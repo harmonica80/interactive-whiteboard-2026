@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📚 教師專屬建置與連線指南 - 即時互動白板</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      background: var(--bg-primary);
+      padding: 40px 20px;
+    }
+    .guide-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 30px;
+      border: 1px solid var(--border-color);
+    }
+    .guide-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px dashed var(--border-color);
+    }
+    .guide-header h1 {
+      font-size: 2rem;
+      color: var(--accent-color);
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+    .guide-header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+    .step-card {
+      background: var(--bg-input);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 5px solid var(--accent-color);
+    }
+    .step-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-num {
+      background: var(--accent-color);
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    ol {
+      padding-left: 20px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    .tool-box {
+      background: var(--bg-card);
+      border: 2px solid var(--accent-color);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 30px 0;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.08);
+    }
+    .tool-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--accent-color);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .generator-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .generator-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: var(--bg-input);
+      color: var(--text-primary);
+      transition: border-color 0.2s;
+    }
+    .generator-input:focus {
+      border-color: var(--accent-color);
+    }
+    .generator-btn {
+      padding: 12px 24px;
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 15px;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .generator-btn:hover {
+      background: var(--accent-hover);
+    }
+    .result-group {
+      display: none;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+    .result-item {
+      margin-bottom: 16px;
+    }
+    .result-label {
+      font-weight: bold;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .result-field {
+      display: flex;
+      gap: 8px;
+    }
+    .result-url {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--text-primary);
+      outline: none;
+    }
+    .copy-btn {
+      padding: 10px 16px;
+      background: #e8eaed;
+      color: #3c4043;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover {
+      background: #dcdfe3;
+    }
+    [data-theme="dark"] .copy-btn {
+      background: #2a2a4a;
+      color: #b0b0b0;
+    }
+    [data-theme="dark"] .copy-btn:hover {
+      background: #33335c;
+    }
+    .alert-tip {
+      background: rgba(102, 126, 234, 0.08);
+      border-left: 4px solid var(--accent-color);
+      color: var(--text-primary);
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="guide-container">
+    <div class="guide-header">
+      <h1>📚 教師專屬建置與連線指南</h1>
+      <p>只要簡單三步驟，立刻為您的班級建立專屬的即時互動空間，無需寫任何程式碼！</p>
+    </div>
+
+    <!-- 步驟 1 -->
+    <div class="step-card">
+      <div class="step-title">
+        <span class="step-num">1</span>
+        <span>建立免費的 Firebase 即時資料庫</span>
+      </div>
+      <ol>
+        <li>前往 <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--accent-color); font-weight: bold;">Firebase 主控台</a>，登入您的 Google 帳號。</li>
+        <li>點選「新增專案」，輸入您的班級或專案名稱（例如：<code>my-class-whiteboard</code>），點選「繼續」直到專案建立完成。</li>
+        <li>建立完成後，在左側選單點選「<strong>Build (建置)</strong>」 -> 「<strong>Realtime Database</strong>」。</li>
+        <li>點選「<strong>建立資料庫</strong>」，資料庫位置選擇 <code>Singapore (asia-southeast1)</code> 或鄰近地區，點選「下一步」。</li>
+        <li>安全規則請務必點選「<strong>以測試模式啟動</strong>」（如此才能允許學生進行提問及投票），最後點選「<strong>啟用</strong>」。</li>
+      </ol>
+    </div>
+
+    <!-- 步驟 2 -->
+    <div class="step-card">
+      <div class="step-title">
+        <span class="step-num">2</span>
+        <span>複製您的資料庫 URL 連結</span>
+      </div>
+      <ol>
+        <li>在 Realtime Database 的頁面頂部，您會看到一串 HTTPS 網址（例如：<code>https://xxxx-default-rtdb.asia-southeast1.firebasedatabase.app/</code>）。</li>
+        <li>點選該網址右側的「<strong>複製</strong>」按鈕。</li>
+      </ol>
+    </div>
+
+    <!-- 產生連結工具 -->
+    <div class="tool-box">
+      <div class="tool-title">⚡ 專屬上課連線產生器</div>
+      <div class="generator-group">
+        <input type="text" id="dbUrlInput" class="generator-input" placeholder="在此貼上您複製的 Firebase Database URL (例如：https://...)">
+        <button onclick="generateLinks()" class="generator-btn">產生專屬連結</button>
+      </div>
+
+      <div id="resultArea" class="result-group">
+        <div class="result-item">
+          <span class="result-label">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
+          <div class="result-field">
+            <input type="text" id="shareUrl" class="result-url" readonly>
+            <button onclick="copyText('shareUrl')" class="copy-btn">複製連結</button>
+          </div>
+          <div class="alert-tip">
+            💡 <strong>如何進入管理員模式？</strong><br>
+            老師點擊此連結進入白板後，點選選單最右側的「⚙️ 管理後台」並輸入預設密碼 <strong><code>1234</code></strong>，即可解鎖測驗發布、清除資料、刪除提問等管理權限。一般學生直接在原頁面作答與提問即可。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 步驟 3 -->
+    <div class="step-card" style="border-left-color: var(--success-color);">
+      <div class="step-title">
+        <span class="step-num">3</span>
+        <span>直接上課使用！</span>
+      </div>
+      <ol>
+        <li>點擊上方產生的網址進入您專屬的互動白板。</li>
+        <li>將網址直接分享給學生（或是轉為 QR Code），學生即可加入提問與測驗，資料將會儲存於您專屬的安全資料庫中，與其他班級完全獨立隔離！</li>
+      </ol>
+    </div>
+
+    <!-- 自行架設說明 -->
+    <div class="step-card" style="border-left-color: var(--text-muted); background: var(--bg-card);">
+      <div class="step-title" style="color: var(--text-secondary);">
+        <span class="step-num" style="background: var(--text-muted);">🛠️</span>
+        <span>進階：自行託管並綁定專屬網站</span>
+      </div>
+      <ol style="font-size: 13px;">
+        <li>下載本白板專案的完整原始碼。</li>
+        <li>打開 <code>js/firebase-config.js</code>，將 <code>firebaseConfig</code> 內的預設設定值取代為您自己的 Firebase 專案設定值。</li>
+        <li>儲存檔案後，將整個資料庫目錄拖曳至 <a href="https://app.netlify.com/drop" target="_blank" style="color: var(--accent-color);">Netlify Drop</a> 完成免費網站架設，即可擁有專屬網址。</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    function generateLinks() {
+      const dbUrl = document.getElementById('dbUrlInput').value.trim();
+      if (!dbUrl) {
+        alert('請先輸入或貼上您的 Firebase Database URL！');
+        return;
+      }
+      
+      if (!dbUrl.startsWith('https://')) {
+        alert('格式不正確！URL 應該以 https:// 開頭。');
+        return;
+      }
+
+      // 取得目前白板主頁面的網址路徑
+      const currentUrl = window.location.href;
+      const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+      const whiteboardUrl = `${baseUrl}/index.html`;
+
+      // 產生專屬連結，加入 dbUrl 參數
+      const finalShareUrl = `${whiteboardUrl}?dbUrl=${encodeURIComponent(dbUrl)}`;
+
+      document.getElementById('shareUrl').value = finalShareUrl;
+      document.getElementById('resultArea').style.display = 'block';
+    }
+
+    function copyText(elementId) {
+      const copyText = document.getElementById(elementId);
+      copyText.select();
+      copyText.setSelectionRange(0, 99999); // 適用行動端
+
+      try {
+        navigator.clipboard.writeText(copyText.value);
+        alert('連結已成功複製！可直接貼上分享給學生。');
+      } catch (err) {
+        // 備用方案
+        document.execCommand('copy');
+        alert('連結已複製！');
+      }
+    }
+  </script>
+</body>
+</html>
