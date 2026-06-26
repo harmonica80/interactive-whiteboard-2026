@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
   <div class="container">
@@ -31,8 +31,8 @@
     <!-- 功能選單 -->
     <div class="function-menu">
       <button class="menu-tab active" data-target="panel-questions">💬 提問區</button>
-      <button class="menu-tab" data-target="panel-quiz">📝 選擇題測驗</button>
       <button class="menu-tab" data-target="panel-images">🖼️ 圖片分享</button>
+      <button class="menu-tab" data-target="panel-quiz">📝 選擇題測驗</button>
       <button class="menu-tab" id="adminTabBtn" data-target="panel-admin" style="border-left: 1px solid var(--border-color);">⚙️ 管理後台</button>
       <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
     </div>
@@ -55,20 +55,6 @@
         </div>
       </div>
       
-      <!-- 選擇題測驗 -->
-      <div class="panel-card" id="panel-quiz">
-        <div class="panel-header">
-          <span class="icon">📝</span>
-          <span class="title">選擇題測驗</span>
-          <span class="collapse-icon">▼</span>
-        </div>
-        <div class="panel-body">
-          <div id="quizStatus"></div>
-          <div id="answerOptions" style="display: none;"></div>
-          <div id="quizResults" class="quiz-results"></div>
-        </div>
-      </div>
-      
       <!-- 圖片分享 -->
       <div class="panel-card" id="panel-images">
         <div class="panel-header">
@@ -86,6 +72,20 @@
           <div class="upload-note" style="margin-top: 16px; font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.5;">
             💡 提示：單張圖片大小限制為 5MB。為了維持系統即時同步的順暢度，上傳時系統會自動進行輕量化壓縮。
           </div>
+        </div>
+      </div>
+
+      <!-- 選擇題測驗 -->
+      <div class="panel-card" id="panel-quiz">
+        <div class="panel-header">
+          <span class="icon">📝</span>
+          <span class="title">選擇題測驗</span>
+          <span class="collapse-icon">▼</span>
+        </div>
+        <div class="panel-body">
+          <div id="quizStatus"></div>
+          <div id="answerOptions" style="display: none;"></div>
+          <div id="quizResults" class="quiz-results"></div>
         </div>
       </div>
 
@@ -252,9 +252,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=3"></script>
-  <script src="js/quiz.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/firebase-config.js?v=4"></script>
+  <script src="js/quiz.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
