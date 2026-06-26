@@ -122,6 +122,19 @@ body {
   gap: 10px;
 }
 
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.online-count {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--danger-color);
+  white-space: nowrap;
+}
+
 /* 連線狀態 */
 .connection-status {
   padding: 6px 14px;

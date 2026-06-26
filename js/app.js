@@ -628,13 +628,41 @@ class App {
 
   setupConnectionStatus() {
     const statusEl = document.getElementById('connectionStatus');
+    const onlineEl = document.getElementById('onlineCount');
+    
+    const presenceRef = db.ref('presence');
+    let myPresenceRef = null;
+
     db.ref('.info/connected').on('value', (snapshot) => {
       if (snapshot.val()) {
         statusEl.textContent = '已連線';
         statusEl.className = 'connection-status connected';
+        
+        // Clean up previous reference if it exists
+        if (myPresenceRef) {
+          myPresenceRef.remove();
+        }
+        
+        // Register connection session
+        myPresenceRef = presenceRef.push();
+        myPresenceRef.set({
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+        myPresenceRef.onDisconnect().remove();
       } else {
         statusEl.textContent = '斷線中...';
         statusEl.className = 'connection-status disconnected';
+      }
+    });
+
+    // Listen for changes in the presence list and count active users
+    presenceRef.on('value', (snapshot) => {
+      let count = 0;
+      if (snapshot.exists()) {
+        count = snapshot.numChildren();
+      }
+      if (onlineEl) {
+        onlineEl.textContent = `線上人數 ${count} 人`;
       }
     });
   }
