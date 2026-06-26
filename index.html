@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
   <div class="container">
@@ -15,8 +15,8 @@
         <p>課堂互動、提問、測驗、分享</p>
       </div>
       <div class="top-actions">
-        <div class="status-group">
-          <div id="onlineCount" class="online-count">線上人數 0 人</div>
+        <div class="status-group" style="display: flex; align-items: center; gap: 10px;">
+          <div id="onlineCount" class="online-count" style="font-size: 13px; font-weight: bold; color: var(--danger-color); white-space: nowrap;">線上人數 0 人</div>
           <div id="connectionStatus" class="connection-status disconnected">連線中...</div>
         </div>
         <div class="theme-switcher">
@@ -252,9 +252,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=2"></script>
-  <script src="js/quiz.js?v=2"></script>
-  <script src="js/app.js?v=2"></script>
+  <script src="js/firebase-config.js?v=3"></script>
+  <script src="js/quiz.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

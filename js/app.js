@@ -630,7 +630,7 @@ class App {
     const statusEl = document.getElementById('connectionStatus');
     const onlineEl = document.getElementById('onlineCount');
     
-    const presenceRef = db.ref('presence');
+    const presenceRef = db.ref('quiz/presence');
     let myPresenceRef = null;
 
     db.ref('.info/connected').on('value', (snapshot) => {
@@ -813,7 +813,8 @@ function closeNotifyModal() {
 
 function resetAll() {
   db.ref('questions').remove();
-  db.ref('quiz').remove();
+  db.ref('quiz/current').remove();
+  db.ref('quiz/answers').remove();
   db.ref('images').remove();
   db.ref('whiteboard').remove();
   location.reload();
