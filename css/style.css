@@ -341,6 +341,19 @@ body {
   line-height: 1.4;
 }
 
+.linkified {
+  color: var(--accent-color);
+  text-decoration: underline;
+  word-break: break-all;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.linkified:hover {
+  color: var(--accent-hover);
+}
+
+
 /* ===== 測驗區域 ===== */
 .quiz-controls {
   display: flex;

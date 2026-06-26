@@ -302,7 +302,7 @@ class App {
   showQuestionModal(user, text) {
     const questionModal = document.getElementById('questionModal');
     document.getElementById('questionModalUser').textContent = user;
-    document.getElementById('questionModalText').textContent = text;
+    document.getElementById('questionModalText').innerHTML = this.linkify(text);
     questionModal.classList.add('active');
   }
   
@@ -389,12 +389,15 @@ class App {
           </div>
           <span class="time">${this.formatTime(q.timestamp)}</span>
         </div>
-        <div class="text">${this.escapeHtml(q.text)}</div>
+        <div class="text">${this.linkify(q.text)}</div>
       </li>
     `).join('');
     
     questionList.querySelectorAll('.question-item').forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('a')) {
+          return;
+        }
         this.showQuestionModal(item.dataset.user, item.dataset.text);
       });
     });
@@ -591,7 +594,7 @@ class App {
             </div>
             <span class="time">${this.formatTime(q.timestamp)}</span>
           </div>
-          <div class="text">${this.escapeHtml(q.text)}</div>
+          <div class="text">${this.linkify(q.text)}</div>
         </div>
         <button class="remove-option-btn" onclick="deleteQuestion('${q.id}')" title="刪除問題" style="width: 28px; height: 28px; font-size: 13px; margin-left: 12px; flex-shrink: 0;">✕</button>
       </li>
@@ -657,6 +660,26 @@ class App {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  linkify(text) {
+    if (!text) return '';
+    const escaped = this.escapeHtml(text);
+    const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/g;
+    
+    return escaped.replace(urlRegex, (match) => {
+      let cleanUrl = match;
+      let trailing = '';
+      
+      const punc = ['.', ',', '!', '?', ';', ':', ')', ']', '}', '。', '，', '！', '？', '；', '：'];
+      while (cleanUrl.length > 0 && punc.includes(cleanUrl[cleanUrl.length - 1])) {
+        trailing = cleanUrl[cleanUrl.length - 1] + trailing;
+        cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+      }
+      
+      const href = cleanUrl.startsWith('www.') ? `https://${cleanUrl}` : cleanUrl;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="linkified">${cleanUrl}</a>${trailing}`;
+    });
   }
 
   formatTime(timestamp) {
