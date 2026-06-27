@@ -15,6 +15,14 @@ class App {
     this.quizAnswers = {};
     this.isAdmin = false;
     
+    // 計時器狀態
+    this.timerRef = db.ref('quiz/timer');
+    this.localTimerStyle = 'flip';
+    this.isTimerMinimized = false;
+    this.timerInterval = null;
+    this.timerState = null;
+    this.lastRenderedDigits = { minTens: '', minOnes: '', secTens: '', secOnes: '' };
+    
     this.init();
   }
   
@@ -31,6 +39,8 @@ class App {
     this.initImageZoom();
     this.initThemeSwitcher();
     this.initFunctionMenu();
+    this.setupTimerSync();
+    this.initTimerDragging();
   }
   
   initFunctionMenu() {
@@ -666,6 +676,311 @@ class App {
       }
     });
   }
+
+  setupTimerSync() {
+    const floatingTimer = document.getElementById('floatingTimer');
+    const localStyleSelect = document.getElementById('localTimerStyle');
+    
+    this.timerRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      this.timerState = data;
+      
+      // Update admin UI buttons if user is admin
+      if (this.isAdmin) {
+        this.updateAdminTimerUI(data);
+      }
+      
+      if (!data || !data.isActive) {
+        // Hide timer
+        if (floatingTimer) floatingTimer.style.display = 'none';
+        if (this.timerInterval) {
+          clearInterval(this.timerInterval);
+          this.timerInterval = null;
+        }
+        return;
+      }
+      
+      // Show timer
+      if (floatingTimer) {
+        floatingTimer.style.display = 'block';
+      }
+      
+      // Set timer style
+      if (localStyleSelect && !localStyleSelect.dataset.userChanged) {
+        localStyleSelect.value = data.style;
+        this.changeLocalTimerStyle(data.style, false);
+      }
+      
+      // Sync inputs in admin if not active focus
+      const minsInput = document.getElementById('timerMinutes');
+      const styleInput = document.getElementById('timerStyle');
+      if (minsInput && document.activeElement !== minsInput) {
+        minsInput.value = Math.round(data.duration / 60);
+      }
+      if (styleInput) {
+        styleInput.value = data.style;
+      }
+      
+      // Start/maintain ticking interval
+      if (!this.timerInterval) {
+        this.timerInterval = setInterval(() => this.tickTimer(), 250);
+      }
+      this.tickTimer();
+    });
+  }
+
+  updateAdminTimerUI(data) {
+    const startBtn = document.getElementById('adminStartTimerBtn');
+    const pauseBtn = document.getElementById('adminPauseTimerBtn');
+    const resumeBtn = document.getElementById('adminResumeTimerBtn');
+    
+    if (!data || !data.isActive) {
+      if (startBtn) startBtn.style.display = 'inline-block';
+      if (pauseBtn) pauseBtn.style.display = 'none';
+      if (resumeBtn) resumeBtn.style.display = 'none';
+    } else if (data.isPaused) {
+      if (startBtn) startBtn.style.display = 'none';
+      if (pauseBtn) pauseBtn.style.display = 'none';
+      if (resumeBtn) resumeBtn.style.display = 'inline-block';
+    } else {
+      if (startBtn) startBtn.style.display = 'none';
+      if (pauseBtn) pauseBtn.style.display = 'inline-block';
+      if (resumeBtn) resumeBtn.style.display = 'none';
+    }
+  }
+
+  tickTimer() {
+    if (!this.timerState || !this.timerState.isActive) return;
+    
+    let remaining = 0;
+    if (this.timerState.isPaused) {
+      remaining = this.timerState.remainingTime;
+    } else {
+      remaining = Math.max(0, Math.ceil((this.timerState.endTime - Date.now()) / 1000));
+    }
+    
+    this.updateTimerDisplay(remaining);
+  }
+
+  updateTimerDisplay(totalSeconds) {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    
+    const minStr = String(mins).padStart(2, '0');
+    const secStr = String(secs).padStart(2, '0');
+    const timeStr = `${minStr}:${secStr}`;
+    
+    // 1. Update Minimized Display
+    const minimizedText = document.getElementById('minimizedTimeText');
+    if (minimizedText) minimizedText.textContent = timeStr;
+    
+    // 2. Update style: Flip style
+    if (this.localTimerStyle === 'flip') {
+      this.updateFlipCard('flipMinTens', minStr[0]);
+      this.updateFlipCard('flipMinOnes', minStr[1]);
+      this.updateFlipCard('flipSecTens', secStr[0]);
+      this.updateFlipCard('flipSecOnes', secStr[1]);
+    }
+    
+    // 3. Update style: LED Digital style
+    const ledDisplay = document.querySelector('.led-display');
+    if (ledDisplay) ledDisplay.textContent = timeStr;
+    
+    // 4. Update style: SVG Ring style
+    const ringText = document.getElementById('ringTimeText');
+    if (ringText) ringText.textContent = timeStr;
+    
+    const ringProgress = document.getElementById('ringProgress');
+    if (ringProgress && this.timerState) {
+      const total = this.timerState.duration || 600;
+      const pct = totalSeconds / total;
+      const offset = 263.89 * (1 - pct);
+      ringProgress.style.strokeDashoffset = offset;
+    }
+  }
+
+  updateFlipCard(cardId, digit) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    
+    const digitEl = card.querySelector('.digit');
+    if (!digitEl) return;
+    
+    if (digitEl.textContent !== digit) {
+      card.classList.remove('flipping');
+      void card.offsetWidth; // Trigger reflow
+      digitEl.textContent = digit;
+      card.classList.add('flipping');
+    }
+  }
+
+  changeLocalTimerStyle(style, userInitiated = true) {
+    this.localTimerStyle = style;
+    
+    if (userInitiated) {
+      const localStyleSelect = document.getElementById('localTimerStyle');
+      if (localStyleSelect) {
+        localStyleSelect.dataset.userChanged = "true";
+      }
+    }
+    
+    const styles = ['flip', 'digital', 'ring'];
+    styles.forEach(s => {
+      const el = document.getElementById(`timerStyle${s.charAt(0).toUpperCase() + s.slice(1)}`);
+      if (el) {
+        if (s === style) {
+          el.style.display = (s === 'flip') ? 'flex' : 'block';
+        } else {
+          el.style.display = 'none';
+        }
+      }
+    });
+    
+    this.tickTimer();
+  }
+
+  toggleMinimizeTimer(minimize) {
+    this.isTimerMinimized = minimize;
+    
+    const expanded = document.getElementById('timerExpandedContent');
+    const minimized = document.getElementById('timerMinimizedContent');
+    const floatingTimer = document.getElementById('floatingTimer');
+    
+    if (minimize) {
+      if (expanded) expanded.style.display = 'none';
+      if (minimized) minimized.style.display = 'flex';
+      if (floatingTimer) {
+        floatingTimer.style.background = 'none';
+        floatingTimer.style.border = 'none';
+        floatingTimer.style.boxShadow = 'none';
+        floatingTimer.style.backdropFilter = 'none';
+      }
+    } else {
+      if (expanded) expanded.style.display = 'block';
+      if (minimized) minimized.style.display = 'none';
+      if (floatingTimer) {
+        floatingTimer.style.background = 'var(--bg-card)';
+        floatingTimer.style.border = '1px solid var(--border-color)';
+        floatingTimer.style.boxShadow = '0 10px 40px rgba(0,0,0,0.15)';
+        floatingTimer.style.backdropFilter = 'blur(8px)';
+      }
+    }
+  }
+
+  initTimerDragging() {
+    const timer = document.getElementById('floatingTimer');
+    const handle = timer ? timer.querySelector('.timer-drag-handle') : null;
+    if (!timer || !handle) return;
+    
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let initialX = 0, initialY = 0;
+    
+    const onStart = (e) => {
+      if (this.isTimerMinimized) return;
+      
+      const clientX = (e.clientX !== undefined) ? e.clientX : e.touches[0].clientX;
+      const clientY = (e.clientY !== undefined) ? e.clientY : e.touches[0].clientY;
+      
+      isDragging = true;
+      startX = clientX;
+      startY = clientY;
+      
+      const rect = timer.getBoundingClientRect();
+      initialX = rect.left;
+      initialY = rect.top;
+      
+      timer.style.bottom = 'auto';
+      timer.style.right = 'auto';
+      timer.style.left = `${initialX}px`;
+      timer.style.top = `${initialY}px`;
+      
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onEnd);
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onEnd);
+    };
+    
+    const onMove = (e) => {
+      if (!isDragging) return;
+      if (e.cancelable) e.preventDefault();
+      
+      const clientX = (e.clientX !== undefined) ? e.clientX : e.touches[0].clientX;
+      const clientY = (e.clientY !== undefined) ? e.clientY : e.touches[0].clientY;
+      
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+      
+      let newLeft = initialX + dx;
+      let newTop = initialY + dy;
+      
+      const maxLeft = window.innerWidth - timer.offsetWidth;
+      const maxTop = window.innerHeight - timer.offsetHeight;
+      
+      newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+      newTop = Math.max(0, Math.min(newTop, maxTop));
+      
+      timer.style.left = `${newLeft}px`;
+      timer.style.top = `${newTop}px`;
+    };
+    
+    const onEnd = () => {
+      isDragging = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+    
+    handle.addEventListener('mousedown', onStart);
+    handle.addEventListener('touchstart', onStart, { passive: true });
+  }
+
+  adminStartTimer() {
+    const mins = parseInt(document.getElementById('timerMinutes').value) || 10;
+    const style = document.getElementById('timerStyle').value || 'flip';
+    const duration = mins * 60;
+    
+    this.timerRef.set({
+      duration: duration,
+      endTime: Date.now() + duration * 1000,
+      isActive: true,
+      isPaused: false,
+      remainingTime: duration,
+      style: style
+    });
+  }
+
+  adminPauseTimer() {
+    this.timerRef.once('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data || !data.isActive || data.isPaused) return;
+      
+      const remaining = Math.max(0, Math.ceil((data.endTime - Date.now()) / 1000));
+      this.timerRef.update({
+        isPaused: true,
+        remainingTime: remaining
+      });
+    });
+  }
+
+  adminResumeTimer() {
+    this.timerRef.once('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data || !data.isActive || !data.isPaused) return;
+      
+      this.timerRef.update({
+        isPaused: false,
+        endTime: Date.now() + data.remainingTime * 1000
+      });
+    });
+  }
+
+  adminResetTimer() {
+    this.timerRef.update({
+      isActive: false
+    });
+  }
   
   initThemeSwitcher() {
     const savedTheme = localStorage.getItem('whiteboard_theme') || 'light';
@@ -913,4 +1228,21 @@ function copyText(elementId) {
     document.execCommand('copy');
     window.app.showNotification('成功', '連結已複製！');
   }
+}
+
+// 倒數計時全域呼叫介面
+function adminStartTimer() {
+  if (window.app) window.app.adminStartTimer();
+}
+
+function adminPauseTimer() {
+  if (window.app) window.app.adminPauseTimer();
+}
+
+function adminResumeTimer() {
+  if (window.app) window.app.adminResumeTimer();
+}
+
+function adminResetTimer() {
+  if (window.app) window.app.adminResetTimer();
 }

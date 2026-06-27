@@ -197,6 +197,32 @@
             <button class="reset-btn" onclick="confirmReset()" style="width: auto; background: var(--danger-color); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">🔄 清除所有資料 (提問、測驗及圖片)</button>
           </div>
 
+          <!-- 倒數計時管理區 -->
+          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">⏱️ 倒數計時管理</h3>
+            <div class="timer-controls" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label for="timerMinutes" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">時間：</label>
+                <input type="number" id="timerMinutes" class="question-input" style="width: 70px; padding: 6px; text-align: center; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" min="1" max="180" value="10">
+                <span style="font-size: 14px; color: var(--text-secondary);">分鐘</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label for="timerStyle" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">預設風格：</label>
+                <select id="timerStyle" class="question-input" style="width: 120px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                  <option value="flip">⏱️ 經典翻頁</option>
+                  <option value="digital">🚨 LED 數位</option>
+                  <option value="ring">⭕ 簡約圓環</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="adminStartTimerBtn" class="preset-btn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminStartTimer()">啟動倒數</button>
+                <button id="adminPauseTimerBtn" class="preset-btn" style="background: #ff9800; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminPauseTimer()">暫停</button>
+                <button id="adminResumeTimerBtn" class="preset-btn" style="background: var(--success-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminResumeTimer()">繼續</button>
+                <button id="adminResetTimerBtn" class="preset-btn" style="border-color: var(--text-muted); color: var(--text-secondary); padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminResetTimer()">重設/關閉</button>
+              </div>
+            </div>
+          </div>
+
           <!-- 測驗管理區 -->
           <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
             <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">📝 測驗管理</h3>
@@ -339,6 +365,54 @@
           <button class="confirm-btn confirm" onclick="submitAdminPassword()">確認</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- 懸浮倒數計時器 -->
+  <div id="floatingTimer" class="floating-timer" style="display: none;">
+    <!-- 計時器主體 (展開狀態) -->
+    <div id="timerExpandedContent" class="timer-expanded-content">
+      <div class="timer-header">
+        <span class="timer-drag-handle">⏱️ 倒數計時</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <select id="localTimerStyle" class="local-style-select" onchange="window.app.changeLocalTimerStyle(this.value)">
+            <option value="flip">經典翻頁</option>
+            <option value="digital">LED 數位</option>
+            <option value="ring">簡約圓環</option>
+          </select>
+          <button class="timer-min-btn" onclick="window.app.toggleMinimizeTimer(true)" title="最小化">−</button>
+        </div>
+      </div>
+      <div class="timer-body">
+        <!-- 1. 翻頁風格 -->
+        <div id="timerStyleFlip" class="timer-display-style flip-style">
+          <div class="flip-unit" id="flipMinTens"><span class="digit">0</span></div>
+          <div class="flip-unit" id="flipMinOnes"><span class="digit">0</span></div>
+          <span class="flip-colon">:</span>
+          <div class="flip-unit" id="flipSecTens"><span class="digit">0</span></div>
+          <div class="flip-unit" id="flipSecOnes"><span class="digit">0</span></div>
+        </div>
+        
+        <!-- 2. LED 數位風格 -->
+        <div id="timerStyleDigital" class="timer-display-style digital-style" style="display: none;">
+          <div class="led-display">00:00</div>
+        </div>
+        
+        <!-- 3. 簡約圓環風格 -->
+        <div id="timerStyleRing" class="timer-display-style ring-style" style="display: none;">
+          <svg class="ring-svg" viewBox="0 0 100 100">
+            <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
+            <circle id="ringProgress" class="ring-fg" cx="50" cy="50" r="42"></circle>
+          </svg>
+          <div class="ring-text" id="ringTimeText">00:00</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 計時器主體 (最小化狀態) -->
+    <div id="timerMinimizedContent" class="timer-minimized-content" style="display: none;" onclick="window.app.toggleMinimizeTimer(false)">
+      <span style="font-size: 16px; margin-right: 4px;">⏱️</span>
+      <span id="minimizedTimeText">10:00</span>
     </div>
   </div>
 
