@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
   <div class="container">
@@ -278,9 +278,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=6"></script>
-  <script src="js/quiz.js?v=6"></script>
-  <script src="js/app.js?v=6"></script>
+  <script src="js/firebase-config.js?v=7"></script>
+  <script src="js/quiz.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -380,6 +380,7 @@
             <option value="digital">LED 數位</option>
             <option value="ring">簡約圓環</option>
           </select>
+          <button id="timerVolumeBtn" class="timer-min-btn" onclick="window.app.toggleTimerMute()" title="靜音/取消靜音">🔊</button>
           <button class="timer-min-btn" onclick="window.app.toggleMinimizeTimer(true)" title="最小化">−</button>
         </div>
       </div>
@@ -414,6 +415,12 @@
       <span style="font-size: 16px; margin-right: 4px;">⏱️</span>
       <span id="minimizedTimeText">10:00</span>
     </div>
+  </div>
+
+  <!-- 隱藏的 YouTube 音訊播放器 -->
+  <div id="ytPlayerContainer" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden;">
+    <div id="canonPlayer"></div>
+    <div id="bellPlayer"></div>
   </div>
 
 </body>

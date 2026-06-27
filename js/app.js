@@ -15,13 +15,19 @@ class App {
     this.quizAnswers = {};
     this.isAdmin = false;
     
-    // 計時器狀態
+    // 計時器與音訊狀態
     this.timerRef = db.ref('quiz/timer');
     this.localTimerStyle = 'flip';
     this.isTimerMinimized = false;
     this.timerInterval = null;
     this.timerState = null;
     this.lastRenderedDigits = { minTens: '', minOnes: '', secTens: '', secOnes: '' };
+    
+    this.ytPlayersReady = false;
+    this.timerMuted = localStorage.getItem('timer_muted') === 'true';
+    this.currentAudioPlaying = 'none';
+    this.playerCanon = null;
+    this.playerBell = null;
     
     this.init();
   }
@@ -41,6 +47,7 @@ class App {
     this.initFunctionMenu();
     this.setupTimerSync();
     this.initTimerDragging();
+    this.loadYoutubeAPI();
   }
   
   initFunctionMenu() {
@@ -685,6 +692,12 @@ class App {
         
         const floatingTimer = document.getElementById('floatingTimer');
         const localStyleSelect = document.getElementById('localTimerStyle');
+        const volBtn = document.getElementById('timerVolumeBtn');
+        
+        // Show volume toggle only for admin
+        if (volBtn) {
+          volBtn.style.display = this.isAdmin ? 'inline-block' : 'none';
+        }
         
         // Update admin UI buttons if user is admin
         if (this.isAdmin) {
@@ -698,6 +711,8 @@ class App {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
           }
+          // Stop music
+          this.playAudio('none');
           return;
         }
         
@@ -766,6 +781,30 @@ class App {
     }
     
     this.updateTimerDisplay(remaining);
+
+    // 音樂播放邏輯 (僅在教師端/管理者端執行)
+    if (this.isAdmin) {
+      if (this.timerState.isPaused) {
+        this.playAudio('none');
+      } else if (remaining > 30) {
+        if (this.currentAudioPlaying !== 'canon') {
+          this.playAudio('canon');
+        }
+      } else if (remaining > 0) {
+        if (this.currentAudioPlaying !== 'bell') {
+          this.playAudio('bell');
+        }
+      } else {
+        if (this.currentAudioPlaying !== 'none') {
+          this.playAudio('none');
+        }
+      }
+    } else {
+      // 學生端強制停止播放音樂
+      if (this.currentAudioPlaying !== 'none') {
+        this.playAudio('none');
+      }
+    }
   }
 
   updateTimerDisplay(totalSeconds) {
@@ -1042,6 +1081,122 @@ class App {
       this.showNotification('錯誤', '重設失敗: ' + e.message);
     }
   }
+
+  loadYoutubeAPI() {
+    window.onYouTubeIframeAPIReady = () => {
+      this.initYoutubePlayers();
+    };
+
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+  }
+
+  initYoutubePlayers() {
+    try {
+      this.playerCanon = new YT.Player('canonPlayer', {
+        height: '1',
+        width: '1',
+        videoId: 'MnhXZRw_ATU',
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0,
+          loop: 1,
+          playlist: 'MnhXZRw_ATU'
+        },
+        events: {
+          onReady: () => {
+            this.ytPlayersReady = true;
+            this.applyMuteState();
+          }
+        }
+      });
+
+      this.playerBell = new YT.Player('bellPlayer', {
+        height: '1',
+        width: '1',
+        videoId: 'xQy8-P68R_0', // Westminster Chimes
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0
+        }
+      });
+    } catch (e) {
+      console.error("Failed to initialize YouTube players:", e);
+    }
+  }
+
+  playAudio(track) {
+    if (!this.ytPlayersReady) return;
+    
+    try {
+      if (track === 'canon') {
+        this.currentAudioPlaying = 'canon';
+        if (this.playerBell && typeof this.playerBell.stopVideo === 'function') {
+          this.playerBell.stopVideo();
+        }
+        if (this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
+          this.playerCanon.playVideo();
+        }
+      } else if (track === 'bell') {
+        this.currentAudioPlaying = 'bell';
+        if (this.playerCanon && typeof this.playerCanon.stopVideo === 'function') {
+          this.playerCanon.stopVideo();
+        }
+        if (this.playerBell && typeof this.playerBell.playVideo === 'function') {
+          this.playerBell.playVideo();
+        }
+      } else {
+        this.currentAudioPlaying = 'none';
+        if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+          this.playerCanon.pauseVideo();
+        }
+        if (this.playerBell && typeof this.playerBell.pauseVideo === 'function') {
+          this.playerBell.pauseVideo();
+        }
+      }
+    } catch (e) {
+      console.error("Error playing audio track:", track, e);
+    }
+  }
+
+  toggleTimerMute() {
+    this.timerMuted = !this.timerMuted;
+    localStorage.setItem('timer_muted', this.timerMuted ? 'true' : 'false');
+    this.applyMuteState();
+  }
+
+  applyMuteState() {
+    const volBtn = document.getElementById('timerVolumeBtn');
+    if (volBtn) {
+      volBtn.textContent = this.timerMuted ? '🔇' : '🔊';
+    }
+    
+    if (!this.ytPlayersReady) return;
+    
+    try {
+      if (this.timerMuted) {
+        if (this.playerCanon && typeof this.playerCanon.mute === 'function') this.playerCanon.mute();
+        if (this.playerBell && typeof this.playerBell.mute === 'function') this.playerBell.mute();
+      } else {
+        if (this.playerCanon && typeof this.playerCanon.unmute === 'function') this.playerCanon.unmute();
+        if (this.playerBell && typeof this.playerBell.unmute === 'function') this.playerBell.unmute();
+      }
+    } catch (e) {
+      console.error("Error applying mute state:", e);
+    }
+  }
   
   initThemeSwitcher() {
     const savedTheme = localStorage.getItem('whiteboard_theme') || 'light';
@@ -1225,6 +1380,10 @@ function logoutAdmin() {
   window.app.isAdmin = false;
   window.app.switchToTab('panel-questions');
   window.app.showNotification('提示', '已登出管理員模式');
+  
+  const volBtn = document.getElementById('timerVolumeBtn');
+  if (volBtn) volBtn.style.display = 'none';
+  window.app.playAudio('none');
 }
 
 // 管理員資料刪除操作
