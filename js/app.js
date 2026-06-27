@@ -1117,53 +1117,42 @@ class App {
           }
         }
       });
-
-      this.playerBell = new YT.Player('bellPlayer', {
-        height: '1',
-        width: '1',
-        videoId: 'xQy8-P68R_0', // Westminster Chimes
-        playerVars: {
-          autoplay: 0,
-          controls: 0,
-          disablekb: 1,
-          fs: 0,
-          modestbranding: 1,
-          rel: 0,
-          showinfo: 0
-        }
-      });
     } catch (e) {
       console.error("Failed to initialize YouTube players:", e);
     }
   }
 
   playAudio(track) {
-    if (!this.ytPlayersReady) return;
+    const bellAudio = document.getElementById('bellAudio');
     
     try {
       if (track === 'canon') {
         this.currentAudioPlaying = 'canon';
-        if (this.playerBell && typeof this.playerBell.stopVideo === 'function') {
-          this.playerBell.stopVideo();
+        if (bellAudio) {
+          bellAudio.pause();
+          bellAudio.currentTime = 0;
         }
-        if (this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
+        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
           this.playerCanon.playVideo();
         }
       } else if (track === 'bell') {
         this.currentAudioPlaying = 'bell';
-        if (this.playerCanon && typeof this.playerCanon.stopVideo === 'function') {
+        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.stopVideo === 'function') {
           this.playerCanon.stopVideo();
         }
-        if (this.playerBell && typeof this.playerBell.playVideo === 'function') {
-          this.playerBell.playVideo();
+        if (bellAudio) {
+          bellAudio.currentTime = 0;
+          bellAudio.play().catch(err => {
+            console.warn("Autoplay blocked or audio play failed:", err);
+          });
         }
       } else {
         this.currentAudioPlaying = 'none';
-        if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
           this.playerCanon.pauseVideo();
         }
-        if (this.playerBell && typeof this.playerBell.pauseVideo === 'function') {
-          this.playerBell.pauseVideo();
+        if (bellAudio) {
+          bellAudio.pause();
         }
       }
     } catch (e) {
@@ -1183,15 +1172,18 @@ class App {
       volBtn.textContent = this.timerMuted ? '🔇' : '🔊';
     }
     
+    const bellAudio = document.getElementById('bellAudio');
+    if (bellAudio) {
+      bellAudio.muted = this.timerMuted;
+    }
+    
     if (!this.ytPlayersReady) return;
     
     try {
       if (this.timerMuted) {
         if (this.playerCanon && typeof this.playerCanon.mute === 'function') this.playerCanon.mute();
-        if (this.playerBell && typeof this.playerBell.mute === 'function') this.playerBell.mute();
       } else {
         if (this.playerCanon && typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
-        if (this.playerBell && typeof this.playerBell.unMute === 'function') this.playerBell.unMute();
       }
     } catch (e) {
       console.error("Error applying mute state:", e);
