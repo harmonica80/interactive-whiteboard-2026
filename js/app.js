@@ -1190,8 +1190,8 @@ class App {
         if (this.playerCanon && typeof this.playerCanon.mute === 'function') this.playerCanon.mute();
         if (this.playerBell && typeof this.playerBell.mute === 'function') this.playerBell.mute();
       } else {
-        if (this.playerCanon && typeof this.playerCanon.unmute === 'function') this.playerCanon.unmute();
-        if (this.playerBell && typeof this.playerBell.unmute === 'function') this.playerBell.unmute();
+        if (this.playerCanon && typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
+        if (this.playerBell && typeof this.playerBell.unMute === 'function') this.playerBell.unMute();
       }
     } catch (e) {
       console.error("Error applying mute state:", e);
