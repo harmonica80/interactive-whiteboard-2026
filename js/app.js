@@ -678,54 +678,60 @@ class App {
   }
 
   setupTimerSync() {
-    const floatingTimer = document.getElementById('floatingTimer');
-    const localStyleSelect = document.getElementById('localTimerStyle');
-    
     this.timerRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      this.timerState = data;
-      
-      // Update admin UI buttons if user is admin
-      if (this.isAdmin) {
-        this.updateAdminTimerUI(data);
-      }
-      
-      if (!data || !data.isActive) {
-        // Hide timer
-        if (floatingTimer) floatingTimer.style.display = 'none';
-        if (this.timerInterval) {
-          clearInterval(this.timerInterval);
-          this.timerInterval = null;
+      try {
+        const data = snapshot.val();
+        this.timerState = data;
+        
+        const floatingTimer = document.getElementById('floatingTimer');
+        const localStyleSelect = document.getElementById('localTimerStyle');
+        
+        // Update admin UI buttons if user is admin
+        if (this.isAdmin) {
+          this.updateAdminTimerUI(data);
         }
-        return;
+        
+        if (!data || !data.isActive) {
+          // Hide timer
+          if (floatingTimer) floatingTimer.style.display = 'none';
+          if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+          }
+          return;
+        }
+        
+        // Show timer
+        if (floatingTimer) {
+          floatingTimer.style.display = 'block';
+        }
+        
+        // Set timer style
+        if (localStyleSelect && !localStyleSelect.dataset.userChanged) {
+          localStyleSelect.value = data.style;
+          this.changeLocalTimerStyle(data.style, false);
+        }
+        
+        // Sync inputs in admin if not active focus
+        const minsInput = document.getElementById('timerMinutes');
+        const styleInput = document.getElementById('timerStyle');
+        if (minsInput && document.activeElement !== minsInput) {
+          minsInput.value = Math.round((data.duration || 600) / 60);
+        }
+        if (styleInput) {
+          styleInput.value = data.style;
+        }
+        
+        // Start/maintain ticking interval
+        if (!this.timerInterval) {
+          this.timerInterval = setInterval(() => this.tickTimer(), 250);
+        }
+        this.tickTimer();
+      } catch (err) {
+        console.error("Timer sync error:", err);
       }
-      
-      // Show timer
-      if (floatingTimer) {
-        floatingTimer.style.display = 'block';
-      }
-      
-      // Set timer style
-      if (localStyleSelect && !localStyleSelect.dataset.userChanged) {
-        localStyleSelect.value = data.style;
-        this.changeLocalTimerStyle(data.style, false);
-      }
-      
-      // Sync inputs in admin if not active focus
-      const minsInput = document.getElementById('timerMinutes');
-      const styleInput = document.getElementById('timerStyle');
-      if (minsInput && document.activeElement !== minsInput) {
-        minsInput.value = Math.round(data.duration / 60);
-      }
-      if (styleInput) {
-        styleInput.value = data.style;
-      }
-      
-      // Start/maintain ticking interval
-      if (!this.timerInterval) {
-        this.timerInterval = setInterval(() => this.tickTimer(), 250);
-      }
-      this.tickTimer();
+    }, (error) => {
+      console.error("Timer database sync error:", error);
     });
   }
 
@@ -937,49 +943,75 @@ class App {
   }
 
   adminStartTimer() {
-    const mins = parseInt(document.getElementById('timerMinutes').value) || 10;
-    const style = document.getElementById('timerStyle').value || 'flip';
-    const duration = mins * 60;
-    
-    this.timerRef.set({
-      duration: duration,
-      endTime: Date.now() + duration * 1000,
-      isActive: true,
-      isPaused: false,
-      remainingTime: duration,
-      style: style
-    });
+    try {
+      const mins = parseInt(document.getElementById('timerMinutes').value) || 10;
+      const style = document.getElementById('timerStyle').value || 'flip';
+      const duration = mins * 60;
+      
+      this.timerRef.set({
+        duration: duration,
+        endTime: Date.now() + duration * 1000,
+        isActive: true,
+        isPaused: false,
+        remainingTime: duration,
+        style: style
+      }).catch(err => {
+        console.error("Timer set error:", err);
+        this.showNotification('資料庫錯誤', '無法設定計時器: ' + err.message);
+      });
+    } catch (e) {
+      console.error("Start timer exception:", e);
+      this.showNotification('錯誤', '啟動失敗: ' + e.message);
+    }
   }
 
   adminPauseTimer() {
-    this.timerRef.once('value', (snapshot) => {
-      const data = snapshot.val();
-      if (!data || !data.isActive || data.isPaused) return;
-      
-      const remaining = Math.max(0, Math.ceil((data.endTime - Date.now()) / 1000));
-      this.timerRef.update({
-        isPaused: true,
-        remainingTime: remaining
+    try {
+      this.timerRef.once('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data || !data.isActive || data.isPaused) return;
+        
+        const remaining = Math.max(0, Math.ceil((data.endTime - Date.now()) / 1000));
+        this.timerRef.update({
+          isPaused: true,
+          remainingTime: remaining
+        }).catch(err => {
+          this.showNotification('資料庫錯誤', '無法暫停計時器: ' + err.message);
+        });
       });
-    });
+    } catch (e) {
+      this.showNotification('錯誤', '暫停失敗: ' + e.message);
+    }
   }
 
   adminResumeTimer() {
-    this.timerRef.once('value', (snapshot) => {
-      const data = snapshot.val();
-      if (!data || !data.isActive || !data.isPaused) return;
-      
-      this.timerRef.update({
-        isPaused: false,
-        endTime: Date.now() + data.remainingTime * 1000
+    try {
+      this.timerRef.once('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data || !data.isActive || !data.isPaused) return;
+        
+        this.timerRef.update({
+          isPaused: false,
+          endTime: Date.now() + data.remainingTime * 1000
+        }).catch(err => {
+          this.showNotification('資料庫錯誤', '無法繼續計時器: ' + err.message);
+        });
       });
-    });
+    } catch (e) {
+      this.showNotification('錯誤', '繼續計時失敗: ' + e.message);
+    }
   }
 
   adminResetTimer() {
-    this.timerRef.update({
-      isActive: false
-    });
+    try {
+      this.timerRef.update({
+        isActive: false
+      }).catch(err => {
+        this.showNotification('資料庫錯誤', '無法重設計時器: ' + err.message);
+      });
+    } catch (e) {
+      this.showNotification('錯誤', '重設失敗: ' + e.message);
+    }
   }
   
   initThemeSwitcher() {
@@ -1152,6 +1184,9 @@ function submitAdminPassword() {
     window.app.closeAdminPasswordModal();
     window.app.switchToTab('panel-admin');
     window.app.showNotification('成功', '已進入管理員模式！');
+    if (window.app.timerState) {
+      window.app.updateAdminTimerUI(window.app.timerState);
+    }
   } else {
     window.app.showNotification('錯誤', '密碼不正確！');
   }
