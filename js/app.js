@@ -800,7 +800,7 @@ class App {
     if (ringProgress && this.timerState) {
       const total = this.timerState.duration || 600;
       const pct = totalSeconds / total;
-      const offset = 263.89 * (1 - pct);
+      const offset = 251.32 * (1 - pct);
       ringProgress.style.strokeDashoffset = offset;
     }
   }
@@ -856,10 +856,22 @@ class App {
       if (expanded) expanded.style.display = 'none';
       if (minimized) minimized.style.display = 'flex';
       if (floatingTimer) {
+        // Save expanded position details before minimizing
+        this.expandedPosition = {
+          left: floatingTimer.style.left,
+          top: floatingTimer.style.top,
+          transform: floatingTimer.style.transform
+        };
+        
         floatingTimer.style.background = 'none';
         floatingTimer.style.border = 'none';
         floatingTimer.style.boxShadow = 'none';
         floatingTimer.style.backdropFilter = 'none';
+        floatingTimer.style.top = 'auto';
+        floatingTimer.style.left = 'auto';
+        floatingTimer.style.bottom = '24px';
+        floatingTimer.style.right = '24px';
+        floatingTimer.style.transform = 'none';
       }
     } else {
       if (expanded) expanded.style.display = 'block';
@@ -867,8 +879,23 @@ class App {
       if (floatingTimer) {
         floatingTimer.style.background = 'var(--bg-card)';
         floatingTimer.style.border = '1px solid var(--border-color)';
-        floatingTimer.style.boxShadow = '0 10px 40px rgba(0,0,0,0.15)';
-        floatingTimer.style.backdropFilter = 'blur(8px)';
+        floatingTimer.style.boxShadow = '0 15px 50px rgba(0,0,0,0.2)';
+        floatingTimer.style.backdropFilter = 'blur(12px)';
+        
+        // Restore expanded position or center
+        if (this.expandedPosition && this.expandedPosition.left) {
+          floatingTimer.style.top = this.expandedPosition.top;
+          floatingTimer.style.left = this.expandedPosition.left;
+          floatingTimer.style.bottom = 'auto';
+          floatingTimer.style.right = 'auto';
+          floatingTimer.style.transform = this.expandedPosition.transform;
+        } else {
+          floatingTimer.style.top = '50%';
+          floatingTimer.style.left = '50%';
+          floatingTimer.style.bottom = 'auto';
+          floatingTimer.style.right = 'auto';
+          floatingTimer.style.transform = 'translate(-50%, -50%)';
+        }
       }
     }
   }
@@ -896,6 +923,8 @@ class App {
       initialX = rect.left;
       initialY = rect.top;
       
+      // Remove transform so it doesn't offset absolute coordinates
+      timer.style.transform = 'none';
       timer.style.bottom = 'auto';
       timer.style.right = 'auto';
       timer.style.left = `${initialX}px`;

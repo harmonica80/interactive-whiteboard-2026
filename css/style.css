@@ -1324,38 +1324,39 @@ body {
 /* ===== 懸浮倒數計時器 ===== */
 .floating-timer {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 1000;
   background: var(--bg-card);
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  border-radius: 20px;
+  box-shadow: 0 15px 50px rgba(0,0,0,0.2);
   border: 1px solid var(--border-color);
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
 }
 
 [data-theme="dark"] .floating-timer {
-  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 15px 50px rgba(0,0,0,0.45);
 }
 
 .timer-expanded-content {
-  width: 260px;
-  padding: 16px;
+  width: 380px;
+  padding: 24px;
 }
 
 .timer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 8px;
+  padding-bottom: 10px;
 }
 
 .timer-drag-handle {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: bold;
   color: var(--text-secondary);
   cursor: move;
@@ -1363,8 +1364,8 @@ body {
 }
 
 .local-style-select {
-  font-size: 11px;
-  padding: 2px 6px;
+  font-size: 12px;
+  padding: 4px 8px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
   background: var(--bg-input);
@@ -1375,12 +1376,12 @@ body {
 .timer-min-btn {
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: bold;
   cursor: pointer;
   color: var(--text-secondary);
   line-height: 1;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 4px;
 }
 .timer-min-btn:hover {
@@ -1391,28 +1392,28 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80px;
+  min-height: 110px;
 }
 
 /* 1. 翻頁風格 (Flip Style) */
 .flip-style {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
 }
 
 .flip-unit {
   position: relative;
-  width: 44px;
-  height: 60px;
+  width: 65px;
+  height: 90px;
   background: #1e1e24;
   color: #fff;
-  border-radius: 8px;
-  font-size: 38px;
+  border-radius: 12px;
+  font-size: 60px;
   font-weight: bold;
   text-align: center;
-  line-height: 60px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  line-height: 90px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
   font-family: 'Courier New', monospace;
   overflow: hidden;
 }
@@ -1452,7 +1453,7 @@ body {
 }
 
 .flip-colon {
-  font-size: 32px;
+  font-size: 56px;
   font-weight: bold;
   color: var(--text-primary);
   animation: blinkColon 1s infinite;
@@ -1470,43 +1471,43 @@ body {
 
 .led-display {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 38px;
+  font-size: 56px;
   color: #ff3b30;
   background: #000;
-  padding: 10px;
-  border-radius: 8px;
-  text-shadow: 0 0 10px #ff3b30, 0 0 15px #ff3b30;
-  letter-spacing: 2px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  text-shadow: 0 0 15px #ff3b30, 0 0 25px #ff3b30;
+  letter-spacing: 4px;
   text-align: center;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
   border: 2px solid #222;
 }
 
 /* 3. 簡約圓環風格 (Ring Style) */
 .ring-style {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: 180px;
+  height: 180px;
 }
 
 .ring-svg {
-  width: 110px;
-  height: 110px;
+  width: 180px;
+  height: 180px;
   transform: rotate(-90deg);
 }
 
 .ring-bg {
   fill: none;
   stroke: var(--border-color);
-  stroke-width: 6;
+  stroke-width: 8;
 }
 
 .ring-fg {
   fill: none;
   stroke: var(--accent-color);
-  stroke-width: 6;
+  stroke-width: 8;
   stroke-linecap: round;
-  stroke-dasharray: 263.89; /* 2 * PI * r = 2 * 3.14159 * 42 = 263.89 */
+  stroke-dasharray: 251.32; /* 2 * PI * r = 2 * 3.14159 * 40 = 251.32 */
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 0.3s linear;
 }
@@ -1520,7 +1521,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 32px;
   font-weight: bold;
   color: var(--text-primary);
   font-family: monospace;
