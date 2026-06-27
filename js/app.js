@@ -773,28 +773,40 @@ class App {
   tickTimer() {
     if (!this.timerState || !this.timerState.isActive) return;
     
-    let remaining = 0;
+    let remMs = 0;
     if (this.timerState.isPaused) {
-      remaining = this.timerState.remainingTime;
+      remMs = this.timerState.remainingTime * 1000;
     } else {
-      remaining = Math.max(0, Math.ceil((this.timerState.endTime - Date.now()) / 1000));
+      remMs = Math.max(0, this.timerState.endTime - Date.now());
     }
     
-    this.updateTimerDisplay(remaining);
+    const remainingSeconds = Math.ceil(remMs / 1000);
+    this.updateTimerDisplay(remainingSeconds);
 
-    // 音樂播放邏輯 (僅在教師端/管理者端執行)
+    // 音樂播放與淡出邏輯 (僅在教師端/管理者端執行)
     if (this.isAdmin) {
       if (this.timerState.isPaused) {
         this.playAudio('none');
-      } else if (remaining > 30) {
+      } else if (remainingSeconds > 0) {
+        // 播放卡農
         if (this.currentAudioPlaying !== 'canon') {
           this.playAudio('canon');
         }
-      } else if (remaining > 0) {
-        if (this.currentAudioPlaying !== 'bell') {
-          this.playAudio('bell');
+        
+        // 最後 10 秒音樂淡出
+        if (remMs <= 10000) {
+          const vol = Math.max(0, Math.min(100, Math.floor((remMs / 10000) * 100)));
+          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
+            this.playerCanon.setVolume(vol);
+          }
+        } else {
+          // 正常音量 (100)
+          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
+            this.playerCanon.setVolume(100);
+          }
         }
       } else {
+        // 時間到，停止播放
         if (this.currentAudioPlaying !== 'none') {
           this.playAudio('none');
         }
@@ -1123,36 +1135,20 @@ class App {
   }
 
   playAudio(track) {
-    const bellAudio = document.getElementById('bellAudio');
-    
     try {
       if (track === 'canon') {
         this.currentAudioPlaying = 'canon';
-        if (bellAudio) {
-          bellAudio.pause();
-          bellAudio.currentTime = 0;
-        }
         if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
+          // Reset volume to 100 on start play
+          if (typeof this.playerCanon.setVolume === 'function') {
+            this.playerCanon.setVolume(100);
+          }
           this.playerCanon.playVideo();
-        }
-      } else if (track === 'bell') {
-        this.currentAudioPlaying = 'bell';
-        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.stopVideo === 'function') {
-          this.playerCanon.stopVideo();
-        }
-        if (bellAudio) {
-          bellAudio.currentTime = 0;
-          bellAudio.play().catch(err => {
-            console.warn("Autoplay blocked or audio play failed:", err);
-          });
         }
       } else {
         this.currentAudioPlaying = 'none';
         if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
           this.playerCanon.pauseVideo();
-        }
-        if (bellAudio) {
-          bellAudio.pause();
         }
       }
     } catch (e) {
@@ -1170,11 +1166,6 @@ class App {
     const volBtn = document.getElementById('timerVolumeBtn');
     if (volBtn) {
       volBtn.textContent = this.timerMuted ? '🔇' : '🔊';
-    }
-    
-    const bellAudio = document.getElementById('bellAudio');
-    if (bellAudio) {
-      bellAudio.muted = this.timerMuted;
     }
     
     if (!this.ytPlayersReady) return;

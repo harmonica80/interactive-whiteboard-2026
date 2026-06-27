@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=9">
+  <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
   <div class="container">
@@ -278,9 +278,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=9"></script>
-  <script src="js/quiz.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/firebase-config.js?v=10"></script>
+  <script src="js/quiz.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -417,11 +417,10 @@
     </div>
   </div>
 
-  <!-- 隱藏的 YouTube 音訊播放器與本地下課鐘聲 -->
+  <!-- 隱藏的 YouTube 音訊播放器 -->
   <div id="ytPlayerContainer" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden;">
     <div id="canonPlayer"></div>
   </div>
-  <audio id="bellAudio" src="audio/bell.mp3" preload="auto"></audio>
 
 </body>
 </html>
