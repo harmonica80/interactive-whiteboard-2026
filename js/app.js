@@ -398,23 +398,25 @@ class App {
     canvas.addEventListener('touchend', stopDrawing);
   }
 
+  toggleImageMode() {
+    const nextMode = (this.imageMode === 'draw') ? 'pan' : 'draw';
+    this.setImageMode(nextMode);
+  }
+
   setImageMode(mode) {
     this.imageMode = mode;
     const canvas = document.getElementById('imageMarkupCanvas');
-    const panBtn = document.getElementById('modePanBtn');
     const drawBtn = document.getElementById('modeDrawBtn');
     const settingsPanel = document.getElementById('drawSettingsPanel');
     const zoomContainer = document.getElementById('imageZoomContainer');
     
     if (mode === 'draw') {
       if (canvas) canvas.style.pointerEvents = 'auto';
-      if (panBtn) panBtn.classList.remove('active');
       if (drawBtn) drawBtn.classList.add('active');
       if (settingsPanel) settingsPanel.style.display = 'flex';
       if (zoomContainer) zoomContainer.style.cursor = 'crosshair';
     } else {
       if (canvas) canvas.style.pointerEvents = 'none';
-      if (panBtn) panBtn.classList.add('active');
       if (drawBtn) drawBtn.classList.remove('active');
       if (settingsPanel) settingsPanel.style.display = 'none';
       if (zoomContainer) zoomContainer.style.cursor = 'grab';
