@@ -22,6 +22,7 @@ class App {
     this.timerInterval = null;
     this.timerState = null;
     this.lastRenderedDigits = { minTens: '', minOnes: '', secTens: '', secOnes: '' };
+    this.isFirstTimerSync = true;
     
     this.ytPlayersReady = false;
     this.timerMuted = localStorage.getItem('timer_muted') === 'true';
@@ -688,7 +689,12 @@ class App {
     this.timerRef.on('value', (snapshot) => {
       try {
         const data = snapshot.val();
+        
+        const wasActive = this.timerState ? this.timerState.isActive : false;
         this.timerState = data;
+        
+        const isInitialLoad = this.isFirstTimerSync;
+        this.isFirstTimerSync = false;
         
         const floatingTimer = document.getElementById('floatingTimer');
         const localStyleSelect = document.getElementById('localTimerStyle');
@@ -719,6 +725,15 @@ class App {
         // Show timer
         if (floatingTimer) {
           floatingTimer.style.display = 'block';
+        }
+        
+        // Handle centering vs corner display based on initial load vs dynamic start
+        if (isInitialLoad) {
+          // Page load: minimize by default to avoid blocking student screen
+          this.toggleMinimizeTimer(true);
+        } else if (!wasActive) {
+          // Dynamic start by admin: show expanded in center
+          this.toggleMinimizeTimer(false);
         }
         
         // Set timer style
@@ -1239,6 +1254,101 @@ class App {
       return `${month}-${day} ${hours}:${minutes}`;
     }
   }
+
+  adminExportRecord() {
+    this.showNotification('提示', '正在準備匯出檔案，請稍候...');
+    
+    Promise.all([
+      db.ref('questions').once('value'),
+      db.ref('images').once('value'),
+      db.ref('quiz').once('value'),
+      db.ref('whiteboard').once('value')
+    ]).then(([questionsSnap, imagesSnap, quizSnap, whiteboardSnap]) => {
+      const exportData = {
+        questions: questionsSnap.val() || {},
+        images: imagesSnap.val() || {},
+        quiz: quizSnap.val() || {},
+        whiteboard: whiteboardSnap.val() || {},
+        exportedAt: new Date().toISOString(),
+        dbUrl: db.app.options.databaseURL || ""
+      };
+      
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const downloadAnchor = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      downloadAnchor.setAttribute("href", url);
+      downloadAnchor.setAttribute("download", `classroom_record_${dateStr}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      
+      // Clean up
+      setTimeout(() => {
+        downloadAnchor.remove();
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      this.showNotification('成功', '匯出記錄檔完成！');
+    }).catch(err => {
+      console.error("Export failed:", err);
+      this.showNotification('錯誤', '匯出失敗: ' + err.message);
+    });
+  }
+
+  adminImportRecord(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        
+        // Validate format
+        if (!importedData.questions && !importedData.images && !importedData.quiz && !importedData.whiteboard) {
+          this.showNotification('錯誤', '無效的記錄檔格式！');
+          return;
+        }
+        
+        this.showConfirmModal(
+          '📥',
+          '確定要匯入此記錄檔嗎？',
+          '此動作會覆蓋當前資料庫的所有資料（提問、測驗與白板畫跡），且無法復原。',
+          () => {
+            this.showNotification('提示', '正在匯入資料，請稍候...');
+            
+            const promises = [];
+            
+            // Set data nodes
+            promises.push(db.ref('questions').set(importedData.questions || null));
+            promises.push(db.ref('images').set(importedData.images || null));
+            promises.push(db.ref('quiz').set(importedData.quiz || null));
+            promises.push(db.ref('whiteboard').set(importedData.whiteboard || null));
+            
+            Promise.all(promises).then(() => {
+              this.showNotification('成功', '匯入記錄檔完成！');
+              // Clear file input value
+              event.target.value = '';
+              
+              // Force reload to refresh UI
+              setTimeout(() => {
+                location.reload();
+              }, 1000);
+            }).catch(err => {
+              console.error("Import set failed:", err);
+              this.showNotification('錯誤', '寫入資料庫失敗: ' + err.message);
+            });
+          }
+        );
+      } catch (err) {
+        console.error("Parse failed:", err);
+        this.showNotification('錯誤', '解析 JSON 檔案失敗！');
+      }
+    };
+    reader.readAsText(file);
+  }
 }
 
 // 開始測驗
@@ -1451,4 +1561,18 @@ function adminResumeTimer() {
 
 function adminResetTimer() {
   if (window.app) window.app.adminResetTimer();
+}
+
+// 課堂記錄備份全域呼叫介面
+function adminExportRecord() {
+  if (window.app) window.app.adminExportRecord();
+}
+
+function triggerImportInput() {
+  const input = document.getElementById('importRecordInput');
+  if (input) input.click();
+}
+
+function adminImportRecord(event) {
+  if (window.app) window.app.adminImportRecord(event);
 }
