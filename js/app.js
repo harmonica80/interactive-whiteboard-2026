@@ -403,26 +403,20 @@ class App {
     const canvas = document.getElementById('imageMarkupCanvas');
     const panBtn = document.getElementById('modePanBtn');
     const drawBtn = document.getElementById('modeDrawBtn');
-    const colorPicker = document.getElementById('markupColorPicker');
-    const sizePicker = document.getElementById('markupSizePicker');
-    const clearBtn = document.getElementById('markupClearBtn');
+    const settingsPanel = document.getElementById('drawSettingsPanel');
     const zoomContainer = document.getElementById('imageZoomContainer');
     
     if (mode === 'draw') {
       if (canvas) canvas.style.pointerEvents = 'auto';
-      if (panBtn) { panBtn.style.background = 'transparent'; panBtn.style.color = 'var(--text-primary)'; panBtn.classList.remove('active'); }
-      if (drawBtn) { drawBtn.style.background = 'var(--accent-color)'; drawBtn.style.color = 'white'; drawBtn.classList.add('active'); }
-      if (colorPicker) colorPicker.style.display = 'flex';
-      if (sizePicker) sizePicker.style.display = 'flex';
-      if (clearBtn) clearBtn.style.display = 'flex';
+      if (panBtn) panBtn.classList.remove('active');
+      if (drawBtn) drawBtn.classList.add('active');
+      if (settingsPanel) settingsPanel.style.display = 'flex';
       if (zoomContainer) zoomContainer.style.cursor = 'crosshair';
     } else {
       if (canvas) canvas.style.pointerEvents = 'none';
-      if (panBtn) { panBtn.style.background = 'var(--accent-color)'; panBtn.style.color = 'white'; panBtn.classList.add('active'); }
-      if (drawBtn) { drawBtn.style.background = 'transparent'; drawBtn.style.color = 'var(--text-primary)'; drawBtn.classList.remove('active'); }
-      if (colorPicker) colorPicker.style.display = 'none';
-      if (sizePicker) sizePicker.style.display = 'none';
-      if (clearBtn) clearBtn.style.display = 'none';
+      if (panBtn) panBtn.classList.add('active');
+      if (drawBtn) drawBtn.classList.remove('active');
+      if (settingsPanel) settingsPanel.style.display = 'none';
       if (zoomContainer) zoomContainer.style.cursor = 'grab';
     }
   }
@@ -431,10 +425,8 @@ class App {
     this.imageBrushColor = color;
     document.querySelectorAll('#markupColorPicker .color-dot').forEach(d => {
       d.classList.remove('active');
-      d.style.boxShadow = '0 0 0 1px #ccc';
     });
     btn.classList.add('active');
-    btn.style.boxShadow = '0 0 0 2px var(--accent-color)';
   }
 
   setImageBrushSize(size) {

@@ -786,9 +786,36 @@ body {
   bottom: 80px;
   right: 15px;
   display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 10;
+}
+
+.image-modal .zoom-buttons-container {
+  display: flex;
   flex-direction: column;
   gap: 6px;
-  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(5px);
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.image-modal .draw-settings-panel {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px;
+  border-radius: 8px;
+  align-items: center;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
 .image-modal .zoom-btn {
@@ -797,17 +824,43 @@ body {
   border: none;
   background: rgba(255,255,255,0.9);
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  color: #333;
 }
 
 .image-modal .zoom-btn:hover {
   background: white;
+}
+
+.image-modal .zoom-btn.active {
+  background: var(--accent-color);
+  color: white;
+}
+
+/* Color Dots inside modal */
+.image-modal .color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.4);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s;
+}
+
+.image-modal .color-dot:hover {
+  transform: scale(1.15);
+}
+
+.image-modal .color-dot.active {
+  box-shadow: 0 0 0 2px var(--accent-color);
 }
 
 .image-modal .zoom-info {
