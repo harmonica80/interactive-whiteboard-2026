@@ -766,11 +766,17 @@ body {
   cursor: grabbing;
 }
 
+#imageCanvasWrapper {
+  display: inline-block;
+  position: relative;
+  transition: transform 0.1s ease-out;
+}
+
 .image-modal .modal-image {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  transition: transform 0.1s ease-out;
+  display: block;
   user-select: none;
   -webkit-user-drag: none;
 }

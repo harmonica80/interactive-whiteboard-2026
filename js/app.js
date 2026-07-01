@@ -49,6 +49,7 @@ class App {
     this.setupTimerSync();
     this.initTimerDragging();
     this.loadYoutubeAPI();
+    this.initImageCanvasDrawing();
   }
   
   initFunctionMenu() {
@@ -253,6 +254,7 @@ class App {
     });
     
     zoomContainer.addEventListener('mousedown', (e) => {
+      if (this.imageMode === 'draw') return;
       if (this.currentZoom > 1) {
         this.isDragging = true;
         this.dragStart = { x: e.clientX - this.imagePos.x, y: e.clientY - this.imagePos.y };
@@ -261,7 +263,7 @@ class App {
     });
     
     document.addEventListener('mousemove', (e) => {
-      if (this.isDragging) {
+      if (this.isDragging && this.imageMode !== 'draw') {
         this.imagePos.x = e.clientX - this.dragStart.x;
         this.imagePos.y = e.clientY - this.dragStart.y;
         this.updateImageTransform();
@@ -276,12 +278,14 @@ class App {
     let touchStartPos = { x: 0, y: 0 };
     
     zoomContainer.addEventListener('touchstart', (e) => {
+      if (this.imageMode === 'draw') return;
       if (e.touches.length === 1 && this.currentZoom > 1) {
         touchStartPos = { x: e.touches[0].clientX - this.imagePos.x, y: e.touches[0].clientY - this.imagePos.y };
       }
     });
     
     zoomContainer.addEventListener('touchmove', (e) => {
+      if (this.imageMode === 'draw') return;
       if (e.touches.length === 1 && this.currentZoom > 1) {
         this.imagePos.x = e.touches[0].clientX - touchStartPos.x;
         this.imagePos.y = e.touches[0].clientY - touchStartPos.y;
@@ -311,12 +315,139 @@ class App {
   }
   
   updateImageTransform() {
-    const modalImage = document.getElementById('modalImage');
+    const wrapper = document.getElementById('imageCanvasWrapper');
     const zoomInfo = document.getElementById('zoomInfo');
-    modalImage.style.transform = `translate(${this.imagePos.x}px, ${this.imagePos.y}px) scale(${this.currentZoom})`;
-    zoomInfo.textContent = `${Math.round(this.currentZoom * 100)}%`;
+    if (wrapper) {
+      wrapper.style.transform = `translate(${this.imagePos.x}px, ${this.imagePos.y}px) scale(${this.currentZoom})`;
+    }
+    if (zoomInfo) {
+      zoomInfo.textContent = `${Math.round(this.currentZoom * 100)}%`;
+    }
   }
-  
+
+  initImageCanvasDrawing() {
+    const canvas = document.getElementById('imageMarkupCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0, lastY = 0;
+    
+    this.imageBrushColor = '#ff3b30';
+    this.imageBrushSize = 5;
+    this.imageMode = 'pan';
+    
+    const getPos = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      
+      const clientX = (e.clientX !== undefined) ? e.clientX : e.touches[0].clientX;
+      const clientY = (e.clientY !== undefined) ? e.clientY : e.touches[0].clientY;
+      
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    };
+    
+    const startDrawing = (e) => {
+      if (this.imageMode !== 'draw') return;
+      isDrawing = true;
+      const pos = getPos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+      
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, this.imageBrushSize / 2, 0, Math.PI * 2);
+      ctx.fillStyle = this.imageBrushColor;
+      ctx.fill();
+    };
+    
+    const draw = (e) => {
+      if (!isDrawing || this.imageMode !== 'draw') return;
+      if (e.cancelable) e.preventDefault();
+      
+      const pos = getPos(e);
+      
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(pos.x, pos.y);
+      
+      ctx.strokeStyle = this.imageBrushColor;
+      ctx.lineWidth = this.imageBrushSize;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      
+      lastX = pos.x;
+      lastY = pos.y;
+    };
+    
+    const stopDrawing = () => {
+      isDrawing = false;
+    };
+    
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+    
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+  }
+
+  setImageMode(mode) {
+    this.imageMode = mode;
+    const canvas = document.getElementById('imageMarkupCanvas');
+    const panBtn = document.getElementById('modePanBtn');
+    const drawBtn = document.getElementById('modeDrawBtn');
+    const colorPicker = document.getElementById('markupColorPicker');
+    const sizePicker = document.getElementById('markupSizePicker');
+    const clearBtn = document.getElementById('markupClearBtn');
+    const zoomContainer = document.getElementById('imageZoomContainer');
+    
+    if (mode === 'draw') {
+      if (canvas) canvas.style.pointerEvents = 'auto';
+      if (panBtn) { panBtn.style.background = 'transparent'; panBtn.style.color = 'var(--text-primary)'; panBtn.classList.remove('active'); }
+      if (drawBtn) { drawBtn.style.background = 'var(--accent-color)'; drawBtn.style.color = 'white'; drawBtn.classList.add('active'); }
+      if (colorPicker) colorPicker.style.display = 'flex';
+      if (sizePicker) sizePicker.style.display = 'flex';
+      if (clearBtn) clearBtn.style.display = 'flex';
+      if (zoomContainer) zoomContainer.style.cursor = 'crosshair';
+    } else {
+      if (canvas) canvas.style.pointerEvents = 'none';
+      if (panBtn) { panBtn.style.background = 'var(--accent-color)'; panBtn.style.color = 'white'; panBtn.classList.add('active'); }
+      if (drawBtn) { drawBtn.style.background = 'transparent'; drawBtn.style.color = 'var(--text-primary)'; drawBtn.classList.remove('active'); }
+      if (colorPicker) colorPicker.style.display = 'none';
+      if (sizePicker) sizePicker.style.display = 'none';
+      if (clearBtn) clearBtn.style.display = 'none';
+      if (zoomContainer) zoomContainer.style.cursor = 'grab';
+    }
+  }
+
+  setImageColor(color, btn) {
+    this.imageBrushColor = color;
+    document.querySelectorAll('#markupColorPicker .color-dot').forEach(d => {
+      d.classList.remove('active');
+      d.style.boxShadow = '0 0 0 1px #ccc';
+    });
+    btn.classList.add('active');
+    btn.style.boxShadow = '0 0 0 2px var(--accent-color)';
+  }
+
+  setImageBrushSize(size) {
+    this.imageBrushSize = parseInt(size) || 5;
+  }
+
+  clearImageMarkup() {
+    const canvas = document.getElementById('imageMarkupCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
   showQuestionModal(user, text) {
     const questionModal = document.getElementById('questionModal');
     document.getElementById('questionModalUser').textContent = user;
@@ -326,7 +457,10 @@ class App {
   
   showImageModal(url, user, filename) {
     const imageModal = document.getElementById('imageModal');
-    document.getElementById('modalImage').src = url;
+    const modalImage = document.getElementById('modalImage');
+    const canvas = document.getElementById('imageMarkupCanvas');
+    
+    modalImage.src = url;
     document.getElementById('modalImageUser').textContent = '上傳者: ' + user;
     document.getElementById('modalImageFilename').textContent = filename;
     document.getElementById('modalDownloadBtn').href = url;
@@ -334,8 +468,24 @@ class App {
     
     this.currentZoom = 1;
     this.imagePos = { x: 0, y: 0 };
-    document.getElementById('modalImage').style.transform = 'scale(1)';
+    
+    const wrapper = document.getElementById('imageCanvasWrapper');
+    if (wrapper) {
+      wrapper.style.transform = 'translate(0px, 0px) scale(1)';
+    }
+    
     document.getElementById('zoomInfo').textContent = '100%';
+    
+    // Set default mode to pan
+    this.setImageMode('pan');
+    
+    modalImage.onload = () => {
+      if (canvas) {
+        canvas.width = modalImage.naturalWidth;
+        canvas.height = modalImage.naturalHeight;
+        this.clearImageMarkup();
+      }
+    };
     
     imageModal.classList.add('active');
   }
