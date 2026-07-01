@@ -217,7 +217,7 @@ class App {
     if (this.notifyTimer) clearTimeout(this.notifyTimer);
     this.notifyTimer = setTimeout(() => {
       notifyModal.classList.remove('active');
-    }, 2000);
+    }, 3000);
   }
   
   initImageZoom() {
@@ -632,13 +632,13 @@ class App {
       <div class="preview-item" style="position: relative;">
         <img src="${img.url}" alt="${img.filename}">
         <button onclick="deleteImage('${img.id}')" title="刪除圖片" style="
-          position: absolute; top: -5px; right: -5px;
-          width: 20px; height: 20px; border: none;
+          position: absolute; top: -6px; right: -6px;
+          width: 24px; height: 24px; border: none;
           background: var(--danger-color); color: white;
           border-radius: 50%; cursor: pointer;
-          font-size: 10px; display: flex;
+          font-size: 12px; display: flex;
           align-items: center; justify-content: center;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         ">✕</button>
       </div>
     `).join('');
