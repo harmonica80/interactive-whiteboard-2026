@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=29">
+  <link rel="stylesheet" href="css/style.css?v=30">
 </head>
 <body>
   <div class="container">
@@ -239,7 +239,7 @@
               </div>
               <div id="customMusicInputWrapper" style="display: none; align-items: center; gap: 6px;">
                 <label for="timerMusicCustomUrl" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">網址：</label>
-                <input type="text" id="timerMusicCustomUrl" class="question-input" style="width: 260px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="貼上 YouTube 網址 (支援 &t= 秒數)...">
+                <input type="text" id="timerMusicCustomUrl" class="question-input" onchange="window.app.updateMusicSource(this.value)" style="width: 260px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="貼上 YouTube 網址 (支援 &t= 秒數)...">
               </div>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button id="adminStartTimerBtn" class="preset-btn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminStartTimer()">啟動倒數</button>
@@ -361,9 +361,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=29"></script>
-  <script src="js/quiz.js?v=29"></script>
-  <script src="js/app.js?v=29"></script>
+  <script src="js/firebase-config.js?v=30"></script>
+  <script src="js/quiz.js?v=30"></script>
+  <script src="js/app.js?v=30"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

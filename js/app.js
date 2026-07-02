@@ -59,13 +59,18 @@ class App {
     // Global user interaction listener to resume audio if blocked by autoplay
     const resumeAudioOnGesture = () => {
       if (this.timerState && this.timerState.isActive && !this.timerState.isPaused) {
-        if (this.currentAudioPlaying !== 'canon') {
-          this.playAudio('canon');
+        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
+          this.playerCanon.playVideo();
+          
+          document.removeEventListener('click', resumeAudioOnGesture);
+          document.removeEventListener('keydown', resumeAudioOnGesture);
+          document.removeEventListener('touchstart', resumeAudioOnGesture);
         }
+      } else {
+        document.removeEventListener('click', resumeAudioOnGesture);
+        document.removeEventListener('keydown', resumeAudioOnGesture);
+        document.removeEventListener('touchstart', resumeAudioOnGesture);
       }
-      document.removeEventListener('click', resumeAudioOnGesture);
-      document.removeEventListener('keydown', resumeAudioOnGesture);
-      document.removeEventListener('touchstart', resumeAudioOnGesture);
     };
     document.addEventListener('click', resumeAudioOnGesture);
     document.addEventListener('keydown', resumeAudioOnGesture);
@@ -2008,8 +2013,13 @@ class App {
     const customWrapper = document.getElementById('customMusicInputWrapper');
     if (val === 'custom') {
       if (customWrapper) customWrapper.style.display = 'flex';
+      const customInput = document.getElementById('timerMusicCustomUrl');
+      if (customInput && customInput.value.trim() !== '') {
+        this.updateMusicSource(customInput.value.trim());
+      }
     } else {
       if (customWrapper) customWrapper.style.display = 'none';
+      this.updateMusicSource(val);
     }
   }
 
