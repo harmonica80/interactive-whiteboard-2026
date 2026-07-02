@@ -1719,6 +1719,17 @@ body {
   border-color: var(--accent-color);
 }
 
+/* Off-screen placement for YouTube player to bypass browser background autoplay throttling */
+#canonPlayer {
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  width: 200px !important;
+  height: 200px !important;
+  opacity: 0.001 !important;
+  pointer-events: none !important;
+}
+
 
 
 

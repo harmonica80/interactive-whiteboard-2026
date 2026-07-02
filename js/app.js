@@ -55,6 +55,21 @@ class App {
     this.initTimerDragging();
     this.loadYoutubeAPI();
     this.initImageCanvasDrawing();
+    
+    // Global user interaction listener to resume audio if blocked by autoplay
+    const resumeAudioOnGesture = () => {
+      if (this.timerState && this.timerState.isActive && !this.timerState.isPaused) {
+        if (this.currentAudioPlaying !== 'canon') {
+          this.playAudio('canon');
+        }
+      }
+      document.removeEventListener('click', resumeAudioOnGesture);
+      document.removeEventListener('keydown', resumeAudioOnGesture);
+      document.removeEventListener('touchstart', resumeAudioOnGesture);
+    };
+    document.addEventListener('click', resumeAudioOnGesture);
+    document.addEventListener('keydown', resumeAudioOnGesture);
+    document.addEventListener('touchstart', resumeAudioOnGesture);
   }
   
   initFunctionMenu() {
@@ -1854,8 +1869,8 @@ class App {
   initYoutubePlayers() {
     try {
       this.playerCanon = new YT.Player('canonPlayer', {
-        height: '1',
-        width: '1',
+        height: '200',
+        width: '200',
         videoId: this.currentVideoId || 'MnhXZRw_ATU',
         playerVars: {
           autoplay: 0,
