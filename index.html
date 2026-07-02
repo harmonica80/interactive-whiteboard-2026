@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=23">
+  <link rel="stylesheet" href="css/style.css?v=24">
 </head>
 <body>
   <div class="container">
@@ -283,34 +283,6 @@
             <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="display: none; margin-top: 10px; padding: 12px; width: 100%; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color);">結束測驗</button>
           </div>
 
-          <!-- 📁 提問分組管理 -->
-          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">📁 💬 提問分組管理</h3>
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-              <input type="text" id="newQuestionFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新提問群組名稱（如：第一組）...">
-              <button class="preset-btn" onclick="window.app.adminCreateQuestionFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
-            </div>
-            
-            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">提問群組清單：</div>
-            <div id="adminQuestionFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">
-              <!-- 提問群組清單 -->
-            </div>
-          </div>
-
-          <!-- 📁 🖼️ 圖片分組管理 -->
-          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">📁 🖼️ 圖片分組管理</h3>
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-              <input type="text" id="newImageFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新圖片群組名稱（如：第一組圖片）...">
-              <button class="preset-btn" onclick="window.app.adminCreateImageFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
-            </div>
-            
-            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">圖片群組清單：</div>
-            <div id="adminImageFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">
-              <!-- 圖片群組清單 -->
-            </div>
-          </div>
-
           <!-- 提問管理區 -->
           <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -334,8 +306,22 @@
             <ul id="adminQuestionList" class="question-list"></ul>
           </div>
 
+          <!-- 📁 提問分組管理 -->
+          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">📁 💬 提問分組管理</h3>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" id="newQuestionFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新提問群組名稱（如：第一組）...">
+              <button class="preset-btn" onclick="window.app.adminCreateQuestionFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+            </div>
+            
+            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">提問群組清單：</div>
+            <div id="adminQuestionFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">
+              <!-- 提問群組清單 -->
+            </div>
+          </div>
+
           <!-- 圖片管理區 -->
-          <div class="admin-section">
+          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <h3 style="margin: 0; color: var(--text-primary); font-size: 15px;">🖼️ 圖片管理 (點選 ✕ 可刪除)</h3>
               <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
@@ -356,6 +342,20 @@
             <div id="adminImagesGroupedContainer" class="grouped-folders-container"></div>
             <div id="adminImagePreview" class="image-preview"></div>
           </div>
+
+          <!-- 📁 🖼️ 圖片分組管理 -->
+          <div class="admin-section">
+            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">📁 🖼️ 圖片分組管理</h3>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" id="newImageFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新圖片群組名稱（如：第一組圖片）...">
+              <button class="preset-btn" onclick="window.app.adminCreateImageFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+            </div>
+
+            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">圖片群組清單：</div>
+            <div id="adminImageFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">
+              <!-- 圖片群組清單 -->
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -367,9 +367,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=23"></script>
-  <script src="js/quiz.js?v=23"></script>
-  <script src="js/app.js?v=23"></script>
+  <script src="js/firebase-config.js?v=24"></script>
+  <script src="js/quiz.js?v=24"></script>
+  <script src="js/app.js?v=24"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
