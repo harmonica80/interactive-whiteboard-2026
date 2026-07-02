@@ -1618,9 +1618,10 @@ body {
 
 .reaction-btn {
   display: inline-flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -1642,15 +1643,14 @@ body {
 }
 
 .reaction-btn .reaction-count {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: bold;
   color: var(--text-secondary);
   line-height: 1;
-  margin-bottom: 2px;
 }
 
 .reaction-btn .reaction-emoji {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* ===== 群組資料夾 (Group Folders) ===== */
