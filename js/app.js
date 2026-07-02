@@ -479,9 +479,6 @@ class App {
 
   adminDeleteFolder(folderId) {
     if (confirm('確定要刪除此群組資料夾嗎？\n（其中的提問與圖片不會被刪除，會移回無群組狀態）')) {
-      if (this.editingFolderId === folderId) {
-        this.closeFolderEditor();
-      }
       db.ref(`quiz/folders/${folderId}`).remove().then(() => {
         this.questions.forEach(q => {
           if (q.folderId === folderId) {
@@ -542,74 +539,68 @@ class App {
     return !this.expandedFolders.has(folderId);
   }
 
-  openFolderEditor(folderId) {
-    this.editingFolderId = folderId;
-    const folder = this.folders.find(f => f.id === folderId);
-    if (!folder) return;
-    
-    const editor = document.getElementById('folderMemberEditor');
-    const title = document.getElementById('editorFolderTitle');
-    if (editor) editor.style.display = 'block';
-    if (title) title.textContent = `📝 編輯群組成員: ${folder.name}`;
-    
-    this.renderFolderChecklists();
-    this.renderFoldersList();
+  updateBatchSelectCount() {
+    const qBoxes = document.querySelectorAll('.admin-select-question:checked');
+    const imgBoxes = document.querySelectorAll('.admin-select-image:checked');
+    const totalSelected = qBoxes.length + imgBoxes.length;
+    const countEl = document.getElementById('batchSelectCount');
+    if (countEl) countEl.textContent = totalSelected;
   }
 
-  closeFolderEditor() {
-    this.editingFolderId = null;
-    const editor = document.getElementById('folderMemberEditor');
-    if (editor) editor.style.display = 'none';
-    this.renderFoldersList();
+  applyBatchArchive() {
+    const select = document.getElementById('batchFolderSelect');
+    if (!select) return;
+    const folderId = select.value;
+    
+    const qBoxes = document.querySelectorAll('.admin-select-question:checked');
+    const imgBoxes = document.querySelectorAll('.admin-select-image:checked');
+    
+    if (qBoxes.length === 0 && imgBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選下方的提問或圖片');
+      return;
+    }
+    
+    const promises = [];
+    qBoxes.forEach(box => {
+      const qId = box.value;
+      if (folderId === "") {
+        promises.push(db.ref(`questions/${qId}/folderId`).remove());
+      } else {
+        promises.push(db.ref(`questions/${qId}/folderId`).set(folderId));
+      }
+    });
+    
+    imgBoxes.forEach(box => {
+      const imgId = box.value;
+      if (folderId === "") {
+        promises.push(db.ref(`images/${imgId}/folderId`).remove());
+      } else {
+        promises.push(db.ref(`images/${imgId}/folderId`).set(folderId));
+      }
+    });
+    
+    Promise.all(promises).then(() => {
+      this.showNotification('成功', '批次分組歸檔完成！');
+      const countEl = document.getElementById('batchSelectCount');
+      if (countEl) countEl.textContent = 0;
+    }).catch(err => {
+      this.showNotification('錯誤', '歸檔失敗: ' + err.message);
+    });
+  }
+
+  renderBatchFolderOptions() {
+    const select = document.getElementById('batchFolderSelect');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = `
+      <option value="">📁 移出群組 (無群組)</option>
+      ${this.folders.map(f => `<option value="${f.id}">${this.escapeHtml(f.name)}</option>`).join('')}
+    `;
+    select.value = currentVal;
   }
 
   renderFolderChecklists() {
-    if (!this.editingFolderId) return;
-    const folderId = this.editingFolderId;
-    
-    const qList = document.getElementById('editorQuestionChecklist');
-    const imgList = document.getElementById('editorImageChecklist');
-    if (!qList || !imgList) return;
-    
-    if (this.questions.length === 0) {
-      qList.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 11px; padding: 8px;">暫無問題</div>';
-    } else {
-      const total = this.questions.length;
-      qList.innerHTML = this.questions.map((q, index) => `
-        <label style="display: flex; align-items: flex-start; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text-primary); padding: 4px 6px; border-radius: 4px; background: var(--bg-card); margin-bottom: 2px;">
-          <input type="checkbox" onchange="window.app.toggleQuestionFolderAssign('${q.id}', this.checked)" ${q.folderId === folderId ? 'checked' : ''} style="margin-top: 2px;">
-          <span style="display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" title="${this.escapeHtml(q.user)}: ${this.escapeHtml(q.text)}">
-            <strong>#${total - index} ${this.escapeHtml(q.user)}</strong>: ${this.escapeHtml(q.text)}
-          </span>
-        </label>
-      `).join('');
-    }
-    
-    if (this.images.length === 0) {
-      imgList.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 11px; padding: 8px;">暫無圖片</div>';
-    } else {
-      imgList.innerHTML = this.images.map(img => `
-        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text-primary); padding: 4px 6px; border-radius: 4px; background: var(--bg-card); margin-bottom: 2px;">
-          <input type="checkbox" onchange="window.app.toggleImageFolderAssign('${img.id}', this.checked)" ${img.folderId === folderId ? 'checked' : ''}>
-          <img src="${img.url}" style="width: 20px; height: 20px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">
-          <span style="display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;" title="${this.escapeHtml(img.user)}: ${this.escapeHtml(img.filename)}">
-            ${this.escapeHtml(img.user)}
-          </span>
-        </label>
-      `).join('');
-    }
-  }
-
-  toggleQuestionFolderAssign(questionId, checked) {
-    if (!this.editingFolderId) return;
-    const folderId = checked ? this.editingFolderId : null;
-    this.assignQuestionFolder(questionId, folderId);
-  }
-
-  toggleImageFolderAssign(imageId, checked) {
-    if (!this.editingFolderId) return;
-    const folderId = checked ? this.editingFolderId : null;
-    this.assignImageFolder(imageId, folderId);
+    this.renderBatchFolderOptions();
   }
 
   renderFoldersList() {
@@ -617,18 +608,14 @@ class App {
     if (!list) return;
     if (this.folders.length === 0) {
       list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 8px; font-size: 13px;">暫無群組</div>';
-      this.closeFolderEditor();
       return;
     }
-    list.innerHTML = this.folders.map(f => {
-      const isEditing = this.editingFolderId === f.id;
-      return `
-        <div onclick="window.app.openFolderEditor('${f.id}')" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: ${isEditing ? 'rgba(52, 199, 89, 0.15)' : 'rgba(0,0,0,0.03)'}; border: 1px solid ${isEditing ? 'var(--accent-color)' : 'transparent'}; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.2s; margin-bottom: 4px;">
-          <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">📁 ${this.escapeHtml(f.name)}</span>
-          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
-        </div>
-      `;
-    }).join('');
+    list.innerHTML = this.folders.map(f => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: default;">
+        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">📁 ${this.escapeHtml(f.name)}</span>
+        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+      </div>
+    `).join('');
   }
 
   showQuestionModal(user, text) {
