@@ -1226,6 +1226,21 @@ class App {
       ungroupedHtml = '<li style="text-align: center; color: var(--text-muted); padding: 20px; width: 100%;">暫無未分類提問</li>';
     }
     adminQuestionList.innerHTML = ungroupedHtml;
+    
+    // Bind click events on all admin cards to toggle checkbox selection
+    document.querySelectorAll('#adminQuestionList .admin-card, #adminQuestionsGroupedContainer .admin-card').forEach(card => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input[type="checkbox"]')) {
+          return;
+        }
+        const checkbox = card.querySelector('.admin-select-question');
+        if (checkbox) {
+          checkbox.checked = !checkbox.checked;
+          window.app.updateBatchSelectCount();
+        }
+      });
+    });
   }
 
   renderAdminImages() {
@@ -1306,6 +1321,21 @@ class App {
     } else {
       adminImagePreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無未分類圖片</div>';
     }
+    
+    // Bind click events on all admin image wrappers to toggle checkbox selection
+    document.querySelectorAll('#adminImagePreview .preview-item-wrapper, #adminImagesGroupedContainer .preview-item-wrapper').forEach(wrapper => {
+      wrapper.style.cursor = 'pointer';
+      wrapper.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) {
+          return;
+        }
+        const checkbox = wrapper.querySelector('.admin-select-image');
+        if (checkbox) {
+          checkbox.checked = !checkbox.checked;
+          window.app.updateBatchSelectCount();
+        }
+      });
+    });
   }
 
   setupConnectionStatus() {
