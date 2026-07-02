@@ -1330,6 +1330,9 @@ class App {
           this.changeLocalTimerStyle(data.style, false);
         }
         
+        // 同步音樂來源
+        this.updateMusicSource(data.musicUrl || 'https://www.youtube.com/watch?v=MnhXZRw_ATU');
+        
         // Sync inputs in admin if not active focus
         const minsInput = document.getElementById('timerMinutes');
         const styleInput = document.getElementById('timerStyle');
@@ -1338,6 +1341,26 @@ class App {
         }
         if (styleInput) {
           styleInput.value = data.style;
+        }
+        
+        if (this.isAdmin) {
+          const musicSelect = document.getElementById('timerMusicSelect');
+          const customUrlInput = document.getElementById('timerMusicCustomUrl');
+          const customWrapper = document.getElementById('customMusicInputWrapper');
+          
+          if (musicSelect && data.musicUrl) {
+            const presetExists = Array.from(musicSelect.options).some(opt => opt.value === data.musicUrl);
+            if (presetExists) {
+              musicSelect.value = data.musicUrl;
+              if (customWrapper) customWrapper.style.display = 'none';
+            } else {
+              musicSelect.value = 'custom';
+              if (customWrapper) customWrapper.style.display = 'flex';
+              if (customUrlInput && document.activeElement !== customUrlInput) {
+                customUrlInput.value = data.musicUrl;
+              }
+            }
+          }
         }
         
         // Start/maintain ticking interval
@@ -1631,13 +1654,27 @@ class App {
       const style = document.getElementById('timerStyle').value || 'flip';
       const duration = mins * 60;
       
+      const musicSelect = document.getElementById('timerMusicSelect');
+      let musicUrl = 'https://www.youtube.com/watch?v=MnhXZRw_ATU'; // Default Canon
+      if (musicSelect) {
+        if (musicSelect.value === 'custom') {
+          const customInput = document.getElementById('timerMusicCustomUrl');
+          if (customInput && customInput.value.trim() !== '') {
+            musicUrl = customInput.value.trim();
+          }
+        } else {
+          musicUrl = musicSelect.value;
+        }
+      }
+      
       this.timerRef.set({
         duration: duration,
         endTime: Date.now() + duration * 1000,
         isActive: true,
         isPaused: false,
         remainingTime: duration,
-        style: style
+        style: style,
+        musicUrl: musicUrl
       }).catch(err => {
         console.error("Timer set error:", err);
         this.showNotification('資料庫錯誤', '無法設定計時器: ' + err.message);
@@ -1713,7 +1750,7 @@ class App {
       this.playerCanon = new YT.Player('canonPlayer', {
         height: '1',
         width: '1',
-        videoId: 'MnhXZRw_ATU',
+        videoId: this.currentVideoId || 'MnhXZRw_ATU',
         playerVars: {
           autoplay: 0,
           controls: 0,
@@ -1721,14 +1758,25 @@ class App {
           fs: 0,
           modestbranding: 1,
           rel: 0,
-          showinfo: 0,
-          loop: 1,
-          playlist: 'MnhXZRw_ATU'
+          showinfo: 0
         },
         events: {
           onReady: () => {
             this.ytPlayersReady = true;
             this.applyMuteState();
+            if (this.pendingMusicUrl) {
+              this.updateMusicSource(this.pendingMusicUrl);
+              this.pendingMusicUrl = null;
+            }
+          },
+          onStateChange: (event) => {
+            // Loop video: when ended, seek to start time and play
+            if (event.data === YT.PlayerState.ENDED) {
+              if (this.playerCanon && typeof this.playerCanon.seekTo === 'function') {
+                this.playerCanon.seekTo(this.currentVideoStart || 0, true);
+                this.playerCanon.playVideo();
+              }
+            }
           }
         }
       });
@@ -1737,15 +1785,114 @@ class App {
     }
   }
 
+  parseYoutubeUrl(url) {
+    if (!url) return { videoId: 'MnhXZRw_ATU', startTime: 0 };
+    
+    let videoId = 'MnhXZRw_ATU';
+    let startTime = 0;
+    
+    try {
+      if (url.includes('youtu.be/')) {
+        const parts = url.split('youtu.be/');
+        if (parts[1]) {
+          videoId = parts[1].split(/[?#]/)[0];
+        }
+      } else if (url.includes('v=')) {
+        const parts = url.split('v=');
+        if (parts[1]) {
+          videoId = parts[1].split('&')[0].split('#')[0];
+        }
+      } else if (url.includes('embed/')) {
+        const parts = url.split('embed/');
+        if (parts[1]) {
+          videoId = parts[1].split(/[?#]/)[0];
+        }
+      } else if (url.trim().length === 11) {
+        videoId = url.trim();
+      }
+      
+      const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+      const searchParams = urlObj.searchParams;
+      let t = searchParams.get('t') || searchParams.get('start') || '';
+      
+      if (!t && urlObj.hash && urlObj.hash.includes('t=')) {
+        t = urlObj.hash.split('t=')[1].split('&')[0];
+      }
+      
+      if (t) {
+        if (t.includes('m') || t.includes('s')) {
+          let mins = 0;
+          let secs = 0;
+          if (t.includes('m')) {
+            const splitMin = t.split('m');
+            mins = parseInt(splitMin[0]) || 0;
+            t = splitMin[1] || '';
+          }
+          if (t.includes('s')) {
+            secs = parseInt(t.split('s')[0]) || 0;
+          } else {
+            secs = parseInt(t) || 0;
+          }
+          startTime = mins * 60 + secs;
+        } else {
+          startTime = parseInt(t) || 0;
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing YouTube URL:", e);
+    }
+    
+    return { videoId, startTime };
+  }
+
+  updateMusicSource(url) {
+    if (!this.ytPlayersReady) {
+      this.pendingMusicUrl = url;
+      return;
+    }
+    
+    const { videoId, startTime } = this.parseYoutubeUrl(url);
+    if (this.currentVideoId === videoId && this.currentVideoStart === startTime) {
+      return;
+    }
+    
+    this.currentVideoId = videoId;
+    this.currentVideoStart = startTime;
+    
+    if (this.playerCanon && typeof this.playerCanon.cueVideoById === 'function') {
+      try {
+        this.playerCanon.cueVideoById({
+          videoId: videoId,
+          startSeconds: startTime
+        });
+      } catch (e) {
+        console.error("Error cuing video:", e);
+      }
+    }
+  }
+
+  onTimerMusicSelectChange(val) {
+    const customWrapper = document.getElementById('customMusicInputWrapper');
+    if (val === 'custom') {
+      if (customWrapper) customWrapper.style.display = 'flex';
+    } else {
+      if (customWrapper) customWrapper.style.display = 'none';
+    }
+  }
+
   playAudio(track) {
     try {
       if (track === 'canon') {
         this.currentAudioPlaying = 'canon';
         if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
-          // Reset volume to 100 on start play
           if (typeof this.playerCanon.setVolume === 'function') {
             this.playerCanon.setVolume(100);
           }
+          
+          if (this.currentVideoStart > 0 && typeof this.playerCanon.seekTo === 'function') {
+            this.playerCanon.seekTo(this.currentVideoStart, true);
+          }
+          
           this.playerCanon.playVideo();
         }
       } else {
