@@ -237,7 +237,7 @@ class App {
     if (this.notifyTimer) clearTimeout(this.notifyTimer);
     this.notifyTimer = setTimeout(() => {
       notifyModal.classList.remove('active');
-    }, 3000);
+    }, 1500);
   }
   
   initImageZoom() {
