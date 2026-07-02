@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=15">
+  <link rel="stylesheet" href="css/style.css?v=16">
 </head>
 <body>
   <div class="container">
@@ -207,6 +207,18 @@
             </div>
           </div>
 
+          <!-- 群組資料夾管理 -->
+          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">📁 群組資料夾管理</h3>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" id="newFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新群組名稱（如：第一組）...">
+              <button class="preset-btn" onclick="window.app.adminCreateFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+            </div>
+            <div id="adminFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 4px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">
+              <!-- 群組資料夾清單 -->
+            </div>
+          </div>
+
           <!-- 倒數計時管理區 -->
           <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
             <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">⏱️ 倒數計時管理</h3>
@@ -288,9 +300,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=15"></script>
-  <script src="js/quiz.js?v=15"></script>
-  <script src="js/app.js?v=15"></script>
+  <script src="js/firebase-config.js?v=16"></script>
+  <script src="js/quiz.js?v=16"></script>
+  <script src="js/app.js?v=16"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -308,11 +320,8 @@
   
   <!-- 圖片彈出視窗 -->
   <div id="imageModal" class="modal-overlay image-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <span>🖼️ 圖片檢視</span>
-        <button id="imageModalClose" class="modal-close">✕</button>
-      </div>
+    <div class="modal-content" style="position: relative;">
+      <button id="imageModalClose" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 20; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.4);" title="關閉">✕</button>
       <div class="modal-body">
         <div id="imageZoomContainer" class="image-zoom-container">
           <div id="imageCanvasWrapper" style="position: relative; display: inline-block;">

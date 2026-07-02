@@ -752,7 +752,7 @@ body {
 
 .image-modal .image-zoom-container {
   width: 100%;
-  height: calc(85vh - 110px);
+  height: calc(85vh - 60px);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -1606,6 +1606,117 @@ body {
 .timer-minimized-content:hover {
   transform: scale(1.05);
   background: var(--accent-hover);
+}
+
+/* ===== 心情符號回饋 (Reactions) ===== */
+.reactions-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.reaction-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s, border-color 0.2s;
+  user-select: none;
+  min-width: 42px;
+}
+
+.reaction-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(0,0,0,0.02);
+  border-color: var(--accent-color);
+}
+
+.reaction-btn:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.reaction-btn .reaction-count {
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--text-secondary);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.reaction-btn .reaction-emoji {
+  font-size: 14px;
+}
+
+/* ===== 群組資料夾 (Group Folders) ===== */
+.folder-card {
+  border-left: 5px solid var(--accent-color) !important;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.folder-card-header {
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+}
+
+.folder-card-header:hover {
+  opacity: 0.85;
+}
+
+.folder-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.folder-toggle-btn:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--text-primary);
+}
+
+.folder-image-card {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: var(--bg-card);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+
+/* Select Folder dropdown inside admin list */
+.folder-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.folder-select:hover {
+  border-color: var(--accent-color);
 }
 
 

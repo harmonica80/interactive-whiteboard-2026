@@ -30,6 +30,10 @@ class App {
     this.playerCanon = null;
     this.playerBell = null;
     
+    // 群組資料夾變數
+    this.folders = [];
+    this.expandedFolders = new Set();
+    
     this.init();
   }
   
@@ -157,6 +161,21 @@ class App {
 
     db.ref('quiz/answers').on('value', (snapshot) => {
       this.quizAnswers = snapshot.val() || {};
+    });
+
+    // 監聽群組資料夾資料庫
+    db.ref('quiz/folders').on('value', (snapshot) => {
+      const folders = [];
+      snapshot.forEach(child => {
+        folders.push({ id: child.key, ...child.val() });
+      });
+      folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-hant'));
+      this.folders = folders;
+      this.renderFoldersList();
+      this.renderQuestions();
+      this.renderImages();
+      this.renderAdminQuestions();
+      this.renderAdminImages();
     });
   }
   
@@ -442,6 +461,98 @@ class App {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
+  // ===== 群組資料夾與心情回饋方法 =====
+  adminCreateFolder() {
+    const input = document.getElementById('newFolderName');
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) {
+      this.showNotification('提示', '請輸入群組名稱');
+      return;
+    }
+    db.ref('quiz/folders').push({ name: name }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '群組資料夾已建立');
+    });
+  }
+
+  adminDeleteFolder(folderId) {
+    if (confirm('確定要刪除此群組資料夾嗎？\n（其中的提問與圖片不會被刪除，會移回無群組狀態）')) {
+      db.ref(`quiz/folders/${folderId}`).remove().then(() => {
+        this.questions.forEach(q => {
+          if (q.folderId === folderId) {
+            db.ref(`questions/${q.id}/folderId`).remove();
+          }
+        });
+        this.images.forEach(img => {
+          if (img.folderId === folderId) {
+            db.ref(`images/${img.id}/folderId`).remove();
+          }
+        });
+        this.showNotification('成功', '群組資料夾已刪除');
+      });
+    }
+  }
+
+  assignQuestionFolder(questionId, folderId) {
+    if (!folderId) {
+      db.ref(`questions/${questionId}/folderId`).remove();
+    } else {
+      db.ref(`questions/${questionId}/folderId`).set(folderId);
+    }
+  }
+
+  assignImageFolder(imageId, folderId) {
+    if (!folderId) {
+      db.ref(`images/${imageId}/folderId`).remove();
+    } else {
+      db.ref(`images/${imageId}/folderId`).set(folderId);
+    }
+  }
+
+  reactToQuestion(id, type) {
+    db.ref(`questions/${id}/reactions/${type}`).transaction(count => {
+      return (count || 0) + 1;
+    });
+  }
+
+  reactToImage(id, type) {
+    db.ref(`images/${id}/reactions/${type}`).transaction(count => {
+      return (count || 0) + 1;
+    });
+  }
+
+  toggleFolderCollapse(folderId) {
+    if (this.expandedFolders.has(folderId)) {
+      this.expandedFolders.delete(folderId);
+    } else {
+      this.expandedFolders.add(folderId);
+    }
+    this.renderQuestions();
+    this.renderImages();
+    this.renderAdminQuestions();
+    this.renderAdminImages();
+  }
+
+  isFolderCollapsed(folderId) {
+    return !this.expandedFolders.has(folderId);
+  }
+
+  renderFoldersList() {
+    const list = document.getElementById('adminFolderList');
+    if (!list) return;
+    if (this.folders.length === 0) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 8px; font-size: 13px;">暫無群組</div>';
+      return;
+    }
+    list.innerHTML = this.folders.map(f => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px;">
+        <span style="font-weight: bold; color: var(--text-primary);">📁 ${this.escapeHtml(f.name)}</span>
+        <button class="preset-btn" onclick="window.app.adminDeleteFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+      </div>
+    `).join('');
+  }
+
   showQuestionModal(user, text) {
     const questionModal = document.getElementById('questionModal');
     document.getElementById('questionModalUser').textContent = user;
@@ -542,22 +653,83 @@ class App {
     }
     
     const total = this.questions.length;
-    questionList.innerHTML = this.questions.map((q, index) => `
-      <li class="question-item card-style" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}">
+    
+    const renderQuestionItemHtml = (q, idx) => `
+      <li class="question-item card-style" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px;">
         <div class="question-card-header">
           <div class="header-left">
-            <span class="question-badge">#${total - index}</span>
+            <span class="question-badge">#${total - idx}</span>
             <span class="user">${this.escapeHtml(q.user)}</span>
           </div>
           <span class="time">${this.formatTime(q.timestamp)}</span>
         </div>
         <div class="text">${this.linkify(q.text)}</div>
+        <div class="reactions-bar" onclick="event.stopPropagation()">
+          <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'like')" title="讚">
+            <span class="reaction-count">${q.reactions?.like || 0}</span>
+            <span class="reaction-emoji">👍</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'love')" title="愛心">
+            <span class="reaction-count">${q.reactions?.love || 0}</span>
+            <span class="reaction-emoji">❤️</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'laugh')" title="大笑">
+            <span class="reaction-count">${q.reactions?.laugh || 0}</span>
+            <span class="reaction-emoji">😆</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'wow')" title="驚訝">
+            <span class="reaction-count">${q.reactions?.wow || 0}</span>
+            <span class="reaction-emoji">😮</span>
+          </button>
+        </div>
       </li>
-    `).join('');
+    `;
+
+    let html = '';
+    
+    // 1. Grouped Folders
+    this.folders.forEach(f => {
+      const folderQuestions = this.questions.filter(q => q.folderId === f.id);
+      if (folderQuestions.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        html += `
+          <li class="folder-card card-style">
+            <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span style="font-weight: bold; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                📁 ${this.escapeHtml(f.name)} 
+                <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderQuestions.length} 個提問)</span>
+              </span>
+              <button class="folder-toggle-btn">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+            </div>
+            <ul class="folder-content" style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 12px; list-style: none; padding-left: 0;">
+              ${folderQuestions.map(q => {
+                const idx = this.questions.indexOf(q);
+                return renderQuestionItemHtml(q, idx);
+              }).join('')}
+            </ul>
+          </li>
+        `;
+      }
+    });
+    
+    // 2. Unassigned Questions
+    const unassignedQuestions = this.questions.filter(q => {
+      if (!q.folderId) return true;
+      return !this.folders.some(f => f.id === q.folderId);
+    });
+    
+    if (unassignedQuestions.length > 0) {
+      html += unassignedQuestions.map(q => {
+        const idx = this.questions.indexOf(q);
+        return renderQuestionItemHtml(q, idx);
+      }).join('');
+    }
+    
+    questionList.innerHTML = html;
     
     questionList.querySelectorAll('.question-item').forEach(item => {
       item.addEventListener('click', (e) => {
-        if (e.target.closest('a')) {
+        if (e.target.closest('a') || e.target.closest('.reactions-bar')) {
           return;
         }
         this.showQuestionModal(item.dataset.user, item.dataset.text);
@@ -723,11 +895,76 @@ class App {
     const imagePreview = document.getElementById('imagePreview');
     if (!imagePreview) return;
     
-    imagePreview.innerHTML = this.images.map(img => `
-      <div class="preview-item" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}">
-        <img src="${img.url}" alt="${img.filename}">
+    const renderImageItemHtml = (img) => `
+      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
+        <div class="preview-item" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0;">
+          <img src="${img.url}" alt="${img.filename}">
+        </div>
+        <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px;">
+          <button class="reaction-btn" onclick="reactToImage('${img.id}', 'like')" style="min-width: 32px; padding: 2px 6px;" title="讚">
+            <span class="reaction-count" style="font-size: 9px;">${img.reactions?.like || 0}</span>
+            <span class="reaction-emoji" style="font-size: 11px;">👍</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToImage('${img.id}', 'love')" style="min-width: 32px; padding: 2px 6px;" title="愛心">
+            <span class="reaction-count" style="font-size: 9px;">${img.reactions?.love || 0}</span>
+            <span class="reaction-emoji" style="font-size: 11px;">❤️</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToImage('${img.id}', 'laugh')" style="min-width: 32px; padding: 2px 6px;" title="大笑">
+            <span class="reaction-count" style="font-size: 9px;">${img.reactions?.laugh || 0}</span>
+            <span class="reaction-emoji" style="font-size: 11px;">😆</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToImage('${img.id}', 'wow')" style="min-width: 32px; padding: 2px 6px;" title="驚訝">
+            <span class="reaction-count" style="font-size: 9px;">${img.reactions?.wow || 0}</span>
+            <span class="reaction-emoji" style="font-size: 11px;">😮</span>
+          </button>
+        </div>
       </div>
-    `).join('');
+    `;
+
+    let html = '';
+    
+    // 1. Grouped Folders
+    this.folders.forEach(f => {
+      const folderImages = this.images.filter(img => img.folderId === f.id);
+      if (folderImages.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        html += `
+          <div class="folder-image-card">
+            <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                📁 ${this.escapeHtml(f.name)} 
+                <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderImages.length} 張圖片)</span>
+              </span>
+              <button class="folder-toggle-btn">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+            </div>
+            <div class="image-preview" style="display: ${isCollapsed ? 'none' : 'flex'}; margin-top: 12px; gap: 12px; flex-wrap: wrap;">
+              ${folderImages.map(img => renderImageItemHtml(img)).join('')}
+            </div>
+          </div>
+        `;
+      }
+    });
+    
+    // 2. Unassigned Images
+    const unassignedImages = this.images.filter(img => {
+      if (!img.folderId) return true;
+      return !this.folders.some(f => f.id === img.folderId);
+    });
+    
+    if (unassignedImages.length > 0) {
+      html += `
+        <div class="image-preview" style="display: flex; gap: 12px; flex-wrap: wrap;">
+          ${unassignedImages.map(img => renderImageItemHtml(img)).join('')}
+        </div>
+      `;
+    }
+    
+    if (html === '') {
+      imagePreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無圖片</div>';
+      return;
+    }
+    
+    imagePreview.innerHTML = html;
     
     imagePreview.querySelectorAll('.preview-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -747,18 +984,34 @@ class App {
     
     const total = this.questions.length;
     adminQuestionList.innerHTML = this.questions.map((q, index) => `
-      <li class="question-item card-style admin-card" style="border-left-color: var(--danger-color); cursor: default;">
-        <div style="flex: 1; min-width: 0;">
-          <div class="question-card-header">
-            <div class="header-left">
-              <span class="question-badge admin-badge">#${total - index}</span>
-              <span class="user" style="color: var(--danger-color);">${this.escapeHtml(q.user)}</span>
+      <li class="question-item card-style admin-card" style="border-left-color: var(--danger-color); cursor: default; flex-direction: column; align-items: stretch; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+          <div style="flex: 1; min-width: 0;">
+            <div class="question-card-header">
+              <div class="header-left">
+                <span class="question-badge admin-badge">#${total - index}</span>
+                <span class="user" style="color: var(--danger-color);">${this.escapeHtml(q.user)}</span>
+              </div>
+              <span class="time">${this.formatTime(q.timestamp)}</span>
             </div>
-            <span class="time">${this.formatTime(q.timestamp)}</span>
+            <div class="text">${this.linkify(q.text)}</div>
           </div>
-          <div class="text">${this.linkify(q.text)}</div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: 12px;">
+            <select class="folder-select" onchange="assignQuestionFolder('${q.id}', this.value)">
+              <option value="">📁 無群組</option>
+              ${this.folders.map(f => `<option value="${f.id}" ${q.folderId === f.id ? 'selected' : ''}>${this.escapeHtml(f.name)}</option>`).join('')}
+            </select>
+            <button class="remove-option-btn" onclick="deleteQuestion('${q.id}')" title="刪除問題" style="width: 28px; height: 28px; font-size: 13px;">✕</button>
+          </div>
         </div>
-        <button class="remove-option-btn" onclick="deleteQuestion('${q.id}')" title="刪除問題" style="width: 28px; height: 28px; font-size: 13px; margin-left: 12px; flex-shrink: 0;">✕</button>
+        
+        <div style="display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.02); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; width: 100%;">
+          <span style="font-weight: bold; color: var(--text-secondary);">回饋統計:</span>
+          <span>👍 ${q.reactions?.like || 0}</span>
+          <span>❤️ ${q.reactions?.love || 0}</span>
+          <span>😆 ${q.reactions?.laugh || 0}</span>
+          <span>😮 ${q.reactions?.wow || 0}</span>
+        </div>
       </li>
     `).join('');
   }
@@ -773,17 +1026,32 @@ class App {
     }
 
     adminImagePreview.innerHTML = this.images.map(img => `
-      <div class="preview-item" style="position: relative;">
-        <img src="${img.url}" alt="${img.filename}">
-        <button onclick="deleteImage('${img.id}')" title="刪除圖片" style="
-          position: absolute; top: -6px; right: -6px;
-          width: 24px; height: 24px; border: none;
-          background: var(--danger-color); color: white;
-          border-radius: 50%; cursor: pointer;
-          font-size: 12px; display: flex;
-          align-items: center; justify-content: center;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        ">✕</button>
+      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg-card); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); position: relative;">
+        <div class="preview-item" style="position: relative; margin: 0;">
+          <img src="${img.url}" alt="${img.filename}">
+          <button onclick="deleteImage('${img.id}')" title="刪除圖片" style="
+            position: absolute; top: -6px; right: -6px;
+            width: 24px; height: 24px; border: none;
+            background: var(--danger-color); color: white;
+            border-radius: 50%; cursor: pointer;
+            font-size: 12px; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 5;
+          ">✕</button>
+        </div>
+        
+        <select class="folder-select" onchange="assignImageFolder('${img.id}', this.value)" style="width: 100%; font-size: 11px; padding: 2px 4px;">
+          <option value="">📁 無群組</option>
+          ${this.folders.map(f => `<option value="${f.id}" ${img.folderId === f.id ? 'selected' : ''}>${this.escapeHtml(f.name)}</option>`).join('')}
+        </select>
+        
+        <div style="font-size: 10px; color: var(--text-secondary); display: flex; gap: 6px; justify-content: center; width: 100%;">
+          <span>👍 ${img.reactions?.like || 0}</span>
+          <span>❤️ ${img.reactions?.love || 0}</span>
+          <span>😆 ${img.reactions?.laugh || 0}</span>
+          <span>😮 ${img.reactions?.wow || 0}</span>
+        </div>
       </div>
     `).join('');
   }
@@ -1719,4 +1987,21 @@ function triggerImportInput() {
 
 function adminImportRecord(event) {
   if (window.app) window.app.adminImportRecord(event);
+}
+
+// 全域群組與心情回饋呼叫介面
+function reactToQuestion(id, type) {
+  if (window.app) window.app.reactToQuestion(id, type);
+}
+
+function reactToImage(id, type) {
+  if (window.app) window.app.reactToImage(id, type);
+}
+
+function assignQuestionFolder(questionId, folderId) {
+  if (window.app) window.app.assignQuestionFolder(questionId, folderId);
+}
+
+function assignImageFolder(imageId, folderId) {
+  if (window.app) window.app.assignImageFolder(imageId, folderId);
 }
