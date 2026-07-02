@@ -31,7 +31,8 @@ class App {
     this.playerBell = null;
     
     // 群組資料夾變數
-    this.folders = [];
+    this.questionFolders = [];
+    this.imageFolders = [];
     this.expandedFolders = new Set();
     
     this.init();
@@ -163,19 +164,30 @@ class App {
       this.quizAnswers = snapshot.val() || {};
     });
 
-    // 監聽群組資料夾資料庫
-    db.ref('quiz/folders').on('value', (snapshot) => {
+    // 監聽提問與圖片群組資料庫
+    db.ref('quiz/questionFolders').on('value', (snapshot) => {
       const folders = [];
       snapshot.forEach(child => {
         folders.push({ id: child.key, ...child.val() });
       });
       folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-hant'));
-      this.folders = folders;
-      this.renderFoldersList();
-      this.renderFolderChecklists();
+      this.questionFolders = folders;
+      this.renderQuestionFoldersList();
+      this.renderBatchQuestionFolderOptions();
       this.renderQuestions();
-      this.renderImages();
       this.renderAdminQuestions();
+    });
+
+    db.ref('quiz/imageFolders').on('value', (snapshot) => {
+      const folders = [];
+      snapshot.forEach(child => {
+        folders.push({ id: child.key, ...child.val() });
+      });
+      folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-hant'));
+      this.imageFolders = folders;
+      this.renderImageFoldersList();
+      this.renderBatchImageFolderOptions();
+      this.renderImages();
       this.renderAdminImages();
     });
   }
@@ -463,34 +475,57 @@ class App {
   }
 
   // ===== 群組資料夾與心情回饋方法 =====
-  adminCreateFolder() {
-    const input = document.getElementById('newFolderName');
+  // ===== 提問與圖片群組分開管理 =====
+  adminCreateQuestionFolder() {
+    const input = document.getElementById('newQuestionFolderName');
     if (!input) return;
     const name = input.value.trim();
     if (!name) {
-      this.showNotification('提示', '請輸入群組名稱');
+      this.showNotification('提示', '請輸入提問群組名稱');
       return;
     }
-    db.ref('quiz/folders').push({ name: name }).then(() => {
+    db.ref('quiz/questionFolders').push({ name: name }).then(() => {
       input.value = '';
-      this.showNotification('成功', '群組資料夾已建立');
+      this.showNotification('成功', '提問群組已建立');
     });
   }
 
-  adminDeleteFolder(folderId) {
-    if (confirm('確定要刪除此群組資料夾嗎？\n（其中的提問與圖片不會被刪除，會移回無群組狀態）')) {
-      db.ref(`quiz/folders/${folderId}`).remove().then(() => {
+  adminDeleteQuestionFolder(folderId) {
+    if (confirm('確定要刪除此提問群組嗎？\n（其中的提問不會被刪除，會移回無群組狀態）')) {
+      db.ref(`quiz/questionFolders/${folderId}`).remove().then(() => {
         this.questions.forEach(q => {
           if (q.folderId === folderId) {
             db.ref(`questions/${q.id}/folderId`).remove();
           }
         });
+        this.showNotification('成功', '提問群組已刪除');
+      });
+    }
+  }
+
+  adminCreateImageFolder() {
+    const input = document.getElementById('newImageFolderName');
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) {
+      this.showNotification('提示', '請輸入圖片群組名稱');
+      return;
+    }
+    db.ref('quiz/imageFolders').push({ name: name }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '圖片群組已建立');
+    });
+  }
+
+  adminDeleteImageFolder(folderId) {
+    if (confirm('確定要刪除此圖片群組嗎？\n（其中的圖片不會被刪除，會移回無群組狀態）')) {
+      db.ref(`quiz/imageFolders/${folderId}`).remove().then(() => {
         this.images.forEach(img => {
           if (img.folderId === folderId) {
             db.ref(`images/${img.id}/folderId`).remove();
           }
         });
-        this.showNotification('成功', '群組資料夾已刪除');
+        this.showNotification('成功', '圖片群組已刪除');
       });
     }
   }
@@ -540,23 +575,23 @@ class App {
   }
 
   updateBatchSelectCount() {
-    const qBoxes = document.querySelectorAll('.admin-select-question:checked');
-    const imgBoxes = document.querySelectorAll('.admin-select-image:checked');
-    const totalSelected = qBoxes.length + imgBoxes.length;
-    const countEl = document.getElementById('batchSelectCount');
-    if (countEl) countEl.textContent = totalSelected;
+    const qBoxesChecked = document.querySelectorAll('.admin-select-question:checked');
+    const qCountEl = document.getElementById('batchQuestionSelectCount');
+    if (qCountEl) qCountEl.textContent = qBoxesChecked.length;
+
+    const imgBoxesChecked = document.querySelectorAll('.admin-select-image:checked');
+    const imgCountEl = document.getElementById('batchImageSelectCount');
+    if (imgCountEl) imgCountEl.textContent = imgBoxesChecked.length;
   }
 
-  applyBatchArchive() {
-    const select = document.getElementById('batchFolderSelect');
+  applyBatchQuestionArchive() {
+    const select = document.getElementById('batchQuestionFolderSelect');
     if (!select) return;
     const folderId = select.value;
-    
     const qBoxes = document.querySelectorAll('.admin-select-question:checked');
-    const imgBoxes = document.querySelectorAll('.admin-select-image:checked');
     
-    if (qBoxes.length === 0 && imgBoxes.length === 0) {
-      this.showNotification('提示', '請先勾選下方的提問或圖片');
+    if (qBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選下方的提問項目');
       return;
     }
     
@@ -570,6 +605,28 @@ class App {
       }
     });
     
+    Promise.all(promises).then(() => {
+      this.showNotification('成功', '提問批次分組歸檔完成！');
+      const selectAll = document.getElementById('selectAllQuestions');
+      if (selectAll) selectAll.checked = false;
+      this.updateBatchSelectCount();
+    }).catch(err => {
+      this.showNotification('錯誤', '歸檔失敗: ' + err.message);
+    });
+  }
+
+  applyBatchImageArchive() {
+    const select = document.getElementById('batchImageFolderSelect');
+    if (!select) return;
+    const folderId = select.value;
+    const imgBoxes = document.querySelectorAll('.admin-select-image:checked');
+    
+    if (imgBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選下方的圖片項目');
+      return;
+    }
+    
+    const promises = [];
     imgBoxes.forEach(box => {
       const imgId = box.value;
       if (folderId === "") {
@@ -580,40 +637,75 @@ class App {
     });
     
     Promise.all(promises).then(() => {
-      this.showNotification('成功', '批次分組歸檔完成！');
-      const countEl = document.getElementById('batchSelectCount');
-      if (countEl) countEl.textContent = 0;
+      this.showNotification('成功', '圖片批次分組歸檔完成！');
+      const selectAll = document.getElementById('selectAllImages');
+      if (selectAll) selectAll.checked = false;
+      this.updateBatchSelectCount();
     }).catch(err => {
       this.showNotification('錯誤', '歸檔失敗: ' + err.message);
     });
   }
 
-  renderBatchFolderOptions() {
-    const select = document.getElementById('batchFolderSelect');
+  toggleSelectAllQuestions(checked) {
+    const qBoxes = document.querySelectorAll('.admin-select-question');
+    qBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  toggleSelectAllImages(checked) {
+    const imgBoxes = document.querySelectorAll('.admin-select-image');
+    imgBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  renderBatchQuestionFolderOptions() {
+    const select = document.getElementById('batchQuestionFolderSelect');
     if (!select) return;
     const currentVal = select.value;
     select.innerHTML = `
-      <option value="">📁 移出群組 (無群組)</option>
-      ${this.folders.map(f => `<option value="${f.id}">${this.escapeHtml(f.name)}</option>`).join('')}
+      <option value="">📁 移出提問群組 (無群組)</option>
+      ${this.questionFolders.map(f => `<option value="${f.id}">${this.escapeHtml(f.name)}</option>`).join('')}
     `;
     select.value = currentVal;
   }
 
-  renderFolderChecklists() {
-    this.renderBatchFolderOptions();
+  renderBatchImageFolderOptions() {
+    const select = document.getElementById('batchImageFolderSelect');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = `
+      <option value="">📁 移出圖片群組 (無群組)</option>
+      ${this.imageFolders.map(f => `<option value="${f.id}">${this.escapeHtml(f.name)}</option>`).join('')}
+    `;
+    select.value = currentVal;
   }
 
-  renderFoldersList() {
-    const list = document.getElementById('adminFolderList');
+  renderQuestionFoldersList() {
+    const list = document.getElementById('adminQuestionFolderList');
     if (!list) return;
-    if (this.folders.length === 0) {
-      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 8px; font-size: 13px;">暫無群組</div>';
+    if (this.questionFolders.length === 0) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 8px; font-size: 13px;">暫無提問群組</div>';
       return;
     }
-    list.innerHTML = this.folders.map(f => `
+    list.innerHTML = this.questionFolders.map(f => `
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: default;">
         <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">📁 ${this.escapeHtml(f.name)}</span>
-        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteQuestionFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+      </div>
+    `).join('');
+  }
+
+  renderImageFoldersList() {
+    const list = document.getElementById('adminImageFolderList');
+    if (!list) return;
+    if (this.imageFolders.length === 0) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 8px; font-size: 13px;">暫無圖片群組</div>';
+      return;
+    }
+    list.innerHTML = this.imageFolders.map(f => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: default;">
+        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">📁 ${this.escapeHtml(f.name)}</span>
+        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteImageFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
       </div>
     `).join('');
   }
@@ -710,10 +802,12 @@ class App {
   
   renderQuestions() {
     const questionList = document.getElementById('questionList');
-    if (!questionList) return;
+    const questionsGroupedContainer = document.getElementById('questionsGroupedContainer');
+    if (!questionList || !questionsGroupedContainer) return;
 
     if (this.questions.length === 0) {
-      questionList.innerHTML = '<li style="text-align: center; color: var(--text-muted); padding: 20px;">暫無問題</li>';
+      questionsGroupedContainer.innerHTML = '';
+      questionList.innerHTML = '<li style="text-align: center; color: var(--text-muted); padding: 20px; width: 100%;">暫無問題</li>';
       return;
     }
     
@@ -750,49 +844,54 @@ class App {
       </li>
     `;
 
-    let html = '';
-    
-    // 1. Grouped Folders
-    this.folders.forEach(f => {
+    // 1. Render Grouped Folders (takes full rows)
+    let groupedHtml = '';
+    this.questionFolders.forEach(f => {
       const folderQuestions = this.questions.filter(q => q.folderId === f.id);
       if (folderQuestions.length > 0) {
         const isCollapsed = this.isFolderCollapsed(f.id);
-        html += `
-          <li class="folder-card card-style">
-            <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              <span style="font-weight: bold; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+        groupedHtml += `
+          <div class="folder-group-row" style="margin-bottom: 16px; border-left: 6px solid #ff9500; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
+              <span style="font-size: 15px; display: flex; align-items: center; gap: 6px;">
                 📁 ${this.escapeHtml(f.name)} 
                 <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderQuestions.length} 個提問)</span>
               </span>
-              <button class="folder-toggle-btn">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+              <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
             </div>
-            <ul class="folder-content" style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 12px; list-style: none; padding-left: 0;">
-              ${folderQuestions.map(q => {
-                const idx = this.questions.indexOf(q);
-                return renderQuestionItemHtml(q, idx);
-              }).join('')}
-            </ul>
-          </li>
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
+              <ul class="question-list" style="margin: 0; padding: 0; list-style: none;">
+                ${folderQuestions.map(q => {
+                  const idx = this.questions.indexOf(q);
+                  return renderQuestionItemHtml(q, idx);
+                }).join('')}
+              </ul>
+            </div>
+          </div>
         `;
       }
     });
+    questionsGroupedContainer.innerHTML = groupedHtml;
     
-    // 2. Unassigned Questions
+    // 2. Render Unassigned Questions
     const unassignedQuestions = this.questions.filter(q => {
       if (!q.folderId) return true;
-      return !this.folders.some(f => f.id === q.folderId);
+      return !this.questionFolders.some(f => f.id === q.folderId);
     });
     
+    let ungroupedHtml = '';
     if (unassignedQuestions.length > 0) {
-      html += unassignedQuestions.map(q => {
+      ungroupedHtml = unassignedQuestions.map(q => {
         const idx = this.questions.indexOf(q);
         return renderQuestionItemHtml(q, idx);
       }).join('');
+    } else {
+      ungroupedHtml = '<li style="text-align: center; color: var(--text-muted); padding: 20px; width: 100%;">暫無未分類提問</li>';
     }
+    questionList.innerHTML = ungroupedHtml;
     
-    questionList.innerHTML = html;
-    
-    questionList.querySelectorAll('.question-item').forEach(item => {
+    // Bind click events
+    document.querySelectorAll('.panel-body .question-item').forEach(item => {
       item.addEventListener('click', (e) => {
         if (e.target.closest('a') || e.target.closest('.reactions-bar')) {
           return;
@@ -958,8 +1057,15 @@ class App {
   
   renderImages() {
     const imagePreview = document.getElementById('imagePreview');
-    if (!imagePreview) return;
+    const imagesGroupedContainer = document.getElementById('imagesGroupedContainer');
+    if (!imagePreview || !imagesGroupedContainer) return;
     
+    if (this.images.length === 0) {
+      imagesGroupedContainer.innerHTML = '';
+      imagePreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無圖片</div>';
+      return;
+    }
+
     const renderImageItemHtml = (img) => `
       <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
         <div class="preview-item" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0;">
@@ -986,52 +1092,46 @@ class App {
       </div>
     `;
 
-    let html = '';
-    
-    // 1. Grouped Folders
-    this.folders.forEach(f => {
+    // 1. Grouped Folders (takes full rows)
+    let groupedHtml = '';
+    this.imageFolders.forEach(f => {
       const folderImages = this.images.filter(img => img.folderId === f.id);
       if (folderImages.length > 0) {
         const isCollapsed = this.isFolderCollapsed(f.id);
-        html += `
-          <div class="folder-image-card">
-            <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+        groupedHtml += `
+          <div class="folder-group-row" style="margin-bottom: 16px; border-left: 6px solid #af52de; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
+              <span style="font-size: 15px; display: flex; align-items: center; gap: 6px;">
                 📁 ${this.escapeHtml(f.name)} 
                 <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderImages.length} 張圖片)</span>
               </span>
-              <button class="folder-toggle-btn">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+              <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
             </div>
-            <div class="image-preview" style="display: ${isCollapsed ? 'none' : 'flex'}; margin-top: 12px; gap: 12px; flex-wrap: wrap;">
-              ${folderImages.map(img => renderImageItemHtml(img)).join('')}
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
+              <div class="image-preview" style="margin: 0; padding: 0;">
+                ${folderImages.map(img => renderImageItemHtml(img)).join('')}
+              </div>
             </div>
           </div>
         `;
       }
     });
+    imagesGroupedContainer.innerHTML = groupedHtml;
     
     // 2. Unassigned Images
     const unassignedImages = this.images.filter(img => {
       if (!img.folderId) return true;
-      return !this.folders.some(f => f.id === img.folderId);
+      return !this.imageFolders.some(f => f.id === img.folderId);
     });
     
     if (unassignedImages.length > 0) {
-      html += `
-        <div class="image-preview" style="display: flex; gap: 12px; flex-wrap: wrap;">
-          ${unassignedImages.map(img => renderImageItemHtml(img)).join('')}
-        </div>
-      `;
+      imagePreview.innerHTML = unassignedImages.map(img => renderImageItemHtml(img)).join('');
+    } else {
+      imagePreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無未分類圖片</div>';
     }
     
-    if (html === '') {
-      imagePreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無圖片</div>';
-      return;
-    }
-    
-    imagePreview.innerHTML = html;
-    
-    imagePreview.querySelectorAll('.preview-item').forEach(item => {
+    // Bind click events
+    document.querySelectorAll('.panel-body .preview-item').forEach(item => {
       item.addEventListener('click', () => {
         this.showImageModal(item.dataset.url, item.dataset.user, item.dataset.filename);
       });
@@ -1049,12 +1149,14 @@ class App {
     
     const total = this.questions.length;
     adminQuestionList.innerHTML = this.questions.map((q, index) => {
-      const folder = this.folders.find(f => f.id === q.folderId);
+      const folder = this.questionFolders.find(f => f.id === q.folderId);
       const folderBadge = folder ? `<span style="font-size: 11px; background: rgba(52, 199, 89, 0.15); color: var(--accent-color); padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px;">📁 ${this.escapeHtml(folder.name)}</span>` : '';
       
       return `
         <li class="question-item card-style admin-card" style="border-left-color: var(--danger-color); cursor: default; flex-direction: column; align-items: stretch; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+            <input type="checkbox" class="admin-select-question" value="${q.id}" onchange="window.app.updateBatchSelectCount()" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; margin-top: 4px; margin-right: 12px;">
+            
             <div style="flex: 1; min-width: 0;">
               <div class="question-card-header">
                 <div class="header-left">
@@ -1093,7 +1195,7 @@ class App {
     }
 
     adminImagePreview.innerHTML = this.images.map(img => {
-      const folder = this.folders.find(f => f.id === img.folderId);
+      const folder = this.imageFolders.find(f => f.id === img.folderId);
       const folderText = folder ? `<div style="font-size: 10px; background: rgba(52, 199, 89, 0.15); color: var(--accent-color); padding: 2px 4px; border-radius: 4px; font-weight: bold; width: 100%; text-align: center; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">📁 ${this.escapeHtml(folder.name)}</div>` : '';
       
       return `
@@ -1113,6 +1215,11 @@ class App {
           </div>
           
           ${folderText}
+          
+          <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; margin-top: 2px; user-select: none;">
+            <input type="checkbox" class="admin-select-image" value="${img.id}" onchange="window.app.updateBatchSelectCount()" style="width: 14px; height: 14px; margin: 0;">
+            <span>選取</span>
+          </label>
           
           <div style="font-size: 10px; color: var(--text-secondary); display: flex; gap: 6px; justify-content: center; width: 100%;">
             <span>👍 ${img.reactions?.like || 0}</span>
