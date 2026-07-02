@@ -1980,14 +1980,26 @@ class App {
     this.currentVideoId = videoId;
     this.currentVideoStart = startTime;
     
-    if (this.playerCanon && typeof this.playerCanon.cueVideoById === 'function') {
+    if (this.playerCanon) {
       try {
-        this.playerCanon.cueVideoById({
-          videoId: videoId,
-          startSeconds: startTime
-        });
+        if (this.currentAudioPlaying === 'canon') {
+          if (typeof this.playerCanon.loadVideoById === 'function') {
+            this.playerCanon.loadVideoById({
+              videoId: videoId,
+              startSeconds: startTime
+            });
+            return;
+          }
+        }
+        
+        if (typeof this.playerCanon.cueVideoById === 'function') {
+          this.playerCanon.cueVideoById({
+            videoId: videoId,
+            startSeconds: startTime
+          });
+        }
       } catch (e) {
-        console.error("Error cuing video:", e);
+        console.error("Error updating music source:", e);
       }
     }
   }
