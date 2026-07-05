@@ -1003,6 +1003,14 @@ class App {
     
     const submitQuestion = () => {
       if (this.askBtn.disabled) return;
+      
+      const now = Date.now();
+      if (this.lastQuestionSubmitTime && now - this.lastQuestionSubmitTime < 2000) {
+        this.showNotification('提示', '提問頻率太快，請稍候再試...');
+        return;
+      }
+      this.lastQuestionSubmitTime = now;
+      
       const text = this.questionInput.value.trim();
       if (!text) {
         this.showNotification('提示', '請輸入問題');
@@ -1186,6 +1194,7 @@ class App {
       for (let item of items) {
         if (item.type.startsWith('image/')) {
           e.preventDefault();
+          e.stopPropagation(); // 阻止事件冒泡到 document 造成重複觸發
           const file = item.getAsFile();
           if (file) {
             this.handleImageUpload(file);
@@ -1209,6 +1218,13 @@ class App {
   }
   
   handleImageUpload(file) {
+    const now = Date.now();
+    if (this.lastImageUploadTime && now - this.lastImageUploadTime < 2000) {
+      this.showNotification('提示', '貼上/上傳頻率太快，請稍候再試...');
+      return;
+    }
+    this.lastImageUploadTime = now;
+
     if (this.isUploadingImage) {
       this.showNotification('提示', '上傳中，請稍候...');
       return;
