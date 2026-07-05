@@ -339,8 +339,6 @@ class App {
   
   initImageZoom() {
     const zoomContainer = document.getElementById('imageZoomContainer');
-    const zoomInBtn = document.getElementById('zoomInBtn');
-    const zoomOutBtn = document.getElementById('zoomOutBtn');
     const zoomResetBtn = document.getElementById('zoomResetBtn');
     
     zoomContainer.addEventListener('wheel', (e) => {
@@ -407,15 +405,7 @@ class App {
       }
     });
     
-    zoomInBtn.addEventListener('click', () => {
-      this.currentZoom = Math.min(5, this.currentZoom + 0.3);
-      this.updateImageTransform();
-    });
     
-    zoomOutBtn.addEventListener('click', () => {
-      this.currentZoom = Math.max(0.5, this.currentZoom - 0.3);
-      this.updateImageTransform();
-    });
     
     zoomResetBtn.addEventListener('click', () => {
       this.currentZoom = 1;
