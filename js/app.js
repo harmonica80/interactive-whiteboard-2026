@@ -16,6 +16,7 @@ class App {
     this.isAdmin = false;
     this.activeQuestionId = null;
     this.activeImageId = null;
+    this.isUploadingImage = false;
     
     // 計時器與音訊狀態
     this.timerRef = db.ref('quiz/timer');
@@ -1001,6 +1002,7 @@ class App {
     this.questionsRef = db.ref('questions');
     
     const submitQuestion = () => {
+      if (this.askBtn.disabled) return;
       const text = this.questionInput.value.trim();
       if (!text) {
         this.showNotification('提示', '請輸入問題');
@@ -1207,6 +1209,11 @@ class App {
   }
   
   handleImageUpload(file) {
+    if (this.isUploadingImage) {
+      this.showNotification('提示', '上傳中，請稍候...');
+      return;
+    }
+    
     if (!file.type.startsWith('image/')) {
       this.showNotification('提示', '請上傳圖片檔案（JPG、PNG、GIF 等）');
       return;
@@ -1217,6 +1224,7 @@ class App {
       return;
     }
     
+    this.isUploadingImage = true;
     this.showNotification('提示', '圖片上傳中...');
     
     const compressAndUpload = () => {
@@ -1277,6 +1285,7 @@ class App {
     tryStorageUpload()
       .then(() => {
         this.showNotification('成功', '圖片上傳成功！');
+        this.isUploadingImage = false;
       })
       .catch((error) => {
         console.warn('Firebase Storage 上傳失敗，啟用本地壓縮備用方案:', error);
@@ -1284,10 +1293,12 @@ class App {
         compressAndUpload()
           .then(() => {
             this.showNotification('成功', '圖片上傳成功！');
+            this.isUploadingImage = false;
           })
           .catch((err) => {
             console.error('備用圖片上傳失敗:', err);
             this.showNotification('錯誤', '圖片上傳失敗，請稍後再試');
+            this.isUploadingImage = false;
           });
       });
   }
