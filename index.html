@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=30">
+  <link rel="stylesheet" href="css/style.css?v=31">
 </head>
 <body>
   <div class="container">
@@ -311,6 +311,7 @@
                 <option value="">📁 移出提問群組 (無群組)</option>
               </select>
               <button class="preset-btn" onclick="window.app.applyBatchQuestionArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              <button class="preset-btn" onclick="window.app.deleteSelectedQuestions()" style="background: var(--danger-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto; margin-left: auto;">🗑️ 刪除選取</button>
             </div>
 
             <div id="adminQuestionsGroupedContainer" class="grouped-folders-container"></div>
@@ -345,6 +346,7 @@
                 <option value="">📁 移出圖片群組 (無群組)</option>
               </select>
               <button class="preset-btn" onclick="window.app.applyBatchImageArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              <button class="preset-btn" onclick="window.app.deleteSelectedImages()" style="background: var(--danger-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto; margin-left: auto;">🗑️ 刪除選取</button>
             </div>
 
             <div id="adminImagesGroupedContainer" class="grouped-folders-container"></div>
@@ -361,29 +363,41 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=30"></script>
-  <script src="js/quiz.js?v=30"></script>
-  <script src="js/app.js?v=30"></script>
+  <script src="js/firebase-config.js?v=31"></script>
+  <script src="js/quiz.js?v=31"></script>
+  <script src="js/app.js?v=31"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <span>💬 問題內容</span>
-        <button id="questionModalClose" class="modal-close">✕</button>
-      </div>
-      <div class="modal-body">
-        <div id="questionModalUser" class="question-user"></div>
-        <div id="questionModalText" class="question-text"></div>
+    <div class="modal-content" style="position: relative; max-width: 600px; width: 90%; border-radius: 16px; background: var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+      <button id="questionModalClose" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 120; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.05);" title="關閉">✕</button>
+      
+      <!-- 左右導覽按鈕 -->
+      <button id="questionModalPrev" class="modal-nav-btn" style="left: 15px;" title="上一個">◀</button>
+      <button id="questionModalNext" class="modal-nav-btn" style="right: 15px;" title="下一個">▶</button>
+      
+      <div class="modal-body" style="padding: 40px 70px 30px 70px;">
+        <div id="questionModalUser" class="question-user" style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-secondary); text-align: center;"></div>
+        <div id="questionModalText" class="question-text" style="font-size: 18px; color: var(--text-primary); line-height: 1.6; word-break: break-all; margin-bottom: 24px; text-align: center; white-space: pre-wrap;"></div>
+        
+        <!-- 表情符號回饋 -->
+        <div id="questionModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+          <!-- 動態渲染的表情按鈕 -->
+        </div>
       </div>
     </div>
   </div>
   
   <!-- 圖片彈出視窗 -->
   <div id="imageModal" class="modal-overlay image-modal">
-    <div class="modal-content" style="position: relative;">
-      <button id="imageModalClose" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 20; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.4);" title="關閉">✕</button>
-      <div class="modal-body">
+    <div class="modal-content" style="position: relative; max-width: 90vw; max-height: 95vh;">
+      <button id="imageModalClose" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 120; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.4);" title="關閉">✕</button>
+      
+      <!-- 左右導覽按鈕 -->
+      <button id="imageModalPrev" class="modal-nav-btn" style="left: 20px;" title="上一個">◀</button>
+      <button id="imageModalNext" class="modal-nav-btn" style="right: 20px;" title="下一個">▶</button>
+      
+      <div class="modal-body" style="padding: 0; text-align: center; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; max-height: 85vh;">
         <div id="imageZoomContainer" class="image-zoom-container">
           <div id="imageCanvasWrapper" style="position: relative; display: inline-block;">
             <img id="modalImage" class="modal-image" src="" alt="" draggable="false">
@@ -429,12 +443,20 @@
             <button id="zoomResetBtn" class="zoom-btn">⟲</button>
           </div>
         </div>
-        <div class="image-info">
-          <div>
-            <div id="modalImageUser" class="image-user"></div>
-            <div id="modalImageFilename" class="image-filename"></div>
+        
+        <div class="image-info" style="display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.85); color: white; width: 100%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px;">
+            <div style="text-align: left;">
+              <div id="modalImageUser" class="image-user" style="color: #aaa; font-size: 13px;"></div>
+              <div id="modalImageFilename" class="image-filename" style="color: #fff; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;"></div>
+            </div>
+            <a id="modalDownloadBtn" class="download-btn" href="" download style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">⬇ 下載</a>
           </div>
-          <a id="modalDownloadBtn" class="download-btn" href="" download>⬇ 下載</a>
+          
+          <!-- 表情符號回饋 -->
+          <div id="imageModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%;">
+            <!-- 動態渲染的表情按鈕 -->
+          </div>
         </div>
       </div>
     </div>

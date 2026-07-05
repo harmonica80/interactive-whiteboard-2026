@@ -14,6 +14,8 @@ class App {
     this.currentQuiz = null;
     this.quizAnswers = {};
     this.isAdmin = false;
+    this.activeQuestionId = null;
+    this.activeImageId = null;
     
     // 計時器與音訊狀態
     this.timerRef = db.ref('quiz/timer');
@@ -216,18 +218,77 @@ class App {
     const questionModal = document.getElementById('questionModal');
     const questionModalClose = document.getElementById('questionModalClose');
     
-    questionModalClose.addEventListener('click', () => questionModal.classList.remove('active'));
+    questionModalClose.addEventListener('click', () => {
+      questionModal.classList.remove('active');
+      this.activeQuestionId = null;
+    });
     questionModal.addEventListener('click', (e) => {
-      if (e.target === questionModal) questionModal.classList.remove('active');
+      if (e.target === questionModal) {
+        questionModal.classList.remove('active');
+        this.activeQuestionId = null;
+      }
     });
     
     const imageModal = document.getElementById('imageModal');
     const imageModalClose = document.getElementById('imageModalClose');
     
-    imageModalClose.addEventListener('click', () => imageModal.classList.remove('active'));
-    imageModal.addEventListener('click', (e) => {
-      if (e.target === imageModal) imageModal.classList.remove('active');
+    imageModalClose.addEventListener('click', () => {
+      imageModal.classList.remove('active');
+      this.activeImageId = null;
     });
+    imageModal.addEventListener('click', (e) => {
+      if (e.target === imageModal) {
+        imageModal.classList.remove('active');
+        this.activeImageId = null;
+      }
+    });
+    
+    // 左右導覽按鈕事件註冊
+    const questionModalPrev = document.getElementById('questionModalPrev');
+    const questionModalNext = document.getElementById('questionModalNext');
+    if (questionModalPrev) {
+      questionModalPrev.addEventListener('click', () => {
+        if (!this.activeQuestionId || this.questions.length <= 1) return;
+        const index = this.questions.findIndex(q => q.id === this.activeQuestionId);
+        if (index > -1) {
+          const prevIndex = (index - 1 + this.questions.length) % this.questions.length;
+          this.showQuestionModal(this.questions[prevIndex].id);
+        }
+      });
+    }
+    if (questionModalNext) {
+      questionModalNext.addEventListener('click', () => {
+        if (!this.activeQuestionId || this.questions.length <= 1) return;
+        const index = this.questions.findIndex(q => q.id === this.activeQuestionId);
+        if (index > -1) {
+          const nextIndex = (index + 1) % this.questions.length;
+          this.showQuestionModal(this.questions[nextIndex].id);
+        }
+      });
+    }
+
+    const imageModalPrev = document.getElementById('imageModalPrev');
+    const imageModalNext = document.getElementById('imageModalNext');
+    if (imageModalPrev) {
+      imageModalPrev.addEventListener('click', () => {
+        if (!this.activeImageId || this.images.length <= 1) return;
+        const index = this.images.findIndex(img => img.id === this.activeImageId);
+        if (index > -1) {
+          const prevIndex = (index - 1 + this.images.length) % this.images.length;
+          this.showImageModal(this.images[prevIndex].id);
+        }
+      });
+    }
+    if (imageModalNext) {
+      imageModalNext.addEventListener('click', () => {
+        if (!this.activeImageId || this.images.length <= 1) return;
+        const index = this.images.findIndex(img => img.id === this.activeImageId);
+        if (index > -1) {
+          const nextIndex = (index + 1) % this.images.length;
+          this.showImageModal(this.images[nextIndex].id);
+        }
+      });
+    }
     
     const customConfirmModal = document.getElementById('customConfirmModal');
     customConfirmModal.addEventListener('click', (e) => {
@@ -258,6 +319,8 @@ class App {
         customConfirmModal.classList.remove('active');
         notifyModal.classList.remove('active');
         adminPasswordModal.classList.remove('active');
+        this.activeQuestionId = null;
+        this.activeImageId = null;
       }
     });
   }
@@ -667,15 +730,71 @@ class App {
   }
 
   toggleSelectAllQuestions(checked) {
-    const qBoxes = document.querySelectorAll('.admin-select-question');
+    const qBoxes = document.querySelectorAll('#adminQuestionList .admin-select-question');
     qBoxes.forEach(box => box.checked = checked);
     this.updateBatchSelectCount();
   }
 
   toggleSelectAllImages(checked) {
-    const imgBoxes = document.querySelectorAll('.admin-select-image');
+    const imgBoxes = document.querySelectorAll('#adminImagePreview .admin-select-image');
     imgBoxes.forEach(box => box.checked = checked);
     this.updateBatchSelectCount();
+  }
+
+  deleteSelectedQuestions() {
+    const qBoxes = document.querySelectorAll('.admin-select-question:checked');
+    if (qBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選要刪除的提問！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🗑️',
+      `確定要刪除這 ${qBoxes.length} 個提問嗎？`,
+      '此動作將永久刪除所選提問，且無法復原。',
+      () => {
+        const promises = Array.from(qBoxes).map(box => {
+          return db.ref('questions').child(box.value).remove();
+        });
+        
+        Promise.all(promises).then(() => {
+          this.showNotification('成功', `已成功刪除 ${qBoxes.length} 個提問！`);
+          const selectAll = document.getElementById('selectAllQuestions');
+          if (selectAll) selectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  deleteSelectedImages() {
+    const imgBoxes = document.querySelectorAll('.admin-select-image:checked');
+    if (imgBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選要刪除的圖片！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🖼️',
+      `確定要刪除這 ${imgBoxes.length} 張圖片嗎？`,
+      '此動作將永久刪除所選圖片，且無法復原。',
+      () => {
+        const promises = Array.from(imgBoxes).map(box => {
+          return db.ref('images').child(box.value).remove();
+        });
+        
+        Promise.all(promises).then(() => {
+          this.showNotification('成功', `已成功刪除 ${imgBoxes.length} 張圖片！`);
+          const selectAll = document.getElementById('selectAllImages');
+          if (selectAll) selectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
   }
 
   renderBatchQuestionFolderOptions() {
@@ -730,23 +849,80 @@ class App {
     `).join('');
   }
 
-  showQuestionModal(user, text) {
+  showQuestionModal(id) {
+    this.activeQuestionId = id;
     const questionModal = document.getElementById('questionModal');
-    document.getElementById('questionModalUser').textContent = user;
-    document.getElementById('questionModalText').innerHTML = this.linkify(text);
+    const q = this.questions.find(item => item.id === id);
+    if (!q) {
+      questionModal.classList.remove('active');
+      this.activeQuestionId = null;
+      return;
+    }
+    
+    document.getElementById('questionModalUser').textContent = q.user;
+    document.getElementById('questionModalText').innerHTML = this.linkify(q.text);
+    
+    this.updateActiveQuestionModal();
+    
+    const prevBtn = document.getElementById('questionModalPrev');
+    const nextBtn = document.getElementById('questionModalNext');
+    if (this.questions.length <= 1) {
+      if (prevBtn) prevBtn.style.display = 'none';
+      if (nextBtn) nextBtn.style.display = 'none';
+    } else {
+      if (prevBtn) prevBtn.style.display = 'flex';
+      if (nextBtn) nextBtn.style.display = 'flex';
+    }
+    
     questionModal.classList.add('active');
   }
+
+  updateActiveQuestionModal() {
+    if (!this.activeQuestionId) return;
+    const q = this.questions.find(item => item.id === this.activeQuestionId);
+    if (!q) return;
+    
+    const container = document.getElementById('questionModalReactions');
+    if (container) {
+      container.innerHTML = `
+        <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'like')" title="讚">
+          <span class="reaction-emoji">👍</span>
+          <span class="reaction-count">${q.reactions?.like || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'love')" title="愛心">
+          <span class="reaction-emoji">❤️</span>
+          <span class="reaction-count">${q.reactions?.love || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'laugh')" title="大笑">
+          <span class="reaction-emoji">😆</span>
+          <span class="reaction-count">${q.reactions?.laugh || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'wow')" title="驚訝">
+          <span class="reaction-emoji">😮</span>
+          <span class="reaction-count">${q.reactions?.wow || 0}</span>
+        </button>
+      `;
+    }
+  }
   
-  showImageModal(url, user, filename) {
+  showImageModal(id) {
+    this.activeImageId = id;
     const imageModal = document.getElementById('imageModal');
+    const img = this.images.find(item => item.id === id);
+    if (!img) {
+      imageModal.classList.remove('active');
+      this.activeImageId = null;
+      return;
+    }
+    
     const modalImage = document.getElementById('modalImage');
     const canvas = document.getElementById('imageMarkupCanvas');
     
-    modalImage.src = url;
-    document.getElementById('modalImageUser').textContent = '上傳者: ' + user;
-    document.getElementById('modalImageFilename').textContent = filename;
-    document.getElementById('modalDownloadBtn').href = url;
-    document.getElementById('modalDownloadBtn').download = filename;
+    modalImage.src = img.url;
+    document.getElementById('modalImageUser').textContent = '上傳者: ' + img.user;
+    document.getElementById('modalImageFilename').textContent = img.filename;
+    document.getElementById('modalDownloadBtn').href = img.url;
+    document.getElementById('modalDownloadBtn').download = img.filename;
     
     this.currentZoom = 1;
     this.imagePos = { x: 0, y: 0 };
@@ -757,8 +933,6 @@ class App {
     }
     
     document.getElementById('zoomInfo').textContent = '100%';
-    
-    // Set default mode to pan
     this.setImageMode('pan');
     
     modalImage.onload = () => {
@@ -769,7 +943,47 @@ class App {
       }
     };
     
+    this.updateActiveImageModal();
+    
+    const prevBtn = document.getElementById('imageModalPrev');
+    const nextBtn = document.getElementById('imageModalNext');
+    if (this.images.length <= 1) {
+      if (prevBtn) prevBtn.style.display = 'none';
+      if (nextBtn) nextBtn.style.display = 'none';
+    } else {
+      if (prevBtn) prevBtn.style.display = 'flex';
+      if (nextBtn) nextBtn.style.display = 'flex';
+    }
+    
     imageModal.classList.add('active');
+  }
+
+  updateActiveImageModal() {
+    if (!this.activeImageId) return;
+    const img = this.images.find(item => item.id === this.activeImageId);
+    if (!img) return;
+    
+    const container = document.getElementById('imageModalReactions');
+    if (container) {
+      container.innerHTML = `
+        <button class="reaction-btn" onclick="reactToImage('${img.id}', 'like')" style="min-width: 32px; padding: 2px 6px;" title="讚">
+          <span class="reaction-emoji" style="font-size: 11px;">👍</span>
+          <span class="reaction-count" style="font-size: 9px;">${img.reactions?.like || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToImage('${img.id}', 'love')" style="min-width: 32px; padding: 2px 6px;" title="愛心">
+          <span class="reaction-emoji" style="font-size: 11px;">❤️</span>
+          <span class="reaction-count" style="font-size: 9px;">${img.reactions?.love || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToImage('${img.id}', 'laugh')" style="min-width: 32px; padding: 2px 6px;" title="大笑">
+          <span class="reaction-emoji" style="font-size: 11px;">😆</span>
+          <span class="reaction-count" style="font-size: 9px;">${img.reactions?.laugh || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToImage('${img.id}', 'wow')" style="min-width: 32px; padding: 2px 6px;" title="驚訝">
+          <span class="reaction-emoji" style="font-size: 11px;">😮</span>
+          <span class="reaction-count" style="font-size: 9px;">${img.reactions?.wow || 0}</span>
+        </button>
+      `;
+    }
   }
   
   bindCollapseEvents() {
@@ -834,7 +1048,7 @@ class App {
     const total = this.questions.length;
     
     const renderQuestionItemHtml = (q, idx) => `
-      <li class="question-item card-style" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px;">
+      <li class="question-item card-style" data-id="${q.id}" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px;">
         <div class="question-card-header">
           <div class="header-left">
             <span class="question-badge">#${total - idx}</span>
@@ -916,9 +1130,12 @@ class App {
         if (e.target.closest('a') || e.target.closest('.reactions-bar')) {
           return;
         }
-        this.showQuestionModal(item.dataset.user, item.dataset.text);
+        this.showQuestionModal(item.dataset.id);
       });
     });
+    
+    // Reactively update active question modal reactions
+    this.updateActiveQuestionModal();
   }
   
   bindImageUpload() {
@@ -1088,7 +1305,7 @@ class App {
 
     const renderImageItemHtml = (img) => `
       <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
-        <div class="preview-item" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0;">
+        <div class="preview-item" data-id="${img.id}" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0;">
           <img src="${img.url}" alt="${img.filename}">
         </div>
         <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px;">
@@ -1153,9 +1370,12 @@ class App {
     // Bind click events
     document.querySelectorAll('.panel-body .preview-item').forEach(item => {
       item.addEventListener('click', () => {
-        this.showImageModal(item.dataset.url, item.dataset.user, item.dataset.filename);
+        this.showImageModal(item.dataset.id);
       });
     });
+    
+    // Reactively update active image modal reactions
+    this.updateActiveImageModal();
   }
   
   renderAdminQuestions() {
