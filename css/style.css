@@ -783,7 +783,7 @@ body {
 
 .image-modal .zoom-controls {
   position: absolute;
-  bottom: 80px;
+  bottom: 160px;
   right: 15px;
   display: flex;
   flex-direction: row;
