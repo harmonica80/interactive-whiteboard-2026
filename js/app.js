@@ -679,11 +679,6 @@ class App {
       return;
     }
 
-    if (qBoxes.length > 30) {
-      this.showNotification('提示', '批次歸檔一次最多只能選擇 30 個提問！');
-      return;
-    }
-    
     const updates = {};
     qBoxes.forEach(box => {
       const qId = box.value;
@@ -711,11 +706,6 @@ class App {
       return;
     }
 
-    if (imgBoxes.length > 30) {
-      this.showNotification('提示', '批次歸檔一次最多只能選擇 30 張圖片！');
-      return;
-    }
-    
     const updates = {};
     imgBoxes.forEach(box => {
       const imgId = box.value;
@@ -762,11 +752,6 @@ class App {
       this.showNotification('提示', '請先勾選要刪除的提問！');
       return;
     }
-
-    if (qBoxes.length > 30) {
-      this.showNotification('提示', '批次刪除一次最多只能選擇 30 個提問！');
-      return;
-    }
     
     this.showConfirmModal(
       '🗑️',
@@ -794,11 +779,6 @@ class App {
     const imgBoxes = document.querySelectorAll('.admin-select-image:checked');
     if (imgBoxes.length === 0) {
       this.showNotification('提示', '請先勾選要刪除的圖片！');
-      return;
-    }
-
-    if (imgBoxes.length > 30) {
-      this.showNotification('提示', '批次刪除一次最多只能選擇 30 張圖片！');
       return;
     }
     
