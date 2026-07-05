@@ -371,11 +371,9 @@ class App {
     
     zoomContainer.addEventListener('mousedown', (e) => {
       if (this.imageMode === 'draw') return;
-      if (this.currentZoom > 1) {
-        this.isDragging = true;
-        this.dragStart = { x: e.clientX - this.imagePos.x, y: e.clientY - this.imagePos.y };
-        zoomContainer.style.cursor = 'grabbing';
-      }
+      this.isDragging = true;
+      this.dragStart = { x: e.clientX - this.imagePos.x, y: e.clientY - this.imagePos.y };
+      zoomContainer.style.cursor = 'grabbing';
     });
     
     document.addEventListener('mousemove', (e) => {
@@ -395,14 +393,14 @@ class App {
     
     zoomContainer.addEventListener('touchstart', (e) => {
       if (this.imageMode === 'draw') return;
-      if (e.touches.length === 1 && this.currentZoom > 1) {
+      if (e.touches.length === 1) {
         touchStartPos = { x: e.touches[0].clientX - this.imagePos.x, y: e.touches[0].clientY - this.imagePos.y };
       }
     });
     
     zoomContainer.addEventListener('touchmove', (e) => {
       if (this.imageMode === 'draw') return;
-      if (e.touches.length === 1 && this.currentZoom > 1) {
+      if (e.touches.length === 1) {
         this.imagePos.x = e.touches[0].clientX - touchStartPos.x;
         this.imagePos.y = e.touches[0].clientY - touchStartPos.y;
         this.updateImageTransform();
