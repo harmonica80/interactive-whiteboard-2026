@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=31">
+  <link rel="stylesheet" href="css/style.css?v=32">
 </head>
 <body>
   <div class="container">
@@ -287,9 +287,6 @@
           <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <h3 style="margin: 0; color: var(--text-primary); font-size: 15px;">💬 提問管理 (點選 ✕ 可刪除)</h3>
-              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
-                <input type="checkbox" id="selectAllQuestions" onchange="window.app.toggleSelectAllQuestions(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選提問
-              </label>
             </div>
 
             <!-- 新建群組與清單 -->
@@ -311,10 +308,18 @@
                 <option value="">📁 移出提問群組 (無群組)</option>
               </select>
               <button class="preset-btn" onclick="window.app.applyBatchQuestionArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
-              <button class="preset-btn" onclick="window.app.deleteSelectedQuestions()" style="background: var(--danger-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto; margin-left: auto;">🗑️ 刪除選取</button>
             </div>
 
             <div id="adminQuestionsGroupedContainer" class="grouped-folders-container"></div>
+            
+            <!-- 全選提問與批次刪除區塊 -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
+              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                <input type="checkbox" id="selectAllQuestions" onchange="window.app.toggleSelectAllQuestions(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選提問
+              </label>
+              <button class="preset-btn" onclick="window.app.deleteSelectedQuestions()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+            </div>
+            
             <ul id="adminQuestionList" class="question-list"></ul>
           </div>
 
@@ -322,9 +327,6 @@
           <div class="admin-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <h3 style="margin: 0; color: var(--text-primary); font-size: 15px;">🖼️ 圖片管理 (點選 ✕ 可刪除)</h3>
-              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
-                <input type="checkbox" id="selectAllImages" onchange="window.app.toggleSelectAllImages(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選圖片
-              </label>
             </div>
 
             <!-- 新建圖片群組與清單 -->
@@ -346,10 +348,18 @@
                 <option value="">📁 移出圖片群組 (無群組)</option>
               </select>
               <button class="preset-btn" onclick="window.app.applyBatchImageArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
-              <button class="preset-btn" onclick="window.app.deleteSelectedImages()" style="background: var(--danger-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto; margin-left: auto;">🗑️ 刪除選取</button>
             </div>
 
             <div id="adminImagesGroupedContainer" class="grouped-folders-container"></div>
+            
+            <!-- 全選圖片與批次刪除區塊 -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
+              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                <input type="checkbox" id="selectAllImages" onchange="window.app.toggleSelectAllImages(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選圖片
+              </label>
+              <button class="preset-btn" onclick="window.app.deleteSelectedImages()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+            </div>
+            
             <div id="adminImagePreview" class="image-preview"></div>
           </div>
         </div>
@@ -363,9 +373,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=31"></script>
-  <script src="js/quiz.js?v=31"></script>
-  <script src="js/app.js?v=31"></script>
+  <script src="js/firebase-config.js?v=32"></script>
+  <script src="js/quiz.js?v=32"></script>
+  <script src="js/app.js?v=32"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
