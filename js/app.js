@@ -2405,11 +2405,19 @@ class App {
       db.ref('quiz').once('value'),
       db.ref('whiteboard').once('value')
     ]).then(([questionsSnap, imagesSnap, quizSnap, whiteboardSnap]) => {
+      const quizData = quizSnap.val() || {};
+      
       const exportData = {
         questions: questionsSnap.val() || {},
         images: imagesSnap.val() || {},
-        quiz: quizSnap.val() || {},
         whiteboard: whiteboardSnap.val() || {},
+        quiz: {
+          current: quizData.current || null,
+          answers: quizData.answers || null,
+          timer: quizData.timer || null,
+          questionFolders: quizData.questionFolders || null,
+          imageFolders: quizData.imageFolders || null
+        },
         exportedAt: new Date().toISOString(),
         dbUrl: db.app.options.databaseURL || ""
       };
@@ -2465,8 +2473,33 @@ class App {
             // Set data nodes
             promises.push(db.ref('questions').set(importedData.questions || null));
             promises.push(db.ref('images').set(importedData.images || null));
-            promises.push(db.ref('quiz').set(importedData.quiz || null));
             promises.push(db.ref('whiteboard').set(importedData.whiteboard || null));
+            
+            // Set subnodes of quiz explicitly (excluding presence to prevent connection issues)
+            const quizNode = importedData.quiz || {};
+            
+            // Defensive check: If the imported file has no folders but the current database has folders, preserve them!
+            let questionFolders = quizNode.questionFolders;
+            if (!questionFolders && this.questionFolders && this.questionFolders.length > 0) {
+              questionFolders = {};
+              this.questionFolders.forEach(f => {
+                questionFolders[f.id] = { name: f.name };
+              });
+            }
+            
+            let imageFolders = quizNode.imageFolders;
+            if (!imageFolders && this.imageFolders && this.imageFolders.length > 0) {
+              imageFolders = {};
+              this.imageFolders.forEach(f => {
+                imageFolders[f.id] = { name: f.name };
+              });
+            }
+            
+            promises.push(db.ref('quiz/current').set(quizNode.current || null));
+            promises.push(db.ref('quiz/answers').set(quizNode.answers || null));
+            promises.push(db.ref('quiz/timer').set(quizNode.timer || null));
+            promises.push(db.ref('quiz/questionFolders').set(questionFolders || null));
+            promises.push(db.ref('quiz/imageFolders').set(imageFolders || null));
             
             Promise.all(promises).then(() => {
               this.showNotification('成功', '匯入記錄檔完成！');
