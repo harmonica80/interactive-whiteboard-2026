@@ -2472,8 +2472,18 @@ class App {
             
             // Set data nodes
             promises.push(db.ref('questions').set(importedData.questions || null));
-            promises.push(db.ref('images').set(importedData.images || null));
             promises.push(db.ref('whiteboard').set(importedData.whiteboard || null));
+            
+            // Write images sequentially to prevent WebSocket connection frame overflow & disconnects
+            const writeImagesSequentially = async () => {
+              await db.ref('images').remove();
+              const imagesObj = importedData.images || {};
+              const keys = Object.keys(imagesObj);
+              for (const imgId of keys) {
+                await db.ref(`images/${imgId}`).set(imagesObj[imgId]);
+              }
+            };
+            promises.push(writeImagesSequentially());
             
             // Set subnodes of quiz explicitly (excluding presence to prevent connection issues)
             const quizNode = importedData.quiz || {};
