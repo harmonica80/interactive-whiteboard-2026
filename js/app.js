@@ -744,6 +744,18 @@ class App {
     this.updateBatchSelectCount();
   }
 
+  toggleSelectAllFolderQuestions(folderId, checked) {
+    const qBoxes = document.querySelectorAll(`.folder-questions-${folderId} .admin-select-question`);
+    qBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  toggleSelectAllFolderImages(folderId, checked) {
+    const imgBoxes = document.querySelectorAll(`.folder-images-${folderId} .admin-select-image`);
+    imgBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
   deleteSelectedQuestions() {
     const qBoxes = document.querySelectorAll('.admin-select-question:checked');
     if (qBoxes.length === 0) {
@@ -1478,7 +1490,12 @@ class App {
               <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
             </div>
             <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
-              <ul class="question-list" style="margin: 0; padding: 0; list-style: none;">
+              <div style="display: flex; justify-content: flex-end; margin-bottom: 10px; width: 100%;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" onchange="window.app.toggleSelectAllFolderQuestions('${f.id}', this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選群組提問
+                </label>
+              </div>
+              <ul class="question-list folder-questions-${f.id}" style="margin: 0; padding: 0; list-style: none;">
                 ${folderQuestions.map(q => {
                   const idx = this.questions.indexOf(q);
                   return renderQuestionItemHtml(q, idx);
@@ -1581,7 +1598,12 @@ class App {
               <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
             </div>
             <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
-              <div class="image-preview" style="margin: 0; padding: 0;">
+              <div style="display: flex; justify-content: flex-end; margin-bottom: 10px; width: 100%;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" onchange="window.app.toggleSelectAllFolderImages('${f.id}', this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選群組圖片
+                </label>
+              </div>
+              <div class="image-preview folder-images-${f.id}" style="margin: 0; padding: 0;">
                 ${folderImages.map(img => renderImageItemHtml(img)).join('')}
               </div>
             </div>
