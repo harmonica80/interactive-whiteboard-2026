@@ -678,18 +678,19 @@ class App {
       this.showNotification('提示', '請先勾選下方的提問項目');
       return;
     }
+
+    if (qBoxes.length > 30) {
+      this.showNotification('提示', '批次歸檔一次最多只能選擇 30 個提問！');
+      return;
+    }
     
-    const promises = [];
+    const updates = {};
     qBoxes.forEach(box => {
       const qId = box.value;
-      if (folderId === "") {
-        promises.push(db.ref(`questions/${qId}/folderId`).remove());
-      } else {
-        promises.push(db.ref(`questions/${qId}/folderId`).set(folderId));
-      }
+      updates[`questions/${qId}/folderId`] = folderId === "" ? null : folderId;
     });
     
-    Promise.all(promises).then(() => {
+    db.ref().update(updates).then(() => {
       this.showNotification('成功', '提問批次分組歸檔完成！');
       const selectAll = document.getElementById('selectAllQuestions');
       if (selectAll) selectAll.checked = false;
@@ -709,18 +710,19 @@ class App {
       this.showNotification('提示', '請先勾選下方的圖片項目');
       return;
     }
+
+    if (imgBoxes.length > 30) {
+      this.showNotification('提示', '批次歸檔一次最多只能選擇 30 張圖片！');
+      return;
+    }
     
-    const promises = [];
+    const updates = {};
     imgBoxes.forEach(box => {
       const imgId = box.value;
-      if (folderId === "") {
-        promises.push(db.ref(`images/${imgId}/folderId`).remove());
-      } else {
-        promises.push(db.ref(`images/${imgId}/folderId`).set(folderId));
-      }
+      updates[`images/${imgId}/folderId`] = folderId === "" ? null : folderId;
     });
     
-    Promise.all(promises).then(() => {
+    db.ref().update(updates).then(() => {
       this.showNotification('成功', '圖片批次分組歸檔完成！');
       const selectAll = document.getElementById('selectAllImages');
       if (selectAll) selectAll.checked = false;
@@ -748,17 +750,23 @@ class App {
       this.showNotification('提示', '請先勾選要刪除的提問！');
       return;
     }
+
+    if (qBoxes.length > 30) {
+      this.showNotification('提示', '批次刪除一次最多只能選擇 30 個提問！');
+      return;
+    }
     
     this.showConfirmModal(
       '🗑️',
       `確定要刪除這 ${qBoxes.length} 個提問嗎？`,
       '此動作將永久刪除所選提問，且無法復原。',
       () => {
-        const promises = Array.from(qBoxes).map(box => {
-          return db.ref('questions').child(box.value).remove();
+        const updates = {};
+        qBoxes.forEach(box => {
+          updates[`questions/${box.value}`] = null;
         });
         
-        Promise.all(promises).then(() => {
+        db.ref().update(updates).then(() => {
           this.showNotification('成功', `已成功刪除 ${qBoxes.length} 個提問！`);
           const selectAll = document.getElementById('selectAllQuestions');
           if (selectAll) selectAll.checked = false;
@@ -776,17 +784,23 @@ class App {
       this.showNotification('提示', '請先勾選要刪除的圖片！');
       return;
     }
+
+    if (imgBoxes.length > 30) {
+      this.showNotification('提示', '批次刪除一次最多只能選擇 30 張圖片！');
+      return;
+    }
     
     this.showConfirmModal(
       '🖼️',
       `確定要刪除這 ${imgBoxes.length} 張圖片嗎？`,
       '此動作將永久刪除所選圖片，且無法復原。',
       () => {
-        const promises = Array.from(imgBoxes).map(box => {
-          return db.ref('images').child(box.value).remove();
+        const updates = {};
+        imgBoxes.forEach(box => {
+          updates[`images/${box.value}`] = null;
         });
         
-        Promise.all(promises).then(() => {
+        db.ref().update(updates).then(() => {
           this.showNotification('成功', `已成功刪除 ${imgBoxes.length} 張圖片！`);
           const selectAll = document.getElementById('selectAllImages');
           if (selectAll) selectAll.checked = false;
