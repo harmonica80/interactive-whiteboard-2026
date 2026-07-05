@@ -804,6 +804,64 @@ class App {
     );
   }
 
+  deleteSelectedFolderQuestions(folderId) {
+    const qBoxes = document.querySelectorAll(`.folder-questions-${folderId} .admin-select-question:checked`);
+    if (qBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選此群組中要刪除的提問！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🗑️',
+      `確定要刪除此群組中的 ${qBoxes.length} 個提問嗎？`,
+      '此動作將永久刪除所選提問，且無法復原。',
+      () => {
+        const updates = {};
+        qBoxes.forEach(box => {
+          updates[`questions/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除群組中的 ${qBoxes.length} 個提問！`);
+          const folderSelectAll = document.querySelector(`.folder-select-all-checkbox-${folderId}`);
+          if (folderSelectAll) folderSelectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  deleteSelectedFolderImages(folderId) {
+    const imgBoxes = document.querySelectorAll(`.folder-images-${folderId} .admin-select-image:checked`);
+    if (imgBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選此群組中要刪除的圖片！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🖼️',
+      `確定要刪除此群組中的 ${imgBoxes.length} 張圖片嗎？`,
+      '此動作將永久刪除所選圖片，且無法復原。',
+      () => {
+        const updates = {};
+        imgBoxes.forEach(box => {
+          updates[`images/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除群組中的 ${imgBoxes.length} 張圖片！`);
+          const folderSelectAll = document.querySelector(`.folder-select-all-checkbox-${folderId}`);
+          if (folderSelectAll) folderSelectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
   renderBatchQuestionFolderOptions() {
     const select = document.getElementById('batchQuestionFolderSelect');
     if (!select) return;
@@ -1470,10 +1528,15 @@ class App {
               <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
             </div>
             <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
-              <div style="display: flex; justify-content: flex-end; margin-bottom: 10px; width: 100%;">
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 10px; width: 100%;">
                 <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
-                  <input type="checkbox" onchange="window.app.toggleSelectAllFolderQuestions('${f.id}', this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選群組提問
+                  <input type="checkbox" class="folder-select-all-checkbox-${f.id}" onchange="window.app.toggleSelectAllFolderQuestions('${f.id}', this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選群組提問
                 </label>
+                <button onclick="window.app.deleteSelectedFolderQuestions('${f.id}')" style="
+                  background: var(--danger-color); color: white; border: none;
+                  padding: 4px 8px; border-radius: 6px; font-size: 11px;
+                  cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 4px;
+                ">🗑️ 刪除所選</button>
               </div>
               <ul class="question-list folder-questions-${f.id}" style="margin: 0; padding: 0; list-style: none;">
                 ${folderQuestions.map(q => {
@@ -1578,10 +1641,15 @@ class App {
               <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
             </div>
             <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
-              <div style="display: flex; justify-content: flex-end; margin-bottom: 10px; width: 100%;">
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 10px; width: 100%;">
                 <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
-                  <input type="checkbox" onchange="window.app.toggleSelectAllFolderImages('${f.id}', this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選群組圖片
+                  <input type="checkbox" class="folder-select-all-checkbox-${f.id}" onchange="window.app.toggleSelectAllFolderImages('${f.id}', this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選群組圖片
                 </label>
+                <button onclick="window.app.deleteSelectedFolderImages('${f.id}')" style="
+                  background: var(--danger-color); color: white; border: none;
+                  padding: 4px 8px; border-radius: 6px; font-size: 11px;
+                  cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 4px;
+                ">🗑️ 刪除所選</button>
               </div>
               <div class="image-preview folder-images-${f.id}" style="margin: 0; padding: 0;">
                 ${folderImages.map(img => renderImageItemHtml(img)).join('')}
