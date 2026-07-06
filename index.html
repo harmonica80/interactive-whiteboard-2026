@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=51">
+  <link rel="stylesheet" href="css/style.css?v=52">
 </head>
 <body>
   <div class="container">
@@ -92,14 +92,14 @@
           
           <div id="videoUploadZone" class="upload-zone" style="min-height: 80px; padding: 12px; cursor: pointer;">
             <div class="upload-icon" style="font-size: 24px; margin-bottom: 4px;">📁</div>
-            <div class="upload-text" style="font-size: 12px;">或點擊/拖曳本地影片檔至此（限制 5MB）</div>
+            <div class="upload-text" style="font-size: 12px;">或點擊/拖曳本地影片檔至此（限制 10MB，支援大檔自動壓縮）</div>
           </div>
           <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime" style="display: none;">
           
           <div id="videoPreview" class="image-preview" style="margin-bottom: 16px; margin-top: 12px;"></div>
           <div id="videosGroupedContainer" class="grouped-folders-container"></div>
           <div class="upload-note" style="margin-top: 16px; font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5;">
-            💡 提示：本地影片直接上傳僅限 5MB 以內。較大影片請上傳至 YouTube 或 Google Drive 後貼上連結分享。
+            💡 提示：影片大小上限為 10MB（支援 100MB 影片自動壓縮）。較大影片請上傳至 YouTube 或 Google Drive 後貼上連結分享。
           </div>
         </div>
       </div>
@@ -441,9 +441,9 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=51"></script>
-  <script src="js/quiz.js?v=51"></script>
-  <script src="js/app.js?v=51"></script>
+  <script src="js/firebase-config.js?v=52"></script>
+  <script src="js/quiz.js?v=52"></script>
+  <script src="js/app.js?v=52"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

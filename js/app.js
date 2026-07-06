@@ -2122,8 +2122,8 @@ class App {
         return;
       }
     } else {
-      if (file.size > 5 * 1024 * 1024) {
-        this.showNotification('提示', '您的瀏覽器不支援影片壓縮，直接上傳大小不能超過 5MB！');
+      if (file.size > 10 * 1024 * 1024) {
+        this.showNotification('提示', '您的瀏覽器不支援影片壓縮，直接上傳大小不能超過 10MB！');
         return;
       }
     }
@@ -2203,8 +2203,8 @@ class App {
       this.compressVideo(file, updateProgressNotification)
         .then(compressedBlob => {
           console.log(`Original: ${file.size} bytes, Compressed: ${compressedBlob.size} bytes`);
-          if (compressedBlob.size > 5 * 1024 * 1024) {
-            this.showNotification('提示', `影片壓縮後大小為 ${(compressedBlob.size / 1024 / 1024).toFixed(1)}MB (超過 5MB)，請使用較短的影片。`);
+          if (compressedBlob.size > 10 * 1024 * 1024) {
+            this.showNotification('提示', `影片壓縮後大小為 ${(compressedBlob.size / 1024 / 1024).toFixed(1)}MB (超過 10MB)，請使用較短的影片。`);
             this.isUploadingVideo = false;
             return;
           }
