@@ -1161,7 +1161,7 @@ class App {
               </div>
             </div>
             <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 12px; background: var(--bg-card);">
-              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
+              <div class="image-preview" style="margin: 0; padding: 0;">
                 ${folderVideos.map(vid => renderAdminVideoItemHtml(vid)).join('')}
               </div>
             </div>
@@ -2204,7 +2204,7 @@ class App {
               <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
             </div>
             <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
-              <div style="margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;">
+              <div class="image-preview" style="margin: 0; padding: 0;">
                 ${folderVideos.map(vid => renderVideoItemHtml(vid)).join('')}
               </div>
             </div>
