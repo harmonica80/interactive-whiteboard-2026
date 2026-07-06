@@ -404,32 +404,37 @@ class App {
     
     const textEl = document.getElementById('notifyModalText');
     if (isProgress) {
-      textEl.innerHTML = `
-        <div style="margin-bottom: 10px;">${message}</div>
-        <button id="cancelVideoCompressBtn" style="
-          margin: 10px auto 0;
-          padding: 8px 20px;
-          background: var(--danger-color);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: bold;
-          font-size: 13px;
-          display: block;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-          transition: background 0.2s;
-        ">取消上傳</button>
-      `;
-      // Bind click event
-      setTimeout(() => {
-        const btn = document.getElementById('cancelVideoCompressBtn');
-        if (btn) {
-          btn.onclick = () => {
-            if (window.app) window.app.cancelVideoCompression();
-          };
-        }
-      }, 0);
+      const msgDiv = document.getElementById('notifyProgressMessage');
+      const btn = document.getElementById('cancelVideoCompressBtn');
+      if (msgDiv && btn) {
+        msgDiv.textContent = message;
+      } else {
+        textEl.innerHTML = `
+          <div id="notifyProgressMessage" style="margin-bottom: 10px;">${message}</div>
+          <button id="cancelVideoCompressBtn" style="
+            margin: 10px auto 0;
+            padding: 8px 20px;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            display: block;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+          ">取消上傳</button>
+        `;
+        setTimeout(() => {
+          const cancelBtn = document.getElementById('cancelVideoCompressBtn');
+          if (cancelBtn) {
+            cancelBtn.onclick = () => {
+              if (window.app) window.app.cancelVideoCompression();
+            };
+          }
+        }, 0);
+      }
     } else {
       textEl.textContent = message;
     }
