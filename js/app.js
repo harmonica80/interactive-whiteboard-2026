@@ -2214,8 +2214,8 @@ class App {
         .catch(err => {
           console.error("Compression failed, fallback to original upload:", err);
           this.showNotification('提示', '影片壓縮失敗，嘗試直接上傳原始檔案...');
-          if (file.size > 5 * 1024 * 1024) {
-            this.showNotification('提示', '原始影片大小超過 5MB，無法上傳！');
+          if (file.size > 10 * 1024 * 1024) {
+            this.showNotification('提示', '原始影片大小超過 10MB，無法上傳！');
             this.isUploadingVideo = false;
             return;
           }
