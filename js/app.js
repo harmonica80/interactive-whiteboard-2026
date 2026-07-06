@@ -1112,7 +1112,7 @@ class App {
       if (vid.type === 'youtube' && vid.youtubeId) {
         return `https://img.youtube.com/vi/${vid.youtubeId}/0.jpg`;
       }
-      return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><rect width="100%" height="100%" fill="%232c2c2e"/><path d="M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z" fill="%238e8e93" stroke="%238e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'><rect width='100%' height='100%' fill='%232c2c2e'/><path d='M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z' fill='%238e8e93' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
     };
 
     const renderAdminVideoItemHtml = (vid) => `
@@ -2156,7 +2156,7 @@ class App {
       if (vid.type === 'youtube' && vid.youtubeId) {
         return `https://img.youtube.com/vi/${vid.youtubeId}/0.jpg`;
       }
-      return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><rect width="100%" height="100%" fill="%232c2c2e"/><path d="M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z" fill="%238e8e93" stroke="%238e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'><rect width='100%' height='100%' fill='%232c2c2e'/><path d='M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z' fill='%238e8e93' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
     };
 
     const renderVideoItemHtml = (vid) => `
