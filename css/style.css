@@ -1772,7 +1772,45 @@ body {
 .image-modal .modal-nav-btn:hover {
   background: rgba(0, 0, 0, 0.85);
 }
+/* ===== 影片專用樣式 ===== */
+.preview-item.video-item {
+  position: relative;
+}
 
+.preview-item.video-item::after {
+  content: '▶';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  padding-left: 3px; /* 微調三角形對齊 */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: background 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 2;
+}
 
+.preview-item.video-item:hover::after {
+  background: var(--accent-color);
+  transform: translate(-50%, -50%) scale(1.1);
+}
 
-
+/* 廣播播放器與一般影片容器樣式 */
+#broadcastPlayerContainer iframe,
+#broadcastPlayerContainer video,
+#videoPlayerContainer iframe,
+#videoPlayerContainer video {
+  width: 100%;
+  height: 100%;
+  border: none;
+  object-fit: contain;
+}

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=44">
+  <link rel="stylesheet" href="css/style.css?v=45">
 </head>
 <body>
   <div class="container">
@@ -73,6 +73,33 @@
           <div id="imagesGroupedContainer" class="grouped-folders-container"></div>
           <div class="upload-note" style="margin-top: 16px; font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.5;">
             💡 提示：單張圖片大小限制為 5MB。為了維持系統即時同步的順暢度，上傳時系統會自動進行輕量化壓縮。
+          </div>
+        </div>
+      </div>
+      
+      <!-- 影片分享 -->
+      <div class="panel-card" id="panel-videos">
+        <div class="panel-header">
+          <span class="icon">🎥</span>
+          <span class="title">影片分享</span>
+          <span class="collapse-icon">▼</span>
+        </div>
+        <div class="panel-body">
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input type="text" id="videoLinkInput" class="question-input" placeholder="貼上 YouTube 或 Google Drive 影片網址..." style="flex: 1; margin: 0; min-height: 38px;">
+            <button id="videoLinkBtn" onclick="window.app.submitVideoLink()" class="ask-btn" style="white-space: nowrap; padding: 0 16px;">分享連結</button>
+          </div>
+          
+          <div id="videoUploadZone" class="upload-zone" style="min-height: 80px; padding: 12px; cursor: pointer;">
+            <div class="upload-icon" style="font-size: 24px; margin-bottom: 4px;">📁</div>
+            <div class="upload-text" style="font-size: 12px;">或點擊/拖曳本地影片檔至此（限制 5MB）</div>
+          </div>
+          <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime" style="display: none;">
+          
+          <div id="videoPreview" class="image-preview" style="margin-bottom: 16px; margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;"></div>
+          <div id="videosGroupedContainer" class="grouped-folders-container"></div>
+          <div class="upload-note" style="margin-top: 16px; font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5;">
+            💡 提示：本地影片直接上傳僅限 5MB 以內。較大影片請上傳至 YouTube 或 Google Drive 後貼上連結分享。
           </div>
         </div>
       </div>
@@ -362,6 +389,47 @@
             
             <div id="adminImagePreview" class="image-preview"></div>
           </div>
+
+          <!-- 影片管理區 -->
+          <div class="admin-section" style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 style="margin: 0; color: var(--text-primary); font-size: 15px;">🎥 影片管理</h3>
+              <button onclick="window.app.stopBroadcastVideo()" class="preset-btn" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">⏹️ 停止全體廣播</button>
+            </div>
+
+            <!-- 新建影片群組與清單 -->
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" id="newVideoFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新影片群組名稱（如：第一組影片）...">
+              <button class="preset-btn" onclick="window.app.adminCreateVideoFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+            </div>
+
+            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">影片群組清單：</div>
+            <div id="adminVideoFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+              <!-- 影片群組清單 -->
+            </div>
+
+            <!-- 影片批次管理工具列 -->
+            <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(52, 199, 89, 0.1); border: 1px solid #34c759; border-radius: 8px;">
+              <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次影片歸檔：</span>
+              <span style="font-size: 12px; color: var(--text-secondary);">已選 🎥 <strong id="batchVideoSelectCount">0</strong> 項</span>
+              <select id="batchVideoFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                <option value="">📁 移出影片群組 (無群組)</option>
+              </select>
+              <button class="preset-btn" onclick="window.app.applyBatchVideoArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+            </div>
+
+            <div id="adminVideosGroupedContainer" class="grouped-folders-container"></div>
+            
+            <!-- 全選影片與批次刪除區塊 -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
+              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                <input type="checkbox" id="selectAllVideos" onchange="window.app.toggleSelectAllVideos(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選影片
+              </label>
+              <button class="preset-btn" onclick="window.app.deleteSelectedVideos()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+            </div>
+            
+            <div id="adminVideoPreview" class="image-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -373,9 +441,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=44"></script>
-  <script src="js/quiz.js?v=44"></script>
-  <script src="js/app.js?v=44"></script>
+  <script src="js/firebase-config.js?v=45"></script>
+  <script src="js/quiz.js?v=45"></script>
+  <script src="js/app.js?v=45"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -566,6 +634,58 @@
   <!-- 隱藏的 YouTube 音訊播放器 -->
   <div id="ytPlayerContainer" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden;">
     <div id="canonPlayer"></div>
+  </div>
+
+  <!-- 影片播放彈出視窗 -->
+  <div id="videoModal" class="modal-overlay image-modal">
+    <div class="modal-content" style="position: relative; max-width: 90vw; max-height: 95vh;">
+      <button id="videoModalClose" onclick="window.app.closeVideoModal()" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 120; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.4);" title="關閉">✕</button>
+      
+      <!-- 左右導覽按鈕 -->
+      <button id="videoModalPrev" class="modal-nav-btn" style="left: 20px;" title="上一個">◀</button>
+      <button id="videoModalNext" class="modal-nav-btn" style="right: 20px;" title="下一個">▶</button>
+      
+      <div class="modal-body" style="padding: 0; text-align: center; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; max-height: 85vh;">
+        <div style="width: 100%; height: calc(85vh - 60px); display: flex; align-items: center; justify-content: center; position: relative;">
+          <div id="videoPlayerContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #000;">
+            <!-- 將會動態渲染為 <video> 或是 <iframe> -->
+          </div>
+        </div>
+        
+        <div class="image-info" style="display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.85); color: white; width: 100%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px;">
+            <div style="text-align: left;">
+              <div id="modalVideoUser" class="image-user" style="color: #aaa; font-size: 13px;"></div>
+              <div id="modalVideoFilename" class="image-filename" style="color: #fff; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;"></div>
+            </div>
+            <a id="modalVideoDownloadBtn" class="download-btn" href="" download style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; display: none;">⬇ 下載</a>
+          </div>
+          
+          <!-- 表情符號回饋 -->
+          <div id="videoModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%;">
+            <!-- 動態渲染的表情按鈕 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 影片廣播全螢幕覆蓋層 -->
+  <div id="broadcastVideoOverlay" class="modal-overlay" style="display: none; z-index: 2000; background: rgba(0,0,0,0.95); align-items: center; justify-content: center;">
+    <div style="position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+      <button onclick="window.app.closeBroadcastOverlayLocal()" style="position: absolute; top: 20px; right: 20px; z-index: 2010; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      
+      <div id="broadcastTitle" style="font-size: 18px; font-weight: bold; margin-bottom: 12px; color: var(--accent-color);">📢 老師正在播放影片</div>
+      
+      <div id="broadcastPlayerContainer" style="width: 90vw; height: 70vh; background: #000; display: flex; align-items: center; justify-content: center; border-radius: 12px; overflow: hidden; position: relative;">
+        <!-- 動態渲染的影片播放器 -->
+      </div>
+      
+      <!-- 靜音提示按鈕 -->
+      <button id="broadcastUnmuteBtn" onclick="window.app.unmuteBroadcastVideo()" style="margin-top: 16px; padding: 10px 24px; background: #34c759; color: white; border: none; border-radius: 30px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(52,199,89,0.4); display: flex; align-items: center; gap: 8px;">
+        <span>🔊 點擊播放聲音 (Tap to Unmute)</span>
+      </button>
+    </div>
   </div>
 
 </body>

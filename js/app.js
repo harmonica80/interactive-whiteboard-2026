@@ -3,6 +3,7 @@ class App {
   constructor() {
     this.quiz = null;
     this.imageRef = db.ref('images');
+    this.videoRef = db.ref('videos');
     this.currentZoom = 1;
     this.isDragging = false;
     this.dragStart = { x: 0, y: 0 };
@@ -11,12 +12,15 @@ class App {
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
+    this.videos = [];
     this.currentQuiz = null;
     this.quizAnswers = {};
     this.isAdmin = false;
     this.activeQuestionId = null;
     this.activeImageId = null;
+    this.activeVideoId = null;
     this.isUploadingImage = false;
+    this.isUploadingVideo = false;
     
     // 計時器與音訊狀態
     this.timerRef = db.ref('quiz/timer');
@@ -36,6 +40,7 @@ class App {
     // 群組資料夾變數
     this.questionFolders = [];
     this.imageFolders = [];
+    this.videoFolders = [];
     this.expandedFolders = new Set();
     
     this.init();
@@ -48,6 +53,7 @@ class App {
     this.bindCollapseEvents();
     this.bindQuestionEvents();
     this.bindImageUpload();
+    this.bindVideoUpload();
     this.setupRealtimeSync();
     this.setupConnectionStatus();
     this.initModals();
@@ -213,6 +219,39 @@ class App {
       this.renderImages();
       this.renderAdminImages();
     });
+
+    // 監聽影片資料庫
+    this.videoRef.on('value', (snapshot) => {
+      const videos = [];
+      snapshot.forEach(child => {
+        videos.push({ id: child.key, ...child.val() });
+      });
+      videos.sort((a, b) => b.timestamp - a.timestamp);
+      this.videos = videos;
+      this.renderVideos();
+      this.renderAdminVideos();
+      this.updateActiveVideoModal();
+    });
+
+    // 監聽影片群組資料庫
+    db.ref('quiz/videoFolders').on('value', (snapshot) => {
+      const folders = [];
+      snapshot.forEach(child => {
+        folders.push({ id: child.key, ...child.val() });
+      });
+      folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-hant'));
+      this.videoFolders = folders;
+      this.renderVideoFoldersList();
+      this.renderBatchVideoFolderOptions();
+      this.renderVideos();
+      this.renderAdminVideos();
+    });
+
+    // 監聽影片廣播狀態
+    db.ref('quiz/broadcastVideo').on('value', (snapshot) => {
+      const broadcastObj = snapshot.val();
+      this.handleVideoBroadcastSync(broadcastObj);
+    });
   }
   
   initModals() {
@@ -287,6 +326,39 @@ class App {
         if (index > -1) {
           const nextIndex = (index + 1) % this.images.length;
           this.showImageModal(this.images[nextIndex].id);
+        }
+      });
+    }
+
+    // 影片視窗事件註冊
+    const videoModal = document.getElementById('videoModal');
+    if (videoModal) {
+      videoModal.addEventListener('click', (e) => {
+        if (e.target === videoModal) {
+          this.closeVideoModal();
+        }
+      });
+    }
+
+    const videoModalPrev = document.getElementById('videoModalPrev');
+    const videoModalNext = document.getElementById('videoModalNext');
+    if (videoModalPrev) {
+      videoModalPrev.addEventListener('click', () => {
+        if (!this.activeVideoId || this.videos.length <= 1) return;
+        const index = this.videos.findIndex(v => v.id === this.activeVideoId);
+        if (index > -1) {
+          const prevIndex = (index - 1 + this.videos.length) % this.videos.length;
+          this.showVideoModal(this.videos[prevIndex].id);
+        }
+      });
+    }
+    if (videoModalNext) {
+      videoModalNext.addEventListener('click', () => {
+        if (!this.activeVideoId || this.videos.length <= 1) return;
+        const index = this.videos.findIndex(v => v.id === this.activeVideoId);
+        if (index > -1) {
+          const nextIndex = (index + 1) % this.videos.length;
+          this.showVideoModal(this.videos[nextIndex].id);
         }
       });
     }
@@ -618,6 +690,14 @@ class App {
     }
   }
 
+  assignVideoFolder(videoId, folderId) {
+    if (!folderId) {
+      db.ref(`videos/${videoId}/folderId`).remove();
+    } else {
+      db.ref(`videos/${videoId}/folderId`).set(folderId);
+    }
+  }
+
   reactToQuestion(id, type) {
     db.ref(`questions/${id}/reactions/${type}`).transaction(count => {
       return (count || 0) + 1;
@@ -630,6 +710,12 @@ class App {
     });
   }
 
+  reactToVideo(id, type) {
+    db.ref(`videos/${id}/reactions/${type}`).transaction(count => {
+      return (count || 0) + 1;
+    });
+  }
+
   toggleFolderCollapse(folderId) {
     if (this.expandedFolders.has(folderId)) {
       this.expandedFolders.delete(folderId);
@@ -638,8 +724,10 @@ class App {
     }
     this.renderQuestions();
     this.renderImages();
+    this.renderVideos();
     this.renderAdminQuestions();
     this.renderAdminImages();
+    this.renderAdminVideos();
   }
 
   isFolderCollapsed(folderId) {
@@ -654,6 +742,10 @@ class App {
     const imgBoxesChecked = document.querySelectorAll('.admin-select-image:checked');
     const imgCountEl = document.getElementById('batchImageSelectCount');
     if (imgCountEl) imgCountEl.textContent = imgBoxesChecked.length;
+
+    const vidBoxesChecked = document.querySelectorAll('.admin-select-video:checked');
+    const vidCountEl = document.getElementById('batchVideoSelectCount');
+    if (vidCountEl) vidCountEl.textContent = vidBoxesChecked.length;
   }
 
   applyBatchQuestionArchive() {
@@ -850,6 +942,248 @@ class App {
     );
   }
 
+  adminCreateVideoFolder() {
+    const input = document.getElementById('newVideoFolderName');
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) {
+      this.showNotification('提示', '請輸入影片群組名稱');
+      return;
+    }
+    db.ref('quiz/videoFolders').push({ name: name }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '影片群組已建立');
+    });
+  }
+
+  adminDeleteVideoFolder(folderId) {
+    if (confirm('確定要刪除此影片群組嗎？\n（其中的影片不會被刪除，會移回無群組狀態）')) {
+      db.ref(`quiz/videoFolders/${folderId}`).remove().then(() => {
+        this.videos.forEach(vid => {
+          if (vid.folderId === folderId) {
+            db.ref(`videos/${vid.id}/folderId`).remove();
+          }
+        });
+        this.showNotification('成功', '影片群組已刪除');
+      });
+    }
+  }
+
+  renderVideoFoldersList() {
+    const container = document.getElementById('adminVideoFolderList');
+    if (!container) return;
+
+    if (this.videoFolders.length === 0) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 12px 0;">暫無群組</div>';
+      return;
+    }
+
+    container.innerHTML = this.videoFolders.map(f => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 6px; border: 1px solid var(--border-color);">
+        <span style="font-weight: bold; color: var(--text-primary); font-size: 13px;">📁 ${this.escapeHtml(f.name)}</span>
+        <button class="preset-btn" onclick="window.app.adminDeleteVideoFolder('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">刪除</button>
+      </div>
+    `).join('');
+  }
+
+  renderBatchVideoFolderOptions() {
+    const select = document.getElementById('batchVideoFolderSelect');
+    if (!select) return;
+    const currentVal = select.value;
+    
+    let html = '<option value="">📁 移出影片群組 (無群組)</option>';
+    this.videoFolders.forEach(f => {
+      html += `<option value="${f.id}">📁 ${this.escapeHtml(f.name)}</option>`;
+    });
+    
+    select.innerHTML = html;
+    select.value = currentVal;
+  }
+
+  applyBatchVideoArchive() {
+    const select = document.getElementById('batchVideoFolderSelect');
+    if (!select) return;
+    const folderId = select.value;
+    const vidBoxes = document.querySelectorAll('.admin-select-video:checked');
+    
+    if (vidBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選下方的影片項目');
+      return;
+    }
+
+    const updates = {};
+    vidBoxes.forEach(box => {
+      const vidId = box.value;
+      updates[`videos/${vidId}/folderId`] = folderId === "" ? null : folderId;
+    });
+    
+    db.ref().update(updates).then(() => {
+      this.showNotification('成功', '影片批次分組歸檔完成！');
+      const selectAll = document.getElementById('selectAllVideos');
+      if (selectAll) selectAll.checked = false;
+      this.updateBatchSelectCount();
+    }).catch(err => {
+      this.showNotification('錯誤', '歸檔失敗: ' + err.message);
+    });
+  }
+
+  toggleSelectAllVideos(checked) {
+    const vidBoxes = document.querySelectorAll('#adminVideoPreview .admin-select-video, #adminVideosGroupedContainer .admin-select-video');
+    vidBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  toggleSelectAllFolderVideos(folderId, checked) {
+    const vidBoxes = document.querySelectorAll(`.folder-videos-${folderId} .admin-select-video`);
+    vidBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  deleteSelectedVideos() {
+    const vidBoxes = document.querySelectorAll('.admin-select-video:checked');
+    if (vidBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選要刪除的影片！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🎥',
+      `確定要刪除這 ${vidBoxes.length} 個影片嗎？`,
+      '此動作將永久刪除所選影片，且無法復原。',
+      () => {
+        const updates = {};
+        vidBoxes.forEach(box => {
+          updates[`videos/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除 ${vidBoxes.length} 個影片！`);
+          const selectAll = document.getElementById('selectAllVideos');
+          if (selectAll) selectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  deleteSelectedFolderVideos(folderId) {
+    const vidBoxes = document.querySelectorAll(`.folder-videos-${folderId} .admin-select-video:checked`);
+    if (vidBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選此群組中要刪除的影片！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🎥',
+      `確定要刪除此群組中的 ${vidBoxes.length} 個影片嗎？`,
+      '此動作將永久刪除所選影片，且無法復原。',
+      () => {
+        const updates = {};
+        vidBoxes.forEach(box => {
+          updates[`videos/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除群組中的 ${vidBoxes.length} 個影片！`);
+          const folderSelectAll = document.querySelector(`.folder-select-all-checkbox-${folderId}`);
+          if (folderSelectAll) folderSelectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  renderAdminVideos() {
+    const adminVideoPreview = document.getElementById('adminVideoPreview');
+    const adminVideosGroupedContainer = document.getElementById('adminVideosGroupedContainer');
+    if (!adminVideoPreview || !adminVideosGroupedContainer) return;
+
+    if (this.videos.length === 0) {
+      adminVideosGroupedContainer.innerHTML = '';
+      adminVideoPreview.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px; width: 100%;">暫無影片</div>';
+      return;
+    }
+
+    const getThumbnailUrl = (vid) => {
+      if (vid.type === 'youtube' && vid.youtubeId) {
+        return `https://img.youtube.com/vi/${vid.youtubeId}/0.jpg`;
+      }
+      return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><rect width="100%" height="100%" fill="%232c2c2e"/><path d="M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z" fill="%238e8e93" stroke="%238e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    };
+
+    const renderAdminVideoItemHtml = (vid) => `
+      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 4px;">
+          <input type="checkbox" class="admin-select-video" value="${vid.id}" onchange="window.app.updateBatchSelectCount()" style="width: 14px; height: 14px; margin: 0; cursor: pointer;">
+          <button onclick="window.app.broadcastVideo('${vid.id}')" style="background: var(--accent-color); color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;" title="廣播播放此影片到學生端螢幕">📢 廣播</button>
+        </div>
+        <div class="preview-item video-item" style="cursor: pointer; margin: 0; position: relative; width: 100%;">
+          <img src="${getThumbnailUrl(vid)}" onclick="window.app.showVideoModal('${vid.id}')" alt="${vid.filename}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);">
+          <button onclick="deleteVideo('${vid.id}')" title="刪除影片" style="
+            position: absolute; top: -6px; right: -6px;
+            width: 20px; height: 20px; border: none;
+            background: var(--danger-color); color: white;
+            border-radius: 50%; cursor: pointer;
+            font-size: 10px; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            z-index: 5;
+          ">✕</button>
+          <div style="position: absolute; bottom: 2px; left: 2px; right: 2px; background: rgba(0,0,0,0.7); color: white; font-size: 9px; padding: 1px 2px; border-radius: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
+            ${this.escapeHtml(vid.filename)}
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 1. Grouped Folders
+    let groupedHtml = '';
+    this.videoFolders.forEach(f => {
+      const folderVideos = this.videos.filter(vid => vid.folderId === f.id);
+      if (folderVideos.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        groupedHtml += `
+          <div class="folder-group-row folder-videos-${f.id}" style="margin-bottom: 16px; border-left: 6px solid #34c759; background: var(--bg-card); border-radius: 12px; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" style="padding: 10px 14px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; user-select: none;">
+              <span onclick="window.app.toggleFolderCollapse('${f.id}')" style="font-size: 13px; font-weight: bold; color: var(--text-primary); cursor: pointer; flex: 1;">
+                📁 ${this.escapeHtml(f.name)} (${folderVideos.length} 個影片)
+              </span>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <label style="font-size: 11px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none; margin: 0;">
+                  <input type="checkbox" class="folder-select-all-checkbox-${f.id}" onchange="window.app.toggleSelectAllFolderVideos('${f.id}', this.checked)" style="width: 12px; height: 12px; margin: 0;"> 全選
+                </label>
+                <button onclick="window.app.deleteSelectedFolderVideos('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">🗑️ 刪除選取</button>
+                <button onclick="window.app.toggleFolderCollapse('${f.id}')" style="background: transparent; border: none; font-size: 12px; color: var(--accent-color); cursor: pointer; font-weight: bold;">${isCollapsed ? '展開' : '折疊'}</button>
+              </div>
+            </div>
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 12px; background: var(--bg-card);">
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
+                ${folderVideos.map(vid => renderAdminVideoItemHtml(vid)).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    });
+    adminVideosGroupedContainer.innerHTML = groupedHtml;
+
+    // 2. Unassigned Videos
+    const unassignedVideos = this.videos.filter(vid => {
+      if (!vid.folderId) return true;
+      return !this.videoFolders.some(f => f.id === vid.folderId);
+    });
+
+    if (unassignedVideos.length > 0) {
+      adminVideoPreview.innerHTML = unassignedVideos.map(vid => renderAdminVideoItemHtml(vid)).join('');
+    } else {
+      adminVideoPreview.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px; width: 100%; font-size: 12px;">暫無未分類影片</div>';
+    }
+  }
+
   renderBatchQuestionFolderOptions() {
     const select = document.getElementById('batchQuestionFolderSelect');
     if (!select) return;
@@ -1037,6 +1371,172 @@ class App {
         </button>
       `;
     }
+  }
+
+  showVideoModal(id) {
+    this.activeVideoId = id;
+    const videoModal = document.getElementById('videoModal');
+    const vid = this.videos.find(item => item.id === id);
+    if (!vid) {
+      if (videoModal) videoModal.classList.remove('active');
+      this.activeVideoId = null;
+      return;
+    }
+
+    document.getElementById('modalVideoUser').textContent = '分享者: ' + vid.user;
+    document.getElementById('modalVideoFilename').textContent = vid.filename;
+
+    const downloadBtn = document.getElementById('modalVideoDownloadBtn');
+    if (vid.type === 'upload' && vid.url && !vid.url.startsWith('data:')) {
+      downloadBtn.href = vid.url;
+      downloadBtn.download = vid.filename;
+      downloadBtn.style.display = 'block';
+    } else {
+      downloadBtn.style.display = 'none';
+    }
+
+    const playerContainer = document.getElementById('videoPlayerContainer');
+    playerContainer.innerHTML = '';
+
+    if (vid.type === 'youtube' && vid.youtubeId) {
+      playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${vid.youtubeId}?autoplay=1&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+    } else if (vid.type === 'drive') {
+      const driveMatch = vid.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || vid.url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      const embedUrl = driveMatch ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : vid.url;
+      playerContainer.innerHTML = `<iframe src="${embedUrl}" allow="autoplay" allowfullscreen></iframe>`;
+    } else {
+      playerContainer.innerHTML = `<video src="${vid.url}" controls autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>`;
+    }
+
+    this.updateActiveVideoModal();
+
+    const prevBtn = document.getElementById('videoModalPrev');
+    const nextBtn = document.getElementById('videoModalNext');
+    if (this.videos.length <= 1) {
+      if (prevBtn) prevBtn.style.display = 'none';
+      if (nextBtn) nextBtn.style.display = 'none';
+    } else {
+      if (prevBtn) prevBtn.style.display = 'flex';
+      if (nextBtn) nextBtn.style.display = 'flex';
+    }
+
+    if (videoModal) videoModal.classList.add('active');
+  }
+
+  closeVideoModal() {
+    const videoModal = document.getElementById('videoModal');
+    if (videoModal) videoModal.classList.remove('active');
+    
+    const playerContainer = document.getElementById('videoPlayerContainer');
+    if (playerContainer) playerContainer.innerHTML = '';
+    
+    this.activeVideoId = null;
+  }
+
+  updateActiveVideoModal() {
+    if (!this.activeVideoId) return;
+    const vid = this.videos.find(item => item.id === this.activeVideoId);
+    if (!vid) return;
+
+    const container = document.getElementById('videoModalReactions');
+    if (container) {
+      container.innerHTML = `
+        <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'like')" style="min-width: 32px; padding: 2px 6px;" title="讚">
+          <span class="reaction-emoji" style="font-size: 11px;">👍</span>
+          <span class="reaction-count" style="font-size: 9px;">${vid.reactions?.like || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'love')" style="min-width: 32px; padding: 2px 6px;" title="愛心">
+          <span class="reaction-emoji" style="font-size: 11px;">❤️</span>
+          <span class="reaction-count" style="font-size: 9px;">${vid.reactions?.love || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'laugh')" style="min-width: 32px; padding: 2px 6px;" title="大笑">
+          <span class="reaction-emoji" style="font-size: 11px;">😆</span>
+          <span class="reaction-count" style="font-size: 9px;">${vid.reactions?.laugh || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'wow')" style="min-width: 32px; padding: 2px 6px;" title="驚訝">
+          <span class="reaction-emoji" style="font-size: 11px;">😮</span>
+          <span class="reaction-count" style="font-size: 9px;">${vid.reactions?.wow || 0}</span>
+        </button>
+      `;
+    }
+  }
+
+  handleVideoBroadcastSync(broadcastObj) {
+    const overlay = document.getElementById('broadcastVideoOverlay');
+    const container = document.getElementById('broadcastPlayerContainer');
+    if (!overlay || !container) return;
+
+    if (!broadcastObj) {
+      overlay.style.display = 'none';
+      container.innerHTML = '';
+      return;
+    }
+
+    overlay.style.display = 'flex';
+    container.innerHTML = '';
+    
+    const unmuteBtn = document.getElementById('broadcastUnmuteBtn');
+    if (unmuteBtn) unmuteBtn.style.display = 'flex';
+
+    if (broadcastObj.type === 'youtube' && broadcastObj.youtubeId) {
+      container.innerHTML = `<iframe id="broadcastIframe" src="https://www.youtube.com/embed/${broadcastObj.youtubeId}?autoplay=1&mute=1&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen style="width:100%; height:100%;"></iframe>`;
+    } else if (broadcastObj.type === 'drive') {
+      const driveMatch = broadcastObj.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || broadcastObj.url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      const embedUrl = driveMatch ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : broadcastObj.url;
+      container.innerHTML = `<iframe id="broadcastIframe" src="${embedUrl}" allow="autoplay" allowfullscreen style="width:100%; height:100%;"></iframe>`;
+    } else {
+      container.innerHTML = `<video id="broadcastVideoEl" src="${broadcastObj.url}" autoplay muted playsinline controls style="width: 100%; height: 100%; object-fit: contain;"></video>`;
+    }
+  }
+
+  unmuteBroadcastVideo() {
+    const unmuteBtn = document.getElementById('broadcastUnmuteBtn');
+    if (unmuteBtn) unmuteBtn.style.display = 'none';
+
+    const videoEl = document.getElementById('broadcastVideoEl');
+    if (videoEl) {
+      videoEl.muted = false;
+      return;
+    }
+
+    const iframe = document.getElementById('broadcastIframe');
+    if (iframe) {
+      iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+      iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+    }
+  }
+
+  closeBroadcastOverlayLocal() {
+    const overlay = document.getElementById('broadcastVideoOverlay');
+    const container = document.getElementById('broadcastPlayerContainer');
+    if (overlay) overlay.style.display = 'none';
+    if (container) container.innerHTML = '';
+  }
+
+  broadcastVideo(id) {
+    if (!this.isAdmin) {
+      this.showNotification('提示', '只有管理員老師可以進行廣播');
+      return;
+    }
+    const vid = this.videos.find(item => item.id === id);
+    if (!vid) return;
+
+    db.ref('quiz/broadcastVideo').set({
+      url: vid.url,
+      type: vid.type,
+      filename: vid.filename,
+      youtubeId: vid.youtubeId || null,
+      timestamp: Date.now()
+    }).then(() => {
+      this.showNotification('成功', '已對全班廣播播放該影片！');
+    });
+  }
+
+  stopBroadcastVideo() {
+    if (!this.isAdmin) return;
+    db.ref('quiz/broadcastVideo').set(null).then(() => {
+      this.showNotification('提示', '已停止全體影片廣播');
+    });
   }
   
   bindCollapseEvents() {
@@ -1370,6 +1870,190 @@ class App {
           });
       });
   }
+
+  bindVideoUpload() {
+    const videoUploadZone = document.getElementById('videoUploadZone');
+    const videoFileInput = document.getElementById('videoFileInput');
+    if (!videoUploadZone || !videoFileInput) return;
+
+    videoUploadZone.addEventListener('click', (e) => {
+      e.stopPropagation();
+      videoFileInput.click();
+    });
+
+    videoUploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      videoUploadZone.classList.add('dragover');
+    });
+
+    videoUploadZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      videoUploadZone.classList.remove('dragover');
+    });
+
+    videoUploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      videoUploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        this.handleVideoUpload(e.dataTransfer.files[0]);
+      }
+    });
+
+    videoFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        this.handleVideoUpload(e.target.files[0]);
+        videoFileInput.value = '';
+      }
+    });
+  }
+
+  handleVideoUpload(file) {
+    const now = Date.now();
+    if (this.lastVideoUploadTime && now - this.lastVideoUploadTime < 2000) {
+      this.showNotification('提示', '上傳頻率太快，請稍候再試...');
+      return;
+    }
+    this.lastVideoUploadTime = now;
+
+    if (this.isUploadingVideo) {
+      this.showNotification('提示', '影片上傳中，請稍候...');
+      return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+      this.showNotification('提示', '請上傳影片檔案（MP4、WebM 等）');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.showNotification('提示', '本地影片大小不能超過 5MB！');
+      return;
+    }
+
+    this.isUploadingVideo = true;
+    this.showNotification('提示', '影片上傳中...');
+
+    const base64UploadFallback = () => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve(e.target.result);
+        };
+        reader.onerror = () => reject(new Error('讀取檔案失敗'));
+        reader.readAsDataURL(file);
+      }).then(dataUrl => {
+        return this.videoRef.push({
+          url: dataUrl,
+          user: '匿名',
+          filename: file.name,
+          timestamp: Date.now(),
+          type: 'upload'
+        });
+      });
+    };
+
+    const tryStorageUpload = () => {
+      return new Promise((resolve, reject) => {
+        if (typeof storage === 'undefined' || !storage) {
+          return reject(new Error('Storage not initialized'));
+        }
+        const fileRef = storage.ref().child('videos/' + Date.now() + '_' + file.name);
+        fileRef.put(file).then((snapshot) => {
+          return snapshot.ref.getDownloadURL();
+        }).then((downloadURL) => {
+          return this.videoRef.push({ 
+            url: downloadURL, 
+            user: '匿名', 
+            filename: file.name, 
+            timestamp: Date.now(),
+            type: 'upload'
+          });
+        }).then(resolve).catch(reject);
+      });
+    };
+
+    tryStorageUpload()
+      .then(() => {
+        this.showNotification('成功', '影片上傳成功！');
+        this.isUploadingVideo = false;
+      })
+      .catch((error) => {
+        console.warn('Firebase Storage 上傳影片失敗，啟用本地 Base64 備用方案:', error);
+        this.showNotification('提示', '正在將影片轉換為 Base64 並寫入資料庫...');
+        base64UploadFallback()
+          .then(() => {
+            this.showNotification('成功', '影片上傳成功！');
+            this.isUploadingVideo = false;
+          })
+          .catch((err) => {
+            console.error('備用影片上傳失敗:', err);
+            this.showNotification('錯誤', '影片上傳失敗，請稍後再試');
+            this.isUploadingVideo = false;
+          });
+      });
+  }
+
+  submitVideoLink() {
+    const input = document.getElementById('videoLinkInput');
+    if (!input) return;
+    const url = input.value.trim();
+    if (!url) {
+      this.showNotification('提示', '請輸入影片網址');
+      return;
+    }
+
+    const now = Date.now();
+    if (this.lastVideoUploadTime && now - this.lastVideoUploadTime < 2000) {
+      this.showNotification('提示', '操作頻率太快，請稍候再試...');
+      return;
+    }
+    this.lastVideoUploadTime = now;
+
+    let ytId = null;
+    let type = '';
+    
+    const ytReg1 = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
+    const match1 = url.match(ytReg1);
+    if (match1) {
+      ytId = match1[1];
+      type = 'youtube';
+    } else if (url.includes('drive.google.com')) {
+      type = 'drive';
+    } else {
+      type = 'external';
+    }
+
+    if (type === 'external' && !url.startsWith('http')) {
+      this.showNotification('提示', '請輸入正確的網址連結');
+      return;
+    }
+
+    let filename = '分享影片';
+    if (type === 'youtube') {
+      filename = `YouTube 影片 (${ytId})`;
+    } else if (type === 'drive') {
+      filename = 'Google Drive 共享影片';
+    } else {
+      filename = '外部影片連結';
+    }
+
+    this.videoRef.push({
+      url: url,
+      user: '匿名',
+      filename: filename,
+      timestamp: Date.now(),
+      type: type,
+      youtubeId: ytId || null
+    }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '影片連結分享成功！');
+    }).catch(err => {
+      this.showNotification('錯誤', '分享失敗: ' + err.message);
+    });
+  }
   
   renderImages() {
     const imagePreview = document.getElementById('imagePreview');
@@ -1455,6 +2139,101 @@ class App {
     
     // Reactively update active image modal reactions
     this.updateActiveImageModal();
+  }
+
+  renderVideos() {
+    const videoPreview = document.getElementById('videoPreview');
+    const videosGroupedContainer = document.getElementById('videosGroupedContainer');
+    if (!videoPreview || !videosGroupedContainer) return;
+    
+    if (this.videos.length === 0) {
+      videosGroupedContainer.innerHTML = '';
+      videoPreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無影片</div>';
+      return;
+    }
+
+    const getThumbnailUrl = (vid) => {
+      if (vid.type === 'youtube' && vid.youtubeId) {
+        return `https://img.youtube.com/vi/${vid.youtubeId}/0.jpg`;
+      }
+      return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140"><rect width="100%" height="100%" fill="%232c2c2e"/><path d="M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z" fill="%238e8e93" stroke="%238e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    };
+
+    const renderVideoItemHtml = (vid) => `
+      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box;">
+        <div class="preview-item video-item" data-id="${vid.id}" style="cursor: pointer; margin: 0; position: relative; width: 100%;">
+          <img src="${getThumbnailUrl(vid)}" alt="${vid.filename}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
+          <div style="position: absolute; bottom: 4px; left: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 2px 4px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
+            ${this.escapeHtml(vid.filename)}
+          </div>
+        </div>
+        <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px; width: 100%; flex-wrap: wrap;">
+          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'like')" style="min-width: 28px; padding: 2px 4px;" title="讚">
+            <span class="reaction-emoji" style="font-size: 10px;">👍</span>
+            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.like || 0}</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'love')" style="min-width: 28px; padding: 2px 4px;" title="愛心">
+            <span class="reaction-emoji" style="font-size: 10px;">❤️</span>
+            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.love || 0}</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'laugh')" style="min-width: 28px; padding: 2px 4px;" title="大笑">
+            <span class="reaction-emoji" style="font-size: 10px;">😆</span>
+            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.laugh || 0}</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'wow')" style="min-width: 28px; padding: 2px 4px;" title="驚訝">
+            <span class="reaction-emoji" style="font-size: 10px;">😮</span>
+            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.wow || 0}</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // 1. Grouped Folders
+    let groupedHtml = '';
+    this.videoFolders.forEach(f => {
+      const folderVideos = this.videos.filter(vid => vid.folderId === f.id);
+      if (folderVideos.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        groupedHtml += `
+          <div class="folder-group-row" style="margin-bottom: 16px; border-left: 6px solid #34c759; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
+              <span style="font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                📁 ${this.escapeHtml(f.name)} 
+                <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderVideos.length} 個影片)</span>
+              </span>
+              <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+            </div>
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
+              <div style="margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;">
+                ${folderVideos.map(vid => renderVideoItemHtml(vid)).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    });
+    videosGroupedContainer.innerHTML = groupedHtml;
+    
+    // 2. Unassigned Videos
+    const unassignedVideos = this.videos.filter(vid => {
+      if (!vid.folderId) return true;
+      return !this.videoFolders.some(f => f.id === vid.folderId);
+    });
+    
+    if (unassignedVideos.length > 0) {
+      videoPreview.innerHTML = unassignedVideos.map(vid => renderVideoItemHtml(vid)).join('');
+    } else {
+      videoPreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無未分類影片</div>';
+    }
+    
+    // Bind click events for all video preview items
+    document.querySelectorAll('#panel-videos .preview-item').forEach(item => {
+      item.addEventListener('click', () => {
+        this.showVideoModal(item.dataset.id);
+      });
+    });
+    
+    this.updateActiveVideoModal();
   }
   
   renderAdminQuestions() {
@@ -2458,21 +3237,24 @@ class App {
     Promise.all([
       db.ref('questions').once('value'),
       db.ref('images').once('value'),
+      db.ref('videos').once('value'),
       db.ref('quiz').once('value'),
       db.ref('whiteboard').once('value')
-    ]).then(([questionsSnap, imagesSnap, quizSnap, whiteboardSnap]) => {
+    ]).then(([questionsSnap, imagesSnap, videosSnap, quizSnap, whiteboardSnap]) => {
       const quizData = quizSnap.val() || {};
       
       const exportData = {
         questions: questionsSnap.val() || {},
         images: imagesSnap.val() || {},
+        videos: videosSnap.val() || {},
         whiteboard: whiteboardSnap.val() || {},
         quiz: {
           current: quizData.current || null,
           answers: quizData.answers || null,
           timer: quizData.timer || null,
           questionFolders: quizData.questionFolders || null,
-          imageFolders: quizData.imageFolders || null
+          imageFolders: quizData.imageFolders || null,
+          videoFolders: quizData.videoFolders || null
         },
         exportedAt: new Date().toISOString(),
         dbUrl: db.app.options.databaseURL || ""
@@ -2512,7 +3294,7 @@ class App {
         const importedData = JSON.parse(e.target.result);
         
         // Validate format
-        if (!importedData.questions && !importedData.images && !importedData.quiz && !importedData.whiteboard) {
+        if (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard) {
           this.showNotification('錯誤', '無效的記錄檔格式！');
           return;
         }
@@ -2529,6 +3311,7 @@ class App {
             // Set data nodes
             promises.push(db.ref('questions').set(importedData.questions || null));
             promises.push(db.ref('whiteboard').set(importedData.whiteboard || null));
+            promises.push(db.ref('quiz/broadcastVideo').remove()); // Reset broadcast state
             
             // Write images sequentially to prevent WebSocket connection frame overflow & disconnects
             const writeImagesSequentially = async () => {
@@ -2540,6 +3323,17 @@ class App {
               }
             };
             promises.push(writeImagesSequentially());
+
+            // Write videos sequentially
+            const writeVideosSequentially = async () => {
+              await db.ref('videos').remove();
+              const videosObj = importedData.videos || {};
+              const keys = Object.keys(videosObj);
+              for (const vidId of keys) {
+                await db.ref(`videos/${vidId}`).set(videosObj[vidId]);
+              }
+            };
+            promises.push(writeVideosSequentially());
             
             // Set subnodes of quiz explicitly (excluding presence to prevent connection issues)
             const quizNode = importedData.quiz || {};
@@ -2560,12 +3354,21 @@ class App {
                 imageFolders[f.id] = { name: f.name };
               });
             }
+
+            let videoFolders = quizNode.videoFolders;
+            if (!videoFolders && this.videoFolders && this.videoFolders.length > 0) {
+              videoFolders = {};
+              this.videoFolders.forEach(f => {
+                videoFolders[f.id] = { name: f.name };
+              });
+            }
             
             promises.push(db.ref('quiz/current').set(quizNode.current || null));
             promises.push(db.ref('quiz/answers').set(quizNode.answers || null));
             promises.push(db.ref('quiz/timer').set(quizNode.timer || null));
             promises.push(db.ref('quiz/questionFolders').set(questionFolders || null));
             promises.push(db.ref('quiz/imageFolders').set(imageFolders || null));
+            promises.push(db.ref('quiz/videoFolders').set(videoFolders || null));
             
             Promise.all(promises).then(() => {
               this.showNotification('成功', '匯入記錄檔完成！');
@@ -2680,6 +3483,9 @@ function resetAll() {
   db.ref('quiz/current').remove();
   db.ref('quiz/answers').remove();
   db.ref('images').remove();
+  db.ref('videos').remove();
+  db.ref('quiz/videoFolders').remove();
+  db.ref('quiz/broadcastVideo').remove();
   db.ref('whiteboard').remove();
   location.reload();
 }
@@ -2742,6 +3548,20 @@ function deleteImage(id) {
     () => {
       db.ref('images').child(id).remove()
         .then(() => window.app.showNotification('成功', '已刪除圖片！'))
+        .catch(err => window.app.showNotification('錯誤', '刪除失敗: ' + err.message));
+    }
+  );
+}
+
+// 管理員刪除影片操作
+function deleteVideo(id) {
+  window.app.showConfirmModal(
+    '🎥',
+    '確定要刪除此影片嗎？',
+    '此動作將永久刪除該影片，且無法復原。',
+    () => {
+      db.ref('videos').child(id).remove()
+        .then(() => window.app.showNotification('成功', '已刪除影片！'))
         .catch(err => window.app.showNotification('錯誤', '刪除失敗: ' + err.message));
     }
   );
@@ -2832,4 +3652,12 @@ function assignQuestionFolder(questionId, folderId) {
 
 function assignImageFolder(imageId, folderId) {
   if (window.app) window.app.assignImageFolder(imageId, folderId);
+}
+
+function reactToVideo(id, type) {
+  if (window.app) window.app.reactToVideo(id, type);
+}
+
+function assignVideoFolder(videoId, folderId) {
+  if (window.app) window.app.assignVideoFolder(videoId, folderId);
 }
