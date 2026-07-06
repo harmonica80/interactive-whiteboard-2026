@@ -1116,13 +1116,13 @@ class App {
     };
 
     const renderAdminVideoItemHtml = (vid) => `
-      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box;">
+      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); position: relative; margin-bottom: 12px;">
         <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 4px;">
           <input type="checkbox" class="admin-select-video" value="${vid.id}" onchange="window.app.updateBatchSelectCount()" style="width: 14px; height: 14px; margin: 0; cursor: pointer;">
           <button onclick="window.app.broadcastVideo('${vid.id}')" style="background: var(--accent-color); color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;" title="廣播播放此影片到學生端螢幕">📢 廣播</button>
         </div>
-        <div class="preview-item video-item" style="cursor: pointer; margin: 0; position: relative; width: 100%;">
-          <img src="${getThumbnailUrl(vid)}" onclick="window.app.showVideoModal('${vid.id}')" alt="${vid.filename}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);">
+        <div class="preview-item video-item" style="cursor: pointer; margin: 0; position: relative;">
+          <img src="${getThumbnailUrl(vid)}" onclick="window.app.showVideoModal('${vid.id}')" alt="${vid.filename}" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
           <button onclick="deleteVideo('${vid.id}')" title="刪除影片" style="
             position: absolute; top: -6px; right: -6px;
             width: 20px; height: 20px; border: none;
@@ -2160,9 +2160,9 @@ class App {
     };
 
     const renderVideoItemHtml = (vid) => `
-      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box;">
-        <div class="preview-item video-item" data-id="${vid.id}" style="cursor: pointer; margin: 0; position: relative; width: 100%;">
-          <img src="${getThumbnailUrl(vid)}" alt="${vid.filename}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
+      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
+        <div class="preview-item video-item" data-id="${vid.id}" style="cursor: pointer; margin: 0; position: relative;">
+          <img src="${getThumbnailUrl(vid)}" alt="${vid.filename}" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
           <div style="position: absolute; bottom: 4px; left: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 2px 4px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
             ${this.escapeHtml(vid.filename)}
           </div>
