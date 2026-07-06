@@ -1981,8 +1981,31 @@ class App {
           }
         });
         
+        const codecs = ['avc1.42001f', 'avc1.4d401f', 'avc1.64001f', 'avc1.42e01f'];
+        let selectedCodec = null;
+        for (const c of codecs) {
+          try {
+            const supported = await VideoEncoder.isConfigSupported({
+              codec: c,
+              width: targetWidth,
+              height: targetHeight,
+              bitrate: 500000,
+              framerate: fps
+            });
+            if (supported && supported.supported) {
+              selectedCodec = c;
+              break;
+            }
+          } catch (e) {
+            console.warn(`Codec ${c} test failed:`, e);
+          }
+        }
+        if (!selectedCodec) {
+          selectedCodec = 'avc1.42001f';
+        }
+        
         videoEncoder.configure({
-          codec: 'avc1.42001f',
+          codec: selectedCodec,
           width: targetWidth,
           height: targetHeight,
           bitrate: 500000,
@@ -2208,12 +2231,13 @@ class App {
             this.isUploadingVideo = false;
             return;
           }
+          this.showNotification('成功', `影片壓縮成功！(${(file.size / 1024 / 1024).toFixed(1)}MB -> ${(compressedBlob.size / 1024 / 1024).toFixed(1)}MB)`);
           const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp4", { type: 'video/mp4' });
           startUpload(compressedFile);
         })
         .catch(err => {
           console.error("Compression failed, fallback to original upload:", err);
-          this.showNotification('提示', '影片壓縮失敗，嘗試直接上傳原始檔案...');
+          this.showNotification('提示', `影片壓縮失敗 (${err.message || '不支援的格式'})，嘗試直接上傳原始檔案...`);
           if (file.size > 10 * 1024 * 1024) {
             this.showNotification('提示', '原始影片大小超過 10MB，無法上傳！');
             this.isUploadingVideo = false;
