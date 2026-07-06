@@ -1910,6 +1910,192 @@ class App {
     });
   }
 
+  compressVideo(file, progressCallback) {
+    return new Promise(async (resolve, reject) => {
+      let objectUrl = null;
+      try {
+        const video = document.createElement('video');
+        objectUrl = URL.createObjectURL(file);
+        video.src = objectUrl;
+        video.muted = true;
+        video.playsInline = true;
+        
+        await new Promise((res, rej) => {
+          video.onloadedmetadata = () => res();
+          video.onerror = (e) => rej(new Error("無法讀取影片元資料"));
+        });
+        
+        let targetWidth = video.videoWidth;
+        let targetHeight = video.videoHeight;
+        const MAX_SIZE = 640;
+        if (targetWidth > MAX_SIZE || targetHeight > MAX_SIZE) {
+          if (targetWidth > targetHeight) {
+            targetHeight = Math.round((targetHeight * MAX_SIZE) / targetWidth);
+            targetWidth = MAX_SIZE;
+          } else {
+            targetWidth = Math.round((targetWidth * MAX_SIZE) / targetHeight);
+            targetHeight = MAX_SIZE;
+          }
+        }
+        targetWidth = targetWidth - (targetWidth % 2);
+        targetHeight = targetHeight - (targetHeight % 2);
+        
+        const duration = video.duration;
+        const fps = 25;
+        const interval = 1 / fps;
+        
+        let audioBuffer = null;
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        } catch (err) {
+          console.warn("無法解碼音軌，將以無聲模式壓縮:", err);
+        }
+        
+        const muxerConfig = {
+          target: new Mp4Muxer.ArrayBufferTarget(),
+          video: {
+            codec: 'avc',
+            width: targetWidth,
+            height: targetHeight
+          },
+          fastStart: 'in-memory'
+        };
+        
+        if (audioBuffer) {
+          muxerConfig.audio = {
+            codec: 'aac',
+            numberOfChannels: Math.min(2, audioBuffer.numberOfChannels),
+            sampleRate: audioBuffer.sampleRate
+          };
+        }
+        
+        const muxer = new Mp4Muxer.Muxer(muxerConfig);
+        
+        const videoEncoder = new VideoEncoder({
+          output: (chunk, metadata) => muxer.addVideoChunk(chunk, metadata),
+          error: (e) => {
+            console.error("VideoEncoder 發生錯誤:", e);
+            reject(e);
+          }
+        });
+        
+        videoEncoder.configure({
+          codec: 'avc1.42001f',
+          width: targetWidth,
+          height: targetHeight,
+          bitrate: 500000,
+          framerate: fps,
+          latencyMode: 'quality'
+        });
+        
+        let audioEncoder = null;
+        if (audioBuffer) {
+          try {
+            audioEncoder = new AudioEncoder({
+              output: (chunk, metadata) => muxer.addAudioChunk(chunk, metadata),
+              error: (e) => {
+                console.error("AudioEncoder 發生錯誤:", e);
+              }
+            });
+            audioEncoder.configure({
+              codec: 'mp4a.40.2',
+              numberOfChannels: Math.min(2, audioBuffer.numberOfChannels),
+              sampleRate: audioBuffer.sampleRate,
+              bitrate: 64000
+            });
+          } catch (err) {
+            console.warn("瀏覽器不支援 AAC 音訊編碼，改為無聲壓縮:", err);
+            audioEncoder = null;
+          }
+        }
+        
+        let currentTime = 0;
+        video.pause();
+        
+        while (currentTime < duration) {
+          video.currentTime = currentTime;
+          await new Promise(res => {
+            video.onseeked = () => res();
+          });
+          
+          const timestampUs = Math.round(currentTime * 1000000);
+          const frame = new VideoFrame(video, { timestamp: timestampUs });
+          
+          videoEncoder.encode(frame);
+          frame.close();
+          
+          currentTime += interval;
+          if (progressCallback) {
+            const percent = Math.min(80, Math.round((currentTime / duration) * 80));
+            progressCallback(percent);
+          }
+        }
+        
+        await videoEncoder.flush();
+        videoEncoder.close();
+        
+        if (audioBuffer && audioEncoder) {
+          const sampleRate = audioBuffer.sampleRate;
+          const channels = Math.min(2, audioBuffer.numberOfChannels);
+          const length = audioBuffer.length;
+          const chunkSize = 1024;
+          let offset = 0;
+          
+          while (offset < length) {
+            const currentChunkSize = Math.min(chunkSize, length - offset);
+            const audioDataBuffer = new Float32Array(channels * currentChunkSize);
+            
+            for (let c = 0; c < channels; c++) {
+              const channelData = audioBuffer.getChannelData(c);
+              const subarray = channelData.subarray(offset, offset + currentChunkSize);
+              audioDataBuffer.set(subarray, c * currentChunkSize);
+            }
+            
+            const timestampUs = Math.round((offset / sampleRate) * 1000000);
+            const audioFrame = new AudioData({
+              format: 'f32-planar',
+              sampleRate: sampleRate,
+              numberOfFrames: currentChunkSize,
+              numberOfChannels: channels,
+              timestamp: timestampUs,
+              data: audioDataBuffer
+            });
+            
+            audioEncoder.encode(audioFrame);
+            audioFrame.close();
+            
+            offset += currentChunkSize;
+            if (progressCallback) {
+              const percent = 80 + Math.min(18, Math.round((offset / length) * 18));
+              progressCallback(percent);
+            }
+          }
+          
+          await audioEncoder.flush();
+          audioEncoder.close();
+        }
+        
+        muxer.finalize();
+        
+        const { buffer } = muxer.target;
+        const compressedBlob = new Blob([buffer], { type: 'video/mp4' });
+        
+        if (progressCallback) progressCallback(100);
+        resolve(compressedBlob);
+        
+      } catch (err) {
+        console.error("影片壓縮失敗:", err);
+        reject(err);
+      } finally {
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+      }
+    });
+  }
+
   handleVideoUpload(file) {
     const now = Date.now();
     if (this.lastVideoUploadTime && now - this.lastVideoUploadTime < 2000) {
@@ -1928,72 +2114,116 @@ class App {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      this.showNotification('提示', '本地影片大小不能超過 5MB！');
-      return;
+    const isWebCodecsSupported = typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined';
+    
+    if (isWebCodecsSupported) {
+      if (file.size > 100 * 1024 * 1024) {
+        this.showNotification('提示', '本地影片最大限制為 100MB！');
+        return;
+      }
+    } else {
+      if (file.size > 5 * 1024 * 1024) {
+        this.showNotification('提示', '您的瀏覽器不支援影片壓縮，直接上傳大小不能超過 5MB！');
+        return;
+      }
     }
 
     this.isUploadingVideo = true;
-    this.showNotification('提示', '影片上傳中...');
 
-    const base64UploadFallback = () => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          resolve(e.target.result);
-        };
-        reader.onerror = () => reject(new Error('讀取檔案失敗'));
-        reader.readAsDataURL(file);
-      }).then(dataUrl => {
-        return this.videoRef.push({
-          url: dataUrl,
-          user: '匿名',
-          filename: file.name,
-          timestamp: Date.now(),
-          type: 'upload'
-        });
-      });
-    };
+    const startUpload = (uploadFile) => {
+      this.showNotification('提示', '正在上傳影片...');
 
-    const tryStorageUpload = () => {
-      return new Promise((resolve, reject) => {
-        if (typeof storage === 'undefined' || !storage) {
-          return reject(new Error('Storage not initialized'));
-        }
-        const fileRef = storage.ref().child('videos/' + Date.now() + '_' + file.name);
-        fileRef.put(file).then((snapshot) => {
-          return snapshot.ref.getDownloadURL();
-        }).then((downloadURL) => {
-          return this.videoRef.push({ 
-            url: downloadURL, 
-            user: '匿名', 
-            filename: file.name, 
+      const base64UploadFallback = () => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            resolve(e.target.result);
+          };
+          reader.onerror = () => reject(new Error('讀取檔案失敗'));
+          reader.readAsDataURL(uploadFile);
+        }).then(dataUrl => {
+          return this.videoRef.push({
+            url: dataUrl,
+            user: '匿名',
+            filename: file.name,
             timestamp: Date.now(),
             type: 'upload'
           });
-        }).then(resolve).catch(reject);
-      });
+        });
+      };
+
+      const tryStorageUpload = () => {
+        return new Promise((resolve, reject) => {
+          if (typeof storage === 'undefined' || !storage) {
+            return reject(new Error('Storage not initialized'));
+          }
+          const fileRef = storage.ref().child('videos/' + Date.now() + '_' + file.name);
+          fileRef.put(uploadFile).then((snapshot) => {
+            return snapshot.ref.getDownloadURL();
+          }).then((downloadURL) => {
+            return this.videoRef.push({ 
+              url: downloadURL, 
+              user: '匿名', 
+              filename: file.name, 
+              timestamp: Date.now(),
+              type: 'upload'
+            });
+          }).then(resolve).catch(reject);
+        });
+      };
+
+      tryStorageUpload()
+        .then(() => {
+          this.showNotification('成功', '影片上傳成功！');
+          this.isUploadingVideo = false;
+        })
+        .catch((error) => {
+          console.warn('Firebase Storage 上傳影片失敗，啟用本地 Base64 備用方案:', error);
+          this.showNotification('提示', '正在將影片轉換為 Base64 並寫入資料庫...');
+          base64UploadFallback()
+            .then(() => {
+              this.showNotification('成功', '影片上傳成功！');
+              this.isUploadingVideo = false;
+            })
+            .catch((err) => {
+              console.error('備用影片上傳失敗:', err);
+              this.showNotification('錯誤', '影片上傳失敗，請稍後再試');
+              this.isUploadingVideo = false;
+            });
+        });
     };
 
-    tryStorageUpload()
-      .then(() => {
-        this.showNotification('成功', '影片上傳成功！');
-        this.isUploadingVideo = false;
-      })
-      .catch((error) => {
-        console.warn('Firebase Storage 上傳影片失敗，啟用本地 Base64 備用方案:', error);
-        this.showNotification('提示', '正在將影片轉換為 Base64 並寫入資料庫...');
-        base64UploadFallback()
-          .then(() => {
-            this.showNotification('成功', '影片上傳成功！');
+    if (isWebCodecsSupported) {
+      this.showNotification('提示', '正在準備壓縮影片，請稍候...');
+      
+      const updateProgressNotification = (percent) => {
+        this.showNotification('提示', `🎬 正在壓縮影片中... ${percent}%`);
+      };
+
+      this.compressVideo(file, updateProgressNotification)
+        .then(compressedBlob => {
+          console.log(`Original: ${file.size} bytes, Compressed: ${compressedBlob.size} bytes`);
+          if (compressedBlob.size > 5 * 1024 * 1024) {
+            this.showNotification('提示', `影片壓縮後大小為 ${(compressedBlob.size / 1024 / 1024).toFixed(1)}MB (超過 5MB)，請使用較短的影片。`);
             this.isUploadingVideo = false;
-          })
-          .catch((err) => {
-            console.error('備用影片上傳失敗:', err);
-            this.showNotification('錯誤', '影片上傳失敗，請稍後再試');
+            return;
+          }
+          const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp4", { type: 'video/mp4' });
+          startUpload(compressedFile);
+        })
+        .catch(err => {
+          console.error("Compression failed, fallback to original upload:", err);
+          this.showNotification('提示', '影片壓縮失敗，嘗試直接上傳原始檔案...');
+          if (file.size > 5 * 1024 * 1024) {
+            this.showNotification('提示', '原始影片大小超過 5MB，無法上傳！');
             this.isUploadingVideo = false;
-          });
-      });
+            return;
+          }
+          startUpload(file);
+        });
+    } else {
+      startUpload(file);
+    }
   }
 
   submitVideoLink() {
