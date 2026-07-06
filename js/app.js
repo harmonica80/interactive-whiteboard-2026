@@ -398,15 +398,50 @@ class App {
     });
   }
   
-  showNotification(title, message) {
+  showNotification(title, message, isProgress = false) {
     const notifyModal = document.getElementById('notifyModal');
     document.getElementById('notifyModalTitle').textContent = title;
-    document.getElementById('notifyModalText').textContent = message;
+    
+    const textEl = document.getElementById('notifyModalText');
+    if (isProgress) {
+      textEl.innerHTML = `
+        <div style="margin-bottom: 10px;">${message}</div>
+        <button id="cancelVideoCompressBtn" style="
+          margin: 10px auto 0;
+          padding: 8px 20px;
+          background: var(--danger-color);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: bold;
+          font-size: 13px;
+          display: block;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          transition: background 0.2s;
+        ">取消上傳</button>
+      `;
+      // Bind click event
+      setTimeout(() => {
+        const btn = document.getElementById('cancelVideoCompressBtn');
+        if (btn) {
+          btn.onclick = () => {
+            if (window.app) window.app.cancelVideoCompression();
+          };
+        }
+      }, 0);
+    } else {
+      textEl.textContent = message;
+    }
+    
     notifyModal.classList.add('active');
+    
     if (this.notifyTimer) clearTimeout(this.notifyTimer);
-    this.notifyTimer = setTimeout(() => {
-      notifyModal.classList.remove('active');
-    }, 1500);
+    if (!isProgress) {
+      this.notifyTimer = setTimeout(() => {
+        notifyModal.classList.remove('active');
+      }, 1500);
+    }
   }
   
   initImageZoom() {
@@ -2038,6 +2073,10 @@ class App {
         video.pause();
         
         while (currentTime < duration) {
+          if (window.app && window.app.videoCompressionCancelled) {
+            reject(new Error("使用者取消壓縮"));
+            return;
+          }
           video.currentTime = currentTime;
           await new Promise(res => {
             video.onseeked = () => res();
@@ -2067,6 +2106,10 @@ class App {
           let offset = 0;
           
           while (offset < length) {
+            if (window.app && window.app.videoCompressionCancelled) {
+              reject(new Error("使用者取消壓縮"));
+              return;
+            }
             const currentChunkSize = Math.min(chunkSize, length - offset);
             const audioDataBuffer = new Float32Array(channels * currentChunkSize);
             
@@ -2119,7 +2162,13 @@ class App {
     });
   }
 
+  cancelVideoCompression() {
+    this.videoCompressionCancelled = true;
+    this.showNotification('提示', '正在取消，請稍候...');
+  }
+
   handleVideoUpload(file) {
+    this.videoCompressionCancelled = false;
     const now = Date.now();
     if (this.lastVideoUploadTime && now - this.lastVideoUploadTime < 2000) {
       this.showNotification('提示', '上傳頻率太快，請稍候再試...');
@@ -2217,10 +2266,10 @@ class App {
     };
 
     if (isWebCodecsSupported) {
-      this.showNotification('提示', '正在準備壓縮影片，請稍候...');
+      this.showNotification('提示', '正在準備壓縮影片，請稍候...', true);
       
       const updateProgressNotification = (percent) => {
-        this.showNotification('提示', `🎬 正在壓縮影片中... ${percent}%`);
+        this.showNotification('提示', `🎬 正在壓縮影片中... ${percent}%`, true);
       };
 
       this.compressVideo(file, updateProgressNotification)
@@ -2236,6 +2285,11 @@ class App {
           startUpload(compressedFile);
         })
         .catch(err => {
+          if (err.message === "使用者取消壓縮") {
+            this.showNotification('提示', '已取消影片上傳');
+            this.isUploadingVideo = false;
+            return;
+          }
           console.error("Compression failed, fallback to original upload:", err);
           this.showNotification('提示', `影片壓縮失敗 (${err.message || '不支援的格式'})，嘗試直接上傳原始檔案...`);
           if (file.size > 10 * 1024 * 1024) {
