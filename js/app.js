@@ -1841,13 +1841,19 @@ class App {
     
     uploadZone.addEventListener('paste', handlePaste);
     
-    // 全域貼上支援（當焦點不在輸入框時）
+    // 全域貼上支援（當焦點不在輸入框且圖片分享面板是展開狀態時）
     document.addEventListener('paste', (e) => {
       // 如果焦點在輸入框，不處理
       const activeEl = document.activeElement;
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
         return;
       }
+      
+      const imagePanel = document.getElementById('panel-images');
+      if (imagePanel && imagePanel.classList.contains('collapsed')) {
+        return;
+      }
+      
       handlePaste(e);
     });
   }
