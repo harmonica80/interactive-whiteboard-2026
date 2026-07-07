@@ -2718,30 +2718,44 @@ class App {
   }
 
   fetchWebsiteTitle(url) {
-    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-    
-    const fetchPromise = fetch(proxyUrl)
-      .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-      })
-      .then(data => {
-        if (!data || !data.contents) throw new Error('No contents returned');
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(data.contents, 'text/html');
-        const titleEl = doc.querySelector('title');
-        if (titleEl && titleEl.innerText) {
-          const title = titleEl.innerText.trim();
-          if (title) return title;
-        }
-        throw new Error('Title not found in HTML');
-      });
+    const primaryProxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
+    const backupProxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
 
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), 5000)
+    const tryFetch = (proxyUrl, isBackup = false) => {
+      return fetch(proxyUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('Status ' + res.status);
+          return isBackup ? res.json() : res.text();
+        })
+        .then(data => {
+          const html = isBackup ? (data.contents || '') : data;
+          if (!html) throw new Error('Empty content');
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const titleEl = doc.querySelector('title');
+          if (titleEl && titleEl.innerText) {
+            const title = titleEl.innerText.trim();
+            if (title) return title;
+          }
+          throw new Error('Title not found in HTML');
+        });
+    };
+
+    // 優先使用極速的 corsproxy.io，若超時 (3.5秒) 或失敗則自動改用備用的 allorigins.win
+    const primaryPromise = tryFetch(primaryProxy, false);
+    const primaryTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Primary Timeout')), 3500)
     );
 
-    return Promise.race([fetchPromise, timeoutPromise]);
+    return Promise.race([primaryPromise, primaryTimeout])
+      .catch(err => {
+        console.warn('Primary CORS proxy failed, trying backup proxy:', err.message);
+        const backupPromise = tryFetch(backupProxy, true);
+        const backupTimeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Backup Timeout')), 4500)
+        );
+        return Promise.race([backupPromise, backupTimeout]);
+      });
   }
 
   renderTeacherShares() {
