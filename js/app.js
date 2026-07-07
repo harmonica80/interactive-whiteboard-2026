@@ -1621,6 +1621,13 @@ class App {
         header.closest('.panel-card').classList.toggle('collapsed');
       });
     });
+    
+    // 綁定管理後台摺疊區塊事件
+    document.querySelectorAll('.admin-section-header').forEach(header => {
+      header.addEventListener('click', () => {
+        header.closest('.admin-section-collapsible').classList.toggle('collapsed');
+      });
+    });
   }
   
   bindQuestionEvents() {

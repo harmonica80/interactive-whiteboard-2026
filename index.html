@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=57">
+  <link rel="stylesheet" href="css/style.css?v=58">
 </head>
 <body>
   <div class="container">
@@ -291,237 +291,255 @@
           </div>
 
           <!-- 測驗管理區 -->
-          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">📝 測驗管理</h3>
-            <div id="quizForm" class="quiz-controls">
-              <input type="text" id="quizQuestion" class="quiz-input" placeholder="輸入題目...">
-              
-              <!-- 預設選項 -->
-              <div class="preset-options">
-                <span class="preset-label">快速選項：</span>
-                <div class="preset-btns">
-                  <button class="preset-btn" onclick="loadPreset('yesno')">是/否</button>
-                  <button class="preset-btn" onclick="loadPreset('truefalse')">正確/錯誤</button>
-                  <button class="preset-btn" onclick="loadPreset('abcd')">A/B/C/D</button>
-                  <button class="preset-btn" onclick="loadPreset('1234')">1/2/3/4</button>
-                </div>
-              </div>
-              
-              <div id="optionsContainer" class="options-container">
-                <div class="option-input">
-                  <input type="text" class="option-field" placeholder="選項 1">
-                  <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
-                </div>
-                <div class="option-input">
-                  <input type="text" class="option-field" placeholder="選項 2">
-                  <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
-                </div>
-              </div>
-              <button class="add-option-btn" onclick="addOption()">+ 新增選項</button>
-              <button id="startQuizBtn" class="start-quiz-btn" onclick="startQuiz()">開始測驗</button>
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>📝 選擇題測驗管理</h3>
+              <span class="collapse-icon">▼</span>
             </div>
-            <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="display: none; margin-top: 10px; padding: 12px; width: 100%; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color);">結束測驗</button>
+            <div class="admin-section-body">
+              <div id="quizForm" class="quiz-controls">
+                <input type="text" id="quizQuestion" class="quiz-input" placeholder="輸入題目...">
+                
+                <!-- 預設選項 -->
+                <div class="preset-options">
+                  <span class="preset-label">快速選項：</span>
+                  <div class="preset-btns">
+                    <button class="preset-btn" onclick="loadPreset('yesno')">是/否</button>
+                    <button class="preset-btn" onclick="loadPreset('truefalse')">正確/錯誤</button>
+                    <button class="preset-btn" onclick="loadPreset('abcd')">A/B/C/D</button>
+                    <button class="preset-btn" onclick="loadPreset('1234')">1/2/3/4</button>
+                  </div>
+                </div>
+                
+                <div id="optionsContainer" class="options-container">
+                  <div class="option-input">
+                    <input type="text" class="option-field" placeholder="選項 1">
+                    <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+                  </div>
+                  <div class="option-input">
+                    <input type="text" class="option-field" placeholder="選項 2">
+                    <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+                  </div>
+                </div>
+                <button class="add-option-btn" onclick="addOption()">+ 新增選項</button>
+                <button id="startQuizBtn" class="start-quiz-btn" onclick="startQuiz()">開始測驗</button>
+              </div>
+              <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="display: none; margin-top: 10px; padding: 12px; width: 100%; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color);">結束測驗</button>
+            </div>
           </div>
 
           <!-- 提問管理區 -->
-          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <h3 style="margin: 0; color: var(--text-primary); font-size: 15px;">💬 提問管理 (點選 ✕ 可刪除)</h3>
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>💬 提問管理 (點選 ✕ 可刪除)</h3>
+              <span class="collapse-icon">▼</span>
             </div>
+            <div class="admin-section-body">
+              <!-- 新建群組與清單 -->
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="newQuestionFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新提問群組名稱（如：第一組）...">
+                <button class="preset-btn" onclick="window.app.adminCreateQuestionFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+              </div>
+              
+              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">提問群組清單：</div>
+              <div id="adminQuestionFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <!-- 提問群組清單 -->
+              </div>
 
-            <!-- 新建群組與清單 -->
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-              <input type="text" id="newQuestionFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新提問群組名稱（如：第一組）...">
-              <button class="preset-btn" onclick="window.app.adminCreateQuestionFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
-            </div>
-            
-            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">提問群組清單：</div>
-            <div id="adminQuestionFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-              <!-- 提問群組清單 -->
-            </div>
+              <!-- 提問批次管理工具列 -->
+              <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
+                <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次提問歸檔：</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">已選 💬 <strong id="batchQuestionSelectCount">0</strong> 項</span>
+                <select id="batchQuestionFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                  <option value="">📁 移出提問群組 (無群組)</option>
+                </select>
+                <button class="preset-btn" onclick="window.app.applyBatchQuestionArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              </div>
 
-            <!-- 提問批次管理工具列 -->
-            <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
-              <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次提問歸檔：</span>
-              <span style="font-size: 12px; color: var(--text-secondary);">已選 💬 <strong id="batchQuestionSelectCount">0</strong> 項</span>
-              <select id="batchQuestionFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
-                <option value="">📁 移出提問群組 (無群組)</option>
-              </select>
-              <button class="preset-btn" onclick="window.app.applyBatchQuestionArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              <div id="adminQuestionsGroupedContainer" class="grouped-folders-container"></div>
+              
+              <!-- 全選提問與批次刪除區塊 -->
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" id="selectAllQuestions" onchange="window.app.toggleSelectAllQuestions(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選提問
+                </label>
+                <button class="preset-btn" onclick="window.app.deleteSelectedQuestions()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              </div>
+              
+              <ul id="adminQuestionList" class="question-list"></ul>
             </div>
-
-            <div id="adminQuestionsGroupedContainer" class="grouped-folders-container"></div>
-            
-            <!-- 全選提問與批次刪除區塊 -->
-            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
-              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
-                <input type="checkbox" id="selectAllQuestions" onchange="window.app.toggleSelectAllQuestions(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選提問
-              </label>
-              <button class="preset-btn" onclick="window.app.deleteSelectedQuestions()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
-            </div>
-            
-            <ul id="adminQuestionList" class="question-list"></ul>
           </div>
 
           <!-- 圖片管理區 -->
-          <div class="admin-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <h3 style="margin: 0; color: var(--text-primary); font-size: 15px;">🖼️ 圖片管理 (點選 ✕ 可刪除)</h3>
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>🖼️ 圖片管理 (點選 ✕ 可刪除)</h3>
+              <span class="collapse-icon">▼</span>
             </div>
+            <div class="admin-section-body">
+              <!-- 新建圖片群組與清單 -->
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="newImageFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新圖片群組名稱（如：第一組圖片）...">
+                <button class="preset-btn" onclick="window.app.adminCreateImageFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+              </div>
 
-            <!-- 新建圖片群組與清單 -->
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-              <input type="text" id="newImageFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新圖片群組名稱（如：第一組圖片）...">
-              <button class="preset-btn" onclick="window.app.adminCreateImageFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
-            </div>
+              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">圖片群組清單：</div>
+              <div id="adminImageFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <!-- 圖片群組清單 -->
+              </div>
 
-            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">圖片群組清單：</div>
-            <div id="adminImageFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-              <!-- 圖片群組清單 -->
-            </div>
+              <!-- 圖片批次管理工具列 -->
+              <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(175, 82, 222, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
+                <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次圖片歸檔：</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">已選 🖼️ <strong id="batchImageSelectCount">0</strong> 項</span>
+                <select id="batchImageFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                  <option value="">📁 移出圖片群組 (無群組)</option>
+                </select>
+                <button class="preset-btn" onclick="window.app.applyBatchImageArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              </div>
 
-            <!-- 圖片批次管理工具列 -->
-            <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(175, 82, 222, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
-              <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次圖片歸檔：</span>
-              <span style="font-size: 12px; color: var(--text-secondary);">已選 🖼️ <strong id="batchImageSelectCount">0</strong> 項</span>
-              <select id="batchImageFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
-                <option value="">📁 移出圖片群組 (無群組)</option>
-              </select>
-              <button class="preset-btn" onclick="window.app.applyBatchImageArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              <div id="adminImagesGroupedContainer" class="grouped-folders-container"></div>
+              
+              <!-- 全選圖片與批次刪除區塊 -->
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" id="selectAllImages" onchange="window.app.toggleSelectAllImages(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選圖片
+                </label>
+                <button class="preset-btn" onclick="window.app.deleteSelectedImages()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              </div>
+              
+              <div id="adminImagePreview" class="image-preview"></div>
             </div>
-
-            <div id="adminImagesGroupedContainer" class="grouped-folders-container"></div>
-            
-            <!-- 全選圖片與批次刪除區塊 -->
-            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
-              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
-                <input type="checkbox" id="selectAllImages" onchange="window.app.toggleSelectAllImages(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選圖片
-              </label>
-              <button class="preset-btn" onclick="window.app.deleteSelectedImages()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
-            </div>
-            
-            <div id="adminImagePreview" class="image-preview"></div>
           </div>
 
           <!-- 影片管理區 -->
-          <div class="admin-section" style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <h3 style="margin: 0; color: var(--text-primary); font-size: 15px;">🎥 影片管理</h3>
-              <button onclick="window.app.stopBroadcastVideo()" class="preset-btn" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">⏹️ 停止全體廣播</button>
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>🎥 影片管理</h3>
+              <span class="collapse-icon">▼</span>
             </div>
+            <div class="admin-section-body">
+              <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+                <button onclick="window.app.stopBroadcastVideo()" class="preset-btn" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto; margin: 0;">⏹️ 停止全體廣播</button>
+              </div>
 
-            <!-- 新建影片群組與清單 -->
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-              <input type="text" id="newVideoFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新影片群組名稱（如：第一組影片）...">
-              <button class="preset-btn" onclick="window.app.adminCreateVideoFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
-            </div>
+              <!-- 新建影片群組與清單 -->
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="newVideoFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新影片群組名稱（如：第一組影片）...">
+                <button class="preset-btn" onclick="window.app.adminCreateVideoFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+              </div>
 
-            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">影片群組清單：</div>
-            <div id="adminVideoFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-              <!-- 影片群組清單 -->
-            </div>
+              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">影片群組清單：</div>
+              <div id="adminVideoFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <!-- 影片群組清單 -->
+              </div>
 
-            <!-- 影片批次管理工具列 -->
-            <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(52, 199, 89, 0.1); border: 1px solid #34c759; border-radius: 8px;">
-              <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次影片歸檔：</span>
-              <span style="font-size: 12px; color: var(--text-secondary);">已選 🎥 <strong id="batchVideoSelectCount">0</strong> 項</span>
-              <select id="batchVideoFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
-                <option value="">📁 移出影片群組 (無群組)</option>
-              </select>
-              <button class="preset-btn" onclick="window.app.applyBatchVideoArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
-            </div>
+              <!-- 影片批次管理工具列 -->
+              <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(52, 199, 89, 0.1); border: 1px solid #34c759; border-radius: 8px;">
+                <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次影片歸檔：</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">已選 🎥 <strong id="batchVideoSelectCount">0</strong> 項</span>
+                <select id="batchVideoFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                  <option value="">📁 移出影片群組 (無群組)</option>
+                </select>
+                <button class="preset-btn" onclick="window.app.applyBatchVideoArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              </div>
 
-            <div id="adminVideosGroupedContainer" class="grouped-folders-container"></div>
-            
-            <!-- 全選影片與批次刪除區塊 -->
-            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
-              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
-                <input type="checkbox" id="selectAllVideos" onchange="window.app.toggleSelectAllVideos(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選影片
-              </label>
-              <button class="preset-btn" onclick="window.app.deleteSelectedVideos()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              <div id="adminVideosGroupedContainer" class="grouped-folders-container"></div>
+              
+              <!-- 全選影片與批次刪除區塊 -->
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" id="selectAllVideos" onchange="window.app.toggleSelectAllVideos(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選影片
+                </label>
+                <button class="preset-btn" onclick="window.app.deleteSelectedVideos()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              </div>
+
+              <div id="adminVideoPreview" class="image-preview"></div>
             </div>
-            
-            <div id="adminVideoPreview" class="image-preview"></div>
           </div>
 
           <!-- 教師分享管理區 -->
-          <div class="admin-section" style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
-            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">📢 教師分享管理</h3>
-            
-            <!-- 新建分享資料夾 -->
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-              <input type="text" id="newShareFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新分享資料夾名稱（如：課堂講義）...">
-              <button class="preset-btn" onclick="window.app.adminCreateShareFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>📢 教師分享管理</h3>
+              <span class="collapse-icon">▼</span>
             </div>
-
-            <!-- 分享資料夾清單 -->
-            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">資料夾清單：</div>
-            <div id="adminShareFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-              <!-- 渲染資料夾 -->
-            </div>
-
-            <!-- 新增分享內容區 -->
-            <div class="share-creation-box" style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 16px;">
-              <div style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-primary);">➕ 新增分享內容</div>
-              
-              <!-- 類型切換按鈕 -->
+            <div class="admin-section-body">
+              <!-- 新建分享資料夾 -->
               <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                <button class="preset-btn active-share-type" id="shareTypeBtnText" onclick="window.app.switchShareFormType('text')" style="flex: 1; padding: 6px; font-size: 13px; font-weight: bold;">💬 文字</button>
-                <button class="preset-btn" id="shareTypeBtnImage" onclick="window.app.switchShareFormType('image')" style="flex: 1; padding: 6px; font-size: 13px;">🖼️ 圖片</button>
-                <button class="preset-btn" id="shareTypeBtnLink" onclick="window.app.switchShareFormType('link')" style="flex: 1; padding: 6px; font-size: 13px;">🔗 網址</button>
+                <input type="text" id="newShareFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新分享資料夾名稱（如：課堂講義）...">
+                <button class="preset-btn" onclick="window.app.adminCreateShareFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
               </div>
 
-              <!-- 動態表單欄位 -->
-              <div id="shareFormFields">
-                <!-- 文字輸入欄位 -->
-                <div id="shareFieldText">
-                  <textarea id="shareInputText" class="question-input" style="width: 100%; height: 80px; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入要分享給學生的文字訊息..."></textarea>
+              <!-- 分享資料夾清單 -->
+              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">資料夾清單：</div>
+              <div id="adminShareFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <!-- 渲染資料夾 -->
+              </div>
+
+              <!-- 新增分享內容區 -->
+              <div class="share-creation-box" style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 16px;">
+                <div style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-primary);">➕ 新增分享內容</div>
+                
+                <!-- 類型切換按鈕 -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                  <button class="preset-btn active-share-type" id="shareTypeBtnText" onclick="window.app.switchShareFormType('text')" style="flex: 1; padding: 6px; font-size: 13px; font-weight: bold;">💬 文字</button>
+                  <button class="preset-btn" id="shareTypeBtnImage" onclick="window.app.switchShareFormType('image')" style="flex: 1; padding: 6px; font-size: 13px;">🖼️ 圖片</button>
+                  <button class="preset-btn" id="shareTypeBtnLink" onclick="window.app.switchShareFormType('link')" style="flex: 1; padding: 6px; font-size: 13px;">🔗 網址</button>
                 </div>
-                <!-- 圖片選擇欄位 -->
-                <div id="shareFieldImage" style="display: none;">
-                  <div id="shareImageUploadZone" class="upload-zone" style="min-height: 80px; padding: 12px; cursor: pointer; text-align: center;">
-                    <div style="font-size: 24px; margin-bottom: 4px;">📁</div>
-                    <div style="font-size: 12px;">點擊或拖曳圖片檔至此（限制 5MB）</div>
-                    <div id="shareImageFilename" style="font-size: 11px; color: var(--accent-color); margin-top: 4px; font-weight: bold;"></div>
+
+                <!-- 動態表單欄位 -->
+                <div id="shareFormFields">
+                  <!-- 文字輸入欄位 -->
+                  <div id="shareFieldText">
+                    <textarea id="shareInputText" class="question-input" style="width: 100%; height: 80px; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入要分享給學生的文字訊息..."></textarea>
                   </div>
-                  <input type="file" id="shareImageFileInput" accept="image/*" style="display: none;">
+                  <!-- 圖片選擇欄位 -->
+                  <div id="shareFieldImage" style="display: none;">
+                    <div id="shareImageUploadZone" class="upload-zone" style="min-height: 80px; padding: 12px; cursor: pointer; text-align: center;">
+                      <div style="font-size: 24px; margin-bottom: 4px;">📁</div>
+                      <div style="font-size: 12px;">點擊或拖曳圖片檔至此（限制 5MB）</div>
+                      <div id="shareImageFilename" style="font-size: 11px; color: var(--accent-color); margin-top: 4px; font-weight: bold;"></div>
+                    </div>
+                    <input type="file" id="shareImageFileInput" accept="image/*" style="display: none;">
+                  </div>
+                  <!-- 網址輸入欄位 -->
+                  <div id="shareFieldLink" style="display: none;">
+                    <input type="text" id="shareInputLinkTitle" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="連結標題（例如：Google 首頁，選填）">
+                    <input type="url" id="shareInputLinkUrl" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入連結網址（如 https://google.com）">
+                  </div>
                 </div>
-                <!-- 網址輸入欄位 -->
-                <div id="shareFieldLink" style="display: none;">
-                  <input type="text" id="shareInputLinkTitle" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="連結標題（例如：Google 首頁，選填）">
-                  <input type="url" id="shareInputLinkUrl" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入連結網址（如 https://google.com）">
+
+                <!-- 選擇要放入的資料夾 -->
+                <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                  <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary); white-space: nowrap;">歸類到資料夾：</label>
+                  <select id="shareFolderSelect" class="folder-select" style="flex: 1; margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);">
+                    <option value="">📁 未分類</option>
+                  </select>
                 </div>
+
+                <button class="preset-btn" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 12px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
               </div>
 
-              <!-- 選擇要放入的資料夾 -->
-              <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
-                <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary); white-space: nowrap;">歸類到資料夾：</label>
-                <select id="shareFolderSelect" class="folder-select" style="flex: 1; margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);">
-                  <option value="">📁 未分類</option>
+              <!-- 分享內容批次管理與列表 -->
+              <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
+                <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次歸類分享：</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">已選 📢 <strong id="batchShareSelectCount">0</strong> 項</span>
+                <select id="batchShareFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                  <option value="">📁 移出資料夾 (未分類)</option>
                 </select>
+                <button class="preset-btn" onclick="window.app.applyBatchShareArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸類</button>
               </div>
 
-              <button class="preset-btn" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 12px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
-            </div>
+              <div id="adminSharesContainer" class="grouped-folders-container"></div>
 
-            <!-- 分享內容批次管理與列表 -->
-            <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
-              <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次歸類分享：</span>
-              <span style="font-size: 12px; color: var(--text-secondary);">已選 📢 <strong id="batchShareSelectCount">0</strong> 項</span>
-              <select id="batchShareFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
-                <option value="">📁 移出資料夾 (未分類)</option>
-              </select>
-              <button class="preset-btn" onclick="window.app.applyBatchShareArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸類</button>
-            </div>
-
-            <div id="adminSharesContainer" class="grouped-folders-container"></div>
-
-            <!-- 全選與刪除 -->
-            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px;">
-              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
-                <input type="checkbox" id="selectAllShares" onchange="window.app.toggleSelectAllShares(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選分享項目
-              </label>
-              <button class="preset-btn" onclick="window.app.deleteSelectedShares()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              <!-- 全選與刪除 -->
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" id="selectAllShares" onchange="window.app.toggleSelectAllShares(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選分享項目
+                </label>
+                <button class="preset-btn" onclick="window.app.deleteSelectedShares()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              </div>
             </div>
           </div>
         </div>
@@ -535,9 +553,9 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=57"></script>
-  <script src="js/quiz.js?v=57"></script>
-  <script src="js/app.js?v=57"></script>
+  <script src="js/firebase-config.js?v=58"></script>
+  <script src="js/quiz.js?v=58"></script>
+  <script src="js/app.js?v=58"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

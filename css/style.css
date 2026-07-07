@@ -1903,3 +1903,63 @@ body {
 .share-copy-btn:hover {
   opacity: 0.9;
 }
+
+/* ===== 後台摺疊區塊樣式 (Collapsible Admin Sections) ===== */
+.admin-section-collapsible {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin-bottom: 16px !important;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.admin-section-collapsible:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.admin-section-collapsible .admin-section-header {
+  padding: 14px 18px;
+  background: var(--bg-header-gradient, linear-gradient(135deg, rgba(0, 122, 255, 0.05), rgba(0, 122, 255, 0.02)));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-section-collapsible .admin-section-header h3 {
+  margin: 0 !important;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.admin-section-collapsible .admin-section-header .collapse-icon {
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: transform 0.3s ease;
+}
+
+/* 展開狀態 */
+.admin-section-collapsible.collapsed .admin-section-header .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.admin-section-collapsible .admin-section-body {
+  padding: 16px;
+  max-height: 3000px; /* 大到足以容納任何內容區塊 */
+  opacity: 1;
+  transition: max-height 0.5s ease, opacity 0.3s ease, padding 0.5s ease;
+  overflow: visible; /* 允許選單/下拉式選單正常彈出 */
+}
+
+/* 折疊狀態 */
+.admin-section-collapsible.collapsed .admin-section-body {
+  max-height: 0;
+  padding: 0 16px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none; /* 摺疊時不接收任何滑鼠點擊事件 */
+}
