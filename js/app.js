@@ -2498,10 +2498,23 @@ class App {
       return;
     }
     this.shareImageFile = file;
-    const filenameDiv = document.getElementById('shareImageFilename');
-    if (filenameDiv) {
-      filenameDiv.textContent = `已選取：${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`;
-    }
+    
+    // 建立並顯示圖片縮圖預覽
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const filenameDiv = document.getElementById('shareImageFilename');
+      if (filenameDiv) {
+        filenameDiv.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px;">
+            <img src="${e.target.result}" style="max-width: 100px; max-height: 100px; border-radius: 6px; border: 1px solid var(--border-color); object-fit: cover; box-shadow: var(--shadow);">
+            <div style="font-size: 11px; color: var(--accent-color); font-weight: bold;">
+              已選取：${this.escapeHtml(file.name)} (${(file.size/1024/1024).toFixed(2)}MB)
+            </div>
+          </div>
+        `;
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   switchShareFormType(type) {
@@ -2752,9 +2765,9 @@ class App {
     if (grouped[''] && grouped[''].length > 0) {
       html += `<div class="folder-card" style="border-left: 5px solid var(--accent-color) !important;">
         <div class="folder-card-header">
-          <span>📢 未分類分享</span>
+          <span>📁 未分類分享</span>
         </div>
-        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
           ${grouped[''].map(item => this.buildShareItemHTML(item)).join('')}
         </div>
       </div>`;
@@ -2771,8 +2784,8 @@ class App {
           <span>📁 ${folder.name} (${fShares.length})</span>
           <button class="folder-toggle-btn">${isCollapsed ? '展開 ▼' : '折疊 ▲'}</button>
         </div>
-        <div style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 10px;">
-          <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 12px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
             ${fShares.map(item => this.buildShareItemHTML(item)).join('')}
           </div>
         </div>
@@ -2800,13 +2813,15 @@ class App {
     } else if (item.type === 'image') {
       contentHTML = `
         <img src="${item.content}" class="share-item-content-image" onclick="window.app.zoomShareImage('${item.content}')" alt="Shared Image">
+        <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+          <button class="share-copy-btn" onclick="window.app.copyShareImage('${item.content}')">📋 複製圖片</button>
+        </div>
       `;
     }
 
     return `
       <div class="share-item-card">
-        <div class="share-item-header">
-          <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
+        <div class="share-item-header" style="justify-content: flex-end;">
           <span>${timeStr}</span>
         </div>
         <div class="share-item-body">
@@ -2825,14 +2840,114 @@ class App {
   }
 
   zoomShareImage(src) {
-    const zoomContainer = document.getElementById('imageZoomContainer');
-    const zoomedImg = document.getElementById('zoomedImage');
-    if (!zoomContainer || !zoomedImg) return;
-    zoomedImg.src = src;
-    zoomContainer.classList.add('active');
-    this.currentZoom = 1;
-    this.imagePos = { x: 0, y: 0 };
-    this.updateImageTransform();
+    const modal = document.getElementById('shareImageZoomModal');
+    const img = document.getElementById('shareZoomedImage');
+    if (!modal || !img) return;
+    img.src = src;
+    modal.style.display = 'flex';
+  }
+
+  closeShareImageZoom() {
+    const modal = document.getElementById('shareImageZoomModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  copyShareImage(src) {
+    this.showNotification('提示', '正在複製圖片，請稍候...');
+    
+    const copyBlobToClipboard = (blob) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(pngBlob => {
+          if (!pngBlob) {
+            this.showNotification('錯誤', '轉換圖片格式失敗');
+            return;
+          }
+          navigator.clipboard.write([
+            new ClipboardItem({
+              [pngBlob.type]: pngBlob
+            })
+          ]).then(() => {
+            this.showNotification('成功', '圖片已複製到剪貼簿！');
+          }).catch(err => {
+            console.error('Clipboard write error:', err);
+            this.showNotification('錯誤', '複製失敗: ' + err.message);
+          });
+        }, 'image/png');
+      };
+      img.onerror = () => {
+        navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob
+          })
+        ]).then(() => {
+          this.showNotification('成功', '圖片已複製到剪貼簿！');
+        }).catch(err => {
+          console.error('Clipboard write error:', err);
+          this.showNotification('錯誤', '複製失敗: ' + err.message);
+        });
+      };
+      img.src = URL.createObjectURL(blob);
+    };
+
+    if (src.startsWith('data:')) {
+      const parts = src.split(',');
+      const mime = parts[0].match(/:(.*?);/)[1];
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      copyBlobToClipboard(blob);
+    } else {
+      fetch(src)
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP error ' + res.status);
+          return res.blob();
+        })
+        .then(blob => {
+          copyBlobToClipboard(blob);
+        })
+        .catch(err => {
+          console.error('Fetch image failed, fallback to canvas proxy:', err);
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob(pngBlob => {
+              if (!pngBlob) {
+                this.showNotification('錯誤', '轉換圖片格式失敗');
+                return;
+              }
+              navigator.clipboard.write([
+                new ClipboardItem({
+                  [pngBlob.type]: pngBlob
+                })
+              ]).then(() => {
+                this.showNotification('成功', '圖片已複製到剪貼簿！');
+              }).catch(e => {
+                this.showNotification('錯誤', '複製失敗: ' + e.message);
+              });
+            }, 'image/png');
+          };
+          img.onerror = () => {
+            this.showNotification('錯誤', '載入圖片失敗，無法複製');
+          };
+          img.src = src;
+        });
+    }
   }
 
   escapeHtml(str) {
@@ -2866,7 +2981,7 @@ class App {
     if (grouped[''] && grouped[''].length > 0) {
       html += `<div class="folder-card" style="border-left: 5px solid var(--accent-color) !important;">
         <div class="folder-card-header">
-          <span>📢 未分類分享 (${grouped[''].length})</span>
+          <span>📁 未分類分享 (${grouped[''].length})</span>
         </div>
         <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
           ${grouped[''].map(item => this.buildAdminShareItemHTML(item)).join('')}
