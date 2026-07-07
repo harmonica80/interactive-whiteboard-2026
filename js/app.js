@@ -2718,44 +2718,81 @@ class App {
   }
 
   fetchWebsiteTitle(url) {
-    const primaryProxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
-    const backupProxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-
-    const tryFetch = (proxyUrl, isBackup = false) => {
-      return fetch(proxyUrl)
+    const isYoutube = url.includes('youtube.com/') || url.includes('youtu.be/');
+    
+    if (isYoutube) {
+      // 針對 YouTube 使用官方 oEmbed API，無限制、極速且免 proxy
+      const oembedUrl = 'https://www.youtube.com/oembed?url=' + encodeURIComponent(url) + '&format=json';
+      return fetch(oembedUrl)
         .then(res => {
-          if (!res.ok) throw new Error('Status ' + res.status);
-          return isBackup ? res.json() : res.text();
+          if (!res.ok) throw new Error('YouTube oEmbed Status ' + res.status);
+          return res.json();
         })
         .then(data => {
-          const html = isBackup ? (data.contents || '') : data;
-          if (!html) throw new Error('Empty content');
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, 'text/html');
-          const titleEl = doc.querySelector('title');
-          if (titleEl && titleEl.innerText) {
-            const title = titleEl.innerText.trim();
-            if (title) return title;
-          }
-          throw new Error('Title not found in HTML');
+          if (data && data.title) return data.title;
+          throw new Error('No title in YouTube oEmbed');
+        })
+        .catch(err => {
+          console.warn('YouTube oEmbed failed, falling back to Microlink:', err.message);
+          return this.fetchTitleViaMicrolink(url);
         });
-    };
+    } else {
+      return this.fetchTitleViaMicrolink(url);
+    }
+  }
 
-    // 優先使用極速的 corsproxy.io，若超時 (3.5秒) 或失敗則自動改用備用的 allorigins.win
-    const primaryPromise = tryFetch(primaryProxy, false);
-    const primaryTimeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Primary Timeout')), 3500)
+  fetchTitleViaMicrolink(url) {
+    const microlinkUrl = 'https://api.microlink.io/?url=' + encodeURIComponent(url);
+    
+    const fetchPromise = fetch(microlinkUrl)
+      .then(res => {
+        if (!res.ok) throw new Error('Microlink Status ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.data && data.data.title) {
+          return data.data.title;
+        }
+        throw new Error('No title in Microlink response');
+      });
+
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Microlink Timeout')), 3500)
     );
 
-    return Promise.race([primaryPromise, primaryTimeout])
+    return Promise.race([fetchPromise, timeoutPromise])
       .catch(err => {
-        console.warn('Primary CORS proxy failed, trying backup proxy:', err.message);
-        const backupPromise = tryFetch(backupProxy, true);
-        const backupTimeout = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Backup Timeout')), 4500)
-        );
-        return Promise.race([backupPromise, backupTimeout]);
+        console.warn('Microlink failed, trying backup AllOrigins proxy:', err.message);
+        return this.fetchTitleViaAllOrigins(url);
       });
+  }
+
+  fetchTitleViaAllOrigins(url) {
+    const backupProxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+    
+    const fetchPromise = fetch(backupProxy)
+      .then(res => {
+        if (!res.ok) throw new Error('AllOrigins Status ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        const html = data.contents;
+        if (!html) throw new Error('Empty content from AllOrigins');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const titleEl = doc.querySelector('title');
+        if (titleEl && titleEl.innerText) {
+          const title = titleEl.innerText.trim();
+          if (title) return title;
+        }
+        throw new Error('Title not found in AllOrigins HTML');
+      });
+
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('AllOrigins Timeout')), 4500)
+    );
+
+    return Promise.race([fetchPromise, timeoutPromise]);
   }
 
   renderTeacherShares() {
