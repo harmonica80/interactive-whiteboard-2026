@@ -2801,30 +2801,38 @@ class App {
     
     if (item.type === 'text') {
       contentHTML = `
-        <div class="share-item-content-text">${this.escapeHtml(item.content)}</div>
-        <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
-          <button class="share-copy-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)">📋 複製文字</button>
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+          <div class="share-item-content-text" style="flex: 1;">${this.escapeHtml(item.content)}</div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+            <button class="share-copy-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)">📋 複製文字</button>
+          </div>
         </div>
       `;
     } else if (item.type === 'link') {
       contentHTML = `
-        <a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 60px;">
+          <a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>
+        </div>
       `;
     } else if (item.type === 'image') {
       contentHTML = `
-        <img src="${item.content}" class="share-item-content-image" onclick="window.app.zoomShareImage('${item.content}')" alt="Shared Image">
-        <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
-          <button class="share-copy-btn" onclick="window.app.copyShareImage('${item.content}')">📋 複製圖片</button>
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+          <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; min-height: 140px;">
+            <img src="${item.content}" class="share-item-content-image" onclick="window.app.zoomShareImage('${item.content}')" alt="Shared Image">
+          </div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+            <button class="share-copy-btn" onclick="window.app.copyShareImage('${item.content}')">📋 複製圖片</button>
+          </div>
         </div>
       `;
     }
 
     return `
-      <div class="share-item-card">
-        <div class="share-item-header" style="justify-content: flex-end;">
+      <div class="share-item-card" style="height: 100%; display: flex; flex-direction: column; margin-top: 0; justify-content: space-between;">
+        <div class="share-item-header" style="justify-content: flex-end; margin-bottom: 8px;">
           <span>${timeStr}</span>
         </div>
-        <div class="share-item-body">
+        <div class="share-item-body" style="flex: 1; display: flex; flex-direction: column;">
           ${contentHTML}
         </div>
       </div>
