@@ -2816,7 +2816,7 @@ class App {
     if (item.type === 'text') {
       contentHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-          <div class="share-item-content-text" style="flex: 1; text-align: center;">${this.escapeHtml(item.content)}</div>
+          <div class="share-item-content-text" style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 80px;">${this.escapeHtml(item.content)}</div>
           <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
             <button class="share-copy-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)">📋 複製文字</button>
           </div>
