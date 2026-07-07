@@ -57,21 +57,10 @@ class App {
     this.quiz = new Quiz();
     window.quiz = this.quiz;
     
-    this.lastClickedSectionType = null;
-    document.addEventListener('mousedown', (e) => {
-      const panelCard = e.target.closest('.panel-card');
-      const adminSection = e.target.closest('.admin-section-collapsible');
-      if (panelCard) {
-        this.lastClickedSectionType = 'student-' + panelCard.id;
-      } else if (adminSection) {
-        if (adminSection.querySelector('#newImageFolderName')) {
-          this.lastClickedSectionType = 'admin-images';
-        } else if (adminSection.querySelector('#newShareFolderName')) {
-          this.lastClickedSectionType = 'admin-shares';
-        }
-      }
-    });
+    // 記錄目前選按的功能選單（預設是提問區）
+    this.activeTabId = 'panel-questions';
     
+    // 移除舊的 lastClickedSectionType mousedown 追蹤，改用選單追蹤
     this.bindCollapseEvents();
     this.bindQuestionEvents();
     this.bindImageUpload();
@@ -147,6 +136,9 @@ class App {
         panel.classList.remove('active');
       }
     });
+    
+    // 記錄目前選按的功能選單，供貼上事件判斷用
+    this.activeTabId = targetId;
   }
 
   openAdminPasswordModal() {
@@ -1635,9 +1627,6 @@ class App {
       header.addEventListener('click', () => {
         const card = header.closest('.panel-card');
         card.classList.toggle('collapsed');
-        if (!card.classList.contains('collapsed')) {
-          this.lastClickedSectionType = 'student-' + card.id;
-        }
       });
     });
     
@@ -1646,13 +1635,6 @@ class App {
       header.addEventListener('click', () => {
         const section = header.closest('.admin-section-collapsible');
         section.classList.toggle('collapsed');
-        if (!section.classList.contains('collapsed')) {
-          if (section.querySelector('#newImageFolderName')) {
-            this.lastClickedSectionType = 'admin-images';
-          } else if (section.querySelector('#newShareFolderName')) {
-            this.lastClickedSectionType = 'admin-shares';
-          }
-        }
       });
     });
   }
@@ -1868,7 +1850,7 @@ class App {
     
     uploadZone.addEventListener('paste', handlePaste);
     
-    // 全域貼上支援（當焦點不在輸入框且圖片分享或圖片管理面板是展開狀態時）
+    // 全域貼上支援 — 以目前選按的功能選單 (activeTabId) 判斷貼到哪一區
     document.addEventListener('paste', (e) => {
       // 如果焦點在輸入框，不處理
       const activeEl = document.activeElement;
@@ -1876,22 +1858,26 @@ class App {
         return;
       }
       
-      const imagePanel = document.getElementById('panel-images');
-      const isStudentPanelExpanded = imagePanel && !imagePanel.classList.contains('collapsed');
+      const tab = this.activeTabId;
       
-      const adminImageSection = document.getElementById('newImageFolderName')?.closest('.admin-section-collapsible');
-      const isAdminSectionExpanded = adminImageSection && !adminImageSection.classList.contains('collapsed');
-      
-      if (!isStudentPanelExpanded && !isAdminSectionExpanded) {
+      // 前台：選按「圖片分享」選單時，直接貼到圖片分享區
+      if (tab === 'panel-images') {
+        handlePaste(e);
         return;
       }
       
-      // 確保滑鼠最後操作的區塊是「圖片分享」或「圖片管理」才貼上
-      if (this.lastClickedSectionType && this.lastClickedSectionType !== 'student-panel-images' && this.lastClickedSectionType !== 'admin-images') {
+      // 後台：選按「管理後台」選單時，判斷哪個折疊區塊是展開的
+      if (tab === 'panel-admin') {
+        const adminImageSection = document.getElementById('newImageFolderName')?.closest('.admin-section-collapsible');
+        const isAdminImageOpen = adminImageSection && !adminImageSection.classList.contains('collapsed');
+        if (isAdminImageOpen) {
+          handlePaste(e);
+        }
+        // 教師分享區的貼上由 bindTeacherShareEvents 的 listener 處理
         return;
       }
       
-      handlePaste(e);
+      // 其他選單頁不處理貼上
     });
   }
   
@@ -2512,23 +2498,20 @@ class App {
     uploadZone.setAttribute('tabindex', '0');
     uploadZone.style.outline = 'none';
 
-    // 全域貼上支援（當分享圖片的區塊是顯示狀態時）
+    // 全域貼上支援 — 以目前選按的功能選單 (activeTabId) 判斷是否貼到教師分享區
     document.addEventListener('paste', (e) => {
       if (this.selectedShareFormType !== 'image') return;
       
+      // 必須在管理後台選單才有效
+      if (this.activeTabId !== 'panel-admin') return;
+      
+      // 必須教師分享管理的折疊區塊是展開的
       const shareSection = document.getElementById('newShareFolderName')?.closest('.admin-section-collapsible');
-      if (shareSection && shareSection.classList.contains('collapsed')) {
-        return; // 如果教師分享管理摺疊卡片是關閉的，不處理貼上
-      }
+      if (!shareSection || shareSection.classList.contains('collapsed')) return;
 
       // 如果焦點在其他輸入框，如文字分享的 input/textarea，我們不攔截（除非焦點是在 uploadZone）
       const activeEl = document.activeElement;
       if (activeEl && activeEl !== uploadZone && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
-        return;
-      }
-
-      // 確保滑鼠最後操作的區塊是「教師分享」才貼上
-      if (this.lastClickedSectionType && this.lastClickedSectionType !== 'admin-shares') {
         return;
       }
 
