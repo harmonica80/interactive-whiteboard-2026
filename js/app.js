@@ -2816,7 +2816,7 @@ class App {
     if (item.type === 'text') {
       contentHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-          <div class="share-item-content-text" style="flex: 1;">${this.escapeHtml(item.content)}</div>
+          <div class="share-item-content-text" style="flex: 1; text-align: center;">${this.escapeHtml(item.content)}</div>
           <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
             <button class="share-copy-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)">📋 複製文字</button>
           </div>
@@ -2824,14 +2824,14 @@ class App {
       `;
     } else if (item.type === 'link') {
       contentHTML = `
-        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 60px;">
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 60px; text-align: center;">
           <a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>
         </div>
       `;
     } else if (item.type === 'image') {
       contentHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-          <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; min-height: 140px;">
+          <div style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 140px;">
             <img src="${item.content}" class="share-item-content-image" onclick="window.app.zoomShareImage('${item.content}')" alt="Shared Image">
           </div>
           <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
