@@ -1814,3 +1814,92 @@ body {
   border: none;
   object-fit: contain;
 }
+
+/* ===== 教師分享區 (Teacher Share Area) ===== */
+.share-creation-box .preset-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.share-creation-box .preset-btn.active-share-type {
+  background: var(--accent-color) !important;
+  color: white !important;
+  border-color: var(--accent-color) !important;
+}
+
+.share-item-card {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.share-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.share-item-content-text {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.share-item-content-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent-color);
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 14px;
+  word-break: break-all;
+}
+.share-item-content-link:hover {
+  text-decoration: underline;
+}
+
+.share-item-content-image {
+  max-width: 140px;
+  max-height: 140px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  cursor: zoom-in;
+  transition: transform 0.2s;
+  object-fit: cover;
+}
+.share-item-content-image:hover {
+  transform: scale(1.02);
+}
+
+.share-copy-btn {
+  padding: 4px 8px;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.2s;
+  height: 26px;
+  line-height: 1;
+}
+.share-copy-btn:hover {
+  opacity: 0.9;
+}

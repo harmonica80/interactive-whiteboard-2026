@@ -4,6 +4,8 @@ class App {
     this.quiz = null;
     this.imageRef = db.ref('images');
     this.videoRef = db.ref('videos');
+    this.sharesRef = db.ref('teacherShares');
+    this.shareFoldersRef = db.ref('quiz/teacherShareFolders');
     this.currentZoom = 1;
     this.isDragging = false;
     this.dragStart = { x: 0, y: 0 };
@@ -13,6 +15,11 @@ class App {
     this.questions = [];
     this.images = [];
     this.videos = [];
+    this.shares = [];
+    this.shareFolders = [];
+    this.selectedShareFormType = 'text';
+    this.isUploadingShareImage = false;
+    this.shareImageFile = null;
     this.currentQuiz = null;
     this.quizAnswers = {};
     this.isAdmin = false;
@@ -54,6 +61,7 @@ class App {
     this.bindQuestionEvents();
     this.bindImageUpload();
     this.bindVideoUpload();
+    this.bindTeacherShareEvents();
     this.setupRealtimeSync();
     this.setupConnectionStatus();
     this.initModals();
@@ -251,6 +259,32 @@ class App {
     db.ref('quiz/broadcastVideo').on('value', (snapshot) => {
       const broadcastObj = snapshot.val();
       this.handleVideoBroadcastSync(broadcastObj);
+    });
+
+    // 監聽教師分享資料庫
+    this.sharesRef.on('value', (snapshot) => {
+      const shares = [];
+      snapshot.forEach(child => {
+        shares.push({ id: child.key, ...child.val() });
+      });
+      shares.sort((a, b) => b.timestamp - a.timestamp);
+      this.shares = shares;
+      this.renderTeacherShares();
+      this.renderAdminShares();
+    });
+
+    // 監聽教師分享資料庫資料夾
+    this.shareFoldersRef.on('value', (snapshot) => {
+      const folders = [];
+      snapshot.forEach(child => {
+        folders.push({ id: child.key, ...child.val() });
+      });
+      folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-hant'));
+      this.shareFolders = folders;
+      this.renderShareFoldersList();
+      this.updateShareFolderDropdowns();
+      this.renderTeacherShares();
+      this.renderAdminShares();
     });
   }
   
@@ -765,9 +799,11 @@ class App {
     this.renderQuestions();
     this.renderImages();
     this.renderVideos();
+    this.renderTeacherShares();
     this.renderAdminQuestions();
     this.renderAdminImages();
     this.renderAdminVideos();
+    this.renderAdminShares();
   }
 
   isFolderCollapsed(folderId) {
@@ -2367,7 +2403,591 @@ class App {
       this.showNotification('錯誤', '分享失敗: ' + err.message);
     });
   }
-  
+
+  // ===== 教師分享區功能 =====
+  bindTeacherShareEvents() {
+    const uploadZone = document.getElementById('shareImageUploadZone');
+    const fileInput = document.getElementById('shareImageFileInput');
+    if (!uploadZone || !fileInput) return;
+
+    uploadZone.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        this.handleTeacherShareImageSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        this.handleTeacherShareImageSelect(e.target.files[0]);
+      }
+    });
+  }
+
+  handleTeacherShareImageSelect(file) {
+    if (!file.type.startsWith('image/')) {
+      this.showNotification('提示', '請選擇圖片檔案');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.showNotification('提示', '圖片大小不能超過 5MB');
+      return;
+    }
+    this.shareImageFile = file;
+    const filenameDiv = document.getElementById('shareImageFilename');
+    if (filenameDiv) {
+      filenameDiv.textContent = `已選取：${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`;
+    }
+  }
+
+  switchShareFormType(type) {
+    this.selectedShareFormType = type;
+    
+    const btns = {
+      'text': document.getElementById('shareTypeBtnText'),
+      'image': document.getElementById('shareTypeBtnImage'),
+      'link': document.getElementById('shareTypeBtnLink')
+    };
+    
+    Object.keys(btns).forEach(key => {
+      const btn = btns[key];
+      if (btn) {
+        if (key === type) {
+          btn.classList.add('active-share-type');
+        } else {
+          btn.classList.remove('active-share-type');
+        }
+      }
+    });
+
+    const fields = {
+      'text': document.getElementById('shareFieldText'),
+      'image': document.getElementById('shareFieldImage'),
+      'link': document.getElementById('shareFieldLink')
+    };
+    
+    Object.keys(fields).forEach(key => {
+      const field = fields[key];
+      if (field) {
+        field.style.display = (key === type) ? 'block' : 'none';
+      }
+    });
+  }
+
+  submitTeacherShare() {
+    const type = this.selectedShareFormType;
+    const folderId = document.getElementById('shareFolderSelect').value || '';
+    
+    if (type === 'text') {
+      const input = document.getElementById('shareInputText');
+      const val = input.value.trim();
+      if (!val) {
+        this.showNotification('提示', '請輸入分享文字內容');
+        return;
+      }
+      this.sharesRef.push({
+        type: 'text',
+        content: val,
+        folderId: folderId,
+        timestamp: Date.now()
+      }).then(() => {
+        input.value = '';
+        this.showNotification('成功', '文字發佈成功！');
+      }).catch(err => {
+        this.showNotification('錯誤', '發佈失敗: ' + err.message);
+      });
+    } else if (type === 'link') {
+      const titleInput = document.getElementById('shareInputLinkTitle');
+      const urlInput = document.getElementById('shareInputLinkUrl');
+      const title = titleInput.value.trim();
+      const url = urlInput.value.trim();
+      if (!url) {
+        this.showNotification('提示', '請輸入連結網址');
+        return;
+      }
+      if (!url.startsWith('http')) {
+        this.showNotification('提示', '網址必須以 http:// 或 https:// 開頭');
+        return;
+      }
+      this.sharesRef.push({
+        type: 'link',
+        title: title || '連結網址',
+        content: url,
+        folderId: folderId,
+        timestamp: Date.now()
+      }).then(() => {
+        titleInput.value = '';
+        urlInput.value = '';
+        this.showNotification('成功', '連結發佈成功！');
+      }).catch(err => {
+        this.showNotification('錯誤', '發佈失敗: ' + err.message);
+      });
+    } else if (type === 'image') {
+      if (!this.shareImageFile) {
+        this.showNotification('提示', '請拖曳或選擇要分享的圖片');
+        return;
+      }
+      if (this.isUploadingShareImage) {
+        this.showNotification('提示', '圖片上傳中，請稍候...');
+        return;
+      }
+      
+      this.isUploadingShareImage = true;
+      this.showNotification('提示', '圖片處理中，請稍候...');
+      
+      const file = this.shareImageFile;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1000;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) {
+              h = Math.round(h * MAX / w);
+              w = MAX;
+            } else {
+              w = Math.round(w * MAX / h);
+              h = MAX;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          
+          const uploadToDatabase = (finalUrl) => {
+            return this.sharesRef.push({
+              type: 'image',
+              title: file.name,
+              content: finalUrl,
+              folderId: folderId,
+              timestamp: Date.now()
+            });
+          };
+          
+          const tryStorageUpload = () => {
+            return new Promise((resolve, reject) => {
+              if (typeof storage === 'undefined' || !storage) {
+                return reject(new Error('Storage not initialized'));
+              }
+              const fetchPromise = fetch(dataUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                  const fileRef = storage.ref().child('shares/' + Date.now() + '_' + file.name);
+                  return fileRef.put(blob).then(snapshot => snapshot.ref.getDownloadURL());
+                });
+              resolve(fetchPromise);
+            });
+          };
+
+          this.showNotification('提示', '上傳分享圖片中...');
+          tryStorageUpload()
+            .then(downloadURL => {
+              return uploadToDatabase(downloadURL);
+            })
+            .then(() => {
+              this.showNotification('成功', '圖片分享成功！');
+              this.isUploadingShareImage = false;
+              this.shareImageFile = null;
+              const filenameDiv = document.getElementById('shareImageFilename');
+              if (filenameDiv) filenameDiv.textContent = '';
+              const fileInput = document.getElementById('shareImageFileInput');
+              if (fileInput) fileInput.value = '';
+            })
+            .catch(error => {
+              console.warn('Firebase Storage 失敗，啟用 Base64 備用方案:', error);
+              uploadToDatabase(dataUrl)
+                .then(() => {
+                  this.showNotification('成功', '圖片分享成功 (Base64)！');
+                  this.isUploadingShareImage = false;
+                  this.shareImageFile = null;
+                  const filenameDiv = document.getElementById('shareImageFilename');
+                  if (filenameDiv) filenameDiv.textContent = '';
+                  const fileInput = document.getElementById('shareImageFileInput');
+                  if (fileInput) fileInput.value = '';
+                })
+                .catch(err => {
+                  console.error(err);
+                  this.showNotification('錯誤', '分享失敗，請稍後再試');
+                  this.isUploadingShareImage = false;
+                });
+            });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  renderTeacherShares() {
+    const container = document.getElementById('teacherSharesContainer');
+    if (!container) return;
+    
+    if (this.shares.length === 0) {
+      container.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無分享內容</div>';
+      return;
+    }
+
+    const grouped = {};
+    this.shares.forEach(item => {
+      const fid = item.folderId || '';
+      if (!grouped[fid]) grouped[fid] = [];
+      grouped[fid].push(item);
+    });
+
+    let html = '';
+
+    if (grouped[''] && grouped[''].length > 0) {
+      html += `<div class="folder-card" style="border-left: 5px solid var(--accent-color) !important;">
+        <div class="folder-card-header">
+          <span>📢 未分類分享</span>
+        </div>
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+          ${grouped[''].map(item => this.buildShareItemHTML(item)).join('')}
+        </div>
+      </div>`;
+    }
+
+    this.shareFolders.forEach(folder => {
+      const fShares = grouped[folder.id] || [];
+      if (fShares.length === 0) return;
+      
+      const isCollapsed = this.isFolderCollapsed(folder.id);
+      
+      html += `<div class="folder-card">
+        <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${folder.id}')" style="cursor: pointer;">
+          <span>📁 ${folder.name} (${fShares.length})</span>
+          <button class="folder-toggle-btn">${isCollapsed ? '展開 ▼' : '折疊 ▲'}</button>
+        </div>
+        <div style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            ${fShares.map(item => this.buildShareItemHTML(item)).join('')}
+          </div>
+        </div>
+      </div>`;
+    });
+
+    container.innerHTML = html;
+  }
+
+  buildShareItemHTML(item) {
+    const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let contentHTML = '';
+    
+    if (item.type === 'text') {
+      contentHTML = `
+        <div class="share-item-content-text">${this.escapeHtml(item.content)}</div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+          <button class="share-copy-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)">📋 複製文字</button>
+        </div>
+      `;
+    } else if (item.type === 'link') {
+      contentHTML = `
+        <a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>
+      `;
+    } else if (item.type === 'image') {
+      contentHTML = `
+        <img src="${item.content}" class="share-item-content-image" onclick="window.app.zoomShareImage('${item.content}')" alt="Shared Image">
+      `;
+    }
+
+    return `
+      <div class="share-item-card">
+        <div class="share-item-header">
+          <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
+          <span>${timeStr}</span>
+        </div>
+        <div class="share-item-body">
+          ${contentHTML}
+        </div>
+      </div>
+    `;
+  }
+
+  copyShareText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      this.showNotification('成功', '已複製文字到剪貼簿！');
+    }).catch(err => {
+      this.showNotification('錯誤', '複製失敗: ' + err.message);
+    });
+  }
+
+  zoomShareImage(src) {
+    const zoomContainer = document.getElementById('imageZoomContainer');
+    const zoomedImg = document.getElementById('zoomedImage');
+    if (!zoomContainer || !zoomedImg) return;
+    zoomedImg.src = src;
+    zoomContainer.classList.add('active');
+    this.currentZoom = 1;
+    this.imagePos = { x: 0, y: 0 };
+    this.updateImageTransform();
+  }
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  escapeQuote(str) {
+    if (!str) return '';
+    return str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+  }
+
+  renderAdminShares() {
+    const container = document.getElementById('adminSharesContainer');
+    if (!container) return;
+    
+    if (this.shares.length === 0) {
+      container.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無分享內容</div>';
+      return;
+    }
+
+    const grouped = {};
+    this.shares.forEach(item => {
+      const fid = item.folderId || '';
+      if (!grouped[fid]) grouped[fid] = [];
+      grouped[fid].push(item);
+    });
+
+    let html = '';
+
+    if (grouped[''] && grouped[''].length > 0) {
+      html += `<div class="folder-card" style="border-left: 5px solid var(--accent-color) !important;">
+        <div class="folder-card-header">
+          <span>📢 未分類分享 (${grouped[''].length})</span>
+        </div>
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+          ${grouped[''].map(item => this.buildAdminShareItemHTML(item)).join('')}
+        </div>
+      </div>`;
+    }
+
+    this.shareFolders.forEach(folder => {
+      const fShares = grouped[folder.id] || [];
+      const isCollapsed = this.isFolderCollapsed(folder.id);
+      
+      html += `<div class="folder-card">
+        <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${folder.id}')" style="cursor: pointer;">
+          <span>📁 ${folder.name} (${fShares.length})</span>
+          <button class="folder-toggle-btn">${isCollapsed ? '展開 ▼' : '折疊 ▲'}</button>
+        </div>
+        <div style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${fShares.length > 0 ? fShares.map(item => this.buildAdminShareItemHTML(item)).join('') : '<div style="color: var(--text-muted); padding: 6px; font-size: 13px;">資料夾為空</div>'}
+          </div>
+        </div>
+      </div>`;
+    });
+
+    container.innerHTML = html;
+    this.updateBatchShareSelectCount();
+  }
+
+  buildAdminShareItemHTML(item) {
+    const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let preview = '';
+    
+    if (item.type === 'text') {
+      preview = `<div class="share-item-content-text" style="max-height: 50px; overflow: hidden; text-overflow: ellipsis;">${this.escapeHtml(item.content)}</div>`;
+    } else if (item.type === 'link') {
+      preview = `<a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>`;
+    } else if (item.type === 'image') {
+      preview = `<img src="${item.content}" class="share-item-content-image" style="max-width: 60px; max-height: 60px;" onclick="window.app.zoomShareImage('${item.content}')">`;
+    }
+
+    return `
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px dashed var(--border-color);">
+        <input type="checkbox" class="share-select-checkbox" data-id="${item.id}" onchange="window.app.updateBatchShareSelectCount()" style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
+            <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
+            <span>${timeStr}</span>
+          </div>
+          <div>${preview}</div>
+        </div>
+        <button class="preset-btn" onclick="window.app.deleteShareItem('${item.id}')" style="background: var(--danger-color); color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
+      </div>
+    `;
+  }
+
+  adminCreateShareFolder() {
+    const input = document.getElementById('newShareFolderName');
+    const name = input.value.trim();
+    if (!name) {
+      this.showNotification('提示', '請輸入資料夾名稱');
+      return;
+    }
+    
+    this.shareFoldersRef.push({
+      name: name
+    }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '資料夾已建立');
+    }).catch(err => {
+      this.showNotification('錯誤', '建立失敗: ' + err.message);
+    });
+  }
+
+  adminDeleteShareFolder(folderId) {
+    if (!confirm('確定要刪除此資料夾嗎？（資料夾內的分享內容將會保留為「未分類」）')) return;
+    
+    this.shareFoldersRef.child(folderId).remove()
+      .then(() => {
+        this.sharesRef.once('value').then(snapshot => {
+          const updates = {};
+          snapshot.forEach(child => {
+            if (child.val().folderId === folderId) {
+              updates[`${child.key}/folderId`] = '';
+            }
+          });
+          if (Object.keys(updates).length > 0) {
+            this.sharesRef.update(updates);
+          }
+        });
+        this.showNotification('成功', '資料夾已刪除');
+      })
+      .catch(err => {
+        this.showNotification('錯誤', '刪除失敗: ' + err.message);
+      });
+  }
+
+  renderShareFoldersList() {
+    const container = document.getElementById('adminShareFolderList');
+    if (!container) return;
+    
+    if (this.shareFolders.length === 0) {
+      container.innerHTML = '<div style="color: var(--text-muted); padding: 6px; font-size: 13px; text-align: center;">暫無自訂資料夾</div>';
+      return;
+    }
+
+    container.innerHTML = this.shareFolders.map(folder => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-input); border-radius: 6px; font-size: 13px;">
+        <span style="font-weight: bold; color: var(--text-primary);">📁 ${this.escapeHtml(folder.name)}</span>
+        <button class="preset-btn" onclick="window.app.adminDeleteShareFolder('${folder.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
+      </div>
+    `).join('');
+  }
+
+  updateShareFolderDropdowns() {
+    const selectors = [
+      document.getElementById('shareFolderSelect'),
+      document.getElementById('batchShareFolderSelect')
+    ];
+    
+    selectors.forEach((select, idx) => {
+      if (!select) return;
+      
+      const firstOptHTML = idx === 0 
+        ? '<option value="">📁 未分類</option>'
+        : '<option value="">📁 移出資料夾 (未分類)</option>';
+      
+      select.innerHTML = firstOptHTML + this.shareFolders.map(folder => `
+        <option value="${folder.id}">📁 ${this.escapeHtml(folder.name)}</option>
+      `).join('');
+    });
+  }
+
+  updateBatchShareSelectCount() {
+    const checkboxes = document.querySelectorAll('.share-select-checkbox:checked');
+    const countEl = document.getElementById('batchShareSelectCount');
+    if (countEl) countEl.textContent = checkboxes.length;
+  }
+
+  toggleSelectAllShares(checked) {
+    const checkboxes = document.querySelectorAll('.share-select-checkbox');
+    checkboxes.forEach(cb => {
+      cb.checked = checked;
+    });
+    this.updateBatchShareSelectCount();
+  }
+
+  applyBatchShareArchive() {
+    const checkboxes = document.querySelectorAll('.share-select-checkbox:checked');
+    if (checkboxes.length === 0) {
+      this.showNotification('提示', '請先勾選要歸類的項目');
+      return;
+    }
+    const targetFolderId = document.getElementById('batchShareFolderSelect').value || '';
+    const updates = {};
+    checkboxes.forEach(cb => {
+      const id = cb.getAttribute('data-id');
+      updates[`${id}/folderId`] = targetFolderId;
+    });
+
+    this.showNotification('提示', '正在更新歸類...');
+    this.sharesRef.update(updates)
+      .then(() => {
+        this.showNotification('成功', '批次歸類完成！');
+        checkboxes.forEach(cb => { cb.checked = false; });
+        const selectAll = document.getElementById('selectAllShares');
+        if (selectAll) selectAll.checked = false;
+        this.updateBatchShareSelectCount();
+      })
+      .catch(err => {
+        this.showNotification('錯誤', '歸類失敗: ' + err.message);
+      });
+  }
+
+  deleteShareItem(id) {
+    if (!confirm('確定要刪除此分享項目嗎？')) return;
+    this.sharesRef.child(id).remove()
+      .then(() => {
+        this.showNotification('成功', '已刪除分享項目');
+      })
+      .catch(err => {
+        this.showNotification('錯誤', '刪除失敗: ' + err.message);
+      });
+  }
+
+  deleteSelectedShares() {
+    const checkboxes = document.querySelectorAll('.share-select-checkbox:checked');
+    if (checkboxes.length === 0) {
+      this.showNotification('提示', '請先勾選要刪除的項目！');
+      return;
+    }
+    if (!confirm(`確定要刪除這 ${checkboxes.length} 個分享項目嗎？`)) return;
+
+    this.showNotification('提示', '正在刪除項目...');
+    const promises = Array.from(checkboxes).map(cb => {
+      const id = cb.getAttribute('data-id');
+      return this.sharesRef.child(id).remove();
+    });
+
+    Promise.all(promises)
+      .then(() => {
+        this.showNotification('成功', '選取的項目已刪除！');
+        const selectAll = document.getElementById('selectAllShares');
+        if (selectAll) selectAll.checked = false;
+        this.updateBatchShareSelectCount();
+      })
+      .catch(err => {
+        this.showNotification('錯誤', '刪除失敗: ' + err.message);
+      });
+  }
+
   renderImages() {
     const imagePreview = document.getElementById('imagePreview');
     const imagesGroupedContainer = document.getElementById('imagesGroupedContainer');
@@ -3551,15 +4171,17 @@ class App {
       db.ref('questions').once('value'),
       db.ref('images').once('value'),
       db.ref('videos').once('value'),
+      db.ref('teacherShares').once('value'),
       db.ref('quiz').once('value'),
       db.ref('whiteboard').once('value')
-    ]).then(([questionsSnap, imagesSnap, videosSnap, quizSnap, whiteboardSnap]) => {
+    ]).then(([questionsSnap, imagesSnap, videosSnap, sharesSnap, quizSnap, whiteboardSnap]) => {
       const quizData = quizSnap.val() || {};
       
       const exportData = {
         questions: questionsSnap.val() || {},
         images: imagesSnap.val() || {},
         videos: videosSnap.val() || {},
+        teacherShares: sharesSnap.val() || {},
         whiteboard: whiteboardSnap.val() || {},
         quiz: {
           current: quizData.current || null,
@@ -3567,7 +4189,8 @@ class App {
           timer: quizData.timer || null,
           questionFolders: quizData.questionFolders || null,
           imageFolders: quizData.imageFolders || null,
-          videoFolders: quizData.videoFolders || null
+          videoFolders: quizData.videoFolders || null,
+          teacherShareFolders: quizData.teacherShareFolders || null
         },
         exportedAt: new Date().toISOString(),
         dbUrl: db.app.options.databaseURL || ""
@@ -3647,6 +4270,17 @@ class App {
               }
             };
             promises.push(writeVideosSequentially());
+
+            // Write teacher shares sequentially
+            const writeSharesSequentially = async () => {
+              await db.ref('teacherShares').remove();
+              const sharesObj = importedData.teacherShares || {};
+              const keys = Object.keys(sharesObj);
+              for (const shareId of keys) {
+                await db.ref(`teacherShares/${shareId}`).set(sharesObj[shareId]);
+              }
+            };
+            promises.push(writeSharesSequentially());
             
             // Set subnodes of quiz explicitly (excluding presence to prevent connection issues)
             const quizNode = importedData.quiz || {};
@@ -3675,6 +4309,14 @@ class App {
                 videoFolders[f.id] = { name: f.name };
               });
             }
+
+            let teacherShareFolders = quizNode.teacherShareFolders;
+            if (!teacherShareFolders && this.shareFolders && this.shareFolders.length > 0) {
+              teacherShareFolders = {};
+              this.shareFolders.forEach(f => {
+                teacherShareFolders[f.id] = { name: f.name };
+              });
+            }
             
             promises.push(db.ref('quiz/current').set(quizNode.current || null));
             promises.push(db.ref('quiz/answers').set(quizNode.answers || null));
@@ -3682,6 +4324,7 @@ class App {
             promises.push(db.ref('quiz/questionFolders').set(questionFolders || null));
             promises.push(db.ref('quiz/imageFolders').set(imageFolders || null));
             promises.push(db.ref('quiz/videoFolders').set(videoFolders || null));
+            promises.push(db.ref('quiz/teacherShareFolders').set(teacherShareFolders || null));
             
             Promise.all(promises).then(() => {
               this.showNotification('成功', '匯入記錄檔完成！');
@@ -3799,6 +4442,8 @@ function resetAll() {
   db.ref('videos').remove();
   db.ref('quiz/videoFolders').remove();
   db.ref('quiz/broadcastVideo').remove();
+  db.ref('teacherShares').remove();
+  db.ref('quiz/teacherShareFolders').remove();
   db.ref('whiteboard').remove();
   location.reload();
 }
