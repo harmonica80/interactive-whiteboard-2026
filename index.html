@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=59">
+  <link rel="stylesheet" href="css/style.css?v=60">
 </head>
 <body>
   <div class="container">
@@ -233,19 +233,24 @@
             <button class="preset-btn" onclick="logoutAdmin()" style="border-color: var(--danger-color); color: var(--danger-color); padding: 6px 12px; font-weight: bold;">登出管理員</button>
           </div>
           
-          <!-- 重設區 -->
+          <!-- 系統重設與備份管理區 (兩欄配置) -->
           <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">🔄 系統重設</h3>
-            <button class="reset-btn" onclick="confirmReset()" style="width: auto; background: var(--danger-color); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">🔄 清除所有資料 (提問、測驗及圖片)</button>
-          </div>
-
-          <!-- 課堂記錄管理 -->
-          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">💾 課堂記錄備份管理</h3>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <button class="preset-btn" onclick="adminExportRecord()" style="background: var(--accent-color); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1;">📤 匯出 JSON 記錄檔</button>
-              <button class="preset-btn" onclick="triggerImportInput()" style="background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1;">📥 匯入 JSON 記錄檔</button>
-              <input type="file" id="importRecordInput" accept=".json" style="display: none;" onchange="adminImportRecord(event)">
+            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+              <!-- 系統重設欄 -->
+              <div style="flex: 1; min-width: 250px;">
+                <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">🔄 系統重設</h3>
+                <button class="reset-btn" onclick="confirmReset()" style="width: 100%; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; box-sizing: border-box; margin: 0;">🔄 清除所有資料 (提問、測驗及圖片)</button>
+              </div>
+              
+              <!-- 課堂記錄備份管理欄 -->
+              <div style="flex: 1; min-width: 280px;">
+                <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">💾 課堂記錄備份管理</h3>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                  <button class="preset-btn" onclick="adminExportRecord()" style="flex: 1; min-width: 120px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1; box-sizing: border-box; margin: 0;">📤 匯出 JSON 記錄</button>
+                  <button class="preset-btn" onclick="triggerImportInput()" style="flex: 1; min-width: 120px; justify-content: center; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1; box-sizing: border-box; margin: 0;">📥 匯入 JSON 記錄</button>
+                  <input type="file" id="importRecordInput" accept=".json" style="display: none;" onchange="adminImportRecord(event)">
+                </div>
+              </div>
             </div>
           </div>
 
@@ -553,9 +558,9 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=59"></script>
-  <script src="js/quiz.js?v=59"></script>
-  <script src="js/app.js?v=59"></script>
+  <script src="js/firebase-config.js?v=60"></script>
+  <script src="js/quiz.js?v=60"></script>
+  <script src="js/app.js?v=60"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
