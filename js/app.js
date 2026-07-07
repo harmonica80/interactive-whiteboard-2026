@@ -57,6 +57,21 @@ class App {
     this.quiz = new Quiz();
     window.quiz = this.quiz;
     
+    this.lastClickedSectionType = null;
+    document.addEventListener('mousedown', (e) => {
+      const panelCard = e.target.closest('.panel-card');
+      const adminSection = e.target.closest('.admin-section-collapsible');
+      if (panelCard) {
+        this.lastClickedSectionType = 'student-' + panelCard.id;
+      } else if (adminSection) {
+        if (adminSection.querySelector('#newImageFolderName')) {
+          this.lastClickedSectionType = 'admin-images';
+        } else if (adminSection.querySelector('#newShareFolderName')) {
+          this.lastClickedSectionType = 'admin-shares';
+        }
+      }
+    });
+    
     this.bindCollapseEvents();
     this.bindQuestionEvents();
     this.bindImageUpload();
@@ -1618,14 +1633,26 @@ class App {
   bindCollapseEvents() {
     document.querySelectorAll('.panel-header').forEach(header => {
       header.addEventListener('click', () => {
-        header.closest('.panel-card').classList.toggle('collapsed');
+        const card = header.closest('.panel-card');
+        card.classList.toggle('collapsed');
+        if (!card.classList.contains('collapsed')) {
+          this.lastClickedSectionType = 'student-' + card.id;
+        }
       });
     });
     
     // 綁定管理後台摺疊區塊事件
     document.querySelectorAll('.admin-section-header').forEach(header => {
       header.addEventListener('click', () => {
-        header.closest('.admin-section-collapsible').classList.toggle('collapsed');
+        const section = header.closest('.admin-section-collapsible');
+        section.classList.toggle('collapsed');
+        if (!section.classList.contains('collapsed')) {
+          if (section.querySelector('#newImageFolderName')) {
+            this.lastClickedSectionType = 'admin-images';
+          } else if (section.querySelector('#newShareFolderName')) {
+            this.lastClickedSectionType = 'admin-shares';
+          }
+        }
       });
     });
   }
@@ -1856,6 +1883,11 @@ class App {
       const isAdminSectionExpanded = adminImageSection && !adminImageSection.classList.contains('collapsed');
       
       if (!isStudentPanelExpanded && !isAdminSectionExpanded) {
+        return;
+      }
+      
+      // 確保滑鼠最後操作的區塊是「圖片分享」或「圖片管理」才貼上
+      if (this.lastClickedSectionType && this.lastClickedSectionType !== 'student-panel-images' && this.lastClickedSectionType !== 'admin-images') {
         return;
       }
       
@@ -2492,6 +2524,11 @@ class App {
       // 如果焦點在其他輸入框，如文字分享的 input/textarea，我們不攔截（除非焦點是在 uploadZone）
       const activeEl = document.activeElement;
       if (activeEl && activeEl !== uploadZone && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+        return;
+      }
+
+      // 確保滑鼠最後操作的區塊是「教師分享」才貼上
+      if (this.lastClickedSectionType && this.lastClickedSectionType !== 'admin-shares') {
         return;
       }
 
