@@ -1841,7 +1841,7 @@ class App {
     
     uploadZone.addEventListener('paste', handlePaste);
     
-    // 全域貼上支援（當焦點不在輸入框且圖片分享面板是展開狀態時）
+    // 全域貼上支援（當焦點不在輸入框且圖片分享或圖片管理面板是展開狀態時）
     document.addEventListener('paste', (e) => {
       // 如果焦點在輸入框，不處理
       const activeEl = document.activeElement;
@@ -1850,7 +1850,12 @@ class App {
       }
       
       const imagePanel = document.getElementById('panel-images');
-      if (imagePanel && imagePanel.classList.contains('collapsed')) {
+      const isStudentPanelExpanded = imagePanel && !imagePanel.classList.contains('collapsed');
+      
+      const adminImageSection = document.getElementById('newImageFolderName')?.closest('.admin-section-collapsible');
+      const isAdminSectionExpanded = adminImageSection && !adminImageSection.classList.contains('collapsed');
+      
+      if (!isStudentPanelExpanded && !isAdminSectionExpanded) {
         return;
       }
       
