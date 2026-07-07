@@ -2448,6 +2448,44 @@ class App {
         this.handleTeacherShareImageSelect(e.target.files[0]);
       }
     });
+
+    // 剪貼簿貼上圖片支援
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items || [];
+      for (let item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          e.stopPropagation();
+          const file = item.getAsFile();
+          if (file) {
+            this.handleTeacherShareImageSelect(file);
+          }
+          break;
+        }
+      }
+    };
+
+    uploadZone.addEventListener('paste', handlePaste);
+    uploadZone.setAttribute('tabindex', '0');
+    uploadZone.style.outline = 'none';
+
+    // 全域貼上支援（當分享圖片的區塊是顯示狀態時）
+    document.addEventListener('paste', (e) => {
+      if (this.selectedShareFormType !== 'image') return;
+      
+      const shareSection = document.getElementById('newShareFolderName')?.closest('.admin-section-collapsible');
+      if (shareSection && shareSection.classList.contains('collapsed')) {
+        return; // 如果教師分享管理摺疊卡片是關閉的，不處理貼上
+      }
+
+      // 如果焦點在其他輸入框，如文字分享的 input/textarea，我們不攔截（除非焦點是在 uploadZone）
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl !== uploadZone && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+        return;
+      }
+
+      handlePaste(e);
+    });
   }
 
   handleTeacherShareImageSelect(file) {
@@ -2535,19 +2573,36 @@ class App {
         this.showNotification('提示', '網址必須以 http:// 或 https:// 開頭');
         return;
       }
-      this.sharesRef.push({
-        type: 'link',
-        title: title || '連結網址',
-        content: url,
-        folderId: folderId,
-        timestamp: Date.now()
-      }).then(() => {
-        titleInput.value = '';
-        urlInput.value = '';
-        this.showNotification('成功', '連結發佈成功！');
-      }).catch(err => {
-        this.showNotification('錯誤', '發佈失敗: ' + err.message);
-      });
+
+      const publishLink = (finalTitle) => {
+        this.sharesRef.push({
+          type: 'link',
+          title: finalTitle || '',
+          content: url,
+          folderId: folderId,
+          timestamp: Date.now()
+        }).then(() => {
+          titleInput.value = '';
+          urlInput.value = '';
+          this.showNotification('成功', '連結發佈成功！');
+        }).catch(err => {
+          this.showNotification('錯誤', '發佈失敗: ' + err.message);
+        });
+      };
+
+      if (!title) {
+        this.showNotification('提示', '正在自動抓取網址標題，請稍候...');
+        this.fetchWebsiteTitle(url)
+          .then(fetchedTitle => {
+            publishLink(fetchedTitle);
+          })
+          .catch(err => {
+            console.warn('無法抓取網址標題，將直接顯示網址:', err);
+            publishLink('');
+          });
+      } else {
+        publishLink(title);
+      }
     } else if (type === 'image') {
       if (!this.shareImageFile) {
         this.showNotification('提示', '請拖曳或選擇要分享的圖片');
@@ -2647,6 +2702,33 @@ class App {
       };
       reader.readAsDataURL(file);
     }
+  }
+
+  fetchWebsiteTitle(url) {
+    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+    
+    const fetchPromise = fetch(proxyUrl)
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (!data || !data.contents) throw new Error('No contents returned');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data.contents, 'text/html');
+        const titleEl = doc.querySelector('title');
+        if (titleEl && titleEl.innerText) {
+          const title = titleEl.innerText.trim();
+          if (title) return title;
+        }
+        throw new Error('Title not found in HTML');
+      });
+
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout')), 5000)
+    );
+
+    return Promise.race([fetchPromise, timeoutPromise]);
   }
 
   renderTeacherShares() {
