@@ -215,7 +215,12 @@ class App {
       snapshot.forEach(child => {
         folders.push({ id: child.key, ...child.val() });
       });
-      folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-hant'));
+      folders.sort((a, b) => {
+        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
+        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'zh-hant');
+      });
       this.questionFolders = folders;
       this.renderQuestionFoldersList();
       this.renderBatchQuestionFolderOptions();
@@ -228,7 +233,12 @@ class App {
       snapshot.forEach(child => {
         folders.push({ id: child.key, ...child.val() });
       });
-      folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-hant'));
+      folders.sort((a, b) => {
+        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
+        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'zh-hant');
+      });
       this.imageFolders = folders;
       this.renderImageFoldersList();
       this.renderBatchImageFolderOptions();
@@ -255,7 +265,12 @@ class App {
       snapshot.forEach(child => {
         folders.push({ id: child.key, ...child.val() });
       });
-      folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-hant'));
+      folders.sort((a, b) => {
+        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
+        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'zh-hant');
+      });
       this.videoFolders = folders;
       this.renderVideoFoldersList();
       this.renderBatchVideoFolderOptions();
@@ -287,7 +302,12 @@ class App {
       snapshot.forEach(child => {
         folders.push({ id: child.key, ...child.val() });
       });
-      folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-hant'));
+      folders.sort((a, b) => {
+        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
+        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'zh-hant');
+      });
       this.shareFolders = folders;
       this.renderShareFoldersList();
       this.updateShareFolderDropdowns();
@@ -1081,9 +1101,13 @@ class App {
     }
 
     container.innerHTML = this.videoFolders.map(f => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 6px; border: 1px solid var(--border-color);">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 4px;">
         <span style="font-weight: bold; color: var(--text-primary); font-size: 13px;">📁 ${this.escapeHtml(f.name)}</span>
-        <button class="preset-btn" onclick="window.app.adminDeleteVideoFolder('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">刪除</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="preset-btn" onclick="moveFolder('videos', '${f.id}', 'up')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer;" title="上移">▲</button>
+          <button class="preset-btn" onclick="moveFolder('videos', '${f.id}', 'down')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer;" title="下移">▼</button>
+          <button class="preset-btn" onclick="window.app.adminDeleteVideoFolder('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">刪除</button>
+        </div>
       </div>
     `).join('');
   }
@@ -1321,7 +1345,11 @@ class App {
     list.innerHTML = this.questionFolders.map(f => `
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: default;">
         <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">📁 ${this.escapeHtml(f.name)}</span>
-        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteQuestionFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="preset-btn" onclick="moveFolder('questions', '${f.id}', 'up')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;" title="上移">▲</button>
+          <button class="preset-btn" onclick="moveFolder('questions', '${f.id}', 'down')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;" title="下移">▼</button>
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteQuestionFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+        </div>
       </div>
     `).join('');
   }
@@ -1550,7 +1578,11 @@ class App {
     list.innerHTML = this.imageFolders.map(f => `
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: default;">
         <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">📁 ${this.escapeHtml(f.name)}</span>
-        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteImageFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="preset-btn" onclick="moveFolder('images', '${f.id}', 'up')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;" title="上移">▲</button>
+          <button class="preset-btn" onclick="moveFolder('images', '${f.id}', 'down')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;" title="下移">▼</button>
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteImageFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+        </div>
       </div>
     `).join('');
   }
@@ -3433,9 +3465,13 @@ class App {
     }
 
     container.innerHTML = this.shareFolders.map(folder => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-input); border-radius: 6px; font-size: 13px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-input); border-radius: 6px; font-size: 13px; margin-bottom: 4px;">
         <span style="font-weight: bold; color: var(--text-primary);">📁 ${this.escapeHtml(folder.name)}</span>
-        <button class="preset-btn" onclick="window.app.adminDeleteShareFolder('${folder.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="preset-btn" onclick="moveFolder('shares', '${folder.id}', 'up')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;" title="上移">▲</button>
+          <button class="preset-btn" onclick="moveFolder('shares', '${folder.id}', 'down')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;" title="下移">▼</button>
+          <button class="preset-btn" onclick="window.app.adminDeleteShareFolder('${folder.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
+        </div>
       </div>
     `).join('');
   }
@@ -5266,3 +5302,57 @@ function reactToVideo(id, type) {
 function assignVideoFolder(videoId, folderId) {
   if (window.app) window.app.assignVideoFolder(videoId, folderId);
 }
+
+// 全域資料夾位置調整呼叫介面
+function moveFolder(type, folderId, direction) {
+  if (!window.app) return;
+  let folders = [];
+  let dbPath = '';
+  
+  if (type === 'questions') {
+    folders = [...window.app.questionFolders];
+    dbPath = 'quiz/questionFolders';
+  } else if (type === 'images') {
+    folders = [...window.app.imageFolders];
+    dbPath = 'quiz/imageFolders';
+  } else if (type === 'videos') {
+    folders = [...window.app.videoFolders];
+    dbPath = 'quiz/videoFolders';
+  } else if (type === 'shares') {
+    folders = [...window.app.shareFolders];
+    dbPath = 'quiz/teacherShareFolders';
+  }
+  
+  if (folders.length <= 1) return;
+  const idx = folders.findIndex(f => f.id === folderId);
+  if (idx === -1) return;
+  
+  let targetIdx = idx;
+  if (direction === 'up' && idx > 0) {
+    targetIdx = idx - 1;
+  } else if (direction === 'down' && idx < folders.length - 1) {
+    targetIdx = idx + 1;
+  }
+  
+  if (targetIdx === idx) return; // 無需移動
+  
+  // 交換位置
+  const temp = folders[idx];
+  folders[idx] = folders[targetIdx];
+  folders[targetIdx] = temp;
+  
+  // 重新計算 sortOrder 並寫入 Firebase
+  const updates = {};
+  folders.forEach((f, i) => {
+    updates[`${f.id}/sortOrder`] = i;
+  });
+  
+  db.ref(dbPath).update(updates)
+    .then(() => {
+      window.app.showNotification('成功', '排序已調整！');
+    })
+    .catch(err => {
+      window.app.showNotification('錯誤', '調整排序失敗: ' + err.message);
+    });
+}
+
