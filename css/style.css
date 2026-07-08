@@ -2059,3 +2059,18 @@ body {
   color: #fff;
 }
 
+/* 資料夾拖曳排序視覺樣式 */
+.draggable-folder {
+  cursor: grab;
+  user-select: none;
+}
+.draggable-folder:active {
+  cursor: grabbing;
+}
+.draggable-folder.dragging {
+  opacity: 0.5;
+  background: rgba(var(--accent-color-rgb, 0, 122, 255), 0.08) !important;
+  border: 1px dashed var(--accent-color) !important;
+}
+
+

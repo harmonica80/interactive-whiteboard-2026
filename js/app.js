@@ -1101,15 +1101,16 @@ class App {
     }
 
     container.innerHTML = this.videoFolders.map(f => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 4px;">
-        <span style="font-weight: bold; color: var(--text-primary); font-size: 13px;">📁 ${this.escapeHtml(f.name)}</span>
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <button class="preset-btn" onclick="moveFolder('videos', '${f.id}', 'up')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer;" title="上移">▲</button>
-          <button class="preset-btn" onclick="moveFolder('videos', '${f.id}', 'down')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer;" title="下移">▼</button>
-          <button class="preset-btn" onclick="window.app.adminDeleteVideoFolder('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">刪除</button>
-        </div>
+      <div class="draggable-folder" draggable="true" data-id="${f.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 4px; cursor: grab; transition: background 0.2s;">
+        <span style="font-weight: bold; color: var(--text-primary); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+          <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
+          📁 ${this.escapeHtml(f.name)}
+        </span>
+        <button class="preset-btn" onclick="window.app.adminDeleteVideoFolder('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">刪除</button>
       </div>
     `).join('');
+
+    this.initFolderDragAndDrop('adminVideoFolderList', 'videos', 'quiz/videoFolders');
   }
 
   renderBatchVideoFolderOptions() {
@@ -1343,15 +1344,16 @@ class App {
       return;
     }
     list.innerHTML = this.questionFolders.map(f => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: default;">
-        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">📁 ${this.escapeHtml(f.name)}</span>
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <button class="preset-btn" onclick="moveFolder('questions', '${f.id}', 'up')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;" title="上移">▲</button>
-          <button class="preset-btn" onclick="moveFolder('questions', '${f.id}', 'down')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;" title="下移">▼</button>
-          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteQuestionFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
-        </div>
+      <div class="draggable-folder" draggable="true" data-id="${f.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: grab; transition: background 0.2s;">
+        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+          <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
+          📁 ${this.escapeHtml(f.name)}
+        </span>
+        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteQuestionFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
       </div>
     `).join('');
+
+    this.initFolderDragAndDrop('adminQuestionFolderList', 'questions', 'quiz/questionFolders');
   }
 
   // ===== 留言回饋同步機制 =====
@@ -1576,15 +1578,16 @@ class App {
       return;
     }
     list.innerHTML = this.imageFolders.map(f => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: default;">
-        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">📁 ${this.escapeHtml(f.name)}</span>
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <button class="preset-btn" onclick="moveFolder('images', '${f.id}', 'up')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;" title="上移">▲</button>
-          <button class="preset-btn" onclick="moveFolder('images', '${f.id}', 'down')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;" title="下移">▼</button>
-          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteImageFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
-        </div>
+      <div class="draggable-folder" draggable="true" data-id="${f.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: grab; transition: background 0.2s;">
+        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+          <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
+          📁 ${this.escapeHtml(f.name)}
+        </span>
+        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteImageFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
       </div>
     `).join('');
+
+    this.initFolderDragAndDrop('adminImageFolderList', 'images', 'quiz/imageFolders');
   }
 
   showQuestionModal(id) {
@@ -3400,16 +3403,41 @@ class App {
     }
 
     return `
-      <div style="display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px dashed var(--border-color);">
-        <input type="checkbox" class="share-select-checkbox" data-id="${item.id}" onchange="window.app.updateBatchShareSelectCount()" style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
-            <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
-            <span>${timeStr}</span>
+      <div style="display: flex; flex-direction: column; padding: 8px; border-bottom: 1px dashed var(--border-color); gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+          <input type="checkbox" class="share-select-checkbox" data-id="${item.id}" onchange="window.app.updateBatchShareSelectCount()" style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
+              <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
+              <span>${timeStr}</span>
+            </div>
+            <div id="share-preview-${item.id}" style="word-break: break-all;">${preview}</div>
           </div>
-          <div>${preview}</div>
+          <div style="display: flex; gap: 4px; flex-shrink: 0;">
+            <button class="preset-btn" onclick="adminEditShare('${item.id}')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">✏️ 編輯</button>
+            <button class="preset-btn" onclick="window.app.deleteShareItem('${item.id}')" style="background: var(--danger-color); color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
+          </div>
         </div>
-        <button class="preset-btn" onclick="window.app.deleteShareItem('${item.id}')" style="background: var(--danger-color); color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
+        
+        <!-- 內嵌編輯區塊 -->
+        <div id="share-edit-${item.id}" style="display: none; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 6px; margin-top: 4px; width: 100%; box-sizing: border-box;">
+          ${item.type === 'text' ? `
+            <textarea id="share-edit-content-${item.id}" style="width: 100%; min-height: 60px; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box; resize: vertical;">${this.escapeHtml(item.content)}</textarea>
+          ` : item.type === 'link' ? `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <input type="text" id="share-edit-title-${item.id}" value="${this.escapeHtml(item.title || '')}" placeholder="連結標題" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
+              <input type="text" id="share-edit-content-${item.id}" value="${this.escapeHtml(item.content)}" placeholder="連結網址" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
+            </div>
+          ` : `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <input type="text" id="share-edit-content-${item.id}" value="${this.escapeHtml(item.content)}" placeholder="圖片 URL (Base64 或遠端網址)" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
+            </div>
+          `}
+          <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
+            <button onclick="adminSaveShare('${item.id}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 儲存</button>
+            <button onclick="adminCancelEditShare('${item.id}')" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer;">取消</button>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -3465,15 +3493,70 @@ class App {
     }
 
     container.innerHTML = this.shareFolders.map(folder => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-input); border-radius: 6px; font-size: 13px; margin-bottom: 4px;">
-        <span style="font-weight: bold; color: var(--text-primary);">📁 ${this.escapeHtml(folder.name)}</span>
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <button class="preset-btn" onclick="moveFolder('shares', '${folder.id}', 'up')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;" title="上移">▲</button>
-          <button class="preset-btn" onclick="moveFolder('shares', '${folder.id}', 'down')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;" title="下移">▼</button>
-          <button class="preset-btn" onclick="window.app.adminDeleteShareFolder('${folder.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
-        </div>
+      <div class="draggable-folder" draggable="true" data-id="${folder.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-input); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: grab; transition: background 0.2s;">
+        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+          <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
+          📁 ${this.escapeHtml(folder.name)}
+        </span>
+        <button class="preset-btn" onclick="window.app.adminDeleteShareFolder('${folder.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
       </div>
     `).join('');
+
+    this.initFolderDragAndDrop('adminShareFolderList', 'shares', 'quiz/teacherShareFolders');
+  }
+
+  initFolderDragAndDrop(containerId, type, dbPath) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const items = container.querySelectorAll('.draggable-folder');
+    items.forEach(item => {
+      item.addEventListener('dragstart', (e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        item.classList.add('dragging');
+        // 為了移動端的拖放或未來需要，設定屬性
+        container.setAttribute('data-dragging-id', item.getAttribute('data-id'));
+      });
+
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        container.removeAttribute('data-dragging-id');
+
+        // 讀取當下 DOM 的排序
+        const currentItems = [...container.querySelectorAll('.draggable-folder')];
+        const updates = {};
+        currentItems.forEach((el, index) => {
+          const id = el.getAttribute('data-id');
+          updates[`${id}/sortOrder`] = index;
+        });
+
+        db.ref(dbPath).update(updates)
+          .then(() => {
+            this.showNotification('成功', '排序已調整！');
+          })
+          .catch(err => {
+            this.showNotification('錯誤', '更新排序失敗: ' + err.message);
+          });
+      });
+    });
+
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const draggingItem = container.querySelector('.dragging');
+      if (!draggingItem) return;
+
+      const siblings = [...container.querySelectorAll('.draggable-folder:not(.dragging)')];
+      const nextSibling = siblings.find(sibling => {
+        const box = sibling.getBoundingClientRect();
+        return e.clientY <= box.top + box.height / 2;
+      });
+
+      if (nextSibling) {
+        container.insertBefore(draggingItem, nextSibling);
+      } else {
+        container.appendChild(draggingItem);
+      }
+    });
   }
 
   updateShareFolderDropdowns() {
@@ -5355,4 +5438,50 @@ function moveFolder(type, folderId, direction) {
       window.app.showNotification('錯誤', '調整排序失敗: ' + err.message);
     });
 }
+
+// 管理員編輯教師分享
+function adminEditShare(id) {
+  const editDiv = document.getElementById('share-edit-' + id);
+  if (editDiv) {
+    editDiv.style.display = editDiv.style.display === 'none' ? 'block' : 'none';
+  }
+}
+window.app && (window.app.adminEditShare = adminEditShare);
+
+function adminCancelEditShare(id) {
+  const editDiv = document.getElementById('share-edit-' + id);
+  if (editDiv) editDiv.style.display = 'none';
+}
+window.app && (window.app.adminCancelEditShare = adminCancelEditShare);
+
+function adminSaveShare(id) {
+  if (!window.app) return;
+  const item = window.app.shares.find(s => s.id === id);
+  if (!item) return;
+  
+  const contentInput = document.getElementById('share-edit-content-' + id);
+  const titleInput = document.getElementById('share-edit-title-' + id);
+  
+  const newContent = contentInput ? contentInput.value.trim() : '';
+  if (!newContent) {
+    window.app.showNotification('提示', '內容不能為空');
+    return;
+  }
+  
+  const updates = { content: newContent };
+  if (item.type === 'link' && titleInput) {
+    updates.title = titleInput.value.trim() || newContent;
+  }
+  
+  db.ref('quiz/teacherShares').child(id).update(updates)
+    .then(() => {
+      window.app.showNotification('成功', '教師分享已更新！');
+      adminCancelEditShare(id);
+    })
+    .catch(err => {
+      window.app.showNotification('錯誤', '更新失敗: ' + err.message);
+    });
+}
+window.app && (window.app.adminSaveShare = adminSaveShare);
+
 
