@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=71">
+  <link rel="stylesheet" href="css/style.css?v=72">
 </head>
 <body>
   <div class="container">
@@ -19,6 +19,8 @@
           <div id="onlineCount" class="online-count" style="font-size: 13px; font-weight: bold; color: var(--danger-color); white-space: nowrap;">線上人數 0 人</div>
           <div id="connectionStatus" class="connection-status disconnected">連線中...</div>
         </div>
+        <!-- 管理後台按鈕移至右上角 -->
+        <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️ 管理後台</button>
         <div class="theme-switcher">
           <button class="theme-btn light active" data-theme="light" title="淺色"></button>
           <button class="theme-btn dark" data-theme="dark" title="深色"></button>
@@ -34,7 +36,6 @@
       <button class="menu-tab" data-target="panel-videos">🎥 影片分享</button>
       <button class="menu-tab" data-target="panel-teacher-shares">📢 教師分享</button>
       <button class="menu-tab" data-target="panel-quiz">📝 選擇題測驗</button>
-      <button class="menu-tab" id="adminTabBtn" data-target="panel-admin" style="border-left: 1px solid var(--border-color);">⚙️ 管理後台</button>
       <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
     </div>
 
@@ -558,9 +559,9 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=71"></script>
-  <script src="js/quiz.js?v=71"></script>
-  <script src="js/app.js?v=71"></script>
+  <script src="js/firebase-config.js?v=72"></script>
+  <script src="js/quiz.js?v=72"></script>
+  <script src="js/app.js?v=72"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

@@ -122,6 +122,31 @@ body {
   gap: 10px;
 }
 
+/* 管理後台按鈕（移至右上角）*/
+.admin-top-btn {
+  flex: none !important;
+  max-width: none !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  border: 1.5px solid var(--accent-color) !important;
+  background: transparent !important;
+  color: var(--accent-color) !important;
+  border-radius: 20px !important;
+  white-space: nowrap;
+  font-weight: 700;
+  transition: all 0.25s ease;
+}
+.admin-top-btn:hover {
+  background: var(--accent-color) !important;
+  color: white !important;
+  box-shadow: 0 3px 10px rgba(102,126,234,0.35);
+}
+.admin-top-btn.active {
+  background: var(--accent-color) !important;
+  color: white !important;
+  box-shadow: 0 3px 10px rgba(102,126,234,0.35);
+}
+
 .status-group {
   display: flex;
   align-items: center;
