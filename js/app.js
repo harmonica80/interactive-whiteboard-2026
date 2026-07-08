@@ -26,6 +26,7 @@ class App {
     this.activeQuestionId = null;
     this.activeImageId = null;
     this.activeVideoId = null;
+    this.activeCommentsRef = null;
     this.isUploadingImage = false;
     this.isUploadingVideo = false;
     
@@ -302,13 +303,20 @@ class App {
     questionModalClose.addEventListener('click', () => {
       questionModal.classList.remove('active');
       this.activeQuestionId = null;
+      this.cleanupCommentsSync();
     });
     questionModal.addEventListener('click', (e) => {
       if (e.target === questionModal) {
         questionModal.classList.remove('active');
         this.activeQuestionId = null;
+        this.cleanupCommentsSync();
       }
     });
+
+    const questionCopyBtn = document.getElementById('questionCopyBtn');
+    if (questionCopyBtn) {
+      questionCopyBtn.addEventListener('click', () => this.copyQuestionText());
+    }
     
     const imageModal = document.getElementById('imageModal');
     const imageModalClose = document.getElementById('imageModalClose');
@@ -316,13 +324,20 @@ class App {
     imageModalClose.addEventListener('click', () => {
       imageModal.classList.remove('active');
       this.activeImageId = null;
+      this.cleanupCommentsSync();
     });
     imageModal.addEventListener('click', (e) => {
       if (e.target === imageModal) {
         imageModal.classList.remove('active');
         this.activeImageId = null;
+        this.cleanupCommentsSync();
       }
     });
+
+    const imageCopyBtn = document.getElementById('imageCopyBtn');
+    if (imageCopyBtn) {
+      imageCopyBtn.addEventListener('click', () => this.copyImageToClipboard());
+    }
     
     // 左右導覽按鈕事件註冊
     const questionModalPrev = document.getElementById('questionModalPrev');
@@ -430,11 +445,15 @@ class App {
       if (e.key === 'Escape') {
         questionModal.classList.remove('active');
         imageModal.classList.remove('active');
+        const videoModal = document.getElementById('videoModal');
+        if (videoModal) videoModal.classList.remove('active');
         customConfirmModal.classList.remove('active');
         notifyModal.classList.remove('active');
         adminPasswordModal.classList.remove('active');
         this.activeQuestionId = null;
         this.activeImageId = null;
+        this.activeVideoId = null;
+        this.cleanupCommentsSync();
       }
     });
   }
@@ -1195,6 +1214,9 @@ class App {
       if (vid.type === 'youtube' && vid.youtubeId) {
         return `https://img.youtube.com/vi/${vid.youtubeId}/0.jpg`;
       }
+      if (vid.thumbnail) {
+        return vid.thumbnail;
+      }
       return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'><rect width='100%' height='100%' fill='%232c2c2e'/><path d='M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z' fill='%238e8e93' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
     };
 
@@ -1304,6 +1326,220 @@ class App {
     `).join('');
   }
 
+  // ===== 留言回饋同步機制 =====
+  setupCommentsSync(type, itemId, listContainerId, nicknameInputId, inputId) {
+    this.cleanupCommentsSync();
+
+    const listContainer = document.getElementById(listContainerId);
+    const nicknameInput = document.getElementById(nicknameInputId);
+    const textInput = document.getElementById(inputId);
+    if (!listContainer) return;
+
+    // 設定預設暱稱：優先使用之前的留言暱稱，再來是登入暱稱，最後預設「訪客」
+    const savedName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '訪客';
+    if (nicknameInput) {
+      nicknameInput.value = savedName;
+    }
+
+    if (textInput) {
+      textInput.value = '';
+      // 綁定 Enter 鍵直接發送留言
+      textInput.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+          this.submitComment(type, itemId, listContainerId, nicknameInputId, inputId);
+        }
+      };
+    }
+
+    // 監聽 Firebase 留言（取最近 10 筆）
+    this.activeCommentsRef = db.ref('comments').child(type).child(itemId).orderByChild('timestamp').limitToLast(10);
+    this.activeCommentsRef.on('value', (snapshot) => {
+      let html = '';
+      const comments = [];
+      snapshot.forEach((child) => {
+        comments.push({ id: child.key, ...child.val() });
+      });
+
+      if (comments.length === 0) {
+        html = `<div style="text-align: center; color: var(--text-muted); padding: 12px; font-size: 13px;">💬 暫無留言，快來搶沙發！</div>`;
+      } else {
+        html = comments.map(c => {
+          const timeStr = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+          return `
+            <div class="comment-item">
+              <div class="comment-header">
+                <span class="comment-user">${this.escapeHtml(c.user || '匿名')}</span>
+                <span class="comment-time">${timeStr}</span>
+              </div>
+              <div class="comment-text">${this.escapeHtml(c.text || '')}</div>
+            </div>
+          `;
+        }).join('');
+      }
+      listContainer.innerHTML = html;
+      // 自動捲動到最底下
+      listContainer.scrollTop = listContainer.scrollHeight;
+    });
+  }
+
+  cleanupCommentsSync() {
+    if (this.activeCommentsRef) {
+      this.activeCommentsRef.off();
+      this.activeCommentsRef = null;
+    }
+  }
+
+  submitComment(type, itemId, listContainerId, nicknameInputId, inputId) {
+    // 若沒有傳入，則根據 type 猜測
+    const nickId = nicknameInputId || (type === 'questions' ? 'questionCommentNickname' : type === 'images' ? 'imageCommentNickname' : 'videoCommentNickname');
+    const inpId = inputId || (type === 'questions' ? 'questionCommentInput' : type === 'images' ? 'imageCommentInput' : 'videoCommentInput');
+    
+    const nicknameInput = document.getElementById(nickId);
+    const textInput = document.getElementById(inpId);
+    if (!textInput) return;
+
+    const nickname = (nicknameInput ? nicknameInput.value.trim() : '') || '匿名';
+    const text = textInput.value.trim();
+    if (!text) {
+      this.showNotification('提示', '請輸入留言內容');
+      return;
+    }
+
+    // 保存暱稱
+    localStorage.setItem('comment_nickname', nickname);
+
+    db.ref('comments').child(type).child(itemId).push({
+      user: nickname,
+      text: text,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      textInput.value = '';
+    }).catch(err => {
+      this.showNotification('錯誤', '留言發送失敗: ' + err.message);
+    });
+  }
+
+  copyQuestionText() {
+    if (!this.activeQuestionId) return;
+    const q = this.questions.find(item => item.id === this.activeQuestionId);
+    if (!q) return;
+    navigator.clipboard.writeText(q.text)
+      .then(() => this.showNotification('成功', '問題內容已複製到剪貼簿！'))
+      .catch(err => this.showNotification('錯誤', '複製失敗: ' + err.message));
+  }
+
+  async copyImageToClipboard() {
+    if (!this.activeImageId) return;
+    const img = this.images.find(item => item.id === this.activeImageId);
+    if (!img) return;
+
+    this.showNotification('提示', '正在複製圖片，請稍候...');
+
+    try {
+      // 若是 Base64 格式
+      if (img.url.startsWith('data:')) {
+        const response = await fetch(img.url);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob })
+        ]);
+        this.showNotification('成功', '圖片已成功複製到剪貼簿！');
+        return;
+      }
+
+      // 若是 Firebase Storage 的 URL，需要跨網域 Fetch
+      // 藉由建立一個 Image 並畫到 Canvas 上來規避 CORS 的 restrictions 
+      const image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.src = img.url;
+      image.onload = async () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = image.naturalWidth;
+          canvas.height = image.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(image, 0, 0);
+          canvas.toBlob(async (blob) => {
+            if (!blob) {
+              this.showNotification('錯誤', '圖片轉檔失敗');
+              return;
+            }
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ [blob.type]: blob })
+              ]);
+              this.showNotification('成功', '圖片已成功複製到剪貼簿！');
+            } catch (err) {
+              this.showNotification('錯誤', '瀏覽器不支援複製此類型檔案，請直接點下載！');
+            }
+          }, 'image/png');
+        } catch (err) {
+          this.showNotification('錯誤', '複製圖片失敗: ' + err.message);
+        }
+      };
+      image.onerror = () => {
+        this.showNotification('錯誤', '讀取圖片失敗，請改用下載功能！');
+      };
+    } catch (err) {
+      this.showNotification('錯誤', '複製圖片出錯: ' + err.message);
+    }
+  }
+
+  extractVideoThumbnail(fileOrUrl) {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      
+      let videoUrl = '';
+      if (typeof fileOrUrl === 'string') {
+        videoUrl = fileOrUrl;
+      } else if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+        videoUrl = URL.createObjectURL(fileOrUrl);
+      } else {
+        resolve(null);
+        return;
+      }
+
+      video.src = videoUrl;
+
+      // 影片載入 metadata 後，跳到第 1.5 秒
+      video.onloadedmetadata = () => {
+        video.currentTime = Math.min(1.5, video.duration / 2);
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          // 設定截圖寬高 (上限為 320x240，大小適中，節省 Firebase 儲存空間)
+          const scale = Math.min(320 / video.videoWidth, 240 / video.videoHeight, 1);
+          canvas.width = video.videoWidth * scale;
+          canvas.height = video.videoHeight * scale;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // 稍微壓縮以縮減體積
+
+          if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+            URL.revokeObjectURL(videoUrl);
+          }
+          resolve(dataUrl);
+        } catch (err) {
+          console.error('Extract thumbnail error:', err);
+          resolve(null);
+        }
+      };
+
+      video.onerror = () => {
+        if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+          URL.revokeObjectURL(videoUrl);
+        }
+        resolve(null);
+      };
+    });
+  }
+
   renderImageFoldersList() {
     const list = document.getElementById('adminImageFolderList');
     if (!list) return;
@@ -1333,6 +1569,9 @@ class App {
     document.getElementById('questionModalText').innerHTML = this.linkify(q.text);
     
     this.updateActiveQuestionModal();
+    
+    // 初始化留言區同步
+    this.setupCommentsSync('questions', id, 'questionCommentsList', 'questionCommentNickname', 'questionCommentInput');
     
     const prevBtn = document.getElementById('questionModalPrev');
     const nextBtn = document.getElementById('questionModalNext');
@@ -1415,6 +1654,9 @@ class App {
     
     this.updateActiveImageModal();
     
+    // 初始化留言區同步
+    this.setupCommentsSync('images', id, 'imageCommentsList', 'imageCommentNickname', 'imageCommentInput');
+    
     const prevBtn = document.getElementById('imageModalPrev');
     const nextBtn = document.getElementById('imageModalNext');
     if (this.images.length <= 1) {
@@ -1470,28 +1712,35 @@ class App {
     document.getElementById('modalVideoFilename').textContent = vid.filename;
 
     const downloadBtn = document.getElementById('modalVideoDownloadBtn');
-    if (vid.type === 'upload' && vid.url && !vid.url.startsWith('data:')) {
-      downloadBtn.href = vid.url;
-      downloadBtn.download = vid.filename;
+    if (downloadBtn) {
+      downloadBtn.href = vid.url || '';
       downloadBtn.style.display = 'block';
-    } else {
-      downloadBtn.style.display = 'none';
+      if (vid.type === 'youtube') {
+        downloadBtn.textContent = '⬇ 觀看 YouTube 影片';
+        downloadBtn.removeAttribute('download');
+      } else {
+        downloadBtn.textContent = '⬇ 下載影片';
+        downloadBtn.setAttribute('download', vid.filename || 'video');
+      }
     }
 
     const playerContainer = document.getElementById('videoPlayerContainer');
     playerContainer.innerHTML = '';
 
     if (vid.type === 'youtube' && vid.youtubeId) {
-      playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${vid.youtubeId}?autoplay=1&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+      playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${vid.youtubeId}?autoplay=1&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>`;
     } else if (vid.type === 'drive') {
       const driveMatch = vid.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || vid.url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
       const embedUrl = driveMatch ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : vid.url;
-      playerContainer.innerHTML = `<iframe src="${embedUrl}" allow="autoplay" allowfullscreen></iframe>`;
+      playerContainer.innerHTML = `<iframe src="${embedUrl}" allow="autoplay" allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>`;
     } else {
       playerContainer.innerHTML = `<video src="${vid.url}" controls autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>`;
     }
 
     this.updateActiveVideoModal();
+
+    // 初始化留言區同步
+    this.setupCommentsSync('videos', id, 'videoCommentsList', 'videoCommentNickname', 'videoCommentInput');
 
     const prevBtn = document.getElementById('videoModalPrev');
     const nextBtn = document.getElementById('videoModalNext');
@@ -1514,6 +1763,7 @@ class App {
     if (playerContainer) playerContainer.innerHTML = '';
     
     this.activeVideoId = null;
+    this.cleanupCommentsSync();
   }
 
   updateActiveVideoModal() {
@@ -2279,7 +2529,10 @@ class App {
 
     this.isUploadingVideo = true;
 
-    const startUpload = (uploadFile) => {
+    const startUpload = async (uploadFile) => {
+      this.showNotification('提示', '正在解析影片縮圖...');
+      const thumbnail = await this.extractVideoThumbnail(uploadFile);
+
       this.showNotification('提示', '正在上傳影片...');
 
       const base64UploadFallback = () => {
@@ -2296,7 +2549,8 @@ class App {
             user: '匿名',
             filename: file.name,
             timestamp: Date.now(),
-            type: 'upload'
+            type: 'upload',
+            thumbnail: thumbnail || null
           });
         });
       };
@@ -2315,7 +2569,8 @@ class App {
               user: '匿名', 
               filename: file.name, 
               timestamp: Date.now(),
-              type: 'upload'
+              type: 'upload',
+              thumbnail: thumbnail || null
             });
           }).then(resolve).catch(reject);
         });
@@ -3382,6 +3637,9 @@ class App {
     const getThumbnailUrl = (vid) => {
       if (vid.type === 'youtube' && vid.youtubeId) {
         return `https://img.youtube.com/vi/${vid.youtubeId}/0.jpg`;
+      }
+      if (vid.thumbnail) {
+        return vid.thumbnail;
       }
       return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'><rect width='100%' height='100%' fill='%232c2c2e'/><path d='M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z' fill='%238e8e93' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
     };

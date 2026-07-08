@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=73">
+  <link rel="stylesheet" href="css/style.css?v=74">
 </head>
 <body>
   <div class="container">
@@ -559,26 +559,44 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=73"></script>
-  <script src="js/quiz.js?v=73"></script>
-  <script src="js/app.js?v=73"></script>
+  <script src="js/firebase-config.js?v=74"></script>
+  <script src="js/quiz.js?v=74"></script>
+  <script src="js/app.js?v=74"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
-    <div class="modal-content" style="position: relative; max-width: 600px; width: 90%; border-radius: 16px; background: var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+    <div class="modal-content" style="position: relative; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; border-radius: 16px; background: var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
       <button id="questionModalClose" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 120; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.05);" title="關閉">✕</button>
       
       <!-- 左右導覽按鈕 -->
       <button id="questionModalPrev" class="modal-nav-btn" style="left: 15px;" title="上一個">◀</button>
       <button id="questionModalNext" class="modal-nav-btn" style="right: 15px;" title="下一個">▶</button>
       
-      <div class="modal-body" style="padding: 40px 70px 30px 70px;">
+      <div class="modal-body" style="padding: 40px 30px 30px 30px;">
         <div id="questionModalUser" class="question-user" style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-secondary); text-align: center;"></div>
         <div id="questionModalText" class="question-text" style="font-size: 18px; color: var(--text-primary); line-height: 1.6; word-break: break-all; margin-bottom: 24px; text-align: center; white-space: pre-wrap;"></div>
         
-        <!-- 表情符號回饋 -->
-        <div id="questionModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-          <!-- 動態渲染的表情按鈕 -->
+        <!-- 複製內容與表情符號回饋 -->
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+          <div style="display: flex; gap: 8px; justify-content: center; width: 100%;">
+            <button id="questionCopyBtn" class="download-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer;">📋 複製內容</button>
+          </div>
+          <div id="questionModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; width: 100%; border: none; padding: 0; margin: 0;">
+            <!-- 動態渲染的表情按鈕 -->
+          </div>
+        </div>
+
+        <!-- 留言回饋區塊 -->
+        <div class="modal-comments-section" style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-primary); text-align: left;">💬 留言回饋</h3>
+          <div id="questionCommentsList" class="comments-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <!-- 留言內容 -->
+          </div>
+          <div class="comment-input-group" style="display: flex; gap: 8px;">
+            <input type="text" id="questionCommentNickname" placeholder="您的名字" style="width: 80px; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+            <input type="text" id="questionCommentInput" placeholder="輸入留言內容..." style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+            <button onclick="window.app.submitComment('questions', window.app.activeQuestionId)" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">送出</button>
+          </div>
         </div>
       </div>
     </div>
@@ -586,15 +604,15 @@
   
   <!-- 圖片彈出視窗 -->
   <div id="imageModal" class="modal-overlay image-modal">
-    <div class="modal-content" style="position: relative; max-width: 90vw; max-height: 95vh;">
+    <div class="modal-content" style="position: relative; max-width: 90vw; max-height: 95vh; display: flex; flex-direction: column;">
       <button id="imageModalClose" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 120; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.4);" title="關閉">✕</button>
       
       <!-- 左右導覽按鈕 -->
       <button id="imageModalPrev" class="modal-nav-btn" style="left: 20px;" title="上一個">◀</button>
       <button id="imageModalNext" class="modal-nav-btn" style="right: 20px;" title="下一個">▶</button>
       
-      <div class="modal-body" style="padding: 0; text-align: center; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; max-height: 85vh;">
-        <div id="imageZoomContainer" class="image-zoom-container">
+      <div class="modal-body" style="padding: 0; text-align: center; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; max-height: 90vh;">
+        <div id="imageZoomContainer" class="image-zoom-container" style="max-height: 60vh;">
           <div id="imageCanvasWrapper" style="position: relative; display: inline-block;">
             <img id="modalImage" class="modal-image" src="" alt="" draggable="false">
             <canvas id="imageMarkupCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; cursor: crosshair;"></canvas>
@@ -644,12 +662,28 @@
               <div id="modalImageUser" class="image-user" style="color: #aaa; font-size: 13px;"></div>
               <div id="modalImageFilename" class="image-filename" style="color: #fff; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;"></div>
             </div>
-            <a id="modalDownloadBtn" class="download-btn" href="" download style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">⬇ 下載</a>
+            <div style="display: flex; gap: 8px;">
+              <button id="imageCopyBtn" class="download-btn" style="padding: 6px 12px; background: #34c759; color: white; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer;">📋 複製圖片</button>
+              <a id="modalDownloadBtn" class="download-btn" href="" download style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">⬇ 下載</a>
+            </div>
           </div>
           
           <!-- 表情符號回饋 -->
           <div id="imageModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%;">
             <!-- 動態渲染的表情按鈕 -->
+          </div>
+
+          <!-- 留言區 -->
+          <div class="modal-comments-section" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%; text-align: left;">
+            <h3 style="font-size: 14px; margin-bottom: 8px; color: #fff;">💬 留言回饋</h3>
+            <div id="imageCommentsList" class="comments-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; color: #fff;">
+              <!-- 留言內容 -->
+            </div>
+            <div class="comment-input-group" style="display: flex; gap: 8px;">
+              <input type="text" id="imageCommentNickname" placeholder="名字" style="width: 80px; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 12px;">
+              <input type="text" id="imageCommentInput" placeholder="輸入留言內容..." style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 12px;">
+              <button onclick="window.app.submitComment('images', window.app.activeImageId)" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;">送出</button>
+            </div>
           </div>
         </div>
       </div>
@@ -756,15 +790,15 @@
 
   <!-- 影片播放彈出視窗 -->
   <div id="videoModal" class="modal-overlay image-modal">
-    <div class="modal-content" style="position: relative; max-width: 90vw; max-height: 95vh;">
+    <div class="modal-content" style="position: relative; max-width: 90vw; max-height: 95vh; display: flex; flex-direction: column;">
       <button id="videoModalClose" onclick="window.app.closeVideoModal()" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 120; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.4);" title="關閉">✕</button>
       
       <!-- 左右導覽按鈕 -->
       <button id="videoModalPrev" class="modal-nav-btn" style="left: 20px;" title="上一個">◀</button>
       <button id="videoModalNext" class="modal-nav-btn" style="right: 20px;" title="下一個">▶</button>
       
-      <div class="modal-body" style="padding: 0; text-align: center; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; max-height: 85vh;">
-        <div style="width: 100%; height: calc(85vh - 150px); display: flex; align-items: center; justify-content: center; position: relative;">
+      <div class="modal-body" style="padding: 0; text-align: center; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; max-height: 90vh;">
+        <div style="width: 100%; height: calc(85vh - 250px); display: flex; align-items: center; justify-content: center; position: relative; min-height: 300px;">
           <div id="videoPlayerContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #000;">
             <!-- 將會動態渲染為 <video> 或是 <iframe> -->
           </div>
@@ -776,12 +810,25 @@
               <div id="modalVideoUser" class="image-user" style="color: #aaa; font-size: 13px;"></div>
               <div id="modalVideoFilename" class="image-filename" style="color: #fff; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;"></div>
             </div>
-            <a id="modalVideoDownloadBtn" class="download-btn" href="" download style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; display: none;">⬇ 下載</a>
+            <a id="modalVideoDownloadBtn" class="download-btn" href="" download target="_blank" style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; display: block;">⬇ 下載影片</a>
           </div>
           
           <!-- 表情符號回饋 -->
           <div id="videoModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%;">
             <!-- 動態渲染的表情按鈕 -->
+          </div>
+
+          <!-- 留言區 -->
+          <div class="modal-comments-section" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%; text-align: left;">
+            <h3 style="font-size: 14px; margin-bottom: 8px; color: #fff;">💬 留言回饋</h3>
+            <div id="videoCommentsList" class="comments-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; color: #fff;">
+              <!-- 留言內容 -->
+            </div>
+            <div class="comment-input-group" style="display: flex; gap: 8px;">
+              <input type="text" id="videoCommentNickname" placeholder="名字" style="width: 80px; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 12px;">
+              <input type="text" id="videoCommentInput" placeholder="輸入留言內容..." style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 12px;">
+              <button onclick="window.app.submitComment('videos', window.app.activeVideoId)" style="padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;">送出</button>
+            </div>
           </div>
         </div>
       </div>

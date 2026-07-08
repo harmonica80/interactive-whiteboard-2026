@@ -1988,3 +1988,74 @@ body {
   overflow: hidden;
   pointer-events: none; /* 摺疊時不接收任何滑鼠點擊事件 */
 }
+
+/* ===== 彈出視窗留言區樣式 ===== */
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px dashed var(--border-color);
+}
+
+.comment-item {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.comment-item .comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.comment-item .comment-user {
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+.comment-item .comment-time {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.comment-item .comment-text {
+  font-size: 13px;
+  color: var(--text-primary);
+  word-break: break-all;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+/* 在黑底 (如圖片/影片 modal 的 info 區) 留言樣式微調 */
+.image-info .comments-list {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.image-info .comment-item {
+  background: #1c1c1e;
+  border: 1px solid #2c2c2e;
+}
+
+.image-info .comment-item .comment-user {
+  color: #64d2ff;
+}
+
+.image-info .comment-item .comment-time {
+  color: #8e8e93;
+}
+
+.image-info .comment-item .comment-text {
+  color: #fff;
+}
+
