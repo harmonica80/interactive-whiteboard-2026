@@ -1565,7 +1565,7 @@ class App {
       return;
     }
     
-    document.getElementById('questionModalUser').textContent = q.user;
+    document.getElementById('questionModalUser').textContent = (q.user && q.user !== '匿名') ? q.user : '';
     document.getElementById('questionModalText').innerHTML = this.linkify(q.text);
     
     this.updateActiveQuestionModal();
@@ -1628,7 +1628,7 @@ class App {
     const canvas = document.getElementById('imageMarkupCanvas');
     
     modalImage.src = img.url;
-    document.getElementById('modalImageUser').textContent = '上傳者: ' + img.user;
+    document.getElementById('modalImageUser').textContent = (img.user && img.user !== '匿名') ? '上傳者: ' + img.user : '';
     document.getElementById('modalImageFilename').textContent = img.filename;
     document.getElementById('modalDownloadBtn').href = img.url;
     document.getElementById('modalDownloadBtn').download = img.filename;
@@ -1708,7 +1708,7 @@ class App {
       return;
     }
 
-    document.getElementById('modalVideoUser').textContent = '分享者: ' + vid.user;
+    document.getElementById('modalVideoUser').textContent = (vid.user && vid.user !== '匿名') ? '分享者: ' + vid.user : '';
     document.getElementById('modalVideoFilename').textContent = vid.filename;
 
     const downloadBtn = document.getElementById('modalVideoDownloadBtn');
@@ -1956,7 +1956,7 @@ class App {
         <div class="question-card-header">
           <div class="header-left">
             <span class="question-badge">#${total - idx}</span>
-            <span class="user">${this.escapeHtml(q.user)}</span>
+            ${q.user && q.user !== '匿名' ? `<span class="user">${this.escapeHtml(q.user)}</span>` : ''}
           </div>
           <span class="time">${this.formatTime(q.timestamp)}</span>
         </div>
@@ -3759,7 +3759,7 @@ class App {
             <div class="question-card-header">
               <div class="header-left">
                 <span class="question-badge admin-badge">#${total - idx}</span>
-                <span class="user" style="color: var(--danger-color);">${this.escapeHtml(q.user)}</span>
+                ${q.user && q.user !== '匿名' ? `<span class="user" style="color: var(--danger-color);">${this.escapeHtml(q.user)}</span>` : ''}
               </div>
               <span class="time">${this.formatTime(q.timestamp)}</span>
             </div>
