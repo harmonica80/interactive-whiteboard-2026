@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=74">
+  <link rel="stylesheet" href="css/style.css?v=75">
 </head>
 <body>
   <div class="container">
@@ -559,9 +559,9 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=74"></script>
-  <script src="js/quiz.js?v=74"></script>
-  <script src="js/app.js?v=74"></script>
+  <script src="js/firebase-config.js?v=75"></script>
+  <script src="js/quiz.js?v=75"></script>
+  <script src="js/app.js?v=75"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -577,11 +577,9 @@
         <div id="questionModalText" class="question-text" style="font-size: 18px; color: var(--text-primary); line-height: 1.6; word-break: break-all; margin-bottom: 24px; text-align: center; white-space: pre-wrap;"></div>
         
         <!-- 複製內容與表情符號回饋 -->
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-          <div style="display: flex; gap: 8px; justify-content: center; width: 100%;">
-            <button id="questionCopyBtn" class="download-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer;">📋 複製內容</button>
-          </div>
-          <div id="questionModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; width: 100%; border: none; padding: 0; margin: 0;">
+        <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px; flex-wrap: wrap;">
+          <button id="questionCopyBtn" class="download-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; flex-shrink: 0;">📋 複製內容</button>
+          <div id="questionModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border: none; padding: 0; margin: 0; flex-shrink: 0;">
             <!-- 動態渲染的表情按鈕 -->
           </div>
         </div>
@@ -657,14 +655,19 @@
         </div>
         
         <div class="image-info" style="display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.85); color: white; width: 100%;">
-          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; flex-wrap: wrap;">
             <div style="text-align: left;">
               <div id="modalImageUser" class="image-user" style="color: #aaa; font-size: 13px;"></div>
               <div id="modalImageFilename" class="image-filename" style="color: #fff; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;"></div>
             </div>
-            <div style="display: flex; gap: 8px;">
-              <button id="imageCopyBtn" class="download-btn" style="padding: 6px 12px; background: #34c759; color: white; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer;">📋 複製圖片</button>
-              <a id="modalDownloadBtn" class="download-btn" href="" download style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">⬇ 下載</a>
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+              <div style="display: flex; gap: 8px;">
+                <button id="imageCopyBtn" class="download-btn" style="padding: 6px 12px; background: #34c759; color: white; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer;">📋 複製圖片</button>
+                <a id="modalDownloadBtn" class="download-btn" href="" download style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">⬇ 下載</a>
+              </div>
+              <div id="imageModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border: none; padding: 0; margin: 0; display: flex;">
+                <!-- 動態渲染的表情按鈕 -->
+              </div>
             </div>
           </div>
           
@@ -805,17 +808,17 @@
         </div>
         
         <div class="image-info" style="display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.85); color: white; width: 100%;">
-          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; flex-wrap: wrap;">
             <div style="text-align: left;">
               <div id="modalVideoUser" class="image-user" style="color: #aaa; font-size: 13px;"></div>
               <div id="modalVideoFilename" class="image-filename" style="color: #fff; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;"></div>
             </div>
-            <a id="modalVideoDownloadBtn" class="download-btn" href="" download target="_blank" style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; display: block;">⬇ 下載影片</a>
-          </div>
-          
-          <!-- 表情符號回饋 -->
-          <div id="videoModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%;">
-            <!-- 動態渲染的表情按鈕 -->
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+              <a id="modalVideoDownloadBtn" class="download-btn" href="" download target="_blank" style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; display: block;">⬇ 下載影片</a>
+              <div id="videoModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border: none; padding: 0; margin: 0; display: flex;">
+                <!-- 動態渲染的表情按鈕 -->
+              </div>
+            </div>
           </div>
 
           <!-- 留言區 -->
