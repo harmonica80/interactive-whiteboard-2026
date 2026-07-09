@@ -150,6 +150,10 @@ class App {
     
     // 記錄目前選按的功能選單，供貼上事件判斷用
     this.activeTabId = targetId;
+
+    if (targetId === 'panel-focus-game') {
+      this.handleFocusGameSync(this.focusGame);
+    }
   }
 
   openAdminPasswordModal() {
@@ -5840,6 +5844,7 @@ function submitAdminPassword() {
   const pwd = document.getElementById('adminPasswordInput').value;
   if (pwd === '1234') {
     window.app.isAdmin = true;
+    window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
     window.app.closeAdminPasswordModal();
     window.app.switchToTab('panel-admin');
     window.app.showNotification('成功', '已進入管理員模式！');
@@ -5853,6 +5858,7 @@ function submitAdminPassword() {
 
 function logoutAdmin() {
   window.app.isAdmin = false;
+  window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
   window.app.switchToTab('panel-questions');
   window.app.showNotification('提示', '已登出管理員模式');
   
