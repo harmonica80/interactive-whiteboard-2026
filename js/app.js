@@ -65,6 +65,12 @@ class App {
   }
   
   init() {
+    // 初始化學生端唯一使用者 ID
+    if (!localStorage.getItem('user_id')) {
+      const uniqueId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('user_id', uniqueId);
+    }
+
     this.quiz = new Quiz();
     window.quiz = this.quiz;
     
@@ -5623,7 +5629,7 @@ class App {
     const timeSpent = (now - start) / 1000;
     
     const userId = localStorage.getItem('user_id') || 'guest';
-    const userName = localStorage.getItem('user_name') || '匿名';
+    const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名';
 
     db.ref(`quiz/focusGame/results/${userId}`).set({
       name: userName,
