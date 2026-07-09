@@ -1346,6 +1346,21 @@ class App {
     } else {
       adminVideoPreview.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px; width: 100%; font-size: 12px;">暫無未分類影片</div>';
     }
+
+    // Bind click events on all admin video wrappers to toggle checkbox selection (same as image cards)
+    document.querySelectorAll('#adminVideoPreview .preview-item-wrapper, #adminVideosGroupedContainer .preview-item-wrapper').forEach(wrapper => {
+      wrapper.style.cursor = 'pointer';
+      wrapper.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) {
+          return;
+        }
+        const checkbox = wrapper.querySelector('.admin-select-video');
+        if (checkbox) {
+          checkbox.checked = !checkbox.checked;
+          window.app.updateBatchSelectCount();
+        }
+      });
+    });
   }
 
   renderBatchQuestionFolderOptions() {
