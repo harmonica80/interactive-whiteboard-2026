@@ -122,8 +122,9 @@ body {
   gap: 10px;
 }
 
-/* 管理後台按鈕（移至右上角）*/
-.admin-top-btn {
+/* 管理後台按鈕與教師分享頂部按鈕 */
+.admin-top-btn,
+.teacher-share-top-btn {
   flex: none !important;
   max-width: none !important;
   padding: 8px 14px !important;
@@ -136,12 +137,14 @@ body {
   font-weight: 700;
   transition: all 0.25s ease;
 }
-.admin-top-btn:hover {
+.admin-top-btn:hover,
+.teacher-share-top-btn:hover {
   background: var(--accent-color) !important;
   color: white !important;
   box-shadow: 0 3px 10px rgba(102,126,234,0.35);
 }
-.admin-top-btn.active {
+.admin-top-btn.active,
+.teacher-share-top-btn.active {
   background: var(--accent-color) !important;
   color: white !important;
   box-shadow: 0 3px 10px rgba(102,126,234,0.35);
