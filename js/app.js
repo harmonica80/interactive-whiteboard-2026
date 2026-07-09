@@ -1854,11 +1854,13 @@ class App {
 
     if (!broadcastObj) {
       overlay.style.display = 'none';
+      overlay.classList.remove('active');
       container.innerHTML = '';
       return;
     }
 
     overlay.style.display = 'flex';
+    overlay.classList.add('active');
     container.innerHTML = '';
     
     const unmuteBtn = document.getElementById('broadcastUnmuteBtn');
@@ -1895,7 +1897,10 @@ class App {
   closeBroadcastOverlayLocal() {
     const overlay = document.getElementById('broadcastVideoOverlay');
     const container = document.getElementById('broadcastPlayerContainer');
-    if (overlay) overlay.style.display = 'none';
+    if (overlay) {
+      overlay.style.display = 'none';
+      overlay.classList.remove('active');
+    }
     if (container) container.innerHTML = '';
   }
 
@@ -3243,11 +3248,15 @@ class App {
     if (!modal || !img) return;
     img.src = src;
     modal.style.display = 'flex';
+    modal.classList.add('active');
   }
 
   closeShareImageZoom() {
     const modal = document.getElementById('shareImageZoomModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
   }
 
   copyShareImage(src) {
@@ -5371,7 +5380,10 @@ class App {
     }
 
     if (!game || game.status === 'idle') {
-      if (gameOverlay) gameOverlay.style.display = 'none';
+      if (gameOverlay) {
+        gameOverlay.style.display = 'none';
+        gameOverlay.classList.remove('active');
+      }
       this.stopFocusTimers();
       
       const rankSection = document.getElementById('focusGameRankSection');
@@ -5384,7 +5396,10 @@ class App {
       return;
     }
 
-    if (gameOverlay) gameOverlay.style.display = 'flex';
+    if (gameOverlay) {
+      gameOverlay.style.display = 'flex';
+      gameOverlay.classList.add('active');
+    }
     
     if (game.status === 'countdown') {
       document.getElementById('focusCountdownArea').style.display = 'block';
