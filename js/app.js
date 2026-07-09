@@ -51,6 +51,16 @@ class App {
     this.videoFolders = [];
     this.expandedFolders = new Set();
     
+    // 專注力遊戲屬性
+    this.focusGame = null;
+    this.focusTimerInterval = null;
+    this.focusCountdownInterval = null;
+    this.focusStartTimeLocal = 0;
+    this.focusCurrentExpected = 1;
+    this.focusGridSize = 36;
+    this.fireworkParticles = [];
+    this.fireworkAnimationId = null;
+    
     this.init();
   }
   
@@ -207,6 +217,10 @@ class App {
 
     db.ref('quiz/answers').on('value', (snapshot) => {
       this.quizAnswers = snapshot.val() || {};
+    });
+
+    db.ref('quiz/focusGame').on('value', (snapshot) => {
+      this.handleFocusGameSync(snapshot.val());
     });
 
     // 監聽提問與圖片群組資料庫
@@ -5288,6 +5302,430 @@ class App {
     };
     reader.readAsText(file);
   }
+
+  // ==========================================
+  // 🧠 專注力遊戲活動機制 (Schulte Grid)
+  // ==========================================
+
+  startFocusGame() {
+    if (!this.isAdmin) return;
+    
+    const selectedSize = parseInt(document.getElementById('selectedFocusGridSize').value) || 36;
+    const countdownSecs = parseInt(document.getElementById('focusGameCountdown').value) || 10;
+    
+    db.ref('quiz/focusGame').set({
+      status: 'countdown',
+      gameType: 'numberGrid',
+      gridSize: selectedSize,
+      countdownSeconds: countdownSecs,
+      countdownStartTime: firebase.database.ServerValue.TIMESTAMP,
+      results: null
+    }).then(() => {
+      this.showNotification('成功', '專注力遊戲已發起！');
+    }).catch(err => {
+      this.showNotification('錯誤', '發起失敗: ' + err.message);
+    });
+  }
+
+  endFocusGame() {
+    if (!this.isAdmin) return;
+    
+    this.showConfirmModal(
+      '🧠',
+      '確定要結束專注力遊戲嗎？',
+      '這會關閉所有學生的遊戲 Overlay。',
+      () => {
+        db.ref('quiz/focusGame/status').set('idle').then(() => {
+          this.showNotification('成功', '遊戲已結束！');
+        });
+      }
+    );
+  }
+
+  handleFocusGameSync(game) {
+    this.focusGame = game;
+    
+    const teacherLobby = document.getElementById('teacherGameLobby');
+    const studentLobby = document.getElementById('studentGameLobby');
+    const gameOverlay = document.getElementById('focusGameOverlay');
+    const teacherCloseBtn = document.getElementById('focusGameTeacherCloseBtn');
+
+    if (this.isAdmin) {
+      if (teacherLobby) teacherLobby.style.display = 'block';
+      if (studentLobby) studentLobby.style.display = 'none';
+      if (teacherCloseBtn) teacherCloseBtn.style.display = 'block';
+    } else {
+      if (teacherLobby) teacherLobby.style.display = 'none';
+      if (studentLobby) studentLobby.style.display = 'block';
+      if (teacherCloseBtn) teacherCloseBtn.style.display = 'none';
+    }
+
+    if (!game || game.status === 'idle') {
+      if (gameOverlay) gameOverlay.style.display = 'none';
+      this.stopFocusTimers();
+      
+      const rankSection = document.getElementById('focusGameRankSection');
+      if (game && game.results && rankSection) {
+        rankSection.style.display = 'block';
+        this.renderFocusGameLeaderboard('focusGameLobbyRankList', game.results);
+      } else if (rankSection) {
+        rankSection.style.display = 'none';
+      }
+      return;
+    }
+
+    if (gameOverlay) gameOverlay.style.display = 'flex';
+    
+    if (game.status === 'countdown') {
+      document.getElementById('focusCountdownArea').style.display = 'block';
+      document.getElementById('focusPlayArea').style.display = 'none';
+      document.getElementById('focusFinishArea').style.display = 'none';
+      document.getElementById('lblTargetCount').textContent = game.gridSize || 36;
+      
+      this.startLocalCountdown(game);
+    }
+    else if (game.status === 'playing') {
+      document.getElementById('focusCountdownArea').style.display = 'none';
+      
+      const userId = localStorage.getItem('user_id') || 'guest';
+      const hasCompleted = game.results && game.results[userId];
+
+      if (hasCompleted) {
+        document.getElementById('focusPlayArea').style.display = 'none';
+        document.getElementById('focusFinishArea').style.display = 'block';
+        
+        const result = game.results[userId];
+        document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+        
+        const rank = this.calculateFocusUserRank(game.results, userId);
+        document.getElementById('lblFinishRank').textContent = rank;
+        
+        this.renderFocusGameLeaderboard('focusGameRankList', game.results);
+        
+        this.initFireworkCanvas();
+        this.triggerFireworkEffect();
+      } else {
+        document.getElementById('focusPlayArea').style.display = 'flex';
+        document.getElementById('focusFinishArea').style.display = 'none';
+        
+        this.startLocalPlay(game);
+      }
+    }
+    else if (game.status === 'ended') {
+      document.getElementById('focusCountdownArea').style.display = 'none';
+      document.getElementById('focusPlayArea').style.display = 'none';
+      document.getElementById('focusFinishArea').style.display = 'block';
+      
+      const userId = localStorage.getItem('user_id') || 'guest';
+      const result = game.results && game.results[userId];
+      if (result) {
+        document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+        const rank = this.calculateFocusUserRank(game.results, userId);
+        document.getElementById('lblFinishRank').textContent = rank;
+        document.getElementById('lblFinishRankAnimation').style.display = 'inline-block';
+        document.getElementById('lblFinishTime').parentElement.style.display = 'block';
+      } else {
+        document.getElementById('lblFinishRankAnimation').style.display = 'none';
+        document.getElementById('lblFinishTime').parentElement.style.display = 'none';
+      }
+      
+      this.renderFocusGameLeaderboard('focusGameRankList', game.results);
+    }
+  }
+
+  stopFocusTimers() {
+    if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
+    if (this.focusCountdownInterval) clearInterval(this.focusCountdownInterval);
+    this.focusTimerInterval = null;
+    this.focusCountdownInterval = null;
+    if (this.fireworkAnimationId) cancelAnimationFrame(this.fireworkAnimationId);
+    this.fireworkAnimationId = null;
+    
+    const canvas = document.getElementById('focusFireworkCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  calculateFocusUserRank(results, targetUserId) {
+    if (!results) return '-';
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => {
+      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+      return a.completedAt - b.completedAt;
+    });
+    const index = sorted.findIndex(item => item.uid === targetUserId);
+    return index !== -1 ? index + 1 : '-';
+  }
+
+  startLocalCountdown(game) {
+    this.stopFocusTimers(); // 重置先前的
+    
+    const countdownEl = document.getElementById('focusCountdownNumber');
+    const updateCountdown = () => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - game.countdownStartTime) / 1000);
+      const remaining = Math.max(0, game.countdownSeconds - elapsed);
+      
+      if (countdownEl) {
+        countdownEl.textContent = remaining;
+        if (remaining <= 3 && remaining > 0) {
+          countdownEl.style.color = '#FF3B30';
+          countdownEl.style.transform = 'scale(1.3)';
+          setTimeout(() => countdownEl.style.transform = 'scale(1)', 100);
+        } else {
+          countdownEl.style.color = 'var(--accent-color)';
+        }
+      }
+
+      if (remaining <= 0) {
+        clearInterval(this.focusCountdownInterval);
+        this.focusCountdownInterval = null;
+        
+        if (this.isAdmin) {
+          db.ref('quiz/focusGame').update({
+            status: 'playing',
+            startTime: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
+      }
+    };
+
+    updateCountdown();
+    this.focusCountdownInterval = setInterval(updateCountdown, 250);
+  }
+
+  startLocalPlay(game) {
+    this.stopFocusTimers();
+
+    this.focusCurrentExpected = 1;
+    this.focusGridSize = game.gridSize || 36;
+    
+    const grid = document.getElementById('focusGameGrid');
+    if (grid) {
+      const cols = Math.sqrt(this.focusGridSize);
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      
+      const numbers = this.generateSchulteGrid(this.focusGridSize);
+      grid.innerHTML = numbers.map(num => `
+        <button class="schulte-btn" onclick="window.app.clickSchulteGrid(${num}, this)" style="width: 100%; height: 100%; border-radius: 12px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.15); color: var(--accent-color); font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.05); user-select: none;">${num}</button>
+      `).join('');
+    }
+
+    document.getElementById('focusCurrentTarget').textContent = this.focusCurrentExpected;
+
+    this.focusStartTimeLocal = game.startTime || Date.now();
+    const timerEl = document.getElementById('focusTimer');
+    
+    const updateTimer = () => {
+      const now = Date.now();
+      const start = game.startTime || this.focusStartTimeLocal;
+      const spent = (now - start) / 1000;
+      if (timerEl) {
+        timerEl.textContent = spent.toFixed(2);
+      }
+    };
+
+    updateTimer();
+    this.focusTimerInterval = setInterval(updateTimer, 30);
+  }
+
+  generateSchulteGrid(size) {
+    const numbers = [];
+    for (let i = 1; i <= size; i++) {
+      numbers.push(i);
+    }
+    
+    for (let i = numbers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = numbers[i];
+      numbers[i] = numbers[j];
+      numbers[j] = temp;
+    }
+    return numbers;
+  }
+
+  clickSchulteGrid(num, btn) {
+    if (num === this.focusCurrentExpected) {
+      btn.style.opacity = '0';
+      btn.style.pointerEvents = 'none';
+      btn.style.transform = 'scale(0.5)';
+      
+      this.focusCurrentExpected++;
+      
+      if (this.focusCurrentExpected > this.focusGridSize) {
+        this.finishSchulteGrid();
+      } else {
+        document.getElementById('focusCurrentTarget').textContent = this.focusCurrentExpected;
+      }
+    } else {
+      btn.style.borderColor = '#FF3B30';
+      btn.style.background = 'rgba(255,59,48,0.1)';
+      btn.style.transform = 'translateX(-5px)';
+      setTimeout(() => btn.style.transform = 'translateX(5px)', 50);
+      setTimeout(() => btn.style.transform = 'translateX(-3px)', 100);
+      setTimeout(() => {
+        btn.style.transform = '';
+        btn.style.borderColor = 'rgba(0,122,255,0.15)';
+        btn.style.background = 'rgba(0,122,255,0.08)';
+      }, 300);
+    }
+  }
+
+  finishSchulteGrid() {
+    this.stopFocusTimers();
+    
+    const now = Date.now();
+    const start = (this.focusGame && this.focusGame.startTime) || this.focusStartTimeLocal;
+    const timeSpent = (now - start) / 1000;
+    
+    const userId = localStorage.getItem('user_id') || 'guest';
+    const userName = localStorage.getItem('user_name') || '匿名';
+
+    db.ref(`quiz/focusGame/results/${userId}`).set({
+      name: userName,
+      timeSpent: timeSpent,
+      completedAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      this.showNotification('成功', `您花了 ${timeSpent.toFixed(2)} 秒完成挑戰！`);
+      
+      // 學生端也立刻啟動本地煙火動畫
+      this.initFireworkCanvas();
+      this.triggerFireworkEffect();
+    }).catch(err => {
+      console.error("Submit result failed:", err);
+    });
+  }
+
+  renderFocusGameLeaderboard(listContainerId, results) {
+    const list = document.getElementById(listContainerId);
+    if (!list) return;
+
+    if (!results) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px 0;">目前尚無人完成</div>';
+      return;
+    }
+
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => {
+      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+      return a.completedAt - b.completedAt;
+    });
+
+    list.innerHTML = sorted.map((res, index) => {
+      const isTop3 = index < 3;
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+      const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
+      const fontWeight = isTop3 ? 'bold' : 'normal';
+      
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 8px; font-size: 13px; font-weight: ${fontWeight}; border-bottom: 1px solid var(--border-color);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px; font-weight: 900; color: ${color}; width: 24px; display: inline-block;">${medal}</span>
+            <span style="color: var(--text-primary);">${this.escapeHtml(res.name)}</span>
+          </div>
+          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold;">${res.timeSpent.toFixed(2)} 秒</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  initFireworkCanvas() {
+    const canvas = document.getElementById('focusFireworkCanvas');
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  triggerFireworkEffect() {
+    const canvas = document.getElementById('focusFireworkCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    this.fireworkParticles = [];
+    
+    if (this.fireworkAnimationId) {
+      cancelAnimationFrame(this.fireworkAnimationId);
+    }
+
+    const colors = ['#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55'];
+
+    // 粒子類別
+    const self = this;
+    class Particle {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 3;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.015 + 0.015;
+        this.gravity = 0.15;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity;
+        this.alpha -= this.decay;
+      }
+      draw(c) {
+        c.save();
+        c.globalAlpha = this.alpha;
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, 4, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    const spawnFirework = () => {
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * (canvas.height * 0.4) + canvas.height * 0.2;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for (let i = 0; i < 60; i++) {
+        self.fireworkParticles.push(new Particle(x, y, color));
+      }
+    };
+
+    for (let i = 0; i < 5; i++) {
+      setTimeout(spawnFirework, i * 400);
+    }
+
+    const loop = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      for (let i = self.fireworkParticles.length - 1; i >= 0; i--) {
+        const p = self.fireworkParticles[i];
+        p.update();
+        if (p.alpha <= 0) {
+          self.fireworkParticles.splice(i, 1);
+        } else {
+          p.draw(ctx);
+        }
+      }
+
+      if (self.focusGame && (self.focusGame.status === 'playing' || self.focusGame.status === 'ended')) {
+        if (Math.random() < 0.02 && self.fireworkParticles.length < 200) {
+          spawnFirework();
+        }
+      }
+
+      if (self.fireworkParticles.length > 0 || (self.focusGame && (self.focusGame.status === 'playing' || self.focusGame.status === 'ended'))) {
+        self.fireworkAnimationId = requestAnimationFrame(loop);
+      }
+    };
+
+    loop();
+  }
+
 }
 
 // 開始測驗
@@ -5732,6 +6170,20 @@ window.app && (window.app.adminSaveShare = adminSaveShare);
 function adminExportZipRecord() {
   if (window.app) window.app.adminExportZipRecord();
 }
+
+// 專注力遊戲全域呼叫介面
+function startFocusGame() {
+  if (window.app) window.app.startFocusGame();
+}
+
+function endFocusGame() {
+  if (window.app) window.app.endFocusGame();
+}
+
+function clickSchulteGrid(num, btn) {
+  if (window.app) window.app.clickSchulteGrid(num, btn);
+}
+
 
 
 
