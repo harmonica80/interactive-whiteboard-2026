@@ -5714,7 +5714,11 @@ class App {
     const timerEl = document.getElementById('focusTimer');
     
 
-    if (helpBtn) helpBtn.style.display = 'none';
+    if (helpBtn) {
+      helpBtn.style.display = 'none';
+      helpBtn.disabled = false;
+      helpBtn.textContent = '🆘 重播提示（+5 秒）';
+    }
     if (helpInfo) helpInfo.textContent = game.reverseMode ? '請記住閃爍位置，等播放完後反向點回。' : '請記住閃爍位置，等播放完後照順序點回。';
     if (targetEl) targetEl.textContent = '記憶中...';
     if (timerEl) timerEl.textContent = '0.00';
@@ -5728,22 +5732,36 @@ class App {
       }).join('');
     }
 
-    this.playMemorySequence(game);
+    this.playMemorySequence(game, false);
   }
 
   // OpenCode 修改：依序播放位置序列閃爍提示
-  playMemorySequence(game) {
+  playMemorySequence(game, isReplay = false) {
     let index = 0;
+    this.focusMemoryAcceptInput = false;
     const flashNext = () => {
       document.querySelectorAll('#focusGameGrid .memory-cell').forEach(cell => cell.classList.remove('memory-sequence-highlight'));
       if (index >= this.focusMemorySequence.length) {
         this.focusMemoryAcceptInput = true;
-        this.focusStartTimeLocal = Date.now();
         const targetEl = document.getElementById('focusCurrentTarget');
         const helpInfo = document.getElementById('focusHelpInfo');
+        const helpBtn = document.getElementById('focusHelpBtn');
         if (targetEl) targetEl.textContent = game.reverseMode ? '反向作答' : '依序作答';
-        if (helpInfo) helpInfo.textContent = game.reverseMode ? '請從最後一個閃爍位置開始點回來。' : '請從第一個閃爍位置開始點回來。';
-        this.startMemoryTimer();
+        if (helpInfo) {
+          const directionText = game.reverseMode ? '請從最後一個閃爍位置開始點回來。' : '請從第一個閃爍位置開始點回來。';
+          helpInfo.textContent = isReplay
+            ? `提示已重播，累計加時 ${this.focusHelpPenaltySeconds} 秒。${directionText}`
+            : directionText;
+        }
+        if (helpBtn) {
+          helpBtn.style.display = 'inline-block';
+          helpBtn.disabled = false;
+          helpBtn.textContent = '🆘 重播提示（+5 秒）';
+        }
+        if (!isReplay) {
+          this.focusStartTimeLocal = Date.now();
+          this.startMemoryTimer();
+        }
         return;
       }
 
@@ -5756,6 +5774,14 @@ class App {
         setTimeout(flashNext, 180);
       }, 620);
     };
+    if (isReplay) {
+      const targetEl = document.getElementById('focusCurrentTarget');
+      const helpBtn = document.getElementById('focusHelpBtn');
+      const helpInfo = document.getElementById('focusHelpInfo');
+      if (targetEl) targetEl.textContent = '重播提示中...';
+      if (helpBtn) helpBtn.disabled = true;
+      if (helpInfo) helpInfo.textContent = `正在重播位置提示，已加時 ${this.focusHelpPenaltySeconds} 秒。`;
+    }
     flashNext();
   }
 
@@ -5824,6 +5850,10 @@ class App {
   // OpenCode 修改：專注力遊戲求救提示；高亮下一個目標數字並加 5 秒懲罰時間
   requestFocusHelp() {
     if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    if (this.focusGame.gameType === 'memoryPosition') {
+      this.requestMemoryPositionHelp();
+      return;
+    }
     if (this.focusCurrentExpected > this.focusGridSize) return;
 
     this.focusHelpCount++;
@@ -5847,6 +5877,15 @@ class App {
     if (helpInfo) {
       helpInfo.textContent = `已提示 ${this.focusHelpCount} 次，累計加時 ${this.focusHelpPenaltySeconds} 秒`;
     }
+  }
+
+  // OpenCode 修改：位置序列記憶求救提示，重播同一組閃爍序列並加 5 秒
+  requestMemoryPositionHelp() {
+    if (!this.focusMemoryAcceptInput) return;
+
+    this.focusHelpCount++;
+    this.focusHelpPenaltySeconds += 5;
+    this.playMemorySequence(this.focusGame, true);
   }
 
   finishSchulteGrid() {
