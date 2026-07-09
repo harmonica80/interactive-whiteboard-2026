@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=81">
+  <link rel="stylesheet" href="css/style.css?v=82">
 </head>
 <body>
   <div class="container">
@@ -149,52 +149,6 @@
               <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-primary); font-weight: bold;">專注力遊戲大廳</h3>
               <p style="color: var(--text-secondary); font-size: 14px;">等待老師發起專注力活動... 請保持此頁面開啟喔！</p>
             </div>
-            
-            <!-- 教師視角 lobby (控制台) -->
-            <div id="teacherGameLobby" style="display: none; padding: 12px;">
-              <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; font-weight: bold;">🧠 專注力遊戲控制台</h3>
-              
-              <div style="margin-bottom: 16px;">
-                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">1. 選擇遊戲類型：</label>
-                <select id="focusGameType" class="question-input" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px; height: 38px;">
-                  <option value="numberGrid">🔢 依序點選數字 (舒爾特方格 Schulte Grid)</option>
-                </select>
-              </div>
-
-              <div style="margin-bottom: 16px;">
-                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 設定數字數量 (格子數)：</label>
-                <div class="grid-size-selector" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                  <div class="grid-size-card" onclick="selectFocusGridSize(9, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
-                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">9</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">3×3 格子</div>
-                  </div>
-                  <div class="grid-size-card" onclick="selectFocusGridSize(16, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
-                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">16</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">4×4 格子</div>
-                  </div>
-                  <div class="grid-size-card" onclick="selectFocusGridSize(25, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
-                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">25</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">5×5 格子</div>
-                  </div>
-                  <div class="grid-size-card active" onclick="selectFocusGridSize(36, this)" style="border: 2px solid var(--accent-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
-                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">36</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">6×6 格子 (預設)</div>
-                  </div>
-                </div>
-                <input type="hidden" id="selectedFocusGridSize" value="36">
-              </div>
-
-              <div style="margin-bottom: 20px;">
-                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">3. 自訂開始倒數秒數：</label>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <input type="number" id="focusGameCountdown" class="question-input" min="3" max="60" value="10" style="width: 80px; text-align: center; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px;">
-                  <span style="font-size: 14px; color: var(--text-secondary);">秒</span>
-                </div>
-              </div>
-
-              <button onclick="window.app.startFocusGame()" style="width: 100%; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 42px;">
-                🚀 確認並開始互動
-              </button>
             </div>
             
             <!-- 即時排行榜顯示區 (Lobby 下方) -->
@@ -408,6 +362,72 @@
                 <button id="startQuizBtn" class="start-quiz-btn" onclick="startQuiz()">開始測驗</button>
               </div>
               <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="display: none; margin-top: 10px; padding: 12px; width: 100%; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color);">結束測驗</button>
+            </div>
+          </div>
+
+          <!-- 專注力遊戲管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>🧠 專注力遊戲管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body" style="padding: 12px 0;">
+              
+              <div style="margin-bottom: 16px;">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">1. 選擇遊戲類型：</label>
+                <select id="focusGameType" class="question-input" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px; height: 38px;">
+                  <option value="numberGrid">🔢 依序點選數字 (舒爾特方格 Schulte Grid)</option>
+                </select>
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 設定數字數量 (格子數)：</label>
+                <div class="grid-size-selector" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                  <div class="grid-size-card" onclick="selectFocusGridSize(9, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">9</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">3×3 格子</div>
+                  </div>
+                  <div class="grid-size-card" onclick="selectFocusGridSize(16, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">16</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">4×4 格子</div>
+                  </div>
+                  <div class="grid-size-card" onclick="selectFocusGridSize(25, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">25</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">5×5 格子</div>
+                  </div>
+                  <div class="grid-size-card active" onclick="selectFocusGridSize(36, this)" style="border: 2px solid var(--accent-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">36</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">6×6 格子 (預設)</div>
+                  </div>
+                </div>
+                <input type="hidden" id="selectedFocusGridSize" value="36">
+              </div>
+
+              <div style="margin-bottom: 20px;">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">3. 自訂開始倒數秒數：</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input type="number" id="focusGameCountdown" class="question-input" min="3" max="60" value="10" style="width: 80px; text-align: center; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px;">
+                  <span style="font-size: 14px; color: var(--text-secondary);">秒</span>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 8px;">
+                <button onclick="window.app.startFocusGame()" style="flex: 1; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 42px;">
+                  🚀 開始遊戲
+                </button>
+                <button onclick="window.app.endFocusGame()" style="flex: 1; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 42px;">
+                  ❌ 結束遊戲
+                </button>
+              </div>
+
+              <!-- 控制台即時排行榜 -->
+              <div id="adminFocusGameRankSection" style="display: none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">🏆 即時成績排行榜</h4>
+                <div id="adminFocusGameRankList" style="display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto;">
+                  <!-- 排行榜清單 -->
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -637,9 +657,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=81"></script>
-  <script src="js/quiz.js?v=81"></script>
-  <script src="js/app.js?v=81"></script>
+  <script src="js/firebase-config.js?v=82"></script>
+  <script src="js/quiz.js?v=82"></script>
+  <script src="js/app.js?v=82"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

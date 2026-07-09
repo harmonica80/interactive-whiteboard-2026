@@ -5349,19 +5349,25 @@ class App {
   handleFocusGameSync(game) {
     this.focusGame = game;
     
-    const teacherLobby = document.getElementById('teacherGameLobby');
     const studentLobby = document.getElementById('studentGameLobby');
     const gameOverlay = document.getElementById('focusGameOverlay');
     const teacherCloseBtn = document.getElementById('focusGameTeacherCloseBtn');
 
-    if (this.isAdmin) {
-      if (teacherLobby) teacherLobby.style.display = 'block';
-      if (studentLobby) studentLobby.style.display = 'none';
-      if (teacherCloseBtn) teacherCloseBtn.style.display = 'block';
-    } else {
-      if (teacherLobby) teacherLobby.style.display = 'none';
-      if (studentLobby) studentLobby.style.display = 'block';
-      if (teacherCloseBtn) teacherCloseBtn.style.display = 'none';
+    // 學生端大廳永遠只顯示 studentLobby，不需要隱藏
+    if (studentLobby) studentLobby.style.display = 'block';
+
+    // 只有管理員在 Overlay 顯示結束遊戲按鈕
+    if (teacherCloseBtn) {
+      teacherCloseBtn.style.display = this.isAdmin ? 'block' : 'none';
+    }
+
+    // 渲染管理後台的即時排行榜 (如果存在 results 且目前已登入管理員)
+    const adminRankSection = document.getElementById('adminFocusGameRankSection');
+    if (game && game.results && adminRankSection) {
+      adminRankSection.style.display = 'block';
+      this.renderFocusGameLeaderboard('adminFocusGameRankList', game.results);
+    } else if (adminRankSection) {
+      adminRankSection.style.display = 'none';
     }
 
     if (!game || game.status === 'idle') {
