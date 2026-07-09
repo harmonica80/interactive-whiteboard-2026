@@ -5370,13 +5370,15 @@ class App {
       teacherCloseBtn.style.display = this.isAdmin ? 'block' : 'none';
     }
 
-    // 渲染管理後台的即時排行榜 (如果存在 results 且目前已登入管理員)
+    // 渲染管理後台的即時排行榜 (如果目前已登入管理員，一律在管理面板下方顯示)
     const adminRankSection = document.getElementById('adminFocusGameRankSection');
-    if (game && game.results && adminRankSection) {
-      adminRankSection.style.display = 'block';
-      this.renderFocusGameLeaderboard('adminFocusGameRankList', game.results);
-    } else if (adminRankSection) {
-      adminRankSection.style.display = 'none';
+    if (adminRankSection) {
+      if (this.isAdmin) {
+        adminRankSection.style.display = 'block';
+        this.renderFocusGameLeaderboard('adminFocusGameRankList', game ? game.results : null);
+      } else {
+        adminRankSection.style.display = 'none';
+      }
     }
 
     if (!game || game.status === 'idle') {
@@ -5396,9 +5398,22 @@ class App {
       return;
     }
 
-    if (gameOverlay) {
-      gameOverlay.style.display = 'flex';
-      gameOverlay.classList.add('active');
+    // 已進入管理介面者，畫面不用顯示專注力遊戲，只要留在管理頁面就好
+    if (this.isAdmin) {
+      if (gameOverlay) {
+        gameOverlay.style.display = 'none';
+        gameOverlay.classList.remove('active');
+      }
+      // 倒數階段仍需由管理員的背景計時觸發 status -> playing，因此倒數階段管理員不 return，其餘 status 一律 return
+      if (game.status !== 'countdown') {
+        this.stopFocusTimers();
+        return;
+      }
+    } else {
+      if (gameOverlay) {
+        gameOverlay.style.display = 'flex';
+        gameOverlay.classList.add('active');
+      }
     }
     
     if (game.status === 'countdown') {
@@ -5649,12 +5664,12 @@ class App {
       const fontWeight = isTop3 ? 'bold' : 'normal';
       
       return `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 8px; font-size: 13px; font-weight: ${fontWeight}; border-bottom: 1px solid var(--border-color);">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 14px; font-weight: 900; color: ${color}; width: 24px; display: inline-block;">${medal}</span>
-            <span style="color: var(--text-primary);">${this.escapeHtml(res.name)}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
           </div>
-          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold;">${res.timeSpent.toFixed(2)} 秒</span>
+          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒</span>
         </div>
       `;
     }).join('');
