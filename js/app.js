@@ -5838,7 +5838,12 @@ function resetAll() {
 
 // 啟動應用程式
 document.addEventListener('DOMContentLoaded', () => {
-  window.app = new App();
+  try {
+    window.app = new App();
+  } catch (err) {
+    console.error("CRITICAL RUNTIME ERROR:", err);
+    alert("載入錯誤: " + err.message + "\n" + err.stack);
+  }
 });
 
 // 管理員密碼驗證
