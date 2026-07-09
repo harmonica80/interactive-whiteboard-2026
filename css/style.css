@@ -2098,11 +2098,51 @@ body {
   animation: countdownPulse 1s infinite;
 }
 
+/* OpenCode 修改：專注力遊戲求救提示高亮動畫 */
+.schulte-btn.focus-help-highlight {
+  animation: focusHelpPulse 1.25s ease-in-out;
+  border-color: #ffcc00 !important;
+  background: rgba(255, 204, 0, 0.32) !important;
+  color: #5a3b00 !important;
+  box-shadow: 0 0 0 6px rgba(255, 204, 0, 0.22), 0 0 28px rgba(255, 204, 0, 0.75) !important;
+  transform: scale(1.14) !important;
+  z-index: 3;
+}
+
+@keyframes focusHelpPulse {
+  0%, 100% { transform: scale(1); }
+  35%, 70% { transform: scale(1.16); }
+}
+
+/* OpenCode 修改：位置序列記憶遊戲格子狀態 */
+.memory-cell.memory-sequence-highlight {
+  background: rgba(52, 199, 89, 0.8) !important;
+  border-color: #34c759 !important;
+  box-shadow: 0 0 0 6px rgba(52, 199, 89, 0.18), 0 0 24px rgba(52, 199, 89, 0.65) !important;
+  transform: scale(1.08);
+}
+
+.memory-cell.memory-correct {
+  background: rgba(52, 199, 89, 0.22) !important;
+  border-color: #34c759 !important;
+  opacity: 0.65;
+}
+
+.memory-cell.memory-wrong {
+  background: rgba(255, 59, 48, 0.18) !important;
+  border-color: #ff3b30 !important;
+  animation: memoryWrongShake 0.32s ease-in-out;
+}
+
+@keyframes memoryWrongShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
 /* 動畫效果：排名彈跳 */
 @keyframes rankBounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
-
-
 

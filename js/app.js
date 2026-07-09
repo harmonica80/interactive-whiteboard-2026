@@ -58,6 +58,16 @@ class App {
     this.focusStartTimeLocal = 0;
     this.focusCurrentExpected = 1;
     this.focusGridSize = 36;
+    // OpenCode 修改：專注力遊戲求救提示狀態，每次使用加 5 秒懲罰時間
+    this.focusHelpPenaltySeconds = 0;
+    this.focusHelpCount = 0;
+    // OpenCode 修改：位置序列記憶遊戲狀態
+    this.focusLocalGameKey = null;
+    this.focusMemorySequence = [];
+    this.focusMemoryAnswerOrder = [];
+    this.focusMemoryInputIndex = 0;
+    this.focusMemoryAcceptInput = false;
+    this.focusMemoryMistakes = 0;
     this.fireworkParticles = [];
     this.fireworkAnimationId = null;
     
@@ -5329,13 +5339,27 @@ class App {
   startFocusGame() {
     if (!this.isAdmin) return;
     
-    const selectedSize = parseInt(document.getElementById('selectedFocusGridSize').value) || 36;
+    const gameType = document.getElementById('focusGameType').value || 'numberGrid';
+    const numberGridSize = parseInt(document.getElementById('selectedFocusGridSize').value) || 36;
+    const memoryGridSize = parseInt(document.getElementById('focusMemoryGridSize')?.value) || 16;
+    const selectedSize = gameType === 'memoryPosition' ? memoryGridSize : numberGridSize;
     const countdownSecs = parseInt(document.getElementById('focusGameCountdown').value) || 10;
+    // OpenCode 修改：位置序列記憶第一版，由老師端產生共用序列並寫入 Firebase
+    const memoryLengthInput = document.getElementById('focusMemoryLength');
+    const memoryReverseInput = document.getElementById('focusMemoryReverse');
+    const memoryLength = Math.max(3, Math.min(12, parseInt(memoryLengthInput && memoryLengthInput.value) || 5));
+    const memoryReverse = !!(memoryReverseInput && memoryReverseInput.checked);
+    const memorySequence = gameType === 'memoryPosition'
+      ? this.generateFocusMemorySequence(selectedSize, memoryLength)
+      : null;
     
     db.ref('quiz/focusGame').set({
       status: 'countdown',
-      gameType: 'numberGrid',
+      gameType: gameType,
       gridSize: selectedSize,
+      sequenceLength: gameType === 'memoryPosition' ? memoryLength : null,
+      reverseMode: gameType === 'memoryPosition' ? memoryReverse : false,
+      sequence: memorySequence,
       countdownSeconds: countdownSecs,
       countdownStartTime: firebase.database.ServerValue.TIMESTAMP,
       results: null
@@ -5344,6 +5368,39 @@ class App {
     }).catch(err => {
       this.showNotification('錯誤', '發起失敗: ' + err.message);
     });
+  }
+
+  // OpenCode 修改：管理後台依遊戲類型顯示對應設定，避免不同遊戲選項混在一起
+  updateFocusGameAdminOptions() {
+    const gameType = document.getElementById('focusGameType')?.value || 'numberGrid';
+    const numberGridSettings = document.getElementById('focusNumberGridSettings');
+    const memorySettings = document.getElementById('focusMemorySettings');
+    if (numberGridSettings) numberGridSettings.style.display = gameType === 'numberGrid' ? 'block' : 'none';
+    if (memorySettings) memorySettings.style.display = gameType === 'memoryPosition' ? 'block' : 'none';
+  }
+
+  // OpenCode 修改：倒數畫面依專注力遊戲類型顯示不同說明文字
+  updateFocusCountdownCopy(game) {
+    const titleEl = document.getElementById('focusCountdownTitle');
+    const descriptionEl = document.getElementById('focusCountdownDescription');
+    const hintEl = document.getElementById('focusCountdownHint');
+    const gridSize = game.gridSize || 36;
+    const sequenceLength = game.sequenceLength || 5;
+
+    if (game.gameType === 'memoryPosition') {
+      if (titleEl) titleEl.textContent = game.reverseMode ? '位置序列記憶・反向挑戰！' : '位置序列記憶挑戰！';
+      if (descriptionEl) {
+        descriptionEl.textContent = game.reverseMode
+          ? `請記住 ${gridSize} 格盤面中依序閃爍的 ${sequenceLength} 個位置，播放完後要反向點回。`
+          : `請記住 ${gridSize} 格盤面中依序閃爍的 ${sequenceLength} 個位置，播放完後照順序點回。`;
+      }
+      if (hintEl) hintEl.textContent = '記憶挑戰即將開始，請專心看格子閃爍...';
+      return;
+    }
+
+    if (titleEl) titleEl.textContent = '提升專注力挑戰！';
+    if (descriptionEl) descriptionEl.innerHTML = `請準備好眼睛和滑鼠，依序尋找並點擊數字 1 到 <span id="lblTargetCount">${gridSize}</span> 喔！`;
+    if (hintEl) hintEl.textContent = '挑戰即將開始...';
   }
 
   endFocusGame() {
@@ -5393,6 +5450,7 @@ class App {
         gameOverlay.classList.remove('active');
       }
       this.stopFocusTimers();
+      this.focusLocalGameKey = null;
       
       const rankSection = document.getElementById('focusGameRankSection');
       if (game && game.results && rankSection) {
@@ -5426,7 +5484,7 @@ class App {
       document.getElementById('focusCountdownArea').style.display = 'block';
       document.getElementById('focusPlayArea').style.display = 'none';
       document.getElementById('focusFinishArea').style.display = 'none';
-      document.getElementById('lblTargetCount').textContent = game.gridSize || 36;
+      this.updateFocusCountdownCopy(game);
       
       this.startLocalCountdown(game);
     }
@@ -5545,10 +5603,36 @@ class App {
   }
 
   startLocalPlay(game) {
+    // OpenCode 修改：避免 Firebase results 更新時重置正在作答的本地遊戲畫面
+    const localGameKey = [
+      game.countdownStartTime,
+      game.gameType || 'numberGrid',
+      game.gridSize || 36,
+      game.sequenceLength || '',
+      game.reverseMode ? 'reverse' : 'normal'
+    ].join('_');
+    const existingGrid = document.getElementById('focusGameGrid');
+    if (this.focusLocalGameKey === localGameKey && existingGrid && existingGrid.children.length > 0) {
+      return;
+    }
     this.stopFocusTimers();
+    this.focusLocalGameKey = localGameKey;
+
+    // OpenCode 修改：位置序列記憶第一版與舒爾特方格共用專注力遊戲 Overlay
+    if (game.gameType === 'memoryPosition') {
+      this.startMemoryPositionGame(game);
+      return;
+    }
 
     this.focusCurrentExpected = 1;
     this.focusGridSize = game.gridSize || 36;
+    // OpenCode 修改：每局開始時重置求救提示與懲罰秒數
+    this.focusHelpPenaltySeconds = 0;
+    this.focusHelpCount = 0;
+    const helpBtn = document.getElementById('focusHelpBtn');
+    if (helpBtn) helpBtn.style.display = 'inline-block';
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) helpInfo.textContent = '';
     
     const grid = document.getElementById('focusGameGrid');
     if (grid) {
@@ -5557,7 +5641,7 @@ class App {
       
       const numbers = this.generateSchulteGrid(this.focusGridSize);
       grid.innerHTML = numbers.map(num => `
-        <button class="schulte-btn" onclick="window.app.clickSchulteGrid(${num}, this)" style="width: 100%; height: 100%; border-radius: 12px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.15); color: var(--accent-color); font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.05); user-select: none;">${num}</button>
+        <button class="schulte-btn" data-number="${num}" onclick="window.app.clickSchulteGrid(${num}, this)" style="width: 100%; height: 100%; border-radius: 12px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.15); color: var(--accent-color); font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.05); user-select: none;">${num}</button>
       `).join('');
     }
 
@@ -5569,7 +5653,8 @@ class App {
     const updateTimer = () => {
       const now = Date.now();
       const start = game.startTime || this.focusStartTimeLocal;
-      const spent = (now - start) / 1000;
+      // OpenCode 修改：畫面計時包含求救提示的懲罰秒數
+      const spent = (now - start) / 1000 + this.focusHelpPenaltySeconds;
       if (timerEl) {
         timerEl.textContent = spent.toFixed(2);
       }
@@ -5594,8 +5679,123 @@ class App {
     return numbers;
   }
 
+  // OpenCode 修改：產生位置序列記憶遊戲的共用題目序列
+  generateFocusMemorySequence(size, length) {
+    const cells = [];
+    for (let i = 1; i <= size; i++) cells.push(i);
+    for (let i = cells.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = cells[i];
+      cells[i] = cells[j];
+      cells[j] = temp;
+    }
+    return cells.slice(0, Math.min(length, size));
+  }
+
+  // OpenCode 修改：位置序列記憶第一版，播放格子閃爍後讓學生依序或反向點回
+  startMemoryPositionGame(game) {
+    this.focusGridSize = game.gridSize || 36;
+    // OpenCode 修改：修正位置序列模式未宣告 grid 導致無作用，並相容 Firebase array/object 序列格式
+    const grid = document.getElementById('focusGameGrid');
+    const sequence = Array.isArray(game.sequence)
+      ? game.sequence
+      : (game.sequence ? Object.values(game.sequence).map(v => parseInt(v)).filter(v => Number.isFinite(v)) : []);
+    this.focusMemorySequence = sequence.length > 0 ? sequence : this.generateFocusMemorySequence(this.focusGridSize, game.sequenceLength || 5);
+    this.focusMemoryAnswerOrder = game.reverseMode ? [...this.focusMemorySequence].reverse() : [...this.focusMemorySequence];
+    this.focusMemoryInputIndex = 0;
+    this.focusMemoryAcceptInput = false;
+    this.focusMemoryMistakes = 0;
+    this.focusHelpPenaltySeconds = 0;
+    this.focusHelpCount = 0;
+
+    const targetEl = document.getElementById('focusCurrentTarget');
+    const helpBtn = document.getElementById('focusHelpBtn');
+    const helpInfo = document.getElementById('focusHelpInfo');
+    const timerEl = document.getElementById('focusTimer');
+    
+
+    if (helpBtn) helpBtn.style.display = 'none';
+    if (helpInfo) helpInfo.textContent = game.reverseMode ? '請記住閃爍位置，等播放完後反向點回。' : '請記住閃爍位置，等播放完後照順序點回。';
+    if (targetEl) targetEl.textContent = '記憶中...';
+    if (timerEl) timerEl.textContent = '0.00';
+
+    if (grid) {
+      const cols = Math.sqrt(this.focusGridSize);
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      grid.innerHTML = Array.from({ length: this.focusGridSize }, (_, i) => {
+        const cell = i + 1;
+        return `<button class="schulte-btn memory-cell" data-cell="${cell}" onclick="window.app.clickMemoryPosition(${cell}, this)" style="width: 100%; height: 100%; border-radius: 12px; background: rgba(0,122,255,0.06); border: 2px solid rgba(0,122,255,0.13); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.04); user-select: none;"></button>`;
+      }).join('');
+    }
+
+    this.playMemorySequence(game);
+  }
+
+  // OpenCode 修改：依序播放位置序列閃爍提示
+  playMemorySequence(game) {
+    let index = 0;
+    const flashNext = () => {
+      document.querySelectorAll('#focusGameGrid .memory-cell').forEach(cell => cell.classList.remove('memory-sequence-highlight'));
+      if (index >= this.focusMemorySequence.length) {
+        this.focusMemoryAcceptInput = true;
+        this.focusStartTimeLocal = Date.now();
+        const targetEl = document.getElementById('focusCurrentTarget');
+        const helpInfo = document.getElementById('focusHelpInfo');
+        if (targetEl) targetEl.textContent = game.reverseMode ? '反向作答' : '依序作答';
+        if (helpInfo) helpInfo.textContent = game.reverseMode ? '請從最後一個閃爍位置開始點回來。' : '請從第一個閃爍位置開始點回來。';
+        this.startMemoryTimer();
+        return;
+      }
+
+      const cellNum = this.focusMemorySequence[index];
+      const cell = document.querySelector(`#focusGameGrid .memory-cell[data-cell="${cellNum}"]`);
+      if (cell) cell.classList.add('memory-sequence-highlight');
+      index++;
+      setTimeout(() => {
+        if (cell) cell.classList.remove('memory-sequence-highlight');
+        setTimeout(flashNext, 180);
+      }, 620);
+    };
+    flashNext();
+  }
+
+  // OpenCode 修改：位置序列記憶作答階段計時
+  startMemoryTimer() {
+    const timerEl = document.getElementById('focusTimer');
+    const updateTimer = () => {
+      const spent = (Date.now() - this.focusStartTimeLocal) / 1000 + this.focusHelpPenaltySeconds;
+      if (timerEl) timerEl.textContent = spent.toFixed(2);
+    };
+    updateTimer();
+    this.focusTimerInterval = setInterval(updateTimer, 30);
+  }
+
+  // OpenCode 修改：位置序列記憶點擊判定，支援反向模式
+  clickMemoryPosition(cellNum, btn) {
+    if (!this.focusMemoryAcceptInput) return;
+    const expected = this.focusMemoryAnswerOrder[this.focusMemoryInputIndex];
+    if (cellNum === expected) {
+      btn.classList.remove('memory-wrong');
+      btn.classList.add('memory-correct');
+      btn.style.pointerEvents = 'none';
+      this.focusMemoryInputIndex++;
+      if (this.focusMemoryInputIndex >= this.focusMemoryAnswerOrder.length) {
+        this.finishSchulteGrid();
+      }
+      return;
+    }
+
+    this.focusMemoryMistakes++;
+    this.focusHelpPenaltySeconds += 3;
+    btn.classList.add('memory-wrong');
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) helpInfo.textContent = `點錯 ${this.focusMemoryMistakes} 次，已加時 ${this.focusMemoryMistakes * 3} 秒。`;
+    setTimeout(() => btn.classList.remove('memory-wrong'), 350);
+  }
+
   clickSchulteGrid(num, btn) {
     if (num === this.focusCurrentExpected) {
+      btn.classList.remove('focus-help-highlight');
       btn.style.opacity = '0';
       btn.style.pointerEvents = 'none';
       btn.style.transform = 'scale(0.5)';
@@ -5621,12 +5821,41 @@ class App {
     }
   }
 
+  // OpenCode 修改：專注力遊戲求救提示；高亮下一個目標數字並加 5 秒懲罰時間
+  requestFocusHelp() {
+    if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    if (this.focusCurrentExpected > this.focusGridSize) return;
+
+    this.focusHelpCount++;
+    this.focusHelpPenaltySeconds += 5;
+
+    const target = document.querySelector(`#focusGameGrid .schulte-btn[data-number="${this.focusCurrentExpected}"]`);
+    if (target) {
+      target.classList.remove('focus-help-highlight');
+      void target.offsetWidth;
+      target.classList.add('focus-help-highlight');
+      setTimeout(() => target.classList.remove('focus-help-highlight'), 1300);
+    }
+
+    const timerEl = document.getElementById('focusTimer');
+    if (timerEl) {
+      const current = parseFloat(timerEl.textContent) || 0;
+      timerEl.textContent = (current + 5).toFixed(2);
+    }
+
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) {
+      helpInfo.textContent = `已提示 ${this.focusHelpCount} 次，累計加時 ${this.focusHelpPenaltySeconds} 秒`;
+    }
+  }
+
   finishSchulteGrid() {
     this.stopFocusTimers();
     
     const now = Date.now();
     const start = (this.focusGame && this.focusGame.startTime) || this.focusStartTimeLocal;
-    const timeSpent = (now - start) / 1000;
+    // OpenCode 修改：排行榜成績採計求救提示懲罰秒數
+    const timeSpent = (now - start) / 1000 + this.focusHelpPenaltySeconds;
     
     const userId = localStorage.getItem('user_id') || 'guest';
     const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名';
@@ -5634,6 +5863,11 @@ class App {
     db.ref(`quiz/focusGame/results/${userId}`).set({
       name: userName,
       timeSpent: timeSpent,
+      gameType: this.focusGame && this.focusGame.gameType ? this.focusGame.gameType : 'numberGrid',
+      reverseMode: !!(this.focusGame && this.focusGame.reverseMode),
+      mistakes: this.focusMemoryMistakes || 0,
+      helpCount: this.focusHelpCount,
+      penaltySeconds: this.focusHelpPenaltySeconds,
       completedAt: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
       this.showNotification('成功', `您花了 ${timeSpent.toFixed(2)} 秒完成挑戰！`);
@@ -5668,6 +5902,8 @@ class App {
       const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
       const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
       const fontWeight = isTop3 ? 'bold' : 'normal';
+      const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
+      const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
       
       return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
@@ -5675,7 +5911,7 @@ class App {
             <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
             <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
           </div>
-          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒</span>
+          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒 ${helpNote}${memoryNote}</span>
         </div>
       `;
     }).join('');
@@ -5876,6 +6112,7 @@ function resetAll() {
 document.addEventListener('DOMContentLoaded', () => {
   try {
     window.app = new App();
+    window.app.updateFocusGameAdminOptions();
   } catch (err) {
     console.error("CRITICAL RUNTIME ERROR:", err);
     alert("載入錯誤: " + err.message + "\n" + err.stack);
@@ -5892,6 +6129,7 @@ function submitAdminPassword() {
   if (pwd === '1234') {
     window.app.isAdmin = true;
     window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
+    window.app.updateFocusGameAdminOptions();
     window.app.closeAdminPasswordModal();
     window.app.switchToTab('panel-admin');
     window.app.showNotification('成功', '已進入管理員模式！');
