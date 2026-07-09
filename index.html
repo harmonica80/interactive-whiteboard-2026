@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=89">
+  <link rel="stylesheet" href="css/style.css?v=88">
 </head>
 <body>
   <div class="container">
@@ -33,8 +33,8 @@
     <div class="function-menu">
       <button class="menu-tab active" data-target="panel-questions">💬 提問區</button>
       <button class="menu-tab" data-target="panel-images">🖼️ 圖片分享</button>
-      <button class="menu-tab" data-target="panel-teacher-shares">📢 教師分享</button>
       <button class="menu-tab" data-target="panel-videos">🎥 影片分享</button>
+      <button class="menu-tab" data-target="panel-teacher-shares">📢 教師分享</button>
       <button class="menu-tab" data-target="panel-quiz">📝 選擇題測驗</button>
       <button class="menu-tab" data-target="panel-focus-game">🧠 專注力遊戲</button>
       <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
@@ -80,18 +80,6 @@
         </div>
       </div>
       
-      <!-- 教師分享區 -->
-      <div class="panel-card" id="panel-teacher-shares">
-        <div class="panel-header">
-          <span class="icon">📢</span>
-          <span class="title">教師分享區</span>
-          <span class="collapse-icon">▼</span>
-        </div>
-        <div class="panel-body">
-          <div id="teacherSharesContainer" class="grouped-folders-container"></div>
-        </div>
-      </div>
-
       <!-- 影片分享 -->
       <div class="panel-card" id="panel-videos">
         <div class="panel-header">
@@ -116,6 +104,18 @@
           <div class="upload-note" style="margin-top: 16px; font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5;">
             💡 提示：影片大小上限為 10MB（支援 100MB 影片自動壓縮）。較大影片請上傳至 YouTube 或 Google Drive 後貼上連結分享。
           </div>
+        </div>
+      </div>
+
+      <!-- 教師分享區 -->
+      <div class="panel-card" id="panel-teacher-shares">
+        <div class="panel-header">
+          <span class="icon">📢</span>
+          <span class="title">教師分享區</span>
+          <span class="collapse-icon">▼</span>
+        </div>
+        <div class="panel-body">
+          <div id="teacherSharesContainer" class="grouped-folders-container"></div>
         </div>
       </div>
 
@@ -683,9 +683,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=89"></script>
-  <script src="js/quiz.js?v=89"></script>
-  <script src="js/app.js?v=89"></script>
+  <script src="js/firebase-config.js?v=88"></script>
+  <script src="js/quiz.js?v=88"></script>
+  <script src="js/app.js?v=88"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
