@@ -4980,7 +4980,58 @@ class App {
       return;
     }
 
-    this.showNotification('提示', '正在打包壓縮檔，請稍候...');
+    this.showNotification('提示', '正在從資料庫讀取最新資料，請稍候...');
+
+    // 先從 Firebase 取得最新資料，確保打包資料完整
+    Promise.all([
+      this.imageRef.once('value'),
+      this.videoRef.once('value'),
+      this.sharesRef.once('value'),
+      db.ref('quiz/questionFolders').once('value'),
+      db.ref('quiz/imageFolders').once('value'),
+      db.ref('quiz/videoFolders').once('value'),
+      db.ref('quiz/teacherShareFolders').once('value'),
+      db.ref('questions').once('value'),
+    ]).then(([imgSnap, vidSnap, shareSnap, qFolderSnap, imgFolderSnap, vidFolderSnap, shareFolderSnap, qSnap]) => {
+
+      const freshImages = [];
+      imgSnap.forEach(child => freshImages.push({ id: child.key, ...child.val() }));
+      freshImages.sort((a, b) => b.timestamp - a.timestamp);
+
+      const freshVideos = [];
+      vidSnap.forEach(child => freshVideos.push({ id: child.key, ...child.val() }));
+      freshVideos.sort((a, b) => b.timestamp - a.timestamp);
+
+      const freshShares = [];
+      shareSnap.forEach(child => freshShares.push({ id: child.key, ...child.val() }));
+      freshShares.sort((a, b) => b.timestamp - a.timestamp);
+
+      const freshQuestions = [];
+      qSnap.forEach(child => freshQuestions.push({ id: child.key, ...child.val() }));
+      freshQuestions.sort((a, b) => b.timestamp - a.timestamp);
+
+      const freshQFolders = [];
+      qFolderSnap.forEach(child => freshQFolders.push({ id: child.key, ...child.val() }));
+
+      const freshImgFolders = [];
+      imgFolderSnap.forEach(child => freshImgFolders.push({ id: child.key, ...child.val() }));
+
+      const freshVidFolders = [];
+      vidFolderSnap.forEach(child => freshVidFolders.push({ id: child.key, ...child.val() }));
+
+      const freshShareFolders = [];
+      shareFolderSnap.forEach(child => freshShareFolders.push({ id: child.key, ...child.val() }));
+
+      this.showNotification('提示', `正在打包 ${freshQuestions.length} 筆提問、${freshImages.length} 張圖片、${freshVideos.length} 支影片、${freshShares.length} 筆教師分享，請稍候...`);
+      this._buildZip(freshQuestions, freshQFolders, freshImages, freshImgFolders, freshVideos, freshVidFolders, freshShares, freshShareFolders);
+
+    }).catch(err => {
+      console.error('讀取資料庫失敗:', err);
+      this.showNotification('錯誤', '讀取資料失敗: ' + err.message);
+    });
+  }
+
+  _buildZip(questions, questionFolders, images, imageFolders, videos, videoFolders, shares, shareFolders) {
     const zip = new JSZip();
 
     // ==========================================
@@ -4991,18 +5042,14 @@ class App {
     questionText += `匯出時間：${new Date().toLocaleString()}\r\n`;
     questionText += "==================================================\r\n\r\n";
 
-    const qFolders = {};
-    this.questionFolders.forEach(f => {
-      qFolders[f.id] = f.name;
-    });
+    const qFolderMap = {};
+    questionFolders.forEach(f => { qFolderMap[f.id] = f.name; });
 
     const groupedQuestions = {};
     groupedQuestions[''] = [];
-    Object.keys(qFolders).forEach(fid => {
-      groupedQuestions[fid] = [];
-    });
+    Object.keys(qFolderMap).forEach(fid => { groupedQuestions[fid] = []; });
 
-    this.questions.forEach(q => {
+    questions.forEach(q => {
       const fid = q.folderId || '';
       if (groupedQuestions[fid] !== undefined) {
         groupedQuestions[fid].push(q);
@@ -5011,7 +5058,7 @@ class App {
       }
     });
 
-    this.questionFolders.forEach(f => {
+    questionFolders.forEach(f => {
       const list = groupedQuestions[f.id] || [];
       questionText += `📁 群組資料夾：${f.name} (${list.length})\r\n`;
       questionText += `--------------------------------------------------\r\n`;
@@ -5042,16 +5089,14 @@ class App {
     // ==========================================
     // 2. 圖片分享各自放到群組清單資料夾中
     // ==========================================
-    const imgFolder = zip.folder("圖片分享");
+    const imgZipFolder = zip.folder("圖片分享");
     const imgFolderMap = {};
-    this.imageFolders.forEach(f => {
-      imgFolderMap[f.id] = imgFolder.folder(f.name);
-    });
-    const imgUnclassifiedFolder = imgFolder.folder("未分類");
+    imageFolders.forEach(f => { imgFolderMap[f.id] = imgZipFolder.folder(f.name); });
+    const imgUnclassifiedFolder = imgZipFolder.folder("未分類");
 
     const imagePromises = [];
 
-    this.images.forEach((img, idx) => {
+    images.forEach((img, idx) => {
       const fid = img.folderId || '';
       const folder = imgFolderMap[fid] || imgUnclassifiedFolder;
       const filename = img.filename || `image_${img.id || idx}.png`;
@@ -5059,12 +5104,10 @@ class App {
 
       if (img.url.startsWith('data:')) {
         try {
-          const dataParts = img.url.split(',');
-          const base64Data = dataParts[1];
+          const base64Data = img.url.split(',')[1];
           folder.file(safeFilename, base64Data, { base64: true });
         } catch (e) {
-          console.error("Parse base64 image failed:", e);
-          folder.file(`${safeFilename}_錯誤.txt`, `解析圖片資料失敗。`);
+          folder.file(`${safeFilename}_錯誤.txt`, '解析圖片資料失敗。');
         }
       } else {
         const p = fetch(img.url)
@@ -5072,11 +5115,8 @@ class App {
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             return res.blob();
           })
-          .then(blob => {
-            folder.file(safeFilename, blob);
-          })
+          .then(blob => { folder.file(safeFilename, blob); })
           .catch(err => {
-            console.error("Fetch image failed:", err);
             folder.file(`${safeFilename}_連結.txt`, `圖片下載失敗。\n使用者：${img.user || '匿名'}\n連結：${img.url}\n錯誤原因：${err.message}`);
           });
         imagePromises.push(p);
@@ -5084,22 +5124,18 @@ class App {
     });
 
     // ==========================================
-    // 3. 影片也各自放到群組清單資料夾中 (儲存資訊檔)
+    // 3. 影片分享 - 每支影片寫獨立 .txt 資訊檔與匯總清單
     // ==========================================
-    const vidFolder = zip.folder("影片分享");
+    const vidZipFolder = zip.folder("影片分享");
     const vidFolderMap = {};
-    this.videoFolders.forEach(f => {
-      vidFolderMap[f.id] = vidFolder.folder(f.name);
-    });
-    const vidUnclassifiedFolder = vidFolder.folder("未分類");
+    videoFolders.forEach(f => { vidFolderMap[f.id] = vidZipFolder.folder(f.name); });
+    const vidUnclassifiedFolder = vidZipFolder.folder("未分類");
 
     const groupedVideos = {};
     groupedVideos[''] = [];
-    this.videoFolders.forEach(f => {
-      groupedVideos[f.id] = [];
-    });
+    videoFolders.forEach(f => { groupedVideos[f.id] = []; });
 
-    this.videos.forEach(v => {
+    videos.forEach(v => {
       const fid = v.folderId || '';
       if (groupedVideos[fid] !== undefined) {
         groupedVideos[fid].push(v);
@@ -5113,9 +5149,8 @@ class App {
       let text = `==================================================\r\n`;
       text += `【影片分享清單 - ${name}】\r\n`;
       text += `==================================================\r\n\r\n`;
-
       if (list.length === 0) {
-        text += `(暫無影片)\r\n`;
+        text += '(暫無影片)\r\n';
       } else {
         list.forEach((v, idx) => {
           const time = new Date(v.timestamp).toLocaleString();
@@ -5124,33 +5159,27 @@ class App {
           text += `   時間：${time}\r\n`;
           text += `   類型：${v.type === 'youtube' ? 'YouTube' : '雲端/上傳影片'}\r\n`;
           text += `   連結：${v.url || ''}\r\n\r\n`;
-
           const fileTitle = `${v.user || '匿名'}_${v.timestamp}_${(v.filename || '影片').replace(/[\/\\:*?"<>|]/g, '_')}.txt`;
-          const singleInfo = `影片名稱：${v.filename || '未命名影片'}\r\n分享者：${v.user || '匿名'}\r\n時間：${time}\r\n類型：${v.type}\r\n網址：${v.url || ''}`;
-          folderObj.file(fileTitle, singleInfo);
+          folderObj.file(fileTitle, `影片名稱：${v.filename || '未命名影片'}\r\n分享者：${v.user || '匿名'}\r\n時間：${time}\r\n類型：${v.type}\r\n網址：${v.url || ''}`);
         });
       }
       folderObj.file("影片清單.txt", text);
     };
 
-    this.videoFolders.forEach(f => {
-      generateVideoFiles(f.id, vidFolderMap[f.id], f.name);
-    });
+    videoFolders.forEach(f => { generateVideoFiles(f.id, vidFolderMap[f.id], f.name); });
     generateVideoFiles('', vidUnclassifiedFolder, '未分類');
 
     // ==========================================
     // 4. 教師分享依資料夾群組分類存放
     // ==========================================
-    const shareFolder = zip.folder("教師分享");
+    const shareZipFolder = zip.folder("教師分享");
     const shareFolderMap = {};
-    this.shareFolders.forEach(f => {
-      shareFolderMap[f.id] = shareFolder.folder(f.name);
-    });
-    const shareUnclassifiedFolder = shareFolder.folder("未分類");
+    shareFolders.forEach(f => { shareFolderMap[f.id] = shareZipFolder.folder(f.name); });
+    const shareUnclassifiedFolder = shareZipFolder.folder("未分類");
 
     const sharePromises = [];
 
-    this.shares.forEach((item, idx) => {
+    shares.forEach((item) => {
       const fid = item.folderId || '';
       const folder = shareFolderMap[fid] || shareUnclassifiedFolder;
       const baseName = `${item.user || '匿名'}_${item.timestamp}`;
@@ -5158,17 +5187,15 @@ class App {
       if (item.type === 'text') {
         folder.file(`${baseName}_文字.txt`, item.content);
       } else if (item.type === 'link') {
-        const info = `標題：${item.title || '無標題'}\r\n網址：${item.content}`;
         const safeTitle = (item.title || '連結').replace(/[\/\\:*?"<>|]/g, '_');
-        folder.file(`${baseName}_連結_${safeTitle}.txt`, info);
+        folder.file(`${baseName}_連結_${safeTitle}.txt`, `標題：${item.title || '無標題'}\r\n網址：${item.content}`);
       } else if (item.type === 'image') {
         const safeFilename = `${baseName}_圖片.png`;
         if (item.content.startsWith('data:')) {
           try {
-            const base64Data = item.content.split(',')[1];
-            folder.file(safeFilename, base64Data, { base64: true });
+            folder.file(safeFilename, item.content.split(',')[1], { base64: true });
           } catch (e) {
-            folder.file(`${safeFilename}_錯誤.txt`, `解析圖片資料失敗。`);
+            folder.file(`${safeFilename}_錯誤.txt`, '解析圖片資料失敗。');
           }
         } else {
           const p = fetch(item.content)
@@ -5176,11 +5203,8 @@ class App {
               if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
               return res.blob();
             })
-            .then(blob => {
-              folder.file(safeFilename, blob);
-            })
+            .then(blob => { folder.file(safeFilename, blob); })
             .catch(err => {
-              console.error("Fetch teacher share image failed:", err);
               folder.file(`${safeFilename}_連結.txt`, `圖片下載失敗。\n連結：${item.content}\n錯誤原因：${err.message}`);
             });
           sharePromises.push(p);
@@ -5199,17 +5223,14 @@ class App {
         const url = URL.createObjectURL(blob);
         const downloadAnchor = document.createElement('a');
         const dateStr = new Date().toISOString().slice(0, 10);
-        
         downloadAnchor.setAttribute("href", url);
         downloadAnchor.setAttribute("download", `classroom_backup_${dateStr}.zip`);
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
-        
         setTimeout(() => {
           downloadAnchor.remove();
           URL.revokeObjectURL(url);
         }, 100);
-        
         this.showNotification('成功', '打包備份壓縮檔完成！');
       })
       .catch(err => {
@@ -5217,6 +5238,8 @@ class App {
         this.showNotification('錯誤', '壓縮打包失敗: ' + err.message);
       });
   }
+
+
 
   adminImportRecord(event) {
     const file = event.target.files[0];
