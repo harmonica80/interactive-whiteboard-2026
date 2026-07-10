@@ -5031,8 +5031,21 @@ class App {
     });
   }
 
-  _buildZip(questions, questionFolders, images, imageFolders, videos, videoFolders, shares, shareFolders) {
+  async _buildZip(questions, questionFolders, images, imageFolders, videos, videoFolders, shares, shareFolders) {
     const zip = new JSZip();
+    let successCount = 0;
+    let failCount = 0;
+    const failedItems = [];
+
+    // Helper: fetch a URL and return blob, with detailed error
+    const fetchBlob = async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      return res.blob();
+    };
+
+    // Helper: safe filename
+    const safeStr = (s) => (s || '').replace(/[\/\\:*?"<>|]/g, '_');
 
     // ==========================================
     // 1. 提問內容整理在一個文字檔
@@ -5044,240 +5057,223 @@ class App {
 
     const qFolderMap = {};
     questionFolders.forEach(f => { qFolderMap[f.id] = f.name; });
-
-    const groupedQuestions = {};
-    groupedQuestions[''] = [];
+    const groupedQuestions = { '': [] };
     Object.keys(qFolderMap).forEach(fid => { groupedQuestions[fid] = []; });
-
     questions.forEach(q => {
       const fid = q.folderId || '';
-      if (groupedQuestions[fid] !== undefined) {
-        groupedQuestions[fid].push(q);
-      } else {
-        groupedQuestions[''].push(q);
-      }
+      (groupedQuestions[fid] !== undefined ? groupedQuestions[fid] : groupedQuestions['']).push(q);
     });
 
     questionFolders.forEach(f => {
       const list = groupedQuestions[f.id] || [];
-      questionText += `📁 群組資料夾：${f.name} (${list.length})\r\n`;
-      questionText += `--------------------------------------------------\r\n`;
-      if (list.length === 0) {
-        questionText += `(暫無提問)\r\n`;
-      } else {
-        list.forEach((q, idx) => {
-          const time = new Date(q.timestamp).toLocaleString();
-          questionText += `#${idx + 1} 【${q.user || '匿名'}】 (${time})\r\n內容：${q.text}\r\n\r\n`;
-        });
-      }
-      questionText += `\r\n`;
-    });
-
-    const unclassifiedQuestions = groupedQuestions[''];
-    if (unclassifiedQuestions && unclassifiedQuestions.length > 0) {
-      questionText += `📁 未分類提問 (${unclassifiedQuestions.length})\r\n`;
-      questionText += `--------------------------------------------------\r\n`;
-      unclassifiedQuestions.forEach((q, idx) => {
-        const time = new Date(q.timestamp).toLocaleString();
-        questionText += `#${idx + 1} 【${q.user || '匿名'}】 (${time})\r\n內容：${q.text}\r\n\r\n`;
+      questionText += `📁 ${f.name} (${list.length})\r\n--------------------------------------------------\r\n`;
+      list.forEach((q, i) => {
+        questionText += `#${i+1} 【${q.user||'匿名'}】(${new Date(q.timestamp).toLocaleString()})\r\n${q.text}\r\n\r\n`;
       });
-      questionText += `\r\n`;
+      if (list.length === 0) questionText += '(暫無提問)\r\n';
+      questionText += '\r\n';
+    });
+    const unclassQ = groupedQuestions[''] || [];
+    if (unclassQ.length > 0) {
+      questionText += `📁 未分類提問 (${unclassQ.length})\r\n--------------------------------------------------\r\n`;
+      unclassQ.forEach((q, i) => {
+        questionText += `#${i+1} 【${q.user||'匿名'}】(${new Date(q.timestamp).toLocaleString()})\r\n${q.text}\r\n\r\n`;
+      });
     }
-
     zip.file("提問內容.txt", questionText);
 
     // ==========================================
-    // 2. 圖片分享各自放到群組清單資料夾中
+    // 2. 圖片分享（序列下載，一張一張）
     // ==========================================
     const imgZipFolder = zip.folder("圖片分享");
     const imgFolderMap = {};
     imageFolders.forEach(f => { imgFolderMap[f.id] = imgZipFolder.folder(f.name); });
     const imgUnclassifiedFolder = imgZipFolder.folder("未分類");
 
-    const imagePromises = [];
+    for (let idx = 0; idx < images.length; idx++) {
+      const img = images[idx];
+      this.showNotification('提示', `📥 下載圖片 ${idx + 1}/${images.length}...`);
 
-    images.forEach((img, idx) => {
       const fid = img.folderId || '';
       const folder = imgFolderMap[fid] || imgUnclassifiedFolder;
       const filename = img.filename || `image_${img.id || idx}.png`;
-      const safeFilename = `${img.user || '匿名'}_${img.timestamp}_${filename}`;
+      const safeFilename = `${safeStr(img.user||'匿名')}_${img.timestamp}_${safeStr(filename)}`;
+
+      if (!img.url) {
+        folder.file(`${safeFilename}_無連結.txt`, '此圖片無有效下載連結。');
+        failCount++;
+        continue;
+      }
 
       if (img.url.startsWith('data:')) {
         try {
-          const base64Data = img.url.split(',')[1];
-          folder.file(safeFilename, base64Data, { base64: true });
+          folder.file(safeFilename, img.url.split(',')[1], { base64: true });
+          successCount++;
         } catch (e) {
-          folder.file(`${safeFilename}_錯誤.txt`, '解析圖片資料失敗。');
+          folder.file(`${safeFilename}_錯誤.txt`, `解析失敗：${e.message}`);
+          failCount++;
         }
       } else {
-        const p = fetch(img.url)
-          .then(res => {
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-            return res.blob();
-          })
-          .then(blob => { folder.file(safeFilename, blob); })
-          .catch(err => {
-            folder.file(`${safeFilename}_連結.txt`, `圖片下載失敗。\n使用者：${img.user || '匿名'}\n連結：${img.url}\n錯誤原因：${err.message}`);
-          });
-        imagePromises.push(p);
+        try {
+          const blob = await fetchBlob(img.url);
+          folder.file(safeFilename, blob);
+          successCount++;
+        } catch (err) {
+          console.error('圖片下載失敗:', img.url, err);
+          folder.file(`${safeFilename}_連結.txt`, `圖片下載失敗\n分享者：${img.user||'匿名'}\n連結：${img.url}\n原因：${err.message}`);
+          failedItems.push(`圖片：${filename} (${err.message})`);
+          failCount++;
+        }
       }
-    });
+    }
 
     // ==========================================
-    // 3. 影片分享 - 上傳 MP4 直接下載；YouTube/雲端寫 .txt 資訊檔
+    // 3. 影片分享（上傳MP4序列下載；YouTube/雲端寫txt）
     // ==========================================
     const vidZipFolder = zip.folder("影片分享");
     const vidFolderMap = {};
     videoFolders.forEach(f => { vidFolderMap[f.id] = vidZipFolder.folder(f.name); });
     const vidUnclassifiedFolder = vidZipFolder.folder("未分類");
 
-    const groupedVideos = {};
-    groupedVideos[''] = [];
+    const groupedVideos = { '': [] };
     videoFolders.forEach(f => { groupedVideos[f.id] = []; });
-
     videos.forEach(v => {
       const fid = v.folderId || '';
-      if (groupedVideos[fid] !== undefined) {
-        groupedVideos[fid].push(v);
-      } else {
-        groupedVideos[''].push(v);
-      }
+      (groupedVideos[fid] !== undefined ? groupedVideos[fid] : groupedVideos['']).push(v);
     });
 
-    const videoPromises = [];
-
-    const generateVideoFiles = (fid, folderObj, name) => {
+    const processVideoGroup = async (fid, folderObj, groupName) => {
       const list = groupedVideos[fid] || [];
-      let text = `==================================================\r\n`;
-      text += `【影片分享清單 - ${name}】\r\n`;
-      text += `==================================================\r\n\r\n`;
-      if (list.length === 0) {
-        text += '(暫無影片)\r\n';
-      } else {
-        list.forEach((v, idx) => {
-          const time = new Date(v.timestamp).toLocaleString();
-          const safeBase = `${v.user || '匿名'}_${v.timestamp}_${(v.filename || '影片').replace(/[\/\\:*?"<>|]/g, '_')}`;
+      let listText = `【影片分享清單 - ${groupName}】\r\n==================================================\r\n\r\n`;
+      if (list.length === 0) { listText += '(暫無影片)\r\n'; }
 
-          if (v.type === 'upload' && v.url) {
-            // 上傳的 MP4：直接打包成影片二進位檔
-            const ext = (v.filename && v.filename.includes('.')) ? v.filename.split('.').pop().toLowerCase() : 'mp4';
-            const mp4Filename = `${safeBase}.${ext}`;
+      for (let vidIdx = 0; vidIdx < list.length; vidIdx++) {
+        const v = list[vidIdx];
+        this.showNotification('提示', `🎬 處理影片 ${vidIdx + 1}/${list.length}（${groupName}）...`);
+        const time = new Date(v.timestamp).toLocaleString();
+        const safeBase = `${safeStr(v.user||'匿名')}_${v.timestamp}_${safeStr(v.filename||'影片')}`;
 
-            if (v.url.startsWith('data:')) {
-              // Base64 DataURL：直接解碼
-              try {
-                const base64Data = v.url.split(',')[1];
-                folderObj.file(mp4Filename, base64Data, { base64: true });
-              } catch (e) {
-                folderObj.file(`${safeBase}_錯誤.txt`, `解析影片資料失敗：${e.message}`);
-              }
-            } else {
-              // Firebase Storage URL：fetch 下載
-              const p = fetch(v.url)
-                .then(res => {
-                  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                  return res.blob();
-                })
-                .then(blob => { folderObj.file(mp4Filename, blob); })
-                .catch(err => {
-                  console.warn('影片下載失敗，改寫資訊檔:', err);
-                  folderObj.file(`${safeBase}_連結.txt`, `影片名稱：${v.filename || '未命名影片'}\r\n下載失敗原因：${err.message}\r\n網址：${v.url || ''}`);
-                });
-              videoPromises.push(p);
+        if (v.type === 'upload' && v.url) {
+          const ext = (v.filename && v.filename.includes('.')) ? v.filename.split('.').pop().toLowerCase() : 'mp4';
+          const mp4Name = `${safeBase}.${ext}`;
+
+          if (v.url.startsWith('data:')) {
+            try {
+              folderObj.file(mp4Name, v.url.split(',')[1], { base64: true });
+              listText += `#${vidIdx+1} ${v.filename||'未命名'} ✅ 已打包\r\n   分享者：${v.user||'匿名'} | ${time}\r\n\r\n`;
+              successCount++;
+            } catch (e) {
+              folderObj.file(`${safeBase}_錯誤.txt`, `解析失敗：${e.message}`);
+              listText += `#${vidIdx+1} ${v.filename||'未命名'} ❌ 解析失敗\r\n\r\n`;
+              failCount++;
             }
-
-            text += `#${idx + 1} 影片名稱：${v.filename || '未命名影片'} ✅ 已打包\r\n`;
-            text += `   分享者：${v.user || '匿名'}\r\n`;
-            text += `   時間：${time}\r\n\r\n`;
           } else {
-            // YouTube / Google Drive：只能寫資訊檔
-            const txtFilename = `${safeBase}.txt`;
-            folderObj.file(txtFilename, `影片名稱：${v.filename || '未命名影片'}\r\n分享者：${v.user || '匿名'}\r\n時間：${time}\r\n類型：YouTube/雲端連結\r\n網址：${v.url || ''}`);
-
-            text += `#${idx + 1} 影片名稱：${v.filename || '未命名影片'} （YouTube/雲端連結）\r\n`;
-            text += `   分享者：${v.user || '匿名'}\r\n`;
-            text += `   時間：${time}\r\n`;
-            text += `   連結：${v.url || ''}\r\n\r\n`;
+            try {
+              const blob = await fetchBlob(v.url);
+              folderObj.file(mp4Name, blob);
+              listText += `#${vidIdx+1} ${v.filename||'未命名'} ✅ 已打包\r\n   分享者：${v.user||'匿名'} | ${time}\r\n\r\n`;
+              successCount++;
+            } catch (err) {
+              console.error('影片下載失敗:', v.url, err);
+              folderObj.file(`${safeBase}_連結.txt`, `影片名稱：${v.filename||'未命名'}\r\n下載失敗：${err.message}\r\n網址：${v.url||''}`);
+              listText += `#${vidIdx+1} ${v.filename||'未命名'} ❌ 下載失敗（${err.message}）\r\n   連結：${v.url}\r\n\r\n`;
+              failedItems.push(`影片：${v.filename} (${err.message})`);
+              failCount++;
+            }
           }
-        });
+        } else {
+          // YouTube / Google Drive
+          folderObj.file(`${safeBase}.txt`, `影片名稱：${v.filename||'未命名'}\r\n分享者：${v.user||'匿名'}\r\n時間：${time}\r\nYouTube/雲端連結：${v.url||''}`);
+          listText += `#${vidIdx+1} ${v.filename||'未命名'} 🔗 YouTube/雲端連結\r\n   ${v.url||''}\r\n\r\n`;
+        }
       }
-      folderObj.file("影片清單.txt", text);
+      folderObj.file("影片清單.txt", listText);
     };
 
-    videoFolders.forEach(f => { generateVideoFiles(f.id, vidFolderMap[f.id], f.name); });
-    generateVideoFiles('', vidUnclassifiedFolder, '未分類');
+    for (const f of videoFolders) {
+      await processVideoGroup(f.id, vidFolderMap[f.id], f.name);
+    }
+    await processVideoGroup('', vidUnclassifiedFolder, '未分類');
 
     // ==========================================
-    // 4. 教師分享依資料夾群組分類存放
+    // 4. 教師分享（序列下載）
     // ==========================================
     const shareZipFolder = zip.folder("教師分享");
     const shareFolderMap = {};
     shareFolders.forEach(f => { shareFolderMap[f.id] = shareZipFolder.folder(f.name); });
     const shareUnclassifiedFolder = shareZipFolder.folder("未分類");
 
-    const sharePromises = [];
+    for (let sidx = 0; sidx < shares.length; sidx++) {
+      const item = shares[sidx];
+      this.showNotification('提示', `📢 處理教師分享 ${sidx + 1}/${shares.length}...`);
 
-    shares.forEach((item) => {
       const fid = item.folderId || '';
       const folder = shareFolderMap[fid] || shareUnclassifiedFolder;
-      const baseName = `${item.user || '匿名'}_${item.timestamp}`;
+      const baseName = `${safeStr(item.user||'匿名')}_${item.timestamp}`;
 
       if (item.type === 'text') {
-        folder.file(`${baseName}_文字.txt`, item.content);
+        folder.file(`${baseName}_文字.txt`, item.content || '');
+        successCount++;
       } else if (item.type === 'link') {
-        const safeTitle = (item.title || '連結').replace(/[\/\\:*?"<>|]/g, '_');
-        folder.file(`${baseName}_連結_${safeTitle}.txt`, `標題：${item.title || '無標題'}\r\n網址：${item.content}`);
+        const safeTitle = safeStr(item.title || '連結');
+        folder.file(`${baseName}_連結_${safeTitle}.txt`, `標題：${item.title||'無標題'}\r\n網址：${item.content}`);
+        successCount++;
       } else if (item.type === 'image') {
         const safeFilename = `${baseName}_圖片.png`;
-        if (item.content.startsWith('data:')) {
+        if (!item.content) {
+          folder.file(`${baseName}_無內容.txt`, '此分享無有效圖片。');
+          failCount++;
+        } else if (item.content.startsWith('data:')) {
           try {
             folder.file(safeFilename, item.content.split(',')[1], { base64: true });
+            successCount++;
           } catch (e) {
-            folder.file(`${safeFilename}_錯誤.txt`, '解析圖片資料失敗。');
+            folder.file(`${safeFilename}_錯誤.txt`, `解析失敗：${e.message}`);
+            failCount++;
           }
         } else {
-          const p = fetch(item.content)
-            .then(res => {
-              if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-              return res.blob();
-            })
-            .then(blob => { folder.file(safeFilename, blob); })
-            .catch(err => {
-              folder.file(`${safeFilename}_連結.txt`, `圖片下載失敗。\n連結：${item.content}\n錯誤原因：${err.message}`);
-            });
-          sharePromises.push(p);
+          try {
+            const blob = await fetchBlob(item.content);
+            folder.file(safeFilename, blob);
+            successCount++;
+          } catch (err) {
+            console.error('教師分享圖片下載失敗:', item.content, err);
+            folder.file(`${safeFilename}_連結.txt`, `圖片下載失敗\n連結：${item.content}\n原因：${err.message}`);
+            failedItems.push(`教師分享圖片（${err.message}）`);
+            failCount++;
+          }
         }
       }
-    });
+    }
 
     // ==========================================
-    // 5. 等待所有資源下載完畢後打包
+    // 5. 生成 ZIP 並下載
     // ==========================================
-    Promise.all([...imagePromises, ...videoPromises, ...sharePromises])
-      .then(() => {
-        return zip.generateAsync({ type: 'blob' });
-      })
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const downloadAnchor = document.createElement('a');
-        const dateStr = new Date().toISOString().slice(0, 10);
-        downloadAnchor.setAttribute("href", url);
-        downloadAnchor.setAttribute("download", `classroom_backup_${dateStr}.zip`);
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        setTimeout(() => {
-          downloadAnchor.remove();
-          URL.revokeObjectURL(url);
-        }, 100);
-        this.showNotification('成功', '打包備份壓縮檔完成！');
-      })
-      .catch(err => {
-        console.error("Zip compression failed:", err);
-        this.showNotification('錯誤', '壓縮打包失敗: ' + err.message);
-      });
+    this.showNotification('提示', '🔧 正在壓縮打包，請稍候...');
+
+    try {
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.setAttribute("href", url);
+      a.setAttribute("download", `classroom_backup_${dateStr}.zip`);
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 100);
+
+      let msg = `✅ 打包完成！成功 ${successCount} 項`;
+      if (failCount > 0) msg += `，${failCount} 項下載失敗（已寫入連結記錄）`;
+      this.showNotification('成功', msg);
+
+      if (failedItems.length > 0) {
+        console.warn('ZIP 打包失敗項目：', failedItems);
+      }
+    } catch (err) {
+      console.error("ZIP 壓縮失敗:", err);
+      this.showNotification('錯誤', '壓縮打包失敗: ' + err.message);
+    }
   }
-
-
 
   adminImportRecord(event) {
     const file = event.target.files[0];
