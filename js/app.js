@@ -5124,7 +5124,7 @@ class App {
     });
 
     // ==========================================
-    // 3. 影片分享 - 每支影片寫獨立 .txt 資訊檔與匯總清單
+    // 3. 影片分享 - 上傳 MP4 直接下載；YouTube/雲端寫 .txt 資訊檔
     // ==========================================
     const vidZipFolder = zip.folder("影片分享");
     const vidFolderMap = {};
@@ -5144,6 +5144,8 @@ class App {
       }
     });
 
+    const videoPromises = [];
+
     const generateVideoFiles = (fid, folderObj, name) => {
       const list = groupedVideos[fid] || [];
       let text = `==================================================\r\n`;
@@ -5154,13 +5156,49 @@ class App {
       } else {
         list.forEach((v, idx) => {
           const time = new Date(v.timestamp).toLocaleString();
-          text += `#${idx + 1} 影片名稱：${v.filename || '未命名影片'}\r\n`;
-          text += `   分享者：${v.user || '匿名'}\r\n`;
-          text += `   時間：${time}\r\n`;
-          text += `   類型：${v.type === 'youtube' ? 'YouTube' : '雲端/上傳影片'}\r\n`;
-          text += `   連結：${v.url || ''}\r\n\r\n`;
-          const fileTitle = `${v.user || '匿名'}_${v.timestamp}_${(v.filename || '影片').replace(/[\/\\:*?"<>|]/g, '_')}.txt`;
-          folderObj.file(fileTitle, `影片名稱：${v.filename || '未命名影片'}\r\n分享者：${v.user || '匿名'}\r\n時間：${time}\r\n類型：${v.type}\r\n網址：${v.url || ''}`);
+          const safeBase = `${v.user || '匿名'}_${v.timestamp}_${(v.filename || '影片').replace(/[\/\\:*?"<>|]/g, '_')}`;
+
+          if (v.type === 'upload' && v.url) {
+            // 上傳的 MP4：直接打包成影片二進位檔
+            const ext = (v.filename && v.filename.includes('.')) ? v.filename.split('.').pop().toLowerCase() : 'mp4';
+            const mp4Filename = `${safeBase}.${ext}`;
+
+            if (v.url.startsWith('data:')) {
+              // Base64 DataURL：直接解碼
+              try {
+                const base64Data = v.url.split(',')[1];
+                folderObj.file(mp4Filename, base64Data, { base64: true });
+              } catch (e) {
+                folderObj.file(`${safeBase}_錯誤.txt`, `解析影片資料失敗：${e.message}`);
+              }
+            } else {
+              // Firebase Storage URL：fetch 下載
+              const p = fetch(v.url)
+                .then(res => {
+                  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                  return res.blob();
+                })
+                .then(blob => { folderObj.file(mp4Filename, blob); })
+                .catch(err => {
+                  console.warn('影片下載失敗，改寫資訊檔:', err);
+                  folderObj.file(`${safeBase}_連結.txt`, `影片名稱：${v.filename || '未命名影片'}\r\n下載失敗原因：${err.message}\r\n網址：${v.url || ''}`);
+                });
+              videoPromises.push(p);
+            }
+
+            text += `#${idx + 1} 影片名稱：${v.filename || '未命名影片'} ✅ 已打包\r\n`;
+            text += `   分享者：${v.user || '匿名'}\r\n`;
+            text += `   時間：${time}\r\n\r\n`;
+          } else {
+            // YouTube / Google Drive：只能寫資訊檔
+            const txtFilename = `${safeBase}.txt`;
+            folderObj.file(txtFilename, `影片名稱：${v.filename || '未命名影片'}\r\n分享者：${v.user || '匿名'}\r\n時間：${time}\r\n類型：YouTube/雲端連結\r\n網址：${v.url || ''}`);
+
+            text += `#${idx + 1} 影片名稱：${v.filename || '未命名影片'} （YouTube/雲端連結）\r\n`;
+            text += `   分享者：${v.user || '匿名'}\r\n`;
+            text += `   時間：${time}\r\n`;
+            text += `   連結：${v.url || ''}\r\n\r\n`;
+          }
         });
       }
       folderObj.file("影片清單.txt", text);
@@ -5215,7 +5253,7 @@ class App {
     // ==========================================
     // 5. 等待所有資源下載完畢後打包
     // ==========================================
-    Promise.all([...imagePromises, ...sharePromises])
+    Promise.all([...imagePromises, ...videoPromises, ...sharePromises])
       .then(() => {
         return zip.generateAsync({ type: 'blob' });
       })
