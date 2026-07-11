@@ -53,6 +53,13 @@ class App {
     
     // 專注力遊戲屬性
     this.focusGame = null;
+    
+    // 獨立搶答遊戲屬性
+    this.buzzGame = null;
+    this.buzzTimerInterval = null;
+    this.buzzCountdownInterval = null;
+    this.buzzCircleInterval = null;
+    this.buzzStartTimeLocal = 0;
     this.focusTimerInterval = null;
     this.focusCountdownInterval = null;
     this.focusStartTimeLocal = 0;
@@ -241,6 +248,10 @@ class App {
 
     db.ref('quiz/focusGame').on('value', (snapshot) => {
       this.handleFocusGameSync(snapshot.val());
+    });
+
+    db.ref('quiz/buzzGame').on('value', (snapshot) => {
+      this.handleBuzzGameSync(snapshot.val());
     });
 
     // 監聽提問與圖片群組資料庫
@@ -5158,13 +5169,6 @@ class App {
     const gridSize = game.gridSize || 36;
     const sequenceLength = game.sequenceLength || 5;
 
-    if (game.gameType === 'buzzGame') {
-      if (titleEl) titleEl.textContent = '⚡ 搶答挑戰！';
-      if (descriptionEl) descriptionEl.textContent = '搶答開始！快點擊畫面上隨機移動的紅色圓圈！';
-      if (hintEl) hintEl.textContent = '準備好你的滑鼠...';
-      return;
-    }
-
     if (game.gameType === 'memoryPosition') {
       if (titleEl) titleEl.textContent = game.reverseMode ? '位置序列記憶・反向挑戰！' : '位置序列記憶挑戰！';
       if (descriptionEl) {
@@ -5399,17 +5403,10 @@ class App {
     this.focusLocalGameKey = localGameKey;
 
     // OpenCode 修改：位置序列記憶第一版與舒爾特方格共用專注力遊戲 Overlay
-    if (game.gameType === 'buzzGame') {
-      this.startBuzzGame(game);
-      return;
-    }
     if (game.gameType === 'memoryPosition') {
       this.startMemoryPositionGame(game);
       return;
     }
-
-    const buzzArea = document.getElementById('focusBuzzArea');
-    if (buzzArea) buzzArea.style.display = 'none';
 
     this.focusCurrentExpected = 1;
     this.focusGridSize = game.gridSize || 36;
@@ -5479,47 +5476,214 @@ class App {
     return cells.slice(0, Math.min(length, size));
   }
 
-  // OpenCode 修改：位置序列記憶第一版，播放格子閃爍後讓學生依序或反向點回
-  startBuzzGame(game) {
-    this.stopFocusTimers();
+  handleBuzzGameSync(game) {
+    this.buzzGame = game;
     
-    // 隱藏舒爾特方格與求救按鈕，顯示搶答區
-    const grid = document.getElementById('focusGameGrid');
-    if (grid) grid.style.display = 'none';
+    const overlay = document.getElementById('buzzGameOverlay');
+    const teacherCloseBtn = document.getElementById('buzzGameTeacherCloseBtn');
+
+    if (teacherCloseBtn) {
+      teacherCloseBtn.style.display = this.isAdmin ? 'block' : 'none';
+    }
+
+    const adminRankSection = document.getElementById('adminBuzzGameRankSection');
+    if (adminRankSection) {
+      if (this.isAdmin) {
+        adminRankSection.style.display = 'block';
+        this.renderBuzzGameLeaderboard('adminBuzzGameRankList', game ? game.results : null);
+      } else {
+        adminRankSection.style.display = 'none';
+      }
+    }
+
+    if (!game || game.status === 'idle') {
+      if (overlay) {
+        overlay.style.display = 'none';
+        overlay.classList.remove('active');
+      }
+      this.stopBuzzTimers();
+      return;
+    }
+
+    if (this.isAdmin) {
+      if (overlay) {
+        overlay.style.display = 'none';
+        overlay.classList.remove('active');
+      }
+      if (game.status !== 'countdown') {
+        this.stopBuzzTimers();
+        return;
+      }
+    } else {
+      if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.classList.add('active');
+      }
+    }
+
+    if (game.status === 'countdown') {
+      document.getElementById('buzzCountdownArea').style.display = 'block';
+      document.getElementById('buzzPlayArea').style.display = 'none';
+      document.getElementById('buzzFinishArea').style.display = 'none';
+      this.startBuzzLocalCountdown(game);
+    }
+    else if (game.status === 'playing') {
+      document.getElementById('buzzCountdownArea').style.display = 'none';
+      
+      const userId = localStorage.getItem('user_id') || 'guest';
+      const hasCompleted = game.results && game.results[userId];
+
+      if (hasCompleted) {
+        document.getElementById('buzzPlayArea').style.display = 'none';
+        document.getElementById('buzzFinishArea').style.display = 'block';
+        
+        const result = game.results[userId];
+        document.getElementById('lblBuzzTime').textContent = result.timeSpent.toFixed(2);
+        
+        const rank = this.calculateBuzzUserRank(game.results, userId);
+        document.getElementById('lblBuzzRank').textContent = rank;
+        
+        this.renderBuzzGameLeaderboard('buzzGameRankList', game.results);
+      } else {
+        document.getElementById('buzzPlayArea').style.display = 'flex';
+        document.getElementById('buzzFinishArea').style.display = 'none';
+        this.startBuzzLocalPlay(game);
+      }
+    }
+    else if (game.status === 'ended') {
+      document.getElementById('buzzCountdownArea').style.display = 'none';
+      document.getElementById('buzzPlayArea').style.display = 'none';
+      document.getElementById('buzzFinishArea').style.display = 'block';
+      
+      const userId = localStorage.getItem('user_id') || 'guest';
+      const result = game.results && game.results[userId];
+      if (result) {
+        document.getElementById('lblBuzzTime').textContent = result.timeSpent.toFixed(2);
+        const rank = this.calculateBuzzUserRank(game.results, userId);
+        document.getElementById('lblBuzzRank').textContent = rank;
+        document.getElementById('buzzFinishRankBlock').style.display = 'inline-block';
+        document.getElementById('buzzFinishTimeBlock').style.display = 'block';
+      } else {
+        document.getElementById('buzzFinishRankBlock').style.display = 'none';
+        document.getElementById('buzzFinishTimeBlock').style.display = 'none';
+      }
+      
+      this.renderBuzzGameLeaderboard('buzzGameRankList', game.results);
+    }
+  }
+
+  startBuzzGameAdmin() {
+    if (!this.isAdmin) return;
+    const countdownSecs = parseInt(document.getElementById('buzzGameCountdown').value) || 5;
     
-    const helpBtn = document.getElementById('focusHelpBtn');
-    if (helpBtn) helpBtn.style.display = 'none';
+    db.ref('quiz/buzzGame').set({
+      status: 'countdown',
+      countdownSeconds: countdownSecs,
+      countdownStartTime: firebase.database.ServerValue.TIMESTAMP,
+      results: null
+    }).then(() => {
+      this.showNotification('成功', '搶答挑戰已發起！');
+    }).catch(err => {
+      this.showNotification('錯誤', '發起失敗: ' + err.message);
+    });
+  }
+
+  endBuzzGameAdmin() {
+    if (!this.isAdmin) return;
+    this.showConfirmModal(
+      '⚡',
+      '確定要停止搶答嗎？',
+      '這會結束搶答並固定排行成績。',
+      () => {
+        db.ref('quiz/buzzGame/status').set('ended').then(() => {
+          this.showNotification('成功', '搶答已結束！');
+        });
+      }
+    );
+  }
+
+  resetBuzzGameAdmin() {
+    if (!this.isAdmin) return;
+    this.showConfirmModal(
+      '🧹',
+      '確定要關閉與重置搶答嗎？',
+      '這會清除排行榜並收回學生的搶答畫面。',
+      () => {
+        db.ref('quiz/buzzGame').set({
+          status: 'idle',
+          results: null
+        }).then(() => {
+          this.showNotification('成功', '搶答已關閉重置！');
+        });
+      }
+    );
+  }
+
+  startBuzzLocalCountdown(game) {
+    this.stopBuzzTimers();
     
-    const helpInfo = document.getElementById('focusHelpInfo');
-    if (helpInfo) helpInfo.textContent = '';
-    
-    const buzzArea = document.getElementById('focusBuzzArea');
-    if (buzzArea) buzzArea.style.display = 'block';
-    
-    const buzzCircle = document.getElementById('focusBuzzCircle');
+    const countdownEl = document.getElementById('buzzCountdownNumber');
+    const updateCountdown = () => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - game.countdownStartTime) / 1000);
+      const remaining = Math.max(0, game.countdownSeconds - elapsed);
+      
+      if (countdownEl) {
+        countdownEl.textContent = remaining;
+        if (remaining <= 3 && remaining > 0) {
+          countdownEl.style.color = '#FF3B30';
+          countdownEl.style.transform = 'scale(1.3)';
+          setTimeout(() => { if(countdownEl) countdownEl.style.transform = 'scale(1)' }, 100);
+        } else {
+          countdownEl.style.color = 'var(--accent-color)';
+        }
+      }
+
+      if (remaining <= 0) {
+        clearInterval(this.buzzCountdownInterval);
+        this.buzzCountdownInterval = null;
+        
+        if (this.isAdmin) {
+          db.ref('quiz/buzzGame').update({
+            status: 'playing',
+            startTime: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
+      }
+    };
+
+    updateCountdown();
+    this.buzzCountdownInterval = setInterval(updateCountdown, 250);
+  }
+
+  startBuzzLocalPlay(game) {
+    this.stopBuzzTimers();
+
+    const buzzArea = document.getElementById('buzzMoveArea');
+    const buzzCircle = document.getElementById('buzzCircleButton');
     if (buzzCircle) {
       buzzCircle.disabled = false;
       buzzCircle.textContent = '快點我';
-      buzzCircle.style.left = 'calc(50% - 60px)';
-      buzzCircle.style.top = 'calc(50% - 60px)';
+      buzzCircle.style.left = 'calc(50% - 70px)';
+      buzzCircle.style.top = 'calc(50% - 70px)';
     }
 
-    this.focusStartTimeLocal = game.startTime || Date.now();
-    const timerEl = document.getElementById('focusTimer');
+    this.buzzStartTimeLocal = game.startTime || Date.now();
+    const timerEl = document.getElementById('lblBuzzTime');
     
     const updateTimer = () => {
       const now = Date.now();
-      const start = game.startTime || this.focusStartTimeLocal;
+      const start = game.startTime || this.buzzStartTimeLocal;
       const spent = (now - start) / 1000;
-      if (timerEl) {
-        timerEl.textContent = spent.toFixed(2);
+      if (timerEl && document.getElementById('buzzPlayArea').style.display !== 'none') {
+        // Only update on screen if they are playing
+        // (finished screen has its own static timer display)
       }
     };
 
     updateTimer();
-    this.focusTimerInterval = setInterval(updateTimer, 30);
+    this.buzzTimerInterval = setInterval(updateTimer, 30);
 
-    // 隨機移動按鈕座標
     const randomizePosition = () => {
       if (!buzzArea || !buzzCircle) return;
       const maxX = buzzArea.clientWidth - buzzCircle.clientWidth;
@@ -5530,33 +5694,32 @@ class App {
       buzzCircle.style.top = randomY + 'px';
     };
 
-    // 搶答開始時先移動一次，隨後每 3 秒 (3000ms) 移動一次
     randomizePosition();
-    this.focusBuzzInterval = setInterval(randomizePosition, 3000);
+    this.buzzCircleInterval = setInterval(randomizePosition, 3000);
   }
 
   buzzIn() {
-    if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    if (!this.buzzGame || this.buzzGame.status !== 'playing') return;
     
-    const buzzCircle = document.getElementById('focusBuzzCircle');
+    const buzzCircle = document.getElementById('buzzCircleButton');
     if (buzzCircle) {
       buzzCircle.disabled = true;
       buzzCircle.textContent = '已搶答';
     }
 
-    if (this.focusBuzzInterval) {
-      clearInterval(this.focusBuzzInterval);
-      this.focusBuzzInterval = null;
+    if (this.buzzCircleInterval) {
+      clearInterval(this.buzzCircleInterval);
+      this.buzzCircleInterval = null;
     }
 
     const userId = localStorage.getItem('user_id') || 'guest';
     const userName = localStorage.getItem('user_name') || '匿名';
     const now = Date.now();
-    const start = this.focusGame.startTime || this.focusStartTimeLocal;
+    const start = this.buzzGame.startTime || this.buzzStartTimeLocal;
     const reactionTime = (now - start) / 1000;
 
-    db.ref(`quiz/focusGame/results/${userId}`).set({
-      user: userName,
+    db.ref(`quiz/buzzGame/results/${userId}`).set({
+      name: userName,
       timeSpent: reactionTime,
       completedAt: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
@@ -5566,9 +5729,64 @@ class App {
     });
   }
 
+  calculateBuzzUserRank(results, targetUserId) {
+    if (!results) return '-';
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => {
+      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+      return a.completedAt - b.completedAt;
+    });
+    const index = sorted.findIndex(item => item.uid === targetUserId);
+    return index !== -1 ? index + 1 : '-';
+  }
+
+  renderBuzzGameLeaderboard(listContainerId, results) {
+    const list = document.getElementById(listContainerId);
+    if (!list) return;
+
+    if (!results) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px 0;">目前尚無人搶答</div>';
+      return;
+    }
+
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => {
+      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+      return a.completedAt - b.completedAt;
+    });
+
+    list.innerHTML = sorted.map((res, index) => {
+      const isTop3 = index < 3;
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+      const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
+      const fontWeight = isTop3 ? 'bold' : 'normal';
+      
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name || res.user || '匿名')}</span>
+          </div>
+          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  stopBuzzTimers() {
+    if (this.buzzTimerInterval) clearInterval(this.buzzTimerInterval);
+    if (this.buzzCountdownInterval) clearInterval(this.buzzCountdownInterval);
+    if (this.buzzCircleInterval) clearInterval(this.buzzCircleInterval);
+    this.buzzTimerInterval = null;
+    this.buzzCountdownInterval = null;
+    this.buzzCircleInterval = null;
+  }
+
   startMemoryPositionGame(game) {
-    const buzzArea = document.getElementById('focusBuzzArea');
-    if (buzzArea) buzzArea.style.display = 'none';
     this.focusGridSize = game.gridSize || 36;
     // OpenCode 修改：修正位置序列模式未宣告 grid 導致無作用，並相容 Firebase array/object 序列格式
     const grid = document.getElementById('focusGameGrid');
