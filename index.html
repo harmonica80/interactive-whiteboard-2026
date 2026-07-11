@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=91">
+  <link rel="stylesheet" href="css/style.css?v=92">
 </head>
 <body>
   <div class="container">
@@ -720,9 +720,9 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=91"></script>
-  <script src="js/quiz.js?v=91"></script>
-  <script src="js/app.js?v=91"></script>
+  <script src="js/firebase-config.js?v=92"></script>
+  <script src="js/quiz.js?v=92"></script>
+  <script src="js/app.js?v=92"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -1140,19 +1140,22 @@
             快點我
           </button>
         </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
+          💡 按下按鈕搶答！
+        </div>
       </div>
 
       <!-- 3. 搶答結束/排行榜畫面 -->
       <div id="buzzFinishArea" style="display: none; width: 100%; text-align: center;">
         <div style="font-size: 64px; margin-bottom: 12px;">🎉</div>
-        <h2 id="buzzFinishTitle" style="font-size: 24px; color: #34c759; margin-bottom: 8px; font-weight: bold;">已完成搶答！</h2>
+        <h2 id="buzzFinishTitle" style="font-size: 24px; color: #34c759; margin-bottom: 8px; font-weight: bold;">搶答成功！</h2>
         
         <div id="buzzFinishRankBlock" style="font-size: 20px; font-weight: bold; color: var(--accent-color); margin: 16px 0; display: inline-block; padding: 10px 24px; border-radius: 40px; background: rgba(0,122,255,0.08);">
           你是第 <span id="lblBuzzRank">-</span> 位搶答的！
         </div>
 
         <p id="buzzFinishTimeBlock" style="font-size: 16px; color: var(--text-primary); margin-bottom: 20px;">
-          花費時間：<span id="lblBuzzTime" style="font-weight: 900; color: var(--danger-color); font-size: 22px;">0.00</span> 秒
+          反應時間：<span id="lblBuzzTime" style="font-weight: 900; color: var(--danger-color); font-size: 22px;">0.00</span> 秒
         </p>
 
         <!-- 即時排行榜 -->
