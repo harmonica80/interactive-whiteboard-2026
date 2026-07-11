@@ -5610,7 +5610,6 @@ class App {
       '這會清除排行榜並收回學生的搶答畫面，並回到白板畫面。',
       () => {
         db.ref('quiz/buzzGame').set(null).then(() => {
-          this.switchToTab('panel-questions'); // 讓老師端回到白板提問區畫面
           this.showNotification('成功', '搶答已關閉重置！');
         });
       }
