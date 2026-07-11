@@ -5607,12 +5607,13 @@ class App {
     this.showConfirmModal(
       '🧹',
       '確定要關閉與重置搶答嗎？',
-      '這會清除排行榜並收回學生的搶答畫面。',
+      '這會清除排行榜並收回學生的搶答畫面，並回到白板畫面。',
       () => {
         db.ref('quiz/buzzGame').set({
           status: 'idle',
           results: null
         }).then(() => {
+          this.switchToTab('panel-questions'); // 讓老師端回到白板提問區畫面
           this.showNotification('成功', '搶答已關閉重置！');
         });
       }
@@ -6261,6 +6262,7 @@ function submitAdminPassword() {
   if (pwd === '1234') {
     window.app.isAdmin = true;
     window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
+    window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
     window.app.updateFocusGameAdminOptions();
     window.app.closeAdminPasswordModal();
     window.app.switchToTab('panel-admin');
@@ -6276,6 +6278,7 @@ function submitAdminPassword() {
 function logoutAdmin() {
   window.app.isAdmin = false;
   window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
+  window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
   window.app.switchToTab('panel-questions');
   window.app.showNotification('提示', '已登出管理員模式');
   
