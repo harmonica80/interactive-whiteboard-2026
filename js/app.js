@@ -5158,6 +5158,13 @@ class App {
     const gridSize = game.gridSize || 36;
     const sequenceLength = game.sequenceLength || 5;
 
+    if (game.gameType === 'buzzGame') {
+      if (titleEl) titleEl.textContent = '⚡ 搶答挑戰！';
+      if (descriptionEl) descriptionEl.textContent = '搶答開始！快點擊畫面上隨機移動的紅色圓圈！';
+      if (hintEl) hintEl.textContent = '準備好你的滑鼠...';
+      return;
+    }
+
     if (game.gameType === 'memoryPosition') {
       if (titleEl) titleEl.textContent = game.reverseMode ? '位置序列記憶・反向挑戰！' : '位置序列記憶挑戰！';
       if (descriptionEl) {
@@ -5311,8 +5318,10 @@ class App {
   stopFocusTimers() {
     if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
     if (this.focusCountdownInterval) clearInterval(this.focusCountdownInterval);
+    if (this.focusBuzzInterval) clearInterval(this.focusBuzzInterval);
     this.focusTimerInterval = null;
     this.focusCountdownInterval = null;
+    this.focusBuzzInterval = null;
     if (this.fireworkAnimationId) cancelAnimationFrame(this.fireworkAnimationId);
     this.fireworkAnimationId = null;
     
@@ -5390,10 +5399,17 @@ class App {
     this.focusLocalGameKey = localGameKey;
 
     // OpenCode 修改：位置序列記憶第一版與舒爾特方格共用專注力遊戲 Overlay
+    if (game.gameType === 'buzzGame') {
+      this.startBuzzGame(game);
+      return;
+    }
     if (game.gameType === 'memoryPosition') {
       this.startMemoryPositionGame(game);
       return;
     }
+
+    const buzzArea = document.getElementById('focusBuzzArea');
+    if (buzzArea) buzzArea.style.display = 'none';
 
     this.focusCurrentExpected = 1;
     this.focusGridSize = game.gridSize || 36;
@@ -5464,7 +5480,95 @@ class App {
   }
 
   // OpenCode 修改：位置序列記憶第一版，播放格子閃爍後讓學生依序或反向點回
+  startBuzzGame(game) {
+    this.stopFocusTimers();
+    
+    // 隱藏舒爾特方格與求救按鈕，顯示搶答區
+    const grid = document.getElementById('focusGameGrid');
+    if (grid) grid.style.display = 'none';
+    
+    const helpBtn = document.getElementById('focusHelpBtn');
+    if (helpBtn) helpBtn.style.display = 'none';
+    
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) helpInfo.textContent = '';
+    
+    const buzzArea = document.getElementById('focusBuzzArea');
+    if (buzzArea) buzzArea.style.display = 'block';
+    
+    const buzzCircle = document.getElementById('focusBuzzCircle');
+    if (buzzCircle) {
+      buzzCircle.disabled = false;
+      buzzCircle.textContent = '快點我';
+      buzzCircle.style.left = 'calc(50% - 60px)';
+      buzzCircle.style.top = 'calc(50% - 60px)';
+    }
+
+    this.focusStartTimeLocal = game.startTime || Date.now();
+    const timerEl = document.getElementById('focusTimer');
+    
+    const updateTimer = () => {
+      const now = Date.now();
+      const start = game.startTime || this.focusStartTimeLocal;
+      const spent = (now - start) / 1000;
+      if (timerEl) {
+        timerEl.textContent = spent.toFixed(2);
+      }
+    };
+
+    updateTimer();
+    this.focusTimerInterval = setInterval(updateTimer, 30);
+
+    // 隨機移動按鈕座標
+    const randomizePosition = () => {
+      if (!buzzArea || !buzzCircle) return;
+      const maxX = buzzArea.clientWidth - buzzCircle.clientWidth;
+      const maxY = buzzArea.clientHeight - buzzCircle.clientHeight;
+      const randomX = Math.floor(Math.random() * maxX);
+      const randomY = Math.floor(Math.random() * maxY);
+      buzzCircle.style.left = randomX + 'px';
+      buzzCircle.style.top = randomY + 'px';
+    };
+
+    // 搶答開始時先移動一次，隨後每 3 秒 (3000ms) 移動一次
+    randomizePosition();
+    this.focusBuzzInterval = setInterval(randomizePosition, 3000);
+  }
+
+  buzzIn() {
+    if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    
+    const buzzCircle = document.getElementById('focusBuzzCircle');
+    if (buzzCircle) {
+      buzzCircle.disabled = true;
+      buzzCircle.textContent = '已搶答';
+    }
+
+    if (this.focusBuzzInterval) {
+      clearInterval(this.focusBuzzInterval);
+      this.focusBuzzInterval = null;
+    }
+
+    const userId = localStorage.getItem('user_id') || 'guest';
+    const userName = localStorage.getItem('user_name') || '匿名';
+    const now = Date.now();
+    const start = this.focusGame.startTime || this.focusStartTimeLocal;
+    const reactionTime = (now - start) / 1000;
+
+    db.ref(`quiz/focusGame/results/${userId}`).set({
+      user: userName,
+      timeSpent: reactionTime,
+      completedAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      console.log('Buzzed in successfully:', reactionTime);
+    }).catch(err => {
+      console.error('Failed to submit buzz-in:', err);
+    });
+  }
+
   startMemoryPositionGame(game) {
+    const buzzArea = document.getElementById('focusBuzzArea');
+    if (buzzArea) buzzArea.style.display = 'none';
     this.focusGridSize = game.gridSize || 36;
     // OpenCode 修改：修正位置序列模式未宣告 grid 導致無作用，並相容 Firebase array/object 序列格式
     const grid = document.getElementById('focusGameGrid');
