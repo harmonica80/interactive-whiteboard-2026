@@ -281,7 +281,6 @@
                   <button class="preset-btn" onclick="adminExportRecord()" style="flex: 1; min-width: 120px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1; box-sizing: border-box; margin: 0;">📤 匯出 JSON 記錄</button>
                   <button class="preset-btn" onclick="triggerImportInput()" style="flex: 1; min-width: 120px; justify-content: center; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1; box-sizing: border-box; margin: 0;">📥 匯入 JSON 記錄</button>
                   <input type="file" id="importRecordInput" accept=".json" style="display: none;" onchange="adminImportRecord(event)">
-                  <button class="preset-btn" onclick="adminExportZipRecord()" style="width: 100%; justify-content: center; background: #34c759; color: white; border: none; padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1; box-sizing: border-box; margin-top: 8px; margin-bottom: 0;">📦 打包白板內容壓縮檔 (ZIP)</button>
                 </div>
               </div>
             </div>
@@ -682,7 +681,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   
   <!-- 應用程式模組 -->
   <script src="js/firebase-config.js?v=88"></script>
