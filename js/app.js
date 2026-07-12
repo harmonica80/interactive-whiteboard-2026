@@ -5593,24 +5593,11 @@ class App {
     this.showConfirmModal(
       '⚡',
       '確定要停止搶答嗎？',
-      '這會結束搶答並固定排行成績。',
-      () => {
-        db.ref('quiz/buzzGame/status').set('ended').then(() => {
-          this.showNotification('成功', '搶答已結束！');
-        });
-      }
-    );
-  }
-
-  resetBuzzGameAdmin() {
-    if (!this.isAdmin) return;
-    this.showConfirmModal(
-      '🧹',
-      '確定要關閉與重置搶答嗎？',
-      '這會清除排行榜並收回學生的搶答畫面，並回到白板畫面。',
+      '這會關閉學生的搶答畫面，並回到白板畫面。',
       () => {
         db.ref('quiz/buzzGame').set(null).then(() => {
-          this.showNotification('成功', '搶答已關閉重置！');
+          this.switchToTab('panel-questions'); // 讓老師端回到白板提問區畫面
+          this.showNotification('成功', '搶答已停止並重置！');
         });
       }
     );

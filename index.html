@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=95">
+  <link rel="stylesheet" href="css/style.css?v=96">
 </head>
 <body>
   <div class="container">
@@ -384,11 +384,8 @@
                 <button onclick="window.app.startBuzzGameAdmin()" style="flex: 1; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 42px;">
                   🚀 開始搶答
                 </button>
-                <button onclick="window.app.endBuzzGameAdmin()" style="flex: 1; justify-content: center; background: #ff9500; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(255,149,0,0.3); height: 42px;">
+                <button onclick="window.app.endBuzzGameAdmin()" style="flex: 1; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 42px;">
                   🛑 停止搶答
-                </button>
-                <button onclick="window.app.resetBuzzGameAdmin()" style="flex: 1; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 42px;">
-                  🧹 關閉與重置
                 </button>
               </div>
 
@@ -720,9 +717,9 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=95"></script>
-  <script src="js/quiz.js?v=95"></script>
-  <script src="js/app.js?v=95"></script>
+  <script src="js/firebase-config.js?v=96"></script>
+  <script src="js/quiz.js?v=96"></script>
+  <script src="js/app.js?v=96"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
