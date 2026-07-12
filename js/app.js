@@ -5593,10 +5593,9 @@ class App {
     this.showConfirmModal(
       '⚡',
       '確定要停止搶答嗎？',
-      '這會關閉學生的搶答畫面，並回到白板畫面。',
+      '這會收回所有學生的搶答畫面並使其回到白板。',
       () => {
         db.ref('quiz/buzzGame').set(null).then(() => {
-          this.switchToTab('panel-questions'); // 讓老師端回到白板提問區畫面
           this.showNotification('成功', '搶答已停止並重置！');
         });
       }
