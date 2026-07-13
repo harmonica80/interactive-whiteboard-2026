@@ -3483,7 +3483,7 @@ class App {
             <div id="share-preview-${item.id}" style="word-break: break-all;">${preview}</div>
           </div>
           <div style="display: flex; gap: 4px; flex-shrink: 0;">
-            <button class="preset-btn" onclick="adminEditShare('${item.id}')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">✏️ 編輯</button>
+            <button class="preset-btn" onclick="window.app.adminEditShare('${item.id}')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">✏️ 編輯</button>
             <button class="preset-btn" onclick="window.app.deleteShareItem('${item.id}')" style="background: var(--danger-color); color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
           </div>
         </div>
@@ -3503,8 +3503,8 @@ class App {
             </div>
           `}
           <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
-            <button onclick="adminSaveShare('${item.id}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 儲存</button>
-            <button onclick="adminCancelEditShare('${item.id}')" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer;">取消</button>
+            <button onclick="window.app.adminSaveShare('${item.id}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 儲存</button>
+            <button onclick="window.app.adminCancelEditShare('${item.id}')" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer;">取消</button>
           </div>
         </div>
       </div>
@@ -6223,10 +6223,12 @@ function resetAll() {
   location.reload();
 }
 
-// 啟動應用程式
 document.addEventListener('DOMContentLoaded', () => {
   try {
     window.app = new App();
+    window.app.adminEditShare = adminEditShare;
+    window.app.adminCancelEditShare = adminCancelEditShare;
+    window.app.adminSaveShare = adminSaveShare;
     window.app.updateFocusGameAdminOptions();
   } catch (err) {
     console.error("CRITICAL RUNTIME ERROR:", err);
