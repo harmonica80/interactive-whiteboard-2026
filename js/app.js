@@ -6533,6 +6533,15 @@ function moveFolder(type, folderId, direction) {
 function adminEditShare(id) {
   const editDiv = document.getElementById('share-edit-' + id);
   if (editDiv) {
+    if (window.app) {
+      const item = window.app.shares.find(s => s.id === id);
+      if (item) {
+        const titleInput = document.getElementById('share-edit-title-' + id);
+        const contentInput = document.getElementById('share-edit-content-' + id);
+        if (contentInput) contentInput.value = item.content;
+        if (titleInput && item.type === 'link') titleInput.value = item.title || '';
+      }
+    }
     editDiv.style.display = editDiv.style.display === 'none' ? 'block' : 'none';
   }
 }
