@@ -5326,7 +5326,11 @@ class App {
             
             document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
             document.getElementById('lblFinishRankAnimation').style.display = 'inline-block';
-            document.getElementById('lblFinishRank').textContent = '✔ 全部答對';
+            
+            const correctRank = this.calculateFocusUserCorrectRank(game.results, userId);
+            document.getElementById('lblFinishRank').textContent = correctRank;
+            const suffixEl = document.getElementById('lblFinishRankSuffix');
+            if (suffixEl) suffixEl.textContent = '全部答對';
             
             this.renderFocusGameLeaderboard('focusGameRankList', game.results);
             
@@ -5346,6 +5350,8 @@ class App {
           
           const rank = this.calculateFocusUserRank(game.results, userId);
           document.getElementById('lblFinishRank').textContent = rank;
+          const suffixEl = document.getElementById('lblFinishRankSuffix');
+          if (suffixEl) suffixEl.textContent = '完成';
           
           this.renderFocusGameLeaderboard('focusGameRankList', game.results);
           
@@ -5369,10 +5375,15 @@ class App {
       if (result) {
         document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
         if (game.gameType === 'characterTest') {
-          document.getElementById('lblFinishRank').textContent = result.status === 'correct' ? '✔ 全部答對' : '❌ 答錯了';
+          const correctRank = this.calculateFocusUserCorrectRank(game.results, userId);
+          document.getElementById('lblFinishRank').textContent = correctRank;
+          const suffixEl = document.getElementById('lblFinishRankSuffix');
+          if (suffixEl) suffixEl.textContent = '全部答對';
         } else {
           const rank = this.calculateFocusUserRank(game.results, userId);
           document.getElementById('lblFinishRank').textContent = rank;
+          const suffixEl = document.getElementById('lblFinishRankSuffix');
+          if (suffixEl) suffixEl.textContent = '完成';
         }
         document.getElementById('lblFinishRankAnimation').style.display = 'inline-block';
         document.getElementById('lblFinishTime').parentElement.style.display = 'block';
@@ -5411,6 +5422,17 @@ class App {
       if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
       return a.completedAt - b.completedAt;
     });
+    const index = sorted.findIndex(item => item.uid === targetUserId);
+    return index !== -1 ? index + 1 : '-';
+  }
+
+  calculateFocusUserCorrectRank(results, targetUserId) {
+    if (!results) return '-';
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).filter(item => item.status === 'correct')
+    .sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
     const index = sorted.findIndex(item => item.uid === targetUserId);
     return index !== -1 ? index + 1 : '-';
   }
@@ -6149,7 +6171,7 @@ class App {
           <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
             <!-- 左側：寫字九宮格輸入 -->
             <div class="chinese-writing-grid">
-              <input type="text" id="char-test-input-${idx}" maxlength="1" placeholder="輸入" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
+              <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
             </div>
             <!-- 右側：注音九宮格 -->
             <div class="chinese-writing-grid">

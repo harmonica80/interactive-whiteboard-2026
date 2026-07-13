@@ -2198,3 +2198,13 @@ body {
   justify-content: center;
   height: 100%;
 }
+
+/* 一字千金輸入框 placeholder 樣式，避免文字太大與直排換行 */
+.char-test-input-box::placeholder {
+  font-size: 16px;
+  font-weight: normal;
+  color: var(--text-muted, #999);
+  font-family: system-ui, -apple-system, sans-serif;
+  letter-spacing: 0;
+}
+
