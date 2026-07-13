@@ -6563,7 +6563,7 @@ function adminSaveShare(id) {
     updates.title = titleInput.value.trim() || newContent;
   }
   
-  db.ref('quiz/teacherShares').child(id).update(updates)
+  db.ref('teacherShares').child(id).update(updates)
     .then(() => {
       window.app.showNotification('成功', '教師分享已更新！');
       adminCancelEditShare(id);
