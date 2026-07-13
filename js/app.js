@@ -6545,32 +6545,53 @@ function adminCancelEditShare(id) {
 window.app && (window.app.adminCancelEditShare = adminCancelEditShare);
 
 function adminSaveShare(id) {
-  if (!window.app) return;
-  const item = window.app.shares.find(s => s.id === id);
-  if (!item) return;
-  
-  const contentInput = document.getElementById('share-edit-content-' + id);
-  const titleInput = document.getElementById('share-edit-title-' + id);
-  
-  const newContent = contentInput ? contentInput.value.trim() : '';
-  if (!newContent) {
-    window.app.showNotification('提示', '內容不能為空');
-    return;
+  try {
+    if (!window.app) {
+      alert("系統錯誤: window.app 尚未初始化");
+      return;
+    }
+    const item = window.app.shares.find(s => s.id === id);
+    if (!item) {
+      alert("錯誤: 找不到該分享項目 ID: " + id);
+      return;
+    }
+    
+    const contentInput = document.getElementById('share-edit-content-' + id);
+    const titleInput = document.getElementById('share-edit-title-' + id);
+    
+    if (!contentInput) {
+      alert("錯誤: 找不到內容輸入欄位，ID: " + id);
+      return;
+    }
+    
+    const newContent = contentInput.value.trim();
+    if (!newContent) {
+      window.app.showNotification('提示', '內容不能為空');
+      return;
+    }
+    
+    const updates = { content: newContent };
+    if (item.type === 'link') {
+      if (!titleInput) {
+        alert("錯誤: 找不到標題輸入欄位，ID: " + id);
+        return;
+      }
+      updates.title = titleInput.value.trim() || newContent;
+    }
+    
+    db.ref('teacherShares').child(id).update(updates)
+      .then(() => {
+        window.app.showNotification('成功', '教師分享已更新！');
+        adminCancelEditShare(id);
+      })
+      .catch(err => {
+        window.app.showNotification('錯誤', '更新失敗: ' + err.message);
+        alert("Firebase 更新失敗: " + err.message);
+      });
+  } catch (err) {
+    alert("執行錯誤: " + err.message + "\n" + err.stack);
+    console.error(err);
   }
-  
-  const updates = { content: newContent };
-  if (item.type === 'link' && titleInput) {
-    updates.title = titleInput.value.trim() || newContent;
-  }
-  
-  db.ref('teacherShares').child(id).update(updates)
-    .then(() => {
-      window.app.showNotification('成功', '教師分享已更新！');
-      adminCancelEditShare(id);
-    })
-    .catch(err => {
-      window.app.showNotification('錯誤', '更新失敗: ' + err.message);
-    });
 }
 window.app && (window.app.adminSaveShare = adminSaveShare);
 
