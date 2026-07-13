@@ -6412,11 +6412,13 @@ class App {
     })).sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
     
     const questions = (this.focusGame && this.focusGame.questions) || [];
-    const correctAnswers = questions.map(q => q.char).join(', ');
+    const correctAnswersLinks = questions.map(q => {
+      return `<a href="https://www.moedict.tw/${encodeURIComponent(q.char)}" target="_blank" style="color: var(--accent-color, #007aff); text-decoration: underline; font-weight: bold; font-size: 20px; margin: 0 4px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;" title="點擊查看萌典字典說明">${this.escapeHtml(q.char)}</a>`;
+    }).join(' ');
     
     container.innerHTML = `
-      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; line-height: 1.6;">
-        💡 標準答案：${correctAnswers}<br>
+      <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; line-height: 1.8;">
+        💡 標準答案 (點選字可查字典)：${correctAnswersLinks}<br>
         🎨 標色說明：🟢 綠色代表與標準答案相同；🔴 紅色代表與標準答案不同，方便您快速核對。
       </div>
     ` + sorted.map((res, index) => {
