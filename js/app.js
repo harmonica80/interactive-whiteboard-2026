@@ -6181,12 +6181,9 @@ class App {
       html += `
         <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); width: 100%; box-sizing: border-box;">
           <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-            <!-- 左側：寫字九宮格輸入 + 提示按鈕 -->
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
-              <div class="chinese-writing-grid">
-                <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
-              </div>
-              <button type="button" onclick="window.app.showCharacterHint(${idx})" style="padding: 4px 8px; background: rgba(255, 149, 0, 0.12); color: #e07000; border: 1px solid rgba(255, 149, 0, 0.25); border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: all 0.2s;">💡 提示字 (2秒/+5秒)</button>
+            <!-- 左側：寫字九宮格輸入 -->
+            <div class="chinese-writing-grid">
+              <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
             </div>
             <!-- 右側：注音九宮格 -->
             <div class="chinese-writing-grid">
@@ -6202,6 +6199,9 @@ class App {
     
     html += `
       </div>
+      <button id="focusCharTestHintBtn" onclick="window.app.showGeneralCharacterHint()" style="margin-top: 12px; width: 100%; padding: 12px; background: #ff9500; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(255,149,0,0.25);">
+        💡 顯示提示字 (2秒/+5秒)
+      </button>
       <button onclick="window.app.submitCharTestAnswers()" style="margin-top: 12px; width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,122,255,0.25);">
         ✔️ 送出答案
       </button>
@@ -6271,22 +6271,44 @@ class App {
       });
   }
 
-  showCharacterHint(idx) {
+  showGeneralCharacterHint() {
     if (!this.focusGame || this.focusGame.status !== 'playing') return;
     const questions = this.focusGame.questions || [];
-    const q = questions[idx];
-    if (!q) return;
+    if (questions.length === 0) return;
 
-    // 懲罰時間與提示次數計費
-    this.focusHelpCount = (this.focusHelpCount || 0) + 1;
-    this.focusHelpPenaltySeconds = (this.focusHelpPenaltySeconds || 0) + 5;
+    // 先尋找第一個未填寫的格子索引 (value 為空)
+    let targetIdx = -1;
+    for (let i = 0; i < 3; i++) {
+      const input = document.getElementById(`char-test-input-${i}`);
+      const val = input ? input.value.trim() : '';
+      if (!val) {
+        targetIdx = i;
+        break;
+      }
+    }
+    // 如果全部都填寫了，預設提示第一個
+    if (targetIdx === -1) {
+      targetIdx = 0;
+    }
 
-    const input = document.getElementById(`char-test-input-${idx}`);
+    const q = questions[targetIdx];
+    const input = document.getElementById(`char-test-input-${targetIdx}`);
     if (input) {
+      // 懲罰時間與提示次數計費
+      this.focusHelpCount = (this.focusHelpCount || 0) + 1;
+      this.focusHelpPenaltySeconds = (this.focusHelpPenaltySeconds || 0) + 5;
+
       const originalVal = input.value;
       input.value = q.char; // 顯現正確答案
       input.style.color = '#ff9500'; // 提示時以橘色字體顯著標示
       input.disabled = true;
+
+      // 暫時鎖定下方的提示按鈕，避免連續點擊造成異常
+      const hintBtn = document.getElementById('focusCharTestHintBtn');
+      if (hintBtn) {
+        hintBtn.disabled = true;
+        hintBtn.style.opacity = '0.6';
+      }
 
       // 立即在前端畫面上累加 5 秒
       const timerEl = document.getElementById('focusTimer');
@@ -6295,11 +6317,15 @@ class App {
         timerEl.textContent = (current + 5).toFixed(2);
       }
 
-      // 2 秒後還原原始輸入內容
+      // 2 秒後還原原始輸入內容，並解鎖輸入框和提示按鈕
       setTimeout(() => {
         input.value = originalVal;
         input.style.color = 'var(--accent-color)';
         input.disabled = false;
+        if (hintBtn) {
+          hintBtn.disabled = false;
+          hintBtn.style.opacity = '1';
+        }
         input.focus();
       }, 2000);
     }
