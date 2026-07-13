@@ -5303,6 +5303,18 @@ class App {
       }
     }
     
+    // 更新底部遊戲說明提示文字
+    const instEl = document.getElementById('focusGameInstruction');
+    if (instEl && game) {
+      if (game.gameType === 'characterTest') {
+        instEl.textContent = '💡 請寫出正確的國字，填寫完後點選「送出答案」讓老師評分。';
+      } else if (game.gameType === 'memoryPosition') {
+        instEl.textContent = '💡 請依序或反向點選剛才閃爍位置的格子，加油！';
+      } else {
+        instEl.textContent = '💡 點擊正確數字它將會消失，看誰能用最快的速度完成！';
+      }
+    }
+    
     if (game.status === 'countdown') {
       document.getElementById('focusCountdownArea').style.display = 'block';
       document.getElementById('focusPlayArea').style.display = 'none';
@@ -6169,9 +6181,12 @@ class App {
       html += `
         <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); width: 100%; box-sizing: border-box;">
           <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-            <!-- 左側：寫字九宮格輸入 -->
-            <div class="chinese-writing-grid">
-              <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
+            <!-- 左側：寫字九宮格輸入 + 提示按鈕 -->
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="chinese-writing-grid">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
+              </div>
+              <button type="button" onclick="window.app.showCharacterHint(${idx})" style="padding: 4px 8px; background: rgba(255, 149, 0, 0.12); color: #e07000; border: 1px solid rgba(255, 149, 0, 0.25); border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: all 0.2s;">💡 提示字 (2秒/+5秒)</button>
             </div>
             <!-- 右側：注音九宮格 -->
             <div class="chinese-writing-grid">
@@ -6254,6 +6269,40 @@ class App {
       .then(() => {
         this.showNotification('提示', '已重設，可以重新作答！');
       });
+  }
+
+  showCharacterHint(idx) {
+    if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    const questions = this.focusGame.questions || [];
+    const q = questions[idx];
+    if (!q) return;
+
+    // 懲罰時間與提示次數計費
+    this.focusHelpCount = (this.focusHelpCount || 0) + 1;
+    this.focusHelpPenaltySeconds = (this.focusHelpPenaltySeconds || 0) + 5;
+
+    const input = document.getElementById(`char-test-input-${idx}`);
+    if (input) {
+      const originalVal = input.value;
+      input.value = q.char; // 顯現正確答案
+      input.style.color = '#ff9500'; // 提示時以橘色字體顯著標示
+      input.disabled = true;
+
+      // 立即在前端畫面上累加 5 秒
+      const timerEl = document.getElementById('focusTimer');
+      if (timerEl) {
+        const current = parseFloat(timerEl.textContent) || 0;
+        timerEl.textContent = (current + 5).toFixed(2);
+      }
+
+      // 2 秒後還原原始輸入內容
+      setTimeout(() => {
+        input.value = originalVal;
+        input.style.color = 'var(--accent-color)';
+        input.disabled = false;
+        input.focus();
+      }, 2000);
+    }
   }
 
   renderCharacterTestPlayCompleted(game, result) {
@@ -6340,8 +6389,9 @@ class App {
     const correctAnswers = questions.map(q => q.char).join(', ');
     
     container.innerHTML = `
-      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 6px; border-radius: 6px;">
-        💡 標準答案：${correctAnswers}
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; line-height: 1.6;">
+        💡 標準答案：${correctAnswers}<br>
+        🎨 標色說明：🟢 綠色代表與標準答案相同；🔴 紅色代表與標準答案不同，方便您快速核對。
       </div>
     ` + sorted.map((res, index) => {
       const answers = res.answers || ['', '', ''];
