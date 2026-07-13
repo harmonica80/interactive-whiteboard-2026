@@ -6372,11 +6372,14 @@ class App {
     
     const questions = game.questions || [];
     questions.forEach((q, idx) => {
+      const displayChar = status === 'incorrect' ? q.char : (answers[idx] || '');
+      const displayColor = status === 'incorrect' ? '#dc3545' : 'var(--accent-color)';
+      
       html += `
         <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
           <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
             <div class="chinese-writing-grid">
-              <span style="font-size: 44px; font-weight: bold; color: var(--accent-color); font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(answers[idx] || '')}</span>
+              <span style="font-size: 44px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayChar)}</span>
             </div>
             <div class="chinese-writing-grid">
               <div class="zhuyin-text">${q.zhuyin}</div>
@@ -6388,14 +6391,6 @@ class App {
         </div>
       `;
     });
-    
-    if (status === 'incorrect') {
-      html += `
-        <button onclick="window.app.retryCharacterTest()" style="margin-top: 12px; width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-          🔄 重新作答
-        </button>
-      `;
-    }
     
     grid.innerHTML = html;
   }
