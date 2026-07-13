@@ -6407,34 +6407,6 @@ class App {
       });
   }
 
-    const sorted = Object.keys(results).map(uid => ({
-      uid,
-      ...results[uid]
-    })).sort((a, b) => {
-      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
-      return a.completedAt - b.completedAt;
-    });
-
-    list.innerHTML = sorted.map((res, index) => {
-      const isTop3 = index < 3;
-      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-      const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
-      const fontWeight = isTop3 ? 'bold' : 'normal';
-      const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
-      const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
-      
-      return `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
-            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
-          </div>
-          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒 ${helpNote}${memoryNote}</span>
-        </div>
-      `;
-    }).join('');
-  }
-
   initFireworkCanvas() {
     const canvas = document.getElementById('focusFireworkCanvas');
     if (!canvas) return;
