@@ -6413,12 +6413,25 @@ class App {
     
     const questions = (this.focusGame && this.focusGame.questions) || [];
     const correctAnswersLinks = questions.map(q => {
-      return `<a href="https://www.moedict.tw/${encodeURIComponent(q.char)}" target="_blank" style="color: var(--accent-color, #007aff); text-decoration: underline; font-weight: bold; font-size: 20px; margin: 0 4px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;" title="點擊查看萌典字典說明">${this.escapeHtml(q.char)}</a>`;
+      // 自動擷取提示詞填空後的第一個詞彙作為 Google 搜尋關鍵字
+      let searchWord = q.char;
+      if (q.clue) {
+        let filled = q.clue;
+        const blanks = [/（\s*）/g, /（\u3000*）/g, /（）/g, /\(\s*\)/g, /\(\)/g];
+        blanks.forEach(regex => {
+          filled = filled.replace(regex, q.char);
+        });
+        const parts = filled.split(/[、，,；;]/);
+        if (parts.length > 0 && parts[0].trim()) {
+          searchWord = parts[0].trim();
+        }
+      }
+      return `<a href="https://www.google.com/search?q=${encodeURIComponent(searchWord)}" target="_blank" style="color: var(--accent-color, #007aff); text-decoration: underline; font-weight: bold; font-size: 20px; margin: 0 4px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;" title="點擊在 Google 搜尋：${this.escapeHtml(searchWord)}">${this.escapeHtml(q.char)}</a>`;
     }).join(' ');
     
     container.innerHTML = `
       <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; line-height: 1.8;">
-        💡 標準答案 (點選字可查字典)：${correctAnswersLinks}<br>
+        💡 標準答案 (點選字可進行 Google 詞彙搜尋)：${correctAnswersLinks}<br>
         🎨 標色說明：🟢 綠色代表與標準答案相同；🔴 紅色代表與標準答案不同，方便您快速核對。
       </div>
     ` + sorted.map((res, index) => {
