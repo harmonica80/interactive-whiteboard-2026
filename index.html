@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=101">
+  <link rel="stylesheet" href="css/style.css?v=102">
 </head>
 <body>
   <div class="container">
@@ -412,6 +412,7 @@
                 <select id="focusGameType" onchange="window.app && window.app.updateFocusGameAdminOptions()" class="question-input" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px; height: 38px;">
                   <option value="numberGrid">🔢 依序點選數字 (舒爾特方格 Schulte Grid)</option>
                   <option value="memoryPosition">🧩 位置序列記憶 (含反向模式)</option>
+                  <option value="characterTest">✍️ 一字千金：字力測驗 (手寫/輸入)</option>
                 </select>
               </div>
 
@@ -717,9 +718,9 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=101"></script>
-  <script src="js/quiz.js?v=101"></script>
-  <script src="js/app.js?v=101"></script>
+  <script src="js/firebase-config.js?v=102"></script>
+  <script src="js/quiz.js?v=102"></script>
+  <script src="js/app.js?v=102"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

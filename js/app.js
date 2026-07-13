@@ -1,3 +1,23 @@
+// 一字千金易錯字庫
+const CHARACTER_TEST_POOL = [
+  { char: '熱', zhuyin: 'ㄖㄜˋ', clue: '（　）水、發（　）' },
+  { char: '尷', zhuyin: 'ㄍㄢ', clue: '（　）尬' },
+  { char: '尬', zhuyin: 'ㄍㄚˋ', clue: '尷（　）' },
+  { char: '肺', zhuyin: 'ㄈㄟˋ', clue: '（　）炎、右（　）' },
+  { char: '冒', zhuyin: 'ㄇㄠˋ', clue: '感（　）、（　）險' },
+  { char: '梁', zhuyin: 'ㄌㄧㄤˊ', clue: '（　）柱、橋（　）' },
+  { char: '鼎', zhuyin: 'ㄉㄧㄥˇ', clue: '（　）盛、（　）力相助' },
+  { char: '憋', zhuyin: 'ㄅㄧㄝ', clue: '（　）氣、（　）尿' },
+  { char: '戳', zhuyin: 'ㄔㄨㄛ', clue: '（　）破、郵（　）' },
+  { char: '蒐', zhuyin: 'ㄙㄡ', clue: '（　）集、（　）索' },
+  { char: '幕', zhuyin: 'ㄇㄨˋ', clue: '開（　）、（　）後黑手' },
+  { char: '慕', zhuyin: 'ㄇㄨˋ', clue: '羨（　）、愛（　）' },
+  { char: '辨', zhuyin: 'ㄅㄧㄢˋ', clue: '（　）認、（　）別' },
+  { char: '辯', zhuyin: 'ㄅㄧㄢˋ', clue: '爭（　）、（　）論' },
+  { char: '磬', zhuyin: 'ㄑㄧㄥˋ', clue: '擊（　）演奏' },
+  { char: '磐', zhuyin: 'ㄆㄢˊ', clue: '如石之（　）、（　）石' }
+];
+
 // 主程式
 class App {
   constructor() {
@@ -5126,6 +5146,7 @@ class App {
     const memoryGridSize = parseInt(document.getElementById('focusMemoryGridSize')?.value) || 16;
     const selectedSize = gameType === 'memoryPosition' ? memoryGridSize : numberGridSize;
     const countdownSecs = parseInt(document.getElementById('focusGameCountdown').value) || 10;
+    
     // OpenCode 修改：位置序列記憶第一版，由老師端產生共用序列並寫入 Firebase
     const memoryLengthInput = document.getElementById('focusMemoryLength');
     const memoryReverseInput = document.getElementById('focusMemoryReverse');
@@ -5134,6 +5155,18 @@ class App {
     const memorySequence = gameType === 'memoryPosition'
       ? this.generateFocusMemorySequence(selectedSize, memoryLength)
       : null;
+      
+    // 一字千金：字力測驗題目隨機抽選
+    let selectedQuestions = null;
+    if (gameType === 'characterTest') {
+      const pool = [...CHARACTER_TEST_POOL];
+      selectedQuestions = [];
+      for (let i = 0; i < 3; i++) {
+        if (pool.length === 0) break;
+        const randIdx = Math.floor(Math.random() * pool.length);
+        selectedQuestions.push(pool.splice(randIdx, 1)[0]);
+      }
+    }
     
     db.ref('quiz/focusGame').set({
       status: 'countdown',
@@ -5142,6 +5175,7 @@ class App {
       sequenceLength: gameType === 'memoryPosition' ? memoryLength : null,
       reverseMode: gameType === 'memoryPosition' ? memoryReverse : false,
       sequence: memorySequence,
+      questions: selectedQuestions,
       countdownSeconds: countdownSecs,
       countdownStartTime: firebase.database.ServerValue.TIMESTAMP,
       results: null
@@ -5177,6 +5211,13 @@ class App {
           : `請記住 ${gridSize} 格盤面中依序閃爍的 ${sequenceLength} 個位置，播放完後照順序點回。`;
       }
       if (hintEl) hintEl.textContent = '記憶挑戰即將開始，請專心看格子閃爍...';
+      return;
+    }
+    
+    if (game.gameType === 'characterTest') {
+      if (titleEl) titleEl.textContent = '一字千金：字力測驗！';
+      if (descriptionEl) descriptionEl.textContent = '請注意看畫面上的注音與提示詞，並寫出正確的國字。共有 3 題喔！';
+      if (hintEl) hintEl.textContent = '測驗即將開始，請準備好輸入...';
       return;
     }
 
@@ -5274,22 +5315,43 @@ class App {
       document.getElementById('focusCountdownArea').style.display = 'none';
       
       const userId = localStorage.getItem('user_id') || 'guest';
-      const hasCompleted = game.results && game.results[userId];
+      const result = game.results && game.results[userId];
+      const hasCompleted = !!result;
 
       if (hasCompleted) {
-        document.getElementById('focusPlayArea').style.display = 'none';
-        document.getElementById('focusFinishArea').style.display = 'block';
-        
-        const result = game.results[userId];
-        document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
-        
-        const rank = this.calculateFocusUserRank(game.results, userId);
-        document.getElementById('lblFinishRank').textContent = rank;
-        
-        this.renderFocusGameLeaderboard('focusGameRankList', game.results);
-        
-        this.initFireworkCanvas();
-        this.triggerFireworkEffect();
+        if (game.gameType === 'characterTest') {
+          if (result.status === 'correct') {
+            document.getElementById('focusPlayArea').style.display = 'none';
+            document.getElementById('focusFinishArea').style.display = 'block';
+            
+            document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+            document.getElementById('lblFinishRankAnimation').style.display = 'inline-block';
+            document.getElementById('lblFinishRank').textContent = '✔ 全部答對';
+            
+            this.renderFocusGameLeaderboard('focusGameRankList', game.results);
+            
+            this.initFireworkCanvas();
+            this.triggerFireworkEffect();
+          } else {
+            // 待審核或是被判定答錯，在 Play 區域以唯讀/重試模式顯示
+            document.getElementById('focusPlayArea').style.display = 'flex';
+            document.getElementById('focusFinishArea').style.display = 'none';
+            this.renderCharacterTestPlayCompleted(game, result);
+          }
+        } else {
+          document.getElementById('focusPlayArea').style.display = 'none';
+          document.getElementById('focusFinishArea').style.display = 'block';
+          
+          document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+          
+          const rank = this.calculateFocusUserRank(game.results, userId);
+          document.getElementById('lblFinishRank').textContent = rank;
+          
+          this.renderFocusGameLeaderboard('focusGameRankList', game.results);
+          
+          this.initFireworkCanvas();
+          this.triggerFireworkEffect();
+        }
       } else {
         document.getElementById('focusPlayArea').style.display = 'flex';
         document.getElementById('focusFinishArea').style.display = 'none';
@@ -5306,8 +5368,12 @@ class App {
       const result = game.results && game.results[userId];
       if (result) {
         document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
-        const rank = this.calculateFocusUserRank(game.results, userId);
-        document.getElementById('lblFinishRank').textContent = rank;
+        if (game.gameType === 'characterTest') {
+          document.getElementById('lblFinishRank').textContent = result.status === 'correct' ? '✔ 全部答對' : '❌ 答錯了';
+        } else {
+          const rank = this.calculateFocusUserRank(game.results, userId);
+          document.getElementById('lblFinishRank').textContent = rank;
+        }
         document.getElementById('lblFinishRankAnimation').style.display = 'inline-block';
         document.getElementById('lblFinishTime').parentElement.style.display = 'block';
       } else {
@@ -5405,6 +5471,11 @@ class App {
     // OpenCode 修改：位置序列記憶第一版與舒爾特方格共用專注力遊戲 Overlay
     if (game.gameType === 'memoryPosition') {
       this.startMemoryPositionGame(game);
+      return;
+    }
+    
+    if (game.gameType === 'characterTest') {
+      this.startCharacterTestGame(game);
       return;
     }
 
@@ -5999,10 +6070,342 @@ class App {
     const list = document.getElementById(listContainerId);
     if (!list) return;
 
+    if (this.focusGame && this.focusGame.gameType === 'characterTest') {
+      if (listContainerId === 'adminFocusGameRankList') {
+        this.renderAdminCharacterTestSubmissions(list, results);
+      } else {
+        this.renderStudentCharacterTestLeaderboard(list, results);
+      }
+      return;
+    }
+
     if (!results) {
       list.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px 0;">目前尚無人完成</div>';
       return;
     }
+
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => {
+      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+      return a.completedAt - b.completedAt;
+    });
+
+    list.innerHTML = sorted.map((res, index) => {
+      const isTop3 = index < 3;
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+      const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
+      const fontWeight = isTop3 ? 'bold' : 'normal';
+      const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
+      const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
+      
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
+          </div>
+          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒 ${helpNote}${memoryNote}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  startCharacterTestGame(game) {
+    const grid = document.getElementById('focusGameGrid');
+    if (!grid) return;
+    
+    // 隱藏求救按鈕與提示
+    const helpBtn = document.getElementById('focusHelpBtn');
+    if (helpBtn) helpBtn.style.display = 'none';
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) helpInfo.textContent = '';
+    
+    // 隱藏目標標籤
+    const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (targetLabel) targetLabel.style.display = 'none';
+    
+    // 重設格線外觀為一字千金樣式
+    grid.style.aspectRatio = 'auto';
+    grid.style.display = 'flex';
+    grid.style.flexDirection = 'column';
+    grid.style.gap = '16px';
+    grid.style.width = '100%';
+    grid.style.maxWidth = '500px';
+    
+    const questions = game.questions || [];
+    
+    let html = `
+      <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; text-align: center; width: 100%;">
+        ✍️ 一字千金：請輸入正確的國字
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+    `;
+    
+    questions.forEach((q, idx) => {
+      html += `
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+            <!-- 左側：寫字九宮格輸入 -->
+            <div class="chinese-writing-grid">
+              <input type="text" id="char-test-input-${idx}" maxlength="1" placeholder="輸入" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
+            </div>
+            <!-- 右側：注音九宮格 -->
+            <div class="chinese-writing-grid">
+              <div class="zhuyin-text">${q.zhuyin}</div>
+            </div>
+          </div>
+          <div style="text-align: center; font-size: 14px; color: var(--text-secondary); margin-top: 6px; font-weight: 500;">
+            提示詞：${q.clue}
+          </div>
+        </div>
+      `;
+    });
+    
+    html += `
+      </div>
+      <button onclick="window.app.submitCharTestAnswers()" style="margin-top: 12px; width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,122,255,0.25);">
+        ✔️ 送出答案
+      </button>
+    `;
+    
+    grid.innerHTML = html;
+    
+    // 設定計時器
+    this.focusStartTimeLocal = game.startTime || Date.now();
+    const timerEl = document.getElementById('focusTimer');
+    
+    if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
+    this.focusTimerInterval = setInterval(() => {
+      const now = Date.now();
+      const start = game.startTime || this.focusStartTimeLocal;
+      const elapsed = (now - start) / 1000;
+      if (timerEl) timerEl.textContent = elapsed.toFixed(2);
+    }, 10);
+  }
+
+  submitCharTestAnswers() {
+    if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    
+    const userId = localStorage.getItem('user_id') || 'guest';
+    
+    // 收集三個答案
+    const answers = [];
+    for (let i = 0; i < 3; i++) {
+      const input = document.getElementById(`char-test-input-${i}`);
+      const val = input ? input.value.trim() : '';
+      if (!val) {
+        this.showNotification('提示', '請填寫所有題目的國字！');
+        return;
+      }
+      answers.push(val);
+    }
+    
+    if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
+    this.focusTimerInterval = null;
+    
+    const timeSpent = (Date.now() - (this.focusGame.startTime || this.focusStartTimeLocal)) / 1000;
+    const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名';
+    
+    db.ref(`quiz/focusGame/results/${userId}`).set({
+      name: userName,
+      answers: answers,
+      timeSpent: timeSpent,
+      completedAt: firebase.database.ServerValue.TIMESTAMP,
+      status: 'pending',
+      gameType: 'characterTest'
+    }).then(() => {
+      this.showNotification('成功', '答案已送出，等待老師評分！');
+      this.renderCharacterTestPlayCompleted(this.focusGame, {
+        answers: answers,
+        status: 'pending'
+      });
+    }).catch(err => {
+      this.showNotification('錯誤', '送出失敗: ' + err.message);
+    });
+  }
+
+  retryCharacterTest() {
+    const userId = localStorage.getItem('user_id') || 'guest';
+    db.ref(`quiz/focusGame/results/${userId}`).remove()
+      .then(() => {
+        this.showNotification('提示', '已重設，可以重新作答！');
+      });
+  }
+
+  renderCharacterTestPlayCompleted(game, result) {
+    const grid = document.getElementById('focusGameGrid');
+    if (!grid) return;
+    
+    const helpBtn = document.getElementById('focusHelpBtn');
+    if (helpBtn) helpBtn.style.display = 'none';
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) helpInfo.textContent = '';
+    
+    const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (targetLabel) targetLabel.style.display = 'none';
+    
+    grid.style.aspectRatio = 'auto';
+    grid.style.display = 'flex';
+    grid.style.flexDirection = 'column';
+    grid.style.gap = '16px';
+    grid.style.width = '100%';
+    grid.style.maxWidth = '500px';
+    
+    const answers = result.answers || ['', '', ''];
+    const status = result.status || 'pending';
+    
+    let statusText = '⏳ 等待老師評分中...';
+    let statusColor = 'var(--text-secondary)';
+    if (status === 'correct') {
+      statusText = '🎉 老師判定：全部答對！';
+      statusColor = '#28a745';
+    } else if (status === 'incorrect') {
+      statusText = '❌ 老師判定：答錯了，再加把勁！';
+      statusColor = '#dc3545';
+    }
+    
+    let html = `
+      <div style="font-size: 16px; font-weight: bold; color: ${statusColor}; margin-bottom: 8px; text-align: center; width: 100%;">
+        ${statusText}
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+    `;
+    
+    const questions = game.questions || [];
+    questions.forEach((q, idx) => {
+      html += `
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+            <div class="chinese-writing-grid">
+              <span style="font-size: 44px; font-weight: bold; color: var(--accent-color); font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(answers[idx] || '')}</span>
+            </div>
+            <div class="chinese-writing-grid">
+              <div class="zhuyin-text">${q.zhuyin}</div>
+            </div>
+          </div>
+          <div style="text-align: center; font-size: 14px; color: var(--text-secondary); margin-top: 6px;">
+            提示詞：${q.clue}
+          </div>
+        </div>
+      `;
+    });
+    
+    if (status === 'incorrect') {
+      html += `
+        <button onclick="window.app.retryCharacterTest()" style="margin-top: 12px; width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          🔄 重新作答
+        </button>
+      `;
+    }
+    
+    grid.innerHTML = html;
+  }
+
+  renderAdminCharacterTestSubmissions(container, results) {
+    if (!results) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px 0;">目前尚無同學繳交</div>';
+      return;
+    }
+    
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
+    
+    const questions = (this.focusGame && this.focusGame.questions) || [];
+    const correctAnswers = questions.map(q => q.char).join(', ');
+    
+    container.innerHTML = `
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 6px; border-radius: 6px;">
+        💡 標準答案：${correctAnswers}
+      </div>
+    ` + sorted.map((res, index) => {
+      const answers = res.answers || ['', '', ''];
+      const status = res.status || 'pending';
+      
+      let statusBadge = '';
+      if (status === 'correct') {
+        statusBadge = '<span style="color: #28a745; font-weight: bold; font-size: 12px;">✔️ 答對</span>';
+      } else if (status === 'incorrect') {
+        statusBadge = '<span style="color: #dc3545; font-weight: bold; font-size: 12px;">❌ 答錯</span>';
+      } else {
+        statusBadge = '<span style="color: #ff9500; font-weight: bold; font-size: 12px;">⏳ 待審查</span>';
+      }
+      
+      const answerDisplay = answers.map((ans, idx) => {
+        const correct = questions[idx] && questions[idx].char;
+        const color = ans === correct ? '#28a745' : '#dc3545';
+        return `<span style="color: ${color}; font-weight: bold; font-size: 15px; margin: 0 4px; padding: 2px 6px; border: 1px solid ${color}; border-radius: 4px; background: #fff8f8; font-family: 'DFKai-SB', serif;">${this.escapeHtml(ans)}</span>`;
+      }).join('');
+      
+      return `
+        <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 8px; box-sizing: border-box;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">${this.escapeHtml(res.name)}</span>
+              ${statusBadge}
+            </div>
+            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">⏱️ ${res.timeSpent.toFixed(2)} 秒</span>
+          </div>
+          
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+            <div style="display: flex; align-items: center;">
+              <span style="font-size: 13px; color: var(--text-secondary); margin-right: 6px;">回答：</span>
+              ${answerDisplay}
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button onclick="window.app.judgeCharacterTest('${res.uid}', 'correct')" style="background: #28a745; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">✔️ 答對</button>
+              <button onclick="window.app.judgeCharacterTest('${res.uid}', 'incorrect')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">❌ 答錯</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderStudentCharacterTestLeaderboard(container, results) {
+    if (!results) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px 0;">目前尚無同學繳交</div>';
+      return;
+    }
+    
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
+    
+    container.innerHTML = sorted.map((res, index) => {
+      const status = res.status || 'pending';
+      let statusIcon = '⏳ 待評分';
+      let color = 'var(--text-secondary)';
+      if (status === 'correct') {
+        statusIcon = '🥇 全部答對';
+        color = '#28a745';
+      } else if (status === 'incorrect') {
+        statusIcon = '❌ 答錯了';
+        color = '#dc3545';
+      }
+      
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">#${index + 1}</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
+          </div>
+          <span style="color: ${color}; font-weight: bold; font-size: 14px;">${statusIcon} (${res.timeSpent.toFixed(2)} 秒)</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  judgeCharacterTest(uid, status) {
+    db.ref(`quiz/focusGame/results/${uid}/status`).set(status)
+      .then(() => {
+        this.showNotification('成功', '評分已更新！');
+      });
+  }
 
     const sorted = Object.keys(results).map(uid => ({
       uid,
