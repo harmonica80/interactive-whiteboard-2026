@@ -6196,11 +6196,6 @@ class App {
                 <div class="character-crossword-cell empty"></div>
                 <div class="character-crossword-cell surrounding">${q.surrounding[3].char}</div>
               </div>
-              
-              <!-- 右側：注音九宮格 -->
-              <div class="chinese-writing-grid" style="width: 80px; height: 80px; flex-shrink: 0;">
-                <div class="zhuyin-text" style="font-size: 24px;">${q.zhuyin}</div>
-              </div>
             </div>
             <div style="text-align: center; font-size: 24px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
               提示：請找出可以和這四個字組合成詞的關鍵字
@@ -6444,11 +6439,6 @@ class App {
                 <div class="character-crossword-cell surrounding">${q.surrounding[2].char}</div>
                 <div class="character-crossword-cell empty"></div>
                 <div class="character-crossword-cell surrounding">${q.surrounding[3].char}</div>
-              </div>
-              
-              <!-- 右側：注音九宮格 -->
-              <div class="chinese-writing-grid" style="width: 80px; height: 80px; flex-shrink: 0;">
-                <div class="zhuyin-text" style="font-size: 24px;">${q.zhuyin}</div>
               </div>
             </div>
             <div style="text-align: center; font-size: 24px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
