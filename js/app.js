@@ -6166,33 +6166,81 @@ class App {
     grid.style.maxWidth = '500px';
     
     const questions = game.questions || [];
-      <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
-    `;
+    const isCrossword = game.gameType === 'characterCrossword';
     
-    questions.forEach((q, idx) => {
+    let html = '';
+    if (isCrossword) {
       html += `
-        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); width: 100%; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-            <!-- 左側：寫字九宮格輸入 -->
-            <div class="chinese-writing-grid">
-              <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
-            </div>
-            <!-- 右側：注音九宮格 -->
-            <div class="chinese-writing-grid">
-              <div class="zhuyin-text">${q.zhuyin}</div>
-            </div>
-          </div>
-          <div style="text-align: center; font-size: 28px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
-            提示詞：${q.clue}
-          </div>
+        <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; text-align: center; width: 100%;">
+          ✍️ 一字千金：字字珠璣 (十字選字)
         </div>
+        <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
       `;
-    });
+      questions.forEach((q, idx) => {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); width: 100%; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
+              <!-- 左側：3x3 十字選字盤 -->
+              <div class="character-crossword-container">
+                <div class="character-crossword-cell surrounding">${q.surrounding[0].char}</div>
+                <div class="character-crossword-cell empty"></div>
+                <div class="character-crossword-cell surrounding">${q.surrounding[1].char}</div>
+                
+                <div class="character-crossword-cell empty"></div>
+                <div class="chinese-writing-grid" style="width: 80px; height: 80px;">
+                  <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
+                </div>
+                <div class="character-crossword-cell empty"></div>
+                
+                <div class="character-crossword-cell surrounding">${q.surrounding[2].char}</div>
+                <div class="character-crossword-cell empty"></div>
+                <div class="character-crossword-cell surrounding">${q.surrounding[3].char}</div>
+              </div>
+              
+              <!-- 右側：注音九宮格 -->
+              <div class="chinese-writing-grid" style="width: 80px; height: 80px; flex-shrink: 0;">
+                <div class="zhuyin-text" style="font-size: 24px;">${q.zhuyin}</div>
+              </div>
+            </div>
+            <div style="text-align: center; font-size: 24px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
+              提示：請找出可以和這四個字組合成詞的關鍵字
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      html += `
+        <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; text-align: center; width: 100%;">
+          ✍️ 一字千金：請輸入正確的國字
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+      `;
+      questions.forEach((q, idx) => {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); width: 100%; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+              <!-- 左側：寫字九宮格輸入 -->
+              <div class="chinese-writing-grid">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
+              </div>
+              <!-- 右側：注音九宮格 -->
+              <div class="chinese-writing-grid">
+                <div class="zhuyin-text">${q.zhuyin}</div>
+              </div>
+            </div>
+            <div style="text-align: center; font-size: 28px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
+              提示詞：${q.clue}
+            </div>
+          </div>
+        `;
+      });
+    }
     
+    const penaltyAmount = isCrossword ? 10 : 5;
     html += `
       </div>
       <button id="focusCharTestHintBtn" onclick="window.app.showGeneralCharacterHint()" style="margin-top: 12px; width: 100%; padding: 12px; background: #ff9500; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(255,149,0,0.25);">
-        💡 顯示提示字 (2秒/+5秒)
+        💡 顯示提示字 (2秒/+${penaltyAmount}秒)
       </button>
       <button onclick="window.app.submitCharTestAnswers()" style="margin-top: 12px; width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,122,255,0.25);">
         ✔️ 送出答案
@@ -6218,14 +6266,16 @@ class App {
     if (!this.focusGame || this.focusGame.status !== 'playing') return;
     
     const userId = localStorage.getItem('user_id') || 'guest';
+    const isCrossword = this.focusGame.gameType === 'characterCrossword';
+    const totalAnsCount = isCrossword ? 1 : 3;
     
-    // 收集三個答案
+    // 收集答案
     const answers = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < totalAnsCount; i++) {
       const input = document.getElementById(`char-test-input-${i}`);
       const val = input ? input.value.trim() : '';
       if (!val) {
-        this.showNotification('提示', '請填寫所有題目的國字！');
+        this.showNotification('提示', isCrossword ? '請填寫關鍵字的國字！' : '請填寫所有題目的國字！');
         return;
       }
       answers.push(val);
@@ -6236,14 +6286,17 @@ class App {
     
     const timeSpent = (Date.now() - (this.focusGame.startTime || this.focusStartTimeLocal)) / 1000;
     const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名';
+    const currentGameType = this.focusGame.gameType || 'characterTest';
     
     db.ref(`quiz/focusGame/results/${userId}`).set({
       name: userName,
       answers: answers,
-      timeSpent: timeSpent,
+      timeSpent: timeSpent + (this.focusHelpPenaltySeconds || 0),
       completedAt: firebase.database.ServerValue.TIMESTAMP,
       status: 'pending',
-      gameType: 'characterTest'
+      gameType: currentGameType,
+      helpCount: this.focusHelpCount || 0,
+      penaltySeconds: this.focusHelpPenaltySeconds || 0
     }).then(() => {
       this.showNotification('成功', '答案已送出，等待老師評分！');
       this.renderCharacterTestPlayCompleted(this.focusGame, {
@@ -6268,9 +6321,13 @@ class App {
     const questions = this.focusGame.questions || [];
     if (questions.length === 0) return;
 
+    const isCrossword = this.focusGame.gameType === 'characterCrossword';
+    const penaltyAmount = isCrossword ? 10 : 5;
+
     // 先尋找第一個未填寫的格子索引 (value 為空)
     let targetIdx = -1;
-    for (let i = 0; i < 3; i++) {
+    const maxIdx = isCrossword ? 1 : 3;
+    for (let i = 0; i < maxIdx; i++) {
       const input = document.getElementById(`char-test-input-${i}`);
       const val = input ? input.value.trim() : '';
       if (!val) {
@@ -6288,7 +6345,7 @@ class App {
     if (input) {
       // 懲罰時間與提示次數計費
       this.focusHelpCount = (this.focusHelpCount || 0) + 1;
-      this.focusHelpPenaltySeconds = (this.focusHelpPenaltySeconds || 0) + 5;
+      this.focusHelpPenaltySeconds = (this.focusHelpPenaltySeconds || 0) + penaltyAmount;
 
       const originalVal = input.value;
       input.value = q.char; // 顯現正確答案
@@ -6302,11 +6359,11 @@ class App {
         hintBtn.style.opacity = '0.6';
       }
 
-      // 立即在前端畫面上累加 5 秒
+      // 立即在前端畫面上累加秒數
       const timerEl = document.getElementById('focusTimer');
       if (timerEl) {
         const current = parseFloat(timerEl.textContent) || 0;
-        timerEl.textContent = (current + 5).toFixed(2);
+        timerEl.textContent = (current + penaltyAmount).toFixed(2);
       }
 
       // 2 秒後還原原始輸入內容，並解鎖輸入框和提示按鈕
@@ -6344,6 +6401,7 @@ class App {
     
     const answers = result.answers || ['', '', ''];
     const status = result.status || 'pending';
+    const isCrossword = game.gameType === 'characterCrossword';
     
     let statusText = '⏳ 等待老師評分中...';
     let statusColor = 'var(--text-secondary)';
@@ -6367,21 +6425,54 @@ class App {
       const displayChar = status === 'incorrect' ? q.char : (answers[idx] || '');
       const displayColor = status === 'incorrect' ? '#dc3545' : 'var(--accent-color)';
       
-      html += `
-        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
-          <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-            <div class="chinese-writing-grid">
-              <span style="font-size: 44px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayChar)}</span>
+      if (isCrossword) {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
+              <!-- 左側：3x3 十字選字盤 -->
+              <div class="character-crossword-container">
+                <div class="character-crossword-cell surrounding">${q.surrounding[0].char}</div>
+                <div class="character-crossword-cell empty"></div>
+                <div class="character-crossword-cell surrounding">${q.surrounding[1].char}</div>
+                
+                <div class="character-crossword-cell empty"></div>
+                <div class="chinese-writing-grid" style="width: 80px; height: 80px;">
+                  <span style="font-size: 40px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayChar)}</span>
+                </div>
+                <div class="character-crossword-cell empty"></div>
+                
+                <div class="character-crossword-cell surrounding">${q.surrounding[2].char}</div>
+                <div class="character-crossword-cell empty"></div>
+                <div class="character-crossword-cell surrounding">${q.surrounding[3].char}</div>
+              </div>
+              
+              <!-- 右側：注音九宮格 -->
+              <div class="chinese-writing-grid" style="width: 80px; height: 80px; flex-shrink: 0;">
+                <div class="zhuyin-text" style="font-size: 24px;">${q.zhuyin}</div>
+              </div>
             </div>
-            <div class="chinese-writing-grid">
-              <div class="zhuyin-text">${q.zhuyin}</div>
+            <div style="text-align: center; font-size: 24px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
+              關鍵解答：${q.char}
             </div>
           </div>
-          <div style="text-align: center; font-size: 28px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
-            提示詞：${q.clue}
+        `;
+      } else {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+              <div class="chinese-writing-grid">
+                <span style="font-size: 44px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayChar)}</span>
+              </div>
+              <div class="chinese-writing-grid">
+                <div class="zhuyin-text">${q.zhuyin}</div>
+              </div>
+            </div>
+            <div style="text-align: center; font-size: 28px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
+              提示詞：${q.clue}
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      }
     });
     
     grid.innerHTML = html;
