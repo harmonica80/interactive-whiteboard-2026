@@ -436,7 +436,7 @@ const CHARACTER_TEST_POOL = [
     "char": "竭",
     "zhuyin": "ㄐㄧㄝˊ",
     "clue": "必須竭（　）進全力",
-    "searchWord": "竭進全力"
+    "searchWord": "竭盡全力"
   },
   {
     "char": "拮",
@@ -866,7 +866,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "屬",
-    "zhuyin": "ㄕㄨˇ",
+    "zhuyin": "飾",
     "clue": "到底歸（　）於誰",
     "searchWord": "歸屬"
   },
@@ -1575,7 +1575,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "銅",
     "zhuyin": "ㄊㄨㄥˊ",
-    "clue": "座青（　）雕像矗",
+    "clue": "這座青（　）雕像矗",
     "searchWord": "青銅"
   },
   {
@@ -1731,7 +1731,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "蒂",
     "zhuyin": "ㄉㄧˋ",
-    "clue": "經根深（　）固，很",
+    "clue": "經根深（　）固，難",
     "searchWord": "根深蒂固"
   },
   {
@@ -1754,7 +1754,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "姍",
-    "zhuyin": "順",
+    "zhuyin": "ㄕㄢ",
     "clue": "小時才（　）（　）",
     "searchWord": "姍姍來遲"
   },
@@ -1779,1225 +1779,1225 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "尷",
     "zhuyin": "ㄍㄢ",
-    "clue": "面十分（　）尬！1",
+    "clue": "面十分（　）尬（一）",
     "searchWord": "尷尬"
   },
   {
     "char": "尬",
     "zhuyin": "ㄍㄚˋ",
-    "clue": "氣氛尷（　）！2",
+    "clue": "氣氛尷（　）（一）",
     "searchWord": "尷尬"
   },
   {
     "char": "肺",
     "zhuyin": "ㄈㄟˋ",
-    "clue": "發自（　）腑的真！3",
+    "clue": "發自（　）腑的真（一）",
     "searchWord": "發自肺腑"
   },
   {
     "char": "冒",
     "zhuyin": "ㄇㄠˋ",
-    "clue": "（　）著風雨！4",
+    "clue": "（　）著風雨（一）",
     "searchWord": "冒著風雨"
   },
   {
     "char": "梁",
     "zhuyin": "ㄌㄧㄤˊ",
-    "clue": "不能偷（　）換柱！5",
+    "clue": "不能偷（　）換柱（一）",
     "searchWord": "偷梁換柱"
   },
   {
     "char": "鼎",
     "zhuyin": "ㄉㄧㄥˇ",
-    "clue": "謝大家（　）力相助！6",
+    "clue": "謝大家（　）力相助（一）",
     "searchWord": "鼎力相助"
   },
   {
     "char": "憋",
     "zhuyin": "ㄅㄧㄝ",
-    "clue": "快要（　）不住笑！7",
+    "clue": "快要（　）不住笑（一）",
     "searchWord": "憋不住"
   },
   {
     "char": "戳",
     "zhuyin": "ㄔㄨㄛ",
-    "clue": "出，一（　）即破！8",
+    "clue": "出，一（　）即破（一）",
     "searchWord": "一戳即破"
   },
   {
     "char": "蒐",
     "zhuyin": "ㄙㄡ",
-    "clue": "努力（　）集相關！9",
+    "clue": "努力（　）集相關（一）",
     "searchWord": "蒐集證據"
   },
   {
     "char": "幕",
     "zhuyin": "ㄇㄨˋ",
-    "clue": "隱藏著（　）後黑手！10",
+    "clue": "隱藏著（　）後黑手（一）",
     "searchWord": "幕後黑手"
   },
   {
     "char": "慕",
     "zhuyin": "ㄇㄨˋ",
-    "clue": "數樂迷（　）名前來！11",
+    "clue": "數樂迷（　）名前來（一）",
     "searchWord": "慕名前來"
   },
   {
     "char": "辨",
     "zhuyin": "ㄅㄧㄢˋ",
-    "clue": "難以（　）明方向！12",
+    "clue": "難以（　）明方向（一）",
     "searchWord": "辨明方向"
   },
   {
     "char": "辯",
     "zhuyin": "ㄅㄧㄢˋ",
-    "clue": "大賽中（　）才無礙！13",
+    "clue": "大賽中（　）才無礙（一）",
     "searchWord": "辯才無礙"
   },
   {
     "char": "磬",
     "zhuyin": "ㄑㄧㄥˋ",
-    "clue": "室如懸（　）！14",
+    "clue": "室如懸（　）（一）",
     "searchWord": "室如懸磬"
   },
   {
     "char": "磐",
     "zhuyin": "ㄆㄢˊ",
-    "clue": "情堅如（　）石，不！15",
+    "clue": "情堅如（　）石，不（一）",
     "searchWord": "堅如磐石"
   },
   {
     "char": "藉",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "聲名狼（　）！16",
+    "clue": "聲名狼（　）（一）",
     "searchWord": "聲名狼藉"
   },
   {
     "char": "籍",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "是一個（　）籍無名！17",
+    "clue": "是一個（　）籍無名（一）",
     "searchWord": "籍籍無名"
   },
   {
     "char": "厲",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "再接再（　）！18",
+    "clue": "再接再（　）（一）",
     "searchWord": "再接再厲"
   },
   {
     "char": "勵",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "極具鼓（　）作用！19",
+    "clue": "極具鼓（　）作用（一）",
     "searchWord": "鼓勵"
   },
   {
     "char": "輟",
     "zhuyin": "ㄔㄨㄛˋ",
-    "clue": "被迫（　）學做工！20",
+    "clue": "被迫（　）學做工（一）",
     "searchWord": "輟學"
   },
   {
     "char": "綴",
     "zhuyin": "ㄓㄨㄟˋ",
-    "clue": "空中點（　）著無數！21",
+    "clue": "空中點（　）著無數（一）",
     "searchWord": "點綴"
   },
   {
     "char": "啜",
     "zhuyin": "ㄔㄨㄛˋ",
-    "clue": "落低聲（　）泣！22",
+    "clue": "落低聲（　）泣（一）",
     "searchWord": "啜泣"
   },
   {
     "char": "緝",
     "zhuyin": "ㄑㄧˋ",
-    "clue": "發布通（　）令追捕！23",
+    "clue": "發布通（　）令追捕（一）",
     "searchWord": "通緝"
   },
   {
     "char": "輯",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "本書的（　）排非常！24",
+    "clue": "本書的（　）排非常（一）",
     "searchWord": "編輯"
   },
   {
     "char": "揖",
     "zhuyin": "ㄧ",
-    "clue": "長輩作（　）行禮！25",
+    "clue": "長輩作（　）行禮（二）",
     "searchWord": "作揖"
   },
   {
     "char": "葺",
     "zhuyin": "ㄑㄧˋ",
-    "clue": "需要修（　）！26",
+    "clue": "需要修（　）（二）",
     "searchWord": "修葺"
   },
   {
     "char": "戢",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "定偃兵（　）戈，恢！27",
+    "clue": "定偃兵（　）戈，恢（二）",
     "searchWord": "偃兵戢戈"
   },
   {
     "char": "戈",
     "zhuyin": "ㄍㄜ",
-    "clue": "偃武修（　），停戰！28",
+    "clue": "偃武修（　），停戰（二）",
     "searchWord": "偃武修戈"
   },
   {
     "char": "戌",
     "zhuyin": "ㄒㄩ",
-    "clue": "酉、（　）、亥！29",
+    "clue": "酉、（　）、亥（二）",
     "searchWord": "戌"
   },
   {
     "char": "戊",
     "zhuyin": "ㄨˋ",
-    "clue": "丁、（　）！30",
+    "clue": "丁、（　）（二）",
     "searchWord": "戊"
   },
   {
     "char": "戍",
     "zhuyin": "ㄕㄨˋ",
-    "clue": "邊疆防（　）！31",
+    "clue": "邊疆防（　）（二）",
     "searchWord": "防戍"
   },
   {
     "char": "戎",
     "zhuyin": "ㄖㄨㄥˊ",
-    "clue": "投筆從（　），報效！32",
+    "clue": "投筆從（　），報效（二）",
     "searchWord": "投筆從戎"
   },
   {
     "char": "冗",
     "zhuyin": "ㄖㄨㄥˇ",
-    "clue": "得相當（　）長！33",
+    "clue": "得相當（　）長（二）",
     "searchWord": "冗長"
   },
   {
     "char": "沈",
     "zhuyin": "ㄕㄣˇ",
-    "clue": "引起了（　）默！34",
+    "clue": "引起了（　）默（二）",
     "searchWord": "沈默"
   },
   {
     "char": "枕",
     "zhuyin": "ㄓㄣˇ",
-    "clue": "可說是（　）戈待旦！35",
+    "clue": "可說是（　）戈待旦（二）",
     "searchWord": "枕戈待旦"
   },
   {
     "char": "耽",
     "zhuyin": "ㄉㄢ",
-    "clue": "玩只會（　）誤學業！36",
+    "clue": "玩只會（　）誤學業（二）",
     "searchWord": "耽誤"
   },
   {
     "char": "眈",
     "zhuyin": "ㄉㄢ",
-    "clue": "國虎視（　）（　）！37",
+    "clue": "國虎視（　）（　）（二）",
     "searchWord": "虎視眈眈"
   },
   {
     "char": "諂",
     "zhuyin": "ㄔㄢˇ",
-    "clue": "他極力（　）媚巴結！38",
+    "clue": "他極力（　）媚巴結（二）",
     "searchWord": "諂媚"
   },
   {
     "char": "陷",
     "zhuyin": "ㄒㄧㄢˋ",
-    "clue": "沼中深（　），動彈！39",
+    "clue": "沼中深（　），動彈（二）",
     "searchWord": "深陷"
   },
   {
     "char": "焰",
     "zhuyin": "ㄧㄢˋ",
-    "clue": "火的烈（　）沖天！40",
+    "clue": "火的烈（　）沖天（二）",
     "searchWord": "烈焰"
   },
   {
     "char": "掐",
     "zhuyin": "ㄑㄧㄚ",
-    "clue": "緊張得（　）了自己！41",
+    "clue": "緊張得（　）了自己（二）",
     "searchWord": "掐"
   },
   {
     "char": "瑕",
     "zhuyin": "ㄒㄧㄚˊ",
-    "clue": "微小的（　）疵！42",
+    "clue": "微小的（　）疵（二）",
     "searchWord": "瑕疵"
   },
   {
     "char": "暇",
     "zhuyin": "ㄒㄧㄚˊ",
-    "clue": "人，無（　）顧及娛！43",
+    "clue": "人，無（　）顧及娛（二）",
     "searchWord": "無暇"
   },
   {
     "char": "暇",
     "zhuyin": "ㄒㄧㄚˊ",
-    "clue": "不容（　）想！44",
+    "clue": "不容（　）想（二）",
     "searchWord": "暇想"
   },
   {
     "char": "瑕",
     "zhuyin": "ㄒㄧㄚˊ",
-    "clue": "潔白無（　），價值！45",
+    "clue": "潔白無（　），價值（二）",
     "searchWord": "潔白無瑕"
   },
   {
     "char": "暇",
     "zhuyin": "ㄒㄧㄚˊ",
-    "clue": "應接不（　）！46",
+    "clue": "應接不（　）（二）",
     "searchWord": "應接不暇"
   },
   {
     "char": "遐",
     "zhuyin": "ㄒㄧㄚˊ",
-    "clue": "無窮的（　）思空間！47",
+    "clue": "無窮的（　）思空間（二）",
     "searchWord": "遐思"
   },
   {
     "char": "裨",
     "zhuyin": "ㄅㄧˋ",
-    "clue": "康大有（　）益！48",
+    "clue": "康大有（　）益（二）",
     "searchWord": "裨益"
   },
   {
     "char": "裨",
     "zhuyin": "ㄅㄧˋ",
-    "clue": "題並無（　）補！49",
+    "clue": "題並無（　）補（二）",
     "searchWord": "裨補"
   },
   {
     "char": "稗",
     "zhuyin": "ㄅㄞˋ",
-    "clue": "讀野史（　）官！50",
+    "clue": "讀野史（　）官（三）",
     "searchWord": "稗官野史"
   },
   {
     "char": "碑",
     "zhuyin": "ㄅㄟ",
-    "clue": "歷史古（　）已經被！51",
+    "clue": "歷史古（　）已經被（三）",
     "searchWord": "古碑"
   },
   {
     "char": "脾",
     "zhuyin": "ㄆㄧˊ",
-    "clue": "他脾氣（　）氣暴躁！52",
+    "clue": "他脾氣（　）氣暴躁（三）",
     "searchWord": "脾氣"
   },
   {
     "char": "俾",
     "zhuyin": "ㄅㄧˋ",
-    "clue": "出發，（　）便能按！53",
+    "clue": "出發，（　）便能按（三）",
     "searchWord": "俾便"
   },
   {
     "char": "涸",
     "zhuyin": "ㄏㄜˊ",
-    "clue": "乾（　）的土地！54",
+    "clue": "乾（　）的土地（三）",
     "searchWord": "乾涸"
   },
   {
     "char": "涸",
     "zhuyin": "ㄏㄜˊ",
-    "clue": "他如（　）轍之鮒！55",
+    "clue": "他如（　）轍之鮒（三）",
     "searchWord": "涸轍之鮒"
   },
   {
     "char": "錮",
     "zhuyin": "ㄍㄨˋ",
-    "clue": "犯被禁（　）在狹窄！56",
+    "clue": "犯被禁（　）在狹窄（三）",
     "searchWord": "禁錮"
   },
   {
     "char": "固",
     "zhuyin": "ㄍㄨˋ",
-    "clue": "定要穩（　）！57",
+    "clue": "定要穩（　）（三）",
     "searchWord": "穩固"
   },
   {
     "char": "涸",
     "zhuyin": "ㄏㄜˊ",
-    "clue": "完全枯（　）了！58",
+    "clue": "完全枯（　）了（三）",
     "searchWord": "枯涸"
   },
   {
     "char": "聒",
     "zhuyin": "ㄍㄨㄛ",
-    "clue": "在樹上（　）（　）！59",
+    "clue": "在樹上（　）（　）（三）",
     "searchWord": "聒噪"
   },
   {
     "char": "恬",
     "zhuyin": "ㄊㄧㄢˊ",
-    "clue": "活寧靜（　）適，令！60",
+    "clue": "活寧靜（　）適，令（三）",
     "searchWord": "恬適"
   },
   {
     "char": "恬",
     "zhuyin": "ㄊㄧㄢˊ",
-    "clue": "錯事卻（　）不知恥！61",
+    "clue": "錯事卻（　）不知恥（三）",
     "searchWord": "恬不知恥"
   },
   {
     "char": "刮",
     "zhuyin": "ㄍㄨㄚ",
-    "clue": "風雨颳（　）得天昏！62",
+    "clue": "風雨颳（　）得天昏（三）",
     "searchWord": "颳風"
   },
   {
     "char": "刮",
     "zhuyin": "ㄍㄨㄚ",
-    "clue": "對人刮（　）相看！63",
+    "clue": "對人刮（　）相看（三）",
     "searchWord": "刮目相看"
   },
   {
     "char": "括",
     "zhuyin": "ㄍㄨㄚ",
-    "clue": "動包括（　）多項精！64",
+    "clue": "動包括（　）多項精（三）",
     "searchWord": "包括"
   },
   {
     "char": "憩",
     "zhuyin": "ㄑㄧˋ",
-    "clue": "稍作小（　）！65",
+    "clue": "稍作小（　）（三）",
     "searchWord": "小憩"
   },
   {
     "char": "憇",
     "zhuyin": "ㄑㄧˋ",
-    "clue": "稍作小（　）！66",
+    "clue": "稍作小（　）（三）",
     "searchWord": "小憩"
   },
   {
     "char": "契",
     "zhuyin": "ㄑㄧˋ",
-    "clue": "雙方默（　）十足！67",
+    "clue": "雙方默（　）十足（三）",
     "searchWord": "默契"
   },
   {
     "char": "潔",
     "zhuyin": "ㄐㄧㄝˊ",
-    "clue": "活作風（　）身自好！68",
+    "clue": "活作風（　）身自好（三）",
     "searchWord": "潔身自好"
   },
   {
     "char": "劫",
     "zhuyin": "ㄐㄧㄝˊ",
-    "clue": "店不幸（　）後餘生！69",
+    "clue": "店不幸（　）後餘生（三）",
     "searchWord": "劫後餘生"
   },
   {
     "char": "捷",
     "zhuyin": "ㄐㄧㄝˊ",
-    "clue": "動作敏（　），一下！70",
+    "clue": "動作敏（　），一下（三）",
     "searchWord": "敏捷"
   },
   {
     "char": "捷",
     "zhuyin": "ㄐㄧㄝˊ",
-    "clue": "捷（　）報頻傳！71",
+    "clue": "捷（　）報頻傳（三）",
     "searchWord": "捷報"
   },
   {
     "char": "竭",
     "zhuyin": "ㄐㄧㄝˊ",
-    "clue": "必須竭（　）進全力！72",
-    "searchWord": "竭進全力"
+    "clue": "必須竭（　）進全力（三）",
+    "searchWord": "竭盡全力"
   },
   {
     "char": "拮",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "頭十分（　）据，需！73",
+    "clue": "頭十分（　）据，需（三）",
     "searchWord": "拮据"
   },
   {
     "char": "据",
     "zhuyin": "ㄐㄩ",
-    "clue": "十分拮（　），過得！74",
+    "clue": "十分拮（　），過得（三）",
     "searchWord": "拮据"
   },
   {
     "char": "詰",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "上嚴厲（　）問嫌犯！75",
+    "clue": "上嚴厲（　）問嫌犯（四）",
     "searchWord": "詰問"
   },
   {
     "char": "橘",
     "zhuyin": "ㄐㄩˊ",
-    "clue": "秋天是（　）子紅了！76",
+    "clue": "秋天是（　）子紅了（四）",
     "searchWord": "橘子"
   },
   {
     "char": "橘",
     "zhuyin": "ㄐㄩˊ",
-    "clue": "新鮮的（　）汁酸甜！77",
+    "clue": "新鮮的（　）汁酸甜（四）",
     "searchWord": "橘汁"
   },
   {
     "char": "棘",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "件非常（　）手、難！78",
+    "clue": "件非常（　）手、難（四）",
     "searchWord": "棘手"
   },
   {
     "char": "辣",
     "zhuyin": "ㄌㄚˋ",
-    "clue": "菜以麻（　）著稱！79",
+    "clue": "菜以麻（　）著稱（四）",
     "searchWord": "麻辣"
   },
   {
     "char": "辨",
     "zhuyin": "ㄅㄧㄢˋ",
-    "clue": "真偽難（　），需要！80",
+    "clue": "真偽難（　），需要（四）",
     "searchWord": "真偽難辨"
   },
   {
     "char": "辯",
     "zhuyin": "ㄅㄧㄢˋ",
-    "clue": "百般狡（　）也是無！81",
+    "clue": "百般狡（　）也是無（四）",
     "searchWord": "狡辯"
   },
   {
     "char": "辮",
     "zhuyin": "ㄅㄧㄢˋ",
-    "clue": "長長的（　）子，顯！82",
+    "clue": "長長的（　）子，顯（四）",
     "searchWord": "辮子"
   },
   {
     "char": "辦",
     "zhuyin": "ㄅㄢˋ",
-    "clue": "該如何（　）理，請！83",
+    "clue": "該如何（　）理，請（四）",
     "searchWord": "辦理"
   },
   {
     "char": "瓣",
     "zhuyin": "ㄅㄢˋ",
-    "clue": "玫瑰花（　）隨風飄！84",
+    "clue": "玫瑰花（　）隨風飄（四）",
     "searchWord": "花瓣"
   },
   {
     "char": "辧",
     "zhuyin": "ㄅㄢˋ",
-    "clue": "該如何（　）理，請！85",
+    "clue": "該如何（　）理，請（四）",
     "searchWord": "辦理"
   },
   {
     "char": "脈",
     "zhuyin": "ㄇㄞˋ",
-    "clue": "病人的（　）搏上！86",
+    "clue": "病人的（　）搏上（四）",
     "searchWord": "脈搏"
   },
   {
     "char": "脈",
     "zhuyin": "ㄇㄞˋ",
-    "clue": "座山脈（　）綿延數！87",
+    "clue": "座山脈（　）綿延數（四）",
     "searchWord": "山脈"
   },
   {
     "char": "博",
     "zhuyin": "ㄅㄛˊ",
-    "clue": "他博（　）古通今！88",
+    "clue": "他博（　）古通今（四）",
     "searchWord": "博古通今"
   },
   {
     "char": "搏",
     "zhuyin": "ㄅㄛˊ",
-    "clue": "行生死（　）鬥！89",
+    "clue": "行生死（　）鬥（四）",
     "searchWord": "搏鬥"
   },
   {
     "char": "膊",
     "zhuyin": "ㄅㄛˊ",
-    "clue": "農夫赤（　）在烈日！90",
+    "clue": "農夫赤（　）在烈日（四）",
     "searchWord": "赤膊"
   },
   {
     "char": "駁",
     "zhuyin": "ㄅㄛˊ",
-    "clue": "當場反（　）！91",
+    "clue": "當場反（　）（四）",
     "searchWord": "反駁"
   },
   {
     "char": "簸",
     "zhuyin": "ㄅㄛˇ",
-    "clue": "劇烈顛（　）！92",
+    "clue": "劇烈顛（　）（四）",
     "searchWord": "顛簸"
   },
   {
     "char": "簸",
     "zhuyin": "ㄅㄛˇ",
-    "clue": "夫用簸（　）箕將穀！93",
+    "clue": "夫用簸（　）箕將穀（四）",
     "searchWord": "簸箕"
   },
   {
     "char": "播",
     "zhuyin": "ㄅㄛ",
-    "clue": "台正廣（　）著防災！94",
+    "clue": "台正廣（　）著防災（四）",
     "searchWord": "廣播"
   },
   {
     "char": "撥",
     "zhuyin": "ㄅㄛ",
-    "clue": "筆專款（　）付給受！95",
+    "clue": "筆專款（　）付給受（四）",
     "searchWord": "撥付"
   },
   {
     "char": "撥",
     "zhuyin": "ㄅㄛ",
-    "clue": "輕輕撥（　）琴弦！96",
+    "clue": "輕輕撥（　）琴弦（四）",
     "searchWord": "撥琴"
   },
   {
     "char": "攀",
     "zhuyin": "ㄆㄢ",
-    "clue": "壁向上（　）爬！97",
+    "clue": "壁向上（　）爬（四）",
     "searchWord": "攀爬"
   },
   {
     "char": "樊",
     "zhuyin": "ㄈㄢˊ",
-    "clue": "被關在（　）籠裡！98",
+    "clue": "被關在（　）籠裡（四）",
     "searchWord": "樊籠"
   },
   {
     "char": "婪",
     "zhuyin": "ㄌㄢˊ",
-    "clue": "貪（　）的人總！99",
+    "clue": "貪（　）的人總（四）",
     "searchWord": "貪婪"
   },
   {
     "char": "婪",
     "zhuyin": "ㄌㄢˊ",
-    "clue": "他用貪（　）的目光！100",
+    "clue": "他用貪（　）的目光（五）",
     "searchWord": "貪婪"
   },
   {
     "char": "焚",
     "zhuyin": "ㄈㄣˊ",
-    "clue": "的大火（　）毀了整！101",
+    "clue": "的大火（　）毀了整（五）",
     "searchWord": "焚毀"
   },
   {
     "char": "梵",
     "zhuyin": "ㄈㄢˋ",
-    "clue": "濃厚的（　）宇氣息！102",
+    "clue": "濃厚的（　）宇氣息（五）",
     "searchWord": "梵宇"
   },
   {
     "char": "縝",
     "zhuyin": "ㄓㄣˇ",
-    "clue": "思維縝（　）密，天！103",
+    "clue": "思維縝（　）密，天（五）",
     "searchWord": "縝密"
   },
   {
     "char": "慎",
     "zhuyin": "ㄕㄣˋ",
-    "clue": "定要謹（　）！104",
+    "clue": "定要謹（　）（五）",
     "searchWord": "謹慎"
   },
   {
     "char": "填",
     "zhuyin": "ㄊㄧㄢˊ",
-    "clue": "名表上（　）寫正確！105",
+    "clue": "名表上（　）寫正確（五）",
     "searchWord": "填寫"
   },
   {
     "char": "顛",
     "zhuyin": "ㄉㄧㄢ",
-    "clue": "人瘋瘋（　）（　）！106",
+    "clue": "人瘋瘋（　）（　）（五）",
     "searchWord": "瘋瘋顛顛"
   },
   {
     "char": "巔",
     "zhuyin": "ㄉㄧㄢ",
-    "clue": "了人生（　）峰！107",
+    "clue": "了人生（　）峰（五）",
     "searchWord": "巔峰"
   },
   {
     "char": "癲",
     "zhuyin": "ㄉㄧㄢ",
-    "clue": "他突然（　）癇發作！108",
+    "clue": "他突然（　）癇發作（五）",
     "searchWord": "癲癇"
   },
   {
     "char": "嗔",
     "zhuyin": "ㄔㄣ",
-    "clue": "她面露（　）色，顯！109",
+    "clue": "她面露（　）色，顯（五）",
     "searchWord": "嗔色"
   },
   {
     "char": "瞋",
     "zhuyin": "ㄔㄣ",
-    "clue": "他氣得（　）目結舌！110",
+    "clue": "他氣得（　）目結舌（五）",
     "searchWord": "瞋目結舌"
   },
   {
     "char": "慎",
     "zhuyin": "ㄕㄣˋ",
-    "clue": "事宜審（　）！111",
+    "clue": "事宜審（　）（五）",
     "searchWord": "審慎"
   },
   {
     "char": "鎮",
     "zhuyin": "ㄓㄣˋ",
-    "clue": "示警以（　）壓暴亂！112",
+    "clue": "示警以（　）壓暴亂（五）",
     "searchWord": "鎮壓"
   },
   {
     "char": "震",
     "zhuyin": "ㄓㄣˋ",
-    "clue": "大醜聞（　）驚了整！113",
+    "clue": "大醜聞（　）驚了整（五）",
     "searchWord": "震驚"
   },
   {
     "char": "賑",
     "zhuyin": "ㄓㄣˋ",
-    "clue": "款開倉（　）災，濟！114",
+    "clue": "款開倉（　）災，濟（五）",
     "searchWord": "賑災"
   },
   {
     "char": "振",
     "zhuyin": "ㄓㄣˋ",
-    "clue": "精神，（　）作士氣！115",
+    "clue": "精神，（　）作士氣（五）",
     "searchWord": "振作"
   },
   {
     "char": "陣",
     "zhuyin": "ㄓㄣˋ",
-    "clue": "傳來一（　）雷聲！116",
+    "clue": "傳來一（　）雷聲（五）",
     "searchWord": "一陣"
   },
   {
     "char": "朕",
     "zhuyin": "ㄓㄣˋ",
-    "clue": "自稱為（　）！117",
+    "clue": "自稱為（　）（五）",
     "searchWord": "朕"
   },
   {
     "char": "疹",
     "zhuyin": "ㄓㄣˇ",
-    "clue": "許多紅（　），奇癢！118",
+    "clue": "許多紅（　），奇癢（五）",
     "searchWord": "紅疹"
   },
   {
     "char": "診",
     "zhuyin": "ㄓㄣˇ",
-    "clue": "做詳細（　）斷！119",
+    "clue": "做詳細（　）斷（五）",
     "searchWord": "診斷"
   },
   {
     "char": "厲",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "校長嚴（　）地批評！120",
+    "clue": "校長嚴（　）地批評（五）",
     "searchWord": "嚴厲"
   },
   {
     "char": "勵",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "番鼓勵（　）志的話！121",
+    "clue": "番鼓勵（　）志的話（五）",
     "searchWord": "勵志"
   },
   {
     "char": "歷",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "年老店（　）經滄桑！122",
+    "clue": "年老店（　）經滄桑（五）",
     "searchWord": "歷經"
   },
   {
     "char": "歷",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "歷史（　）史是不！123",
+    "clue": "歷史（　）史是不（五）",
     "searchWord": "歷史"
   },
   {
     "char": "曆",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "上新日（　）！124",
+    "clue": "上新日（　）（五）",
     "searchWord": "日曆"
   },
   {
     "char": "靂",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "晴天霹（　）的消息！125",
+    "clue": "晴天霹（　）的消息（六）",
     "searchWord": "霹靂"
   },
   {
     "char": "礪",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "境中磨（　）意志！126",
+    "clue": "境中磨（　）意志（六）",
     "searchWord": "磨礪"
   },
   {
     "char": "罹",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "不幸（　）難的家！127",
+    "clue": "不幸（　）難的家（六）",
     "searchWord": "罹難"
   },
   {
     "char": "離",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "的距離（　）非常遙！128",
+    "clue": "的距離（　）非常遙（六）",
     "searchWord": "距離"
   },
   {
     "char": "籬",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "矮的木（　）笆！129",
+    "clue": "矮的木（　）笆（六）",
     "searchWord": "籬笆"
   },
   {
     "char": "釐",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "時，一（　）一毫都！130",
+    "clue": "時，一（　）一毫都（六）",
     "searchWord": "釐毫"
   },
   {
     "char": "儷",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "一對璧（　）！131",
+    "clue": "一對璧（　）（六）",
     "searchWord": "璧儷"
   },
   {
     "char": "荔",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "夏天的（　）枝甜美！132",
+    "clue": "夏天的（　）枝甜美（六）",
     "searchWord": "荔枝"
   },
   {
     "char": "麗",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "風景美（　）如畫！133",
+    "clue": "風景美（　）如畫（六）",
     "searchWord": "美麗"
   },
   {
     "char": "莉",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "裡的茉（　）花正悄！134",
+    "clue": "裡的茉（　）花正悄（六）",
     "searchWord": "茉莉"
   },
   {
     "char": "例",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "按照慣（　），我們！135",
+    "clue": "按照慣（　），我們（六）",
     "searchWord": "慣例"
   },
   {
     "char": "俐",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "非常伶（　）乖巧！136",
+    "clue": "非常伶（　）乖巧（六）",
     "searchWord": "伶俐"
   },
   {
     "char": "櫪",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "老馬伏（　），志在！137",
+    "clue": "老馬伏（　），志在（六）",
     "searchWord": "老馬伏櫪"
   },
   {
     "char": "邐",
     "zhuyin": "ㄌㄧˇ",
-    "clue": "風景迤（　），令人！138",
+    "clue": "風景迤（　），令人（六）",
     "searchWord": "迤邐"
   },
   {
     "char": "蠡",
     "zhuyin": "ㄌㄧˇ",
-    "clue": "管窺蠡（　）的見解！139",
+    "clue": "管窺蠡（　）的見解（六）",
     "searchWord": "管窺蠡測"
   },
   {
     "char": "儷",
     "zhuyin": "ㄌㄧˋ",
-    "clue": "這對伉（　）常攜手！140",
+    "clue": "這對伉（　）常攜手（六）",
     "searchWord": "伉儷"
   },
   {
     "char": "灑",
     "zhuyin": "ㄙㄚˇ",
-    "clue": "路面上（　）水除塵！141",
+    "clue": "路面上（　）水除塵（六）",
     "searchWord": "灑水"
   },
   {
     "char": "酒",
     "zhuyin": "ㄐㄧㄡˇ",
-    "clue": "車不喝（　），喝酒！142",
+    "clue": "車不喝（　），喝酒（六）",
     "searchWord": "酒精"
   },
   {
     "char": "矚",
     "zhuyin": "ㄓㄨˇ",
-    "clue": "萬眾（　）目的決！143",
+    "clue": "萬眾（　）目的決（六）",
     "searchWord": "矚目"
   },
   {
     "char": "屬",
-    "zhuyin": "ㄕㄨˇ",
-    "clue": "到底歸（　）於誰！144",
+    "zhuyin": "飾",
+    "clue": "到底歸（　）於誰（六）",
     "searchWord": "歸屬"
   },
   {
     "char": "囑",
     "zhuyin": "ㄓㄨˇ",
-    "clue": "人的遺（　）！145",
+    "clue": "人的遺（　）（六）",
     "searchWord": "遺囑"
   },
   {
     "char": "佇",
     "zhuyin": "ㄓㄨˋ",
-    "clue": "在雨中（　）立許久！146",
+    "clue": "在雨中（　）立許久（六）",
     "searchWord": "佇立"
   },
   {
     "char": "貯",
     "zhuyin": "ㄓㄨˋ",
-    "clue": "需要多（　）備一些！147",
+    "clue": "需要多（　）備一些（六）",
     "searchWord": "貯備"
   },
   {
     "char": "駐",
     "zhuyin": "ㄓㄨˋ",
-    "clue": "隊已進（　）邊防重！148",
+    "clue": "隊已進（　）邊防重（六）",
     "searchWord": "進駐"
   },
   {
     "char": "助",
     "zhuyin": "ㄓㄨˋ",
-    "clue": "互相幫（　）是美德！149",
+    "clue": "互相幫（　）是美德（六）",
     "searchWord": "幫助"
   },
   {
     "char": "蛀",
     "zhuyin": "ㄓㄨˋ",
-    "clue": "容易長（　）牙！150",
+    "clue": "容易長（　）牙（七）",
     "searchWord": "蛀牙"
   },
   {
     "char": "築",
     "zhuyin": "ㄓㄨˊ",
-    "clue": "在建築（　）工地上！151",
+    "clue": "在建築（　）工地上（七）",
     "searchWord": "建築"
   },
   {
     "char": "逐",
     "zhuyin": "ㄓㄨˊ",
-    "clue": "要隨波（　）流，失！152",
+    "clue": "要隨波（　）流，失（七）",
     "searchWord": "隨波逐流"
   },
   {
     "char": "著",
     "zhuyin": "ㄓㄨˋ",
-    "clue": "這本名（　）被翻譯！153",
+    "clue": "這本名（　）被翻譯（七）",
     "searchWord": "名著"
   },
   {
     "char": "署",
     "zhuyin": "ㄕㄨˇ",
-    "clue": "親自簽（　）！154",
+    "clue": "親自簽（　）（七）",
     "searchWord": "簽署"
   },
   {
     "char": "曙",
     "zhuyin": "ㄕㄨˇ",
-    "clue": "出一線（　）光！155",
+    "clue": "出一線（　）光（七）",
     "searchWord": "曙光"
   },
   {
     "char": "薯",
     "zhuyin": "ㄕㄨˇ",
-    "clue": "的馬鈴（　）條非常！156",
+    "clue": "的馬鈴（　）條非常（七）",
     "searchWord": "馬鈴薯"
   },
   {
     "char": "暑",
     "zhuyin": "ㄕㄨˇ",
-    "clue": "漫長的（　）假是孩！157",
+    "clue": "漫長的（　）假是孩（七）",
     "searchWord": "暑假"
   },
   {
     "char": "墅",
     "zhuyin": "ㄕㄨˋ",
-    "clue": "度假別（　）！158",
+    "clue": "度假別（　）（七）",
     "searchWord": "別墅"
   },
   {
     "char": "塑",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "這件泥（　）作品栩！159",
+    "clue": "這件泥（　）作品栩（七）",
     "searchWord": "泥塑"
   },
   {
     "char": "宿",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "民宿寄（　）！160",
+    "clue": "民宿寄（　）（七）",
     "searchWord": "寄宿"
   },
   {
     "char": "素",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "穿著樸（　），不愛！161",
+    "clue": "穿著樸（　），不愛（七）",
     "searchWord": "樸素"
   },
   {
     "char": "訴",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "民事訴（　）！162",
+    "clue": "民事訴（　）（七）",
     "searchWord": "訴訟"
   },
   {
     "char": "溯",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "可以追（　）到百年！163",
+    "clue": "可以追（　）到百年（七）",
     "searchWord": "追溯"
   },
   {
     "char": "夙",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "真是（　）夜匪懈！164",
+    "clue": "真是（　）夜匪懈（七）",
     "searchWord": "夙夜匪懈"
   },
   {
     "char": "肅",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "十分嚴（　）！165",
+    "clue": "十分嚴（　）（七）",
     "searchWord": "嚴肅"
   },
   {
     "char": "簌",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "中發出（　）（　）！166",
+    "clue": "中發出（　）（　）（七）",
     "searchWord": "簌簌"
   },
   {
     "char": "速",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "的速度（　）極快！167",
+    "clue": "的速度（　）極快（七）",
     "searchWord": "速度"
   },
   {
     "char": "粟",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "滄海一（　）微不足！168",
+    "clue": "滄海一（　）微不足（七）",
     "searchWord": "滄海一粟"
   },
   {
     "char": "蘇",
     "zhuyin": "ㄙㄨ",
-    "clue": "萬物復（　）！169",
+    "clue": "萬物復（　）（七）",
     "searchWord": "復蘇"
   },
   {
     "char": "酥",
     "zhuyin": "ㄙㄨ",
-    "clue": "鳳梨酥（　）口感極！170",
+    "clue": "鳳梨酥（　）口感極（七）",
     "searchWord": "鳳梨酥"
   },
   {
     "char": "俗",
     "zhuyin": "ㄙㄨˊ",
-    "clue": "陳規陋（　）！171",
+    "clue": "陳規陋（　）（七）",
     "searchWord": "陋俗"
   },
   {
     "char": "悚",
     "zhuyin": "ㄙㄨㄥˇ",
-    "clue": "毛骨悚（　）！172",
+    "clue": "毛骨悚（　）（七）",
     "searchWord": "毛骨悚然"
   },
   {
     "char": "聳",
     "zhuyin": "ㄙㄨㄥˇ",
-    "clue": "高聳（　）的大樓！173",
+    "clue": "高聳（　）的大樓（七）",
     "searchWord": "高聳"
   },
   {
     "char": "訟",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "入了官（　）！174",
+    "clue": "入了官（　）（七）",
     "searchWord": "官訟"
   },
   {
     "char": "頌",
     "zhuyin": "ㄙㄨㄥˋ",
-    "clue": "為了歌（　）英雄的！175",
+    "clue": "為了歌（　）英雄的（八）",
     "searchWord": "歌頌"
   },
   {
     "char": "送",
     "zhuyin": "ㄙㄨㄥˋ",
-    "clue": "自開車（　）我到火！176",
+    "clue": "自開車（　）我到火（八）",
     "searchWord": "送行"
   },
   {
     "char": "宋",
     "zhuyin": "ㄙㄨㄥˋ",
-    "clue": "這是（　）朝時期！177",
+    "clue": "這是（　）朝時期（八）",
     "searchWord": "宋朝"
   },
   {
     "char": "誦",
     "zhuyin": "ㄙㄨㄥˋ",
-    "clue": "大聲朗（　）課文！178",
+    "clue": "大聲朗（　）課文（八）",
     "searchWord": "朗誦"
   },
   {
     "char": "松",
     "zhuyin": "ㄙㄨㄥ",
-    "clue": "棵古松（　）迎風挺！179",
+    "clue": "棵古松（　）迎風挺（八）",
     "searchWord": "古松"
   },
   {
     "char": "鬆",
     "zhuyin": "ㄙㄨㄥ",
-    "clue": "可以放（　）一下！180",
+    "clue": "可以放（　）一下（八）",
     "searchWord": "放鬆"
   },
   {
     "char": "嵩",
     "zhuyin": "ㄙㄨㄥ",
-    "clue": "尊稱為（　）山！181",
+    "clue": "尊稱為（　）山（八）",
     "searchWord": "嵩山"
   },
   {
     "char": "慫",
     "zhuyin": "ㄙㄨㄥˇ",
-    "clue": "朋友的（　）恿下！182",
+    "clue": "朋友的（　）恿下（八）",
     "searchWord": "慫恿"
   },
   {
     "char": "懍",
     "zhuyin": "ㄌㄧㄣˇ",
-    "clue": "無不畏（　）遵命！183",
+    "clue": "無不畏（　）遵命（八）",
     "searchWord": "畏懍"
   },
   {
     "char": "凜",
     "zhuyin": "ㄌㄧㄣˇ",
-    "clue": "寒風（　）（　）！184",
+    "clue": "寒風（　）（　）（八）",
     "searchWord": "寒風凜凜"
   },
   {
     "char": "鄰",
     "zhuyin": "ㄌㄧㄣˊ",
-    "clue": "不如近（　），鄰里！185",
+    "clue": "不如近（　），鄰里（八）",
     "searchWord": "近鄰"
   },
   {
     "char": "臨",
     "zhuyin": "ㄌㄧㄣˊ",
-    "clue": "貴賓光（　）指導！186",
+    "clue": "貴賓光（　）指導（八）",
     "searchWord": "光臨"
   },
   {
     "char": "林",
     "zhuyin": "ㄌㄧㄣˊ",
-    "clue": "始森林（　）木茂密！187",
+    "clue": "始森林（　）木茂密（八）",
     "searchWord": "森林"
   },
   {
     "char": "淋",
     "zhuyin": "ㄌㄧㄣˊ",
-    "clue": "被大雨（　）得像隻！188",
+    "clue": "被大雨（　）得像隻（八）",
     "searchWord": "淋雨"
   },
   {
     "char": "鱗",
     "zhuyin": "ㄌㄧㄣˊ",
-    "clue": "上的鱗（　）片在陽！189",
+    "clue": "上的鱗（　）片在陽（八）",
     "searchWord": "鱗片"
   },
   {
     "char": "麟",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "界鳳毛（　）角般的！190",
+    "clue": "界鳳毛（　）角般的（八）",
     "searchWord": "鳳毛麟角"
   },
   {
     "char": "吝",
     "zhuyin": "ㄌㄧㄣˋ",
-    "clue": "萬不要（　）嗇！191",
+    "clue": "萬不要（　）嗇（八）",
     "searchWord": "吝嗇"
   },
   {
     "char": "玲",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "雕小巧（　）瓏，十！192",
+    "clue": "雕小巧（　）瓏，十（八）",
     "searchWord": "玲瓏"
   },
   {
     "char": "伶",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "子口齒（　）俐，討！193",
+    "clue": "子口齒（　）俐，討（八）",
     "searchWord": "伶俐"
   },
   {
     "char": "聆",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "靜靜地（　）聽鋼琴！194",
+    "clue": "靜靜地（　）聽鋼琴（八）",
     "searchWord": "聆聽"
   },
   {
     "char": "齡",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "木的年（　）已超過！195",
+    "clue": "木的年（　）已超過（八）",
     "searchWord": "年齡"
   },
   {
     "char": "羚",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "成群的（　）羊奔馳！196",
+    "clue": "成群的（　）羊奔馳（八）",
     "searchWord": "羚羊"
   },
   {
     "char": "零",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "剛好為（　）！197",
+    "clue": "剛好為（　）（八）",
     "searchWord": "零錢"
   },
   {
     "char": "鈴",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "下課（　）聲響起！198",
+    "clue": "下課（　）聲響起（八）",
     "searchWord": "鈴聲"
   },
   {
     "char": "凌",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "經常（　）侮弱小！199",
+    "clue": "經常（　）侮弱小（八）",
     "searchWord": "凌侮"
   },
   {
     "char": "陵",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "帝王的（　）寢遺址！200",
+    "clue": "帝王的（　）寢遺址（九）",
     "searchWord": "陵寢"
   },
   {
     "char": "綾",
     "zhuyin": "ㄌㄧˊ",
-    "clue": "高級的（　）羅綢緞！201",
+    "clue": "高級的（　）羅綢緞（九）",
     "searchWord": "綾羅綢緞"
   },
   {
     "char": "嶺",
     "zhuyin": "ㄌㄧˇ",
-    "clue": "重重山（　），終於！202",
+    "clue": "重重山（　），終於（九）",
     "searchWord": "山嶺"
   },
   {
     "char": "領",
     "zhuyin": "ㄌㄧˇ",
-    "clue": "他帶（　）團隊建！203",
+    "clue": "他帶（　）團隊建（九）",
     "searchWord": "帶領"
   },
   {
     "char": "令",
     "zhuyin": "ㄌㄧㄥˋ",
-    "clue": "這條禁（　）自即日！204",
+    "clue": "這條禁（　）自即日（九）",
     "searchWord": "禁令"
   }
 ];
