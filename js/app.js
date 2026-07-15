@@ -5147,6 +5147,13 @@ class App {
         const randIdx = Math.floor(Math.random() * pool.length);
         selectedQuestions.push(pool.splice(randIdx, 1)[0]);
       }
+    } else if (gameType === 'characterCrossword') {
+      const pool = [...CHARACTER_CROSSWORD_POOL];
+      selectedQuestions = [];
+      if (pool.length > 0) {
+        const randIdx = Math.floor(Math.random() * pool.length);
+        selectedQuestions.push(pool[randIdx]);
+      }
     }
     
     db.ref('quiz/focusGame').set({
@@ -5198,6 +5205,13 @@ class App {
     if (game.gameType === 'characterTest') {
       if (titleEl) titleEl.textContent = '一字千金：字力測驗！';
       if (descriptionEl) descriptionEl.textContent = '請注意看畫面上的注音與提示詞，並寫出正確的國字。共有 3 題喔！';
+      if (hintEl) hintEl.textContent = '測驗即將開始，請準備好輸入...';
+      return;
+    }
+    
+    if (game.gameType === 'characterCrossword') {
+      if (titleEl) titleEl.textContent = '一字千金：字字珠璣！';
+      if (descriptionEl) descriptionEl.textContent = '請根據周邊四個國字與右側注音，找出能同時組合成四個詞彙的「關鍵國字」。只有 1 題喔！';
       if (hintEl) hintEl.textContent = '測驗即將開始，請準備好輸入...';
       return;
     }
@@ -5289,6 +5303,8 @@ class App {
     if (instEl && game) {
       if (game.gameType === 'characterTest') {
         instEl.textContent = '💡 請寫出正確的國字，填寫完後點選「送出答案」讓老師評分。';
+      } else if (game.gameType === 'characterCrossword') {
+        instEl.textContent = '💡 請寫出中心挖空的關鍵字，填寫完後點選「送出答案」讓老師評分。';
       } else if (game.gameType === 'memoryPosition') {
         instEl.textContent = '💡 請依序或反向點選剛才閃爍位置的格子，加油！';
       } else {
@@ -5312,7 +5328,7 @@ class App {
       const hasCompleted = !!result;
 
       if (hasCompleted) {
-        if (game.gameType === 'characterTest') {
+        if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword') {
           if (result.status === 'correct') {
             document.getElementById('focusPlayArea').style.display = 'none';
             document.getElementById('focusFinishArea').style.display = 'block';
@@ -5367,7 +5383,7 @@ class App {
       const result = game.results && game.results[userId];
       if (result) {
         document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
-        if (game.gameType === 'characterTest') {
+        if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword') {
           const correctRank = this.calculateFocusUserCorrectRank(game.results, userId);
           document.getElementById('lblFinishRank').textContent = correctRank;
           const suffixEl = document.getElementById('lblFinishRankSuffix');
@@ -5489,7 +5505,7 @@ class App {
       return;
     }
     
-    if (game.gameType === 'characterTest') {
+    if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword') {
       this.startCharacterTestGame(game);
       return;
     }
@@ -6085,7 +6101,7 @@ class App {
     const list = document.getElementById(listContainerId);
     if (!list) return;
 
-    if (this.focusGame && this.focusGame.gameType === 'characterTest') {
+    if (this.focusGame && (this.focusGame.gameType === 'characterTest' || this.focusGame.gameType === 'characterCrossword')) {
       if (listContainerId === 'adminFocusGameRankList') {
         this.renderAdminCharacterTestSubmissions(list, results);
       } else {
@@ -6150,11 +6166,6 @@ class App {
     grid.style.maxWidth = '500px';
     
     const questions = game.questions || [];
-    
-    let html = `
-      <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; text-align: center; width: 100%;">
-        ✍️ 一字千金：請輸入正確的國字
-      </div>
       <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
     `;
     

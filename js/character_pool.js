@@ -3000,3 +3000,2308 @@ const CHARACTER_TEST_POOL = [
     "searchWord": "大海"
   }
 ];
+
+
+// 一字千金字字珠璣題庫 - 預先準備的 100 題超豐富題庫
+const CHARACTER_CROSSWORD_POOL = [
+  {
+    "char": "海",
+    "zhuyin": "ㄏㄞˇ",
+    "searchWord": "海馬",
+    "surrounding": [
+      {
+        "char": "腦",
+        "pos": "before"
+      },
+      {
+        "char": "外",
+        "pos": "before"
+      },
+      {
+        "char": "馬",
+        "pos": "after"
+      },
+      {
+        "char": "女",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "機",
+    "zhuyin": "ㄐㄧ",
+    "searchWord": "機會",
+    "surrounding": [
+      {
+        "char": "手",
+        "pos": "before"
+      },
+      {
+        "char": "飛",
+        "pos": "before"
+      },
+      {
+        "char": "車",
+        "pos": "after"
+      },
+      {
+        "char": "會",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "天",
+    "zhuyin": "ㄊㄧㄢ",
+    "searchWord": "天空",
+    "surrounding": [
+      {
+        "char": "今",
+        "pos": "before"
+      },
+      {
+        "char": "明",
+        "pos": "before"
+      },
+      {
+        "char": "氣",
+        "pos": "after"
+      },
+      {
+        "char": "空",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "風",
+    "zhuyin": "ㄈㄥ",
+    "searchWord": "風景",
+    "surrounding": [
+      {
+        "char": "颱",
+        "pos": "before"
+      },
+      {
+        "char": "微",
+        "pos": "before"
+      },
+      {
+        "char": "雨",
+        "pos": "after"
+      },
+      {
+        "char": "景",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "心",
+    "zhuyin": "ㄒㄧㄣ",
+    "searchWord": "心理",
+    "surrounding": [
+      {
+        "char": "開",
+        "pos": "before"
+      },
+      {
+        "char": "粗",
+        "pos": "before"
+      },
+      {
+        "char": "臟",
+        "pos": "after"
+      },
+      {
+        "char": "理",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "花",
+    "zhuyin": "ㄏㄨㄚ",
+    "searchWord": "花園",
+    "surrounding": [
+      {
+        "char": "開",
+        "pos": "before"
+      },
+      {
+        "char": "鮮",
+        "pos": "before"
+      },
+      {
+        "char": "園",
+        "pos": "after"
+      },
+      {
+        "char": "朵",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "水",
+    "zhuyin": "ㄕㄨㄟˇ",
+    "searchWord": "水果",
+    "surrounding": [
+      {
+        "char": "汽",
+        "pos": "before"
+      },
+      {
+        "char": "雨",
+        "pos": "before"
+      },
+      {
+        "char": "果",
+        "pos": "after"
+      },
+      {
+        "char": "庫",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "車",
+    "zhuyin": "ㄔㄜ",
+    "searchWord": "車站",
+    "surrounding": [
+      {
+        "char": "汽",
+        "pos": "before"
+      },
+      {
+        "char": "火",
+        "pos": "before"
+      },
+      {
+        "char": "站",
+        "pos": "after"
+      },
+      {
+        "char": "禍",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "人",
+    "zhuyin": "ㄖㄣˊ",
+    "searchWord": "人口",
+    "surrounding": [
+      {
+        "char": "男",
+        "pos": "before"
+      },
+      {
+        "char": "女",
+        "pos": "before"
+      },
+      {
+        "char": "群",
+        "pos": "after"
+      },
+      {
+        "char": "口",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "山",
+    "zhuyin": "ㄕㄢ",
+    "searchWord": "山路",
+    "surrounding": [
+      {
+        "char": "高",
+        "pos": "before"
+      },
+      {
+        "char": "爬",
+        "pos": "before"
+      },
+      {
+        "char": "谷",
+        "pos": "after"
+      },
+      {
+        "char": "路",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "生",
+    "zhuyin": "ㄕㄥ",
+    "searchWord": "生日",
+    "surrounding": [
+      {
+        "char": "學",
+        "pos": "before"
+      },
+      {
+        "char": "人",
+        "pos": "before"
+      },
+      {
+        "char": "活",
+        "pos": "after"
+      },
+      {
+        "char": "日",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "氣",
+    "zhuyin": "ㄑㄧˋ",
+    "searchWord": "氣球",
+    "surrounding": [
+      {
+        "char": "空",
+        "pos": "before"
+      },
+      {
+        "char": "天",
+        "pos": "before"
+      },
+      {
+        "char": "溫",
+        "pos": "after"
+      },
+      {
+        "char": "球",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "力",
+    "zhuyin": "ㄌㄧˋ",
+    "searchWord": "力氣",
+    "surrounding": [
+      {
+        "char": "用",
+        "pos": "before"
+      },
+      {
+        "char": "動",
+        "pos": "before"
+      },
+      {
+        "char": "量",
+        "pos": "after"
+      },
+      {
+        "char": "氣",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "工",
+    "zhuyin": "ㄍㄨㄥ",
+    "searchWord": "工作",
+    "surrounding": [
+      {
+        "char": "員",
+        "pos": "before"
+      },
+      {
+        "char": "手",
+        "pos": "before"
+      },
+      {
+        "char": "作",
+        "pos": "after"
+      },
+      {
+        "char": "廠",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "作",
+    "zhuyin": "ㄗㄨㄛˋ",
+    "searchWord": "作品",
+    "surrounding": [
+      {
+        "char": "工",
+        "pos": "before"
+      },
+      {
+        "char": "寫",
+        "pos": "before"
+      },
+      {
+        "char": "品",
+        "pos": "after"
+      },
+      {
+        "char": "業",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "用",
+    "zhuyin": "ㄩㄥˋ",
+    "searchWord": "用途",
+    "surrounding": [
+      {
+        "char": "使",
+        "pos": "before"
+      },
+      {
+        "char": "利",
+        "pos": "before"
+      },
+      {
+        "char": "功",
+        "pos": "after"
+      },
+      {
+        "char": "途",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "動",
+    "zhuyin": "ㄉㄨㄥˋ",
+    "searchWord": "動物",
+    "surrounding": [
+      {
+        "char": "運",
+        "pos": "before"
+      },
+      {
+        "char": "活",
+        "pos": "before"
+      },
+      {
+        "char": "作",
+        "pos": "after"
+      },
+      {
+        "char": "物",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "物",
+    "zhuyin": "ㄨˋ",
+    "searchWord": "物價",
+    "surrounding": [
+      {
+        "char": "動",
+        "pos": "before"
+      },
+      {
+        "char": "植",
+        "pos": "before"
+      },
+      {
+        "char": "品",
+        "pos": "after"
+      },
+      {
+        "char": "價",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "品",
+    "zhuyin": "ㄆㄧㄣˇ",
+    "searchWord": "品牌",
+    "surrounding": [
+      {
+        "char": "商",
+        "pos": "before"
+      },
+      {
+        "char": "產",
+        "pos": "before"
+      },
+      {
+        "char": "質",
+        "pos": "after"
+      },
+      {
+        "char": "牌",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "家",
+    "zhuyin": "ㄐㄧㄚ",
+    "searchWord": "家庭",
+    "surrounding": [
+      {
+        "char": "回",
+        "pos": "before"
+      },
+      {
+        "char": "國",
+        "pos": "before"
+      },
+      {
+        "char": "庭",
+        "pos": "after"
+      },
+      {
+        "char": "長",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "國",
+    "zhuyin": "ㄍㄨㄛˊ",
+    "searchWord": "國旗",
+    "surrounding": [
+      {
+        "char": "英",
+        "pos": "before"
+      },
+      {
+        "char": "美",
+        "pos": "before"
+      },
+      {
+        "char": "家",
+        "pos": "after"
+      },
+      {
+        "char": "旗",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "民",
+    "zhuyin": "ㄇㄧㄣˊ",
+    "searchWord": "民意",
+    "surrounding": [
+      {
+        "char": "居",
+        "pos": "before"
+      },
+      {
+        "char": "人",
+        "pos": "before"
+      },
+      {
+        "char": "族",
+        "pos": "after"
+      },
+      {
+        "char": "意",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "意",
+    "zhuyin": "ㄧˋ",
+    "searchWord": "意義",
+    "surrounding": [
+      {
+        "char": "注",
+        "pos": "before"
+      },
+      {
+        "char": "同",
+        "pos": "before"
+      },
+      {
+        "char": "見",
+        "pos": "after"
+      },
+      {
+        "char": "義",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "理",
+    "zhuyin": "ㄌㄧˇ",
+    "searchWord": "理解",
+    "surrounding": [
+      {
+        "char": "合",
+        "pos": "before"
+      },
+      {
+        "char": "心",
+        "pos": "before"
+      },
+      {
+        "char": "由",
+        "pos": "after"
+      },
+      {
+        "char": "解",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "學",
+    "zhuyin": "ㄒㄩㄝˊ",
+    "searchWord": "學校",
+    "surrounding": [
+      {
+        "char": "大",
+        "pos": "before"
+      },
+      {
+        "char": "小",
+        "pos": "before"
+      },
+      {
+        "char": "生",
+        "pos": "after"
+      },
+      {
+        "char": "校",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "校",
+    "zhuyin": "ㄒㄧㄠˋ",
+    "searchWord": "校車",
+    "surrounding": [
+      {
+        "char": "學",
+        "pos": "before"
+      },
+      {
+        "char": "母",
+        "pos": "before"
+      },
+      {
+        "char": "長",
+        "pos": "after"
+      },
+      {
+        "char": "車",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "書",
+    "zhuyin": "ㄕㄨ",
+    "searchWord": "書包",
+    "surrounding": [
+      {
+        "char": "讀",
+        "pos": "before"
+      },
+      {
+        "char": "看",
+        "pos": "before"
+      },
+      {
+        "char": "籍",
+        "pos": "after"
+      },
+      {
+        "char": "包",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "包",
+    "zhuyin": "ㄅㄠ",
+    "searchWord": "包裝",
+    "surrounding": [
+      {
+        "char": "書",
+        "pos": "before"
+      },
+      {
+        "char": "皮",
+        "pos": "before"
+      },
+      {
+        "char": "子",
+        "pos": "after"
+      },
+      {
+        "char": "裝",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "子",
+    "zhuyin": "ㄗˇ",
+    "searchWord": "子女",
+    "surrounding": [
+      {
+        "char": "桌",
+        "pos": "before"
+      },
+      {
+        "char": "椅",
+        "pos": "before"
+      },
+      {
+        "char": "彈",
+        "pos": "after"
+      },
+      {
+        "char": "女",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "女",
+    "zhuyin": "ㄋㄩˇ",
+    "searchWord": "女神",
+    "surrounding": [
+      {
+        "char": "男",
+        "pos": "before"
+      },
+      {
+        "char": "婦",
+        "pos": "before"
+      },
+      {
+        "char": "兒",
+        "pos": "after"
+      },
+      {
+        "char": "神",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "兒",
+    "zhuyin": "ㄦˊ",
+    "searchWord": "兒歌",
+    "surrounding": [
+      {
+        "char": "女",
+        "pos": "before"
+      },
+      {
+        "char": "幼",
+        "pos": "before"
+      },
+      {
+        "char": "童",
+        "pos": "after"
+      },
+      {
+        "char": "歌",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "童",
+    "zhuyin": "ㄊㄨㄥˊ",
+    "searchWord": "童年",
+    "surrounding": [
+      {
+        "char": "兒",
+        "pos": "before"
+      },
+      {
+        "char": "神",
+        "pos": "before"
+      },
+      {
+        "char": "話",
+        "pos": "after"
+      },
+      {
+        "char": "年",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "年",
+    "zhuyin": "ㄋㄧㄢˊ",
+    "searchWord": "年輕",
+    "surrounding": [
+      {
+        "char": "今",
+        "pos": "before"
+      },
+      {
+        "char": "明",
+        "pos": "before"
+      },
+      {
+        "char": "齡",
+        "pos": "after"
+      },
+      {
+        "char": "輕",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "輕",
+    "zhuyin": "ㄑㄧㄥ",
+    "searchWord": "輕易",
+    "surrounding": [
+      {
+        "char": "年",
+        "pos": "before"
+      },
+      {
+        "char": "減",
+        "pos": "before"
+      },
+      {
+        "char": "快",
+        "pos": "after"
+      },
+      {
+        "char": "易",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "微",
+    "zhuyin": "ㄨㄟˊ",
+    "searchWord": "微風",
+    "surrounding": [
+      {
+        "char": "輕",
+        "pos": "before"
+      },
+      {
+        "char": "細",
+        "pos": "before"
+      },
+      {
+        "char": "笑",
+        "pos": "after"
+      },
+      {
+        "char": "風",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "笑",
+    "zhuyin": "ㄒㄧㄠˋ",
+    "searchWord": "笑臉",
+    "surrounding": [
+      {
+        "char": "微",
+        "pos": "before"
+      },
+      {
+        "char": "玩",
+        "pos": "before"
+      },
+      {
+        "char": "話",
+        "pos": "after"
+      },
+      {
+        "char": "臉",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "話",
+    "zhuyin": "ㄏㄨㄚˋ",
+    "searchWord": "話劇",
+    "surrounding": [
+      {
+        "char": "說",
+        "pos": "before"
+      },
+      {
+        "char": "笑",
+        "pos": "before"
+      },
+      {
+        "char": "題",
+        "pos": "after"
+      },
+      {
+        "char": "劇",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "題",
+    "zhuyin": "ㄊㄧˊ",
+    "searchWord": "題庫",
+    "surrounding": [
+      {
+        "char": "問",
+        "pos": "before"
+      },
+      {
+        "char": "標",
+        "pos": "before"
+      },
+      {
+        "char": "目",
+        "pos": "after"
+      },
+      {
+        "char": "庫",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "問",
+    "zhuyin": "ㄨㄣˋ",
+    "searchWord": "問候",
+    "surrounding": [
+      {
+        "char": "提",
+        "pos": "before"
+      },
+      {
+        "char": "詢",
+        "pos": "before"
+      },
+      {
+        "char": "題",
+        "pos": "after"
+      },
+      {
+        "char": "候",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "候",
+    "zhuyin": "ㄏㄡˋ",
+    "searchWord": "候選",
+    "surrounding": [
+      {
+        "char": "時",
+        "pos": "before"
+      },
+      {
+        "char": "氣",
+        "pos": "before"
+      },
+      {
+        "char": "車",
+        "pos": "after"
+      },
+      {
+        "char": "選",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "選",
+    "zhuyin": "ㄒㄩㄢˇ",
+    "searchWord": "選舉",
+    "surrounding": [
+      {
+        "char": "挑",
+        "pos": "before"
+      },
+      {
+        "char": "人",
+        "pos": "before"
+      },
+      {
+        "char": "擇",
+        "pos": "after"
+      },
+      {
+        "char": "舉",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "擇",
+    "zhuyin": "ㄗㄜˊ",
+    "searchWord": "擇期",
+    "surrounding": [
+      {
+        "char": "選",
+        "pos": "before"
+      },
+      {
+        "char": "抉",
+        "pos": "before"
+      },
+      {
+        "char": "優",
+        "pos": "after"
+      },
+      {
+        "char": "期",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "期",
+    "zhuyin": "ㄑㄧˊ",
+    "searchWord": "期待",
+    "surrounding": [
+      {
+        "char": "學",
+        "pos": "before"
+      },
+      {
+        "char": "過",
+        "pos": "before"
+      },
+      {
+        "char": "限",
+        "pos": "after"
+      },
+      {
+        "char": "待",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "待",
+    "zhuyin": "ㄉㄞˋ",
+    "searchWord": "待客",
+    "surrounding": [
+      {
+        "char": "期",
+        "pos": "before"
+      },
+      {
+        "char": "對",
+        "pos": "before"
+      },
+      {
+        "char": "遇",
+        "pos": "after"
+      },
+      {
+        "char": "客",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "客",
+    "zhuyin": "ㄎㄜˋ",
+    "searchWord": "客廳",
+    "surrounding": [
+      {
+        "char": "顧",
+        "pos": "before"
+      },
+      {
+        "char": "遊",
+        "pos": "before"
+      },
+      {
+        "char": "人",
+        "pos": "after"
+      },
+      {
+        "char": "廳",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "廳",
+    "zhuyin": "ㄊㄧㄥ",
+    "searchWord": "廳舍",
+    "surrounding": [
+      {
+        "char": "客",
+        "pos": "before"
+      },
+      {
+        "char": "大",
+        "pos": "before"
+      },
+      {
+        "char": "長",
+        "pos": "after"
+      },
+      {
+        "char": "舍",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "長",
+    "zhuyin": "ㄓㄤˇ",
+    "searchWord": "長輩",
+    "surrounding": [
+      {
+        "char": "家",
+        "pos": "before"
+      },
+      {
+        "char": "校",
+        "pos": "before"
+      },
+      {
+        "char": "度",
+        "pos": "after"
+      },
+      {
+        "char": "輩",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "輩",
+    "zhuyin": "ㄅㄟˋ",
+    "searchWord": "輩出",
+    "surrounding": [
+      {
+        "char": "長",
+        "pos": "before"
+      },
+      {
+        "char": "前",
+        "pos": "before"
+      },
+      {
+        "char": "分",
+        "pos": "after"
+      },
+      {
+        "char": "出",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "出",
+    "zhuyin": "ㄔㄨ",
+    "searchWord": "出口",
+    "surrounding": [
+      {
+        "char": "進",
+        "pos": "before"
+      },
+      {
+        "char": "突",
+        "pos": "before"
+      },
+      {
+        "char": "發",
+        "pos": "after"
+      },
+      {
+        "char": "口",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "口",
+    "zhuyin": "ㄎㄡˇ",
+    "searchWord": "口哨",
+    "surrounding": [
+      {
+        "char": "出",
+        "pos": "before"
+      },
+      {
+        "char": "進",
+        "pos": "before"
+      },
+      {
+        "char": "味",
+        "pos": "after"
+      },
+      {
+        "char": "哨",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "味",
+    "zhuyin": "ㄨㄟˋ",
+    "searchWord": "味精",
+    "surrounding": [
+      {
+        "char": "口",
+        "pos": "before"
+      },
+      {
+        "char": "氣",
+        "pos": "before"
+      },
+      {
+        "char": "道",
+        "pos": "after"
+      },
+      {
+        "char": "精",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "道",
+    "zhuyin": "ㄉㄠˋ",
+    "searchWord": "道理",
+    "surrounding": [
+      {
+        "char": "味",
+        "pos": "before"
+      },
+      {
+        "char": "知",
+        "pos": "before"
+      },
+      {
+        "char": "路",
+        "pos": "after"
+      },
+      {
+        "char": "理",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "理",
+    "zhuyin": "ㄌㄧˇ",
+    "searchWord": "理髮",
+    "surrounding": [
+      {
+        "char": "道",
+        "pos": "before"
+      },
+      {
+        "char": "合",
+        "pos": "before"
+      },
+      {
+        "char": "事",
+        "pos": "after"
+      },
+      {
+        "char": "髮",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "髮",
+    "zhuyin": "ㄈㄚˇ",
+    "searchWord": "髮夾",
+    "surrounding": [
+      {
+        "char": "理",
+        "pos": "before"
+      },
+      {
+        "char": "洗",
+        "pos": "before"
+      },
+      {
+        "char": "型",
+        "pos": "after"
+      },
+      {
+        "char": "夾",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "型",
+    "zhuyin": "ㄒㄧㄥˊ",
+    "searchWord": "型號",
+    "surrounding": [
+      {
+        "char": "髮",
+        "pos": "before"
+      },
+      {
+        "char": "模",
+        "pos": "before"
+      },
+      {
+        "char": "態",
+        "pos": "after"
+      },
+      {
+        "char": "號",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "號",
+    "zhuyin": "ㄏㄠˋ",
+    "searchWord": "號召",
+    "surrounding": [
+      {
+        "char": "型",
+        "pos": "before"
+      },
+      {
+        "char": "記",
+        "pos": "before"
+      },
+      {
+        "char": "碼",
+        "pos": "after"
+      },
+      {
+        "char": "召",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "碼",
+    "zhuyin": "ㄇㄚˇ",
+    "searchWord": "碼表",
+    "surrounding": [
+      {
+        "char": "密",
+        "pos": "before"
+      },
+      {
+        "char": "號",
+        "pos": "before"
+      },
+      {
+        "char": "頭",
+        "pos": "after"
+      },
+      {
+        "char": "表",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "頭",
+    "zhuyin": "ㄊㄡˊ",
+    "searchWord": "頭髮",
+    "surrounding": [
+      {
+        "char": "碼",
+        "pos": "before"
+      },
+      {
+        "char": "起",
+        "pos": "before"
+      },
+      {
+        "char": "痛",
+        "pos": "after"
+      },
+      {
+        "char": "髮",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "痛",
+    "zhuyin": "ㄊㄨㄥˋ",
+    "searchWord": "痛快",
+    "surrounding": [
+      {
+        "char": "頭",
+        "pos": "before"
+      },
+      {
+        "char": "心",
+        "pos": "before"
+      },
+      {
+        "char": "苦",
+        "pos": "after"
+      },
+      {
+        "char": "快",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "快",
+    "zhuyin": "ㄎㄨㄞˋ",
+    "searchWord": "快速",
+    "surrounding": [
+      {
+        "char": "痛",
+        "pos": "before"
+      },
+      {
+        "char": "輕",
+        "pos": "before"
+      },
+      {
+        "char": "樂",
+        "pos": "after"
+      },
+      {
+        "char": "速",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "樂",
+    "zhuyin": "ㄌㄜˋ",
+    "searchWord": "樂園",
+    "surrounding": [
+      {
+        "char": "快",
+        "pos": "before"
+      },
+      {
+        "char": "音",
+        "pos": "before"
+      },
+      {
+        "char": "趣",
+        "pos": "after"
+      },
+      {
+        "char": "園",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "趣",
+    "zhuyin": "ㄑㄩˋ",
+    "searchWord": "趣事",
+    "surrounding": [
+      {
+        "char": "樂",
+        "pos": "before"
+      },
+      {
+        "char": "興",
+        "pos": "before"
+      },
+      {
+        "char": "味",
+        "pos": "after"
+      },
+      {
+        "char": "事",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "事",
+    "zhuyin": "ㄕˋ",
+    "searchWord": "事務",
+    "surrounding": [
+      {
+        "char": "趣",
+        "pos": "before"
+      },
+      {
+        "char": "故",
+        "pos": "before"
+      },
+      {
+        "char": "情",
+        "pos": "after"
+      },
+      {
+        "char": "務",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "故",
+    "zhuyin": "ㄍㄨˋ",
+    "searchWord": "故人",
+    "surrounding": [
+      {
+        "char": "事",
+        "pos": "before"
+      },
+      {
+        "char": "變",
+        "pos": "before"
+      },
+      {
+        "char": "鄉",
+        "pos": "after"
+      },
+      {
+        "char": "人",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "鄉",
+    "zhuyin": "ㄒㄧㄤ",
+    "searchWord": "鄉親",
+    "surrounding": [
+      {
+        "char": "故",
+        "pos": "before"
+      },
+      {
+        "char": "家",
+        "pos": "before"
+      },
+      {
+        "char": "村",
+        "pos": "after"
+      },
+      {
+        "char": "親",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "村",
+    "zhuyin": "ㄘㄨㄣ",
+    "searchWord": "村長",
+    "surrounding": [
+      {
+        "char": "鄉",
+        "pos": "before"
+      },
+      {
+        "char": "農",
+        "pos": "before"
+      },
+      {
+        "char": "莊",
+        "pos": "after"
+      },
+      {
+        "char": "長",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "莊",
+    "zhuyin": "ㄓㄨㄤ",
+    "searchWord": "莊重",
+    "surrounding": [
+      {
+        "char": "村",
+        "pos": "before"
+      },
+      {
+        "char": "山",
+        "pos": "before"
+      },
+      {
+        "char": "嚴",
+        "pos": "after"
+      },
+      {
+        "char": "重",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "嚴",
+    "zhuyin": "ㄧㄢˊ",
+    "searchWord": "嚴肅",
+    "surrounding": [
+      {
+        "char": "莊",
+        "pos": "before"
+      },
+      {
+        "char": "尊",
+        "pos": "before"
+      },
+      {
+        "char": "格",
+        "pos": "after"
+      },
+      {
+        "char": "肅",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "肅",
+    "zhuyin": "ㄙㄨˋ",
+    "searchWord": "肅殺",
+    "surrounding": [
+      {
+        "char": "整",
+        "pos": "before"
+      },
+      {
+        "char": "嚴",
+        "pos": "before"
+      },
+      {
+        "char": "靜",
+        "pos": "after"
+      },
+      {
+        "char": "立",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "立",
+    "zhuyin": "ㄌㄧˋ",
+    "searchWord": "立場",
+    "surrounding": [
+      {
+        "char": "肅",
+        "pos": "before"
+      },
+      {
+        "char": "起",
+        "pos": "before"
+      },
+      {
+        "char": "刻",
+        "pos": "after"
+      },
+      {
+        "char": "場",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "刻",
+    "zhuyin": "ㄎㄜˋ",
+    "searchWord": "刻度",
+    "surrounding": [
+      {
+        "char": "立",
+        "pos": "before"
+      },
+      {
+        "char": "片",
+        "pos": "before"
+      },
+      {
+        "char": "苦",
+        "pos": "after"
+      },
+      {
+        "char": "度",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "苦",
+    "zhuyin": "ㄎㄨˇ",
+    "searchWord": "苦笑",
+    "surrounding": [
+      {
+        "char": "刻",
+        "pos": "before"
+      },
+      {
+        "char": "辛",
+        "pos": "before"
+      },
+      {
+        "char": "悶",
+        "pos": "after"
+      },
+      {
+        "char": "笑",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "笑",
+    "zhuyin": "ㄒㄧㄠˋ",
+    "searchWord": "笑柄",
+    "surrounding": [
+      {
+        "char": "苦",
+        "pos": "before"
+      },
+      {
+        "char": "微",
+        "pos": "before"
+      },
+      {
+        "char": "料",
+        "pos": "after"
+      },
+      {
+        "char": "柄",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "料",
+    "zhuyin": "ㄌㄧㄠˋ",
+    "searchWord": "料想",
+    "surrounding": [
+      {
+        "char": "笑",
+        "pos": "before"
+      },
+      {
+        "char": "材",
+        "pos": "before"
+      },
+      {
+        "char": "理",
+        "pos": "after"
+      },
+      {
+        "char": "想",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "材",
+    "zhuyin": "ㄘㄞˊ",
+    "searchWord": "材料",
+    "surrounding": [
+      {
+        "char": "木",
+        "pos": "before"
+      },
+      {
+        "char": "題",
+        "pos": "before"
+      },
+      {
+        "char": "質",
+        "pos": "after"
+      },
+      {
+        "char": "料",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "質",
+    "zhuyin": "ㄓˊ",
+    "searchWord": "質問",
+    "surrounding": [
+      {
+        "char": "材",
+        "pos": "before"
+      },
+      {
+        "char": "品",
+        "pos": "before"
+      },
+      {
+        "char": "量",
+        "pos": "after"
+      },
+      {
+        "char": "問",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "量",
+    "zhuyin": "ㄌㄧㄤˋ",
+    "searchWord": "量杯",
+    "surrounding": [
+      {
+        "char": "質",
+        "pos": "before"
+      },
+      {
+        "char": "力",
+        "pos": "before"
+      },
+      {
+        "char": "度",
+        "pos": "after"
+      },
+      {
+        "char": "杯",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "杯",
+    "zhuyin": "ㄅㄟ",
+    "searchWord": "杯麵",
+    "surrounding": [
+      {
+        "char": "量",
+        "pos": "before"
+      },
+      {
+        "char": "茶",
+        "pos": "before"
+      },
+      {
+        "char": "子",
+        "pos": "after"
+      },
+      {
+        "char": "麵",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "茶",
+    "zhuyin": "ㄔㄚˊ",
+    "searchWord": "茶壺",
+    "surrounding": [
+      {
+        "char": "紅",
+        "pos": "before"
+      },
+      {
+        "char": "綠",
+        "pos": "before"
+      },
+      {
+        "char": "葉",
+        "pos": "after"
+      },
+      {
+        "char": "壺",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "葉",
+    "zhuyin": "ㄧㄝˋ",
+    "searchWord": "葉綠",
+    "surrounding": [
+      {
+        "char": "茶",
+        "pos": "before"
+      },
+      {
+        "char": "落",
+        "pos": "before"
+      },
+      {
+        "char": "片",
+        "pos": "after"
+      },
+      {
+        "char": "綠",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "落",
+    "zhuyin": "ㄌㄨㄛˋ",
+    "searchWord": "落幕",
+    "surrounding": [
+      {
+        "char": "降",
+        "pos": "before"
+      },
+      {
+        "char": "下",
+        "pos": "before"
+      },
+      {
+        "char": "地",
+        "pos": "after"
+      },
+      {
+        "char": "幕",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "幕",
+    "zhuyin": "ㄇㄨˋ",
+    "searchWord": "幕僚",
+    "surrounding": [
+      {
+        "char": "落",
+        "pos": "before"
+      },
+      {
+        "char": "開",
+        "pos": "before"
+      },
+      {
+        "char": "後",
+        "pos": "after"
+      },
+      {
+        "char": "僚",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "後",
+    "zhuyin": "ㄏㄡˋ",
+    "searchWord": "後代",
+    "surrounding": [
+      {
+        "char": "幕",
+        "pos": "before"
+      },
+      {
+        "char": "背",
+        "pos": "before"
+      },
+      {
+        "char": "悔",
+        "pos": "after"
+      },
+      {
+        "char": "代",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "代",
+    "zhuyin": "ㄉㄞˋ",
+    "searchWord": "代價",
+    "surrounding": [
+      {
+        "char": "後",
+        "pos": "before"
+      },
+      {
+        "char": "時",
+        "pos": "before"
+      },
+      {
+        "char": "表",
+        "pos": "after"
+      },
+      {
+        "char": "價",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "表",
+    "zhuyin": "ㄅㄧㄠˇ",
+    "searchWord": "表示",
+    "surrounding": [
+      {
+        "char": "代",
+        "pos": "before"
+      },
+      {
+        "char": "圖",
+        "pos": "before"
+      },
+      {
+        "char": "情",
+        "pos": "after"
+      },
+      {
+        "char": "示",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "示",
+    "zhuyin": "ㄕˋ",
+    "searchWord": "示弱",
+    "surrounding": [
+      {
+        "char": "表",
+        "pos": "before"
+      },
+      {
+        "char": "警",
+        "pos": "before"
+      },
+      {
+        "char": "範",
+        "pos": "after"
+      },
+      {
+        "char": "弱",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "弱",
+    "zhuyin": "ㄖㄨㄛˋ",
+    "searchWord": "弱小",
+    "surrounding": [
+      {
+        "char": "示",
+        "pos": "before"
+      },
+      {
+        "char": "懦",
+        "pos": "before"
+      },
+      {
+        "char": "點",
+        "pos": "after"
+      },
+      {
+        "char": "小",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "點",
+    "zhuyin": "ㄉㄧㄢˇ",
+    "searchWord": "點頭",
+    "surrounding": [
+      {
+        "char": "弱",
+        "pos": "before"
+      },
+      {
+        "char": "特",
+        "pos": "before"
+      },
+      {
+        "char": "心",
+        "pos": "after"
+      },
+      {
+        "char": "頭",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "特",
+    "zhuyin": "ㄊㄜˋ",
+    "searchWord": "特權",
+    "surrounding": [
+      {
+        "char": "獨",
+        "pos": "before"
+      },
+      {
+        "char": "奇",
+        "pos": "before"
+      },
+      {
+        "char": "色",
+        "pos": "after"
+      },
+      {
+        "char": "權",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "色",
+    "zhuyin": "ㄙㄜˋ",
+    "searchWord": "色調",
+    "surrounding": [
+      {
+        "char": "特",
+        "pos": "before"
+      },
+      {
+        "char": "顏",
+        "pos": "before"
+      },
+      {
+        "char": "彩",
+        "pos": "after"
+      },
+      {
+        "char": "調",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "彩",
+    "zhuyin": "ㄘㄞˇ",
+    "searchWord": "彩券",
+    "surrounding": [
+      {
+        "char": "色",
+        "pos": "before"
+      },
+      {
+        "char": "光",
+        "pos": "before"
+      },
+      {
+        "char": "虹",
+        "pos": "after"
+      },
+      {
+        "char": "券",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "虹",
+    "zhuyin": "ㄏㄨㄥˊ",
+    "searchWord": "虹膜",
+    "surrounding": [
+      {
+        "char": "彩",
+        "pos": "before"
+      },
+      {
+        "char": "霓",
+        "pos": "before"
+      },
+      {
+        "char": "吸",
+        "pos": "after"
+      },
+      {
+        "char": "膜",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "膜",
+    "zhuyin": "ㄇㄛˊ",
+    "searchWord": "膜片",
+    "surrounding": [
+      {
+        "char": "虹",
+        "pos": "before"
+      },
+      {
+        "char": "耳",
+        "pos": "before"
+      },
+      {
+        "char": "拜",
+        "pos": "after"
+      },
+      {
+        "char": "片",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "拜",
+    "zhuyin": "ㄅㄞˋ",
+    "searchWord": "拜託",
+    "surrounding": [
+      {
+        "char": "膜",
+        "pos": "before"
+      },
+      {
+        "char": "禮",
+        "pos": "before"
+      },
+      {
+        "char": "訪",
+        "pos": "after"
+      },
+      {
+        "char": "託",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "訪",
+    "zhuyin": "ㄈㄤˇ",
+    "searchWord": "訪談",
+    "surrounding": [
+      {
+        "char": "拜",
+        "pos": "before"
+      },
+      {
+        "char": "採",
+        "pos": "before"
+      },
+      {
+        "char": "問",
+        "pos": "after"
+      },
+      {
+        "char": "談",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "談",
+    "zhuyin": "ㄊㄢˊ",
+    "searchWord": "談話",
+    "surrounding": [
+      {
+        "char": "訪",
+        "pos": "before"
+      },
+      {
+        "char": "交",
+        "pos": "before"
+      },
+      {
+        "char": "判",
+        "pos": "after"
+      },
+      {
+        "char": "話",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "氣",
+    "zhuyin": "ㄑㄧˋ",
+    "searchWord": "氣味",
+    "surrounding": [
+      {
+        "char": "客",
+        "pos": "before"
+      },
+      {
+        "char": "生",
+        "pos": "before"
+      },
+      {
+        "char": "息",
+        "pos": "after"
+      },
+      {
+        "char": "味",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "生",
+    "zhuyin": "ㄕㄥ",
+    "searchWord": "生效",
+    "surrounding": [
+      {
+        "char": "發",
+        "pos": "before"
+      },
+      {
+        "char": "產",
+        "pos": "before"
+      },
+      {
+        "char": "命",
+        "pos": "after"
+      },
+      {
+        "char": "效",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "命",
+    "zhuyin": "ㄇㄧㄥˋ",
+    "searchWord": "命令",
+    "surrounding": [
+      {
+        "char": "生",
+        "pos": "before"
+      },
+      {
+        "char": "救",
+        "pos": "before"
+      },
+      {
+        "char": "運",
+        "pos": "after"
+      },
+      {
+        "char": "令",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "令",
+    "zhuyin": "ㄌㄧㄥˋ",
+    "searchWord": "令牌",
+    "surrounding": [
+      {
+        "char": "命",
+        "pos": "before"
+      },
+      {
+        "char": "禁",
+        "pos": "before"
+      },
+      {
+        "char": "人",
+        "pos": "after"
+      },
+      {
+        "char": "牌",
+        "pos": "after"
+      }
+    ]
+  }
+];

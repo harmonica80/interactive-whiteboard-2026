@@ -2208,3 +2208,42 @@ body {
   letter-spacing: 0;
 }
 
+/* 一字千金：字字珠璣 十字選字佈局 */
+.character-crossword-container {
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  grid-template-rows: repeat(3, 80px);
+  gap: 12px;
+  justify-content: center;
+  align-content: center;
+  margin: 15px auto;
+}
+
+.character-crossword-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 32px;
+  font-weight: bold;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #ccc);
+  color: var(--text-primary, #333);
+  font-family: "DFKai-SB", "BiauKai", "Kaiti", serif;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+
+.character-crossword-cell.empty {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.character-crossword-cell.surrounding {
+  background: #fdf5f5;
+  border: 2px solid rgba(220, 50, 50, 0.3);
+  color: #b32424;
+}
+
+
