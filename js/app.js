@@ -5521,8 +5521,17 @@ class App {
     const helpInfo = document.getElementById('focusHelpInfo');
     if (helpInfo) helpInfo.textContent = '';
     
+    const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (targetLabel) targetLabel.style.display = '';
+
     const grid = document.getElementById('focusGameGrid');
     if (grid) {
+      grid.style.display = 'grid';
+      grid.style.aspectRatio = '1';
+      grid.style.flexDirection = '';
+      grid.style.gap = '8px';
+      grid.style.maxWidth = '450px';
+
       const cols = Math.sqrt(this.focusGridSize);
       grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
       
@@ -5902,7 +5911,16 @@ class App {
     if (targetEl) targetEl.textContent = '記憶中...';
     if (timerEl) timerEl.textContent = '0.00';
 
+    const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (targetLabel) targetLabel.style.display = '';
+
     if (grid) {
+      grid.style.display = 'grid';
+      grid.style.aspectRatio = '1';
+      grid.style.flexDirection = '';
+      grid.style.gap = '8px';
+      grid.style.maxWidth = '450px';
+
       const cols = Math.sqrt(this.focusGridSize);
       grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
       grid.innerHTML = Array.from({ length: this.focusGridSize }, (_, i) => {
