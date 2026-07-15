@@ -1,20 +1,20 @@
 const CHARACTER_TEST_POOL = [
-  { char: '熱', zhuyin: 'ㄖㄜˋ', clue: '這部新上映的科幻電影在網路上引起了（　）烈討論。', searchWord: '熱烈' },
-  { char: '尷', zhuyin: 'ㄍㄢ', clue: '在眾人面前不小心叫錯對方的名字，場面十分（　）尬。', searchWord: '尷尬' },
-  { char: '尬', zhuyin: 'ㄍㄚˋ', clue: '他上台致詞時因為太過緊張而忘詞，現場氣氛非常尷（　）。', searchWord: '尷尬' },
-  { char: '肺', zhuyin: 'ㄈㄟˋ', clue: '這篇演講情感真摯，是他發自（　）腑的感人告白。', searchWord: '發自肺腑' },
-  { char: '冒', zhuyin: 'ㄇㄠˋ', clue: '雖然外面風雨交加，但他仍舊（　）著風雨去送溫暖。', searchWord: '冒著風雨' },
-  { char: '梁', zhuyin: 'ㄌㄧㄤˊ', clue: '我們做人做事一定要誠實守信，千萬不能做偷（　）換柱的小人。', searchWord: '偷梁換柱' },
-  { char: '鼎', zhuyin: 'ㄉㄧㄥˇ', clue: '感謝各位家長在本次運動會中（　）力相助，讓活動能圓滿成功。', searchWord: '鼎力相助' },
-  { char: '憋', zhuyin: 'ㄅㄧㄝ', clue: '看到他那滑稽逗趣的表情，大家都快要（　）不住笑了。', searchWord: '憋不住' },
-  { char: '戳', zhuyin: 'ㄔㄨㄛ', clue: '這場魔術表演漏洞百出，一（　）即破，毫無神祕感可言。', searchWord: '一戳即破' },
-  { char: '蒐', zhuyin: 'ㄙㄡ', clue: '警方在現場努力（　）集相關證據，務求在最短時間內破案。', searchWord: '蒐集證據' },
-  { char: '幕', zhuyin: 'ㄇㄨˋ', clue: '那起喧騰一時的詐騙案件背後，其實隱藏著令人震驚的（　）後黑手。', searchWord: '幕後黑手' },
-  { char: '慕', zhuyin: 'ㄇㄨˋ', clue: '這位鋼琴大師精湛的演奏技巧，吸引了無數樂迷（　）名前來聆聽。', searchWord: '慕名前來' },
-  { char: '辨', zhuyin: 'ㄅㄧㄢˋ', clue: '天色漸漸暗了下來，森林裡的視線模糊到讓人難以（　）明方向。', searchWord: '辨明方向' },
-  { char: '辯', zhuyin: 'ㄅㄧㄢˋ', clue: '他在這場學生社團辯論大賽中（　）才無礙，贏得了全場熱烈掌聲。', searchWord: '辯才無礙' },
-  { char: '磬', zhuyin: 'ㄑㄧㄥˋ', clue: '他的家境十分貧寒，屋子裡空無一物，真可以說是室如懸（　）。', searchWord: '室如懸磬' },
-  { char: '磐', zhuyin: 'ㄆㄢˊ', clue: '他們兄弟的感情堅如（　）石，任何謠言都無法將他們挑撥離間。', searchWord: '堅如磐石' }
+  { char: '熱', zhuyin: 'ㄖㄜˋ', clue: '網路上引起了（　）烈討論。', searchWord: '熱烈' },
+  { char: '尷', zhuyin: 'ㄍㄢ', clue: '叫錯名字，場面十分（　）尬。', searchWord: '尷尬' },
+  { char: '尬', zhuyin: 'ㄍㄚˋ', clue: '台上忘詞，氣氛尷（　）。', searchWord: '尷尬' },
+  { char: '肺', zhuyin: 'ㄈㄟˋ', clue: '發自（　）腑的真心話。', searchWord: '發自肺腑' },
+  { char: '冒', zhuyin: 'ㄇㄠˋ', clue: '（　）著風雨前行。', searchWord: '冒著風雨' },
+  { char: '梁', zhuyin: 'ㄌㄧㄤˊ', clue: '做人絕不能偷（　）換柱。', searchWord: '偷梁換柱' },
+  { char: '鼎', zhuyin: 'ㄉㄧㄥˇ', clue: '感謝大家（　）力相助。', searchWord: '鼎力相助' },
+  { char: '憋', zhuyin: 'ㄅㄧㄝ', clue: '快要（　）不住笑了。', searchWord: '憋不住' },
+  { char: '戳', zhuyin: 'ㄔㄨㄛ', clue: '漏洞百出，一（　）即破。', searchWord: '一戳即破' },
+  { char: '蒐', zhuyin: 'ㄙㄡ', clue: '努力（　）集相關證據。', searchWord: '蒐集證據' },
+  { char: '幕', zhuyin: 'ㄇㄨˋ', clue: '案件背後隱藏著（　）後黑手。', searchWord: '幕後黑手' },
+  { char: '慕', zhuyin: 'ㄇㄨˋ', clue: '吸引無數樂迷（　）名前來。', searchWord: '慕名前來' },
+  { char: '辨', zhuyin: 'ㄅㄧㄢˋ', clue: '視線模糊，難以（　）明方向。', searchWord: '辨明方向' },
+  { char: '辯', zhuyin: 'ㄅㄧㄢˋ', clue: '他在辯論大賽中（　）才無礙。', searchWord: '辯才無礙' },
+  { char: '磬', zhuyin: 'ㄑㄧㄥˋ', clue: '家境貧寒，真可說是室如懸（　）。', searchWord: '室如懸磬' },
+  { char: '磐', zhuyin: 'ㄆㄢˊ', clue: '感情堅如（　）石，不受挑撥。', searchWord: '堅如磐石' }
 ];
 
 // 主程式
