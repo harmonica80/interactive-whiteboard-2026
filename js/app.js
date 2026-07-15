@@ -5484,6 +5484,10 @@ class App {
   }
 
   startLocalPlay(game) {
+    // 每局開始時重置求救提示與懲罰秒數
+    this.focusHelpPenaltySeconds = 0;
+    this.focusHelpCount = 0;
+
     // OpenCode 修改：避免 Firebase results 更新時重置正在作答的本地遊戲畫面
     const localGameKey = [
       game.countdownStartTime,
@@ -5512,9 +5516,6 @@ class App {
 
     this.focusCurrentExpected = 1;
     this.focusGridSize = game.gridSize || 36;
-    // OpenCode 修改：每局開始時重置求救提示與懲罰秒數
-    this.focusHelpPenaltySeconds = 0;
-    this.focusHelpCount = 0;
     const helpBtn = document.getElementById('focusHelpBtn');
     if (helpBtn) helpBtn.style.display = 'inline-block';
     const helpInfo = document.getElementById('focusHelpInfo');
@@ -6535,6 +6536,7 @@ class App {
         return `<span style="color: ${color}; font-weight: bold; font-size: 15px; margin: 0 4px; padding: 2px 6px; border: 1px solid ${color}; border-radius: 4px; background: #fff8f8; font-family: 'DFKai-SB', serif;">${this.escapeHtml(ans)}</span>`;
       }).join('');
       
+      const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次）` : '';
       return `
         <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 8px; box-sizing: border-box;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -6542,7 +6544,7 @@ class App {
               <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">${this.escapeHtml(res.name)}</span>
               ${statusBadge}
             </div>
-            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">⏱️ ${res.timeSpent.toFixed(2)} 秒</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">⏱️ ${res.timeSpent.toFixed(2)} 秒${helpNote}</span>
           </div>
           
           <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
@@ -6583,13 +6585,15 @@ class App {
         color = '#dc3545';
       }
       
+      const helpNote = res.helpCount ? `，提示 ${res.helpCount} 次` : '';
+      
       return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; margin-bottom: 8px;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">#${index + 1}</span>
             <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
           </div>
-          <span style="color: ${color}; font-weight: bold; font-size: 14px;">${statusIcon} (${res.timeSpent.toFixed(2)} 秒)</span>
+          <span style="color: ${color}; font-weight: bold; font-size: 14px;">${statusIcon} (${res.timeSpent.toFixed(2)} 秒${helpNote})</span>
         </div>
       `;
     }).join('');
