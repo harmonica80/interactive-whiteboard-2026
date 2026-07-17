@@ -7226,22 +7226,21 @@ class App {
     ];
     const pc = pointerColors[theme] || pointerColors[0];
 
-    // 指針位置：從 Canvas 右邊，尖端深入轉盤約 18px
-    const pTipX = size - 2;          // 尖端 X（右側）
-    const pTipY = center;            // 尖端 Y（垂直中心）
-    const pLen = 44;                  // 指針長度
-    const pHalf = 22;                 // 指針半寬
+    // 指針位置：底部在 Canvas 右側，尖端朝左插入轉盤
+    const pBaseX = size - 2;        // 底部 X（右側，遠離轉盤）
+    const pTipX  = size - 2 - pLen; // 尖端 X（左側，朝向轉盤，深入 pLen）
+    const pTipY  = center;
 
     ctx.beginPath();
-    ctx.moveTo(pTipX - pLen, pTipY - pHalf); // 左上角
-    ctx.lineTo(pTipX,         pTipY);         // 尖端（右）
-    ctx.lineTo(pTipX - pLen, pTipY + pHalf); // 左下角
+    ctx.moveTo(pBaseX, pTipY - pHalf); // 右上角（底部）
+    ctx.lineTo(pTipX,  pTipY);          // 尖端（左，指向轉盤）
+    ctx.lineTo(pBaseX, pTipY + pHalf); // 右下角（底部）
     ctx.closePath();
 
-    // 指針漸層填色
-    const pGrad = ctx.createLinearGradient(pTipX - pLen, pTipY, pTipX, pTipY);
-    pGrad.addColorStop(0, pc.stroke);
-    pGrad.addColorStop(1, pc.fill);
+    // 指針漸層：尖端到底部
+    const pGrad = ctx.createLinearGradient(pTipX, pTipY, pBaseX, pTipY);
+    pGrad.addColorStop(0, pc.fill);   // 尖端顏色
+    pGrad.addColorStop(1, pc.stroke); // 底部顏色
     ctx.fillStyle = pGrad;
     ctx.fill();
     ctx.lineWidth = 2.5;
@@ -7250,8 +7249,8 @@ class App {
 
     // 指針金屬高光
     ctx.beginPath();
-    ctx.moveTo(pTipX - pLen + 4, pTipY - pHalf * 0.55);
-    ctx.lineTo(pTipX - 8,         pTipY - 3);
+    ctx.moveTo(pBaseX - 4, pTipY - pHalf * 0.55);
+    ctx.lineTo(pTipX + 8,  pTipY - 3);
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(255,255,255,0.55)';
     ctx.stroke();
