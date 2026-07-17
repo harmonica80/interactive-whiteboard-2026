@@ -7107,20 +7107,22 @@ class App {
     
     const arcSize = (2 * Math.PI) / this.wheelNames.length;
     
-    // 6 種色系主題
+    // 7 種色系主題（依圖片色盤）
     const colorThemes = [
-      // 0 彩虹繽紛 (預設)
-      ['#3498db','#e74c3c','#2ecc71','#f1c40f','#9b59b6','#1abc9c','#e67e22','#e84393','#0984e3','#d63031','#20bf6b','#f7b731','#8854d0','#079992','#fa8231','#eb3b5a'],
-      // 1 經典四色 (Classic)
-      ['#2563eb','#dc2626','#ca8a04','#16a34a','#2563eb','#dc2626','#ca8a04','#16a34a','#2563eb','#dc2626','#ca8a04','#16a34a','#2563eb','#dc2626','#ca8a04','#16a34a'],
-      // 2 棉花糖 (Cotton Candy)
-      ['#a5b4fc','#fbcfe8','#bbf7d0','#fef08a','#c4b5fd','#fde68a','#a7f3d0','#fca5a5','#93c5fd','#f9a8d4','#86efac','#fcd34d','#c084fc','#f0abfc','#6ee7b7','#fda4af'],
-      // 3 魔法森林 (Enchanted Forest)
-      ['#6d28d9','#0f766e','#065f46','#7c3aed','#0e7490','#14532d','#4c1d95','#134e4a','#5b21b6','#047857','#1e1b4b','#064e3b','#3b0764','#022c22','#312e81','#042f2e'],
-      // 4 馬卡龍 (Macaron)
-      ['#67e8f9','#fde68a','#a5b4fc','#fbcfe8','#6ee7b7','#fcd34d','#c4b5fd','#fca5a5','#5eead4','#fef08a','#ddd6fe','#fecaca','#99f6e4','#fef3c7','#ede9fe','#fee2e2'],
-      // 5 遊樂場 (Playground)
-      ['#2563eb','#16a34a','#ea580c','#dc2626','#7c3aed','#0891b2','#ca8a04','#db2777','#1d4ed8','#15803d','#c2410c','#b91c1c','#6d28d9','#0e7490','#a16207','#be185d'],
+      // 0 馬卡龍 (Macaron)
+      ['#a7f3d0','#fde68a','#fef3c7','#c4b5fd','#bbf7d0','#fca5a5','#a5f3fc','#f9a8d4','#d9f99d','#ddd6fe','#fed7aa','#bfdbfe','#fecdd3','#e9d5ff','#99f6e4','#fef08a'],
+      // 1 遊樂場 (Playground)
+      ['#2563eb','#f97316','#f59e0b','#ef4444','#7c3aed','#0891b2','#16a34a','#db2777','#1d4ed8','#ea580c','#d97706','#dc2626','#6d28d9','#0e7490','#15803d','#be185d'],
+      // 2 冰巗 (Ice & Slate)
+      ['#0284c7','#0ea5e9','#38bdf8','#7dd3fc','#94a3b8','#64748b','#0369a1','#0c4a6e','#475569','#334155','#1e40af','#1d4ed8','#0e7490','#155e75','#1e3a5f','#0f3460'],
+      // 3 月光 (Moon)
+      ['#18181b','#3f3f46','#52525b','#71717a','#a1a1aa','#d4d4d8','#27272a','#404040','#525252','#737373','#a3a3a3','#d4d4d4','#1c1917','#292524','#44403c','#78716c'],
+      // 4 現代沉穩 (Modern Muted)
+      ['#0d9488','#14b8a6','#2dd4bf','#f0fdfa','#fce7f3','#f9a8d4','#0f766e','#0891b2','#a7f3d0','#fda4af','#fb7185','#e0f2fe','#99f6e4','#fecdd3','#67e8f9','#f472b6'],
+      // 5 棉花糖 (Cotton Candy)
+      ['#f9a8d4','#f0abfc','#c4b5fd','#93c5fd','#6ee7b7','#fca5a5','#f472b6','#e879f9','#a78bfa','#60a5fa','#34d399','#fb7185','#e91e8c','#d946ef','#8b5cf6','#3b82f6'],
+      // 6 薄荷檜檾 (Mint Lemonade)
+      ['#166534','#15803d','#16a34a','#4ade80','#86efac','#d9f99d','#a3e635','#facc15','#eab308','#ca8a04','#4ade80','#86efac','#bef264','#fef08a','#22c55e','#fde047'],
     ];
     const colors = colorThemes[this.wheelColorTheme || 0] || colorThemes[0];
     
@@ -7146,18 +7148,18 @@ class App {
       const name = this.wheelNames[i];
       const displayName = name.length > 12 ? name.substring(0, 11) + '…' : name;
       
-      // 可用弧寬（扇形中段的弦長，距中心 60% 半徑處）
-      const textRadiusMid = radius * 0.62;
+      // 文字繪製在扇形外段（距中心 66% 半徑），視覺上更靠近邂源
+      const textRadiusMid = radius * 0.66;
       const arcChord = 2 * textRadiusMid * Math.sin(arcSize / 2);
       
-      // 依字元數與弧寬估算字體大小，最大 28px，最小 10px
+      // 依字元數與弧寬估算字體大小，最大 36px，最小 11px
       const charsCount = displayName.length;
-      let fontSize = Math.floor(Math.min(arcChord / charsCount * 1.6, (radius - 60) / 5.5, 28));
-      fontSize = Math.max(fontSize, 10);
+      let fontSize = Math.floor(Math.min(arcChord / charsCount * 2.2, (radius - 55) / 4.5, 36));
+      fontSize = Math.max(fontSize, 11);
       
       ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = 'rgba(0,0,0,0.35)';
-      ctx.shadowBlur = 3;
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = 4;
       ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
