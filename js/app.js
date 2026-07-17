@@ -5828,18 +5828,48 @@ class App {
     updateTimer();
     this.buzzTimerInterval = setInterval(updateTimer, 30);
 
+    let currentX = Math.floor((buzzArea?.clientWidth || 300) / 2 - (buzzCircle?.clientWidth || 140) / 2);
+    let currentY = Math.floor((buzzArea?.clientHeight || 350) / 2 - (buzzCircle?.clientHeight || 140) / 2);
+    if (isNaN(currentX) || currentX < 0) currentX = 0;
+    if (isNaN(currentY) || currentY < 0) currentY = 0;
+    let stepCount = 0;
+
     const randomizePosition = () => {
       if (!buzzArea || !buzzCircle) return;
-      const maxX = buzzArea.clientWidth - buzzCircle.clientWidth;
-      const maxY = buzzArea.clientHeight - buzzCircle.clientHeight;
-      const randomX = Math.floor(Math.random() * maxX);
-      const randomY = Math.floor(Math.random() * maxY);
+      
+      const maxX = Math.max(1, buzzArea.clientWidth - buzzCircle.clientWidth);
+      const maxY = Math.max(1, buzzArea.clientHeight - buzzCircle.clientHeight);
+      const maxPossibleDist = Math.sqrt(maxX * maxX + maxY * maxY);
+      
+      stepCount++;
+      // 每次距離加大，初始 40px，每步加 15px，但不超過最大可能距離的 85%
+      const targetMinDist = Math.min(maxPossibleDist * 0.85, 40 + stepCount * 15);
+      
+      let randomX = currentX;
+      let randomY = currentY;
+      let attempts = 0;
+      
+      while (attempts < 50) {
+        const testX = Math.floor(Math.random() * maxX);
+        const testY = Math.floor(Math.random() * maxY);
+        const dist = Math.sqrt(Math.pow(testX - currentX, 2) + Math.pow(testY - currentY, 2));
+        
+        if (dist >= targetMinDist || attempts === 49) {
+          randomX = testX;
+          randomY = testY;
+          break;
+        }
+        attempts++;
+      }
+      
+      currentX = randomX;
+      currentY = randomY;
       buzzCircle.style.left = randomX + 'px';
       buzzCircle.style.top = randomY + 'px';
     };
 
     randomizePosition();
-    this.buzzCircleInterval = setInterval(randomizePosition, 3000);
+    this.buzzCircleInterval = setInterval(randomizePosition, 300);
   }
 
   buzzIn() {
