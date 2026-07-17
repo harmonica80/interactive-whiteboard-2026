@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=127">
+  <link rel="stylesheet" href="css/style.css?v=128">
 </head>
 <body>
   <div class="container">
@@ -41,6 +41,7 @@
       <button class="menu-tab" data-target="panel-images">🖼️ 圖片分享</button>
       <button class="menu-tab" data-target="panel-videos">🎥 影片分享</button>
       <button class="menu-tab" data-target="panel-quiz">📝 選擇題測驗</button>
+      <button class="menu-tab" data-target="panel-lucky-wheel">🎡 抽人轉盤</button>
       <button class="menu-tab" data-target="panel-focus-game" style="display: none;">🧠 專注力遊戲</button>
       <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
     </div>
@@ -135,6 +136,63 @@
           <div id="quizStatus"></div>
           <div id="answerOptions" style="display: none;"></div>
           <div id="quizResults" class="quiz-results"></div>
+        </div>
+      </div>
+
+      <!-- 抽人轉盤 -->
+      <div class="panel-card" id="panel-lucky-wheel">
+        <div class="panel-header">
+          <span class="icon">🎡</span>
+          <span class="title">抽人轉盤</span>
+          <span class="collapse-icon">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="lucky-wheel-container">
+            <!-- 左側轉盤區 -->
+            <div class="wheel-display-area">
+              <div style="position: relative; display: inline-block;">
+                <canvas id="wheelCanvas" width="450" height="450" style="max-width: 100%; height: auto; background: transparent; cursor: pointer;"></canvas>
+                <div class="wheel-pointer"></div>
+              </div>
+              <div id="wheelWinnerDisplay" class="wheel-winner-banner" style="display: none;">
+                恭喜抽中：<span id="lblWheelWinner" class="winner-name">-</span>
+              </div>
+            </div>
+            
+            <!-- 右側設定區 (僅教師/後台可見) -->
+            <div class="wheel-control-panel" id="wheelControlPanel" style="display: none;">
+              <div class="control-header">
+                <h3>🎡 轉盤設定 (教師專屬)</h3>
+                <span class="badge" id="lblWheelCount">0 人</span>
+              </div>
+              
+              <div class="control-group">
+                <label for="wheelNamesInput" style="font-weight: bold; font-size: 14px;">名單列表 (每行一人)：</label>
+                <textarea id="wheelNamesInput" rows="10" placeholder="請在此輸入名單，每行名字一人...&#10;例：&#10;余書賢 01&#10;林泓邑 02&#10;林恩 03" style="width: 100%; box-sizing: border-box; resize: vertical; margin-top: 6px; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: monospace;"></textarea>
+              </div>
+              
+              <div class="control-actions" style="display: flex; gap: 8px; margin-top: 8px;">
+                <button class="btn btn-secondary" onclick="window.app.shuffleWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔀 隨機打亂</button>
+                <button class="btn btn-secondary" onclick="window.app.sortWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔤 排序名單</button>
+              </div>
+              
+              <div class="control-options" style="margin: 14px 0;">
+                <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; font-size: 13px; color: var(--text-secondary);">
+                  <input type="checkbox" id="chkRemoveWinner" onchange="window.app.toggleRemoveWinner(this.checked)" style="width: 16px; height: 16px;">
+                  <span>抽中後，自動從名單移除</span>
+                </label>
+              </div>
+              
+              <button class="btn btn-primary" id="btnSpinWheel" onclick="window.app.triggerWheelSpin()" style="width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; font-weight: bold; border-radius: 8px;">🔥 開始旋轉 (或按 Ctrl+Enter)</button>
+              
+              <div class="results-history" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary);">🏆 本次抽中記錄：</h4>
+                <ul id="wheelHistoryList" style="list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto;">
+                  <li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -722,10 +780,10 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=127"></script>
-  <script src="js/character_pool.js?v=127"></script>
-  <script src="js/quiz.js?v=127"></script>
-  <script src="js/app.js?v=127"></script>
+  <script src="js/firebase-config.js?v=128"></script>
+  <script src="js/character_pool.js?v=128"></script>
+  <script src="js/quiz.js?v=128"></script>
+  <script src="js/app.js?v=128"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

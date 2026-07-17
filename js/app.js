@@ -111,6 +111,7 @@ class App {
     this.initTimerDragging();
     this.loadYoutubeAPI();
     this.initImageCanvasDrawing();
+    this.initLuckyWheel();
     
     // Global user interaction listener to resume audio if blocked by autoplay
     const resumeAudioOnGesture = () => {
@@ -177,6 +178,11 @@ class App {
 
     if (targetId === 'panel-focus-game') {
       this.handleFocusGameSync(this.focusGame);
+    }
+    
+    if (targetId === 'panel-lucky-wheel') {
+      this.updateWheelControlPanelVisibility();
+      this.drawWheelLocal();
     }
     
     if (targetId === 'panel-admin') {
@@ -5869,7 +5875,7 @@ class App {
     };
 
     randomizePosition();
-    this.buzzCircleInterval = setInterval(randomizePosition, 300);
+    this.buzzCircleInterval = setInterval(randomizePosition, 600);
   }
 
   buzzIn() {
@@ -6794,6 +6800,427 @@ class App {
     loop();
   }
 
+  // ===== 抽人轉盤功能 =====
+  initLuckyWheel() {
+    this.wheelNames = [];
+    this.wheelAngle = 0;
+    this.wheelSpinning = false;
+    this.wheelRemoveWinner = false;
+    this.soundEffects = new WheelSoundEffects();
+    
+    // 監聽轉盤名單
+    db.ref('quiz/luckyWheel/names').on('value', (snapshot) => {
+      const val = snapshot.val();
+      const defaultNamesStr = `余書賢 01\n林泓邑 02\n林恩 03\n邱翊睿 04\n徐家揚 05\n陳民浩 06\n陳威儒 07\n詹詠焜 08\n謝學和 10\n林品育 11\n高瑋辰 12\n林子婧 13\n林振嘉 14\n許准安 15`;
+      const namesStr = (val !== null) ? val : defaultNamesStr;
+      
+      this.wheelNames = namesStr.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+      
+      const txt = document.getElementById('wheelNamesInput');
+      if (txt && this.isAdmin) {
+        if (document.activeElement !== txt) {
+          txt.value = namesStr;
+        }
+      }
+      
+      const lblCount = document.getElementById('lblWheelCount');
+      if (lblCount) {
+        lblCount.textContent = `${this.wheelNames.length} 人`;
+      }
+      
+      if (!this.wheelSpinning) {
+        this.wheelAngle = 0;
+        this.drawWheelLocal();
+      }
+    });
+    
+    // 監聽是否移除已抽中項目
+    db.ref('quiz/luckyWheel/removeWinner').on('value', (snapshot) => {
+      this.wheelRemoveWinner = snapshot.val() === true;
+      const chk = document.getElementById('chkRemoveWinner');
+      if (chk) chk.checked = this.wheelRemoveWinner;
+    });
+    
+    // 監聽旋轉事件
+    db.ref('quiz/luckyWheel/spinEvent').on('value', (snapshot) => {
+      const event = snapshot.val();
+      if (!event) return;
+      if (event.timestamp && Date.now() - event.timestamp < 10000) {
+        this.startWheelAnimation(event);
+      }
+    });
+    
+    // 綁定 Canvas 點選旋轉
+    const canvas = document.getElementById('wheelCanvas');
+    if (canvas) {
+      canvas.addEventListener('click', () => {
+        this.triggerWheelSpin();
+      });
+    }
+  }
+
+  updateWheelControlPanelVisibility() {
+    const ctrlPanel = document.getElementById('wheelControlPanel');
+    if (ctrlPanel) {
+      ctrlPanel.style.display = this.isAdmin ? 'block' : 'none';
+    }
+    
+    const txt = document.getElementById('wheelNamesInput');
+    if (txt && this.isAdmin && this.wheelNames) {
+      txt.value = this.wheelNames.join('\n');
+    }
+  }
+
+  shuffleWheelNames() {
+    if (!this.isAdmin) return;
+    const names = [...this.wheelNames];
+    for (let i = names.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [names[i], names[j]] = [names[j], names[i]];
+    }
+    db.ref('quiz/luckyWheel/names').set(names.join('\n'));
+    this.showNotification('成功', '名單已隨機打亂！');
+  }
+  
+  sortWheelNames() {
+    if (!this.isAdmin) return;
+    const names = [...this.wheelNames].sort((a, b) => a.localeCompare(b, 'zh-TW'));
+    db.ref('quiz/luckyWheel/names').set(names.join('\n'));
+    this.showNotification('成功', '名單已完成排序！');
+  }
+
+  toggleRemoveWinner(checked) {
+    if (this.isAdmin) {
+      db.ref('quiz/luckyWheel/removeWinner').set(checked);
+    }
+  }
+
+  triggerWheelSpin() {
+    if (!this.isAdmin) return;
+    if (this.wheelSpinning) return;
+    if (this.wheelNames.length === 0) {
+      this.showNotification('提示', '名單列表是空的！');
+      return;
+    }
+    
+    // 啟動或恢復 AudioContext，避開瀏覽器自動播放限制
+    if (this.soundEffects) {
+      this.soundEffects.init();
+      if (this.soundEffects.ctx && this.soundEffects.ctx.state === 'suspended') {
+        this.soundEffects.ctx.resume();
+      }
+    }
+    
+    const targetIndex = Math.floor(Math.random() * this.wheelNames.length);
+    const arcSize = (2 * Math.PI) / this.wheelNames.length;
+    
+    // 旋轉 8 圈以上，並將 winning index 指向角度 0 (對應右邊 pointer)
+    const targetEndAngle = 8 * 2 * Math.PI + (2 * Math.PI - (targetIndex + 0.5) * arcSize);
+    
+    db.ref('quiz/luckyWheel/spinEvent').set({
+      targetIndex: targetIndex,
+      startAngle: this.wheelAngle % (2 * Math.PI),
+      endAngle: targetEndAngle,
+      duration: 5000,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+  }
+
+  startWheelAnimation(event) {
+    if (this.wheelSpinning) return;
+    this.wheelSpinning = true;
+    
+    // 隱藏之前的得獎 Banner
+    const banner = document.getElementById('wheelWinnerDisplay');
+    if (banner) banner.style.display = 'none';
+    
+    const startTime = Date.now();
+    const duration = event.duration || 5000;
+    const startAngle = event.startAngle || 0;
+    const endAngle = event.endAngle || (10 * Math.PI);
+    
+    const canvas = document.getElementById('wheelCanvas');
+    if (!canvas) return;
+    
+    // 播放背景歡樂音樂與初始化
+    if (this.soundEffects) {
+      this.soundEffects.init();
+      if (this.soundEffects.ctx && this.soundEffects.ctx.state === 'suspended') {
+        this.soundEffects.ctx.resume();
+      }
+      this.soundEffects.startCheerfulMusic();
+    }
+    
+    let lastSectorIndex = -1;
+    const arcSize = (2 * Math.PI) / this.wheelNames.length;
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      
+      // 三次方減速 (Ease Out Cubic)
+      const ease = 1 - Math.pow(1 - progress, 3);
+      this.wheelAngle = startAngle + (endAngle - startAngle) * ease;
+      
+      this.drawWheelLocal();
+      
+      // 計算指針經過的扇區以播放 Tick 聲 (指標在右側 0 角度)
+      const currentSectorIndex = Math.floor(((2 * Math.PI - (this.wheelAngle % (2 * Math.PI))) % (2 * Math.PI)) / arcSize);
+      if (currentSectorIndex !== lastSectorIndex) {
+        if (this.soundEffects) {
+          this.soundEffects.playTick();
+        }
+        lastSectorIndex = currentSectorIndex;
+      }
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        this.wheelSpinning = false;
+        
+        // 停止音樂並播放獲勝號角
+        if (this.soundEffects) {
+          this.soundEffects.playWinFanfare();
+        }
+        
+        const winnerName = this.wheelNames[event.targetIndex];
+        
+        // 顯示中獎 Banner
+        if (banner) {
+          banner.style.display = 'block';
+          const lblWinner = document.getElementById('lblWheelWinner');
+          if (lblWinner) lblWinner.textContent = winnerName;
+        }
+        
+        // 寫入歷史紀錄
+        this.addWheelHistory(winnerName);
+        
+        // 如果開啟了「抽中自動移除名單」且當前是管理員，由管理員將資料回寫 Firebase
+        if (this.isAdmin && this.wheelRemoveWinner) {
+          const idx = this.wheelNames.indexOf(winnerName);
+          if (idx !== -1) {
+            this.wheelNames.splice(idx, 1);
+            db.ref('quiz/luckyWheel/names').set(this.wheelNames.join('\n'));
+          }
+        }
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  }
+
+  addWheelHistory(winnerName) {
+    const list = document.getElementById('wheelHistoryList');
+    if (!list) return;
+    
+    if (list.children.length === 1 && list.children[0].textContent.includes('尚無紀錄')) {
+      list.innerHTML = '';
+    }
+    
+    const li = document.createElement('li');
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    li.innerHTML = `
+      <span style="font-weight: bold; color: var(--text-primary);">${this.escapeHtml(winnerName)}</span>
+      <span style="color: var(--text-muted); font-size: 12px;">${time}</span>
+    `;
+    list.insertBefore(li, list.firstChild);
+  }
+
+  drawWheelLocal() {
+    const canvas = document.getElementById('wheelCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const size = canvas.width;
+    const center = size / 2;
+    const radius = center - 20;
+    
+    ctx.clearRect(0, 0, size, size);
+    
+    if (this.wheelNames.length === 0) {
+      ctx.beginPath();
+      ctx.arc(center, center, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = '#e5e5ea';
+      ctx.fill();
+      ctx.fillStyle = '#8e8e93';
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('請輸入名單', center, center);
+      return;
+    }
+    
+    const arcSize = (2 * Math.PI) / this.wheelNames.length;
+    const colors = [
+      '#3498db', '#e74c3c', '#2ecc71', '#f1c40f', 
+      '#9b59b6', '#1abc9c', '#e67e22', '#e84393',
+      '#0984e3', '#d63031', '#20bf6b', '#f7b731',
+      '#8854d0', '#079992', '#fa8231', '#eb3b5a'
+    ];
+    
+    for (let i = 0; i < this.wheelNames.length; i++) {
+      const angle = this.wheelAngle + i * arcSize;
+      
+      ctx.beginPath();
+      ctx.moveTo(center, center);
+      ctx.arc(center, center, radius, angle, angle + arcSize);
+      ctx.closePath();
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fill();
+      
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(angle + arcSize / 2);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      
+      let name = this.wheelNames[i];
+      if (name.length > 10) name = name.substring(0, 9) + '...';
+      ctx.fillText(name, radius - 20, 0);
+      ctx.restore();
+    }
+    
+    ctx.beginPath();
+    ctx.arc(center, center, 45, 0, 2 * Math.PI);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'var(--border-color)';
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(center, center, 36, 0, 2 * Math.PI);
+    ctx.fillStyle = '#ff2d55';
+    ctx.fill();
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SPIN', center, center);
+  }
+
+}
+
+// ===== 轉盤音效合成器 (Web Audio API) =====
+class WheelSoundEffects {
+  constructor() {
+    this.ctx = null;
+    this.musicInterval = null;
+  }
+  
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+  
+  playTick() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.04);
+      
+      gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+      
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.04);
+    } catch(e) {}
+  }
+  
+  startCheerfulMusic() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      this.stopMusic();
+      
+      let noteIndex = 0;
+      const melody = [523.25, 587.33, 659.25, 783.99, 880.00, 783.99, 659.25, 587.33];
+      
+      const playNote = () => {
+        try {
+          if (this.ctx.state === 'suspended') return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          
+          osc.type = 'sine';
+          const freq = melody[noteIndex % melody.length];
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(freq * 1.03, this.ctx.currentTime + 0.12);
+          
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.14);
+          
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.14);
+          
+          noteIndex++;
+        } catch(e) {}
+      };
+      
+      this.musicInterval = setInterval(playNote, 150);
+    } catch(e) {}
+  }
+  
+  stopMusic() {
+    if (this.musicInterval) {
+      clearInterval(this.musicInterval);
+      this.musicInterval = null;
+    }
+  }
+  
+  playWinFanfare() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      this.stopMusic();
+      
+      const now = this.ctx.currentTime;
+      const chords = [523.25, 659.25, 783.99, 1046.50];
+      
+      chords.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+        
+        gain.gain.setValueAtTime(0.08, now + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 1.0);
+        
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1200, now);
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 1.0);
+      });
+    } catch(e) {}
+  }
 }
 
 // 開始測驗
@@ -6882,14 +7309,17 @@ function closeNotifyModal() {
 
 function resetAll() {
   db.ref('questions').remove();
+  db.ref('quiz/questionFolders').remove();
   db.ref('quiz/current').remove();
   db.ref('quiz/answers').remove();
   db.ref('images').remove();
+  db.ref('quiz/imageFolders').remove();
   db.ref('videos').remove();
   db.ref('quiz/videoFolders').remove();
   db.ref('quiz/broadcastVideo').remove();
   db.ref('teacherShares').remove();
   db.ref('quiz/teacherShareFolders').remove();
+  db.ref('quiz/luckyWheel').remove();
   db.ref('whiteboard').remove();
   location.reload();
 }

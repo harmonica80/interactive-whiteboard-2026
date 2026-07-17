@@ -2391,4 +2391,127 @@ body {
   color: #b32424;
 }
 
+/* ===== 抽人轉盤樣式 ===== */
+.lucky-wheel-container {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+.wheel-display-area {
+  flex: 1;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* 轉盤右側指針 */
+.wheel-pointer {
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-right: 20px solid #555555;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.wheel-pointer::after {
+  content: '';
+  position: absolute;
+  right: -23px;
+  top: -12px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-right: 20px solid #ffffff;
+  z-index: 9;
+}
+
+.wheel-winner-banner {
+  margin-top: 24px;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--success-color);
+  background: rgba(76, 217, 100, 0.1);
+  padding: 12px 28px;
+  border-radius: 40px;
+  border: 2.5px solid var(--success-color);
+  box-shadow: 0 4px 15px rgba(76, 217, 100, 0.2);
+  text-align: center;
+  animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.winner-name {
+  color: #ff2d55;
+  font-size: 28px;
+  margin-left: 6px;
+  text-shadow: 0 0 10px rgba(255, 45, 85, 0.2);
+}
+
+.wheel-control-panel {
+  width: 330px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px var(--shadow-color);
+  box-sizing: border-box;
+}
+
+.wheel-control-panel h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.control-header .badge {
+  background: var(--accent-color);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.results-history ul li {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.results-history ul li:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .wheel-display-area {
+    max-width: 320px;
+  }
+  .wheel-control-panel {
+    width: 100%;
+  }
+}
+
 
