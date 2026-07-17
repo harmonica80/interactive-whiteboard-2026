@@ -7163,9 +7163,9 @@ class App {
       ctx.stroke();
     }
 
-    // ── 繪製文字（依扇形高度自適應大字體）──
-    const innerR = 52; // 中心按鈕半徑（文字起點）
-    const outerR = radius - 6; // 文字終點（靠近外緣）
+    // ── 繪製文字（靠外緣對齊，字體填滿至外側）──
+    const innerR = 56; // 中心按鈕半徑（文字不超過此處）
+    const outerR = radius - 8; // 文字最外側（靠近外緣，留 8px 邊距）
     const radialLen = outerR - innerR; // 可用的徑向長度
 
     for (let i = 0; i < this.wheelNames.length; i++) {
@@ -7179,28 +7179,26 @@ class App {
       const name = this.wheelNames[i];
       const displayName = name.length > 14 ? name.substring(0, 13) + '…' : name;
 
-      // 扇形在中段半徑的可用弧寬（弦長）
-      const midR = (innerR + outerR) / 2;
-      const arcChord = 2 * midR * Math.sin(arcSize / 2) * 0.88;
+      // 弧寬：用外緣附近（outerR * 0.9 處）計算可用弦長
+      const arcChordOuter = 2 * (outerR * 0.85) * Math.sin(arcSize / 2) * 0.92;
 
-      // 字體策略：先嘗試用弧寬/字數，再用徑向長度/字數，取較小值
-      // 乘數 3.2 → 讓每字佔更多橫向空間（針對中文字寬）
+      // 字體：由弧寬/字數 和 徑向長/字數 取小值，最大 44px，最小 11px
       let fontSize = Math.floor(Math.min(
-        arcChord / displayName.length * 3.2,   // 橫向填滿
-        radialLen / displayName.length * 1.1,  // 縱向填滿（沿半徑）
-        44                                     // 最大上限
+        arcChordOuter / displayName.length * 3.0, // 弧寬填滿
+        radialLen / displayName.length * 1.15,    // 徑向填滿
+        44
       ));
-      fontSize = Math.max(fontSize, 12);
+      fontSize = Math.max(fontSize, 11);
 
       ctx.fillStyle = textColor;
       ctx.shadowColor = textShadowColor;
       ctx.shadowBlur = 5;
       ctx.font = `bold ${fontSize}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
 
-      // 文字置中在扇形可用徑向中段
-      ctx.fillText(displayName, midR, 0);
+      // 靠外緣右對齊：文字從外緣往內生長，最後一個字緊貼外側
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(displayName, outerR, 0);
       ctx.shadowBlur = 0;
       ctx.restore();
     }
@@ -7229,47 +7227,47 @@ class App {
     ctx.textBaseline = 'middle';
     ctx.fillText('轉動', center, center);
 
-    // ── 指針箭頭（畫在 Canvas，重疊在轉盤右側）──
-    // 依主題決定指針顏色
-    const pointerColors = [
-      { fill: '#374151', stroke: '#ffffff' }, // 0 馬卡龍 — 深灰
-      { fill: '#fef9c3', stroke: '#1e3a8a' }, // 1 遊樂場 — 奶黃
-      { fill: '#f8fafc', stroke: '#0c4a6e' }, // 2 冰巖   — 白
-      { fill: '#e5e7eb', stroke: '#1c1917' }, // 3 月光   — 淺灰
-      { fill: '#1a1a1a', stroke: '#ffffff' }, // 4 現代沉穩— 深灰
-      { fill: '#1e1b4b', stroke: '#f0abfc' }, // 5 棉花糖 — 深紫
-      { fill: '#fef9c3', stroke: '#166534' }, // 6 薄荷檸檬— 奶黃
-    ];
-    const pc = pointerColors[theme] || pointerColors[0];
+    // ── 指針箭頭（Canvas 繪製，重疊在轉盤右側，尖端朝左指向轉盤）──
+    const pLen  = 52;  // 指針長度（增大以更明顯）
+    const pHalf = 28;  // 指針半寬
 
-    // 指針位置：底部在 Canvas 右側，尖端朝左插入轉盤
-    const pBaseX = size - 2;        // 底部 X（右側，遠離轉盤）
-    const pTipX  = size - 2 - pLen; // 尖端 X（左側，朝向轉盤，深入 pLen）
-    const pTipY  = center;
+    // 底部在右側邊緣，尖端插入轉盤
+    const pBaseX = size;               // 底部 X（右側）
+    const pTipX  = size - pLen;        // 尖端 X（朝左，插入轉盤 pLen px）
+    const pTipY  = center;             // 垂直中心
 
+    // 依主題決定指針顏色（使用高對比、醒目的顏色）
+    const pointerFills   = ['#e11d48','#f59e0b','#e11d48','#9ca3af','#e11d48','#e11d48','#16a34a'];
+    const pointerStrokes = ['#ffffff','#1e3a8a','#ffffff','#111827','#ffffff','#ffffff','#ffffff'];
+    const pFill   = pointerFills[theme]   || '#e11d48';
+    const pStroke = pointerStrokes[theme] || '#ffffff';
+
+    // 繪製三角形（◄）
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = -3;
+    ctx.shadowOffsetY = 0;
     ctx.beginPath();
-    ctx.moveTo(pBaseX, pTipY - pHalf); // 右上角（底部）
-    ctx.lineTo(pTipX,  pTipY);          // 尖端（左，指向轉盤）
-    ctx.lineTo(pBaseX, pTipY + pHalf); // 右下角（底部）
+    ctx.moveTo(pBaseX, pTipY - pHalf); // 右上
+    ctx.lineTo(pTipX,  pTipY);          // 尖端（左）
+    ctx.lineTo(pBaseX, pTipY + pHalf); // 右下
     ctx.closePath();
-
-    // 指針漸層：尖端到底部
-    const pGrad = ctx.createLinearGradient(pTipX, pTipY, pBaseX, pTipY);
-    pGrad.addColorStop(0, pc.fill);   // 尖端顏色
-    pGrad.addColorStop(1, pc.stroke); // 底部顏色
-    ctx.fillStyle = pGrad;
+    ctx.fillStyle = pFill;
     ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = pc.stroke;
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = pStroke;
     ctx.stroke();
 
-    // 指針金屬高光
+    // 高光線（增加立體感）
     ctx.beginPath();
-    ctx.moveTo(pBaseX - 4, pTipY - pHalf * 0.55);
-    ctx.lineTo(pTipX + 8,  pTipY - 3);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.moveTo(pBaseX - 5, pTipY - pHalf * 0.6);
+    ctx.lineTo(pTipX + 10, pTipY - 4);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
     ctx.stroke();
+    ctx.restore();
   }
 
 }
