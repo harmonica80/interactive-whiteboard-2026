@@ -178,16 +178,40 @@ class App {
     if (targetId === 'panel-focus-game') {
       this.handleFocusGameSync(this.focusGame);
     }
+    
+    if (targetId === 'panel-admin') {
+      const focusOverlay = document.getElementById('focusGameOverlay');
+      if (focusOverlay) {
+        focusOverlay.style.display = 'none';
+        focusOverlay.classList.remove('active');
+      }
+      const buzzOverlay = document.getElementById('buzzGameOverlay');
+      if (buzzOverlay) {
+        buzzOverlay.style.display = 'none';
+        buzzOverlay.classList.remove('active');
+      }
+    } else {
+      if (this.focusGame) this.handleFocusGameSync(this.focusGame);
+      if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
+    }
   }
 
   openAdminPasswordModal() {
     document.getElementById('adminPasswordInput').value = '';
     document.getElementById('adminPasswordModal').classList.add('active');
     setTimeout(() => document.getElementById('adminPasswordInput').focus(), 300);
+    
+    // 立即隱藏遊戲覆蓋層，讓使用者能正常輸入密碼
+    if (this.focusGame) this.handleFocusGameSync(this.focusGame);
+    if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
   }
   
   closeAdminPasswordModal() {
     document.getElementById('adminPasswordModal').classList.remove('active');
+    
+    // 關閉後台密碼對話框時重新觸發遊戲同步以確認是否需開啟遊戲覆蓋層
+    if (this.focusGame) this.handleFocusGameSync(this.focusGame);
+    if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
   }
 
   showConfirmModal(icon, title, subtitle, onConfirm) {
@@ -5227,6 +5251,20 @@ class App {
   handleFocusGameSync(game) {
     this.focusGame = game;
     
+    // 如果使用者正嘗試進入或在管理後台，不論是否已登入管理員，一律不顯示覆蓋層
+    const isAccessingAdmin = (this.activeTabId === 'panel-admin') || 
+                             (document.getElementById('adminPasswordModal') && 
+                              document.getElementById('adminPasswordModal').classList.contains('active'));
+    if (isAccessingAdmin) {
+      const gameOverlay = document.getElementById('focusGameOverlay');
+      if (gameOverlay) {
+        gameOverlay.style.display = 'none';
+        gameOverlay.classList.remove('active');
+      }
+      this.stopFocusTimers();
+      return;
+    }
+    
     const studentLobby = document.getElementById('studentGameLobby');
     const gameOverlay = document.getElementById('focusGameOverlay');
     const teacherCloseBtn = document.getElementById('focusGameTeacherCloseBtn');
@@ -5578,6 +5616,20 @@ class App {
 
   handleBuzzGameSync(game) {
     this.buzzGame = game;
+    
+    // 如果使用者正嘗試進入或在管理後台，不論是否已登入管理員，一律不顯示覆蓋層
+    const isAccessingAdmin = (this.activeTabId === 'panel-admin') || 
+                             (document.getElementById('adminPasswordModal') && 
+                              document.getElementById('adminPasswordModal').classList.contains('active'));
+    if (isAccessingAdmin) {
+      const overlay = document.getElementById('buzzGameOverlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+        overlay.classList.remove('active');
+      }
+      this.stopBuzzTimers();
+      return;
+    }
     
     const overlay = document.getElementById('buzzGameOverlay');
     const teacherCloseBtn = document.getElementById('buzzGameTeacherCloseBtn');

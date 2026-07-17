@@ -131,6 +131,20 @@ body {
   gap: 8px;
 }
 
+/* 電腦與行動裝置按鈕可見度控制 */
+.desktop-only {
+  display: inline-block !important;
+}
+.mobile-only {
+  display: none !important;
+}
+
+.header-title-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* 管理後台按鈕與教師分享頂部按鈕 */
 .admin-top-btn,
 .teacher-share-top-btn {
@@ -1054,6 +1068,19 @@ body {
   
   .header {
     text-align: center;
+  }
+  
+  .header-title-container {
+    display: block !important;
+    text-align: center;
+  }
+  
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .mobile-only {
+    display: inline-block !important;
   }
   
   .header-title {
