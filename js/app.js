@@ -6812,8 +6812,8 @@ class App {
     // 監聽轉盤名單 (教師每次輸入後才同步)
     db.ref('quiz/luckyWheel/names').on('value', (snapshot) => {
       const val = snapshot.val();
-      const defaultNamesStr = `陳大文 01\n林小美 02\n王志豪 03\n張雅婷 04\n李建宏 05\n劉佳琪 06\n吳俊廷 07\n黃詩涵 08\n許書豪 09\n鄭怡君 10`;
-      const namesStr = (val !== null) ? val : defaultNamesStr;
+      // 預設空白，等老師自行匯入
+      const namesStr = (val !== null && val !== '') ? val : '';
       
       this.wheelNames = namesStr.split('\n').map(n => n.trim()).filter(n => n.length > 0);
       
@@ -6843,6 +6843,15 @@ class App {
       if (chk) chk.checked = this.wheelRemoveWinner;
     });
     
+    // 監聽色系樣式
+    db.ref('quiz/luckyWheel/colorTheme').on('value', (snapshot) => {
+      const v = snapshot.val();
+      this.wheelColorTheme = (v !== null) ? v : 0;
+      const sel = document.getElementById('selWheelColor');
+      if (sel) sel.value = this.wheelColorTheme;
+      if (!this.wheelSpinning) this.drawWheelLocal();
+    });
+
     // 監聽音效樣式
     db.ref('quiz/luckyWheel/soundStyle').on('value', (snapshot) => {
       const v = snapshot.val();
@@ -6931,6 +6940,13 @@ class App {
       }
       this.soundEffects.playTick();
     }
+  }
+
+  changeWheelColor(themeIndex) {
+    if (!this.isAdmin) return;
+    this.wheelColorTheme = themeIndex;
+    db.ref('quiz/luckyWheel/colorTheme').set(themeIndex);
+    if (!this.wheelSpinning) this.drawWheelLocal();
   }
 
   triggerWheelSpin() {
@@ -7090,12 +7106,23 @@ class App {
     }
     
     const arcSize = (2 * Math.PI) / this.wheelNames.length;
-    const colors = [
-      '#3498db', '#e74c3c', '#2ecc71', '#f1c40f', 
-      '#9b59b6', '#1abc9c', '#e67e22', '#e84393',
-      '#0984e3', '#d63031', '#20bf6b', '#f7b731',
-      '#8854d0', '#079992', '#fa8231', '#eb3b5a'
+    
+    // 6 種色系主題
+    const colorThemes = [
+      // 0 彩虹繽紛 (預設)
+      ['#3498db','#e74c3c','#2ecc71','#f1c40f','#9b59b6','#1abc9c','#e67e22','#e84393','#0984e3','#d63031','#20bf6b','#f7b731','#8854d0','#079992','#fa8231','#eb3b5a'],
+      // 1 經典四色 (Classic)
+      ['#2563eb','#dc2626','#ca8a04','#16a34a','#2563eb','#dc2626','#ca8a04','#16a34a','#2563eb','#dc2626','#ca8a04','#16a34a','#2563eb','#dc2626','#ca8a04','#16a34a'],
+      // 2 棉花糖 (Cotton Candy)
+      ['#a5b4fc','#fbcfe8','#bbf7d0','#fef08a','#c4b5fd','#fde68a','#a7f3d0','#fca5a5','#93c5fd','#f9a8d4','#86efac','#fcd34d','#c084fc','#f0abfc','#6ee7b7','#fda4af'],
+      // 3 魔法森林 (Enchanted Forest)
+      ['#6d28d9','#0f766e','#065f46','#7c3aed','#0e7490','#14532d','#4c1d95','#134e4a','#5b21b6','#047857','#1e1b4b','#064e3b','#3b0764','#022c22','#312e81','#042f2e'],
+      // 4 馬卡龍 (Macaron)
+      ['#67e8f9','#fde68a','#a5b4fc','#fbcfe8','#6ee7b7','#fcd34d','#c4b5fd','#fca5a5','#5eead4','#fef08a','#ddd6fe','#fecaca','#99f6e4','#fef3c7','#ede9fe','#fee2e2'],
+      // 5 遊樂場 (Playground)
+      ['#2563eb','#16a34a','#ea580c','#dc2626','#7c3aed','#0891b2','#ca8a04','#db2777','#1d4ed8','#15803d','#c2410c','#b91c1c','#6d28d9','#0e7490','#a16207','#be185d'],
     ];
+    const colors = colorThemes[this.wheelColorTheme || 0] || colorThemes[0];
     
     for (let i = 0; i < this.wheelNames.length; i++) {
       const angle = this.wheelAngle + i * arcSize;
@@ -7107,7 +7134,7 @@ class App {
       ctx.fillStyle = colors[i % colors.length];
       ctx.fill();
       
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
       
@@ -7115,14 +7142,29 @@ class App {
       ctx.translate(center, center);
       ctx.rotate(angle + arcSize / 2);
       
+      // 智慧自適應字體：依扇形弧長和名字長度計算最大可用字體
+      const name = this.wheelNames[i];
+      const displayName = name.length > 12 ? name.substring(0, 11) + '…' : name;
+      
+      // 可用弧寬（扇形中段的弦長，距中心 60% 半徑處）
+      const textRadiusMid = radius * 0.62;
+      const arcChord = 2 * textRadiusMid * Math.sin(arcSize / 2);
+      
+      // 依字元數與弧寬估算字體大小，最大 28px，最小 10px
+      const charsCount = displayName.length;
+      let fontSize = Math.floor(Math.min(arcChord / charsCount * 1.6, (radius - 60) / 5.5, 28));
+      fontSize = Math.max(fontSize, 10);
+      
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.textAlign = 'right';
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur = 3;
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
-      let name = this.wheelNames[i];
-      if (name.length > 10) name = name.substring(0, 9) + '...';
-      ctx.fillText(name, radius - 20, 0);
+      // 文字繪製在扇形中段徑向中心
+      ctx.fillText(displayName, textRadiusMid, 0);
+      ctx.shadowBlur = 0;
       ctx.restore();
     }
     
