@@ -3859,22 +3859,6 @@ class App {
             <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.wow || 0}</span>
           </button>
         </div>
-        <!-- 編輯 / 刪除操作列 -->
-        <div style="display:flex; gap:6px; width:100%; justify-content:center;">
-          <button onclick="adminEditVideo('${vid.id}')" style="flex:1;background:transparent;border:1px solid var(--accent-color);border-radius:8px;color:var(--accent-color);font-size:12px;font-weight:bold;padding:4px 8px;cursor:pointer;">✏️ 編輯</button>
-          <button onclick="deleteVideo('${vid.id}')" style="flex:1;background:transparent;border:1px solid var(--danger-color);border-radius:8px;color:var(--danger-color);font-size:12px;font-weight:bold;padding:4px 8px;cursor:pointer;">🗑️ 刪除</button>
-        </div>
-        <!-- 內嵌編輯區 -->
-        <div id="v-edit-${vid.id}" style="display:none; width:100%; padding: 6px 0;">
-          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">🔗 影片網址</div>
-          <input id="v-url-${vid.id}" type="text" value="${this.escapeHtml(vid.url || '')}" style="width:100%; padding:6px 10px; border-radius:8px; border:1px solid var(--accent-color); background:var(--bg-input); color:var(--text-primary); font-size:13px; box-sizing:border-box;" placeholder="影片 URL">
-          <div style="font-size:12px; color:var(--text-secondary); margin:6px 0 4px;">📝 顯示標題</div>
-          <input id="v-name-${vid.id}" type="text" value="${this.escapeHtml(vid.filename || '')}" style="width:100%; padding:6px 10px; border-radius:8px; border:1px solid var(--accent-color); background:var(--bg-input); color:var(--text-primary); font-size:13px; box-sizing:border-box;" placeholder="顯示名稱">
-          <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
-            <button onclick="adminSaveVideo('${vid.id}')" style="background:var(--accent-color);color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">💾 儲存</button>
-            <button onclick="adminCancelEditVideo('${vid.id}')" style="background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border-color);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">取消</button>
-          </div>
-        </div>
       </div>
     `;
 
