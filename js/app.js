@@ -5251,10 +5251,12 @@ class App {
   handleFocusGameSync(game) {
     this.focusGame = game;
     
-    // 如果使用者正嘗試進入或在管理後台，不論是否已登入管理員，一律不顯示覆蓋層
-    const isAccessingAdmin = (this.activeTabId === 'panel-admin') || 
-                             (document.getElementById('adminPasswordModal') && 
-                              document.getElementById('adminPasswordModal').classList.contains('active'));
+    // 如果使用者正嘗試進入或在管理後台（且尚未登入管理員），一律不顯示覆蓋層
+    const isAccessingAdmin = !this.isAdmin && (
+      (this.activeTabId === 'panel-admin') || 
+      (document.getElementById('adminPasswordModal') && 
+       document.getElementById('adminPasswordModal').classList.contains('active'))
+    );
     if (isAccessingAdmin) {
       const gameOverlay = document.getElementById('focusGameOverlay');
       if (gameOverlay) {
@@ -5617,10 +5619,12 @@ class App {
   handleBuzzGameSync(game) {
     this.buzzGame = game;
     
-    // 如果使用者正嘗試進入或在管理後台，不論是否已登入管理員，一律不顯示覆蓋層
-    const isAccessingAdmin = (this.activeTabId === 'panel-admin') || 
-                             (document.getElementById('adminPasswordModal') && 
-                              document.getElementById('adminPasswordModal').classList.contains('active'));
+    // 如果使用者正嘗試進入或在管理後台（且尚未登入管理員），一律不顯示覆蓋層
+    const isAccessingAdmin = !this.isAdmin && (
+      (this.activeTabId === 'panel-admin') || 
+      (document.getElementById('adminPasswordModal') && 
+       document.getElementById('adminPasswordModal').classList.contains('active'))
+    );
     if (isAccessingAdmin) {
       const overlay = document.getElementById('buzzGameOverlay');
       if (overlay) {
