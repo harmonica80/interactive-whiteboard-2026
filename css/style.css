@@ -2412,30 +2412,11 @@ body {
 
 /* 轉盤右側指針 */
 .wheel-pointer {
-  position: absolute;
-  right: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-top: 12px solid transparent;
-  border-bottom: 12px solid transparent;
-  border-right: 20px solid #555555;
-  z-index: 10;
-  pointer-events: none;
+  display: none; /* 指針改由 Canvas 繪製 */
 }
 
 .wheel-pointer::after {
-  content: '';
-  position: absolute;
-  right: -23px;
-  top: -12px;
-  width: 0;
-  height: 0;
-  border-top: 12px solid transparent;
-  border-bottom: 12px solid transparent;
-  border-right: 20px solid #ffffff;
-  z-index: 9;
+  display: none;
 }
 
 .wheel-winner-banner {

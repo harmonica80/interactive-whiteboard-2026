@@ -7098,14 +7098,15 @@ class App {
       ctx.fillStyle = '#e5e5ea';
       ctx.fill();
       ctx.fillStyle = '#8e8e93';
-      ctx.font = '16px sans-serif';
+      ctx.font = '20px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('請輸入名單', center, center);
+      ctx.fillText('請輸入名單後開始使用', center, center);
       return;
     }
     
     const arcSize = (2 * Math.PI) / this.wheelNames.length;
+    const theme = this.wheelColorTheme || 0;
     
     // 7 種色系主題（依圖片色盤）
     const colorThemes = [
@@ -7113,7 +7114,7 @@ class App {
       ['#a7f3d0','#fde68a','#fef3c7','#c4b5fd','#bbf7d0','#fca5a5','#a5f3fc','#f9a8d4','#d9f99d','#ddd6fe','#fed7aa','#bfdbfe','#fecdd3','#e9d5ff','#99f6e4','#fef08a'],
       // 1 遊樂場 (Playground)
       ['#2563eb','#f97316','#f59e0b','#ef4444','#7c3aed','#0891b2','#16a34a','#db2777','#1d4ed8','#ea580c','#d97706','#dc2626','#6d28d9','#0e7490','#15803d','#be185d'],
-      // 2 冰巗 (Ice & Slate)
+      // 2 冰巖 (Ice & Slate)
       ['#0284c7','#0ea5e9','#38bdf8','#7dd3fc','#94a3b8','#64748b','#0369a1','#0c4a6e','#475569','#334155','#1e40af','#1d4ed8','#0e7490','#155e75','#1e3a5f','#0f3460'],
       // 3 月光 (Moon)
       ['#18181b','#3f3f46','#52525b','#71717a','#a1a1aa','#d4d4d8','#27272a','#404040','#525252','#737373','#a3a3a3','#d4d4d4','#1c1917','#292524','#44403c','#78716c'],
@@ -7121,11 +7122,17 @@ class App {
       ['#0d9488','#14b8a6','#2dd4bf','#f0fdfa','#fce7f3','#f9a8d4','#0f766e','#0891b2','#a7f3d0','#fda4af','#fb7185','#e0f2fe','#99f6e4','#fecdd3','#67e8f9','#f472b6'],
       // 5 棉花糖 (Cotton Candy)
       ['#f9a8d4','#f0abfc','#c4b5fd','#93c5fd','#6ee7b7','#fca5a5','#f472b6','#e879f9','#a78bfa','#60a5fa','#34d399','#fb7185','#e91e8c','#d946ef','#8b5cf6','#3b82f6'],
-      // 6 薄荷檜檾 (Mint Lemonade)
+      // 6 薄荷檸檬 (Mint Lemonade)
       ['#166534','#15803d','#16a34a','#4ade80','#86efac','#d9f99d','#a3e635','#facc15','#eab308','#ca8a04','#4ade80','#86efac','#bef264','#fef08a','#22c55e','#fde047'],
     ];
-    const colors = colorThemes[this.wheelColorTheme || 0] || colorThemes[0];
+    const colors = colorThemes[theme] || colorThemes[0];
     
+    // 依主題決定文字顏色
+    const useDarkText = [0, 4, 5].includes(theme);
+    const textColor = useDarkText ? '#111111' : '#ffffff';
+    const textShadowColor = useDarkText ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
+
+    // ── 繪製扇形 ──
     for (let i = 0; i < this.wheelNames.length; i++) {
       const angle = this.wheelAngle + i * arcSize;
       
@@ -7135,66 +7142,119 @@ class App {
       ctx.closePath();
       ctx.fillStyle = colors[i % colors.length];
       ctx.fill();
-      
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       ctx.stroke();
-      
+    }
+
+    // ── 繪製文字（依扇形高度自適應大字體）──
+    const innerR = 52; // 中心按鈕半徑（文字起點）
+    const outerR = radius - 6; // 文字終點（靠近外緣）
+    const radialLen = outerR - innerR; // 可用的徑向長度
+
+    for (let i = 0; i < this.wheelNames.length; i++) {
+      const angle = this.wheelAngle + i * arcSize;
+      const midAngle = angle + arcSize / 2;
+
       ctx.save();
       ctx.translate(center, center);
-      ctx.rotate(angle + arcSize / 2);
-      
-      // 智慧自適應字體：依扇形弧長和名字長度計算最大可用字體
+      ctx.rotate(midAngle);
+
       const name = this.wheelNames[i];
-      const displayName = name.length > 12 ? name.substring(0, 11) + '…' : name;
-      
-      // 文字繪製在扇形外段（距中心 66% 半徑），視覺上更靠近邂源
-      const textRadiusMid = radius * 0.66;
-      const arcChord = 2 * textRadiusMid * Math.sin(arcSize / 2);
-      
-      // 依字元數與弧寬估算字體大小，最大 36px，最小 11px
-      const charsCount = displayName.length;
-      let fontSize = Math.floor(Math.min(arcChord / charsCount * 2.2, (radius - 55) / 4.5, 36));
-      fontSize = Math.max(fontSize, 11);
-      
-      // 淺色主題 (馬卡龍/現代沉穩/棉花糖) 用黑字，其餘用白字
-      const useDarkText = [0, 4, 5].includes(this.wheelColorTheme || 0);
-      ctx.fillStyle = useDarkText ? '#1a1a1a' : '#ffffff';
-      ctx.shadowColor = useDarkText ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.45)';
-      ctx.shadowBlur = 4;
+      const displayName = name.length > 14 ? name.substring(0, 13) + '…' : name;
+
+      // 扇形在中段半徑的可用弧寬（弦長）
+      const midR = (innerR + outerR) / 2;
+      const arcChord = 2 * midR * Math.sin(arcSize / 2) * 0.88;
+
+      // 字體策略：先嘗試用弧寬/字數，再用徑向長度/字數，取較小值
+      // 乘數 3.2 → 讓每字佔更多橫向空間（針對中文字寬）
+      let fontSize = Math.floor(Math.min(
+        arcChord / displayName.length * 3.2,   // 橫向填滿
+        radialLen / displayName.length * 1.1,  // 縱向填滿（沿半徑）
+        44                                     // 最大上限
+      ));
+      fontSize = Math.max(fontSize, 12);
+
+      ctx.fillStyle = textColor;
+      ctx.shadowColor = textShadowColor;
+      ctx.shadowBlur = 5;
       ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      
-      // 文字繪製在扇形中段徑向中心
-      ctx.fillText(displayName, textRadiusMid, 0);
+
+      // 文字置中在扇形可用徑向中段
+      ctx.fillText(displayName, midR, 0);
       ctx.shadowBlur = 0;
       ctx.restore();
     }
     
-    // 中心圓底白圈
+    // ── 中心圓底白圈 ──
     ctx.beginPath();
-    ctx.arc(center, center, 52, 0, 2 * Math.PI);
+    ctx.arc(center, center, 56, 0, 2 * Math.PI);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
     ctx.lineWidth = 4;
     ctx.strokeStyle = 'rgba(0,0,0,0.12)';
     ctx.stroke();
     
-    // 中心紅色按鈕
+    // ── 中心紅色按鈕 ──
     ctx.beginPath();
-    ctx.arc(center, center, 44, 0, 2 * Math.PI);
-    const grad = ctx.createRadialGradient(center - 8, center - 8, 4, center, center, 44);
+    ctx.arc(center, center, 46, 0, 2 * Math.PI);
+    const grad = ctx.createRadialGradient(center - 10, center - 10, 4, center, center, 46);
     grad.addColorStop(0, '#ff6b6b');
     grad.addColorStop(1, '#c0392b');
     ctx.fillStyle = grad;
     ctx.fill();
     
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 17px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('轉動', center, center);
+
+    // ── 指針箭頭（畫在 Canvas，重疊在轉盤右側）──
+    // 依主題決定指針顏色
+    const pointerColors = [
+      { fill: '#374151', stroke: '#ffffff' }, // 0 馬卡龍 — 深灰
+      { fill: '#fef9c3', stroke: '#1e3a8a' }, // 1 遊樂場 — 奶黃
+      { fill: '#f8fafc', stroke: '#0c4a6e' }, // 2 冰巖   — 白
+      { fill: '#e5e7eb', stroke: '#1c1917' }, // 3 月光   — 淺灰
+      { fill: '#1a1a1a', stroke: '#ffffff' }, // 4 現代沉穩— 深灰
+      { fill: '#1e1b4b', stroke: '#f0abfc' }, // 5 棉花糖 — 深紫
+      { fill: '#fef9c3', stroke: '#166534' }, // 6 薄荷檸檬— 奶黃
+    ];
+    const pc = pointerColors[theme] || pointerColors[0];
+
+    // 指針位置：從 Canvas 右邊，尖端深入轉盤約 18px
+    const pTipX = size - 2;          // 尖端 X（右側）
+    const pTipY = center;            // 尖端 Y（垂直中心）
+    const pLen = 44;                  // 指針長度
+    const pHalf = 22;                 // 指針半寬
+
+    ctx.beginPath();
+    ctx.moveTo(pTipX - pLen, pTipY - pHalf); // 左上角
+    ctx.lineTo(pTipX,         pTipY);         // 尖端（右）
+    ctx.lineTo(pTipX - pLen, pTipY + pHalf); // 左下角
+    ctx.closePath();
+
+    // 指針漸層填色
+    const pGrad = ctx.createLinearGradient(pTipX - pLen, pTipY, pTipX, pTipY);
+    pGrad.addColorStop(0, pc.stroke);
+    pGrad.addColorStop(1, pc.fill);
+    ctx.fillStyle = pGrad;
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = pc.stroke;
+    ctx.stroke();
+
+    // 指針金屬高光
+    ctx.beginPath();
+    ctx.moveTo(pTipX - pLen + 4, pTipY - pHalf * 0.55);
+    ctx.lineTo(pTipX - 8,         pTipY - 3);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.stroke();
   }
 
 }
