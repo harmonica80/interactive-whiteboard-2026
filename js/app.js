@@ -4970,7 +4970,14 @@ class App {
           questionFolders: quizData.questionFolders || null,
           imageFolders: quizData.imageFolders || null,
           videoFolders: quizData.videoFolders || null,
-          teacherShareFolders: quizData.teacherShareFolders || null
+          teacherShareFolders: quizData.teacherShareFolders || null,
+          // 抽人轉盤設定
+          luckyWheel: quizData.luckyWheel ? {
+            names: quizData.luckyWheel.names || null,
+            colorTheme: quizData.luckyWheel.colorTheme ?? 0,
+            soundStyle: quizData.luckyWheel.soundStyle ?? 0,
+            removeWinner: quizData.luckyWheel.removeWinner ?? false
+          } : null
         },
         exportedAt: new Date().toISOString(),
         dbUrl: db.app.options.databaseURL || ""
@@ -5105,6 +5112,15 @@ class App {
             promises.push(db.ref('quiz/imageFolders').set(imageFolders || null));
             promises.push(db.ref('quiz/videoFolders').set(videoFolders || null));
             promises.push(db.ref('quiz/teacherShareFolders').set(teacherShareFolders || null));
+
+            // 抽人轉盤設定（如果 JSON 內有就寫入）
+            if (quizNode.luckyWheel) {
+              const lw = quizNode.luckyWheel;
+              if (lw.names !== undefined) promises.push(db.ref('quiz/luckyWheel/names').set(lw.names));
+              if (lw.colorTheme !== undefined) promises.push(db.ref('quiz/luckyWheel/colorTheme').set(lw.colorTheme));
+              if (lw.soundStyle !== undefined) promises.push(db.ref('quiz/luckyWheel/soundStyle').set(lw.soundStyle));
+              if (lw.removeWinner !== undefined) promises.push(db.ref('quiz/luckyWheel/removeWinner').set(lw.removeWinner));
+            }
             
             Promise.all(promises).then(() => {
               this.showNotification('成功', '匯入記錄檔完成！');
