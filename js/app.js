@@ -7228,8 +7228,8 @@ class App {
     ctx.fillText('轉動', center, center);
 
     // ── 指針箭頭（Canvas 繪製，重疊在轉盤右側，尖端朝左指向轉盤）──
-    const pLen  = 52;  // 指針長度（增大以更明顯）
-    const pHalf = 28;  // 指針半寬
+    const pLen  = 26;  // 指針長度（縮小 1/2）
+    const pHalf = 14;  // 指針半寬（縮小 1/2）
 
     // 底部在右側邊緣，尖端插入轉盤
     const pBaseX = size;               // 底部 X（右側）
@@ -7244,9 +7244,9 @@ class App {
 
     // 繪製三角形（◄）
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetX = -3;
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = -2;
     ctx.shadowOffsetY = 0;
     ctx.beginPath();
     ctx.moveTo(pBaseX, pTipY - pHalf); // 右上
@@ -7256,7 +7256,7 @@ class App {
     ctx.fillStyle = pFill;
     ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.strokeStyle = pStroke;
     ctx.stroke();
     ctx.restore();
