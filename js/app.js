@@ -3205,7 +3205,7 @@ class App {
         <div class="folder-card-header">
           <span>📁 未分類分享</span>
         </div>
-        <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+        <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px;">
           ${grouped[''].map(item => this.buildShareItemHTML(item)).join('')}
         </div>
       </div>`;
@@ -3223,7 +3223,7 @@ class App {
           <button class="folder-toggle-btn">${isCollapsed ? '展開 ▼' : '折疊 ▲'}</button>
         </div>
         <div style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 12px;">
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px;">
             ${fShares.map(item => this.buildShareItemHTML(item)).join('')}
           </div>
         </div>

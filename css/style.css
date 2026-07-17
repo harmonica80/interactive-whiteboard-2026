@@ -316,6 +316,7 @@ body {
 
 .question-input {
   flex: 1;
+  min-width: 0;
   padding: 10px 14px;
   border: 2px solid var(--border-color);
   border-radius: 10px;
@@ -350,7 +351,7 @@ body {
 .question-list {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 14px;
   margin-top: 16px;
 }
@@ -1150,6 +1151,37 @@ body {
   .theme-btn {
     width: 24px;
     height: 24px;
+  }
+  
+  .modal-content {
+    max-width: 95vw !important;
+  }
+  
+  #focusGameOverlayContent {
+    padding: 16px 12px !important;
+  }
+  
+  .character-crossword-container {
+    grid-template-columns: repeat(3, 64px) !important;
+    grid-template-rows: repeat(3, 64px) !important;
+    gap: 8px !important;
+  }
+  
+  .character-crossword-cell {
+    font-size: 24px !important;
+  }
+  
+  .character-crossword-container .chinese-writing-grid {
+    width: 64px !important;
+    height: 64px !important;
+  }
+  
+  .character-crossword-container .char-test-input-box {
+    font-size: 32px !important;
+  }
+  
+  .image-info {
+    padding: 15px 15px 25px 15px !important;
   }
 }
 
