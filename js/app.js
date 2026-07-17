@@ -7259,14 +7259,6 @@ class App {
     ctx.lineWidth = 3;
     ctx.strokeStyle = pStroke;
     ctx.stroke();
-
-    // 高光線（增加立體感）
-    ctx.beginPath();
-    ctx.moveTo(pBaseX - 5, pTipY - pHalf * 0.6);
-    ctx.lineTo(pTipX + 10, pTipY - 4);
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-    ctx.stroke();
     ctx.restore();
   }
 
