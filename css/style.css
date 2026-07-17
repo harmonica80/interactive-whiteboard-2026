@@ -97,29 +97,38 @@ body {
   justify-content: space-between;
   margin-bottom: 20px;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
 }
 
 .header {
   text-align: left;
 }
 
-.header h1 {
+.header-title {
   font-size: 1.8rem;
   color: var(--text-primary);
   font-weight: 800;
+  margin: 0;
+  line-height: 1.2;
 }
 
-.header p {
+.header-subtitle {
   color: var(--text-secondary);
   font-size: 0.9rem;
-  margin-top: 4px;
+  margin: 4px 0 0 0;
 }
 
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* 管理後台按鈕與教師分享頂部按鈕 */
@@ -1031,15 +1040,92 @@ body {
   .main-content {
     grid-template-columns: 1fr;
   }
-  
+}
+
+@media (max-width: 768px) {
+  /* top-bar layout */
   .top-bar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  
+  .header {
+    text-align: center;
+  }
+  
+  .header-title {
+    font-size: 1.5rem;
+  }
+  
+  .header-subtitle {
+    font-size: 0.85rem;
   }
   
   .top-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
     width: 100%;
+  }
+  
+  .status-group {
+    display: flex;
     justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0 4px;
+    box-sizing: border-box;
+  }
+  
+  .header-buttons {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+    box-sizing: border-box;
+  }
+  
+  .header-buttons .menu-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    border-radius: 20px !important;
+    white-space: nowrap;
+  }
+  
+  .theme-switcher {
+    justify-content: center;
+    margin-top: 2px;
+    width: 100%;
+  }
+
+  /* 功能選單水平滾動 */
+  .function-menu {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    padding: 8px !important;
+    border-radius: 12px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .function-menu::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  .function-menu .menu-tab {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+    white-space: nowrap !important;
   }
 }
 
@@ -1048,8 +1134,8 @@ body {
     padding: 12px;
   }
   
-  .header h1 {
-    font-size: 1.4rem;
+  .header-title {
+    font-size: 1.3rem;
   }
   
   .panel-header {

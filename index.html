@@ -4,26 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=120">
+  <link rel="stylesheet" href="css/style.css?v=121">
 </head>
 <body>
   <div class="container">
     <!-- 頂部工具列 -->
     <div class="top-bar">
-      <div class="header" style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <h1 style="margin: 0; line-height: 1.2;">📚 即時互動白板</h1>
-          <button class="menu-tab teacher-share-top-btn" data-target="panel-teacher-shares" title="教師分享">📢 教師分享</button>
-        </div>
-        <p style="margin: 0;">課堂互動、提問、測驗、分享</p>
+      <div class="header">
+        <h1 class="header-title">📚 即時互動白板</h1>
+        <p class="header-subtitle">課堂互動、提問、測驗、分享</p>
       </div>
       <div class="top-actions">
-        <div class="status-group" style="display: flex; align-items: center; gap: 10px;">
-          <div id="onlineCount" class="online-count" style="font-size: 13px; font-weight: bold; color: var(--danger-color); white-space: nowrap;">線上人數 0 人</div>
+        <div class="status-group">
+          <div id="onlineCount" class="online-count">線上人數 0 人</div>
           <div id="connectionStatus" class="connection-status disconnected">連線中...</div>
         </div>
-        <!-- 管理後台按鈕移至右上角 -->
-        <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️ 管理後台</button>
+        <div class="header-buttons">
+          <button class="menu-tab teacher-share-top-btn" data-target="panel-teacher-shares" title="教師分享">📢 教師分享</button>
+          <!-- 管理後台按鈕移至右上角 -->
+          <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️ 管理後台</button>
+        </div>
         <div class="theme-switcher">
           <button class="theme-btn light active" data-theme="light" title="淺色"></button>
           <button class="theme-btn dark" data-theme="dark" title="深色"></button>
@@ -719,10 +719,10 @@
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=120"></script>
-  <script src="js/character_pool.js?v=120"></script>
-  <script src="js/quiz.js?v=120"></script>
-  <script src="js/app.js?v=120"></script>
+  <script src="js/firebase-config.js?v=121"></script>
+  <script src="js/character_pool.js?v=121"></script>
+  <script src="js/quiz.js?v=121"></script>
+  <script src="js/app.js?v=121"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
