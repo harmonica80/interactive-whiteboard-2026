@@ -7157,8 +7157,10 @@ class App {
       let fontSize = Math.floor(Math.min(arcChord / charsCount * 2.2, (radius - 55) / 4.5, 36));
       fontSize = Math.max(fontSize, 11);
       
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      // 淺色主題 (馬卡龍/現代沉穩/棉花糖) 用黑字，其餘用白字
+      const useDarkText = [0, 4, 5].includes(this.wheelColorTheme || 0);
+      ctx.fillStyle = useDarkText ? '#1a1a1a' : '#ffffff';
+      ctx.shadowColor = useDarkText ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.45)';
       ctx.shadowBlur = 4;
       ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.textAlign = 'center';
