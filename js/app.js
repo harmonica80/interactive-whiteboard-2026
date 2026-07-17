@@ -5106,6 +5106,10 @@ class App {
   startFocusGame() {
     if (!this.isAdmin) return;
     
+    // 自動停止搶答與選擇題測驗
+    db.ref('quiz/buzzGame').set(null);
+    db.ref('quiz/current').update({ active: false }).catch(() => {});
+    
     const gameType = document.getElementById('focusGameType').value || 'numberGrid';
     const numberGridSize = parseInt(document.getElementById('selectedFocusGridSize').value) || 36;
     const memoryGridSize = parseInt(document.getElementById('focusMemoryGridSize')?.value) || 16;
@@ -5670,6 +5674,11 @@ class App {
 
   startBuzzGameAdmin() {
     if (!this.isAdmin) return;
+    
+    // 自動停止專注力測驗與選擇題測驗
+    db.ref('quiz/focusGame/status').set('idle');
+    db.ref('quiz/current').update({ active: false }).catch(() => {});
+    
     const countdownSecs = parseInt(document.getElementById('buzzGameCountdown').value) || 5;
     
     db.ref('quiz/buzzGame').set({

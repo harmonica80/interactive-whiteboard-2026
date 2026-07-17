@@ -25,6 +25,10 @@ class Quiz {
       return;
     }
     
+    // 自動停止搶答與專注力測驗
+    db.ref('quiz/buzzGame').set(null);
+    db.ref('quiz/focusGame/status').set('idle');
+    
     const quizData = {
       question: question,
       options: options,
