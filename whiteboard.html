@@ -6,7 +6,7 @@
   <title>tldraw 互動白板</title>
   
   <!-- tldraw CSS -->
-  <link rel="stylesheet" href="https://esm.sh/tldraw@3.2.0/tldraw.css">
+  <link rel="stylesheet" href="https://esm.sh/tldraw@2.4.5/tldraw.css">
 
   <style>
     html, body {
@@ -47,14 +47,15 @@
     }
   </style>
 
-  <!-- Import Maps for ES Modules -->
+  <!-- Import Maps with explicit react@18.3.1 dependency pinning for esm.sh -->
   <script type="importmap">
   {
     "imports": {
       "react": "https://esm.sh/react@18.3.1",
+      "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
       "react-dom": "https://esm.sh/react-dom@18.3.1",
       "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-      "tldraw": "https://esm.sh/tldraw@3.2.0"
+      "tldraw": "https://esm.sh/tldraw@2.4.5?deps=react@18.3.1,react-dom@18.3.1"
     }
   }
   </script>
@@ -151,8 +152,6 @@
         case 'CLEAR_TLDRAW':
           if (editorInstance) {
             try {
-              // 重置畫布 store
-              const emptyRecords = [];
               editorInstance.store.clear();
             } catch (err) {
               console.error('Failed to clear tldraw:', err);
