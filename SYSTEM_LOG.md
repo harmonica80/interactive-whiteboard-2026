@@ -54,7 +54,11 @@
 ## 2026-07-22 - Antigravity
 - 修改項目：於「🎨 互動白板」面板下方新增操作使用說明。
 - 行為：標註剪貼（文字/圖片/連結）、縮放（Ctrl+滑鼠滾輪）、平移（空白鍵拖曳/滾輪拖曳）3 大提示。
-- 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+## 2026-07-22 - Antigravity
+- 修改項目：管理後台「🔄 清除所有資料」同步清除 tldraw 互動白板內容。
+- 行為：點擊重設時，系統經由 `postMessage` 呼叫白板清空所有筆跡圖案，並刪除 IndexedDB 快取，隨後清除 Firebase 資料庫。
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 

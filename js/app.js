@@ -5001,6 +5001,17 @@ class App {
     }
   }
 
+  clearTldrawWhiteboard() {
+    const iframe = document.getElementById('whiteboardFrame');
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage({ type: 'CLEAR_TLDRAW' }, '*');
+      } catch (e) {
+        console.warn('Failed to send CLEAR_TLDRAW to iframe:', e);
+      }
+    }
+  }
+
   async adminExportRecord() {
     this.showNotification('提示', '正在準備匯出檔案（含 tldraw 白板畫稿），請稍候...');
     
@@ -7768,7 +7779,7 @@ function confirmReset() {
   window.app.showConfirmModal(
     '🔄',
     '確定要重設嗎？',
-    '這將清除所有提問、測驗及圖片資料。',
+    '這將清除所有提問、測驗、圖片及互動白板內容。',
     () => {
       resetAll();
     }
@@ -7784,6 +7795,11 @@ function closeNotifyModal() {
 }
 
 function resetAll() {
+  // 清除 tldraw 白板畫稿與本機快取
+  if (window.app && typeof window.app.clearTldrawWhiteboard === 'function') {
+    window.app.clearTldrawWhiteboard();
+  }
+
   db.ref('questions').remove();
   db.ref('quiz/questionFolders').remove();
   db.ref('quiz/current').remove();
@@ -7797,7 +7813,10 @@ function resetAll() {
   db.ref('quiz/teacherShareFolders').remove();
   db.ref('quiz/luckyWheel').remove();
   db.ref('whiteboard').remove();
-  location.reload();
+  
+  setTimeout(() => {
+    location.reload();
+  }, 300);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

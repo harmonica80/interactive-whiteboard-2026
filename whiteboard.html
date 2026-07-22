@@ -152,11 +152,20 @@
         case 'CLEAR_TLDRAW':
           if (editorInstance) {
             try {
-              editorInstance.store.clear();
+              // 選擇並刪除白板上的所有圖案物件
+              editorInstance.selectAll();
+              const selectedIds = editorInstance.getSelectedShapeIds();
+              if (selectedIds && selectedIds.length > 0) {
+                editorInstance.deleteShapes(selectedIds);
+              }
             } catch (err) {
               console.error('Failed to clear tldraw:', err);
             }
           }
+          try {
+            indexedDB.deleteDatabase('tldraw');
+            indexedDB.deleteDatabase('interactive-whiteboard-room');
+          } catch(e) {}
           break;
       }
     });
