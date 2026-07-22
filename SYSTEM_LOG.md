@@ -51,6 +51,10 @@
   1. 移除 `.panel-header` 的點擊切換 `.collapsed` 事件監聽。
   2. 移除主要單元標題右側的 `▼` 收合箭頭 (`.collapse-icon`)。
   3. 滑鼠移至單元標題上時保持預設指標 (`cursor: default`)。
-- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-22 - Antigravity
+- 修改項目：於「🎨 互動白板」面板下方新增操作使用說明。
+- 行為：標註剪貼（文字/圖片/連結）、縮放（Ctrl+滑鼠滾輪）、平移（空白鍵拖曳/滾輪拖曳）3 大提示。
+- 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+
 
 
