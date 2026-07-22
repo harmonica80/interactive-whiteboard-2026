@@ -7384,68 +7384,63 @@ class App {
       const t = ctx.currentTime;
       
       if (type === 'countdownTick') {
-        // 時鐘滴答聲 (Clock Tick-Tock): 奇數剩餘秒數為高音 Tick，偶數剩餘秒數為低音 Tock
-        const isTick = (val !== undefined && val % 2 !== 0);
-        const startFreq = isTick ? 1200 : 850;
-        const endFreq   = isTick ? 400 : 250;
-        
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(startFreq, t);
-        osc.frequency.exponentialRampToValueAtTime(endFreq, t + 0.015);
-        
-        gain.gain.setValueAtTime(0.18, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
-        
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + 0.035);
-      } else if (type === 'start') {
-        // 大鑼音效 (Chinese Big Gong: Strike Impact + Downward Pitch Bending + Rich Overtones)
-        try {
-          const bufLen = Math.floor(ctx.sampleRate * 0.03);
-          const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-          const data = buf.getChannelData(0);
-          for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
-          const noise = ctx.createBufferSource();
-          noise.buffer = buf;
-          const filter = ctx.createBiquadFilter();
-          filter.type = 'bandpass';
-          filter.frequency.setValueAtTime(1000, t);
-          filter.Q.setValueAtTime(2, t);
-          const nGain = ctx.createGain();
-          nGain.gain.setValueAtTime(0.25, t);
-          nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
-          noise.connect(filter);
-          filter.connect(nGain);
-          nGain.connect(ctx.destination);
-          noise.start(t);
-        } catch(e) {}
-
-        const gongPartials = [
-          { fStart: 250, fEnd: 135, gain: 0.40, dur: 2.2, type: 'sine' },     // Fundamental (Pitch bend down)
-          { fStart: 380, fEnd: 215, gain: 0.28, dur: 1.8, type: 'sine' },     // 2nd Partial
-          { fStart: 540, fEnd: 320, gain: 0.20, dur: 1.4, type: 'triangle' }, // Metallic Shimmer
-          { fStart: 820, fEnd: 480, gain: 0.12, dur: 0.9, type: 'sine' },     // High Ring
-        ];
-
-        gongPartials.forEach(p => {
+        if (val !== undefined && val <= 3 && val > 0) {
+          // 賽車預備倒數最後 3, 2, 1 秒短逼聲 (440Hz 街機預備嗶聲)
           const osc = ctx.createOscillator();
-          const g = ctx.createGain();
-          osc.type = p.type;
-          osc.frequency.setValueAtTime(p.fStart, t);
-          osc.frequency.exponentialRampToValueAtTime(p.fEnd, t + 0.3);
-          
-          g.gain.setValueAtTime(p.gain, t);
-          g.gain.exponentialRampToValueAtTime(0.001, t + p.dur);
-          
-          osc.connect(g);
-          g.connect(ctx.destination);
+          const gain = ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(440, t);
+          gain.gain.setValueAtTime(0.15, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
           osc.start(t);
-          osc.stop(t + p.dur);
-        });
+          osc.stop(t + 0.12);
+        } else {
+          // 時鐘滴答聲 (Clock Tick-Tock): 奇數剩餘秒數為高音 Tick (1200Hz)，偶數剩餘秒數為低音 Tock (850Hz)
+          const isTick = (val !== undefined && val % 2 !== 0);
+          const startFreq = isTick ? 1200 : 850;
+          const endFreq   = isTick ? 400 : 250;
+          
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(startFreq, t);
+          osc.frequency.exponentialRampToValueAtTime(endFreq, t + 0.015);
+          
+          gain.gain.setValueAtTime(0.18, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.035);
+        }
+      } else if (type === 'start') {
+        // 賽車預備開跑音效 (Arcade Race Countdown GO! 響亮長嗶音 BEEEEEP! 880Hz -> 1046.5Hz)
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc1.type = 'square';
+        osc1.frequency.setValueAtTime(880, t);
+        osc1.frequency.setValueAtTime(1046.50, t + 0.08);
+
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(1760, t);
+        osc2.frequency.setValueAtTime(2093, t + 0.08);
+
+        gain.gain.setValueAtTime(0.22, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(t);
+        osc2.start(t);
+        osc1.stop(t + 0.6);
+        osc2.stop(t + 0.6);
       } else if (type === 'end') {
         // 遊戲結束挑戰完成音效 (歡慶勝利三和弦 C5->E5->G5->C6 響亮和弦與長餘音)
         const chord = [
