@@ -52,7 +52,7 @@ class App {
     this.videoFolders = [];
     this.expandedFolders = new Set();
     
-    // 專注力遊戲屬性
+    // 專注力與搶答遊戲音效屬性
     this.focusGame = null;
     this.focusAudioCtx = null;
     this.focusGameCompletedLocal = false;
@@ -62,12 +62,23 @@ class App {
     
     // 獨立搶答遊戲屬性
     this.buzzGame = null;
+    this.buzzGameCompletedLocal = false;
+    this.buzzPrevStatus = null;
+    this.buzzStartSoundPlayed = false;
+    this.buzzLastTickSecond = -1;
     this.buzzTimerInterval = null;
     this.buzzCountdownInterval = null;
     this.buzzCircleInterval = null;
     this.buzzStartTimeLocal = 0;
     this.focusTimerInterval = null;
     this.focusCountdownInterval = null;
+
+    // 透過任一次使用者手勢預先解鎖 Web Audio Context，確保音效不被瀏覽器擋下
+    ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+      window.addEventListener(evt, () => {
+        this.initFocusAudio();
+      }, { passive: true });
+    });
     this.focusStartTimeLocal = 0;
     this.focusCurrentExpected = 1;
     this.focusGridSize = 36;
@@ -5688,6 +5699,16 @@ class App {
   }
 
   handleBuzzGameSync(game) {
+    const prevStatus = this.buzzPrevStatus;
+    this.buzzPrevStatus = game ? game.status : null;
+
+    if (prevStatus === 'countdown' && game && game.status === 'playing') {
+      if (!this.buzzStartSoundPlayed) {
+        this.buzzStartSoundPlayed = true;
+        this.playFocusSound('start');
+      }
+    }
+
     this.buzzGame = game;
     
     // 如果使用者正嘗試進入或在管理後台（且尚未登入管理員），一律不顯示覆蓋層
@@ -5771,6 +5792,12 @@ class App {
         document.getElementById('lblBuzzRank').textContent = rank;
         
         this.renderBuzzGameLeaderboard('buzzGameRankList', game.results);
+
+        // 播放結束音效（限播一次）
+        if (!this.buzzGameCompletedLocal) {
+          this.buzzGameCompletedLocal = true;
+          this.playFocusSound('end');
+        }
       } else {
         document.getElementById('buzzPlayArea').style.display = 'flex';
         document.getElementById('buzzFinishArea').style.display = 'none';
@@ -5790,6 +5817,12 @@ class App {
         document.getElementById('lblBuzzRank').textContent = rank;
         document.getElementById('buzzFinishRankBlock').style.display = 'inline-block';
         document.getElementById('buzzFinishTimeBlock').style.display = 'block';
+
+        // 播放結束音效（限播一次）
+        if (!this.buzzGameCompletedLocal) {
+          this.buzzGameCompletedLocal = true;
+          this.playFocusSound('end');
+        }
       } else {
         document.getElementById('buzzFinishRankBlock').style.display = 'none';
         document.getElementById('buzzFinishTimeBlock').style.display = 'none';
@@ -5836,6 +5869,9 @@ class App {
 
   startBuzzLocalCountdown(game) {
     this.stopBuzzTimers();
+    this.buzzGameCompletedLocal = false; // 重置完成音效狀態
+    this.buzzStartSoundPlayed = false;   // 重置開始音效狀態
+    this.buzzLastTickSecond = -1;        // 重置倒數秒數狀態
     
     const countdownEl = document.getElementById('buzzCountdownNumber');
     const updateCountdown = () => {
@@ -5854,10 +5890,22 @@ class App {
         }
       }
 
+      // 每秒倒數時播放時鐘滴答聲 (Tick-Tock)
+      if (remaining > 0 && remaining !== this.buzzLastTickSecond) {
+        this.buzzLastTickSecond = remaining;
+        this.playFocusSound('countdownTick', remaining);
+      }
+
       if (remaining <= 0) {
         clearInterval(this.buzzCountdownInterval);
         this.buzzCountdownInterval = null;
         
+        // 倒數結束，播放大鑼開戰音效
+        if (!this.buzzStartSoundPlayed) {
+          this.buzzStartSoundPlayed = true;
+          this.playFocusSound('start');
+        }
+
         if (this.isAdmin) {
           db.ref('quiz/buzzGame').update({
             status: 'playing',
@@ -5873,6 +5921,7 @@ class App {
 
   startBuzzLocalPlay(game) {
     this.stopBuzzTimers();
+    this.buzzGameCompletedLocal = false; // 重置完成音效狀態
 
     const buzzArea = document.getElementById('buzzMoveArea');
     const buzzCircle = document.getElementById('buzzCircleButton');
@@ -5969,6 +6018,10 @@ class App {
       completedAt: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
       console.log('Buzzed in successfully:', reactionTime);
+      if (!this.buzzGameCompletedLocal) {
+        this.buzzGameCompletedLocal = true;
+        this.playFocusSound('end');
+      }
     }).catch(err => {
       console.error('Failed to submit buzz-in:', err);
     });
@@ -7311,58 +7364,120 @@ class App {
     ctx.restore();
   }
 
-  playFocusSound(type) {
+  initFocusAudio() {
     try {
       if (!this.focusAudioCtx) {
         this.focusAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      const ctx = this.focusAudioCtx;
-      if (ctx.state === 'suspended') {
-        ctx.resume();
+      if (this.focusAudioCtx && this.focusAudioCtx.state === 'suspended') {
+        this.focusAudioCtx.resume();
       }
+    } catch (e) {}
+  }
+
+  playFocusSound(type, val) {
+    try {
+      this.initFocusAudio();
+      const ctx = this.focusAudioCtx;
+      if (!ctx) return;
+      
       const t = ctx.currentTime;
       
       if (type === 'countdownTick') {
-        // 每秒短音 (800Hz, 50ms 漸弱)
+        // 時鐘滴答聲 (Clock Tick-Tock): 奇數剩餘秒數為高音 Tick，偶數剩餘秒數為低音 Tock
+        const isTick = (val !== undefined && val % 2 !== 0);
+        const startFreq = isTick ? 1200 : 850;
+        const endFreq   = isTick ? 400 : 250;
+        
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, t);
-        gain.gain.setValueAtTime(0.05, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(startFreq, t);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, t + 0.015);
+        
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+        
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(t + 0.05);
+        osc.start(t);
+        osc.stop(t + 0.035);
       } else if (type === 'start') {
-        // 開始音效 (C5 -> E5 -> G5 快速上升音階)
-        const notes = [523.25, 659.25, 783.99];
-        notes.forEach((freq, idx) => {
+        // 大鑼音效 (Chinese Big Gong: Strike Impact + Downward Pitch Bending + Rich Overtones)
+        try {
+          const bufLen = Math.floor(ctx.sampleRate * 0.03);
+          const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+          const noise = ctx.createBufferSource();
+          noise.buffer = buf;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(1000, t);
+          filter.Q.setValueAtTime(2, t);
+          const nGain = ctx.createGain();
+          nGain.gain.setValueAtTime(0.25, t);
+          nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+          noise.connect(filter);
+          filter.connect(nGain);
+          nGain.connect(ctx.destination);
+          noise.start(t);
+        } catch(e) {}
+
+        const gongPartials = [
+          { fStart: 250, fEnd: 135, gain: 0.40, dur: 2.2, type: 'sine' },     // Fundamental (Pitch bend down)
+          { fStart: 380, fEnd: 215, gain: 0.28, dur: 1.8, type: 'sine' },     // 2nd Partial
+          { fStart: 540, fEnd: 320, gain: 0.20, dur: 1.4, type: 'triangle' }, // Metallic Shimmer
+          { fStart: 820, fEnd: 480, gain: 0.12, dur: 0.9, type: 'sine' },     // High Ring
+        ];
+
+        gongPartials.forEach(p => {
           const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, t + idx * 0.1);
-          gain.gain.setValueAtTime(0.08, t + idx * 0.1);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.1 + 0.2);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(t + idx * 0.1);
-          osc.stop(t + idx * 0.1 + 0.2);
+          const g = ctx.createGain();
+          osc.type = p.type;
+          osc.frequency.setValueAtTime(p.fStart, t);
+          osc.frequency.exponentialRampToValueAtTime(p.fEnd, t + 0.3);
+          
+          g.gain.setValueAtTime(p.gain, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + p.dur);
+          
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + p.dur);
         });
       } else if (type === 'end') {
-        // 結束挑戰音效 (C5 -> G5 -> C6 清脆鈴音)
-        const notes = [523.25, 783.99, 1046.50];
-        notes.forEach((freq, idx) => {
+        // 遊戲結束挑戰完成音效 (歡慶勝利三和弦 C5->E5->G5->C6 響亮和弦與長餘音)
+        const chord = [
+          { f: 523.25, delay: 0.00, dur: 0.6, gain: 0.22 }, // C5
+          { f: 659.25, delay: 0.10, dur: 0.6, gain: 0.22 }, // E5
+          { f: 783.99, delay: 0.20, dur: 0.7, gain: 0.25 }, // G5
+          { f: 1046.50, delay: 0.30, dur: 1.0, gain: 0.30 }  // C6 (高音長響)
+        ];
+
+        chord.forEach(item => {
+          const noteTime = t + item.delay;
           const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, t + idx * 0.08);
-          gain.gain.setValueAtTime(0.08, t + idx * 0.08);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.08 + 0.4);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(t + idx * 0.08);
-          osc.stop(t + idx * 0.08 + 0.4);
+          const osc2 = ctx.createOscillator();
+          const g = ctx.createGain();
+          
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(item.f, noteTime);
+          
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(item.f * 2, noteTime);
+          
+          g.gain.setValueAtTime(item.gain, noteTime);
+          g.gain.exponentialRampToValueAtTime(0.001, noteTime + item.dur);
+          
+          osc.connect(g);
+          osc2.connect(g);
+          g.connect(ctx.destination);
+          
+          osc.start(noteTime);
+          osc2.start(noteTime);
+          osc.stop(noteTime + item.dur);
+          osc2.stop(noteTime + item.dur);
         });
       }
     } catch (e) {
