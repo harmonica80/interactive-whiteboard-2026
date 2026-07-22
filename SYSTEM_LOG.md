@@ -45,5 +45,12 @@
   2. `index.html` 功能選單新增「🎨 互動白板」分頁與 iframe 沙盒容器，確保 100% 樣式與系統腳本隔離。
   3. 管理後台「📤 匯出 JSON 記錄」自動透過 `postMessage` 通訊抓取白板快照，打包至單一 `.json` 檔案。
   4. 管理後台「📥 匯入 JSON 記錄」自動解析並還原白板畫圖，且不干擾 Firebase 資料庫。
-- 影響檔案：`index.html`, `js/app.js`, `whiteboard.html`, `SYSTEM_LOG.md`。
+## 2026-07-22 - Antigravity
+- 修改項目：取消主要功能單元標題區塊 (.panel-header) 的點擊收合功能。
+- 行為：
+  1. 移除 `.panel-header` 的點擊切換 `.collapsed` 事件監聽。
+  2. 移除主要單元標題右側的 `▼` 收合箭頭 (`.collapse-icon`)。
+  3. 滑鼠移至單元標題上時保持預設指標 (`cursor: default`)。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+
 

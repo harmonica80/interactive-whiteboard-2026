@@ -2020,12 +2020,7 @@ class App {
   }
   
   bindCollapseEvents() {
-    document.querySelectorAll('.panel-header').forEach(header => {
-      header.addEventListener('click', () => {
-        const card = header.closest('.panel-card');
-        card.classList.toggle('collapsed');
-      });
-    });
+    // 已依需求取消主要單元標題區塊 (.panel-header) 的按壓收合功能
     
     // 綁定管理後台摺疊區塊事件
     document.querySelectorAll('.admin-section-header').forEach(header => {
