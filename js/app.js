@@ -4960,17 +4960,66 @@ class App {
     }
   }
 
-  adminExportRecord() {
-    this.showNotification('提示', '正在準備匯出檔案，請稍候...');
+  getTldrawSnapshot() {
+    return new Promise((resolve) => {
+      const iframe = document.getElementById('whiteboardFrame');
+      if (!iframe || !iframe.contentWindow) {
+        resolve(null);
+        return;
+      }
+      const requestId = 'export_' + Date.now();
+      const handleMessage = (event) => {
+        if (event.data && event.data.type === 'TLDRAW_SNAPSHOT_RESPONSE' && event.data.requestId === requestId) {
+          window.removeEventListener('message', handleMessage);
+          resolve(event.data.snapshot || null);
+        }
+      };
+      window.addEventListener('message', handleMessage);
+      try {
+        iframe.contentWindow.postMessage({ type: 'GET_TLDRAW_SNAPSHOT', requestId: requestId }, '*');
+      } catch (e) {
+        console.warn('Could not postMessage to iframe:', e);
+        window.removeEventListener('message', handleMessage);
+        resolve(null);
+        return;
+      }
+      
+      // 超時 1.5 秒無回應時自動跳過，避免阻塞整體匯出
+      setTimeout(() => {
+        window.removeEventListener('message', handleMessage);
+        resolve(null);
+      }, 1500);
+    });
+  }
+
+  loadTldrawSnapshot(snapshot) {
+    const iframe = document.getElementById('whiteboardFrame');
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage({
+          type: 'LOAD_TLDRAW_SNAPSHOT',
+          snapshot: snapshot
+        }, '*');
+      } catch (e) {
+        console.warn('Failed to send tldraw snapshot to iframe:', e);
+      }
+    }
+  }
+
+  async adminExportRecord() {
+    this.showNotification('提示', '正在準備匯出檔案（含 tldraw 白板畫稿），請稍候...');
     
-    Promise.all([
-      db.ref('questions').once('value'),
-      db.ref('images').once('value'),
-      db.ref('videos').once('value'),
-      db.ref('teacherShares').once('value'),
-      db.ref('quiz').once('value'),
-      db.ref('whiteboard').once('value')
-    ]).then(([questionsSnap, imagesSnap, videosSnap, sharesSnap, quizSnap, whiteboardSnap]) => {
+    try {
+      const [questionsSnap, imagesSnap, videosSnap, sharesSnap, quizSnap, whiteboardSnap, tldrawSnapshot] = await Promise.all([
+        db.ref('questions').once('value'),
+        db.ref('images').once('value'),
+        db.ref('videos').once('value'),
+        db.ref('teacherShares').once('value'),
+        db.ref('quiz').once('value'),
+        db.ref('whiteboard').once('value'),
+        this.getTldrawSnapshot()
+      ]);
+      
       const quizData = quizSnap.val() || {};
       
       const exportData = {
@@ -4979,6 +5028,7 @@ class App {
         videos: videosSnap.val() || {},
         teacherShares: sharesSnap.val() || {},
         whiteboard: whiteboardSnap.val() || {},
+        tldrawSnapshot: tldrawSnapshot || null,
         quiz: {
           current: quizData.current || null,
           answers: quizData.answers || null,
@@ -5017,10 +5067,10 @@ class App {
       }, 100);
       
       this.showNotification('成功', '匯出記錄檔完成！');
-    }).catch(err => {
+    } catch (err) {
       console.error("Export failed:", err);
       this.showNotification('錯誤', '匯出失敗: ' + err.message);
-    });
+    }
   }
 
   adminImportRecord(event) {
@@ -5033,9 +5083,14 @@ class App {
         const importedData = JSON.parse(e.target.result);
         
         // Validate format
-        if (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard) {
+        if (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard && !importedData.tldrawSnapshot) {
           this.showNotification('錯誤', '無效的記錄檔格式！');
           return;
+        }
+
+        // 若包含 tldraw 白板畫稿快照，發送給 iframe 恢復
+        if (importedData.tldrawSnapshot) {
+          this.loadTldrawSnapshot(importedData.tldrawSnapshot);
         }
         
         this.showConfirmModal(

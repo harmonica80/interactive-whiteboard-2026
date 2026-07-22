@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>tldraw 互動白板</title>
+  
+  <!-- tldraw CSS -->
+  <link rel="stylesheet" href="https://esm.sh/tldraw@3.2.0/tldraw.css">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #f8f9fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      font-size: 16px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 122, 255, 0.1);
+      border-left-color: #007aff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <!-- Import Maps for ES Modules -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.3.1",
+      "react-dom": "https://esm.sh/react-dom@18.3.1",
+      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+      "tldraw": "https://esm.sh/tldraw@3.2.0"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root">
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <div>正在載入 tldraw 互動白板...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { Tldraw, getSnapshot, loadSnapshot } from 'tldraw';
+
+    let editorInstance = null;
+
+    function App() {
+      const handleMount = (editor) => {
+        editorInstance = editor;
+        console.log('tldraw initialized successfully!');
+        
+        // 通知父視窗已準備就緒
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'TLDRAW_READY' }, '*');
+        }
+      };
+
+      return React.createElement(Tldraw, {
+        persistenceKey: 'interactive-whiteboard-room',
+        onMount: handleMount
+      });
+    }
+
+    // 監聽來自父視窗的 postMessage 通訊
+    window.addEventListener('message', async (event) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+
+      switch (data.type) {
+        case 'GET_TLDRAW_SNAPSHOT':
+          if (editorInstance) {
+            try {
+              const snapshot = getSnapshot(editorInstance.store);
+              window.parent.postMessage({
+                type: 'TLDRAW_SNAPSHOT_RESPONSE',
+                requestId: data.requestId,
+                snapshot: snapshot
+              }, '*');
+            } catch (err) {
+              console.error('Failed to get tldraw snapshot:', err);
+              window.parent.postMessage({
+                type: 'TLDRAW_SNAPSHOT_RESPONSE',
+                requestId: data.requestId,
+                error: err.message
+              }, '*');
+            }
+          } else {
+            window.parent.postMessage({
+              type: 'TLDRAW_SNAPSHOT_RESPONSE',
+              requestId: data.requestId,
+              error: 'Editor not ready'
+            }, '*');
+          }
+          break;
+
+        case 'LOAD_TLDRAW_SNAPSHOT':
+          if (editorInstance && data.snapshot) {
+            try {
+              loadSnapshot(editorInstance.store, data.snapshot);
+              console.log('tldraw snapshot loaded successfully');
+              if (data.requestId) {
+                window.parent.postMessage({
+                  type: 'TLDRAW_LOAD_RESPONSE',
+                  requestId: data.requestId,
+                  success: true
+                }, '*');
+              }
+            } catch (err) {
+              console.error('Failed to load tldraw snapshot:', err);
+              if (data.requestId) {
+                window.parent.postMessage({
+                  type: 'TLDRAW_LOAD_RESPONSE',
+                  requestId: data.requestId,
+                  error: err.message
+                }, '*');
+              }
+            }
+          }
+          break;
+
+        case 'CLEAR_TLDRAW':
+          if (editorInstance) {
+            try {
+              // 重置畫布 store
+              const emptyRecords = [];
+              editorInstance.store.clear();
+            } catch (err) {
+              console.error('Failed to clear tldraw:', err);
+            }
+          }
+          break;
+      }
+    });
+
+    // 渲染頁面
+    const rootElement = document.getElementById('root');
+    const root = createRoot(rootElement);
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>

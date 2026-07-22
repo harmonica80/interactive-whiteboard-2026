@@ -38,9 +38,12 @@
 - 同步：本次變更需同步推送至 GitHub 遠端倉庫。
 - 影響檔案：`index.html`, `js/app.js`。
 
-## 2026-07-09 - OpenCode
-- 修改項目：位置序列記憶新增求救重播提示。
-- 行為：位置序列記憶進入作答階段後顯示「重播提示（+5 秒）」按鈕；使用後會重新播放同一組位置閃爍提示，並保留目前作答進度。
-- 計分：每使用一次重播提示會將完成時間增加 5 秒，並累計到 `helpCount` 與 `penaltySeconds`。
-- 快取：前端資源版本更新為 `v=88`。
-- 影響檔案：`index.html`, `js/app.js`。
+## 2026-07-22 - Antigravity
+- 修改項目：新增整合 tldraw 互動白板（方案 A：iframe 沙盒隔離）與 JSON 備份同步。
+- 行為：
+  1. 新增 `whiteboard.html` 獨立頁面，採用 tldraw 畫布並透過 IndexedDB 進行本地畫圖自動存檔。
+  2. `index.html` 功能選單新增「🎨 互動白板」分頁與 iframe 沙盒容器，確保 100% 樣式與系統腳本隔離。
+  3. 管理後台「📤 匯出 JSON 記錄」自動透過 `postMessage` 通訊抓取白板快照，打包至單一 `.json` 檔案。
+  4. 管理後台「📥 匯入 JSON 記錄」自動解析並還原白板畫圖，且不干擾 Firebase 資料庫。
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard.html`, `SYSTEM_LOG.md`。
+
