@@ -54,6 +54,11 @@ class App {
     
     // 專注力遊戲屬性
     this.focusGame = null;
+    this.focusAudioCtx = null;
+    this.focusGameCompletedLocal = false;
+    this.focusPrevStatus = null;
+    this.focusStartSoundPlayed = false;
+    this.focusLastTickSecond = -1;
     
     // 獨立搶答遊戲屬性
     this.buzzGame = null;
@@ -5271,6 +5276,16 @@ class App {
   }
 
   handleFocusGameSync(game) {
+    const prevStatus = this.focusPrevStatus;
+    this.focusPrevStatus = game ? game.status : null;
+
+    if (prevStatus === 'countdown' && game && game.status === 'playing') {
+      if (!this.focusStartSoundPlayed) {
+        this.focusStartSoundPlayed = true;
+        this.playFocusSound('start');
+      }
+    }
+
     this.focusGame = game;
     
     // 如果使用者正嘗試進入或在管理後台（且尚未登入管理員），一律不顯示覆蓋層
@@ -5395,6 +5410,12 @@ class App {
             
             this.initFireworkCanvas();
             this.triggerFireworkEffect();
+
+            // 播放結束音效（限播一次）
+            if (!this.focusGameCompletedLocal) {
+              this.focusGameCompletedLocal = true;
+              this.playFocusSound('end');
+            }
           } else {
             // 待審核或是被判定答錯，在 Play 區域以唯讀/重試模式顯示
             document.getElementById('focusPlayArea').style.display = 'flex';
@@ -5416,6 +5437,12 @@ class App {
           
           this.initFireworkCanvas();
           this.triggerFireworkEffect();
+
+          // 播放結束音效（限播一次）
+          if (!this.focusGameCompletedLocal) {
+            this.focusGameCompletedLocal = true;
+            this.playFocusSound('end');
+          }
         }
       } else {
         document.getElementById('focusPlayArea').style.display = 'flex';
@@ -5446,6 +5473,12 @@ class App {
         }
         document.getElementById('lblFinishRankAnimation').style.display = 'inline-block';
         document.getElementById('lblFinishTime').parentElement.style.display = 'block';
+
+        // 播放結束音效（限播一次）
+        if (!this.focusGameCompletedLocal) {
+          this.focusGameCompletedLocal = true;
+          this.playFocusSound('end');
+        }
       } else {
         document.getElementById('lblFinishRankAnimation').style.display = 'none';
         document.getElementById('lblFinishTime').parentElement.style.display = 'none';
@@ -5498,6 +5531,9 @@ class App {
 
   startLocalCountdown(game) {
     this.stopFocusTimers(); // 重置先前的
+    this.focusGameCompletedLocal = false; // 重置完成音效狀態
+    this.focusStartSoundPlayed = false;   // 重置開始音效狀態
+    this.focusLastTickSecond = -1;        // 重置倒數秒數狀態
     
     const countdownEl = document.getElementById('focusCountdownNumber');
     const updateCountdown = () => {
@@ -5516,9 +5552,21 @@ class App {
         }
       }
 
+      // 每秒倒數時播放 Tick 音效
+      if (remaining > 0 && remaining !== this.focusLastTickSecond) {
+        this.focusLastTickSecond = remaining;
+        this.playFocusSound('countdownTick');
+      }
+
       if (remaining <= 0) {
         clearInterval(this.focusCountdownInterval);
         this.focusCountdownInterval = null;
+        
+        // 倒數結束，播放開始音效
+        if (!this.focusStartSoundPlayed) {
+          this.focusStartSoundPlayed = true;
+          this.playFocusSound('start');
+        }
         
         if (this.isAdmin) {
           db.ref('quiz/focusGame').update({
@@ -5537,6 +5585,7 @@ class App {
     // 每局開始時重置求救提示與懲罰秒數
     this.focusHelpPenaltySeconds = 0;
     this.focusHelpCount = 0;
+    this.focusGameCompletedLocal = false; // 重置完成音效狀態
 
     // OpenCode 修改：避免 Firebase results 更新時重置正在作答的本地遊戲畫面
     const localGameKey = [
@@ -7260,6 +7309,65 @@ class App {
     ctx.strokeStyle = pStroke;
     ctx.stroke();
     ctx.restore();
+  }
+
+  playFocusSound(type) {
+    try {
+      if (!this.focusAudioCtx) {
+        this.focusAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = this.focusAudioCtx;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      const t = ctx.currentTime;
+      
+      if (type === 'countdownTick') {
+        // 每秒短音 (800Hz, 50ms 漸弱)
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, t);
+        gain.gain.setValueAtTime(0.05, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(t + 0.05);
+      } else if (type === 'start') {
+        // 開始音效 (C5 -> E5 -> G5 快速上升音階)
+        const notes = [523.25, 659.25, 783.99];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t + idx * 0.1);
+          gain.gain.setValueAtTime(0.08, t + idx * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.1 + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t + idx * 0.1);
+          osc.stop(t + idx * 0.1 + 0.2);
+        });
+      } else if (type === 'end') {
+        // 結束挑戰音效 (C5 -> G5 -> C6 清脆鈴音)
+        const notes = [523.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t + idx * 0.08);
+          gain.gain.setValueAtTime(0.08, t + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.08 + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t + idx * 0.08);
+          osc.stop(t + idx * 0.08 + 0.4);
+        });
+      }
+    } catch (e) {
+      console.warn("Focus sound play failed:", e);
+    }
   }
 
 }
