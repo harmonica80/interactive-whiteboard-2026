@@ -221,18 +221,6 @@
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
-## 2026-07-23 - Antigravity
-- 修改項目：行動端實作 Y 軸多點「雷達掃描物理定位演算法」，並升級至 `v1.5.0`。
-- 行為：
-  1. 在 `whiteboard_v146.html` 的 debug 腳本中，實作在置中 X 軸上自底部向上 35px ~ 105px 的 Y 軸「雷達掃描」，100% 確保必定探測到圓圈觸發按鈕的 DOM 節點。
-  2. 掃描一旦發現與 style / panel / popover 相關之非 toolbar 節點，直接對其強行注入 inline absolute 定位樣式，將其拉至右側 `calc(50% + 98px)` 置中工具列內部，徹底融合。
-  3. 將 `index.html` 的所有資源與 iframe src 版本 Query 升級為 `?v=150`，調試標記升級為 `v1.5.0`。
-- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
-
-
-
-
-## 2026-07-23 - Antigravity
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
