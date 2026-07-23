@@ -30,66 +30,9 @@
 
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
-      /* 1. 底部選單容器：設定垂直居中 Stack，讓快捷操作列 (復原/重做/刪除) 位於工具列「上方」，解決重疊問題 */
-      .tlui-layout__bottom, [class*="layout__bottom"], .tlui-layout__main > div {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: flex-end !important;
-        width: 100% !important;
-        pointer-events: none !important;
-      }
-      .tlui-layout__bottom *, [class*="layout__bottom"] * {
-        pointer-events: auto !important;
-      }
-
-      /* 2. 工具列外框：居中對齊於快捷操作列下方，不再重疊，並消除下方多餘空白 */
+      /* 僅微調工具列底部邊界距，防止緊貼手機邊緣，不影響 position/flex */
       .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
-        position: relative !important;
-        bottom: auto !important;
-        left: auto !important;
-        transform: none !important;
-        margin-top: 4px !important;
-        margin-bottom: 6px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        padding: 3px 6px !important;
-        width: max-content !important;
-        max-width: calc(100vw - 16px) !important;
-        min-height: unset !important;
-        height: auto !important;
-        box-sizing: border-box !important;
-      }
-
-      /* 3. 工具列內部按鈕容器：緊湊橫向排列 */
-      .tlui-toolbar__tools, [class*="toolbar__tools"], [class*="tlui-toolbar"] > div {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-
-      /* 4. 按鈕尺寸設定 (32px)，確保 7 個按鈕 (含最右側 ^ 箭頭) 100% 完整收納於白框內 */
-      .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
-        height: 32px !important;
-        min-height: 32px !important;
-        max-height: 32px !important;
-        width: 32px !important;
-        min-width: 32px !important;
-        max-width: 32px !important;
-        margin: 0 1px !important;
-        padding: 2px !important;
-        box-sizing: border-box !important;
-        flex-shrink: 0 !important;
-      }
-
-      /* 5. 按鈕 svg 圖示適中 (16px) */
-      .tlui-toolbar svg, [class*="tlui-toolbar"] svg {
-        width: 16px !important;
-        height: 16px !important;
+        margin-bottom: 8px !important;
       }
     }
     .loading-container {
@@ -145,13 +88,24 @@
     let isApplyingRemote = false;
 
     function App() {
+      const [canUndo, setCanUndo] = React.useState(false);
+      const [canRedo, setCanRedo] = React.useState(false);
+
       const handleMount = (editor) => {
         editorInstance = editor;
         console.log('tldraw initialized successfully!');
         
+        // 初始狀態
+        setCanUndo(editor.getCanUndo());
+        setCanRedo(editor.getCanRedo());
+
         // 監聽使用者在白板上的畫筆/文字/圖片/物件變動 (scope: 'document')
         let debounceTimer = null;
         editor.store.listen((entry) => {
+          // 動態同步 Undo/Redo 狀態
+          setCanUndo(editor.getCanUndo());
+          setCanRedo(editor.getCanRedo());
+
           if (!isApplyingRemote) {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
@@ -176,9 +130,81 @@
         }
       };
 
-      return React.createElement(Tldraw, {
-        onMount: handleMount
-      });
+      const isMobile = window.innerWidth <= 768;
+
+      // 行動端透過 components 隱藏官方面板，釋放繪圖空間，避免重疊衝突
+      const tldrawComponents = isMobile ? {
+        MainMenu: null,
+        PageMenu: null,
+        NavigationPanel: null,
+        HelpMenu: null,
+        QuickActions: null // 隱藏底部原廠 Undo/Redo，防止遮擋重疊
+      } : {};
+
+      // 手機版在頂部右上角渲染一個精緻、小巧、半透明的復原/重做按鈕組
+      const customControls = isMobile ? React.createElement('div', {
+        style: {
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          zIndex: 1000,
+          display: 'flex',
+          gap: '6px',
+          pointerEvents: 'auto'
+        }
+      }, [
+        React.createElement('button', {
+          key: 'undo',
+          onClick: () => { if (editorInstance) editorInstance.undo(); },
+          disabled: !canUndo,
+          style: {
+            padding: '6px 10px',
+            fontSize: '13px',
+            background: 'rgba(255, 255, 255, 0.9)',
+            border: '1px solid rgba(0,0,0,0.15)',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            cursor: 'pointer',
+            opacity: canUndo ? 1 : 0.4,
+            pointerEvents: canUndo ? 'auto' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 'bold',
+            color: '#333'
+          }
+        }, '↩️ 復原'),
+        React.createElement('button', {
+          key: 'redo',
+          onClick: () => { if (editorInstance) editorInstance.redo(); },
+          disabled: !canRedo,
+          style: {
+            padding: '6px 10px',
+            fontSize: '13px',
+            background: 'rgba(255, 255, 255, 0.9)',
+            border: '1px solid rgba(0,0,0,0.15)',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            cursor: 'pointer',
+            opacity: canRedo ? 1 : 0.4,
+            pointerEvents: canRedo ? 'auto' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 'bold',
+            color: '#333'
+          }
+        }, '↪️ 重做')
+      ]) : null;
+
+      return React.createElement(React.Fragment, null, [
+        React.createElement(Tldraw, {
+          key: 'tldraw',
+          onMount: handleMount,
+          components: tldrawComponents
+        }),
+        customControls
+      ]);
     }
 
     // 監聽來自父視窗的 postMessage 通訊

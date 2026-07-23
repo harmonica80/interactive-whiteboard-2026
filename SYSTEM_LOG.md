@@ -164,6 +164,13 @@
   1. 對行動端底部佈局容器 `.tlui-layout__bottom` 設定 `flex-direction: column; align-items: center`，將快捷操作列 (復原/重做/刪除/複製) 自動整齊地排列在主工具列正上方。
   2. 主工具列恢復 `relative` 流式居中對齊，兩層選單上下分離不重疊、不遮擋，操作流暢美觀。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
+- 行為：
+  1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
+  2. 透過 `<Tldraw />` 的 `components` 屬性，在行動端將主選單 `MainMenu`、分頁選單 `PageMenu`、縮放控制 `NavigationPanel`、說明 `HelpMenu` 與底部快捷列 `QuickActions` 全數設為 `null` 隱藏，騰出手機端最開闊的繪圖空間。
+  3. 獨立在行動端白板頂部右上角自行實作精美、半透明的「復原/重做」按鈕組，透過 `editor.store.listen` 即時驅動 `editor.getCanUndo()` 和 `editor.getCanRedo()` 狀態，防止任何底部選單重疊衝突。
+
 
 
 
