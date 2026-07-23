@@ -30,36 +30,46 @@
 
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
-      /* 1. 精準去除工具列上下多餘空白，設定左右 8px 內邊距確保最右側 ^ 按鈕向內移動完全呈現 */
+      /* 1. 工具列外框：消除下方多餘空白，確保邊距緊湊 */
       .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
         margin-bottom: 6px !important;
-        padding-top: 4px !important;
-        padding-bottom: 4px !important;
-        padding-left: 8px !important;
-        padding-right: 8px !important;
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
         min-height: unset !important;
         height: auto !important;
         box-sizing: border-box !important;
       }
 
-      /* 2. 精簡行動端按鈕尺寸 (34px)，縮小按鈕間距，確保 7 個按鈕 (含 ^ 箭頭) 100% 完整入鏡不被遮擋 */
+      /* 2. 工具列內部按鈕容器：消除左側過多留白，強制作置中對齊，把右側 ^ 按鈕大幅往左拉回 */
+      .tlui-toolbar__tools, [class*="toolbar__tools"], [class*="tlui-toolbar"] > div {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+
+      /* 3. 精簡單個按鈕尺寸至 32px，確保 7 個按鈕 (含最右側 ^ 箭頭) 100% 完全入鏡，絕不被裁切 */
       .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
-        height: 34px !important;
-        min-height: 34px !important;
-        width: 34px !important;
-        min-width: 34px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        width: 32px !important;
+        min-width: 32px !important;
         margin-top: 0 !important;
         margin-bottom: 0 !important;
         margin-left: 1px !important;
         margin-right: 1px !important;
-        padding: 3px !important;
+        padding: 2px !important;
         box-sizing: border-box !important;
       }
 
-      /* 3. 按鈕內 svg 圖示自適應 */
+      /* 4. 按鈕內 svg 圖示自適應 */
       .tlui-toolbar svg, [class*="tlui-toolbar"] svg {
-        width: 18px !important;
-        height: 18px !important;
+        width: 16px !important;
+        height: 16px !important;
       }
     }
     .loading-container {
