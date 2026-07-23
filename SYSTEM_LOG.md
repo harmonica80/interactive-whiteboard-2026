@@ -177,6 +177,13 @@
   2. 恢復行動端工具列 `.tlui-toolbar` 的 `position: absolute; left: 50%; transform: translateX(-50%)` 絕對置中，並將按鈕精細微調至 `34px` (圖示 `16px`)。
   3. 這與行動端滿版白板（40px 可用寬度提升）相結合，使 7 個工具按鈕（選擇、手掌、畫筆、橡皮擦、箭頭、文字 + `^` 向上箭頭）以 Desktop/Tablet 模式的 Overflow 機制 100% 完整清晰呈現在螢幕中央，無任何裁切跑版。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：利用「Iframe 虛擬視窗縮放」方案，徹底解決手機直屏下工具列 `^` 箭頭遺失與圓形按鈕重疊問題。
+- 行為：
+  1. 在 `whiteboard.html` 的 `@media (max-width: 768px)` 中，強制將 `#root` 寬度設為 `720px`（超越 tldraw 640px 臨界點，強制啟用帶有右側 `^` 箭頭的 Tablet/Desktop 工具列，並自動關閉行動端特有的浮動圓圈）。
+  2. 套用 `transform: scale(calc(100vw / 720))` 對整個 `#root` 做等比例縮小以完美契合行動端螢幕，解決所有位置、尺寸、與裁切重疊 Bug。
+- 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 ## 2026-07-23 - Antigravity

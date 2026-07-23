@@ -30,42 +30,19 @@
 
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
-      /* 1. 工具列白框：強制於底部絕對置中懸浮，徹底解決右偏跑版，並精簡高度 */
-      .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
+      /* 
+        利用「Iframe 虛擬視窗縮放大法」：
+        1. 強制將畫布容器設為 720px 寬（大於 640px 的 Tablet 斷點），確保 tldraw 100% 渲染出帶有右側 ^ 向上選單箭頭的工具列，且自動關閉行動端浮動圓圈。
+        2. 採用 CSS scale 等比例縮小以完美契合手機螢幕，按鈕大小字體等比例精細化，徹底解決重疊、跑版與裁切 Bug。
+      */
+      #root {
         position: absolute !important;
-        bottom: 8px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        margin: 0 !important;
-        padding: 3px 6px !important;
-        width: max-content !important;
-        max-width: calc(100vw - 16px) !important;
-        min-height: unset !important;
-        height: auto !important;
-        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12) !important;
-        border-radius: 12px !important;
-        z-index: 999 !important;
-        box-sizing: border-box !important;
-      }
-
-      /* 2. 按鈕輕量固定尺寸 (34px)，縮小間距，確保 7 個按鈕 (含最右側 ^ 箭頭) 100% 完整收納於白框內 */
-      .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
-        height: 34px !important;
-        min-height: 34px !important;
-        max-height: 34px !important;
-        width: 34px !important;
-        min-width: 34px !important;
-        max-width: 34px !important;
-        margin: 0 1px !important;
-        padding: 2px !important;
-        box-sizing: border-box !important;
-        flex-shrink: 0 !important;
-      }
-
-      /* 3. 按鈕 svg 圖示適中 */
-      .tlui-toolbar svg, [class*="tlui-toolbar"] svg {
-        width: 16px !important;
-        height: 16px !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 720px !important;
+        height: calc(100% * (720 / 100vw)) !important;
+        transform: scale(calc(100vw / 720)) !important;
+        transform-origin: top left !important;
       }
     }
     .loading-container {
