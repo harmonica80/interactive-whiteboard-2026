@@ -2513,6 +2513,21 @@ body {
   .wheel-control-panel {
     width: 100%;
   }
+  /* 行動端白板左右滿版，消除 container/body 的邊距以爭取白板最大顯示寬度與手繪面積 */
+  #panel-whiteboard {
+    margin-left: -20px !important;
+    margin-right: -20px !important;
+    border-radius: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 手機版白板抵消 body 12px 邊距以實現 100% 滿版 */
+  #panel-whiteboard {
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    border-radius: 0 !important;
+  }
 }
 
 

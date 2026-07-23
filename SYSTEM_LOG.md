@@ -165,6 +165,13 @@
   2. 主工具列恢復 `relative` 流式居中對齊，兩層選單上下分離不重疊、不遮擋，操作流暢美觀。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
 ## 2026-07-23 - Antigravity
+- 修改項目：引入 `forceMobile` 屬性與行動端滿版白板 CSS，徹底修復 `^` 向上箭頭在手機端消失的 Bug。
+- 行為：
+  1. 在 `whiteboard.html` 中對 `<Tldraw />` 傳入 `forceMobile: isMobile` 屬性，強制 tldraw 在任何手機視窗下都 100% 採用行動版折疊工具列，防止其誤入中等寬度半電腦版版型。
+  2. 在 `css/style.css` 中設定行動端負 Margin (`margin-left: -12px` / `-20px`)，使白板卡片頂滿手機螢幕邊緣，免除 body padding 限制，為白板工具列多爭取 24px+ 可用寬度，確保工具按鈕完全不被裁剪且 `^` 箭頭 100% 清晰浮現。
+- 影響檔案：`whiteboard.html`, `css/style.css`, `SYSTEM_LOG.md`。
+
+## 2026-07-23 - Antigravity
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

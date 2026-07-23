@@ -201,7 +201,8 @@
         React.createElement(Tldraw, {
           key: 'tldraw',
           onMount: handleMount,
-          components: tldrawComponents
+          components: tldrawComponents,
+          forceMobile: isMobile // 強制在行動端使用 100% Mobile UI，確保 ^ 向上選單箭頭完美呈現
         }),
         customControls
       ]);
