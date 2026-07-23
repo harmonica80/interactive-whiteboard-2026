@@ -211,6 +211,14 @@
   1. 將 `index.html` 中引入 `css/style.css`、`js/app.js` 等腳本以及 `whiteboardFrame` iframe 的動態 src 版本號統一提升至 `?v=143`。
   2. 強制手機與 CDN 客端徹底重新整理暫存，確保最新的絕對定位優化與說明文字隱藏樣式 100% 立即生效。
 - 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：升級 DOM 節點移入選擇器（全匹配型）並套用強行 JS 內聯 inline important 覆寫，且版本升級至 `v144`。
+- 行為：
+  1. 在 `whiteboard.html` 中，將 DOM 節點 Observer 匹配 Selector 改為超寬容的 `button[class*="style-panel"], [class*="style-panel"] button`（覆蓋 style-panel__toggle 類名），並對工具列定位容器啟用 `.tlui-toolbar` 全匹配，徹底確保按鈕與容器 100% 成功匹配。
+  2. 在 JS 中對移入後的按鈕以 `.style.setProperty(..., 'important')` 強制灌注 inline 絕對定位，徹底擺脫原處浮動，融合為第 7 個按鈕。
+  3. 將 `index.html` 的所有資源與 iframe src 版本 Query 升級為 `?v=144`。
+- 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
+
 
 
 
