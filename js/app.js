@@ -125,9 +125,9 @@ class App {
     this.initFunctionMenu();
     this.setupTimerSync();
     this.initTimerDragging();
-    this.loadYoutubeAPI();
     this.initImageCanvasDrawing();
     this.initLuckyWheel();
+    this.bindTldrawRealtimeSync();
     
     // Global user interaction listener to resume audio if blocked by autoplay
     const resumeAudioOnGesture = () => {
@@ -5012,6 +5012,74 @@ class App {
     }
   }
 
+  bindTldrawRealtimeSync() {
+    this.tldrawSyncRef = db.ref('whiteboard_room');
+    this.isPublishingTldraw = false;
+    this.lastReceivedTldrawJson = '';
+
+    // 1. 監聽 Firebase 遠端推播過來的即時白板畫稿變更
+    this.tldrawSyncRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      const dataJson = JSON.stringify(data);
+      // 若是自己剛剛廣播推送到 Firebase 的異動，跳過避免循環刷新
+      if (this.isPublishingTldraw || dataJson === this.lastReceivedTldrawJson) {
+        return;
+      }
+
+      this.lastReceivedTldrawJson = dataJson;
+
+      // 發送給 iframe 載入遠端畫稿
+      const iframe = document.getElementById('whiteboardFrame');
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage({
+            type: 'LOAD_TLDRAW_SNAPSHOT',
+            snapshot: data
+          }, '*');
+        } catch (e) {
+          console.warn('Failed to postMessage snapshot to whiteboardFrame:', e);
+        }
+      }
+    });
+
+    // 2. 監聽來自 iframe (whiteboard.html) 的使用者繪圖與就緒事件
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+
+      if (data.type === 'TLDRAW_LOCAL_CHANGE' && data.snapshot) {
+        this.isPublishingTldraw = true;
+        this.lastReceivedTldrawJson = JSON.stringify(data.snapshot);
+
+        // 推送至 Firebase 同步給線上所有使用者
+        this.tldrawSyncRef.set(data.snapshot).catch(err => {
+          console.error('Failed to push tldraw snapshot to Firebase:', err);
+        }).finally(() => {
+          setTimeout(() => {
+            this.isPublishingTldraw = false;
+          }, 400);
+        });
+      } else if (data.type === 'TLDRAW_READY') {
+        // 當白板載入完成時，主動向 Firebase 拉取最新畫稿給 iframe 展示
+        this.tldrawSyncRef.once('value').then(snapshot => {
+          const val = snapshot.val();
+          if (val) {
+            this.lastReceivedTldrawJson = JSON.stringify(val);
+            const iframe = document.getElementById('whiteboardFrame');
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'LOAD_TLDRAW_SNAPSHOT',
+                snapshot: val
+              }, '*');
+            }
+          }
+        });
+      }
+    });
+  }
+
   async adminExportRecord() {
     this.showNotification('提示', '正在準備匯出檔案（含 tldraw 白板畫稿），請稍候...');
     
@@ -7836,6 +7904,7 @@ function resetAll() {
   db.ref('quiz/teacherShareFolders').remove();
   db.ref('quiz/luckyWheel').remove();
   db.ref('whiteboard').remove();
+  db.ref('whiteboard_room').remove();
   
   setTimeout(() => {
     location.reload();

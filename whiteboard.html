@@ -74,12 +74,34 @@
     import { Tldraw, getSnapshot, loadSnapshot } from 'tldraw';
 
     let editorInstance = null;
+    let isApplyingRemote = false;
 
     function App() {
       const handleMount = (editor) => {
         editorInstance = editor;
         console.log('tldraw initialized successfully!');
         
+        // 監聽使用者在白板上的畫筆/文字/圖片/物件變動 (source: 'user')
+        let debounceTimer = null;
+        editor.store.listen((entry) => {
+          if (entry.source === 'user' && !isApplyingRemote) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+              try {
+                const snapshot = getSnapshot(editor.store);
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({
+                    type: 'TLDRAW_LOCAL_CHANGE',
+                    snapshot: snapshot
+                  }, '*');
+                }
+              } catch (err) {
+                console.error('Failed to capture local tldraw change:', err);
+              }
+            }, 300);
+          }
+        }, { scope: 'document', source: 'user' });
+
         // 通知父視窗已準備就緒
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({ type: 'TLDRAW_READY' }, '*');
@@ -127,8 +149,10 @@
         case 'LOAD_TLDRAW_SNAPSHOT':
           if (editorInstance && data.snapshot) {
             try {
+              isApplyingRemote = true;
               loadSnapshot(editorInstance.store, data.snapshot);
-              console.log('tldraw snapshot loaded successfully');
+              console.log('tldraw remote snapshot loaded successfully');
+              setTimeout(() => { isApplyingRemote = false; }, 150);
               if (data.requestId) {
                 window.parent.postMessage({
                   type: 'TLDRAW_LOAD_RESPONSE',
@@ -137,6 +161,7 @@
                 }, '*');
               }
             } catch (err) {
+              isApplyingRemote = false;
               console.error('Failed to load tldraw snapshot:', err);
               if (data.requestId) {
                 window.parent.postMessage({

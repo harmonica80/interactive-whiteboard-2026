@@ -63,7 +63,14 @@
 ## 2026-07-23 - Antigravity
 - 修改項目：刪除各功能卡片上方重複的標題列 (.panel-header)。
 - 行為：因頁面頂部功能選單已有高亮標示當前頁籤，故移除卡片內部的紫色/主題標題欄位，使介面更加簡潔俐落且增大操作空間。
-- 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：實現 tldraw 互動白板多人在線跨裝置即時同步 (Multiplayer Realtime Sync)。
+- 行為：
+  1. 監聽 `whiteboard.html` 的使用者動作 (`source: 'user'`)，防抖 300ms 傳送畫快照至 `app.js`。
+  2. `app.js` 將繪圖狀態自動推播至 Firebase `whiteboard_room` 節點。
+  3. 所有在線學生與老師即時訂閱 Firebase 廣播，並自動重繪白板 (`LOAD_TLDRAW_SNAPSHOT`)，解決異地跨裝置貼圖與手寫無法同步的問題。
+- 影響檔案：`js/app.js`, `whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 
