@@ -220,12 +220,13 @@
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 ## 2026-07-23 - Antigravity
-- 修改項目：重命名白板檔案為 `whiteboard_v146.html`，以徹底擊碎行動端瀏覽器與 CDN 頑固的舊檔案快取。
+- 修改項目：行動端實作 Y 軸多點「雷達掃描物理定位演算法」，並升級至 `v1.5.0`。
 - 行為：
-  1. 複製並建立全新的實體檔案 `whiteboard_v146.html`。
-  2. 在 `index.html` 中將靜態與動態 iframe 的 `src` 皆修正為指向新的 `whiteboard_v146.html`。
-  3. 這使得行動裝置的瀏覽器無法再從快取磁碟讀取舊檔案，而必須 100% 下載最新包含 userAgent 和純 CSS 物理定位的白板程式碼。
+  1. 在 `whiteboard_v146.html` 的 debug 腳本中，實作在置中 X 軸上自底部向上 35px ~ 105px 的 Y 軸「雷達掃描」，100% 確保必定探測到圓圈觸發按鈕的 DOM 節點。
+  2. 掃描一旦發現與 style / panel / popover 相關之非 toolbar 節點，直接對其強行注入 inline absolute 定位樣式，將其拉至右側 `calc(50% + 98px)` 置中工具列內部，徹底融合。
+  3. 將 `index.html` 的所有資源與 iframe src 版本 Query 升級為 `?v=150`，調試標記升級為 `v1.5.0`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 
 
