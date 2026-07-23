@@ -5015,32 +5015,29 @@ class App {
   bindTldrawRealtimeSync() {
     this.tldrawSyncRef = db.ref('whiteboard_room');
     this.isPublishingTldraw = false;
-    this.lastReceivedTldrawJson = '';
+    this.myTldrawClientId = 'client_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
 
     // 1. 監聽 Firebase 遠端推播過來的即時白板畫稿變更
     this.tldrawSyncRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
+      const val = snapshot.val();
+      if (!val || !val.data) return;
 
-      const dataJson = JSON.stringify(data);
-      // 若是自己剛剛廣播推送到 Firebase 的異動，跳過避免循環刷新
-      if (this.isPublishingTldraw || dataJson === this.lastReceivedTldrawJson) {
+      // 若是自己剛剛發送至 Firebase 的異動，跳過避免循環刷新
+      if (this.isPublishingTldraw || val.updatedBy === this.myTldrawClientId) {
         return;
       }
 
-      this.lastReceivedTldrawJson = dataJson;
-
-      // 發送給 iframe 載入遠端畫稿
-      const iframe = document.getElementById('whiteboardFrame');
-      if (iframe && iframe.contentWindow) {
-        try {
+      try {
+        const parsedSnapshot = JSON.parse(val.data);
+        const iframe = document.getElementById('whiteboardFrame');
+        if (iframe && iframe.contentWindow) {
           iframe.contentWindow.postMessage({
             type: 'LOAD_TLDRAW_SNAPSHOT',
-            snapshot: data
+            snapshot: parsedSnapshot
           }, '*');
-        } catch (e) {
-          console.warn('Failed to postMessage snapshot to whiteboardFrame:', e);
         }
+      } catch (err) {
+        console.error('Failed to parse remote tldraw snapshot:', err);
       }
     });
 
@@ -5051,28 +5048,41 @@ class App {
 
       if (data.type === 'TLDRAW_LOCAL_CHANGE' && data.snapshot) {
         this.isPublishingTldraw = true;
-        this.lastReceivedTldrawJson = JSON.stringify(data.snapshot);
-
-        // 推送至 Firebase 同步給線上所有使用者
-        this.tldrawSyncRef.set(data.snapshot).catch(err => {
-          console.error('Failed to push tldraw snapshot to Firebase:', err);
-        }).finally(() => {
-          setTimeout(() => {
-            this.isPublishingTldraw = false;
-          }, 400);
-        });
+        
+        try {
+          const jsonStr = JSON.stringify(data.snapshot);
+          // 將畫稿 Snapshot 序列化為純文字 JSON 字串寫入 Firebase (避免 Firebase 物件 Key 包含 "." 的非法字元錯誤)
+          this.tldrawSyncRef.set({
+            data: jsonStr,
+            updatedBy: this.myTldrawClientId,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          }).catch(err => {
+            console.error('Failed to push tldraw snapshot to Firebase:', err);
+          }).finally(() => {
+            setTimeout(() => {
+              this.isPublishingTldraw = false;
+            }, 300);
+          });
+        } catch (err) {
+          this.isPublishingTldraw = false;
+          console.error('Failed to stringify tldraw snapshot:', err);
+        }
       } else if (data.type === 'TLDRAW_READY') {
         // 當白板載入完成時，主動向 Firebase 拉取最新畫稿給 iframe 展示
         this.tldrawSyncRef.once('value').then(snapshot => {
           const val = snapshot.val();
-          if (val) {
-            this.lastReceivedTldrawJson = JSON.stringify(val);
-            const iframe = document.getElementById('whiteboardFrame');
-            if (iframe && iframe.contentWindow) {
-              iframe.contentWindow.postMessage({
-                type: 'LOAD_TLDRAW_SNAPSHOT',
-                snapshot: val
-              }, '*');
+          if (val && val.data) {
+            try {
+              const parsedSnapshot = JSON.parse(val.data);
+              const iframe = document.getElementById('whiteboardFrame');
+              if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                  type: 'LOAD_TLDRAW_SNAPSHOT',
+                  snapshot: parsedSnapshot
+                }, '*');
+              }
+            } catch (e) {
+              console.error('Failed to parse initial tldraw snapshot:', e);
             }
           }
         });
