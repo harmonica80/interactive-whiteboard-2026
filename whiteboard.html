@@ -81,10 +81,10 @@
         editorInstance = editor;
         console.log('tldraw initialized successfully!');
         
-        // 監聽使用者在白板上的畫筆/文字/圖片/物件變動 (source: 'user')
+        // 監聽使用者在白板上的畫筆/文字/圖片/物件變動 (scope: 'document')
         let debounceTimer = null;
         editor.store.listen((entry) => {
-          if (entry.source === 'user' && !isApplyingRemote) {
+          if (!isApplyingRemote) {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
               try {
@@ -98,18 +98,18 @@
               } catch (err) {
                 console.error('Failed to capture local tldraw change:', err);
               }
-            }, 300);
+            }, 250);
           }
-        }, { scope: 'document', source: 'user' });
+        }, { scope: 'document' });
 
-        // 通知父視窗已準備就緒
+        // 通知父視窗已準備就緒，以便拉取 Firebase 全域共享畫稿
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({ type: 'TLDRAW_READY' }, '*');
         }
       };
 
+      // 移除單機專用的 persistenceKey，確保所有使用者加入同一個雲端共享白板
       return React.createElement(Tldraw, {
-        persistenceKey: 'interactive-whiteboard-room',
         onMount: handleMount
       });
     }
