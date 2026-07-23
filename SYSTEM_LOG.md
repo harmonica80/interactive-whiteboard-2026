@@ -92,7 +92,13 @@
 - 行為：
   1. 在 `whiteboard.html` 中加入 `touch-action: none` 允許 tldraw 完全接管行動端手勢，並抬升 `.tlui-toolbar` 底部邊距 `margin-bottom: 16px`，防止下方工具列被說明框遮擋。
   2. 更新白板使用說明，註明行動裝置「雙指滑動平移/捏合縮放」與「點擊選單 🖐️ 手掌工具單指拖曳平移」的操作指南。
+## 2026-07-23 - Antigravity
+- 修改項目：壓縮 tldraw 工具列高度，並開啟工具列橫向滑動平移功能。
+- 行為：
+  1. 將 `.tlui-toolbar` 及其按鈕高度由 48px+ 壓縮至 44px (按鈕 36px)，顯著減少工具列佔用的垂直空間。
+  2. 加入 `max-width: calc(100vw - 20px)`, `overflow-x: auto`, `touch-action: pan-x` 與 `flex-wrap: nowrap`，讓手機使用者可在工具列上直接左右滑動平移，輕鬆選取後方的便條紙、形狀、媒體、雷射筆等工具。
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
+
 
 
 
