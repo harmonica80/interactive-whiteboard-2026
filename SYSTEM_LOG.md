@@ -152,7 +152,14 @@
 - 行為：
   1. 對行動端 (`@media (max-width: 768px)`) 工具列設定 `max-width: 250px !important`，100% 強制觸發 tldraw 啟動原生 Mobile 模式。
   2. 對內部容器設定 `justify-content: space-between` 均勻排列 7 個 30px 按鈕，確保最右側 `^` 向上箭頭按鈕 100% 完整清晰呈現於白框內右側，點擊即可順暢彈出 24 種工具選擇面板。
+## 2026-07-23 - Antigravity
+- 修改項目：於行動端 (`@media (max-width: 768px)`) 設定絕對置中定位，徹底解決工具列向右跑版問題。
+- 行為：
+  1. 對行動端設定 `position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%)`，強制白框於手機螢幕中央懸浮，防範任何 flex 偏移。
+  2. 精簡 7 個按鈕尺寸至 32px，確保包含最右側 `^` 向上箭頭在內的全體工具按鈕完美呈現於白框內。
+  3. 電腦端 (`width > 768px`) 保持 100% 原始原生樣式完全不受影響。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 
