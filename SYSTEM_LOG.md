@@ -158,7 +158,13 @@
   1. 對行動端設定 `position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%)`，強制白框於手機螢幕中央懸浮，防範任何 flex 偏移。
   2. 精簡 7 個按鈕尺寸至 32px，確保包含最右側 `^` 向上箭頭在內的全體工具按鈕完美呈現於白框內。
   3. 電腦端 (`width > 768px`) 保持 100% 原始原生樣式完全不受影響。
+## 2026-07-23 - Antigravity
+- 修改項目：修復行動端快捷操作列 (復原/重做/刪除) 與工具列重疊覆蓋的 Bug。
+- 行為：
+  1. 對行動端底部佈局容器 `.tlui-layout__bottom` 設定 `flex-direction: column; align-items: center`，將快捷操作列 (復原/重做/刪除/複製) 自動整齊地排列在主工具列正上方。
+  2. 主工具列恢復 `relative` 流式居中對齊，兩層選單上下分離不重疊、不遮擋，操作流暢美觀。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 

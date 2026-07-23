@@ -30,25 +30,38 @@
 
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
-      /* 1. 工具列白框：強制於手機螢幕底部「絕對置中」懸浮，徹底解決右偏跑版問題 */
+      /* 1. 底部選單容器：設定垂直居中 Stack，讓快捷操作列 (復原/重做/刪除) 位於工具列「上方」，解決重疊問題 */
+      .tlui-layout__bottom, [class*="layout__bottom"], .tlui-layout__main > div {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        width: 100% !important;
+        pointer-events: none !important;
+      }
+      .tlui-layout__bottom *, [class*="layout__bottom"] * {
+        pointer-events: auto !important;
+      }
+
+      /* 2. 工具列外框：居中對齊於快捷操作列下方，不再重疊，並消除下方多餘空白 */
       .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
-        position: absolute !important;
-        bottom: 8px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        margin: 0 !important;
+        position: relative !important;
+        bottom: auto !important;
+        left: auto !important;
+        transform: none !important;
+        margin-top: 4px !important;
+        margin-bottom: 6px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
         padding: 3px 6px !important;
         width: max-content !important;
         max-width: calc(100vw - 16px) !important;
         min-height: unset !important;
         height: auto !important;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
-        border-radius: 12px !important;
-        z-index: 999 !important;
         box-sizing: border-box !important;
       }
 
-      /* 2. 工具列內部容器：緊湊橫向排列 */
+      /* 3. 工具列內部按鈕容器：緊湊橫向排列 */
       .tlui-toolbar__tools, [class*="toolbar__tools"], [class*="tlui-toolbar"] > div {
         display: flex !important;
         flex-direction: row !important;
@@ -59,7 +72,7 @@
         margin: 0 !important;
       }
 
-      /* 3. 按鈕輕量固定尺寸 (32px)，確保 7 個按鈕 (含最右側 ^ 箭頭) 100% 完整收納在白框內 */
+      /* 4. 按鈕尺寸設定 (32px)，確保 7 個按鈕 (含最右側 ^ 箭頭) 100% 完整收納於白框內 */
       .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
         height: 32px !important;
         min-height: 32px !important;
@@ -73,7 +86,7 @@
         flex-shrink: 0 !important;
       }
 
-      /* 4. 按鈕 svg 圖示適中 (16px) */
+      /* 5. 按鈕 svg 圖示適中 (16px) */
       .tlui-toolbar svg, [class*="tlui-toolbar"] svg {
         width: 16px !important;
         height: 16px !important;
