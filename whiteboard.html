@@ -206,6 +206,7 @@
           zIndex: 1000,
           display: 'flex',
           gap: '6px',
+          alignItems: 'center',
           pointerEvents: 'auto'
         }
       }, [
@@ -250,7 +251,20 @@
             fontWeight: 'bold',
             color: '#333'
           }
-        }, '↪️ 重做')
+        }, '↪️ 重做'),
+        React.createElement('span', {
+          key: 'ver',
+          style: {
+            fontSize: '9px',
+            color: '#999',
+            background: 'rgba(255,255,255,0.7)',
+            padding: '2px 4px',
+            borderRadius: '4px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            fontWeight: 'bold',
+            userSelect: 'none'
+          }
+        }, 'v1.4.5')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [
@@ -330,34 +344,57 @@
     if (isMobileDevice) {
       const observer = new MutationObserver(() => {
         try {
-          // 使用超寬容選擇器，精確抓取包含 style-panel 的按鈕或其子 button
-          const styleBtn = document.querySelector('button[class*="style-panel"], [class*="style-panel"] button');
-          // 支援多種工具列容器命名
+          // 1. 尋找主工具列容器
           const toolbarTools = document.querySelector('[class*="toolbar__tools"], .tlui-toolbar');
-          
-          if (styleBtn && toolbarTools && styleBtn.parentNode !== toolbarTools) {
-            // 將圓圈選單按鈕移動至工具列容器內部
-            toolbarTools.appendChild(styleBtn);
-            styleBtn.classList.add('custom-style-toggle-btn');
+          if (!toolbarTools) return;
+
+          // 2. 使用意圖導向法（Aria-label/Title/Class）在全域尋找該按鈕
+          const allBtns = Array.from(document.querySelectorAll('button'));
+          const styleBtn = allBtns.find(b => {
+            const label = (b.getAttribute('aria-label') || '').toLowerCase();
+            const title = (b.getAttribute('title') || '').toLowerCase();
+            const className = b.className.toLowerCase();
+            return label.includes('style') || title.includes('style') ||
+                   label.includes('樣式') || title.includes('樣式') ||
+                   className.includes('style-panel');
+          });
+
+          if (styleBtn) {
+            // 3. 檢查工具列中是否已經有我們移入的按鈕了
+            const alreadyEmbedded = toolbarTools.querySelector('.custom-style-toggle-btn');
             
-            // 強行套用 JS 內聯 inline important 樣式，徹底避免其在原處浮動重疊
-            styleBtn.style.setProperty('position', 'absolute', 'important');
-            styleBtn.style.setProperty('right', '4px', 'important');
-            styleBtn.style.setProperty('top', '50%', 'important');
-            styleBtn.style.setProperty('transform', 'translateY(-50%)', 'important');
-            styleBtn.style.setProperty('width', '32px', 'important');
-            styleBtn.style.setProperty('height', '32px', 'important');
-            styleBtn.style.setProperty('min-width', '32px', 'important');
-            styleBtn.style.setProperty('min-height', '32px', 'important');
-            styleBtn.style.setProperty('background', 'transparent', 'important');
-            styleBtn.style.setProperty('box-shadow', 'none', 'important');
-            styleBtn.style.setProperty('border', 'none', 'important');
-            styleBtn.style.setProperty('border-radius', '8px', 'important');
-            styleBtn.style.setProperty('margin', '0', 'important');
-            styleBtn.style.setProperty('padding', '2px', 'important');
-            styleBtn.style.setProperty('display', 'flex', 'important');
-            styleBtn.style.setProperty('align-items', 'center', 'important');
-            styleBtn.style.setProperty('justify-content', 'center', 'important');
+            if (styleBtn.parentNode !== toolbarTools) {
+              if (!alreadyEmbedded) {
+                // 如果還沒有移入過，則將它移入
+                toolbarTools.appendChild(styleBtn);
+                styleBtn.classList.add('custom-style-toggle-btn');
+                
+                // 強行套用 JS 內聯 inline important 樣式，徹底避免其在原處浮動重疊
+                styleBtn.style.setProperty('position', 'absolute', 'important');
+                styleBtn.style.setProperty('right', '4px', 'important');
+                styleBtn.style.setProperty('top', '50%', 'important');
+                styleBtn.style.setProperty('transform', 'translateY(-50%)', 'important');
+                styleBtn.style.setProperty('width', '32px', 'important');
+                styleBtn.style.setProperty('height', '32px', 'important');
+                styleBtn.style.setProperty('min-width', '32px', 'important');
+                styleBtn.style.setProperty('min-height', '32px', 'important');
+                styleBtn.style.setProperty('background', 'transparent', 'important');
+                styleBtn.style.setProperty('box-shadow', 'none', 'important');
+                styleBtn.style.setProperty('border', 'none', 'important');
+                styleBtn.style.setProperty('border-radius', '8px', 'important');
+                styleBtn.style.setProperty('margin', '0', 'important');
+                styleBtn.style.setProperty('padding', '2px', 'important');
+                styleBtn.style.setProperty('display', 'flex', 'important');
+                styleBtn.style.setProperty('align-items', 'center', 'important');
+                styleBtn.style.setProperty('justify-content', 'center', 'important');
+                console.log('Successfully embedded StylePanel button into toolbar.');
+              } else {
+                // 如果工具列已經有一個移入的按鈕了，且現在又在外面偵測到一個新的（React 重新渲染出來的）
+                // 則直接將外面這個重複的按鈕刪除銷毀，防止無限重複與重疊！
+                styleBtn.remove();
+                console.log('Destroyed duplicated style panel button generated by React.');
+              }
+            }
           }
         } catch (err) {
           console.error('Failed to embed style panel button into toolbar:', err);

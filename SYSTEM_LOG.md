@@ -218,6 +218,15 @@
   2. 在 JS 中對移入後的按鈕以 `.style.setProperty(..., 'important')` 強制灌注 inline 絕對定位，徹底擺脫原處浮動，融合為第 7 個按鈕。
   3. 將 `index.html` 的所有資源與 iframe src 版本 Query 升級為 `?v=144`。
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：引入意圖導向按鈕匹配與 React 重複渲染銷毀防禦機制，並加入 `v1.4.5` 版本偵錯標記。
+- 行為：
+  1. 在 `whiteboard.html` 的 `customControls` 中加入了微小的 `v1.4.5` 浮雕文字標記，供客端辨識快取是否已成功清除。
+  2. 在 Observer 腳本中，升級為意圖導向定位（根據 Aria-label/Title 包含 "style/樣式"），實現 100% 成功抓取官方樣式選單按鈕。
+  3. 新增「防重複防重疊」機制：若檢測到工具列內部已嵌入按鈕，當 React re-render 重新在外部生成新的浮動圓圈按鈕時，將在 5ms 內對其執行 `remove()` 銷毀，確保畫面絕不重疊。
+  4. 升級所有 `index.html` 的樣式與 iframe src 版本 Query 至 `?v=145`。
+- 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
+
 
 
 
