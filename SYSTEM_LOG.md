@@ -205,6 +205,13 @@
   1. 將 `whiteboard.html` 行動端 CSS 中的 `.tlui-toolbar` 重新設定為 `position: absolute !important; bottom: 12px !important; left: 50% !important; transform: translateX(-50%) !important;`。
   2. 這能確保工具列不受相對定位的流式高度影響，穩妥懸浮於白板底邊上方 12px 處，100% 完整展示，不再被向下推出視口之外。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：升級所有主幹資源快取控制版本至 `v143`。
+- 行為：
+  1. 將 `index.html` 中引入 `css/style.css`、`js/app.js` 等腳本以及 `whiteboardFrame` iframe 的動態 src 版本號統一提升至 `?v=143`。
+  2. 強制手機與 CDN 客端徹底重新整理暫存，確保最新的絕對定位優化與說明文字隱藏樣式 100% 立即生效。
+- 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+
 
 
 
