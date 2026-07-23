@@ -219,12 +219,12 @@
   3. 將 `index.html` 的所有資源與 iframe src 版本 Query 升級為 `?v=144`。
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
 ## 2026-07-23 - Antigravity
-- 修改項目：引入意圖導向按鈕匹配與 React 重複渲染銷毀防禦機制，並加入 `v1.4.5` 版本偵錯標記。
+- 修改項目：引入基於 navigator.userAgent 的 isMobile 檢測，並改用純 CSS 絕對定位進行選單按鈕物理嵌入，解決電腦端樣式損壞問題。
 - 行為：
-  1. 在 `whiteboard.html` 的 `customControls` 中加入了微小的 `v1.4.5` 浮雕文字標記，供客端辨識快取是否已成功清除。
-  2. 在 Observer 腳本中，升級為意圖導向定位（根據 Aria-label/Title 包含 "style/樣式"），實現 100% 成功抓取官方樣式選單按鈕。
-  3. 新增「防重複防重疊」機制：若檢測到工具列內部已嵌入按鈕，當 React re-render 重新在外部生成新的浮動圓圈按鈕時，將在 5ms 內對其執行 `remove()` 銷毀，確保畫面絕不重疊。
-  4. 升級所有 `index.html` 的樣式與 iframe src 版本 Query 至 `?v=145`。
+  1. 在 `whiteboard.html` 中，將 `isMobile` 檢測改為 `navigator.userAgent` 匹配，100% 避免 iframe 載入時因寬度為 0 導致電腦端被誤判為行動版的 Bug，徹底還原電腦端右側原生的「樣式面板」。
+  2. 廢除 `MutationObserver` 腳本，避免潛在的 DOM 移入副作用與 React 渲染衝突。
+  3. 對行動端特有的圓形選單按鈕，利用純 CSS `position: absolute !important; bottom: 15px !important; left: calc(50% + 98px) !important;` 絕對定位物理偏移，將其天衣無縫地在視覺上定位至主工具列的最右側內部。
+  4. 將 `index.html` 內腳本、樣式與 iframe src 版本 Query 一鍵升級至 `?v=146`，調試標記升級為 `v1.4.6`。
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
 
 
