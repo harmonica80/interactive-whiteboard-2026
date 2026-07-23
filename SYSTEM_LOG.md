@@ -185,6 +185,14 @@
   3. 配合 CSS 微調工具列右側 `padding-right: 40px`，並將該按鈕以絕對定位（不使用 scale）完美鎖定在工具列白框的最右側。
   4. 此方案兼具行動端 100% 座標精準度，將原本浮動重疊的圓圈按鈕完美改造成工具列的最右側第 7 個按鈕，無任何跑版或遮擋。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：更新資源版本號，並引入 iframe 專屬防快取（Cache-Busting）控制機制。
+- 行為：
+  1. 將 `index.html` 中的應用程式 JS 版本 Query Parameter 統一由 `?v=141` 升級為 `?v=142`。
+  2. 在 `index.html` 的 `<body>` 尾端加上 `DOMContentLoaded` 初始化監聽，動態為 `whiteboardFrame` iframe 的 src 附加 `?v=142` 版本字串。
+  3. 這可強制行動端瀏覽器與 GitHub Pages CDN 繞過舊有快取快照，在每次更新時即時獲取最新版 DOM 移入方案程式碼。
+- 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+
 
 
 

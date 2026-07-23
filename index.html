@@ -778,11 +778,10 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <!-- 應用程式模組 -->
-  <script src="js/firebase-config.js?v=141"></script>
-  <script src="js/character_pool.js?v=141"></script>
-  <script src="js/quiz.js?v=141"></script>
-  <script src="js/app.js?v=141"></script>
+  <script src="js/firebase-config.js?v=142"></script>
+  <script src="js/character_pool.js?v=142"></script>
+  <script src="js/quiz.js?v=142"></script>
+  <script src="js/app.js?v=142"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -1230,5 +1229,14 @@
     </div>
   </div>
 
+  <!-- 強制繞過 iframe 快取的版本控制腳本 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const iframe = document.getElementById('whiteboardFrame');
+      if (iframe) {
+        iframe.src = "whiteboard.html?v=142";
+      }
+    });
+  </script>
 </body>
 </html>
