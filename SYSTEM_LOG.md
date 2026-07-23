@@ -117,7 +117,13 @@
 - 行為：
   1. 電腦端 (`width > 768px`) 完全不施加任何自訂 CSS 樣式，百分之百保留 tldraw 官方原汁原味的工具列尺寸、寬度與高度。
   2. 行動端 (`@media (max-width: 768px)`) 僅作最安全輕量的 `padding-bottom/margin-bottom` 貼合與 `overflow-x: auto` 橫向滑動選取，解決手機端工具列消失或擠壓問題。
+## 2026-07-23 - Antigravity
+- 修改項目：恢復行動端 tldraw 原生 `^`（Chevron Up）工具選單展開彈窗功能。
+- 行為：
+  1. 移除行動端過度強制干擾的 `overflow-x: auto`，完整還原 tldraw 原生右側 `^` 展開按鈕。點擊即可開啟 4 欄式全工具彈窗（包含文字、便條紙、各式形狀、箭頭、雷射筆等 24 種工具）。
+  2. 精準收緊行動端白框上下 Padding (4px)，消除工具列下方的多餘留白，且電腦端 (Desktop > 768px) 保持 100% 原生樣式完全不受影響。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 
