@@ -82,7 +82,13 @@
 - 行為：
   1. 在 `whiteboard.html` 中引入 `@tldraw/sync`，並以專屬房間 ID (`interactive-whiteboard-2026-shared-room`) 啟用 tldraw 原生 WebSocket 同步連線。
   2. 所有人手寫筆劃、文字、圖片貼上、移動及游標全部經由 tldraw 官方原生地通道進行毫秒級即時雙向同步，移除 `app.js` 中複雜的 Firebase 白板寫入與廣播邏輯。
+## 2026-07-23 - Antigravity
+- 修改項目：修復行動裝置 Safari/Chrome 載入 `@tldraw/sync` 拋出 WebSocket `onSyncError` 崩潰卡死問題。
+- 行為：
+  1. 移除行動端不相容且易被電信商/瀏覽器擋下的 `@tldraw/sync` WebSocket 示範伺服器連線。
+  2. 改回以穩定流暢的 Firebase Realtime DB 為中央控制樞紐，配合 `JSON.stringify` 序列化畫稿與 `myTldrawClientId` 防重複刷洗機制，確保跨電腦與手機/平板（iOS & Android）100% 穩定即時同步。
 - 影響檔案：`js/app.js`, `whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 

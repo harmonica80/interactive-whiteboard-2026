@@ -127,6 +127,7 @@ class App {
     this.initTimerDragging();
     this.initImageCanvasDrawing();
     this.initLuckyWheel();
+    this.bindTldrawRealtimeSync();
     
     // Global user interaction listener to resume audio if blocked by autoplay
     const resumeAudioOnGesture = () => {
@@ -5009,6 +5010,84 @@ class App {
         console.warn('Failed to send CLEAR_TLDRAW to iframe:', e);
       }
     }
+  }
+
+  bindTldrawRealtimeSync() {
+    this.tldrawSyncRef = db.ref('whiteboard_room');
+    this.isPublishingTldraw = false;
+    this.myTldrawClientId = 'client_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+
+    // 1. 監聽 Firebase 遠端推播過來的即時白板畫稿變更
+    this.tldrawSyncRef.on('value', (snapshot) => {
+      const val = snapshot.val();
+      if (!val || !val.data) return;
+
+      // 若是自己剛剛發送至 Firebase 的異動，跳過避免循環刷新
+      if (this.isPublishingTldraw || val.updatedBy === this.myTldrawClientId) {
+        return;
+      }
+
+      try {
+        const parsedSnapshot = JSON.parse(val.data);
+        const iframe = document.getElementById('whiteboardFrame');
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({
+            type: 'LOAD_TLDRAW_SNAPSHOT',
+            snapshot: parsedSnapshot
+          }, '*');
+        }
+      } catch (err) {
+        console.error('Failed to parse remote tldraw snapshot:', err);
+      }
+    });
+
+    // 2. 監聽來自 iframe (whiteboard.html) 的使用者繪圖與就緒事件
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+
+      if (data.type === 'TLDRAW_LOCAL_CHANGE' && data.snapshot) {
+        this.isPublishingTldraw = true;
+        
+        try {
+          const jsonStr = JSON.stringify(data.snapshot);
+          // 將畫稿 Snapshot 序列化為純文字 JSON 字串寫入 Firebase (避免 Firebase 物件 Key 包含 "." 的非法字元錯誤)
+          this.tldrawSyncRef.set({
+            data: jsonStr,
+            updatedBy: this.myTldrawClientId,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          }).catch(err => {
+            console.error('Failed to push tldraw snapshot to Firebase:', err);
+          }).finally(() => {
+            setTimeout(() => {
+              this.isPublishingTldraw = false;
+            }, 350);
+          });
+        } catch (err) {
+          this.isPublishingTldraw = false;
+          console.error('Failed to stringify tldraw snapshot:', err);
+        }
+      } else if (data.type === 'TLDRAW_READY') {
+        // 當白板載入完成時，主動向 Firebase 拉取最新畫稿給 iframe 展示
+        this.tldrawSyncRef.once('value').then(snapshot => {
+          const val = snapshot.val();
+          if (val && val.data) {
+            try {
+              const parsedSnapshot = JSON.parse(val.data);
+              const iframe = document.getElementById('whiteboardFrame');
+              if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                  type: 'LOAD_TLDRAW_SNAPSHOT',
+                  snapshot: parsedSnapshot
+                }, '*');
+              }
+            } catch (e) {
+              console.error('Failed to parse initial tldraw snapshot:', e);
+            }
+          }
+        });
+      }
+    });
   }
 
   async adminExportRecord() {
