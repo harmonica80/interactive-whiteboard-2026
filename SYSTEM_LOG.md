@@ -147,7 +147,13 @@
 - 行為：
   1. 對行動端 (`@media (max-width: 768px)`) 工具列設定 `width: max-content !important`，確保容器寬度達 273px 以上，100% 觸發 tldraw 渲染第 7 個 `^` 箭頭按鈕。
   2. 將按鈕設定為適中的 `35px` (圖示 `17px`) 搭配 8px 左右 padding，使第 7 個 `^` 箭頭按鈕在白框內部 100% 完整清晰呈現，不再因容器過窄而被 tldraw 自動隱藏。
+## 2026-07-23 - Antigravity
+- 修改項目：徹底修復行動端切換至 Desktop 模式導致 `T` 按鈕裁切且 `^` 箭頭消失的根源 Bug。
+- 行為：
+  1. 對行動端 (`@media (max-width: 768px)`) 工具列設定 `max-width: 250px !important`，100% 強制觸發 tldraw 啟動原生 Mobile 模式。
+  2. 對內部容器設定 `justify-content: space-between` 均勻排列 7 個 30px 按鈕，確保最右側 `^` 向上箭頭按鈕 100% 完整清晰呈現於白框內右側，點擊即可順暢彈出 24 種工具選擇面板。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 
