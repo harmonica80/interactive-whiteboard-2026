@@ -192,6 +192,14 @@
   2. 在 `index.html` 的 `<body>` 尾端加上 `DOMContentLoaded` 初始化監聽，動態為 `whiteboardFrame` iframe 的 src 附加 `?v=142` 版本字串。
   3. 這可強制行動端瀏覽器與 GitHub Pages CDN 繞過舊有快取快照，在每次更新時即時獲取最新版 DOM 移入方案程式碼。
 - 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：行動端隱藏說明文字面板，徹底解決 iframe 高度受擠壓向下偏移遮擋工具列的 Bug。
+- 行為：
+  1. 在 `css/style.css` 的行動端查詢 `@media (max-width: 768px)` 中設定 `.whiteboard-instructions { display: none !important; }`，徹底釋放底部近 100px 的垂直高度空間。
+  2. 將 `index.html` 的 `style.css` 版本 Query Parameter 升級為 `?v=142`，強制繞過瀏覽器對 CSS 的快取。
+  3. 這保證 iframe 的底部完整貼合卡片底邊，主工具列能以 100% 完整的高度呈現，不再遭受任何底部遮擋。
+- 影響檔案：`css/style.css`, `index.html`, `SYSTEM_LOG.md`。
+
 
 
 

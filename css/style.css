@@ -2519,6 +2519,10 @@ body {
     margin-right: -20px !important;
     border-radius: 0 !important;
   }
+  /* 隱藏白板說明文字，釋放高度空間防止遮擋與擠壓工具列 */
+  .whiteboard-instructions {
+    display: none !important;
+  }
 }
 
 @media (max-width: 480px) {
