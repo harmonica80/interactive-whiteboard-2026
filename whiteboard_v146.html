@@ -288,7 +288,7 @@
             fontWeight: 'bold',
             userSelect: 'none'
           }
-        }, 'v1.4.8')
+        }, 'v1.4.9')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [
@@ -363,14 +363,14 @@
     const root = createRoot(rootElement);
     root.render(React.createElement(App));
 
-    // 動態向行動端注入 debug 控制台，將畫面中所有 button 的類名/aria-label/title 印在頂部，以便一擊必殺定位該按鈕
+    // 動態向行動端注入 debug 控制台，將畫面中所有 button 的類名/aria-label/title 印在頂部，以及物理座標狙擊
     document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         try {
           const infoDiv = document.createElement('div');
           infoDiv.style.cssText = 'position: absolute; top: 45px; left: 6px; right: 6px; background: rgba(0,0,0,0.85); color: #00ff00; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 10px; z-index: 99999; max-height: 180px; overflow-y: auto; pointer-events: none; border: 1px solid #00ff00; line-height: 1.3;';
           
-          let html = '<strong>[DEBUG PANEL]</strong><br/>';
+          let html = '<strong>[DEBUG PANEL v1.4.9]</strong><br/>';
           const buttons = Array.from(document.querySelectorAll('button'));
           if (buttons.length === 0) {
             html += 'No buttons found!<br/>';
@@ -380,13 +380,49 @@
             });
           }
           
-          html += '<br/><strong>[OTHER POTENTIAL ELEMENTS]</strong><br/>';
-          const otherElements = Array.from(document.querySelectorAll('[class*="popover"], [class*="menu"], [class*="style"]'));
-          otherElements.forEach((e, idx) => {
-            if (idx < 5) {
-              html += `[E${idx}] Tag: ${e.tagName} | Class: ${e.className || 'none'}<br/>`;
+          // 實施物理座標狙擊：抓取置中工具列上方重疊的圓圈元素 (距離底部 60px)
+          const x = window.innerWidth / 2;
+          const y = window.innerHeight - 60;
+          const target = document.elementFromPoint(x, y);
+          
+          html += `<br/><strong>[TARGETING x:${x}, y:${y}]</strong><br/>`;
+          if (target) {
+            let current = target;
+            let count = 0;
+            let nodeToMove = null;
+            
+            while (current && current !== document.body && count < 6) {
+              const cls = current.className || 'none';
+              const tag = current.tagName;
+              html += `[L${count}] ${tag} | Class: ${cls}<br/>`;
+              
+              // 記錄可能需要移動的節點（如果它是按鈕或者是包含 style / popover 的層）
+              if (cls.includes('style') || cls.includes('button') || cls.includes('panel') || tag === 'BUTTON' || cls.includes('popover')) {
+                if (!nodeToMove) nodeToMove = current;
+              }
+              
+              current = current.parentNode;
+              count++;
             }
-          });
+            
+            // 如果找到目標節點，直接進行物理座標偏置移動，讓它融合到右側
+            if (nodeToMove) {
+              nodeToMove.style.setProperty('position', 'absolute', 'important');
+              nodeToMove.style.setProperty('bottom', '15px', 'important');
+              nodeToMove.style.setProperty('left', 'calc(50% + 98px)', 'important');
+              nodeToMove.style.setProperty('transform', 'translateX(-50%)', 'important');
+              nodeToMove.style.setProperty('width', '32px', 'important');
+              nodeToMove.style.setProperty('height', '32px', 'important');
+              nodeToMove.style.setProperty('min-width', '32px', 'important');
+              nodeToMove.style.setProperty('min-height', '32px', 'important');
+              nodeToMove.style.setProperty('z-index', '1001', 'important');
+              html += `<br/>👉 <strong>SUCCESS: Moved node [${nodeToMove.tagName}.${nodeToMove.className.split(' ')[0]}] to right!</strong><br/>`;
+            } else {
+              html += '<br/>❌ No targetable node trace found for styling!<br/>';
+            }
+          } else {
+            html += '❌ No element detected at point!<br/>';
+          }
           
           infoDiv.innerHTML = html;
           document.body.appendChild(infoDiv);
