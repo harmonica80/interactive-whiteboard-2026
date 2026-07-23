@@ -2305,6 +2305,26 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  transition: border-color 0.3s, box-shadow 0.3s, background-color 0.3s;
+}
+
+/* OpenCode 修改：一字千金未填寫輸入框之醒目螢光框提醒 */
+.chinese-writing-grid.unfilled-fluorescent-highlight {
+  border-color: #ff2d55 !important;
+  background: rgba(255, 45, 85, 0.12) !important;
+  animation: fluorescentPulse 1.2s infinite ease-in-out !important;
+  z-index: 5;
+}
+
+@keyframes fluorescentPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(255, 45, 85, 0.5), 0 0 22px rgba(255, 45, 85, 0.85), inset 0 0 12px rgba(255, 45, 85, 0.35);
+    border-color: #ff2d55;
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(255, 204, 0, 0.75), 0 0 30px rgba(255, 204, 0, 0.95), inset 0 0 16px rgba(255, 204, 0, 0.5);
+    border-color: #ffcc00;
+  }
 }
 
 .chinese-writing-grid::before {

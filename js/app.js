@@ -6471,7 +6471,7 @@ class App {
                 
                 <div class="character-crossword-cell empty"></div>
                 <div class="chinese-writing-grid" style="width: 80px; height: 80px;">
-                  <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
+                  <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); }">
                 </div>
                 <div class="character-crossword-cell empty"></div>
                 
@@ -6499,7 +6499,7 @@ class App {
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
               <!-- 左側：寫字九宮格輸入 -->
               <div class="chinese-writing-grid">
-                <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, '')">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); }">
               </div>
               <!-- 右側：注音九宮格 -->
               <div class="chinese-writing-grid">
@@ -6547,16 +6547,39 @@ class App {
     const isCrossword = this.focusGame.gameType === 'characterCrossword';
     const totalAnsCount = isCrossword ? 1 : 3;
     
-    // 收集答案
+    // 先清除畫面上所有的未填寫螢光框標示
+    document.querySelectorAll('.chinese-writing-grid').forEach(gridEl => {
+      gridEl.classList.remove('unfilled-fluorescent-highlight');
+    });
+
+    let hasUnfilled = false;
+    let firstUnfilledInput = null;
     const answers = [];
+    
     for (let i = 0; i < totalAnsCount; i++) {
       const input = document.getElementById(`char-test-input-${i}`);
       const val = input ? input.value.trim() : '';
+      const gridBox = input ? input.closest('.chinese-writing-grid') : null;
+      
       if (!val) {
-        this.showNotification('提示', isCrossword ? '請填寫關鍵字的國字！' : '請填寫所有題目的國字！');
-        return;
+        hasUnfilled = true;
+        if (gridBox) {
+          gridBox.classList.add('unfilled-fluorescent-highlight');
+        }
+        if (!firstUnfilledInput && input) {
+          firstUnfilledInput = input;
+        }
+      } else {
+        answers.push(val);
       }
-      answers.push(val);
+    }
+
+    if (hasUnfilled) {
+      this.showNotification('提示', isCrossword ? '請填寫關鍵字的國字！' : '請在未填寫螢光框處輸入正確國字！');
+      if (firstUnfilledInput) {
+        firstUnfilledInput.focus();
+      }
+      return;
     }
     
     if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
