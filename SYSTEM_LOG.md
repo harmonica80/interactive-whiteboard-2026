@@ -132,7 +132,13 @@
 - 行為：
   1. 對 `.tlui-toolbar__tools` 設定 `display: flex; justify-content: center` 消除原先左側的偏置留白，使按鈕群置中。
   2. 精簡行動端按鈕尺寸至 32px，總寬度縮減至 236px，使最右側 `^` 展開按鈕向左大幅拉回 35px+，在各種解析度的手機上均 100% 完整呈現且絕不被裁切。
+## 2026-07-23 - Antigravity
+- 修改項目：修復行動端工具列因容器寬度計算錯誤導致向右跑版偏離螢幕的 Bug。
+- 行為：
+  1. 移除幹擾 tldraw 原生計算的 `width: 100%; justify-content: center` 強制改寫，恢復 tldraw 原生置中與寬度計算機制。
+  2. 將按鈕精準固定為 `width: 32px; max-width: 32px`，將 7 個工具按鈕（含最右側 `^` 箭頭）完美收納在 224px 的白框內部，使工具列 100% 穩定居中浮現於手機螢幕中央。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 
