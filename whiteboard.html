@@ -47,7 +47,7 @@
     }
   </style>
 
-  <!-- Import Maps with explicit react@18.3.1 dependency pinning for esm.sh -->
+  <!-- Import Maps for tldraw & @tldraw/sync -->
   <script type="importmap">
   {
     "imports": {
@@ -55,7 +55,8 @@
       "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
       "react-dom": "https://esm.sh/react-dom@18.3.1",
       "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-      "tldraw": "https://esm.sh/tldraw@2.4.5?deps=react@18.3.1,react-dom@18.3.1"
+      "tldraw": "https://esm.sh/tldraw@2.4.5?deps=react@18.3.1,react-dom@18.3.1",
+      "@tldraw/sync": "https://esm.sh/@tldraw/sync@2.4.5?deps=react@18.3.1,react-dom@18.3.1,tldraw@2.4.5"
     }
   }
   </script>
@@ -64,7 +65,7 @@
   <div id="root">
     <div class="loading-container">
       <div class="spinner"></div>
-      <div>正在載入 tldraw 互動白板...</div>
+      <div>正在載入 tldraw 原生多人線上白板...</div>
     </div>
   </div>
 
@@ -72,49 +73,29 @@
     import React from 'react';
     import { createRoot } from 'react-dom/client';
     import { Tldraw, getSnapshot, loadSnapshot } from 'tldraw';
+    import { useSyncDemo } from '@tldraw/sync';
 
     let editorInstance = null;
-    let isApplyingRemote = false;
 
     function App() {
+      // 使用 tldraw 原生連線引擎，直連專屬的雲端房間 (無需經由 Firebase)
+      const store = useSyncDemo({ roomId: 'interactive-whiteboard-2026-shared-room' });
+
       const handleMount = (editor) => {
         editorInstance = editor;
-        console.log('tldraw initialized successfully!');
-        
-        // 監聽使用者在白板上的畫筆/文字/圖片/物件變動 (scope: 'document')
-        let debounceTimer = null;
-        editor.store.listen((entry) => {
-          if (!isApplyingRemote) {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-              try {
-                const snapshot = getSnapshot(editor.store);
-                if (window.parent && window.parent !== window) {
-                  window.parent.postMessage({
-                    type: 'TLDRAW_LOCAL_CHANGE',
-                    snapshot: snapshot
-                  }, '*');
-                }
-              } catch (err) {
-                console.error('Failed to capture local tldraw change:', err);
-              }
-            }, 250);
-          }
-        }, { scope: 'document' });
-
-        // 通知父視窗已準備就緒，以便拉取 Firebase 全域共享畫稿
+        console.log('tldraw native multiplayer sync connected!');
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({ type: 'TLDRAW_READY' }, '*');
         }
       };
 
-      // 移除單機專用的 persistenceKey，確保所有使用者加入同一個雲端共享白板
       return React.createElement(Tldraw, {
+        store: store,
         onMount: handleMount
       });
     }
 
-    // 監聽來自父視窗的 postMessage 通訊
+    // 監聽來自父視窗的管理後台備份與重置請求
     window.addEventListener('message', async (event) => {
       const data = event.data;
       if (!data || typeof data !== 'object') return;
@@ -137,39 +118,16 @@
                 error: err.message
               }, '*');
             }
-          } else {
-            window.parent.postMessage({
-              type: 'TLDRAW_SNAPSHOT_RESPONSE',
-              requestId: data.requestId,
-              error: 'Editor not ready'
-            }, '*');
           }
           break;
 
         case 'LOAD_TLDRAW_SNAPSHOT':
           if (editorInstance && data.snapshot) {
             try {
-              isApplyingRemote = true;
               loadSnapshot(editorInstance.store, data.snapshot);
-              console.log('tldraw remote snapshot loaded successfully');
-              setTimeout(() => { isApplyingRemote = false; }, 150);
-              if (data.requestId) {
-                window.parent.postMessage({
-                  type: 'TLDRAW_LOAD_RESPONSE',
-                  requestId: data.requestId,
-                  success: true
-                }, '*');
-              }
+              console.log('tldraw snapshot loaded successfully');
             } catch (err) {
-              isApplyingRemote = false;
               console.error('Failed to load tldraw snapshot:', err);
-              if (data.requestId) {
-                window.parent.postMessage({
-                  type: 'TLDRAW_LOAD_RESPONSE',
-                  requestId: data.requestId,
-                  error: err.message
-                }, '*');
-              }
             }
           }
           break;
@@ -177,7 +135,6 @@
         case 'CLEAR_TLDRAW':
           if (editorInstance) {
             try {
-              // 選擇並刪除白板上的所有圖案物件
               editorInstance.selectAll();
               const selectedIds = editorInstance.getSelectedShapeIds();
               if (selectedIds && selectedIds.length > 0) {
@@ -187,10 +144,6 @@
               console.error('Failed to clear tldraw:', err);
             }
           }
-          try {
-            indexedDB.deleteDatabase('tldraw');
-            indexedDB.deleteDatabase('interactive-whiteboard-room');
-          } catch(e) {}
           break;
       }
     });
