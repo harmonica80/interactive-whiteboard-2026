@@ -218,14 +218,14 @@
   2. 在 JS 中對移入後的按鈕以 `.style.setProperty(..., 'important')` 強制灌注 inline 絕對定位，徹底擺脫原處浮動，融合為第 7 個按鈕。
   3. 將 `index.html` 的所有資源與 iframe src 版本 Query 升級為 `?v=144`。
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
-## 2026-07-23 - Antigravity
-- 修改項目：引入基於 navigator.userAgent 的 isMobile 檢測，並改用純 CSS 絕對定位進行選單按鈕物理嵌入，解決電腦端樣式損壞問題。
-- 行為：
-  1. 在 `whiteboard.html` 中，將 `isMobile` 檢測改為 `navigator.userAgent` 匹配，100% 避免 iframe 載入時因寬度為 0 導致電腦端被誤判為行動版的 Bug，徹底還原電腦端右側原生的「樣式面板」。
-  2. 廢除 `MutationObserver` 腳本，避免潛在的 DOM 移入副作用與 React 渲染衝突。
-  3. 對行動端特有的圓形選單按鈕，利用純 CSS `position: absolute !important; bottom: 15px !important; left: calc(50% + 98px) !important;` 絕對定位物理偏移，將其天衣無縫地在視覺上定位至主工具列的最右側內部。
-  4. 將 `index.html` 內腳本、樣式與 iframe src 版本 Query 一鍵升級至 `?v=146`，調試標記升級為 `v1.4.6`。
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：重命名白板檔案為 `whiteboard_v146.html`，以徹底擊碎行動端瀏覽器與 CDN 頑固的舊檔案快取。
+- 行為：
+  1. 複製並建立全新的實體檔案 `whiteboard_v146.html`。
+  2. 在 `index.html` 中將靜態與動態 iframe 的 `src` 皆修正為指向新的 `whiteboard_v146.html`。
+  3. 這使得行動裝置的瀏覽器無法再從快取磁碟讀取舊檔案，而必須 100% 下載最新包含 userAgent 和純 CSS 物理定位的白板程式碼。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 
 
 
