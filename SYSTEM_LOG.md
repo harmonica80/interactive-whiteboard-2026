@@ -170,6 +170,14 @@
   1. 在 `whiteboard.html` 中對 `<Tldraw />` 傳入 `forceMobile: isMobile` 屬性，強制 tldraw 在任何手機視窗下都 100% 採用行動版折疊工具列，防止其誤入中等寬度半電腦版版型。
   2. 在 `css/style.css` 中設定行動端負 Margin (`margin-left: -12px` / `-20px`)，使白板卡片頂滿手機螢幕邊緣，免除 body padding 限制，為白板工具列多爭取 24px+ 可用寬度，確保工具按鈕完全不被裁剪且 `^` 箭頭 100% 清晰浮現。
 - 影響檔案：`whiteboard.html`, `css/style.css`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：移除 `forceMobile` 限制，恢復行動端主工具列絕對置中定位與按鈕大小，還原最右側 `^` 箭頭。
+- 行為：
+  1. 移除 `whiteboard.html` 中強制的 `forceMobile: isMobile` 標記，允許 tldraw 使用預設的 overflow 摺疊邏輯渲染工具列。
+  2. 恢復行動端工具列 `.tlui-toolbar` 的 `position: absolute; left: 50%; transform: translateX(-50%)` 絕對置中，並將按鈕精細微調至 `34px` (圖示 `16px`)。
+  3. 這與行動端滿版白板（40px 可用寬度提升）相結合，使 7 個工具按鈕（選擇、手掌、畫筆、橡皮擦、箭頭、文字 + `^` 向上箭頭）以 Desktop/Tablet 模式的 Overflow 機制 100% 完整清晰呈現在螢幕中央，無任何裁切跑版。
+- 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 ## 2026-07-23 - Antigravity
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
