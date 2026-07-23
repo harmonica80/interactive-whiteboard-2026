@@ -30,28 +30,36 @@
 
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
-      /* 1. 精準去除工具列下方的多餘空白，讓白框高度緊貼工具按鈕 */
+      /* 1. 精準去除工具列上下多餘空白，設定左右 8px 內邊距確保最右側 ^ 按鈕向內移動完全呈現 */
       .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
         margin-bottom: 6px !important;
         padding-top: 4px !important;
         padding-bottom: 4px !important;
-        padding-left: 6px !important;
-        padding-right: 6px !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
         min-height: unset !important;
         height: auto !important;
         box-sizing: border-box !important;
       }
 
-      /* 2. 確保按鈕間距與外框高度契合 (38px)，完整保留原生 ^ 展開選單按鈕 */
+      /* 2. 精簡行動端按鈕尺寸 (34px)，縮小按鈕間距，確保 7 個按鈕 (含 ^ 箭頭) 100% 完整入鏡不被遮擋 */
       .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
-        height: 38px !important;
-        min-height: 38px !important;
-        width: 38px !important;
-        min-width: 38px !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        width: 34px !important;
+        min-width: 34px !important;
         margin-top: 0 !important;
         margin-bottom: 0 !important;
-        padding: 4px !important;
+        margin-left: 1px !important;
+        margin-right: 1px !important;
+        padding: 3px !important;
         box-sizing: border-box !important;
+      }
+
+      /* 3. 按鈕內 svg 圖示自適應 */
+      .tlui-toolbar svg, [class*="tlui-toolbar"] svg {
+        width: 18px !important;
+        height: 18px !important;
       }
     }
     .loading-container {
