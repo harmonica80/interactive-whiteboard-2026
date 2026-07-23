@@ -219,6 +219,7 @@
   3. 將 `index.html` 的所有資源與 iframe src 版本 Query 升級為 `?v=144`。
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
 - 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 ## 2026-07-23 - Antigravity
 - 修改項目：重命名白板檔案為 `whiteboard_v146.html`，以徹底擊碎行動端瀏覽器與 CDN 頑固的舊檔案快取。
 - 行為：
@@ -226,11 +227,6 @@
   2. 在 `index.html` 中將靜態與動態 iframe 的 `src` 皆修正為指向新的 `whiteboard_v146.html`。
   3. 這使得行動裝置的瀏覽器無法再從快取磁碟讀取舊檔案，而必須 100% 下載最新包含 userAgent 和純 CSS 物理定位的白板程式碼。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
-
-
-
-
-
 
 
 
