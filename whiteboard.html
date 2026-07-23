@@ -26,41 +26,29 @@
       height: 100%;
       touch-action: none;
     }
-    /* 精準去除工具列下方的多餘空白，讓白框高度緊貼工具按鈕 */
-    .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
-      margin-bottom: 8px !important;
-      padding: 4px 6px !important;
-      min-height: unset !important;
-      height: auto !important;
-      box-sizing: border-box !important;
-    }
+    /* 電腦端 (Desktop > 768px)：完全保留 tldraw 100% 原生原始樣式與大小 */
 
-    /* 工具列內部按鈕容器：支援橫向向後滑動平移選取更多工具，去除上下多餘內邊距 */
-    .tlui-toolbar__tools, [class*="toolbar__tools"], [class*="tlui-toolbar"] > div {
-      overflow-x: auto !important;
-      -webkit-overflow-scrolling: touch !important;
-      touch-action: pan-x !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      display: flex !important;
-      align-items: center !important;
-    }
+    /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
+    @media (max-width: 768px) {
+      /* 抬升底部工具列邊距，精準貼合邊界 */
+      .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
+        margin-bottom: 6px !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+      }
 
-    /* 按鈕高度與外框契合 (38px)，去除上下多餘 Margin，使白框緊貼圖示 */
-    .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
-      height: 38px !important;
-      min-height: 38px !important;
-      width: 38px !important;
-      min-width: 38px !important;
-      padding: 4px !important;
-      margin-top: 0 !important;
-      margin-bottom: 0 !important;
-    }
+      /* 工具列內部按鈕容器：支援橫向滑動平移選取更多工具 */
+      .tlui-toolbar__tools, [class*="toolbar__tools"], [class*="tlui-toolbar"] > div {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x !important;
+      }
 
-    /* 隱藏橫向滾動條保持介面美觀 */
-    .tlui-toolbar__tools::-webkit-scrollbar, [class*="tlui-toolbar"]::-webkit-scrollbar, [class*="tlui-toolbar"] *::-webkit-scrollbar {
-      display: none !important;
-      height: 0 !important;
+      /* 隱藏橫向滾動條保持介面美觀 */
+      .tlui-toolbar__tools::-webkit-scrollbar, [class*="tlui-toolbar"]::-webkit-scrollbar, [class*="tlui-toolbar"] *::-webkit-scrollbar {
+        display: none !important;
+        height: 0 !important;
+      }
     }
     .loading-container {
       display: flex;

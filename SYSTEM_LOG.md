@@ -112,7 +112,13 @@
 - 行為：
   1. 重設 `.tlui-toolbar` 的 `min-height: unset; height: auto` 並精準將上下 padding 縮減至 `4px 6px`。
   2. 移除工具按鈕上下多餘 margin，使白框高度與工具圖示緊密貼合，消除原本下方的空白區塊。
+## 2026-07-23 - Antigravity
+- 修改項目：隔離電腦端與行動端工具列 CSS，電腦端 100% 完全恢復 tldraw 原始原生樣式與大小。
+- 行為：
+  1. 電腦端 (`width > 768px`) 完全不施加任何自訂 CSS 樣式，百分之百保留 tldraw 官方原汁原味的工具列尺寸、寬度與高度。
+  2. 行動端 (`@media (max-width: 768px)`) 僅作最安全輕量的 `padding-bottom/margin-bottom` 貼合與 `overflow-x: auto` 橫向滑動選取，解決手機端工具列消失或擠壓問題。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 
