@@ -97,7 +97,19 @@
 - 行為：
   1. 將 `.tlui-toolbar` 及其按鈕高度由 48px+ 壓縮至 44px (按鈕 36px)，顯著減少工具列佔用的垂直空間。
   2. 加入 `max-width: calc(100vw - 20px)`, `overflow-x: auto`, `touch-action: pan-x` 與 `flex-wrap: nowrap`，讓手機使用者可在工具列上直接左右滑動平移，輕鬆選取後方的便條紙、形狀、媒體、雷射筆等工具。
-- 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：修復 tldraw 底部工具列於行動端遺失/隱藏的 CSS 佈局問題。
+- 行為：
+  1. 將 `.tlui-toolbar` 設定為 `position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 999`，強制置中懸浮於畫布下方 12px 處，100% 清晰顯示。
+  2. 對內部按鈕容器 `.tlui-toolbar__tools` 設定 `overflow-x: auto; flex-wrap: nowrap; flex-shrink: 0; touch-action: pan-x`，讓使用者能在工具列上順暢單指左右滑動，選取所有工具（選擇、手掌、畫筆、橡皮擦、箭頭、文字、便條紙、圖形、媒體等）。
+## 2026-07-23 - Antigravity
+- 修改項目：還原並重構 tldraw 原生工具列 CSS 樣式，解決工具列消失問題。
+- 行為：
+  1. 移除過度幹擾 tldraw 原生計算的 `position: absolute / transform` 強制改寫，恢復 tldraw 原生 React 工具列定位邏輯，確保工具列 100% 正常浮現。
+  2. 僅保留極簡的 `margin-bottom: 10px` 抬升邊距與 `overflow-x: auto` 手勢平移，兼顧手機版滑動平移選取工具與畫面穩定顯示。
+- 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
+
 
 
 

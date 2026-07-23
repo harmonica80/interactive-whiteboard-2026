@@ -26,50 +26,29 @@
       height: 100%;
       touch-action: none;
     }
-    /* 抬升與縮減底部工具列高度，並開啟橫向滑動平移選取更多工具 */
+    /* 抬升底部工具列邊距，避免被邊框遮擋 */
     .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
-      height: 44px !important;
-      min-height: 44px !important;
-      padding: 3px 6px !important;
-      margin-bottom: 8px !important;
-      border-radius: 12px !important;
-      max-width: calc(100vw - 20px) !important;
+      margin-bottom: 10px !important;
+    }
+
+    /* 工具列內部按鈕容器：支援橫向向後滑動平移選取更多工具 */
+    .tlui-toolbar__tools, [class*="toolbar__tools"], [class*="tlui-toolbar"] > div {
       overflow-x: auto !important;
-      overflow-y: hidden !important;
       -webkit-overflow-scrolling: touch !important;
       touch-action: pan-x !important;
-      white-space: nowrap !important;
-      box-sizing: border-box !important;
     }
 
-    /* 工具列內部按鈕容器：支援橫向向後延伸與平移 */
-    .tlui-toolbar__tools, [class*="toolbar__tools"], [class*="tlui-layout"] {
-      display: flex !important;
-      flex-direction: row !important;
-      flex-wrap: nowrap !important;
-      align-items: center !important;
-      min-width: max-content !important;
-    }
-
-    /* 工具列單個按鈕尺寸優化 (高度從 48px+ 縮減至 36px) */
+    /* 按鈕高度輕量縮減 (38px)，減小垂直空間佔用 */
     .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
-      height: 36px !important;
-      min-height: 36px !important;
-      width: 36px !important;
-      min-width: 36px !important;
+      height: 38px !important;
+      min-height: 38px !important;
+      width: 38px !important;
+      min-width: 38px !important;
       padding: 4px !important;
-      margin: 0 2px !important;
-      box-sizing: border-box !important;
     }
 
-    /* 按鈕圖示尺寸自適應 */
-    .tlui-toolbar svg, [class*="tlui-toolbar"] svg {
-      width: 18px !important;
-      height: 18px !important;
-    }
-
-    /* 隱藏滾動條保持美觀 */
-    .tlui-toolbar::-webkit-scrollbar, [class*="tlui-toolbar"]::-webkit-scrollbar {
+    /* 隱藏橫向滾動條保持介面美觀 */
+    .tlui-toolbar__tools::-webkit-scrollbar, [class*="tlui-toolbar"]::-webkit-scrollbar, [class*="tlui-toolbar"] *::-webkit-scrollbar {
       display: none !important;
       height: 0 !important;
     }
