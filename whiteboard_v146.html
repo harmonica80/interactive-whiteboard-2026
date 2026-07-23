@@ -63,7 +63,12 @@
       }
 
       /* 3. 原生浮動圓圈選單按鈕：使用絕對定位物理偏置強行嵌入置中工具列的右側內部 */
-      .tlui-style-panel__toggle, [class*="style-panel__toggle"], [class*="style-panel"] button {
+      .tlui-style-panel,
+      [class*="tlui-style-panel"],
+      .tlui-style-panel__toggle,
+      [class*="style-panel__toggle"],
+      [class*="style-panel"] button,
+      [class*="style-panel"] [role="button"] {
         position: absolute !important;
         bottom: 15px !important;
         left: calc(50% + 98px) !important;
@@ -87,9 +92,26 @@
 
       /* 4. 按鈕 svg 圖示大小適中 */
       .tlui-toolbar svg, [class*="tlui-toolbar"] svg, 
+      .tlui-style-panel svg, [class*="style-panel"] svg,
       .tlui-style-panel__toggle svg, [class*="style-panel__toggle"] svg, [class*="style-panel"] button svg {
         width: 16px !important;
         height: 16px !important;
+      }
+
+      /* 5. 樣式選擇面板還原置中覆寫：確保彈出面板以適當大小置中懸浮於工具列正上方 */
+      [class*="style-panel__content"], 
+      [class*="style-panel__wrapper"], 
+      .tlui-style-panel__content {
+        position: fixed !important;
+        bottom: 60px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: max-content !important;
+        height: auto !important;
+        min-width: unset !important;
+        min-height: unset !important;
+        z-index: 1002 !important;
+        display: block !important;
       }
     }
     .loading-container {
@@ -266,7 +288,7 @@
             fontWeight: 'bold',
             userSelect: 'none'
           }
-        }, 'v1.4.6')
+        }, 'v1.4.7')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [
