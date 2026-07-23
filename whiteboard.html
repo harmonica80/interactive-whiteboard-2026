@@ -26,25 +26,35 @@
       height: 100%;
       touch-action: none;
     }
-    /* 抬升底部工具列邊距，避免被邊框遮擋 */
+    /* 精準去除工具列下方的多餘空白，讓白框高度緊貼工具按鈕 */
     .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
-      margin-bottom: 10px !important;
+      margin-bottom: 8px !important;
+      padding: 4px 6px !important;
+      min-height: unset !important;
+      height: auto !important;
+      box-sizing: border-box !important;
     }
 
-    /* 工具列內部按鈕容器：支援橫向向後滑動平移選取更多工具 */
+    /* 工具列內部按鈕容器：支援橫向向後滑動平移選取更多工具，去除上下多餘內邊距 */
     .tlui-toolbar__tools, [class*="toolbar__tools"], [class*="tlui-toolbar"] > div {
       overflow-x: auto !important;
       -webkit-overflow-scrolling: touch !important;
       touch-action: pan-x !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
     }
 
-    /* 按鈕高度輕量縮減 (38px)，減小垂直空間佔用 */
+    /* 按鈕高度與外框契合 (38px)，去除上下多餘 Margin，使白框緊貼圖示 */
     .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
       height: 38px !important;
       min-height: 38px !important;
       width: 38px !important;
       min-width: 38px !important;
       padding: 4px !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
     }
 
     /* 隱藏橫向滾動條保持介面美觀 */

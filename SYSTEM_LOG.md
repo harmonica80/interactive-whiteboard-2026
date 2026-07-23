@@ -107,7 +107,13 @@
 - 行為：
   1. 移除過度幹擾 tldraw 原生計算的 `position: absolute / transform` 強制改寫，恢復 tldraw 原生 React 工具列定位邏輯，確保工具列 100% 正常浮現。
   2. 僅保留極簡的 `margin-bottom: 10px` 抬升邊距與 `overflow-x: auto` 手勢平移，兼顧手機版滑動平移選取工具與畫面穩定顯示。
+## 2026-07-23 - Antigravity
+- 修改項目：去除 tldraw 底部工具列白框下方的多餘空白，使外框高度精準緊貼工具圖示。
+- 行為：
+  1. 重設 `.tlui-toolbar` 的 `min-height: unset; height: auto` 並精準將上下 padding 縮減至 `4px 6px`。
+  2. 移除工具按鈕上下多餘 margin，使白框高度與工具圖示緊密貼合，消除原本下方的空白區塊。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 
