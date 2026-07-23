@@ -30,40 +30,58 @@
 
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
-      /* 1. 工具列白框：強制於底部絕對置中懸浮，徹底解決右偏跑版，並精簡高度 */
+      /* 1. 工具列外框：右側留出 40px 的空間塞入移入的 custom-style-toggle-btn */
       .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
-        position: absolute !important;
-        bottom: 8px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        margin: 0 !important;
-        padding: 3px 6px !important;
-        width: max-content !important;
-        max-width: calc(100vw - 16px) !important;
-        min-height: unset !important;
-        height: auto !important;
-        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12) !important;
-        border-radius: 12px !important;
-        z-index: 999 !important;
+        margin-bottom: 8px !important;
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
+        padding-left: 6px !important;
+        padding-right: 40px !important;
+        position: relative !important;
         box-sizing: border-box !important;
+        height: 38px !important;
+        min-height: unset !important;
       }
 
-      /* 2. 按鈕輕量固定尺寸 (34px)，縮小間距，確保 7 個按鈕 (含最右側 ^ 箭頭) 100% 完整收納於白框內 */
+      /* 2. 按鈕輕量固定尺寸 (32px)，縮小間距，確保 6 個基本按鈕緊湊並排於白框內 */
       .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
-        height: 34px !important;
-        min-height: 34px !important;
-        max-height: 34px !important;
-        width: 34px !important;
-        min-width: 34px !important;
-        max-width: 34px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
+        width: 32px !important;
+        min-width: 32px !important;
+        max-width: 32px !important;
         margin: 0 1px !important;
         padding: 2px !important;
         box-sizing: border-box !important;
         flex-shrink: 0 !important;
       }
 
-      /* 3. 按鈕 svg 圖示適中 */
-      .tlui-toolbar svg, [class*="tlui-toolbar"] svg {
+      /* 3. 圓圈選單按鈕：視覺上完美嵌入工具列最右側，融為一體成為第 7 個按鈕 */
+      .custom-style-toggle-btn, [class*="style-panel__button"].custom-style-toggle-btn {
+        position: absolute !important;
+        right: 4px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 2px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        cursor: pointer !important;
+      }
+
+      /* 4. 按鈕 svg 圖示大小適中 */
+      .tlui-toolbar svg, [class*="tlui-toolbar"] svg, .custom-style-toggle-btn svg {
         width: 16px !important;
         height: 16px !important;
       }
@@ -234,7 +252,8 @@
         React.createElement(Tldraw, {
           key: 'tldraw',
           onMount: handleMount,
-          components: tldrawComponents
+          components: tldrawComponents,
+          forceMobile: isMobile // 強制在行動端使用原生折疊式的 Mobile UI，以提供帶有 ^ 箭頭的樣式與面板按鈕
         }),
         customControls
       ]);
@@ -300,6 +319,25 @@
     const rootElement = document.getElementById('root');
     const root = createRoot(rootElement);
     root.render(React.createElement(App));
+
+    // 行動端 DOM 優化：將原本獨立浮動的 StylePanel 圓圈按鈕移入主工具列內部，成為視覺上置於右側的第 7 個按鈕
+    const isMobileDevice = window.innerWidth <= 768;
+    if (isMobileDevice) {
+      const observer = new MutationObserver(() => {
+        try {
+          const styleBtn = document.querySelector('.tlui-style-panel__button, [class*="style-panel__button"]');
+          const toolbarTools = document.querySelector('.tlui-toolbar__tools, [class*="toolbar__tools"]');
+          if (styleBtn && toolbarTools && styleBtn.parentNode !== toolbarTools) {
+            // 將圓圈按鈕移入工具列尾端
+            toolbarTools.appendChild(styleBtn);
+            styleBtn.classList.add('custom-style-toggle-btn');
+          }
+        } catch (err) {
+          console.error('Failed to embed style panel button into toolbar:', err);
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
   </script>
 </body>
 </html>

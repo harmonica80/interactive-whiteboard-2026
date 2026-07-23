@@ -177,6 +177,15 @@
   2. 恢復行動端工具列 `.tlui-toolbar` 的 `position: absolute; left: 50%; transform: translateX(-50%)` 絕對置中，並將按鈕精細微調至 `34px` (圖示 `16px`)。
   3. 這與行動端滿版白板（40px 可用寬度提升）相結合，使 7 個工具按鈕（選擇、手掌、畫筆、橡皮擦、箭頭、文字 + `^` 向上箭頭）以 Desktop/Tablet 模式的 Overflow 機制 100% 完整清晰呈現在螢幕中央，無任何裁切跑版。
 - 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：行動端 DOM 優化，動態將圓形選單按鈕（StylePanel 切換按鈕）移入工具列內部，徹底解決重疊並還原 `^` 箭頭。
+- 行為：
+  1. 啟用 `forceMobile: isMobile`，以啟動帶有 `^` 向上箭頭的圓圈選單按鈕，保證工具折疊的完整度。
+  2. 使用 `MutationObserver` 監聽 DOM 節點變動，在行動端動態將 `.tlui-style-panel__button` 節點以 `appendChild` 移入 `.tlui-toolbar__tools` 容器內。
+  3. 配合 CSS 微調工具列右側 `padding-right: 40px`，並將該按鈕以絕對定位（不使用 scale）完美鎖定在工具列白框的最右側。
+  4. 此方案兼具行動端 100% 座標精準度，將原本浮動重疊的圓圈按鈕完美改造成工具列的最右側第 7 個按鈕，無任何跑版或遮擋。
+- 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 ## 2026-07-23 - Antigravity
