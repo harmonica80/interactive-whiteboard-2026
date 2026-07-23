@@ -30,17 +30,22 @@
 
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
-      /* 1. 工具列外框：右側留出 40px 的空間塞入移入的 custom-style-toggle-btn */
+      /* 1. 工具列外框：強制以絕對定位懸浮於底部中央，防止被裁切，右側留出 40px 塞入 custom-style-toggle-btn */
       .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
-        margin-bottom: 8px !important;
+        position: absolute !important;
+        bottom: 12px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        margin: 0 !important;
         padding-top: 3px !important;
         padding-bottom: 3px !important;
         padding-left: 6px !important;
         padding-right: 40px !important;
-        position: relative !important;
         box-sizing: border-box !important;
         height: 38px !important;
         min-height: unset !important;
+        width: max-content !important;
+        z-index: 999 !important;
       }
 
       /* 2. 按鈕輕量固定尺寸 (32px)，縮小間距，確保 6 個基本按鈕緊湊並排於白框內 */

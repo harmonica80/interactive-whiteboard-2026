@@ -199,6 +199,13 @@
   2. 將 `index.html` 的 `style.css` 版本 Query Parameter 升級為 `?v=142`，強制繞過瀏覽器對 CSS 的快取。
   3. 這保證 iframe 的底部完整貼合卡片底邊，主工具列能以 100% 完整的高度呈現，不再遭受任何底部遮擋。
 - 影響檔案：`css/style.css`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-23 - Antigravity
+- 修改項目：恢復工具列行動端絕對定位，徹底解決主工具列向下溢出裁切的排版問題。
+- 行為：
+  1. 將 `whiteboard.html` 行動端 CSS 中的 `.tlui-toolbar` 重新設定為 `position: absolute !important; bottom: 12px !important; left: 50% !important; transform: translateX(-50%) !important;`。
+  2. 這能確保工具列不受相對定位的流式高度影響，穩妥懸浮於白板底邊上方 12px 處，100% 完整展示，不再被向下推出視口之外。
+- 影響檔案：`whiteboard.html`, `SYSTEM_LOG.md`。
+
 
 
 
