@@ -2523,6 +2523,11 @@ body {
   .whiteboard-instructions {
     display: none !important;
   }
+  /* 行動端白板卡片高度優化：限制最大高度自適應，防止矮螢幕手機底部溢出切掉工具列 */
+  #panel-whiteboard > .panel-body {
+    height: calc(100vh - 190px) !important;
+    min-height: 350px !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2531,6 +2536,11 @@ body {
     margin-left: -12px !important;
     margin-right: -12px !important;
     border-radius: 0 !important;
+  }
+  /* 超窄手機高度進一步安全化微調 */
+  #panel-whiteboard > .panel-body {
+    height: calc(100vh - 180px) !important;
+    min-height: 340px !important;
   }
 }
 
