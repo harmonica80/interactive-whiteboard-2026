@@ -4826,6 +4826,19 @@ class App {
                 this.playerCanon.playVideo();
               }
             }
+          },
+          onError: (event) => {
+            console.warn("YouTube player error code:", event.data);
+            // 當音樂遇到權限限制 (150/101) 或載入錯誤時，自動備用預設經典卡農
+            if (event.data === 150 || event.data === 101 || event.data === 100 || event.data === 5 || event.data === 2) {
+              if (this.playerCanon && typeof this.playerCanon.loadVideoById === 'function') {
+                this.playerCanon.loadVideoById({
+                  videoId: 'MnhXZRw_ATU',
+                  startSeconds: 0
+                });
+                this.playerCanon.playVideo();
+              }
+            }
           }
         }
       });

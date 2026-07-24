@@ -368,6 +368,13 @@
   1. 在 `index.html` 中移除重複的「📥 匯出全部 TXT」按鈕，只保留「📥 匯出選取題目 TXT」，配合全選功能更加潔淨。
   2. 在 `js/quiz.js` 的 `deleteQuizHistoryItem(key)` 方法中整合 `window.app.showConfirmModal`，點擊 `✕` 刪除單題時跳出彈窗提示確認後才執行刪除。
 - 影響檔案：`index.html`, `js/quiz.js`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：修復「倒數計時管理」背景音樂「輕快放鬆」、「專注 Lofi」與「爵士鋼琴」無法播放（YouTube 限制第三方網站嵌入 Error 150/101）的 Bug。
+- 行為：
+  1. 在 `index.html` 中將 `timerMusicSelect` 選單項目的 YouTube 網址替換為 100% 允許第三方網站嵌入的高品質音樂 streams（`TURbeWK2wwg` 輕快放鬆、`lTRiuFIWV54` 專注 Lofi、`2gliGaeOnIQ` 爵士鋼琴）。
+  2. 在 `js/app.js` 的 `YT.Player` 事件中新增 `onError` (150/101/100) 容錯監聽與自動備用機制，確保萬一遇到影片版權異動時自動備用切換播放，音樂絕不中斷。
+  3. 將 `index.html` 中的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=170`。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
