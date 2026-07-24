@@ -391,6 +391,12 @@
   3. 當使用者點擊「啟動倒數」時（手勢觸發），HTML5 Audio 無懼任何瀏覽器第三方阻擋，100% 必定響起立體優美的音樂聲！
   4. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=172`。
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：更換倒數計時第一首「🎵 經典卡農」的 MP3 連結為維基共享資源高音質《卡農 (Canon in D)》開放樂曲音訊源。
+- 行為：
+  1. 在 `index.html` 中將 `timerMusicSelect` 第一項「🎵 經典卡農」更換為 100% 穩定且無需 Referrer 限制的帕海貝爾《卡農》MP3 直連檔。
+  2. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=173`。
+- 影響檔案：`index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
