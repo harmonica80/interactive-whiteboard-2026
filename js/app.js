@@ -5722,7 +5722,20 @@ class App {
           db.ref('quiz/focusGame').update({
             status: 'playing',
             startTime: firebase.database.ServerValue.TIMESTAMP
-          });
+          }).catch(err => console.error('Admin update focusGame status failed:', err));
+        } else {
+          // OpenCode 修改：學生端本地防禦性啟動。如果倒數結束但 Firebase status 仍為 countdown（如老師背景休眠），學生端直接在本地樂觀切換進入遊戲
+          setTimeout(() => {
+            if (this.focusGame && this.focusGame.status === 'countdown') {
+              console.log('[DEBUG] Student optimistically switches focus game to playing due to timeout.');
+              const localPlayingGame = {
+                ...this.focusGame,
+                status: 'playing',
+                startTime: this.focusGame.countdownStartTime + ((this.focusGame.countdownSeconds || 10) * 1000)
+              };
+              this.handleFocusGameSync(localPlayingGame);
+            }
+          }, 600);
         }
       }
     };
@@ -6049,7 +6062,20 @@ class App {
           db.ref('quiz/buzzGame').update({
             status: 'playing',
             startTime: firebase.database.ServerValue.TIMESTAMP
-          });
+          }).catch(err => console.error('Admin update buzzGame status failed:', err));
+        } else {
+          // OpenCode 修改：學生端搶答本地防禦性啟動。如果倒數結束但 Firebase status 仍為 countdown（如老師背景休眠），學生端直接在本地樂觀切換進入搶答
+          setTimeout(() => {
+            if (this.buzzGame && this.buzzGame.status === 'countdown') {
+              console.log('[DEBUG] Student optimistically switches buzz game to playing due to timeout.');
+              const localPlayingGame = {
+                ...this.buzzGame,
+                status: 'playing',
+                startTime: this.buzzGame.countdownStartTime + ((this.buzzGame.countdownSeconds || 5) * 1000)
+              };
+              this.handleBuzzGameSync(localPlayingGame);
+            }
+          }, 600);
         }
       }
     };

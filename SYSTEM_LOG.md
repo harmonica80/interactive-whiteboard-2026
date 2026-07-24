@@ -217,10 +217,13 @@
   1. 在 `whiteboard.html` 中，將 DOM 節點 Observer 匹配 Selector 改為超寬容的 `button[class*="style-panel"], [class*="style-panel"] button`（覆蓋 style-panel__toggle 類名），並對工具列定位容器啟用 `.tlui-toolbar` 全匹配，徹底確保按鈕與容器 100% 成功匹配。
   2. 在 JS 中對移入後的按鈕以 `.style.setProperty(..., 'important')` 強制灌注 inline 絕對定位，徹底擺脫原處浮動，融合為第 7 個按鈕。
   3. 將 `index.html` 的所有資源與 iframe src 版本 Query 升級為 `?v=144`。
-- 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
-- 影響檔案：`whiteboard.html`, `index.html`, `SYSTEM_LOG.md`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
-- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：修復專注力測驗與搶答功能在倒數完畢後卡死於 0 秒的 Bug（注入本地樂觀切換機制）。
+- 行為：
+  1. 在 `js/app.js` 的 `startLocalCountdown` 與 `startBuzzLocalCountdown` 中加入學生端防禦性本地啟動備援。
+  2. 當倒數到 0 秒後，若因老師端瀏覽器分頁休眠（Background Suspend）未將 status 改為 `playing`，學生端會自動在 600ms 後發起「本地樂觀切換」，讓學生 100% 順暢進入作答畫面，解決卡死現象。
+- 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
