@@ -353,6 +353,15 @@
   3. 在 `js/app.js` 的 `bindCollapseEvents()` 中實現手風琴獨佔展開邏輯：當展開管理後台任一功能卡片時，自動全數閉合其他功能卡片，確保老師能 100% 專注於當前功能。
   4. 將 `index.html` 的 `quiz.js` 與 `app.js` Query 版本升級為 `?v=168`。
 - 影響檔案：`js/quiz.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：新增「📚 歷屆題目庫 (History Question Bank)」、支援全選與勾選 TXT 匯出、出題介面排版優化（圖 1 題型下移）與刪除重複匯出按鈕（圖 2）。
+- 行為：
+  1. 在 `js/quiz.js` 中新增 `db.ref('quiz/history')` 歷屆題庫自動備份與即時監聽。測驗發起或匯入時自動寫入歷屆題庫。
+  2. 提供 `exportSelectedQuizBankTxt()` 與 `exportAllQuizBankTxt()` 方法，支援全選或勾選指定題目匯出符合規範的 `.txt` 題目檔；並支援一鍵 `🚀 載入出題` 與單題刪除/清空。
+  3. 精準依圖 1 指示，將題目輸入框獨立設置為 `100%` 寬度，並將「題型：🔘 單選  ☑️ 複選」移動至題目輸入框正下方獨立一行。
+  4. 精準依圖 2 劃叉指示，刪除出題框按鈕列中的 `📥 匯出題目 TXT` 按鈕，保留 `📤 匯入題目 TXT` 與 `📄 TXT 範例格式`。
+  5. 將 `index.html` 的 `quiz.js` 與 `app.js` Query 版本升級為 `?v=169`。
+- 影響檔案：`js/quiz.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

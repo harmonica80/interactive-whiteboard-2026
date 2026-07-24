@@ -2,8 +2,10 @@
 class Quiz {
   constructor() {
     this.currentQuiz = null;
+    this.historyBank = {};
     this.quizRef = db.ref('quiz/current');
     this.answersRef = db.ref('quiz/answers');
+    this.historyRef = db.ref('quiz/history');
     this.setupFirebaseSync();
   }
   
@@ -16,6 +18,11 @@ class Quiz {
     this.answersRef.on('value', (snapshot) => {
       const answers = snapshot.val() || {};
       this.updateResults(answers);
+    });
+
+    this.historyRef.on('value', (snapshot) => {
+      this.historyBank = snapshot.val() || {};
+      this.renderQuizHistoryUI();
     });
   }
   
@@ -39,6 +46,27 @@ class Quiz {
     
     this.quizRef.set(quizData);
     this.answersRef.remove();
+
+    // 備份至歷屆題目庫
+    this.saveToHistoryBank(question, options, quizType);
+  }
+
+  // 儲存至歷屆題目庫 (防重覆)
+  saveToHistoryBank(question, options, quizType) {
+    const keys = Object.keys(this.historyBank);
+    const exists = keys.some(k => {
+      const item = this.historyBank[k];
+      return item.question === question && JSON.stringify(item.options) === JSON.stringify(options);
+    });
+
+    if (!exists) {
+      this.historyRef.push({
+        question: question,
+        options: options,
+        quizType: quizType || 'single',
+        createdAt: Date.now()
+      });
+    }
   }
   
   submitAnswer(answerData) {
@@ -226,7 +254,155 @@ class Quiz {
     });
   }
 
-  // 匯出純文字檔 TXT 格式題目庫
+  // 渲染歷屆題目庫 UI
+  renderQuizHistoryUI() {
+    const listContainer = document.getElementById('quizHistoryList');
+    const countSpan = document.getElementById('quizHistoryCount');
+    if (!listContainer) return;
+
+    const keys = Object.keys(this.historyBank);
+    if (countSpan) countSpan.textContent = `(${keys.length} 題)`;
+
+    if (keys.length === 0) {
+      listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前歷史題庫空白（發起或匯入題目後會自動保存）</div>';
+      return;
+    }
+
+    // 按建立時間由新到舊排序
+    const sortedKeys = keys.sort((a, b) => (this.historyBank[b].createdAt || 0) - (this.historyBank[a].createdAt || 0));
+
+    listContainer.innerHTML = sortedKeys.map(key => {
+      const q = this.historyBank[key];
+      const isMultiple = q.quizType === 'multiple';
+      const badgeText = isMultiple ? '☑️ 複選' : '🔘 單選';
+      const optionsStr = (q.options || []).join(' | ');
+
+      return `
+        <div class="quiz-history-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+            <input type="checkbox" class="quiz-history-checkbox" value="${key}" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-color);">
+            <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="background: rgba(0,122,255,0.1); color: var(--accent-color); font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
+                <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(q.question)}</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                選項：${this.escapeHtml(optionsStr)}
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px; flex-shrink: 0;">
+            <button type="button" class="btn btn-secondary" onclick="window.quiz.loadQuizFromHistory('${key}')" style="padding: 4px 8px; font-size: 11px; font-weight: bold;" title="帶入此題到出題框">🚀 載入</button>
+            <button type="button" class="btn btn-secondary" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="padding: 4px 8px; font-size: 11px; color: var(--danger-color);" title="刪除此題">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 切換全選 / 全不選
+  toggleSelectAllHistory(isChecked) {
+    const checkboxes = document.querySelectorAll('.quiz-history-checkbox');
+    checkboxes.forEach(cb => cb.checked = isChecked);
+  }
+
+  // 匯出勾選的題目庫 TXT
+  exportSelectedQuizBankTxt() {
+    const checkedBoxes = document.querySelectorAll('.quiz-history-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+      if (window.app) window.app.showNotification('提示', '請先勾選欲匯出的題目！');
+      return;
+    }
+
+    const selectedKeys = Array.from(checkedBoxes).map(cb => cb.value);
+    const questionsToExport = selectedKeys.map(k => this.historyBank[k]).filter(Boolean);
+
+    this.downloadQuizBankTxt(questionsToExport, "selected_quiz_bank.txt");
+    if (window.app) window.app.showNotification('成功', `已成功匯出 ${questionsToExport.length} 道選取題目！`);
+  }
+
+  // 匯出全部歷屆題目庫 TXT
+  exportAllQuizBankTxt() {
+    const keys = Object.keys(this.historyBank);
+    if (keys.length === 0) {
+      if (window.app) window.app.showNotification('提示', '歷屆題目庫目前無任何題目可匯出');
+      return;
+    }
+
+    const allQuestions = keys.map(k => this.historyBank[k]);
+    this.downloadQuizBankTxt(allQuestions, "all_quiz_bank.txt");
+    if (window.app) window.app.showNotification('成功', `已成功匯出全部 ${allQuestions.length} 道題目！`);
+  }
+
+  // 下載 TXT 工具方法
+  downloadQuizBankTxt(questions, filename) {
+    const txtBlocks = questions.map(q => {
+      const typeStr = q.quizType === 'multiple' ? '複選' : '單選';
+      const optionsText = (q.options || []).join('\n');
+      return `${q.question}\n${typeStr}\n${optionsText}`;
+    });
+
+    const txtContent = txtBlocks.join('\n\n---\n\n');
+    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(txtContent);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", filename);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  // 載入歷史題目至出題框
+  loadQuizFromHistory(key) {
+    const item = this.historyBank[key];
+    if (!item) return;
+
+    const qInput = document.getElementById('quizQuestion');
+    if (qInput) qInput.value = item.question;
+
+    if (item.quizType === 'multiple') {
+      const radMulti = document.querySelector('input[name="quizTypeRadio"][value="multiple"]');
+      if (radMulti) radMulti.checked = true;
+    } else {
+      const radSingle = document.querySelector('input[name="quizTypeRadio"][value="single"]');
+      if (radSingle) radSingle.checked = true;
+    }
+
+    const container = document.getElementById('optionsContainer');
+    if (container && Array.isArray(item.options)) {
+      container.innerHTML = item.options.map(opt => `
+        <div class="option-input">
+          <input type="text" class="option-field" value="${this.escapeHtml(opt)}">
+          <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+        </div>
+      `).join('');
+    }
+
+    if (window.app) window.app.showNotification('成功', '已載入此題至出題框！');
+  }
+
+  // 刪除單題歷史紀錄
+  deleteQuizHistoryItem(key) {
+    this.historyRef.child(key).remove();
+    if (window.app) window.app.showNotification('成功', '已刪除該題');
+  }
+
+  // 清空歷屆題庫
+  clearHistoryBank() {
+    if (window.app) {
+      window.app.showConfirmModal(
+        '🗑️',
+        '確定要清空歷屆題庫嗎？',
+        '這將刪除所有在後台保存的歷史題目，此動作無法復原。',
+        () => {
+          this.historyRef.remove();
+          window.app.showNotification('成功', '已清空歷屆題庫！');
+        }
+      );
+    }
+  }
+
+  // 匯出純文字檔 TXT 格式範例
   exportQuizBankTxt() {
     const sampleTxtContent = `您對今天的課堂內容滿意度如何？
 單選
@@ -306,6 +482,11 @@ Python
           return;
         }
 
+        // 自動寫入歷屆題目庫
+        questions.forEach(q => {
+          this.saveToHistoryBank(q.question, q.options, q.quizType);
+        });
+
         // 帶入第一題
         const q0 = questions[0];
         if (q0 && q0.question && Array.isArray(q0.options)) {
@@ -332,7 +513,7 @@ Python
           }
         }
 
-        if (window.app) window.app.showNotification('成功', `已成功解析 ${questions.length} 個題目！第一題已自動帶入出題框`);
+        if (window.app) window.app.showNotification('成功', `已成功解析並儲存 ${questions.length} 個題目至歷屆題目庫！第一題已自動帶入出題框`);
       } catch (err) {
         if (window.app) window.app.showNotification('錯誤', '解析文字檔失敗: ' + err.message);
       }
