@@ -150,6 +150,29 @@
         setCanUndo(editor.getCanUndo());
         setCanRedo(editor.getCanRedo());
 
+        // 預設將文字工具與未來的圖形字型設定為 'sans' (無襯線體，即選單中的第二個 Aa)
+        const applySansFontDefault = () => {
+          try {
+            const fontProp = window.tldraw?.DefaultFontStyle || window.tldraw?.FontStyleProp;
+            if (fontProp && typeof editor.setStyleForNextShapes === 'function') {
+              editor.setStyleForNextShapes(fontProp, 'sans');
+            }
+          } catch (err) {
+            console.warn('Set default sans font failed:', err);
+          }
+        };
+
+        applySansFontDefault();
+
+        // 每次切換工具至文字時，自動確保預設字型為 sans (第二個 Aa)
+        try {
+          editor.store.listen(() => {
+            if (editor.getCurrentToolId() === 'text') {
+              applySansFontDefault();
+            }
+          }, { scope: 'session' });
+        } catch (e) {}
+
         // 監聽使用者在白板上的畫筆/文字/圖片/物件變動 (scope: 'document')
         let debounceTimer = null;
         editor.store.listen((entry) => {
@@ -260,7 +283,7 @@
             fontWeight: 'bold',
             userSelect: 'none'
           }
-        }, 'v1.5.7')
+        }, 'v1.5.8')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [

@@ -272,6 +272,13 @@
   2. 樣式按鈕（黑色塗鴉圓圈）原生懸浮於底部工具列正上方 60px 處，與 6 個基本工具按鈕保有 12px 物理間距，無重疊且點擊 **100% 順暢彈出 24 色樣式選單面板**。
   3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=157`，白板標記升級為 `v1.5.7`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：全平台白板預設輸入文字字型升級為 `sans` (第二個 Aa - 無襯線字型)，升級至 `v1.5.8`。
+- 行為：
+  1. 在 `whiteboard_v146.html` 的 `handleMount` 函數中，透過 `editor.setStyleForNextShapes(DefaultFontStyle, 'sans')` 將預設字型設定為無襯線字型 `sans`（即屬性選單紅框處之第二個 `Aa`）。
+  2. 監聽工具切換事件（`editor.store.listen`），當使用者切換至文字工具（`text`）時，自動確保預設字型維護為 `sans`。
+  3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=158`，白板標記升級為 `v1.5.8`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
