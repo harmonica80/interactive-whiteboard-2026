@@ -345,6 +345,14 @@
   3. 新增 `exportQuizBank()` 與 `importQuizBankFile()` 功能，支援題目 JSON 檔一鍵下載與上傳匯入；並新增 `#quizFormatModal` 提供標準 JSON 範例格式說明與範例檔下載。
   4. 將 `index.html` 中的 `js/quiz.js` Query 版本升級為 `?v=167`。
 - 影響檔案：`js/quiz.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：優化題目匯入/匯出格式為純文字檔 (.txt)，並實作管理員後台手風琴獨佔展開 Mode (Accordion Exclusive Expand)。
+- 行為：
+  1. 在 `js/quiz.js` 中將題目匯入/匯出的預設格式從 JSON 改為極簡的 `.txt` 純文字檔格式（第 1 行題目、第 2 行單/複選、第 3 行起選項），大幅降低教師編輯題目門檻；同時保留 JSON 向下相容支援。
+  2. 在 `index.html` 中更新匯入/匯出按鈕為 TXT 格式提示，並更新 `#quizFormatModal` 為極簡 `.txt` 格式範例說明與 `sample_quiz_bank.txt` 範例下載。
+  3. 在 `js/app.js` 的 `bindCollapseEvents()` 中實現手風琴獨佔展開邏輯：當展開管理後台任一功能卡片時，自動全數閉合其他功能卡片，確保老師能 100% 專注於當前功能。
+  4. 將 `index.html` 的 `quiz.js` 與 `app.js` Query 版本升級為 `?v=168`。
+- 影響檔案：`js/quiz.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

@@ -2089,13 +2089,23 @@ class App {
   }
   
   bindCollapseEvents() {
-    // 已依需求取消主要單元標題區塊 (.panel-header) 的按壓收合功能
-    
-    // 綁定管理後台摺疊區塊事件
+    // 綁定管理後台摺疊區塊事件（手風琴獨佔展開 Mode：展開任一功能時自動閉合其他功能）
     document.querySelectorAll('.admin-section-header').forEach(header => {
       header.addEventListener('click', () => {
-        const section = header.closest('.admin-section-collapsible');
-        section.classList.toggle('collapsed');
+        const currentSection = header.closest('.admin-section-collapsible');
+        const isCurrentlyCollapsed = currentSection.classList.contains('collapsed');
+
+        if (isCurrentlyCollapsed) {
+          // 自動收合後台所有其他區塊
+          document.querySelectorAll('.admin-section-collapsible').forEach(sec => {
+            sec.classList.add('collapsed');
+          });
+          // 展開當前點擊的區塊
+          currentSection.classList.remove('collapsed');
+        } else {
+          // 點擊已展開區塊則正常收合
+          currentSection.classList.add('collapsed');
+        }
       });
     });
   }

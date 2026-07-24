@@ -428,18 +428,18 @@
                   </div>
                 </div>
 
-                <!-- 題庫匯入/匯出/格式說明按鈕列 -->
+                <!-- 題庫匯入/匯出/格式說明按鈕列 (TXT 純文字格式) -->
                 <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                  <button type="button" class="btn btn-secondary" onclick="window.quiz.exportQuizBank()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
-                    📥 匯出題庫 JSON
+                  <button type="button" class="btn btn-secondary" onclick="window.quiz.exportQuizBankTxt()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    📥 匯出題目 TXT
                   </button>
                   <button type="button" class="btn btn-secondary" onclick="document.getElementById('quizFileInput').click()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
-                    📤 匯入題庫 JSON
+                    📤 匯入題目 TXT
                   </button>
                   <button type="button" class="btn btn-secondary" onclick="openQuizFormatModal()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
-                    📄 範例格式說明
+                    📄 TXT 範例格式
                   </button>
-                  <input type="file" id="quizFileInput" accept=".json" style="display: none;" onchange="window.quiz.importQuizBankFile(event)">
+                  <input type="file" id="quizFileInput" accept=".txt,.json" style="display: none;" onchange="window.quiz.importQuizBankTxtFile(event)">
                 </div>
                 
                 <div id="optionsContainer" class="options-container">
@@ -807,34 +807,38 @@
     </div>
   </div>
 
-  <!-- 題目庫 JSON 範例格式說明對話框 -->
+  <!-- 題目庫 TXT 純文字檔範例格式說明對話框 -->
   <div id="quizFormatModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 560px; width: 90%; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;">
+    <div class="modal-content" style="max-width: 580px; width: 90%; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;">
       <button onclick="closeQuizFormatModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer;">✕</button>
       <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-        📄 題目庫 JSON 格式說明
+        📄 題目庫純文字檔 (.txt) 格式說明
       </h3>
-      <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
-        您可以將題目編輯為以下 JSON 陣列格式，然後點擊「📤 匯入題庫 JSON」即可一次帶入題目！支援單選 (<code>single</code>) 與複選 (<code>multiple</code>) 類型。
+      <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
+        您可以使用任何記事本，將題目寫成簡單的純文字檔格式！<strong>第 1 行為題目</strong>，<strong>第 2 行填單選或複選</strong>，<strong>第 3 行起每行一個選項</strong>。題目間以 <code>---</code> 或空行分隔：
       </p>
 
-      <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 220px; line-height: 1.4;">
-[
-  {
-    "question": "您對今天的課堂內容滿意度如何？",
-    "quizType": "single",
-    "options": ["⭐ 1 星", "⭐⭐ 2 星", "⭐⭐⭐ 3 星", "⭐⭐⭐⭐ 4 星", "⭐⭐⭐⭐⭐ 5 星"]
-  },
-  {
-    "question": "請問下列哪些是網頁開發的三大核心語言？(複選)",
-    "quizType": "multiple",
-    "options": ["HTML", "CSS", "JavaScript", "Python"]
-  }
-]</pre>
+      <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 240px; line-height: 1.4;">
+您對今天的課堂內容滿意度如何？
+單選
+⭐ 1 星
+⭐⭐ 2 星
+⭐⭐⭐ 3 星
+⭐⭐⭐⭐ 4 星
+⭐⭐⭐⭐⭐ 5 星
+
+---
+
+請問下列哪些是網頁開發的三大核心語言？
+複選
+HTML
+CSS
+JavaScript
+Python</pre>
 
       <div style="display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="window.quiz.exportQuizBank()" style="padding: 8px 14px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">
-          ⬇️ 下載範例題目檔 (JSON)
+        <button class="btn btn-secondary" onclick="window.quiz.exportQuizBankTxt()" style="padding: 8px 14px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">
+          ⬇️ 下載範例題目檔 (sample_quiz_bank.txt)
         </button>
         <button class="btn btn-secondary" onclick="closeQuizFormatModal()" style="padding: 8px 14px; font-size: 13px;">
           關閉
@@ -850,8 +854,8 @@
   
   <script src="js/firebase-config.js?v=151"></script>
   <script src="js/character_pool.js?v=151"></script>
-  <script src="js/quiz.js?v=167"></script>
-  <script src="js/app.js?v=166"></script>
+  <script src="js/quiz.js?v=168"></script>
+  <script src="js/app.js?v=168"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

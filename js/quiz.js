@@ -226,48 +226,83 @@ class Quiz {
     });
   }
 
-  // 匯出題目檔 JSON
-  exportQuizBank() {
-    const sampleBank = [
-      {
-        question: "您對今天的課堂內容滿意度如何？",
-        quizType: "single",
-        options: ["⭐ 1 星", "⭐⭐ 2 星", "⭐⭐⭐ 3 星", "⭐⭐⭐⭐ 4 星", "⭐⭐⭐⭐⭐ 5 星"]
-      },
-      {
-        question: "請問下列哪些是網頁前端開發的核心語言？(複選)",
-        quizType: "multiple",
-        options: ["HTML", "CSS", "JavaScript", "Python"]
-      },
-      {
-        question: "您對今天的教學節奏滿意嗎？",
-        quizType: "single",
-        options: ["😍 非常滿意", "👍 滿意", "😐 普通", "👎 不滿意", "😡 非常不滿意"]
-      }
-    ];
+  // 匯出純文字檔 TXT 格式題目庫
+  exportQuizBankTxt() {
+    const sampleTxtContent = `您對今天的課堂內容滿意度如何？
+單選
+⭐ 1 星
+⭐⭐ 2 星
+⭐⭐⭐ 3 星
+⭐⭐⭐⭐ 4 星
+⭐⭐⭐⭐⭐ 5 星
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleBank, null, 2));
+---
+
+請問下列哪些是網頁前端開發的核心語言？
+複選
+HTML
+CSS
+JavaScript
+Python
+
+---
+
+您對今天的教學節奏滿意嗎？
+單選
+😍 非常滿意
+👍 滿意
+😐 普通
+👎 不滿意
+😡 非常不滿意`;
+
+    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(sampleTxtContent);
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", "quiz_question_bank.json");
+    downloadAnchor.setAttribute("download", "sample_quiz_bank.txt");
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
 
-    if (window.app) window.app.showNotification('成功', '已下載題目庫 JSON 檔！');
+    if (window.app) window.app.showNotification('成功', '已下載純文字格式 (.txt) 題目檔！');
   }
 
-  // 匯入題目檔 JSON
-  importQuizBankFile(event) {
+  // 匯入純文字檔 TXT 格式題目庫
+  importQuizBankTxtFile(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const questions = JSON.parse(e.target.result);
-        if (!Array.isArray(questions) || questions.length === 0) {
-          if (window.app) window.app.showNotification('錯誤', '匯入失敗：格式不正確或列表為空');
+        const textContent = e.target.result;
+        let questions = [];
+
+        // 嘗試解析 JSON 作為向下相容備用
+        if (textContent.trim().startsWith('[') && textContent.trim().endsWith(']')) {
+          try {
+            questions = JSON.parse(textContent);
+          } catch(err) { /* ignore JSON parse error */ }
+        }
+
+        // 若不是 JSON，則進行 TXT 段落解析
+        if (questions.length === 0) {
+          const blocks = textContent.split(/\n\s*---\s*\n|\n\s*\n\s*\n/).map(b => b.trim()).filter(Boolean);
+          blocks.forEach(block => {
+            const lines = block.split(/\r?\n/).map(l => l.trim()).filter(l => l !== '' && l !== '---');
+            if (lines.length >= 3) {
+              const question = lines[0];
+              const typeStr = lines[1];
+              const quizType = (typeStr.includes('複') || typeStr.toLowerCase().includes('multi')) ? 'multiple' : 'single';
+              const options = lines.slice(2);
+              if (options.length >= 2) {
+                questions.push({ question, quizType, options });
+              }
+            }
+          });
+        }
+
+        if (questions.length === 0) {
+          if (window.app) window.app.showNotification('錯誤', '匯入失敗：格式無法解析，請參考格式範例');
           return;
         }
 
@@ -297,9 +332,9 @@ class Quiz {
           }
         }
 
-        if (window.app) window.app.showNotification('成功', `已成功讀取 ${questions.length} 個題目！第一題已自動帶入出題框`);
+        if (window.app) window.app.showNotification('成功', `已成功解析 ${questions.length} 個題目！第一題已自動帶入出題框`);
       } catch (err) {
-        if (window.app) window.app.showNotification('錯誤', '解析 JSON 失敗: ' + err.message);
+        if (window.app) window.app.showNotification('錯誤', '解析文字檔失敗: ' + err.message);
       }
     };
     reader.readAsText(file);
