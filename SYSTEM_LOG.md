@@ -258,6 +258,13 @@
   2. 依使用者建議重新注入 Debug Panel v1.5.5 於頂部，探測 `y: window.innerHeight - 20` 處之 DOM 節點 Class 名稱。
   3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=155`，白板標記升級為 `v1.5.5`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：行動端白板還原完整 7 工具按鈕佈局，精準清空樣式選單白底，升級至 `v1.5.6`。
+- 行為：
+  1. 移除 `v1.5.5` 中對全體 `.tlui-toolbar div` 的高度與背景限制，徹底恢復 7 個按鈕（選取、手掌、畫筆、橡皮擦、箭頭、文字、樣式^）的橫向平鋪與高亮感。
+  2. 精準針對 `.tlui-style-panel:not([class*="content"])` 進行 background/box-shadow 清空，防止任何下垂白框。
+  3. 移除 Debug Panel，升級 Querystring 至 `?v=156`，標記升級至 `v1.5.6`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
