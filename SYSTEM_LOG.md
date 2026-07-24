@@ -362,6 +362,12 @@
   4. 精準依圖 2 劃叉指示，刪除出題框按鈕列中的 `📥 匯出題目 TXT` 按鈕，保留 `📤 匯入題目 TXT` 與 `📄 TXT 範例格式`。
   5. 將 `index.html` 的 `quiz.js` 與 `app.js` Query 版本升級為 `?v=169`。
 - 影響檔案：`js/quiz.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：簡化題目庫匯出按鈕（只保留「📥 匯出選取題目 TXT」），並為單題刪除新增防誤觸確認對話框。
+- 行為：
+  1. 在 `index.html` 中移除重複的「📥 匯出全部 TXT」按鈕，只保留「📥 匯出選取題目 TXT」，配合全選功能更加潔淨。
+  2. 在 `js/quiz.js` 的 `deleteQuizHistoryItem(key)` 方法中整合 `window.app.showConfirmModal`，點擊 `✕` 刪除單題時跳出彈窗提示確認後才執行刪除。
+- 影響檔案：`index.html`, `js/quiz.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

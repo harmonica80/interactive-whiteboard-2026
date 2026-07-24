@@ -381,10 +381,26 @@ class Quiz {
     if (window.app) window.app.showNotification('成功', '已載入此題至出題框！');
   }
 
-  // 刪除單題歷史紀錄
+  // 刪除單題歷史紀錄 (新增彈窗確認動作)
   deleteQuizHistoryItem(key) {
-    this.historyRef.child(key).remove();
-    if (window.app) window.app.showNotification('成功', '已刪除該題');
+    const item = this.historyBank[key];
+    const qText = item ? item.question : '';
+
+    if (window.app) {
+      window.app.showConfirmModal(
+        '🗑️',
+        '確定要刪除此題目嗎？',
+        qText ? `題目：「${qText}」\n刪除後將無法復原。` : '此動作無法復原。',
+        () => {
+          this.historyRef.child(key).remove();
+          window.app.showNotification('成功', '已刪除該題目！');
+        }
+      );
+    } else {
+      if (confirm(`確定要刪除題目「${qText}」嗎？`)) {
+        this.historyRef.child(key).remove();
+      }
+    }
   }
 
   // 清空歷屆題庫
