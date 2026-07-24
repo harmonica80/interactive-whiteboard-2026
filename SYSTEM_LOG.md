@@ -309,6 +309,13 @@
   3. 在 `js/app.js` 的 `initFunctionMenu()` 中綁定平滑滾動 (`scrollBy 220px`) 與智慧邊界偵測邏輯，當滾動至最左/最右側或內容未超出時自動隱藏箭頭按鈕。
   4. 將 `index.html` 的 `style.css` 版本 Query 升級為 `?v=162`。
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：修復留言數量通知徽章未顯示 Bug，改為即時監聽 Firebase 全域 `comments` 節點。
+- 行為：
+  1. 在 `js/app.js` 的 `setupRealtimeSync()` 中新增全域 `db.ref('comments').on('value')` 即時監聽器，即時統計各模組（`questions`, `images`, `videos`, `shares`）每個項目的留言總數，儲存於 `this.allCommentCounts`。
+  2. 修改 `renderQuestions`、`renderImages`、`renderVideos` 與 `buildShareItemHTML` 中的 `commentCount` 計算邏輯，改由 `this.allCommentCounts` 獲取真實 Firebase 留言數量。
+  3. 將 `index.html` 的 `style.css` 版本 Query 升級為 `?v=163`。
+- 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

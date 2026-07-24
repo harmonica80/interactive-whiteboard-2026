@@ -306,6 +306,29 @@ class App {
   }
   
   setupRealtimeSync() {
+    // 即時監聽全域留言資料庫以計算與更新卡片右上角留言數量通知徽章
+    this.allCommentCounts = { questions: {}, images: {}, videos: {}, shares: {} };
+    db.ref('comments').on('value', (snapshot) => {
+      const data = snapshot.val() || {};
+      const counts = { questions: {}, images: {}, videos: {}, shares: {} };
+      
+      Object.keys(data).forEach(type => {
+        if (data[type]) {
+          Object.keys(data[type]).forEach(itemId => {
+            const itemComments = data[type][itemId];
+            counts[type] = counts[type] || {};
+            counts[type][itemId] = itemComments ? Object.keys(itemComments).length : 0;
+          });
+        }
+      });
+
+      this.allCommentCounts = counts;
+      this.renderQuestions();
+      this.renderImages();
+      this.renderVideos();
+      this.renderTeacherShares();
+    });
+
     // 監聽問題資料庫
     db.ref('questions').on('value', (snapshot) => {
       const questions = [];
@@ -2140,7 +2163,7 @@ class App {
     const total = this.questions.length;
     
     const renderQuestionItemHtml = (q, idx) => {
-      const commentCount = q.comments ? (Array.isArray(q.comments) ? q.comments.length : Object.keys(q.comments).length) : 0;
+      const commentCount = (this.allCommentCounts && this.allCommentCounts.questions && this.allCommentCounts.questions[q.id]) || (q.comments ? (Array.isArray(q.comments) ? q.comments.length : Object.keys(q.comments).length) : 0);
       return `
         <li class="question-item card-style" data-id="${q.id}" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px; position: relative;">
           ${commentCount > 0 ? `
@@ -3331,7 +3354,7 @@ class App {
 
   buildShareItemHTML(item) {
     const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const commentCount = item.comments ? (Array.isArray(item.comments) ? item.comments.length : Object.keys(item.comments).length) : 0;
+    const commentCount = (this.allCommentCounts && this.allCommentCounts.shares && this.allCommentCounts.shares[item.id]) || (item.comments ? (Array.isArray(item.comments) ? item.comments.length : Object.keys(item.comments).length) : 0);
     let contentHTML = '';
     
     if (item.type === 'text') {
@@ -3841,7 +3864,7 @@ class App {
     }
 
     const renderImageItemHtml = (img) => {
-      const commentCount = img.comments ? (Array.isArray(img.comments) ? img.comments.length : Object.keys(img.comments).length) : 0;
+      const commentCount = (this.allCommentCounts && this.allCommentCounts.images && this.allCommentCounts.images[img.id]) || (img.comments ? (Array.isArray(img.comments) ? img.comments.length : Object.keys(img.comments).length) : 0);
       return `
         <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
           <div class="preview-item" data-id="${img.id}" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0; position: relative;">
@@ -3945,10 +3968,18 @@ class App {
       return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'><rect width='100%' height='100%' fill='%232c2c2e'/><path d='M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z' fill='%238e8e93' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
     };
 
-    const renderVideoItemHtml = (vid) => `
-      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
-        <div class="preview-item video-item" data-id="${vid.id}" style="cursor: pointer; margin: 0; position: relative;">
-          <img src="${getThumbnailUrl(vid)}" alt="${vid.filename}" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
+    const renderVideoItemHtml = (vid) => {
+      const commentCount = (this.allCommentCounts && this.allCommentCounts.videos && this.allCommentCounts.videos[vid.id]) || (vid.comments ? (Array.isArray(vid.comments) ? vid.comments.length : Object.keys(vid.comments).length) : 0);
+      return `
+        <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div class="preview-item video-item" data-id="${vid.id}" style="cursor: pointer; margin: 0; position: relative;">
+            ${commentCount > 0 ? `
+              <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showVideoModal ? window.app.showVideoModal('${vid.id}') : null;" title="${commentCount} 則留言回饋">
+                <span class="bell-icon">🔔</span>
+                <span class="badge-count">${commentCount > 99 ? '99+' : commentCount}</span>
+              </div>
+            ` : ''}
+            <img src="${getThumbnailUrl(vid)}" alt="${vid.filename}" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
           <div style="position: absolute; bottom: 4px; left: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 2px 4px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
             ${this.escapeHtml(vid.filename)}
           </div>
