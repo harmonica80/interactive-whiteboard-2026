@@ -167,6 +167,52 @@ class App {
         this.switchToTab(targetId);
       });
     });
+
+    // 綁定選單左右平滑滾動導覽箭頭按鈕
+    const container = document.getElementById('functionMenuContainer');
+    const btnLeft = document.getElementById('menuScrollLeft');
+    const btnRight = document.getElementById('menuScrollRight');
+
+    if (container && btnLeft && btnRight) {
+      const updateScrollButtons = () => {
+        const scrollLeft = container.scrollLeft;
+        const scrollWidth = container.scrollWidth;
+        const clientWidth = container.clientWidth;
+
+        // 若超出現有寬度
+        if (scrollWidth > clientWidth + 5) {
+          if (scrollLeft > 5) {
+            btnLeft.classList.add('visible');
+          } else {
+            btnLeft.classList.remove('visible');
+          }
+
+          if (scrollLeft + clientWidth < scrollWidth - 5) {
+            btnRight.classList.add('visible');
+          } else {
+            btnRight.classList.remove('visible');
+          }
+        } else {
+          btnLeft.classList.remove('visible');
+          btnRight.classList.remove('visible');
+        }
+      };
+
+      btnLeft.addEventListener('click', () => {
+        container.scrollBy({ left: -220, behavior: 'smooth' });
+      });
+
+      btnRight.addEventListener('click', () => {
+        container.scrollBy({ left: 220, behavior: 'smooth' });
+      });
+
+      container.addEventListener('scroll', updateScrollButtons);
+      window.addEventListener('resize', updateScrollButtons);
+      
+      // 延遲更新以防瀏覽器與字型動態渲染
+      setTimeout(updateScrollButtons, 300);
+      setTimeout(updateScrollButtons, 1000);
+    }
   }
   
   switchToTab(targetId) {

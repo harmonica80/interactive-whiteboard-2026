@@ -301,6 +301,14 @@
   3. 當 `commentCount > 0` 時，自動於卡片右上角渲染懸浮通知徽章，點擊徽章可直接開啟該項目的留言回應視窗。
   4. 將 `index.html` 的 `style.css` 版本 Query 升級為 `?v=161`。
 - 影響檔案：`css/style.css`, `js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：電腦端選單項目強制單行不換行 (`white-space: nowrap`) 並增設左右平滑滾動導覽箭頭按鈕 (`◀` / `▶`)。
+- 行為：
+  1. 在 `css/style.css` 中對 `.menu-tab` 注入 `white-space: nowrap !important` 與 `flex-shrink: 0 !important`，取消 `max-width` 限制，徹底消除文字（如「📖 建立自己的白板」）折行跑版問題。
+  2. 在 `index.html` 中將 `.function-menu` 包裹於 `<div class="function-menu-wrapper">` 內，並新增兩側圓形懸浮滑動導覽按鈕 `<button class="nav-scroll-btn">`。
+  3. 在 `js/app.js` 的 `initFunctionMenu()` 中綁定平滑滾動 (`scrollBy 220px`) 與智慧邊界偵測邏輯，當滾動至最左/最右側或內容未超出時自動隱藏箭頭按鈕。
+  4. 將 `index.html` 的 `style.css` 版本 Query 升級為 `?v=162`。
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
