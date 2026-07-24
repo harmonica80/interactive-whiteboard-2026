@@ -75,15 +75,40 @@
         min-height: 32px !important;
         border-radius: 8px !important;
         background: transparent !important;
+        background-color: transparent !important;
         box-shadow: none !important;
         border: none !important;
         margin: 0 !important;
-        padding: 2px !important;
+        padding: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         z-index: 1001 !important;
         cursor: pointer !important;
+      }
+
+      /* 3-1. 徹底消滅滯留在工具列中央原處的白色圓角底座卡片殘影 */
+      [class*="popover"]:not([class*="content"]):not([class*="wrapper"]) {
+        background: transparent !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        outline: none !important;
+      }
+
+      /* 3-2. 右側第 7 個按鈕點擊感與美化 */
+      .tlui-popover button, [class*="tlui-popover"] button {
+        border-radius: 8px !important;
+        width: 32px !important;
+        height: 32px !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        transition: background 0.15s ease !important;
+      }
+
+      .tlui-popover button:hover, .tlui-popover button:active {
+        background: rgba(0, 122, 255, 0.1) !important;
       }
 
       /* 4. 按鈕 svg 圖示大小適中 */
@@ -284,7 +309,7 @@
             fontWeight: 'bold',
             userSelect: 'none'
           }
-        }, 'v1.5.1')
+        }, 'v1.5.2')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [

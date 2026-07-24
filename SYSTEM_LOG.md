@@ -224,6 +224,13 @@
   1. 在 `js/app.js` 的 `startLocalCountdown` 與 `startBuzzLocalCountdown` 中加入學生端防禦性本地啟動備援。
   2. 當倒數到 0 秒後，若因老師端瀏覽器分頁休眠（Background Suspend）未將 status 改為 `playing`，學生端會自動在 600ms 後發起「本地樂觀切換」，讓學生 100% 順暢進入作答畫面，解決卡死現象。
 - 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：行動端白板徹底清空工具列中央滯留的 `.tlui-popover` 白色背景底座與殘影，升級至 `v1.5.2`。
+- 行為：
+  1. 在 `whiteboard_v146.html` 中新增對非 content 的 `[class*="popover"]` 外層容器強制 `background: transparent !important` 與 `box-shadow: none !important` 覆寫，徹底解決工具列中央（橡皮擦下方）殘留白色圓角底座卡片的問題。
+  2. 為右側偏置的第 7 個按鈕（黑色手寫筆圖標）添加獨立的 hover/active 點擊圓角反饋效果，提升視覺質感與操作反饋。
+  3. 將 `index.html` 資源與 iframe src 版本 Query 升級為 `?v=152`，白板標記升級為 `v1.5.2`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
