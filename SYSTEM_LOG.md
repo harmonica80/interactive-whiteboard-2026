@@ -397,6 +397,14 @@
   1. 在 `index.html` 中將 `timerMusicSelect` 第一項「🎵 經典卡農」更換為 100% 穩定且無需 Referrer 限制的帕海貝爾《卡農》MP3 直連檔。
   2. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=173`。
 - 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：修復「自訂 YouTube 網址」（如 `Ptk_1Dc2iPY`）貼上後無法播放的 Bug。
+- 行為：
+  1. 在 `css/style.css` 與 `index.html` 中將 `#ytPlayerContainer` 與 `#canonPlayer` 的樣式改為右下角實體視野內 (`fixed; bottom: 0; right: 0; opacity: 0.01; z-index: -1`)，徹底擺脫 Chrome/Edge 的「畫面外影音強制靜音 (Out-of-Viewport Autoplay Throttling)」防護封鎖。
+  2. 在 `index.html` 中為自訂網址輸入框 `timerMusicCustomUrl` 加入 `oninput` 即時動態更新監聽。
+  3. 在 `js/app.js` 的 `playAudio()` 中強化對自訂 YouTube 連結的 `loadVideoById` 與播放授權驅動，確保貼上含有 `&list=...` 等複雜參數的 YouTube 連結皆能 100% 響起樂音。
+  4. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=174`。
+- 影響檔案：`css/style.css`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

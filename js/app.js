@@ -4975,18 +4975,23 @@ class App {
           return;
         }
 
-        // 備用 YouTube 引擎
-        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
+        // 備用/自訂 YouTube 引擎 (支援全系列自訂 YouTube 連結)
+        if (this.ytPlayersReady && this.playerCanon) {
+          if (typeof this.playerCanon.loadVideoById === 'function' && this.currentVideoId) {
+            this.playerCanon.loadVideoById({
+              videoId: this.currentVideoId,
+              startSeconds: this.currentVideoStart || 0
+            });
+          }
           if (!this.timerMuted && typeof this.playerCanon.unMute === 'function') {
             this.playerCanon.unMute();
           }
           if (typeof this.playerCanon.setVolume === 'function') {
             this.playerCanon.setVolume(100);
           }
-          if (this.currentVideoStart > 0 && typeof this.playerCanon.seekTo === 'function') {
-            this.playerCanon.seekTo(this.currentVideoStart, true);
+          if (typeof this.playerCanon.playVideo === 'function') {
+            this.playerCanon.playVideo();
           }
-          this.playerCanon.playVideo();
         }
       } else {
         this.currentAudioPlaying = 'none';
