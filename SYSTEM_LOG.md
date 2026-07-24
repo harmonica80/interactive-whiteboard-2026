@@ -330,6 +330,13 @@
   2. 在 `js/app.js` 的 `renderQuestions`、`buildShareItemHTML`、`renderImages` 與 `renderVideoItemHtml` 中，將 `bell-icon` 全數替換為 `comment-icon` `💬`。
   3. 將 `index.html` 的 `style.css` 與 `js/app.js` 版本 Query 升級為 `?v=165`。
 - 影響檔案：`css/style.css`, `js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：精準匹配使用者截圖紅框指示，將留言數量通知徽章調整為純粹的「紅色圓形數字標籤 🔴 N」。
+- 行為：
+  1. 在 `css/style.css` 中精簡 `.card-comment-badge`，移除所有圖示與膠囊外框，設定為 `#ff3b30` 純紅底、白字、圓角懸浮數字 Badge，完全對齊使用者紅框標註樣式。
+  2. 在 `js/app.js` 的所有 4 個渲染函數中，清空多餘的 Icon 標籤，純粹渲染數字內容 `${commentCount}`。
+  3. 將 `index.html` 的 `style.css` 與 `js/app.js` 版本 Query 升級為 `?v=166`。
+- 影響檔案：`css/style.css`, `js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
