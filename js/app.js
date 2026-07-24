@@ -2168,7 +2168,7 @@ class App {
         <li class="question-item card-style" data-id="${q.id}" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px; position: relative;">
           ${commentCount > 0 ? `
             <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showQuestionModal ? window.app.showQuestionModal('${q.id}') : null;" title="${commentCount} 則留言回饋">
-              <span class="bell-icon">🔔</span>
+              <span class="comment-icon">💬</span>
               <span class="badge-count">${commentCount > 99 ? '99+' : commentCount}</span>
             </div>
           ` : ''}
@@ -3389,7 +3389,7 @@ class App {
       <div class="share-item-card" style="height: 100%; display: flex; flex-direction: column; margin-top: 0; justify-content: space-between; position: relative;">
         ${commentCount > 0 ? `
           <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showShareModal ? window.app.showShareModal('${item.id}') : null;" title="${commentCount} 則留言回饋">
-            <span class="bell-icon">🔔</span>
+            <span class="comment-icon">💬</span>
             <span class="badge-count">${commentCount > 99 ? '99+' : commentCount}</span>
           </div>
         ` : ''}
@@ -3870,7 +3870,7 @@ class App {
           <div class="preview-item" data-id="${img.id}" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0; position: relative;">
             ${commentCount > 0 ? `
               <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showImageModal ? window.app.showImageModal('${img.id}') : null;" title="${commentCount} 則留言回饋">
-                <span class="bell-icon">🔔</span>
+                <span class="comment-icon">💬</span>
                 <span class="badge-count">${commentCount > 99 ? '99+' : commentCount}</span>
               </div>
             ` : ''}
@@ -3975,7 +3975,7 @@ class App {
           <div class="preview-item video-item" data-id="${vid.id}" style="cursor: pointer; margin: 0; position: relative;">
             ${commentCount > 0 ? `
               <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showVideoModal ? window.app.showVideoModal('${vid.id}') : null;" title="${commentCount} 則留言回饋">
-                <span class="bell-icon">🔔</span>
+                <span class="comment-icon">💬</span>
                 <span class="badge-count">${commentCount > 99 ? '99+' : commentCount}</span>
               </div>
             ` : ''}

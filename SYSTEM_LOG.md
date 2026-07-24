@@ -323,6 +323,13 @@
   2. 使用 `node -c js/app.js` 100% 驗證通過零語法錯誤。
   3. 將 `index.html` 的 `js/app.js` 與 `style.css` 版本 Query 升級為 `?v=164`，確保瀏覽器重新加載修復後的腳本並正常建立 Firebase 連線。
 - 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：根據使用者回饋移除右上角黃色鈴鐺 🔔，升級為精緻紅底白字「💬 N」膠囊型留言通知徽章。
+- 行為：
+  1. 在 `css/style.css` 中重構 `.card-comment-badge` 樣式，移除鈴鐺相關屬性，改為簡潔亮眼的 `#ff3b30` 紅底白字膠囊勳章，搭配 `💬` 留言小圖示與微幅觸控縮放動畫。
+  2. 在 `js/app.js` 的 `renderQuestions`、`buildShareItemHTML`、`renderImages` 與 `renderVideoItemHtml` 中，將 `bell-icon` 全數替換為 `comment-icon` `💬`。
+  3. 將 `index.html` 的 `style.css` 與 `js/app.js` 版本 Query 升級為 `?v=165`。
+- 影響檔案：`css/style.css`, `js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
