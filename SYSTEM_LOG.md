@@ -293,6 +293,14 @@
   2. 行動端同步保留半透明 `[↩️ 復原]` 與 `[↪️ 重做]` 按鈕組。
   3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=160`，白板標記升級為 `v1.6.0`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：實作卡片右上角懸浮「留言數量通知徽章 (.card-comment-badge)」。
+- 行為：
+  1. 在 `css/style.css` 中新增 `.card-comment-badge` 樣式，精準重現使用者設計截圖風格：白底圓角懸浮卡片、黑色通知鈴鐺 🔔 及右上角鮮紅色圓形數字徽章 🔴。
+  2. 在 `js/app.js` 的 `renderQuestions` (提問區)、`renderImages` (圖片分享)、`renderVideos` (影片分享) 與 `buildShareItemHTML` (教師分享) 中加入留言總數 `commentCount` 判斷。
+  3. 當 `commentCount > 0` 時，自動於卡片右上角渲染懸浮通知徽章，點擊徽章可直接開啟該項目的留言回應視窗。
+  4. 將 `index.html` 的 `style.css` 版本 Query 升級為 `?v=161`。
+- 影響檔案：`css/style.css`, `js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

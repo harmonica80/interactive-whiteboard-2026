@@ -2093,36 +2093,45 @@ class App {
     
     const total = this.questions.length;
     
-    const renderQuestionItemHtml = (q, idx) => `
-      <li class="question-item card-style" data-id="${q.id}" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px;">
-        <div class="question-card-header">
-          <div class="header-left">
-            <span class="question-badge">#${total - idx}</span>
-            ${q.user && q.user !== '匿名' ? `<span class="user">${this.escapeHtml(q.user)}</span>` : ''}
+    const renderQuestionItemHtml = (q, idx) => {
+      const commentCount = q.comments ? (Array.isArray(q.comments) ? q.comments.length : Object.keys(q.comments).length) : 0;
+      return `
+        <li class="question-item card-style" data-id="${q.id}" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px; position: relative;">
+          ${commentCount > 0 ? `
+            <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showQuestionModal ? window.app.showQuestionModal('${q.id}') : null;" title="${commentCount} 則留言回饋">
+              <span class="bell-icon">🔔</span>
+              <span class="badge-count">${commentCount > 99 ? '99+' : commentCount}</span>
+            </div>
+          ` : ''}
+          <div class="question-card-header">
+            <div class="header-left">
+              <span class="question-badge">#${total - idx}</span>
+              ${q.user && q.user !== '匿名' ? `<span class="user">${this.escapeHtml(q.user)}</span>` : ''}
+            </div>
+            <span class="time">${this.formatTime(q.timestamp)}</span>
           </div>
-          <span class="time">${this.formatTime(q.timestamp)}</span>
-        </div>
-        <div class="text">${this.linkify(q.text)}</div>
-        <div class="reactions-bar" onclick="event.stopPropagation()">
-          <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'like')" title="讚">
-            <span class="reaction-emoji">👍</span>
-            <span class="reaction-count">${q.reactions?.like || 0}</span>
-          </button>
-          <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'love')" title="愛心">
-            <span class="reaction-emoji">❤️</span>
-            <span class="reaction-count">${q.reactions?.love || 0}</span>
-          </button>
-          <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'laugh')" title="大笑">
-            <span class="reaction-emoji">😆</span>
-            <span class="reaction-count">${q.reactions?.laugh || 0}</span>
-          </button>
-          <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'wow')" title="驚訝">
-            <span class="reaction-emoji">😮</span>
-            <span class="reaction-count">${q.reactions?.wow || 0}</span>
-          </button>
-        </div>
-      </li>
-    `;
+          <div class="text">${this.linkify(q.text)}</div>
+          <div class="reactions-bar" onclick="event.stopPropagation()">
+            <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'like')" title="讚">
+              <span class="reaction-emoji">👍</span>
+              <span class="reaction-count">${q.reactions?.like || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'love')" title="愛心">
+              <span class="reaction-emoji">❤️</span>
+              <span class="reaction-count">${q.reactions?.love || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'laugh')" title="大笑">
+              <span class="reaction-emoji">😆</span>
+              <span class="reaction-count">${q.reactions?.laugh || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'wow')" title="驚訝">
+              <span class="reaction-emoji">😮</span>
+              <span class="reaction-count">${q.reactions?.wow || 0}</span>
+            </button>
+          </div>
+        </li>
+      `;
+    };
 
     // 1. Render Grouped Folders (takes full rows)
     let groupedHtml = '';
@@ -3276,6 +3285,7 @@ class App {
 
   buildShareItemHTML(item) {
     const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const commentCount = item.comments ? (Array.isArray(item.comments) ? item.comments.length : Object.keys(item.comments).length) : 0;
     let contentHTML = '';
     
     if (item.type === 'text') {
@@ -3307,7 +3317,13 @@ class App {
     }
 
     return `
-      <div class="share-item-card" style="height: 100%; display: flex; flex-direction: column; margin-top: 0; justify-content: space-between;">
+      <div class="share-item-card" style="height: 100%; display: flex; flex-direction: column; margin-top: 0; justify-content: space-between; position: relative;">
+        ${commentCount > 0 ? `
+          <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showShareModal ? window.app.showShareModal('${item.id}') : null;" title="${commentCount} 則留言回饋">
+            <span class="bell-icon">🔔</span>
+            <span class="badge-count">${commentCount > 99 ? '99+' : commentCount}</span>
+          </div>
+        ` : ''}
         <div class="share-item-header" style="justify-content: flex-end; margin-bottom: 8px;">
           <span>${timeStr}</span>
         </div>
@@ -3778,31 +3794,40 @@ class App {
       return;
     }
 
-    const renderImageItemHtml = (img) => `
-      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
-        <div class="preview-item" data-id="${img.id}" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0;">
-          <img src="${img.url}" alt="${img.filename}">
+    const renderImageItemHtml = (img) => {
+      const commentCount = img.comments ? (Array.isArray(img.comments) ? img.comments.length : Object.keys(img.comments).length) : 0;
+      return `
+        <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div class="preview-item" data-id="${img.id}" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0; position: relative;">
+            ${commentCount > 0 ? `
+              <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showImageModal ? window.app.showImageModal('${img.id}') : null;" title="${commentCount} 則留言回饋">
+                <span class="bell-icon">🔔</span>
+                <span class="badge-count">${commentCount > 99 ? '99+' : commentCount}</span>
+              </div>
+            ` : ''}
+            <img src="${img.url}" alt="${img.filename}">
+          </div>
+          <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px;">
+            <button class="reaction-btn" onclick="reactToImage('${img.id}', 'like')" style="min-width: 32px; padding: 2px 6px;" title="讚">
+              <span class="reaction-emoji" style="font-size: 11px;">👍</span>
+              <span class="reaction-count" style="font-size: 9px;">${img.reactions?.like || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToImage('${img.id}', 'love')" style="min-width: 32px; padding: 2px 6px;" title="愛心">
+              <span class="reaction-emoji" style="font-size: 11px;">❤️</span>
+              <span class="reaction-count" style="font-size: 9px;">${img.reactions?.love || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToImage('${img.id}', 'laugh')" style="min-width: 32px; padding: 2px 6px;" title="大笑">
+              <span class="reaction-emoji" style="font-size: 11px;">😆</span>
+              <span class="reaction-count" style="font-size: 9px;">${img.reactions?.laugh || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToImage('${img.id}', 'wow')" style="min-width: 32px; padding: 2px 6px;" title="驚訝">
+              <span class="reaction-emoji" style="font-size: 11px;">😮</span>
+              <span class="reaction-count" style="font-size: 9px;">${img.reactions?.wow || 0}</span>
+            </button>
+          </div>
         </div>
-        <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px;">
-          <button class="reaction-btn" onclick="reactToImage('${img.id}', 'like')" style="min-width: 32px; padding: 2px 6px;" title="讚">
-            <span class="reaction-emoji" style="font-size: 11px;">👍</span>
-            <span class="reaction-count" style="font-size: 9px;">${img.reactions?.like || 0}</span>
-          </button>
-          <button class="reaction-btn" onclick="reactToImage('${img.id}', 'love')" style="min-width: 32px; padding: 2px 6px;" title="愛心">
-            <span class="reaction-emoji" style="font-size: 11px;">❤️</span>
-            <span class="reaction-count" style="font-size: 9px;">${img.reactions?.love || 0}</span>
-          </button>
-          <button class="reaction-btn" onclick="reactToImage('${img.id}', 'laugh')" style="min-width: 32px; padding: 2px 6px;" title="大笑">
-            <span class="reaction-emoji" style="font-size: 11px;">😆</span>
-            <span class="reaction-count" style="font-size: 9px;">${img.reactions?.laugh || 0}</span>
-          </button>
-          <button class="reaction-btn" onclick="reactToImage('${img.id}', 'wow')" style="min-width: 32px; padding: 2px 6px;" title="驚訝">
-            <span class="reaction-emoji" style="font-size: 11px;">😮</span>
-            <span class="reaction-count" style="font-size: 9px;">${img.reactions?.wow || 0}</span>
-          </button>
-        </div>
-      </div>
-    `;
+      `;
+    };
 
     // 1. Grouped Folders (takes full rows)
     let groupedHtml = '';
