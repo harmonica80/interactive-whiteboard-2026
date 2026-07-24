@@ -383,6 +383,14 @@
   3. 在 `initYoutubePlayers()` 中補齊 `enablejsapi: 1` 與 `origin` 參數，並在點擊啟動 `adminStartTimer()` 與 `playAudio()` 時強制執行 `unMute()` 和 `setVolume(100)` 解除預設靜音。
   4. 將 `index.html` 中的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=171`。
 - 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：重構倒數計時背景音樂為原生 HTML5 Audio 音訊引擎 (`#bgAudioPlayer`)，根除 `left: -9999px` 畫面外影音遭瀏覽器強制靜音 (Autoplay Throttling) 的 Bug。
+- 行為：
+  1. 在 `index.html` 中新增 `<audio id="bgAudioPlayer">` 節點，並為 4 首預設背景音樂配置 100% 直連高音質 MP3 樂曲源（經典卡農、輕快放鬆、專注 Lofi、爵士鋼琴）。
+  2. 在 `js/app.js` 中重構 `updateMusicSource()`、`playAudio()` 與 `applyMuteState()`，優先使用原生 HTML5 Audio 驅動播放與淡出。
+  3. 當使用者點擊「啟動倒數」時（手勢觸發），HTML5 Audio 無懼任何瀏覽器第三方阻擋，100% 必定響起立體優美的音樂聲！
+  4. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=172`。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

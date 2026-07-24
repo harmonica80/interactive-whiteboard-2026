@@ -371,10 +371,10 @@
               <div style="display: flex; align-items: center; gap: 6px;">
                 <label for="timerMusicSelect" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">背景音樂：</label>
                 <select id="timerMusicSelect" class="question-input" onchange="window.app.onTimerMusicSelectChange(this.value)" style="width: 150px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                  <option value="https://www.youtube.com/watch?v=MnhXZRw_ATU">🎵 經典卡農</option>
-                  <option value="https://www.youtube.com/watch?v=TURbeWK2wwg">🎵 輕快放鬆</option>
-                  <option value="https://www.youtube.com/watch?v=lTRiuFIWV54">🎵 專注 Lofi</option>
-                  <option value="https://www.youtube.com/watch?v=2gliGaeOnIQ">🎵 爵士鋼琴</option>
+                  <option value="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73220.mp3?filename=canon-in-d-major-10903.mp3">🎵 經典卡農</option>
+                  <option value="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=relaxing-mountains-140632.mp3">🎵 輕快放鬆</option>
+                  <option value="https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-study-112191.mp3">🎵 專注 Lofi</option>
+                  <option value="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=soft-relaxing-piano-jazz-11428.mp3">🎵 爵士鋼琴</option>
                   <option value="custom">✍️ 自訂 YouTube 網址...</option>
                 </select>
               </div>
@@ -881,8 +881,8 @@ Python</pre>
   
   <script src="js/firebase-config.js?v=151"></script>
   <script src="js/character_pool.js?v=151"></script>
-  <script src="js/quiz.js?v=171"></script>
-  <script src="js/app.js?v=171"></script>
+  <script src="js/quiz.js?v=172"></script>
+  <script src="js/app.js?v=172"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -1107,7 +1107,8 @@ Python</pre>
     </div>
   </div>
 
-  <!-- 隱藏的 YouTube 音訊播放器 -->
+  <!-- 原生 HTML5 音訊與 YouTube 播放器 -->
+  <audio id="bgAudioPlayer" loop preload="auto" style="display: none;"></audio>
   <div id="ytPlayerContainer" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden;">
     <div id="canonPlayer"></div>
   </div>

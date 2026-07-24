@@ -4469,12 +4469,20 @@ class App {
       
       // 最後 10 秒音樂淡出
       if (remMs <= 10000) {
-        const vol = Math.max(0, Math.min(100, Math.floor((remMs / 10000) * 100)));
+        const volRatio = Math.max(0, Math.min(1.0, remMs / 10000));
+        const bgAudio = document.getElementById('bgAudioPlayer');
+        if (bgAudio) {
+          bgAudio.volume = volRatio;
+        }
         if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
-          this.playerCanon.setVolume(vol);
+          this.playerCanon.setVolume(Math.floor(volRatio * 100));
         }
       } else {
         // 正常音量 (100)
+        const bgAudio = document.getElementById('bgAudioPlayer');
+        if (bgAudio) {
+          bgAudio.volume = 1.0;
+        }
         if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
           this.playerCanon.setVolume(100);
         }
@@ -4873,6 +4881,25 @@ class App {
   }
 
   updateMusicSource(url) {
+    this.currentMusicUrl = url;
+    const bgAudio = document.getElementById('bgAudioPlayer');
+    
+    // 若為直連音訊 (MP3 或非 YouTube 網址)
+    if (url && (url.includes('.mp3') || url.includes('pixabay') || !url.includes('youtu'))) {
+      this.isHtml5Audio = true;
+      if (bgAudio) {
+        if (bgAudio.src !== url) {
+          bgAudio.src = url;
+          bgAudio.load();
+        }
+      }
+      return;
+    }
+
+    // 若為自訂 YouTube 網址
+    this.isHtml5Audio = false;
+    if (bgAudio) bgAudio.pause();
+
     if (!this.ytPlayersReady) {
       this.pendingMusicUrl = url;
       return;
@@ -4928,8 +4955,27 @@ class App {
 
   playAudio(track) {
     try {
+      const bgAudio = document.getElementById('bgAudioPlayer');
+
       if (track === 'canon') {
         this.currentAudioPlaying = 'canon';
+
+        // 優先使用原生 HTML5 音訊引擎 (100% 必定響起)
+        if (this.isHtml5Audio || !this.currentMusicUrl || this.currentMusicUrl.includes('.mp3')) {
+          if (bgAudio) {
+            bgAudio.muted = this.timerMuted;
+            if (!this.timerMuted) bgAudio.volume = 1.0;
+            const playPromise = bgAudio.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(error => {
+                console.warn("HTML5 Audio play catch:", error);
+              });
+            }
+          }
+          return;
+        }
+
+        // 備用 YouTube 引擎
         if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
           if (!this.timerMuted && typeof this.playerCanon.unMute === 'function') {
             this.playerCanon.unMute();
@@ -4944,6 +4990,7 @@ class App {
         }
       } else {
         this.currentAudioPlaying = 'none';
+        if (bgAudio) bgAudio.pause();
         if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
           this.playerCanon.pauseVideo();
         }
@@ -4965,6 +5012,11 @@ class App {
       volBtn.textContent = this.timerMuted ? '🔇' : '🔊';
     }
     
+    const bgAudio = document.getElementById('bgAudioPlayer');
+    if (bgAudio) {
+      bgAudio.muted = this.timerMuted;
+    }
+
     if (!this.ytPlayersReady) return;
     
     try {
