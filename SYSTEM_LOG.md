@@ -279,6 +279,13 @@
   2. 監聽工具切換事件（`editor.store.listen`），當使用者切換至文字工具（`text`）時，自動確保預設字型維護為 `sans`。
   3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=158`，白板標記升級為 `v1.5.8`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：注入 `registerBeforeCreateHandler` 雙保險 Hook，強制將所有新建文字 shape 的初始字型設為 `sans` (第二個 Aa)，升級至 `v1.5.9`。
+- 行為：
+  1. 在 `whiteboard_v146.html` 中注入 tldraw `editor.sideEffects.registerBeforeCreateHandler('shape', ...)`，攔截所有類型為 `text` 的新建圖形，將初始 `font` 屬性直接強制綁定為 `sans` (無襯線體，選單中的第二個 Aa)。
+  2. 擴充 `applySansFontDefault` 的 StyleProp 掃描覆蓋面，確保不論在 Desktop 還是 Mobile 上，預設打字皆 100% 呈現第二個 Aa 無襯線字型。
+  3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=159`，白板標記升級為 `v1.5.9`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

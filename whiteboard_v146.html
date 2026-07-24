@@ -153,9 +153,23 @@
         // 預設將文字工具與未來的圖形字型設定為 'sans' (無襯線體，即選單中的第二個 Aa)
         const applySansFontDefault = () => {
           try {
-            const fontProp = window.tldraw?.DefaultFontStyle || window.tldraw?.FontStyleProp;
-            if (fontProp && typeof editor.setStyleForNextShapes === 'function') {
-              editor.setStyleForNextShapes(fontProp, 'sans');
+            if (window.tldraw) {
+              const propsToSet = [
+                window.tldraw.DefaultFontProp,
+                window.tldraw.FontProp,
+                window.tldraw.DefaultFontStyle
+              ];
+              propsToSet.forEach(prop => {
+                if (prop && typeof editor.setStyleForNextShapes === 'function') {
+                  try { editor.setStyleForNextShapes(prop, 'sans'); } catch(e){}
+                }
+              });
+              // 遍歷所有包含 font 的 StyleProp
+              Object.keys(window.tldraw).forEach(key => {
+                if (key.toLowerCase().includes('font') && window.tldraw[key]) {
+                  try { editor.setStyleForNextShapes(window.tldraw[key], 'sans'); } catch(e){}
+                }
+              });
             }
           } catch (err) {
             console.warn('Set default sans font failed:', err);
@@ -163,6 +177,25 @@
         };
 
         applySansFontDefault();
+
+        // 核心防線：攔截所有新建文字 shape，強制將其 font 屬性初始設為 sans (第二個 Aa)
+        try {
+          if (editor.sideEffects && typeof editor.sideEffects.registerBeforeCreateHandler === 'function') {
+            editor.sideEffects.registerBeforeCreateHandler('shape', (shape) => {
+              if (shape.type === 'text' && shape.props && shape.props.font === 'draw') {
+                return {
+                  ...shape,
+                  props: {
+                    ...shape.props,
+                    font: 'sans'
+                  }
+                };
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('registerBeforeCreateHandler font hook failed:', e);
+        }
 
         // 每次切換工具至文字時，自動確保預設字型為 sans (第二個 Aa)
         try {
@@ -283,7 +316,7 @@
             fontWeight: 'bold',
             userSelect: 'none'
           }
-        }, 'v1.5.8')
+        }, 'v1.5.9')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [
