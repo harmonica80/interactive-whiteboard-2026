@@ -337,6 +337,14 @@
   2. 在 `js/app.js` 的所有 4 個渲染函數中，清空多餘的 Icon 標籤，純粹渲染數字內容 `${commentCount}`。
   3. 將 `index.html` 的 `style.css` 與 `js/app.js` 版本 Query 升級為 `?v=166`。
 - 影響檔案：`css/style.css`, `js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：重磅升級測驗（`Quiz`）模組：新增單選/複選題型切換、擴充「⭐ 1~5星」與「😍 五大表情」快速選項、支援 JSON 題庫匯入/匯出與範例說明彈窗。
+- 行為：
+  1. 在 `js/quiz.js` 中擴充 `Quiz` 類別，支援 `quizType: 'single' | 'multiple'` 題型。複選題呈現 Checkbox 樣式，學生可多選後點擊「☑️ 提交答案」，統計圖表精準計算複選得票數與百分比。
+  2. 在 `index.html` 的測驗後台新增單選/複選 Radio 切換鈕，擴充 `⭐ 1~5星` 與 `😍 五大表情` 快速選項按鈕。
+  3. 新增 `exportQuizBank()` 與 `importQuizBankFile()` 功能，支援題目 JSON 檔一鍵下載與上傳匯入；並新增 `#quizFormatModal` 提供標準 JSON 範例格式說明與範例檔下載。
+  4. 將 `index.html` 中的 `js/quiz.js` Query 版本升級為 `?v=167`。
+- 影響檔案：`js/quiz.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

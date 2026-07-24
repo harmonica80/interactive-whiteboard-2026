@@ -399,17 +399,47 @@
             </div>
             <div class="admin-section-body">
               <div id="quizForm" class="quiz-controls">
-                <input type="text" id="quizQuestion" class="quiz-input" placeholder="輸入題目...">
-                
-                <!-- 預設選項 -->
-                <div class="preset-options">
+                <!-- 題目與題型選擇 -->
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
+                  <div style="flex: 1; min-width: 240px;">
+                    <input type="text" id="quizQuestion" class="quiz-input" placeholder="輸入題目..." style="margin-bottom: 0;">
+                  </div>
+                  <div style="display: flex; gap: 10px; align-items: center; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <span style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">題型：</span>
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: bold; cursor: pointer; color: var(--text-primary);">
+                      <input type="radio" name="quizTypeRadio" value="single" checked style="cursor: pointer;"> 單選
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: bold; cursor: pointer; color: var(--accent-color);">
+                      <input type="radio" name="quizTypeRadio" value="multiple" style="cursor: pointer;"> 複選
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 預設選項與快速選項按鈕 -->
+                <div class="preset-options" style="margin-bottom: 12px;">
                   <span class="preset-label">快速選項：</span>
-                  <div class="preset-btns">
+                  <div class="preset-btns" style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <button class="preset-btn" onclick="loadPreset('yesno')">是/否</button>
                     <button class="preset-btn" onclick="loadPreset('truefalse')">正確/錯誤</button>
                     <button class="preset-btn" onclick="loadPreset('abcd')">A/B/C/D</button>
                     <button class="preset-btn" onclick="loadPreset('1234')">1/2/3/4</button>
+                    <button class="preset-btn" onclick="loadPreset('star')" style="background: rgba(255,149,0,0.1); color: #ff9500; border-color: rgba(255,149,0,0.3);">⭐ 1~5星</button>
+                    <button class="preset-btn" onclick="loadPreset('emoji')" style="background: rgba(255,45,85,0.1); color: #ff2d55; border-color: rgba(255,45,85,0.3);">😍 五大表情</button>
                   </div>
+                </div>
+
+                <!-- 題庫匯入/匯出/格式說明按鈕列 -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary" onclick="window.quiz.exportQuizBank()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    📥 匯出題庫 JSON
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="document.getElementById('quizFileInput').click()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    📤 匯入題庫 JSON
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="openQuizFormatModal()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    📄 範例格式說明
+                  </button>
+                  <input type="file" id="quizFileInput" accept=".json" style="display: none;" onchange="window.quiz.importQuizBankFile(event)">
                 </div>
                 
                 <div id="optionsContainer" class="options-container">
@@ -423,7 +453,7 @@
                   </div>
                 </div>
                 <button class="add-option-btn" onclick="addOption()">+ 新增選項</button>
-                <button id="startQuizBtn" class="start-quiz-btn" onclick="startQuiz()">開始測驗</button>
+                <button id="startQuizBtn" class="start-quiz-btn" onclick="startQuiz()">🚀 開始測驗</button>
               </div>
               <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="display: none; margin-top: 10px; padding: 12px; width: 100%; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color);">結束測驗</button>
             </div>
@@ -776,6 +806,42 @@
       </div>
     </div>
   </div>
+
+  <!-- 題目庫 JSON 範例格式說明對話框 -->
+  <div id="quizFormatModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 560px; width: 90%; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;">
+      <button onclick="closeQuizFormatModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer;">✕</button>
+      <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+        📄 題目庫 JSON 格式說明
+      </h3>
+      <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
+        您可以將題目編輯為以下 JSON 陣列格式，然後點擊「📤 匯入題庫 JSON」即可一次帶入題目！支援單選 (<code>single</code>) 與複選 (<code>multiple</code>) 類型。
+      </p>
+
+      <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 220px; line-height: 1.4;">
+[
+  {
+    "question": "您對今天的課堂內容滿意度如何？",
+    "quizType": "single",
+    "options": ["⭐ 1 星", "⭐⭐ 2 星", "⭐⭐⭐ 3 星", "⭐⭐⭐⭐ 4 星", "⭐⭐⭐⭐⭐ 5 星"]
+  },
+  {
+    "question": "請問下列哪些是網頁開發的三大核心語言？(複選)",
+    "quizType": "multiple",
+    "options": ["HTML", "CSS", "JavaScript", "Python"]
+  }
+]</pre>
+
+      <div style="display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="window.quiz.exportQuizBank()" style="padding: 8px 14px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">
+          ⬇️ 下載範例題目檔 (JSON)
+        </button>
+        <button class="btn btn-secondary" onclick="closeQuizFormatModal()" style="padding: 8px 14px; font-size: 13px;">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
   
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -784,7 +850,7 @@
   
   <script src="js/firebase-config.js?v=151"></script>
   <script src="js/character_pool.js?v=151"></script>
-  <script src="js/quiz.js?v=151"></script>
+  <script src="js/quiz.js?v=167"></script>
   <script src="js/app.js?v=166"></script>
   
   <!-- 問題彈出視窗 -->

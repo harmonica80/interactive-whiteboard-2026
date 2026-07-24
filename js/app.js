@@ -7933,12 +7933,13 @@ function startQuiz() {
   const question = document.getElementById('quizQuestion').value.trim();
   const optionFields = document.querySelectorAll('.option-field');
   const options = Array.from(optionFields).map(input => input.value.trim()).filter(v => v);
+  const quizType = document.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
   
   if (!question) { window.app.showNotification('提示', '請填寫題目'); return; }
   if (options.length < 2) { window.app.showNotification('提示', '請填寫至少兩個選項'); return; }
   
   if (window.quiz) {
-    window.quiz.startQuiz(question, options);
+    window.quiz.startQuiz(question, options, quizType);
     document.getElementById('quizQuestion').value = '';
     optionFields.forEach(input => input.value = '');
   }
@@ -7951,16 +7952,31 @@ function loadPreset(type) {
     yesno: ['是', '否'],
     truefalse: ['正確', '錯誤'],
     abcd: ['A', 'B', 'C', 'D'],
-    '1234': ['1', '2', '3', '4']
+    '1234': ['1', '2', '3', '4'],
+    star: ['⭐ 1 星', '⭐⭐ 2 星', '⭐⭐⭐ 3 星', '⭐⭐⭐⭐ 4 星', '⭐⭐⭐⭐⭐ 5 星'],
+    emoji: ['😍 非常滿意', '👍 滿意', '😐 普通', '👎 不滿意', '😡 非常不滿意']
   };
   
   const options = presets[type];
-  container.innerHTML = options.map(opt => `
-    <div class="option-input">
-      <input type="text" class="option-field" value="${opt}" placeholder="選項">
-      <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
-    </div>
-  `).join('');
+  if (options) {
+    container.innerHTML = options.map(opt => `
+      <div class="option-input">
+        <input type="text" class="option-field" value="${opt}" placeholder="選項">
+        <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+      </div>
+    `).join('');
+  }
+}
+
+// 題目格式 Modal 控制
+function openQuizFormatModal() {
+  const modal = document.getElementById('quizFormatModal');
+  if (modal) modal.classList.add('active');
+}
+
+function closeQuizFormatModal() {
+  const modal = document.getElementById('quizFormatModal');
+  if (modal) modal.classList.remove('active');
 }
 
 // 新增選項
