@@ -251,6 +251,13 @@
   1. 在 `whiteboard_v146.html` 的 CSS 中，對獨立浮動於工具列最下方邊緣的黑色塗鴉按鈕及容器注入 `display: none !important`。
   2. 將 `index.html` 資源與 iframe src 版本 Query 升級為 `?v=154`，白板標記升級為 `v1.5.4`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：行動端白板徹底透明化並限制工具列包裝容器高度，解決下垂長條白色矩形框，並注入 Debug Panel v1.5.5。
+- 行為：
+  1. 在 `whiteboard_v146.html` 中對 `.tlui-toolbar div` 等所有包裝容器設定 `background: transparent !important` 與 `max-height: 38px !important`，徹底切斷垂直下垂白底。
+  2. 依使用者建議重新注入 Debug Panel v1.5.5 於頂部，探測 `y: window.innerHeight - 20` 處之 DOM 節點 Class 名稱。
+  3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=155`，白板標記升級為 `v1.5.5`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

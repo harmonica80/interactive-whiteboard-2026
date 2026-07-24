@@ -86,16 +86,18 @@
         border-radius: 12px !important;
       }
 
-      /* 5. 徹底隱藏行動端白板最底部浮動的黑色塗鴉樣式設定按鈕與獨立浮動層 */
-      .tlui-popover:not([class*="content"]):not([class*="wrapper"]),
-      [class*="tlui-popover"]:not([class*="content"]):not([class*="wrapper"]),
-      .tlui-style-panel__toggle,
-      [class*="style-panel__toggle"],
-      [data-testid="style-panel.toggle"] {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
+      /* 5. 徹底消滅工具列內部包裝容器垂直下垂的白底矩形框殘影 */
+      .tlui-toolbar div, [class*="tlui-toolbar"] div,
+      .tlui-toolbar .tlui-popover, [class*="tlui-toolbar"] [class*="popover"],
+      .tlui-toolbar .tlui-style-panel, [class*="tlui-toolbar"] [class*="style-panel"] {
+        background: transparent !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        outline: none !important;
+        height: auto !important;
+        min-height: unset !important;
+        max-height: 38px !important;
       }
     }
     .loading-container {
@@ -272,7 +274,7 @@
             fontWeight: 'bold',
             userSelect: 'none'
           }
-        }, 'v1.5.4')
+        }, 'v1.5.5')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [
@@ -347,6 +349,42 @@
     const root = createRoot(rootElement);
     root.render(React.createElement(App));
 
+    // 動態向行動端注入 debug 控制台，精準探測圖1中下垂白色矩形框的實體 DOM 樹
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        try {
+          const infoDiv = document.createElement('div');
+          infoDiv.style.cssText = 'position: absolute; top: 45px; left: 6px; right: 6px; background: rgba(0,0,0,0.85); color: #00ff00; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 10px; z-index: 99999; max-height: 180px; overflow-y: auto; pointer-events: none; border: 1px solid #00ff00; line-height: 1.3;';
+          
+          let html = '<strong>[DEBUG PANEL v1.5.5]</strong><br/>';
+          
+          // 探測圖1中紅箭頭指著的長條白色矩形框 (X軸置中，Y軸近底部 20px 處)
+          const x = window.innerWidth / 2;
+          const y = window.innerHeight - 20;
+          const target = document.elementFromPoint(x, y);
+          
+          html += `<strong>[TARGETING VERTICAL BOX x:${x}, y:${y}]</strong><br/>`;
+          if (target) {
+            let current = target;
+            let count = 0;
+            while (current && current !== document.body && count < 6) {
+              const cls = (current.className || 'none').toString();
+              const tag = current.tagName;
+              html += `[L${count}] ${tag} | Class: ${cls}<br/>`;
+              current = current.parentNode;
+              count++;
+            }
+          } else {
+            html += '❌ No element detected at bottom point!<br/>';
+          }
+          
+          infoDiv.innerHTML = html;
+          document.body.appendChild(infoDiv);
+        } catch (err) {
+          console.error('Debug script execution failed:', err);
+        }
+      }, 2000);
+    });
   </script>
 </body>
 </html>
