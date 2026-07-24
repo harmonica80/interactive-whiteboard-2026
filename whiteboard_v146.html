@@ -249,30 +249,30 @@
         QuickActions: null // 隱藏底部原廠 Undo/Redo，防止遮擋重疊
       } : {};
 
-      // 手機版在頂部右上角渲染一個精緻、小巧、半透明的復原/重做按鈕組
-      const customControls = isMobile ? React.createElement('div', {
+      // 右上角全平台獨立懸浮控制器與版本號標記
+      const customControls = React.createElement('div', {
         style: {
           position: 'absolute',
           top: '8px',
           right: '8px',
-          zIndex: 1000,
+          zIndex: 9999,
           display: 'flex',
           gap: '6px',
           alignItems: 'center',
           pointerEvents: 'auto'
         }
       }, [
-        React.createElement('button', {
+        isMobile ? React.createElement('button', {
           key: 'undo',
           onClick: () => { if (editorInstance) editorInstance.undo(); },
           disabled: !canUndo,
           style: {
             padding: '6px 10px',
             fontSize: '13px',
-            background: 'rgba(255, 255, 255, 0.9)',
+            background: 'rgba(255, 255, 255, 0.92)',
             border: '1px solid rgba(0,0,0,0.15)',
             borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
             cursor: 'pointer',
             opacity: canUndo ? 1 : 0.4,
             pointerEvents: canUndo ? 'auto' : 'none',
@@ -282,18 +282,18 @@
             fontWeight: 'bold',
             color: '#333'
           }
-        }, '↩️ 復原'),
-        React.createElement('button', {
+        }, '↩️ 復原') : null,
+        isMobile ? React.createElement('button', {
           key: 'redo',
           onClick: () => { if (editorInstance) editorInstance.redo(); },
           disabled: !canRedo,
           style: {
             padding: '6px 10px',
             fontSize: '13px',
-            background: 'rgba(255, 255, 255, 0.9)',
+            background: 'rgba(255, 255, 255, 0.92)',
             border: '1px solid rgba(0,0,0,0.15)',
             borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
             cursor: 'pointer',
             opacity: canRedo ? 1 : 0.4,
             pointerEvents: canRedo ? 'auto' : 'none',
@@ -303,21 +303,22 @@
             fontWeight: 'bold',
             color: '#333'
           }
-        }, '↪️ 重做'),
+        }, '↪️ 重做') : null,
         React.createElement('span', {
           key: 'ver',
           style: {
-            fontSize: '9px',
-            color: '#999',
-            background: 'rgba(255,255,255,0.7)',
-            padding: '2px 4px',
-            borderRadius: '4px',
-            border: '1px solid rgba(0,0,0,0.1)',
+            fontSize: '10px',
+            color: '#555',
+            background: 'rgba(255, 255, 255, 0.95)',
+            padding: '3px 7px',
+            borderRadius: '6px',
+            border: '1px solid rgba(0,0,0,0.15)',
             fontWeight: 'bold',
-            userSelect: 'none'
+            userSelect: 'none',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
           }
-        }, 'v1.5.9')
-      ]) : null;
+        }, 'v1.6.0')
+      ].filter(Boolean));
 
       return React.createElement(React.Fragment, null, [
         React.createElement(Tldraw, {

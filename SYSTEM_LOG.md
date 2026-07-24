@@ -286,6 +286,13 @@
   2. 擴充 `applySansFontDefault` 的 StyleProp 掃描覆蓋面，確保不論在 Desktop 還是 Mobile 上，預設打字皆 100% 呈現第二個 Aa 無襯線字型。
   3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=159`，白板標記升級為 `v1.5.9`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：全平台無條件渲染右上角版本號標記 (`v1.6.0`) 並提高層級至 `z-index: 9999`，防止行動端誤判消失。
+- 行為：
+  1. 在 `whiteboard_v146.html` 中調整 `customControls` 為無條件全平台渲染，版本號標記獨立擁有 `z-index: 9999` 與高對比度白底，確保行動端與桌面端 100% 穩定顯示於右上角。
+  2. 行動端同步保留半透明 `[↩️ 復原]` 與 `[↪️ 重做]` 按鈕組。
+  3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=160`，白板標記升級為 `v1.6.0`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
