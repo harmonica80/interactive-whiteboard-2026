@@ -245,6 +245,12 @@
   1. 在 `css/style.css` 的 `@media (max-width: 768px)` 中將 `.theme-switcher` 設為 `display: none !important`，釋放手機端頂部空間。
   2. 將 `index.html` 的 `style.css` 版本 Query 升級為 `?v=154`。
 - 影響檔案：`css/style.css`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：行動端白板徹底隱藏最底部浮動的黑色塗鴉樣式設定按鈕 (`.tlui-popover`, `.tlui-style-panel__toggle`)，升級至 `v1.5.4`。
+- 行為：
+  1. 在 `whiteboard_v146.html` 的 CSS 中，對獨立浮動於工具列最下方邊緣的黑色塗鴉按鈕及容器注入 `display: none !important`。
+  2. 將 `index.html` 資源與 iframe src 版本 Query 升級為 `?v=154`，白板標記升級為 `v1.5.4`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

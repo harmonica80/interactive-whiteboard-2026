@@ -78,11 +78,24 @@
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: max-content !important;
+        max-width: 92vw !important;
         height: auto !important;
-        min-width: unset !important;
-        min-height: unset !important;
         z-index: 1002 !important;
         display: block !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+        border-radius: 12px !important;
+      }
+
+      /* 5. 徹底隱藏行動端白板最底部浮動的黑色塗鴉樣式設定按鈕與獨立浮動層 */
+      .tlui-popover:not([class*="content"]):not([class*="wrapper"]),
+      [class*="tlui-popover"]:not([class*="content"]):not([class*="wrapper"]),
+      .tlui-style-panel__toggle,
+      [class*="style-panel__toggle"],
+      [data-testid="style-panel.toggle"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
       }
     }
     .loading-container {
@@ -259,7 +272,7 @@
             fontWeight: 'bold',
             userSelect: 'none'
           }
-        }, 'v1.5.3')
+        }, 'v1.5.4')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [
