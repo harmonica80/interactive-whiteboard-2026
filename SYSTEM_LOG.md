@@ -405,6 +405,13 @@
   3. 在 `js/app.js` 的 `playAudio()` 中強化對自訂 YouTube 連結的 `loadVideoById` 與播放授權驅動，確保貼上含有 `&list=...` 等複雜參數的 YouTube 連結皆能 100% 響起樂音。
   4. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=174`。
 - 影響檔案：`css/style.css`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：修復 YouTube API 未在 App 初始化時自動呼叫 `loadYoutubeAPI()` 的致命 Bug，並將卡農更換為指定 YouTube 樂曲網址。
+- 行為：
+  1. 在 `js/app.js` 的 `App` 建構子 `constructor()` 中新增 `this.loadYoutubeAPI()` 自動呼叫，並重構 `loadYoutubeAPI()` 確保 `window.onYouTubeIframeAPIReady` 觸發並初始化 `playerCanon`。
+  2. 在 `index.html` 中將第一項「🎵 經典卡農」的 `value` 更換為使用者指定的 YouTube 網址 `https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1` (ID: `MnhXZRw_ATU`)。
+  3. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=175`。
+- 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

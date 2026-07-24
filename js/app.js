@@ -79,6 +79,9 @@ class App {
         this.initFocusAudio();
       }, { passive: true });
     });
+    
+    // 自動初始化 YouTube iframe API
+    this.loadYoutubeAPI();
     this.focusStartTimeLocal = 0;
     this.focusCurrentExpected = 1;
     this.focusGridSize = 36;
@@ -4789,14 +4792,27 @@ class App {
   }
 
   loadYoutubeAPI() {
+    if (window.YT && window.YT.Player) {
+      this.initYoutubePlayers();
+      return;
+    }
+
+    const prevReady = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
+      if (typeof prevReady === 'function') prevReady();
       this.initYoutubePlayers();
     };
 
-    const tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+      const tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      if (firstScriptTag && firstScriptTag.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      } else {
+        document.head.appendChild(tag);
+      }
+    }
   }
 
   initYoutubePlayers() {
