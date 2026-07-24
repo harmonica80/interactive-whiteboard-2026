@@ -1124,9 +1124,7 @@ body {
   }
   
   .theme-switcher {
-    justify-content: center;
-    margin-top: 2px;
-    width: 100%;
+    display: none !important;
   }
 
   /* 功能選單水平滾動 */

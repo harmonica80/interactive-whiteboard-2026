@@ -239,6 +239,12 @@
   3. 在 `whiteboard_v146.html` 中將 `forceMobile` 設為 `false`，回歸桌面端單一工具列模式，將 7 個工具按鈕（包含最右側帶 `^` 箭頭的樣式按鈕）一字排開固定於底部中央，徹底消滅半空中浮動圓圈與雙重工具列重疊問題。
   4. 將 `index.html` 資源與 iframe src 版本 Query 升級為 `?v=153`，白板標記升級為 `v1.5.3`。
 - 影響檔案：`css/style.css`, `whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：行動裝置隱藏主題色系切換按鈕組 (`.theme-switcher`)。
+- 行為：
+  1. 在 `css/style.css` 的 `@media (max-width: 768px)` 中將 `.theme-switcher` 設為 `display: none !important`，釋放手機端頂部空間。
+  2. 將 `index.html` 的 `style.css` 版本 Query 升級為 `?v=154`。
+- 影響檔案：`css/style.css`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
