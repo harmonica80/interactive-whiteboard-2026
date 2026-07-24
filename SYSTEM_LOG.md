@@ -231,6 +231,14 @@
   2. 為右側偏置的第 7 個按鈕（黑色手寫筆圖標）添加獨立的 hover/active 點擊圓角反饋效果，提升視覺質感與操作反饋。
   3. 將 `index.html` 資源與 iframe src 版本 Query 升級為 `?v=152`，白板標記升級為 `v1.5.2`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：行動端白板實現一屏高免滾動顯示、卡片左右留空與單一工具列結構，升級至 `v1.5.3`。
+- 行為：
+  1. 在 `css/style.css` 中調整行動端 `#panel-whiteboard > .panel-body` 的高度計算為 `height: calc(100vh - 190px)`，實現開啟頁面免滾動一屏完整呈現在手機畫面上。
+  2. 移除白板卡片的負邊距，為 `#panel-whiteboard` 加上左右邊距 `margin: 0`（保留頁面內邊距）、圓角 `border-radius: 16px` 及柔和陰影，使白板範圍邊界清晰易辨。
+  3. 在 `whiteboard_v146.html` 中將 `forceMobile` 設為 `false`，回歸桌面端單一工具列模式，將 7 個工具按鈕（包含最右側帶 `^` 箭頭的樣式按鈕）一字排開固定於底部中央，徹底消滅半空中浮動圓圈與雙重工具列重疊問題。
+  4. 將 `index.html` 資源與 iframe src 版本 Query 升級為 `?v=153`，白板標記升級為 `v1.5.3`。
+- 影響檔案：`css/style.css`, `whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

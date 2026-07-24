@@ -26,29 +26,28 @@
       height: 100%;
       touch-action: none;
     }
-    /* 電腦端 (Desktop > 768px)：完全保留 tldraw 100% 原生原始樣式與大小 */
-
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
-      /* 1. 工具列外框：強制以絕對定位懸浮於底部中央，防止被裁切，右側留出 40px 塞入 custom-style-toggle-btn */
+      /* 1. 標準 7 按鈕單一工具列：底部水平置中固定 */
       .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
         position: absolute !important;
         bottom: 12px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         margin: 0 !important;
-        padding-top: 3px !important;
-        padding-bottom: 3px !important;
-        padding-left: 6px !important;
-        padding-right: 40px !important;
+        padding: 3px 6px !important;
         box-sizing: border-box !important;
         height: 38px !important;
-        min-height: unset !important;
+        min-height: 38px !important;
         width: max-content !important;
-        z-index: 999 !important;
+        max-width: calc(100% - 16px) !important;
+        z-index: 1000 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
       }
 
-      /* 2. 按鈕輕量固定尺寸 (32px)，縮小間距，確保 6 個基本按鈕緊湊並排於白框內 */
+      /* 2. 7 個按鈕統一輕量尺寸 (32px)，緊湊排列於工具列內 */
       .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
         height: 32px !important;
         min-height: 32px !important;
@@ -60,69 +59,20 @@
         padding: 2px !important;
         box-sizing: border-box !important;
         flex-shrink: 0 !important;
-      }
-
-      /* 3. 原生浮動圓圈選單按鈕：將 .tlui-popover 觸發容器物理偏置強行嵌入置中工具列的右側內部 */
-      .tlui-popover:not([class*="content"]):not([class*="wrapper"]),
-      [class*="tlui-popover"]:not([class*="content"]):not([class*="wrapper"]) {
-        position: absolute !important;
-        bottom: 15px !important;
-        left: calc(50% + 98px) !important;
-        transform: translateX(-50%) !important;
-        width: 32px !important;
-        height: 32px !important;
-        min-width: 32px !important;
-        min-height: 32px !important;
         border-radius: 8px !important;
-        background: transparent !important;
-        background-color: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        z-index: 1001 !important;
-        cursor: pointer !important;
       }
 
-      /* 3-1. 徹底消滅滯留在工具列中央原處的白色圓角底座卡片殘影 */
-      [class*="popover"]:not([class*="content"]):not([class*="wrapper"]) {
-        background: transparent !important;
-        background-color: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-        outline: none !important;
-      }
-
-      /* 3-2. 右側第 7 個按鈕點擊感與美化 */
-      .tlui-popover button, [class*="tlui-popover"] button {
-        border-radius: 8px !important;
-        width: 32px !important;
-        height: 32px !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-        transition: background 0.15s ease !important;
-      }
-
-      .tlui-popover button:hover, .tlui-popover button:active {
-        background: rgba(0, 122, 255, 0.1) !important;
-      }
-
-      /* 4. 按鈕 svg 圖示大小適中 */
-      .tlui-toolbar svg, [class*="tlui-toolbar"] svg, 
-      .tlui-popover svg, [class*="tlui-popover"] svg {
+      /* 3. 按鈕 svg 圖示大小適中 */
+      .tlui-toolbar svg, [class*="tlui-toolbar"] svg {
         width: 16px !important;
         height: 16px !important;
       }
 
-      /* 5. 樣式選擇面板還原置中覆寫：確保彈出大面板以適當大小置中懸浮於工具列正上方 */
-      [class*="popover__content"], 
-      [class*="popover__wrapper"], 
-      .tlui-popover__content,
-      .tlui-popover__wrapper {
+      /* 4. 點擊 ^ 彈出大面板懸浮置中於工具列正上方 */
+      .tlui-style-panel, 
+      [class*="style-panel"],
+      .tlui-popover__content, 
+      [class*="popover__content"] {
         position: fixed !important;
         bottom: 60px !important;
         left: 50% !important;
@@ -309,7 +259,7 @@
             fontWeight: 'bold',
             userSelect: 'none'
           }
-        }, 'v1.5.2')
+        }, 'v1.5.3')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [
@@ -317,7 +267,7 @@
           key: 'tldraw',
           onMount: handleMount,
           components: tldrawComponents,
-          forceMobile: isMobile // 強制在行動端使用原生折疊式的 Mobile UI，以提供帶有 ^ 箭頭的樣式與面板按鈕
+          forceMobile: false // 行動端統一採用單一工具列結構，將 ^ 按鈕自然包含於右側
         }),
         customControls
       ]);

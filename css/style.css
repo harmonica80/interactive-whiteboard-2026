@@ -2513,34 +2513,36 @@ body {
   .wheel-control-panel {
     width: 100%;
   }
-  /* 行動端白板左右滿版，消除 container/body 的邊距以爭取白板最大顯示寬度與手繪面積 */
+  /* 行動端白板左右留出邊距，並加上圓角與陰影，清晰呈現白板範圍 */
   #panel-whiteboard {
-    margin-left: -20px !important;
-    margin-right: -20px !important;
-    border-radius: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
   }
   /* 隱藏白板說明文字，釋放高度空間防止遮擋與擠壓工具列 */
   .whiteboard-instructions {
     display: none !important;
   }
-  /* 行動端白板卡片高度優化：限制最大高度自適應，防止矮螢幕手機底部溢出切掉工具列 */
+  /* 行動端白板卡片高度優化：與手機螢幕高度自適應，開頁即一屏顯示完整工具列 */
   #panel-whiteboard > .panel-body {
     height: calc(100vh - 190px) !important;
-    min-height: 350px !important;
+    min-height: 330px !important;
   }
 }
 
 @media (max-width: 480px) {
-  /* 手機版白板抵消 body 12px 邊距以實現 100% 滿版 */
+  /* 手機版白板左右保持邊距與圓角 */
   #panel-whiteboard {
-    margin-left: -12px !important;
-    margin-right: -12px !important;
-    border-radius: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 14px !important;
   }
-  /* 超窄手機高度進一步安全化微調 */
+  /* 超窄手機高度一屏化適應 */
   #panel-whiteboard > .panel-body {
-    height: calc(100vh - 180px) !important;
-    min-height: 340px !important;
+    height: calc(100vh - 185px) !important;
+    min-height: 320px !important;
   }
 }
 
