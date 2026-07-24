@@ -316,6 +316,13 @@
   2. 修改 `renderQuestions`、`renderImages`、`renderVideos` 與 `buildShareItemHTML` 中的 `commentCount` 計算邏輯，改由 `this.allCommentCounts` 獲取真實 Firebase 留言數量。
   3. 將 `index.html` 的 `style.css` 版本 Query 升級為 `?v=163`。
 - 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：修復 `js/app.js` 中的 `SyntaxError` 語法錯誤，解決網頁卡在「連線中...」與線上人數 0 人的致命問題。
+- 行為：
+  1. 在 `js/app.js` 的 `renderVideoItemHtml` 函數尾部補上遺漏的關閉大括號 `};`，徹底排除 JS 解析錯誤。
+  2. 使用 `node -c js/app.js` 100% 驗證通過零語法錯誤。
+  3. 將 `index.html` 的 `js/app.js` 與 `style.css` 版本 Query 升級為 `?v=164`，確保瀏覽器重新加載修復後的腳本並正常建立 Firebase 連線。
+- 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

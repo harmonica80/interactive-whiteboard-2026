@@ -4004,6 +4004,7 @@ class App {
         </div>
       </div>
     `;
+    };
 
     // 1. Grouped Folders
     let groupedHtml = '';
