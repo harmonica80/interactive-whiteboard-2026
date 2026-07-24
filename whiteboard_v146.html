@@ -28,7 +28,7 @@
     }
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
-      /* 1. 標準 7 按鈕單一工具列：底部水平置中固定 */
+      /* 1. 6 工具按鈕主工具列：底部水平置中固定 */
       .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
         position: absolute !important;
         bottom: 12px !important;
@@ -47,7 +47,7 @@
         justify-content: center !important;
       }
 
-      /* 2. 7 個按鈕統一輕量尺寸 (32px)，緊湊排列於工具列內 */
+      /* 2. 工具按鈕統一輕量尺寸 (32px) */
       .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
         height: 32px !important;
         min-height: 32px !important;
@@ -68,9 +68,9 @@
         height: 16px !important;
       }
 
-      /* 4. 點擊 ^ 彈出大面板懸浮置中於工具列正上方 */
-      .tlui-style-panel, 
-      [class*="style-panel"],
+      /* 4. 點擊樣式按鈕後，彈出大選單面板懸浮置中於工具列正上方 */
+      .tlui-style-panel__content, 
+      [class*="style-panel__content"],
       .tlui-popover__content, 
       [class*="popover__content"] {
         position: fixed !important;
@@ -84,15 +84,6 @@
         display: block !important;
         box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
         border-radius: 12px !important;
-      }
-
-      /* 5. 清除樣式選單容器與浮動層的白底與多餘陰影，防範長條下垂白框 */
-      .tlui-style-panel:not([class*="content"]), 
-      [class*="style-panel"]:not([class*="content"]) {
-        background: transparent !important;
-        background-color: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
       }
     }
     .loading-container {
@@ -269,7 +260,7 @@
             fontWeight: 'bold',
             userSelect: 'none'
           }
-        }, 'v1.5.6')
+        }, 'v1.5.7')
       ]) : null;
 
       return React.createElement(React.Fragment, null, [
@@ -277,7 +268,7 @@
           key: 'tldraw',
           onMount: handleMount,
           components: tldrawComponents,
-          forceMobile: false // 行動端統一採用單一工具列結構，將 ^ 按鈕自然包含於右側
+          forceMobile: isMobile // 行動端回歸 100% 原生 Mobile UI Layout，確保 Hitbox 點擊 100% 準確觸發
         }),
         customControls
       ]);

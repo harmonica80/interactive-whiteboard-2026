@@ -265,6 +265,13 @@
   2. 精準針對 `.tlui-style-panel:not([class*="content"])` 進行 background/box-shadow 清空，防止任何下垂白框。
   3. 移除 Debug Panel，升級 Querystring 至 `?v=156`，標記升級至 `v1.5.6`。
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：行動端白板徹底回歸 100% 原生 Mobile UI Layout，完全恢復樣式按鈕 Hitbox 點擊功能，升級至 `v1.5.7`。
+- 行為：
+  1. 在 `whiteboard_v146.html` 中重新啟用 `forceMobile: isMobile`，並清除所有會導致 Hitbox 與視覺呈現錯位的 CSS 暴力覆寫。
+  2. 樣式按鈕（黑色塗鴉圓圈）原生懸浮於底部工具列正上方 60px 處，與 6 個基本工具按鈕保有 12px 物理間距，無重疊且點擊 **100% 順暢彈出 24 色樣式選單面板**。
+  3. 將 `index.html` 的 iframe src 版本 Query 升級為 `?v=157`，白板標記升級為 `v1.5.7`。
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
