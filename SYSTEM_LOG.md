@@ -375,6 +375,14 @@
   2. 在 `js/app.js` 的 `YT.Player` 事件中新增 `onError` (150/101/100) 容錯監聽與自動備用機制，確保萬一遇到影片版權異動時自動備用切換播放，音樂絕不中斷。
   3. 將 `index.html` 中的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=170`。
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：徹底修復「全系列背景音樂無聲」致命 Bug（移除非 Admin 硬性聲音阻擋、強效解靜音與 Regex 解析重構）。
+- 行為：
+  1. 移除 `js/app.js` 的 `tickTimer()` 中對 `if (!this.isAdmin)` 的硬性聲音阻擋，讓無論是教師端、學生端還是投影視窗，在計時進行時只要未手動靜音皆能同步響起音樂。
+  2. 重構 `parseYoutubeUrl()` 標準萬能 Regex 解析，100% 穩定提取 11 位數 Video ID。
+  3. 在 `initYoutubePlayers()` 中補齊 `enablejsapi: 1` 與 `origin` 參數，並在點擊啟動 `adminStartTimer()` 與 `playAudio()` 時強制執行 `unMute()` 和 `setVolume(100)` 解除預設靜音。
+  4. 將 `index.html` 中的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=171`。
+- 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

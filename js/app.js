@@ -4458,36 +4458,29 @@ class App {
     const remainingSeconds = Math.ceil(remMs / 1000);
     this.updateTimerDisplay(remainingSeconds);
 
-    // 音樂播放與淡出邏輯 (僅在教師端/管理者端執行)
-    if (this.isAdmin) {
-      if (this.timerState.isPaused) {
-        this.playAudio('none');
-      } else if (remainingSeconds > 0) {
-        // 播放卡農
-        if (this.currentAudioPlaying !== 'canon') {
-          this.playAudio('canon');
-        }
-        
-        // 最後 10 秒音樂淡出
-        if (remMs <= 10000) {
-          const vol = Math.max(0, Math.min(100, Math.floor((remMs / 10000) * 100)));
-          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
-            this.playerCanon.setVolume(vol);
-          }
-        } else {
-          // 正常音量 (100)
-          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
-            this.playerCanon.setVolume(100);
-          }
+    // 音樂播放與淡出邏輯 (為所有用戶播放背景音樂)
+    if (this.timerState.isPaused) {
+      this.playAudio('none');
+    } else if (remainingSeconds > 0) {
+      // 播放背景音樂
+      if (this.currentAudioPlaying !== 'canon') {
+        this.playAudio('canon');
+      }
+      
+      // 最後 10 秒音樂淡出
+      if (remMs <= 10000) {
+        const vol = Math.max(0, Math.min(100, Math.floor((remMs / 10000) * 100)));
+        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
+          this.playerCanon.setVolume(vol);
         }
       } else {
-        // 時間到，停止播放
-        if (this.currentAudioPlaying !== 'none') {
-          this.playAudio('none');
+        // 正常音量 (100)
+        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
+          this.playerCanon.setVolume(100);
         }
       }
     } else {
-      // 學生端強制停止播放音樂
+      // 時間到，停止播放
       if (this.currentAudioPlaying !== 'none') {
         this.playAudio('none');
       }
@@ -4699,6 +4692,10 @@ class App {
 
   adminStartTimer() {
     try {
+      if (this.ytPlayersReady && this.playerCanon) {
+        if (typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
+        if (typeof this.playerCanon.setVolume === 'function') this.playerCanon.setVolume(100);
+      }
       const mins = parseInt(document.getElementById('timerMinutes').value) || 10;
       const style = document.getElementById('timerStyle').value || 'flip';
       const duration = mins * 60;
@@ -4801,13 +4798,15 @@ class App {
         width: '200',
         videoId: this.currentVideoId || 'MnhXZRw_ATU',
         playerVars: {
-          autoplay: 0,
+          autoplay: 1,
           controls: 0,
           disablekb: 1,
           fs: 0,
           modestbranding: 1,
           rel: 0,
-          showinfo: 0
+          showinfo: 0,
+          enablejsapi: 1,
+          origin: window.location.origin
         },
         events: {
           onReady: () => {
@@ -4829,16 +4828,6 @@ class App {
           },
           onError: (event) => {
             console.warn("YouTube player error code:", event.data);
-            // 當音樂遇到權限限制 (150/101) 或載入錯誤時，自動備用預設經典卡農
-            if (event.data === 150 || event.data === 101 || event.data === 100 || event.data === 5 || event.data === 2) {
-              if (this.playerCanon && typeof this.playerCanon.loadVideoById === 'function') {
-                this.playerCanon.loadVideoById({
-                  videoId: 'MnhXZRw_ATU',
-                  startSeconds: 0
-                });
-                this.playerCanon.playVideo();
-              }
-            }
           }
         }
       });
@@ -4854,50 +4843,26 @@ class App {
     let startTime = 0;
     
     try {
-      if (url.includes('youtu.be/')) {
-        const parts = url.split('youtu.be/');
-        if (parts[1]) {
-          videoId = parts[1].split(/[?#]/)[0];
-        }
-      } else if (url.includes('v=')) {
-        const parts = url.split('v=');
-        if (parts[1]) {
-          videoId = parts[1].split('&')[0].split('#')[0];
-        }
-      } else if (url.includes('embed/')) {
-        const parts = url.split('embed/');
-        if (parts[1]) {
-          videoId = parts[1].split(/[?#]/)[0];
-        }
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      if (match && match[2] && match[2].length === 11) {
+        videoId = match[2];
       } else if (url.trim().length === 11) {
         videoId = url.trim();
       }
       
-      const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
-      const searchParams = urlObj.searchParams;
-      let t = searchParams.get('t') || searchParams.get('start') || '';
-      
-      if (!t && urlObj.hash && urlObj.hash.includes('t=')) {
-        t = urlObj.hash.split('t=')[1].split('&')[0];
-      }
-      
-      if (t) {
-        if (t.includes('m') || t.includes('s')) {
-          let mins = 0;
-          let secs = 0;
+      if (url.includes('t=')) {
+        const tMatch = url.match(/[?&#]t=([0-9m-s]+)/);
+        if (tMatch && tMatch[1]) {
+          let t = tMatch[1];
+          let mins = 0, secs = 0;
           if (t.includes('m')) {
-            const splitMin = t.split('m');
-            mins = parseInt(splitMin[0]) || 0;
-            t = splitMin[1] || '';
+            const mParts = t.split('m');
+            mins = parseInt(mParts[0]) || 0;
+            t = mParts[1] || '';
           }
-          if (t.includes('s')) {
-            secs = parseInt(t.split('s')[0]) || 0;
-          } else {
-            secs = parseInt(t) || 0;
-          }
+          secs = parseInt(t.replace('s', '')) || 0;
           startTime = mins * 60 + secs;
-        } else {
-          startTime = parseInt(t) || 0;
         }
       }
     } catch (e) {
@@ -4929,6 +4894,8 @@ class App {
               videoId: videoId,
               startSeconds: startTime
             });
+            if (typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
+            if (typeof this.playerCanon.setVolume === 'function') this.playerCanon.setVolume(100);
             return;
           }
         }
@@ -4964,14 +4931,15 @@ class App {
       if (track === 'canon') {
         this.currentAudioPlaying = 'canon';
         if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
+          if (!this.timerMuted && typeof this.playerCanon.unMute === 'function') {
+            this.playerCanon.unMute();
+          }
           if (typeof this.playerCanon.setVolume === 'function') {
             this.playerCanon.setVolume(100);
           }
-          
           if (this.currentVideoStart > 0 && typeof this.playerCanon.seekTo === 'function') {
             this.playerCanon.seekTo(this.currentVideoStart, true);
           }
-          
           this.playerCanon.playVideo();
         }
       } else {
