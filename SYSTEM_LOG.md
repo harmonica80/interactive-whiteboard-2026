@@ -412,6 +412,13 @@
   2. 在 `index.html` 中將第一項「🎵 經典卡農」的 `value` 更換為使用者指定的 YouTube 網址 `https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1` (ID: `MnhXZRw_ATU`)。
   3. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=175`。
 - 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+## 2026-07-24 - Antigravity
+- 修改項目：於網頁左上角「即時互動白板」標題副標題區新增鮮豔紅字動態版本號標籤 (`ver 1.7.5`)。
+- 行為：
+  1. 在 `index.html` 的 `.header-subtitle` 中新增醒目的 `<span id="appVersionBadge" class="app-version-badge">ver 1.7.5</span>` 紅色標籤 (`#ff3b30`)，精準比照「圖 1」範例設計。
+  2. 在 `js/app.js` 中定義全域版本變數 `this.APP_VERSION = '1.7.5'`，方便後續每次更新維護同步升級。
+  3. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=176`。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
