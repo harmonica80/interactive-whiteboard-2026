@@ -1,0 +1,143 @@
+{
+  "rules": {
+    /* 根目錄：允許讀取，但禁止直接清空整庫根節點 */
+    ".read": true,
+    ".write": false,
+
+    /* 1. 💬 提問區 */
+    "questions": {
+      ".read": true,
+      ".write": true,
+      "$questionId": {
+        ".validate": "newData.hasChildren(['content', 'timestamp'])",
+        "content": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000"
+        },
+        "author": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber()"
+        },
+        "likes": {
+          ".validate": "newData.isNumber()"
+        },
+        "completed": {
+          ".validate": "newData.isBoolean()"
+        },
+        "commentsCount": {
+          ".validate": "newData.isNumber()"
+        },
+        "comments": {
+          "$commentId": {
+            ".validate": "newData.hasChildren(['content', 'timestamp'])",
+            "content": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
+            },
+            "author": {
+              ".validate": "newData.isString() && newData.val().length <= 100"
+            },
+            "timestamp": {
+              ".validate": "newData.isNumber()"
+            }
+          }
+        }
+      }
+    },
+
+    /* 2. 🖼️ 圖片分享區 */
+    "images": {
+      ".read": true,
+      ".write": true,
+      "$imageId": {
+        ".validate": "newData.hasChildren(['url', 'timestamp'])",
+        "url": {
+          ".validate": "newData.isString() && newData.val().length <= 2000"
+        },
+        "name": {
+          ".validate": "newData.isString() && newData.val().length <= 200"
+        },
+        "folder": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber()"
+        },
+        "commentsCount": {
+          ".validate": "newData.isNumber()"
+        },
+        "comments": {
+          "$commentId": {
+            ".validate": "newData.hasChildren(['content', 'timestamp'])",
+            "content": {
+              ".validate": "newData.isString() && newData.val().length <= 500"
+            }
+          }
+        }
+      }
+    },
+
+    /* 3. 🎥 影片分享區 */
+    "videos": {
+      ".read": true,
+      ".write": true,
+      "$videoId": {
+        ".validate": "newData.hasChildren(['url', 'timestamp'])",
+        "url": {
+          ".validate": "newData.isString() && newData.val().length <= 2000"
+        },
+        "name": {
+          ".validate": "newData.isString() && newData.val().length <= 200"
+        },
+        "folder": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber()"
+        },
+        "commentsCount": {
+          ".validate": "newData.isNumber()"
+        },
+        "comments": {
+          "$commentId": {
+            ".validate": "newData.hasChildren(['content', 'timestamp'])",
+            "content": {
+              ".validate": "newData.isString() && newData.val().length <= 500"
+            }
+          }
+        }
+      }
+    },
+
+    /* 4. 📢 教師分享區 */
+    "shares": {
+      ".read": true,
+      ".write": true,
+      "$shareId": {
+        ".validate": "newData.hasChildren(['timestamp'])"
+      }
+    },
+
+    /* 5. 📝 測驗與歷屆題目庫 */
+    "quiz": {
+      ".read": true,
+      ".write": true
+    },
+
+    /* 6. 🎮 專注力與搶答遊戲 */
+    "focus_game": {
+      ".read": true,
+      ".write": true
+    },
+    "buzz_game": {
+      ".read": true,
+      ".write": true
+    },
+
+    /* 7. 👥 在線人數統計 */
+    "online_users": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
