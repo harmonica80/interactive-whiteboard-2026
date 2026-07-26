@@ -8498,7 +8498,7 @@ function clickSchulteGrid(num, btn) {
 
 const SECURITY_RULES_JSON = `{
   "rules": {
-    ".read": true,
+    ".read": false,
     ".write": false,
     "questions": {
       ".read": true,
