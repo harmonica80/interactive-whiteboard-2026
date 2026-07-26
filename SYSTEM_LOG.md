@@ -583,6 +583,12 @@
   1. 移除第 3 點下方重複且錯誤顯示的「選取規則頁籤」舊圖片 `step10.png`（圖 1）。
   2. 替換為正確圈選「發布」按鈕並標註「貼上後，按下『發布』」的指南示意圖片 `step10-01.png`（圖 2）。
 - 影響檔案：`index.html`, `teacher-guide.html`, `images/guide/step10-01.png`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：修正 Firebase 安全規則中缺失資料節點寫入權限導致「清除所有資料」與「匯入 JSON 記錄檔」跳出寫入失敗的 Bug。
+- 行為：
+  1. 在 `SECURITY_RULES_JSON` 中補齊 `questions`, `images`, `videos`, `teacherShares`, `quiz`, `whiteboard`, `whiteboard_room`, `focus_game`, `buzz_game`, `online_users` 等全部資料節點的 `".write": "newData.exists() || !data.exists()"` 權限。
+  2. 根節點維持 `".read": false` 與 `".write": false`，既可確保不觸發 Firebase 警告信，又保障「一鍵重設」與「JSON 備份匯入」等大量整區節點刪除/覆寫動作能夠 100% 成功執行。
+- 影響檔案：`js/app.js`, `teacher-guide.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
