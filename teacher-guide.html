@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>📚 教師專屬建置與連線指南 - 即時互動白板</title>
-  <link rel="stylesheet" href="css/style.css?v=181">
+  <link rel="stylesheet" href="css/style.css?v=183">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     body {
@@ -12,24 +12,24 @@
       color: var(--text-primary);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       margin: 0;
-      padding: 20px;
-      line-height: 1.6;
+      padding: 24px 16px;
+      line-height: 1.8;
     }
     .guide-container {
-      max-width: 900px;
+      max-width: 860px;
       margin: 0 auto;
     }
     .guide-header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 36px;
       background: var(--bg-card);
-      padding: 30px 20px;
+      padding: 32px 20px;
       border-radius: 16px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.05);
       border: 1px solid var(--border-color);
     }
     .guide-header h1 {
-      margin: 0 0 10px 0;
+      margin: 0 0 12px 0;
       color: var(--accent-color);
       font-size: 26px;
       display: flex;
@@ -45,48 +45,49 @@
     .step-card {
       background: var(--bg-card);
       border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 24px;
+      padding: 28px;
+      margin-bottom: 36px;
       border: 1px solid var(--border-color);
-      border-left: 5px solid var(--accent-color);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      border-left: 6px solid var(--accent-color);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.04);
     }
     .step-title {
-      font-size: 18px;
+      font-size: 19px;
       font-weight: bold;
       color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 24px;
     }
     .step-num {
       background: var(--accent-color);
       color: white;
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: bold;
       flex-shrink: 0;
     }
     .step-content {
-      font-size: 14px;
+      font-size: 15px;
       color: var(--text-primary);
     }
     .step-content ol {
       margin: 0;
-      padding-left: 20px;
+      padding-left: 22px;
     }
     .step-content li {
-      margin-bottom: 14px;
+      margin-bottom: 28px;
+      line-height: 1.8;
     }
-    /* 步驟解說截圖 (Step Image Styling) */
+    /* 垂直單欄原尺寸截圖 (Vertical Single Column Images) */
     .step-img-box {
-      margin: 10px 0 16px 0;
+      margin: 16px 0 24px 0;
       text-align: center;
     }
     .step-img {
@@ -95,24 +96,16 @@
       border-radius: 10px;
       border: 1px solid var(--border-color);
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-      transition: transform 0.2s;
-    }
-    .step-img:hover {
-      transform: scale(1.01);
-    }
-    .img-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 14px;
-      margin: 12px 0 18px 0;
+      display: block;
+      margin: 0 auto;
     }
     .code-box-wrapper {
       position: relative;
       background: #282c34;
       color: #abb2bf;
       border-radius: 10px;
-      padding: 14px;
-      margin-top: 10px;
+      padding: 16px;
+      margin-top: 16px;
       overflow-x: auto;
       max-height: 240px;
     }
@@ -120,20 +113,20 @@
       background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(52, 199, 89, 0.05) 100%);
       border: 2px dashed var(--accent-color);
       border-radius: 16px;
-      padding: 24px;
-      margin: 30px 0;
+      padding: 28px;
+      margin: 36px 0;
     }
     .tool-title {
       font-size: 20px;
       font-weight: bold;
       color: var(--accent-color);
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
     .generator-group {
       display: flex;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 12px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
     }
     .generator-input {
@@ -162,7 +155,7 @@
       border: 1px solid var(--border-color);
       border-radius: 12px;
       padding: 20px;
-      margin-top: 16px;
+      margin-top: 20px;
     }
     .qr-container {
       display: flex;
@@ -196,14 +189,12 @@
       <div class="step-content">
         <ol>
           <li>前往 <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--accent-color); font-weight: bold;">Firebase 主控台 🔗</a>，登入您的 Google 帳號。</li>
-          <li>點選「<strong>+ 新增專案</strong>」，輸入班級名稱（例如：<code>my-class-whiteboard</code>），一路點選「繼續」完成建立。
-            <!-- 圖片01, 02, 03, 04 -->
-            <div class="img-grid">
-              <div class="step-img-box"><img src="images/guide/step01.png" alt="步驟1-1" class="step-img"></div>
-              <div class="step-img-box"><img src="images/guide/step02.png" alt="步驟1-2" class="step-img"></div>
-              <div class="step-img-box"><img src="images/guide/step03.png" alt="步驟1-3" class="step-img"></div>
-              <div class="step-img-box"><img src="images/guide/step04.png" alt="步驟1-4" class="step-img"></div>
-            </div>
+          <li>點選「<strong>+ 新增專案</strong>」，輸入班級名稱（例如：<code>my-class-whiteboard</code>），一路點選「繼續」完成建立：
+            <!-- 圖片 01 ~ 04 直式向下排列 -->
+            <div class="step-img-box"><img src="images/guide/step01.png" alt="步驟1-1" class="step-img"></div>
+            <div class="step-img-box"><img src="images/guide/step02.png" alt="步驟1-2" class="step-img"></div>
+            <div class="step-img-box"><img src="images/guide/step03.png" alt="步驟1-3" class="step-img"></div>
+            <div class="step-img-box"><img src="images/guide/step04.png" alt="步驟1-4" class="step-img"></div>
           </li>
           <li>建立完成後，在左側選單點選「<strong>資料庫和儲存空間</strong>」 ➔ 「<strong>Realtime Database</strong>」：
             <!-- 圖片05 -->
@@ -233,14 +224,13 @@
       </div>
       <div class="step-content">
         <ol>
-          <li>在 Realtime Database 頁面上方，點選 <span style="color:#ff9500; font-weight:bold;">規則 (Rules)</span> 頁籤：
-            <!-- 圖片09 -->
-            <div class="step-img-box"><img src="images/guide/step09.png" alt="步驟2-1 規則頁籤與貼上位置" class="step-img"></div>
-          </li>
+          <li>在 Realtime Database 頁面上方，點選 <span style="color:#ff9500; font-weight:bold;">規則 (Rules)</span> 頁籤。</li>
           <li>點擊下方按鈕一鍵複製防護規則：
-            <div style="margin: 12px 0;">
+            <div style="margin: 16px 0;">
               <button onclick="copySecurityRules()" class="generator-btn" style="background: #ff9500;">📋 一鍵複製防護安全規則</button>
             </div>
+            <!-- 插入圖11-01.png -->
+            <div class="step-img-box"><img src="images/guide/step11-01.png" alt="步驟2-2 複製防護規則與貼上位置" class="step-img"></div>
           </li>
           <li>清空頁面原本內容，將複製的規則貼上，最後點選右上角的「<strong>發布 (Publish)</strong>」即完成設定！
             <!-- 圖片10 -->
@@ -275,7 +265,7 @@
     <!-- 步驟 4：產生連結工具 -->
     <div class="tool-box">
       <div class="tool-title">⚡ 步驟 4：產生班級專屬連線網址與 QR Code</div>
-      <p style="text-align: center; font-size: 14px; color: var(--text-secondary); margin-top: 0;">
+      <p style="text-align: center; font-size: 15px; color: var(--text-secondary); margin-top: 0; margin-bottom: 20px;">
         將您剛才複製的 Firebase Database URL 貼在下方即可生成專屬連結！
       </p>
       
@@ -286,7 +276,7 @@
 
       <div id="resultArea" class="result-group">
         <div class="result-item">
-          <span class="result-label" style="font-weight: bold; margin-bottom: 8px; display: block;">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
+          <span style="font-weight: bold; margin-bottom: 10px; display: block; font-size: 15px;">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
           <div style="display: flex; gap: 10px;">
             <input type="text" id="shareUrl" class="generator-input" readonly>
             <button onclick="copyText('shareUrl')" class="generator-btn" style="background: #34c759;">📋 複製連結</button>

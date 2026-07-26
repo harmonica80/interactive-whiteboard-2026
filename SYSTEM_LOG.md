@@ -449,6 +449,14 @@
   1. 將 `teacher-guide.html` 與 `index.html` 中步驟 1 第 4 點的文字修改為 `點選頁面中的「建立資料庫」按鈕：`。
   2. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 1.8.2`。
 - 影響檔案：`teacher-guide.html`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：將教師建置指南圖片改為「直式單欄原尺寸顯示」、加大文字與段落間距，並精準插入最新 `step11-01.png`，升級全站版本為 `ver 1.8.3`。
+- 行為：
+  1. 取消 Grid 多欄並排，將 `images/guide/` 所有步驟圖片改為獨立單行、直式原尺寸高畫質展示。
+  2. 加大 `li` 文字間距 (`margin-bottom: 24px`)、圖片與文字間距以及步驟卡片間距 (`margin-bottom: 36px`)，提升閱讀呼吸感。
+  3. 刪除步驟 2 第 1 點舊圖，並在第 2 點一鍵複製按鈕下方精準插入最新 `step11-01.png`。
+  4. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 1.8.3`。
+- 影響檔案：`teacher-guide.html`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`, `images/guide/step11-01.png`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
