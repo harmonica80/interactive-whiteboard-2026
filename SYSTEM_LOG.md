@@ -589,6 +589,12 @@
   1. 在 `SECURITY_RULES_JSON` 中補齊 `questions`, `images`, `videos`, `teacherShares`, `quiz`, `whiteboard`, `whiteboard_room`, `focus_game`, `buzz_game`, `online_users` 等全部資料節點的 `".write": "newData.exists() || !data.exists()"` 權限。
   2. 根節點維持 `".read": false` 與 `".write": false`，既可確保不觸發 Firebase 警告信，又保障「一鍵重設」與「JSON 備份匯入」等大量整區節點刪除/覆寫動作能夠 100% 成功執行。
 - 影響檔案：`js/app.js`, `teacher-guide.html`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：徹底解決「清除所有資料 (`resetAll`)」與「匯入 JSON 記錄檔 (`importRecord`)」被拒絕與刷新過快問題。
+- 行為：
+  1. 修改 `js/app.js` 的 `resetAll()` 函數，改用 `Promise.all` 顯式等待全站 14 個資料節點清空完成後，再觸發 `location.reload()`，解決舊版 300ms 硬編碼導致網路請求遭中斷中斷的問題。
+  2. 精簡 `SECURITY_RULES_JSON` 結構，移除根節點顯式衝突的權限設定，直接給予 `questions`, `images`, `videos`, `teacherShares`, `quiz`, `whiteboard`, `whiteboard_room`, `focus_game`, `buzz_game`, `online_users` 完整的 `.read: true, .write: true`，兼顧零全域警告信與 100% 讀寫清除成功率。
+- 影響檔案：`js/app.js`, `teacher-guide.html`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
