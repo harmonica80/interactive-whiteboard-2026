@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>📚 教師專屬建置與連線指南 - 即時互動白板</title>
-  <link rel="stylesheet" href="css/style.css?v=178">
+  <link rel="stylesheet" href="css/style.css?v=181">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     body {
@@ -50,10 +50,6 @@
       border: 1px solid var(--border-color);
       border-left: 5px solid var(--accent-color);
       box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .step-card:hover {
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
     }
     .step-title {
       font-size: 18px;
@@ -86,35 +82,29 @@
       padding-left: 20px;
     }
     .step-content li {
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
-    /* 視覺示意圖框 (Visual Diagram Box) */
-    .visual-schematic {
-      background: var(--bg-input);
+    /* 步驟解說截圖 (Step Image Styling) */
+    .step-img-box {
+      margin: 10px 0 16px 0;
+      text-align: center;
+    }
+    .step-img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 10px;
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 16px;
-      margin: 16px 0;
-      font-family: monospace;
-      font-size: 13px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      transition: transform 0.2s;
     }
-    .ui-mock-screen {
-      background: #1e1e1e;
-      color: #d4d4d4;
-      border-radius: 8px;
-      padding: 14px;
-      margin-top: 10px;
-      font-family: consolas, monospace;
-      position: relative;
+    .step-img:hover {
+      transform: scale(1.01);
     }
-    .ui-highlight {
-      border: 2px dashed #ff3b30;
-      background: rgba(255, 59, 48, 0.15);
-      color: #ff3b30;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-weight: bold;
-      display: inline-block;
+    .img-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin: 12px 0 18px 0;
     }
     .code-box-wrapper {
       position: relative;
@@ -124,24 +114,7 @@
       padding: 14px;
       margin-top: 10px;
       overflow-x: auto;
-      max-height: 260px;
-    }
-    .copy-rules-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: var(--accent-color);
-      color: white;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-    .copy-rules-btn:hover {
-      opacity: 0.9;
+      max-height: 240px;
     }
     .tool-box {
       background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(52, 199, 89, 0.05) 100%);
@@ -156,10 +129,6 @@
       color: var(--accent-color);
       text-align: center;
       margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
     }
     .generator-group {
       display: flex;
@@ -186,10 +155,6 @@
       font-weight: bold;
       cursor: pointer;
       font-size: 14px;
-      transition: transform 0.1s;
-    }
-    .generator-btn:active {
-      transform: scale(0.98);
     }
     .result-group {
       display: none;
@@ -198,38 +163,6 @@
       border-radius: 12px;
       padding: 20px;
       margin-top: 16px;
-    }
-    .result-item {
-      margin-bottom: 16px;
-    }
-    .result-label {
-      font-weight: bold;
-      color: var(--text-primary);
-      display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
-    .result-field {
-      display: flex;
-      gap: 10px;
-    }
-    .result-url {
-      flex: 1;
-      padding: 10px;
-      background: var(--bg-input);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      color: var(--text-primary);
-      font-size: 13px;
-    }
-    .copy-btn {
-      background: var(--success-color);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
     }
     .qr-container {
       display: flex;
@@ -244,21 +177,6 @@
       width: fit-content;
       margin-left: auto;
       margin-right: auto;
-    }
-    .qr-title {
-      color: #333;
-      font-weight: bold;
-      margin-bottom: 12px;
-      font-size: 14px;
-    }
-    .alert-tip {
-      background: rgba(255, 149, 0, 0.1);
-      border-left: 4px solid #ff9500;
-      padding: 12px 16px;
-      border-radius: 8px;
-      color: var(--text-primary);
-      font-size: 13px;
-      margin-top: 16px;
     }
   </style>
 </head>
@@ -278,15 +196,31 @@
       <div class="step-content">
         <ol>
           <li>前往 <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--accent-color); font-weight: bold;">Firebase 主控台 🔗</a>，登入您的 Google 帳號。</li>
-          <li>點選「<strong>+ 新增專案</strong>」，輸入班級名稱（例如：<code>my-class-whiteboard</code>），一路點選「繼續」完成建立。</li>
-          <li>建立完成後，在左側選單點選：
-            <div class="ui-mock-screen">
-              📁 選單導覽：<span class="ui-highlight">Build (建置)</span> ➔ <span class="ui-highlight">Realtime Database</span>
+          <li>點選「<strong>+ 新增專案</strong>」，輸入班級名稱（例如：<code>my-class-whiteboard</code>），一路點選「繼續」完成建立。
+            <!-- 圖片01, 02, 03, 04 -->
+            <div class="img-grid">
+              <div class="step-img-box"><img src="images/guide/step01.png" alt="步驟1-1" class="step-img"></div>
+              <div class="step-img-box"><img src="images/guide/step02.png" alt="步驟1-2" class="step-img"></div>
+              <div class="step-img-box"><img src="images/guide/step03.png" alt="步驟1-3" class="step-img"></div>
+              <div class="step-img-box"><img src="images/guide/step04.png" alt="步驟1-4" class="step-img"></div>
             </div>
           </li>
-          <li>點選頁面中央藍色的「<strong>建立資料庫</strong>」按鈕。</li>
-          <li>資料庫位置建議選擇 <span class="ui-highlight">Singapore (asia-southeast1)</span>，點選「下一步」。</li>
-          <li>安全規則選擇「<strong>以測試模式啟動</strong>」，最後點選「<strong>啟用</strong>」。</li>
+          <li>建立完成後，在左側選單點選「<strong>資料庫和儲存空間</strong>」 ➔ 「<strong>Realtime Database</strong>」：
+            <!-- 圖片05 -->
+            <div class="step-img-box"><img src="images/guide/step05.png" alt="步驟1-5 選單導覽" class="step-img"></div>
+          </li>
+          <li>點選頁面中央藍色的「<strong>建立資料庫</strong>」按鈕：
+            <!-- 圖片06 -->
+            <div class="step-img-box"><img src="images/guide/step06.png" alt="步驟1-6 建立資料庫" class="step-img"></div>
+          </li>
+          <li>資料庫位置建議選擇 <span style="color:#ff3b30; font-weight:bold;">新加坡 (asia-southeast1)</span>，點選「下一步」：
+            <!-- 圖片07 -->
+            <div class="step-img-box"><img src="images/guide/step07.png" alt="步驟1-7 選擇位置" class="step-img"></div>
+          </li>
+          <li>安全規則選擇「<strong>以測試模式啟動</strong>」，最後點選「<strong>啟用</strong>」：
+            <!-- 圖片08 -->
+            <div class="step-img-box"><img src="images/guide/step08.png" alt="步驟1-8 以測試模式啟動" class="step-img"></div>
+          </li>
         </ol>
       </div>
     </div>
@@ -299,13 +233,19 @@
       </div>
       <div class="step-content">
         <ol>
-          <li>在 Realtime Database 頁面上方，點選 <span class="ui-highlight">規則 (Rules)</span> 頁籤。</li>
+          <li>在 Realtime Database 頁面上方，點選 <span style="color:#ff9500; font-weight:bold;">規則 (Rules)</span> 頁籤：
+            <!-- 圖片09 -->
+            <div class="step-img-box"><img src="images/guide/step09.png" alt="步驟2-1 規則頁籤與貼上位置" class="step-img"></div>
+          </li>
           <li>點擊下方按鈕一鍵複製防護規則：
             <div style="margin: 12px 0;">
               <button onclick="copySecurityRules()" class="generator-btn" style="background: #ff9500;">📋 一鍵複製防護安全規則</button>
             </div>
           </li>
-          <li>清空頁面原本內容，將複製的規則貼上，最後點選右上角的「<strong>發布 (Publish)</strong>」即完成安全設定！</li>
+          <li>清空頁面原本內容，將複製的規則貼上，最後點選右上角的「<strong>發布 (Publish)</strong>」即完成設定！
+            <!-- 圖片10 -->
+            <div class="step-img-box"><img src="images/guide/step10.png" alt="步驟2-3 貼上後點擊發布" class="step-img"></div>
+          </li>
         </ol>
 
         <!-- 規則預覽 Codebox -->
@@ -323,13 +263,11 @@
       </div>
       <div class="step-content">
         <ol>
-          <li>切換回 <span class="ui-highlight">資料 (Data)</span> 頁籤。</li>
-          <li>在頁面頂部會看到一串以 <code>https://</code> 開頭的資料庫網址：
-            <div class="ui-mock-screen">
-              🔗 資料庫網址位置：<span class="ui-highlight">https://xxxx-default-rtdb.asia-southeast1.firebasedatabase.app/</span>
-            </div>
+          <li>切換回 <span style="color:#34c759; font-weight:bold;">資料 (Data)</span> 頁籤。</li>
+          <li>在頁面頂部會看到一串以 <code>https://</code> 開頭的資料庫網址，點選該網址右側的「<strong>複製</strong>」按鈕：
+            <!-- 圖片11 -->
+            <div class="step-img-box"><img src="images/guide/step11.png" alt="步驟3-2 複製資料庫網址" class="step-img"></div>
           </li>
-          <li>點選該網址右側的「<strong>複製</strong>」按鈕。</li>
         </ol>
       </div>
     </div>
@@ -348,37 +286,18 @@
 
       <div id="resultArea" class="result-group">
         <div class="result-item">
-          <span class="result-label">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
-          <div class="result-field">
-            <input type="text" id="shareUrl" class="result-url" readonly>
-            <button onclick="copyText('shareUrl')" class="copy-btn">📋 複製連結</button>
+          <span class="result-label" style="font-weight: bold; margin-bottom: 8px; display: block;">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="shareUrl" class="generator-input" readonly>
+            <button onclick="copyText('shareUrl')" class="generator-btn" style="background: #34c759;">📋 複製連結</button>
           </div>
         </div>
 
         <!-- 班級專屬 QR Code -->
         <div class="qr-container">
-          <div class="qr-title">📱 班級專屬 QR Code (可投影至黑板供學生掃描)</div>
+          <div style="color: #333; font-weight: bold; margin-bottom: 12px; font-size: 14px;">📱 班級專屬 QR Code (可投影至黑板供學生掃描)</div>
           <div id="qrcode"></div>
         </div>
-
-        <div class="alert-tip">
-          💡 <strong>如何解鎖教師管理員權限？</strong><br>
-          老師點擊上方連結開啟白板後，點選右上角的「⚙️ 管理後台」並輸入預設密碼 <strong><code>1234</code></strong>，即可發布測驗、備份歷史題目與刪除提問。一般學生直接在原網頁互動即可。
-        </div>
-      </div>
-    </div>
-
-    <!-- 步驟 5 -->
-    <div class="step-card" style="border-left-color: #5856d6;">
-      <div class="step-title">
-        <span class="step-num" style="background: #5856d6;">5</span>
-        <span>輕鬆開始課堂互動！</span>
-      </div>
-      <div class="step-content">
-        <ol>
-          <li>點擊上方產生的專屬網址，或是將網址 / QR Code 分享給學生。</li>
-          <li>學生加入提問與答題的資料都會 100% 儲存於您專屬的免費資料庫中，與其他班級完全獨立隔離！</li>
-        </ol>
       </div>
     </div>
   </div>
@@ -424,7 +343,6 @@
   }
 }`;
 
-    // 載入安全規則預覽
     document.getElementById('rulesCodeText').textContent = SECURITY_RULES_JSON;
 
     function copySecurityRules() {
@@ -434,8 +352,6 @@
         alert('請手動選取程式碼框中的內容進行複製');
       });
     }
-
-    let qrCodeInstance = null;
 
     function generateLinks() {
       let dbUrl = document.getElementById('dbUrlInput').value.trim();
@@ -449,24 +365,20 @@
         return;
       }
 
-      // 修剪結尾斜線
       dbUrl = dbUrl.replace(/\/+$/, '');
 
-      // 取得目前白板主頁面的網址路徑
       const currentUrl = window.location.href;
       const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
       const whiteboardUrl = `${baseUrl}/index.html`;
 
-      // 產生專屬連結，加入 dbUrl 參數
       const finalShareUrl = `${whiteboardUrl}?dbUrl=${encodeURIComponent(dbUrl)}`;
 
       document.getElementById('shareUrl').value = finalShareUrl;
       document.getElementById('resultArea').style.display = 'block';
 
-      // 動態生成 QR Code
       const qrDiv = document.getElementById('qrcode');
       qrDiv.innerHTML = '';
-      qrCodeInstance = new QRCode(qrDiv, {
+      new QRCode(qrDiv, {
         text: finalShareUrl,
         width: 180,
         height: 180,
