@@ -85,18 +85,19 @@
       margin-bottom: 28px;
       line-height: 1.8;
     }
-    /* 垂直單欄原尺寸截圖 (Vertical Single Column Images) */
+    /* 垂直單欄原尺寸截圖 (Vertical Single Column Images: max-width 100%, width/height auto) */
     .step-img-box {
       margin: 16px 0 24px 0;
       text-align: center;
     }
     .step-img {
-      max-width: 100%;
-      height: auto;
+      max-width: 100% !important;
+      width: auto !important;
+      height: auto !important;
       border-radius: 10px;
       border: 1px solid var(--border-color);
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-      display: block;
+      display: inline-block;
       margin: 0 auto;
     }
     .code-box-wrapper {

@@ -1507,6 +1507,21 @@ body {
 .step-card li {
   margin-bottom: 8px;
 }
+.step-img-box {
+  margin: 16px 0 24px 0;
+  text-align: center;
+}
+.step-img,
+#panel-guide img {
+  max-width: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  display: inline-block;
+  margin: 0 auto;
+}
 .tool-box {
   background: var(--bg-card);
   border: 2px solid var(--accent-color);
