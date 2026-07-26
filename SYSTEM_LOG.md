@@ -521,6 +521,15 @@
   2. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 1.9.2`。
   3. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=192`。
 - 影響檔案：`images/guide/step03.png`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：根據使用者最新上傳與指定的截圖，重新置換步驟 1 中的第 3、4、5 點對應步驟圖，並遞增版本為 `ver 1.9.5`。
+- 行為：
+  1. 將步驟 1 第 3 點選單導覽圖 `step05.png` 置換為新版。
+  2. 將步驟 1 第 4 點建立資料庫圖 `step06.png` 置換為新版。
+  3. 將步驟 1 第 5 點選擇新加坡位置圖 `step07.png` 置換為新版。
+  4. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 1.9.5`。
+  5. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=195`。
+- 影響檔案：`images/guide/step05.png` ~ `step07.png`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
