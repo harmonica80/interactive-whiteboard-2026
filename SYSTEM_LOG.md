@@ -577,6 +577,12 @@
   1. 將 `.step-img` 樣式調整為 `width: auto !important; height: auto !important; max-width: 100% !important; display: inline-block;`。
   2. 確保指南圖片預設以其高畫質原始解析度尺寸原汁原味展示；當螢幕或頁面顯示範圍小於圖片尺寸時，會自動等比例自適應縮小至容器範圍內，避免圖片遭強行拉伸填滿或超出頁面。
 - 影響檔案：`index.html`, `teacher-guide.html`, `css/style.css`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：修正「教師專屬建置與連線指南」第二大項（貼上防護安全規則）第 3 點之示意圖片。
+- 行為：
+  1. 移除第 3 點下方重複且錯誤顯示的「選取規則頁籤」舊圖片 `step10.png`（圖 1）。
+  2. 替換為正確圈選「發布」按鈕並標註「貼上後，按下『發布』」的指南示意圖片 `step10-01.png`（圖 2）。
+- 影響檔案：`index.html`, `teacher-guide.html`, `images/guide/step10-01.png`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
