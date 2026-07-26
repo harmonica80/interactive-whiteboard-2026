@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '1.7.6';
+    this.APP_VERSION = '1.8.0';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -8513,6 +8513,117 @@ function endFocusGame() {
 
 function clickSchulteGrid(num, btn) {
   if (window.app) window.app.clickSchulteGrid(num, btn);
+}
+
+const SECURITY_RULES_JSON = `{
+  "rules": {
+    ".read": true,
+    ".write": false,
+    "questions": {
+      ".read": true,
+      "$questionId": {
+        ".write": "newData.exists() || !data.exists()",
+        ".validate": "newData.hasChildren(['content', 'timestamp'])",
+        "content": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000" },
+        "author": { ".validate": "newData.isString() && newData.val().length <= 100" },
+        "timestamp": { ".validate": "newData.isNumber()" },
+        "likes": { ".validate": "newData.isNumber()" },
+        "completed": { ".validate": "newData.isBoolean()" },
+        "commentsCount": { ".validate": "newData.isNumber()" },
+        "comments": {
+          "$commentId": {
+            ".write": "newData.exists() || !data.exists()",
+            ".validate": "newData.hasChildren(['content', 'timestamp'])",
+            "content": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" }
+          }
+        }
+      }
+    },
+    "images": { ".read": true, "$imageId": { ".write": "newData.exists() || !data.exists()" } },
+    "videos": { ".read": true, "$videoId": { ".write": "newData.exists() || !data.exists()" } },
+    "shares": { ".read": true, "$shareId": { ".write": "newData.exists() || !data.exists()" } },
+    "quiz": {
+      ".read": true,
+      "current": { ".write": "newData.exists() || !data.exists()" },
+      "answers": { "$answerId": { ".write": "newData.exists() || !data.exists()" } },
+      "history": { "$historyId": { ".write": "newData.exists() || !data.exists()" } },
+      "timer": { ".write": "newData.exists() || !data.exists()" }
+    },
+    "focus_game": { ".read": true, ".write": "newData.exists() || !data.exists()" },
+    "buzz_game": { ".read": true, ".write": "newData.exists() || !data.exists()" },
+    "online_users": { ".read": true, "$userKey": { ".write": "newData.exists() || !data.exists()" } }
+  }
+}`;
+
+function copySecurityRules() {
+  navigator.clipboard.writeText(SECURITY_RULES_JSON).then(() => {
+    if (window.app) window.app.showNotification('成功', '安全防護規則已複製！請至 Firebase Console 的「規則 (Rules)」貼上並點擊「發布」。');
+    else alert('安全防護規則已複製！');
+  }).catch(err => {
+    alert('複製失敗，請手動複製');
+  });
+}
+
+function generateLinks() {
+  let dbUrl = document.getElementById('dbUrlInput').value.trim();
+  if (!dbUrl) {
+    if (window.app) window.app.showNotification('錯誤', '請先輸入或貼上您的 Firebase Database URL！');
+    else alert('請先輸入或貼上您的 Firebase Database URL！');
+    return;
+  }
+
+  if (!dbUrl.startsWith('https://')) {
+    if (window.app) window.app.showNotification('格式錯誤', '網址應該以 https:// 開頭');
+    else alert('格式不正確！網址應該以 https:// 開頭。');
+    return;
+  }
+
+  dbUrl = dbUrl.replace(/\/+$/, '');
+
+  const currentUrl = window.location.href;
+  const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+  const whiteboardUrl = `${baseUrl}/index.html`;
+
+  const finalShareUrl = `${whiteboardUrl}?dbUrl=${encodeURIComponent(dbUrl)}`;
+
+  const shareInput = document.getElementById('shareUrl');
+  if (shareInput) shareInput.value = finalShareUrl;
+  
+  const resArea = document.getElementById('resultArea');
+  if (resArea) resArea.style.display = 'block';
+
+  const qrDiv = document.getElementById('qrcode');
+  if (qrDiv) {
+    qrDiv.innerHTML = '';
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(qrDiv, {
+        text: finalShareUrl,
+        width: 180,
+        height: 180,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      });
+    }
+  }
+
+  if (window.app) window.app.showNotification('成功', '已順利產生班級專屬連線網址與 QR Code！');
+}
+
+function copyText(elementId) {
+  const copyText = document.getElementById(elementId);
+  if (!copyText) return;
+  copyText.select();
+  copyText.setSelectionRange(0, 99999);
+
+  try {
+    navigator.clipboard.writeText(copyText.value);
+    if (window.app) window.app.showNotification('成功', '連結已成功複製！可直接貼上分享給學生。');
+    else alert('連結已成功複製！');
+  } catch (err) {
+    document.execCommand('copy');
+    alert('連結已複製！');
+  }
 }
 
 
