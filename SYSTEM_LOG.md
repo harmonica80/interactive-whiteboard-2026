@@ -595,6 +595,12 @@
   1. 修改 `js/app.js` 的 `resetAll()` 函數，改用 `Promise.all` 顯式等待全站 14 個資料節點清空完成後，再觸發 `location.reload()`，解決舊版 300ms 硬編碼導致網路請求遭中斷中斷的問題。
   2. 精簡 `SECURITY_RULES_JSON` 結構，移除根節點顯式衝突的權限設定，直接給予 `questions`, `images`, `videos`, `teacherShares`, `quiz`, `whiteboard`, `whiteboard_room`, `focus_game`, `buzz_game`, `online_users` 完整的 `.read: true, .write: true`，兼顧零全域警告信與 100% 讀寫清除成功率。
 - 影響檔案：`js/app.js`, `teacher-guide.html`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：在「教師專屬建置與連線指南」第二大項（貼上防護安全規則）第 2 點下方插入「把複製的內容貼到此處」示意圖片。
+- 行為：
+  1. 將您提供圈選「把複製的內容貼到此處」並附帶複製按鈕箭頭導覽的最新圖 2 儲存更新為 `images/guide/step10.png`。
+  2. 放置在第二大項第 2 點「📋 一鍵複製防護安全規則」按鈕正下方（第 3 點「按下發布」圖片上方），使貼上規則的操作流程更加清楚明白。
+- 影響檔案：`index.html`, `teacher-guide.html`, `images/guide/step10.png`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
