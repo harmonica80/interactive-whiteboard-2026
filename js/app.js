@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '1.8.4';
+    this.APP_VERSION = '1.8.5';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -4823,7 +4823,7 @@ class App {
         width: '200',
         videoId: this.currentVideoId || 'MnhXZRw_ATU',
         playerVars: {
-          autoplay: 1,
+          autoplay: 0,
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -4836,6 +4836,9 @@ class App {
         events: {
           onReady: () => {
             this.ytPlayersReady = true;
+            if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+              this.playerCanon.pauseVideo();
+            }
             this.applyMuteState();
             if (this.pendingMusicUrl) {
               this.updateMusicSource(this.pendingMusicUrl);

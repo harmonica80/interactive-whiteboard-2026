@@ -463,6 +463,14 @@
   1. 確保 `teacher-guide.html` 與 `index.html` 的步驟 1 第 2 點圖片按照 01 ➔ 02 ➔ 03 ➔ 04 精準呈現。
   2. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 1.8.4`。
 - 影響檔案：`teacher-guide.html`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：徹底修復網頁剛載入時會自動播放 5~10 秒卡農音樂的 Bug，並將全站版本號升級為 `ver 1.8.5`。
+- 行為：
+  1. 經深入排查，發現 `initYoutubePlayers()` 中初始化 `playerCanon` 的 `playerVars` 被誤設了 `autoplay: 1`，導致 YouTube iframe 一載入即自動播放卡農音樂，直到幾秒後 Firebase 讀取完畢 `isActive: false` 呼叫 `pauseVideo()` 才停止。
+  2. 將 `initYoutubePlayers()` 中的 `autoplay: 1` 徹底修正為 `autoplay: 0`，並在 `onReady` 事件補上 `pauseVideo()` 主動暫停防護，確保網頁開啟時 100% 安靜。
+  3. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 1.8.5`。
+  4. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=185`。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
