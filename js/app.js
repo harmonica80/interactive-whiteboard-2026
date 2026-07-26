@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '1.9.8';
+    this.APP_VERSION = '1.9.9';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -8282,29 +8282,7 @@ function deleteVideo(id) {
   );
 }
 
-// 教師專屬建置連結產生器
-function generateLinks() {
-  const dbUrl = document.getElementById('dbUrlInput').value.trim();
-  if (!dbUrl) {
-    window.app.showNotification('提示', '請先輸入或貼上您的 Firebase Database URL！');
-    return;
-  }
-  
-  if (!dbUrl.startsWith('https://')) {
-    window.app.showNotification('提示', '格式不正確！URL 應該以 https:// 開頭。');
-    return;
-  }
 
-  // 取得目前白板主頁面的網址路徑
-  const currentUrl = window.location.href;
-  const cleanUrl = currentUrl.split('?')[0].split('#')[0];
-
-  // 產生專屬連結，加入 dbUrl 參數
-  const finalShareUrl = `${cleanUrl}?dbUrl=${encodeURIComponent(dbUrl)}`;
-
-  document.getElementById('shareUrl').value = finalShareUrl;
-  document.getElementById('resultArea').style.display = 'block';
-}
 
 function copyText(elementId) {
   const copyText = document.getElementById(elementId);
@@ -8608,6 +8586,49 @@ function generateLinks() {
         correctLevel : QRCode.CorrectLevel.H
       });
     }
+  }
+
+  // 自動產生短網址
+  const shortInput = document.getElementById('shortUrl');
+  const btnCopyShort = document.getElementById('btnCopyShort');
+  if (shortInput) {
+    shortInput.value = "正在產生短網址...";
+    if (btnCopyShort) btnCopyShort.disabled = true;
+
+    const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(finalShareUrl)}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
+
+    fetch(proxyUrl)
+      .then(res => {
+        if (!res.ok) throw new Error("HTTP error");
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.contents) {
+          const shortUrl = data.contents.trim();
+          shortInput.value = shortUrl;
+          if (btnCopyShort) btnCopyShort.disabled = false;
+        } else {
+          throw new Error("Invalid format");
+        }
+      })
+      .catch(err => {
+        console.warn("Failed to generate short URL via proxy, trying fallback direct fetch:", err);
+        fetch(tinyUrlApi)
+          .then(res => {
+            if (!res.ok) throw new Error("HTTP error");
+            return res.text();
+          })
+          .then(text => {
+            const shortUrl = text.trim();
+            shortInput.value = shortUrl;
+            if (btnCopyShort) btnCopyShort.disabled = false;
+          })
+          .catch(err2 => {
+            console.error("All short URL service fallbacks failed:", err2);
+            shortInput.value = "短網址產生失敗，請複製上方長網址";
+          });
+      });
   }
 
   if (window.app) window.app.showNotification('成功', '已順利產生班級專屬連線網址與 QR Code！');

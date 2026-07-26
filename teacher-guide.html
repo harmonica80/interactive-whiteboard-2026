@@ -273,11 +273,20 @@
       </div>
 
       <div id="resultArea" class="result-group">
-        <div class="result-item">
+        <div class="result-item" style="margin-bottom: 18px;">
           <span style="font-weight: bold; margin-bottom: 10px; display: block; font-size: 15px;">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
           <div style="display: flex; gap: 10px;">
             <input type="text" id="shareUrl" class="generator-input" readonly>
             <button onclick="copyText('shareUrl')" class="generator-btn" style="background: #34c759;">📋 複製連結</button>
+          </div>
+        </div>
+
+        <!-- 專屬短網址 -->
+        <div class="result-item" style="margin-bottom: 18px;">
+          <span style="font-weight: bold; margin-bottom: 10px; display: block; font-size: 15px;">🔗 班級專屬短網址（更方便輸入與分享）：</span>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="shortUrl" class="generator-input" placeholder="正在自動產生短網址..." readonly>
+            <button id="btnCopyShort" onclick="copyText('shortUrl')" class="generator-btn" style="background: #34c759;" disabled>📋 複製短網址</button>
           </div>
         </div>
 
@@ -374,6 +383,49 @@
         colorLight : "#ffffff",
         correctLevel : QRCode.CorrectLevel.H
       });
+
+      // 自動產生短網址
+      const shortInput = document.getElementById('shortUrl');
+      const btnCopyShort = document.getElementById('btnCopyShort');
+      if (shortInput) {
+        shortInput.value = "正在產生短網址...";
+        if (btnCopyShort) btnCopyShort.disabled = true;
+
+        const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(finalShareUrl)}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
+
+        fetch(proxyUrl)
+          .then(res => {
+            if (!res.ok) throw new Error("HTTP error");
+            return res.json();
+          })
+          .then(data => {
+            if (data && data.contents) {
+              const shortUrl = data.contents.trim();
+              shortInput.value = shortUrl;
+              if (btnCopyShort) btnCopyShort.disabled = false;
+            } else {
+              throw new Error("Invalid format");
+            }
+          })
+          .catch(err => {
+            console.warn("Failed to generate short URL via proxy, trying fallback direct fetch:", err);
+            fetch(tinyUrlApi)
+              .then(res => {
+                if (!res.ok) throw new Error("HTTP error");
+                return res.text();
+              })
+              .then(text => {
+                const shortUrl = text.trim();
+                shortInput.value = shortUrl;
+                if (btnCopyShort) btnCopyShort.disabled = false;
+              })
+              .catch(err2 => {
+                console.error("All short URL service fallbacks failed:", err2);
+                shortInput.value = "短網址產生失敗，請複製上方長網址";
+              });
+          });
+      }
     }
 
     function copyText(elementId) {

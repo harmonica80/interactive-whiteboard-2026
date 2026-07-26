@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 1.9.8</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 1.9.9</span>
         </p>
       </div>
       <div class="top-actions">
@@ -320,10 +320,19 @@
 
             <div id="resultArea" class="result-group" style="display: none; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-top: 14px;">
               <div class="result-item" style="margin-bottom: 14px;">
-                <span class="result-label" style="font-weight: bold; display: block; margin-bottom: 6px; font-size: 13px;">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
+                <span class="result-label" style="font-weight: bold; display: block; margin-bottom: 6px; font-size: 13px; width: auto !important;">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
                 <div class="result-field" style="display: flex; gap: 8px;">
                   <input type="text" id="shareUrl" class="question-input" style="flex: 1; padding: 8px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px;" readonly>
                   <button onclick="copyText('shareUrl')" class="preset-btn" style="background: var(--success-color); color: white; border: none; padding: 8px 14px; font-weight: bold; border-radius: 8px; cursor: pointer;">📋 複製連結</button>
+                </div>
+              </div>
+
+              <!-- 專屬短網址 -->
+              <div class="result-item" style="margin-bottom: 14px;">
+                <span style="font-weight: bold; display: block; margin-bottom: 6px; font-size: 13px;">🔗 班級專屬短網址（更方便輸入與分享）：</span>
+                <div class="result-field" style="display: flex; gap: 8px;">
+                  <input type="text" id="shortUrl" class="question-input" style="flex: 1; padding: 8px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px;" placeholder="正在自動產生短網址..." readonly>
+                  <button id="btnCopyShort" onclick="copyText('shortUrl')" class="preset-btn" style="background: var(--success-color); color: white; border: none; padding: 8px 14px; font-weight: bold; border-radius: 8px; cursor: pointer;" disabled>📋 複製短網址</button>
                 </div>
               </div>
 
@@ -916,8 +925,8 @@ Python</pre>
   
   <script src="js/firebase-config.js?v=151"></script>
   <script src="js/character_pool.js?v=151"></script>
-  <script src="js/quiz.js?v=198"></script>
-  <script src="js/app.js?v=198"></script>
+  <script src="js/quiz.js?v=199"></script>
+  <script src="js/app.js?v=199"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

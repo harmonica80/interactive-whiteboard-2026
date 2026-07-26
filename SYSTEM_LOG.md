@@ -553,6 +553,16 @@
   2. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 1.9.8`。
   3. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=198`。
 - 影響檔案：`images/guide/step11.png`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：修復步驟 4 專屬連結提示標籤遭折行擠壓的 Bug，並成功整合基於 TinyURL 及 Allorigins 代理免 CORS 的專屬短網址自動產生功能，遞增版本為 `ver 1.9.9`。
+- 行為：
+  1. 將 `index.html` 中的步驟 4 長網址標籤 `class="result-label"` 強制補上 `width: auto !important;` 以避開 Quiz 結果柱狀圖造成的 width 限制，使其獨立一行寬敞展示。
+  2. 在 `index.html` 與 `teacher-guide.html` 的步驟 4 下方追加「專屬短網址」文字框與複製按鈕。
+  3. 修改 `js/app.js` 與 `teacher-guide.html` 中的 `generateLinks()` 函數，使產出長網址時自動背景透過 `api.allorigins.win` CORS 轉接請求 `tinyurl.com` 免費短網址 API，並動態寫入欄位開放複製。
+  4. 刪除 `js/app.js` 內多餘重複的第一個 `generateLinks` 定義以簡化代碼。
+  5. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 1.9.9`。
+  6. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=199`。
+- 影響檔案：`index.html`, `teacher-guide.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
