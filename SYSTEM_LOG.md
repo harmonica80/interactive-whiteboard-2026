@@ -571,6 +571,12 @@
   3. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 2.0.0`。
   4. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=200`。
 - 影響檔案：`index.html`, `teacher-guide.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：優化「教師專屬建置與連線指南」頁面（`teacher-guide.html`）與主頁面板中所有步驟截圖之顯示樣式。
+- 行為：
+  1. 將 `.step-img` 樣式調整為 `width: auto !important; height: auto !important; max-width: 100% !important; display: inline-block;`。
+  2. 確保指南圖片預設以其高畫質原始解析度尺寸原汁原味展示；當螢幕或頁面顯示範圍小於圖片尺寸時，會自動等比例自適應縮小至容器範圍內，避免圖片遭強行拉伸填滿或超出頁面。
+- 影響檔案：`index.html`, `teacher-guide.html`, `css/style.css`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
