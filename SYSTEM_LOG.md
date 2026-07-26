@@ -563,6 +563,14 @@
   5. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 1.9.9`。
   6. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=199`。
 - 影響檔案：`index.html`, `teacher-guide.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-26 - Antigravity
+- 修改項目：升級步驟 4 為長短網址雙軌 QR Code 展示（支援異步動態載入與空間預留），升級版本為大版本號 `ver 2.0.0`。
+- 行為：
+  1. 重構 `index.html` 與 `teacher-guide.html` 中的 QR Code 展示區，分為左側「原始長連結 QR Code」與右側「專屬短網址 QR Code」並列展示。
+  2. 設計短網址 QR Code 的異步動態渲染邏輯：初始狀態顯示「等待短網址生成後自動產生...」灰色虛線邊框預留空間，當 API 背景生成完短網址後，動態清除提示並利用 qrcode.js 將短網址轉繪為 QR Code 嵌入。
+  3. 將左上角與 `js/app.js` 中的全站版本號遞增為 `ver 2.0.0`。
+  4. 將 `index.html` 的 `app.js` 與 `quiz.js` Query 版本升級為 `?v=200`。
+- 影響檔案：`index.html`, `teacher-guide.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

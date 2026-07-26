@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 1.9.9</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.0.0</span>
         </p>
       </div>
       <div class="top-actions">
@@ -336,10 +336,20 @@
                 </div>
               </div>
 
-              <!-- 班級專屬 QR Code -->
-              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 16px; background: white; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); width: fit-content; margin-left: auto; margin-right: auto;">
-                <div style="color: #333; font-weight: bold; margin-bottom: 10px; font-size: 13px;">📱 班級專屬 QR Code (可投影至黑板供學生掃描)</div>
-                <div id="qrcode"></div>
+              <!-- 班級專屬 QR Code 雙軌並陳 -->
+              <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 16px; width: 100%;">
+                <!-- 長網址 QR Code -->
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); width: 210px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                  <div style="color: #333; font-weight: bold; margin-bottom: 10px; font-size: 13px; text-align: center;">📱 原始長連結 QR Code</div>
+                  <div id="qrcode"></div>
+                </div>
+                <!-- 短網址 QR Code -->
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); width: 210px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                  <div style="color: #333; font-weight: bold; margin-bottom: 10px; font-size: 13px; text-align: center;">📱 專屬短網址 QR Code</div>
+                  <div id="qrcode-short" style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px; border: 1px dashed #ccc; border-radius: 6px; background: #fafafa; box-sizing: border-box; text-align: center; padding: 10px;">
+                    等待短網址生成後自動產生...
+                  </div>
+                </div>
               </div>
 
               <div class="alert-tip" style="background: rgba(255, 149, 0, 0.1); border-left: 4px solid #ff9500; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-top: 14px;">
@@ -925,8 +935,8 @@ Python</pre>
   
   <script src="js/firebase-config.js?v=151"></script>
   <script src="js/character_pool.js?v=151"></script>
-  <script src="js/quiz.js?v=199"></script>
-  <script src="js/app.js?v=199"></script>
+  <script src="js/quiz.js?v=200"></script>
+  <script src="js/app.js?v=200"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

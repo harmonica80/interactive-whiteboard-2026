@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '1.9.9';
+    this.APP_VERSION = '2.0.0';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -8574,6 +8574,8 @@ function generateLinks() {
   if (resArea) resArea.style.display = 'block';
 
   const qrDiv = document.getElementById('qrcode');
+  const qrShortDiv = document.getElementById('qrcode-short');
+  
   if (qrDiv) {
     qrDiv.innerHTML = '';
     if (typeof QRCode !== 'undefined') {
@@ -8588,6 +8590,13 @@ function generateLinks() {
     }
   }
 
+  // 重置短網址 QR Code 空間為載入狀態
+  if (qrShortDiv) {
+    qrShortDiv.innerHTML = '等待短網址生成後自動產生...';
+    qrShortDiv.style.border = '1px dashed #ccc';
+    qrShortDiv.style.background = '#fafafa';
+  }
+
   // 自動產生短網址
   const shortInput = document.getElementById('shortUrl');
   const btnCopyShort = document.getElementById('btnCopyShort');
@@ -8598,6 +8607,26 @@ function generateLinks() {
     const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(finalShareUrl)}`;
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
 
+    const renderShortQr = (shortUrl) => {
+      shortInput.value = shortUrl;
+      if (btnCopyShort) btnCopyShort.disabled = false;
+      if (qrShortDiv) {
+        qrShortDiv.innerHTML = '';
+        qrShortDiv.style.border = 'none';
+        qrShortDiv.style.background = 'transparent';
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(qrShortDiv, {
+            text: shortUrl,
+            width: 180,
+            height: 180,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+          });
+        }
+      }
+    };
+
     fetch(proxyUrl)
       .then(res => {
         if (!res.ok) throw new Error("HTTP error");
@@ -8606,8 +8635,7 @@ function generateLinks() {
       .then(data => {
         if (data && data.contents) {
           const shortUrl = data.contents.trim();
-          shortInput.value = shortUrl;
-          if (btnCopyShort) btnCopyShort.disabled = false;
+          renderShortQr(shortUrl);
         } else {
           throw new Error("Invalid format");
         }
@@ -8621,12 +8649,14 @@ function generateLinks() {
           })
           .then(text => {
             const shortUrl = text.trim();
-            shortInput.value = shortUrl;
-            if (btnCopyShort) btnCopyShort.disabled = false;
+            renderShortQr(shortUrl);
           })
           .catch(err2 => {
             console.error("All short URL service fallbacks failed:", err2);
             shortInput.value = "短網址產生失敗，請複製上方長網址";
+            if (qrShortDiv) {
+              qrShortDiv.innerHTML = '產生失敗';
+            }
           });
       });
   }
