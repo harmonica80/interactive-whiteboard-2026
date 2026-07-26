@@ -1,14 +1,14 @@
 {
   "rules": {
-    /* 根目錄：允許讀取，但禁止直接清空整庫根節點 */
+    /* 根目錄：允許讀取，但禁止直接抹除整庫根節點 */
     ".read": true,
     ".write": false,
 
-    /* 1. 💬 提問區 */
+    /* 1. 💬 提問區防護與欄位限制 */
     "questions": {
       ".read": true,
-      ".write": true,
       "$questionId": {
+        ".write": "newData.exists() || !data.exists()",
         ".validate": "newData.hasChildren(['content', 'timestamp'])",
         "content": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000"
@@ -30,6 +30,7 @@
         },
         "comments": {
           "$commentId": {
+            ".write": "newData.exists() || !data.exists()",
             ".validate": "newData.hasChildren(['content', 'timestamp'])",
             "content": {
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
@@ -45,11 +46,11 @@
       }
     },
 
-    /* 2. 🖼️ 圖片分享區 */
+    /* 2. 🖼️ 圖片分享區限制 */
     "images": {
       ".read": true,
-      ".write": true,
       "$imageId": {
+        ".write": "newData.exists() || !data.exists()",
         ".validate": "newData.hasChildren(['url', 'timestamp'])",
         "url": {
           ".validate": "newData.isString() && newData.val().length <= 2000"
@@ -68,6 +69,7 @@
         },
         "comments": {
           "$commentId": {
+            ".write": "newData.exists() || !data.exists()",
             ".validate": "newData.hasChildren(['content', 'timestamp'])",
             "content": {
               ".validate": "newData.isString() && newData.val().length <= 500"
@@ -77,11 +79,11 @@
       }
     },
 
-    /* 3. 🎥 影片分享區 */
+    /* 3. 🎥 影片分享區限制 */
     "videos": {
       ".read": true,
-      ".write": true,
       "$videoId": {
+        ".write": "newData.exists() || !data.exists()",
         ".validate": "newData.hasChildren(['url', 'timestamp'])",
         "url": {
           ".validate": "newData.isString() && newData.val().length <= 2000"
@@ -100,6 +102,7 @@
         },
         "comments": {
           "$commentId": {
+            ".write": "newData.exists() || !data.exists()",
             ".validate": "newData.hasChildren(['content', 'timestamp'])",
             "content": {
               ".validate": "newData.isString() && newData.val().length <= 500"
@@ -112,32 +115,49 @@
     /* 4. 📢 教師分享區 */
     "shares": {
       ".read": true,
-      ".write": true,
       "$shareId": {
+        ".write": "newData.exists() || !data.exists()",
         ".validate": "newData.hasChildren(['timestamp'])"
       }
     },
 
-    /* 5. 📝 測驗與歷屆題目庫 */
+    /* 5. 📝 測驗與歷屆題目庫 (安全驗證防護) */
     "quiz": {
       ".read": true,
-      ".write": true
+      "current": {
+        ".write": "newData.exists() || !data.exists()"
+      },
+      "answers": {
+        "$answerId": {
+          ".write": "newData.exists() || !data.exists()"
+        }
+      },
+      "history": {
+        "$historyId": {
+          ".write": "newData.exists() || !data.exists()"
+        }
+      },
+      "timer": {
+        ".write": "newData.exists() || !data.exists()"
+      }
     },
 
-    /* 6. 🎮 專注力與搶答遊戲 */
+    /* 6. 🎮 專注力與搶答遊戲 (安全驗證防護) */
     "focus_game": {
       ".read": true,
-      ".write": true
+      ".write": "newData.exists() || !data.exists()"
     },
     "buzz_game": {
       ".read": true,
-      ".write": true
+      ".write": "newData.exists() || !data.exists()"
     },
 
-    /* 7. 👥 在線人數統計 */
+    /* 7. 👥 在線人數統計 (安全驗證防護) */
     "online_users": {
       ".read": true,
-      ".write": true
+      "$userKey": {
+        ".write": "newData.exists() || !data.exists()"
+      }
     }
   }
 }
