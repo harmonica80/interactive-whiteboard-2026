@@ -424,11 +424,23 @@
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
                 <label for="timerMusicSelect" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">背景音樂：</label>
-                <select id="timerMusicSelect" class="question-input" onchange="window.app.onTimerMusicSelectChange(this.value)" style="width: 150px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                  <option value="https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1">🎵 經典卡農</option>
-                  <option value="https://www.youtube.com/watch?v=k3AWRUYV9ds">🎵 韋瓦第 - 四季（春）</option>
-                  <option value="https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-study-112191.mp3">🎵 專注 Lofi</option>
-                  <option value="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=soft-relaxing-piano-jazz-11428.mp3">🎵 爵士鋼琴</option>
+                <select id="timerMusicSelect" class="question-input" onchange="window.app.onTimerMusicSelectChange(this.value)" style="width: 200px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                  <optgroup label="── 巴洛克 ──">
+                    <option value="https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1">🎵 帕海貝爾 - 卡農</option>
+                    <option value="https://www.youtube.com/watch?v=GUrkvBPXmDQ">🎵 英格蘭民謠 - 綠袖子</option>
+                    <option value="https://www.youtube.com/watch?v=1h4mAceHmrI">🎵 韓德爾 - 水上音樂</option>
+                    <option value="https://www.youtube.com/watch?v=Kl6R4Ui9blc">🎵 巴哈 - B小調第二號管弦樂組曲</option>
+                    <option value="https://www.youtube.com/watch?v=xVxwuirUX-M">🎵 巴哈 - 諧謔曲</option>
+                    <option value="https://www.youtube.com/watch?v=k3AWRUYV9ds">🎵 韋瓦第 - 四季（春）</option>
+                  </optgroup>
+                  <optgroup label="── 古典鋼琴 ──">
+                    <option value="https://www.youtube.com/watch?v=HJDLHuixqG8">🎵 理查克萊德門 - 夢中的婚禮</option>
+                    <option value="https://www.youtube.com/watch?v=vDlqmTIw8y0">🎵 理查克萊德門 - 給愛麗絲</option>
+                  </optgroup>
+                  <optgroup label="── 輕音樂 ──">
+                    <option value="https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-study-112191.mp3">🎵 專注 Lofi</option>
+                    <option value="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=soft-relaxing-piano-jazz-11428.mp3">🎵 爵士鋼琴</option>
+                  </optgroup>
                   <option value="custom">✍️ 自訂 YouTube 網址...</option>
                 </select>
               </div>
