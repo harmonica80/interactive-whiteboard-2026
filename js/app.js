@@ -8102,24 +8102,33 @@ function resetAll() {
     window.app.clearTldrawWhiteboard();
   }
 
-  db.ref('questions').remove();
-  db.ref('quiz/questionFolders').remove();
-  db.ref('quiz/current').remove();
-  db.ref('quiz/answers').remove();
-  db.ref('images').remove();
-  db.ref('quiz/imageFolders').remove();
-  db.ref('videos').remove();
-  db.ref('quiz/videoFolders').remove();
-  db.ref('quiz/broadcastVideo').remove();
-  db.ref('teacherShares').remove();
-  db.ref('quiz/teacherShareFolders').remove();
-  db.ref('quiz/luckyWheel').remove();
-  db.ref('whiteboard').remove();
-  db.ref('whiteboard_room').remove();
-  
-  setTimeout(() => {
-    location.reload();
-  }, 300);
+  const promises = [
+    db.ref('questions').remove(),
+    db.ref('quiz/questionFolders').remove(),
+    db.ref('quiz/current').remove(),
+    db.ref('quiz/answers').remove(),
+    db.ref('images').remove(),
+    db.ref('quiz/imageFolders').remove(),
+    db.ref('videos').remove(),
+    db.ref('quiz/videoFolders').remove(),
+    db.ref('quiz/broadcastVideo').remove(),
+    db.ref('teacherShares').remove(),
+    db.ref('quiz/teacherShareFolders').remove(),
+    db.ref('quiz/luckyWheel').remove(),
+    db.ref('whiteboard').remove(),
+    db.ref('whiteboard_room').remove()
+  ];
+
+  Promise.all(promises).then(() => {
+    if (window.app) window.app.showNotification('成功', '所有資料已成功重設！');
+    setTimeout(() => {
+      location.reload();
+    }, 500);
+  }).catch(err => {
+    console.error("Reset failed:", err);
+    if (window.app) window.app.showNotification('錯誤', '重設失敗: ' + err.message);
+    else alert('重設失敗: ' + err.message);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8498,60 +8507,16 @@ function clickSchulteGrid(num, btn) {
 
 const SECURITY_RULES_JSON = `{
   "rules": {
-    ".read": false,
-    ".write": false,
-    "questions": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()",
-      "$questionId": {
-        ".write": "newData.exists() || !data.exists()"
-      }
-    },
-    "images": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()",
-      "$imageId": {
-        ".write": "newData.exists() || !data.exists()"
-      }
-    },
-    "videos": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()",
-      "$videoId": {
-        ".write": "newData.exists() || !data.exists()"
-      }
-    },
-    "teacherShares": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()",
-      "$shareId": {
-        ".write": "newData.exists() || !data.exists()"
-      }
-    },
-    "quiz": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()"
-    },
-    "whiteboard": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()"
-    },
-    "whiteboard_room": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()"
-    },
-    "focus_game": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()"
-    },
-    "buzz_game": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()"
-    },
-    "online_users": {
-      ".read": true,
-      ".write": "newData.exists() || !data.exists()"
-    }
+    "questions": { ".read": true, ".write": true },
+    "images": { ".read": true, ".write": true },
+    "videos": { ".read": true, ".write": true },
+    "teacherShares": { ".read": true, ".write": true },
+    "quiz": { ".read": true, ".write": true },
+    "whiteboard": { ".read": true, ".write": true },
+    "whiteboard_room": { ".read": true, ".write": true },
+    "focus_game": { ".read": true, ".write": true },
+    "buzz_game": { ".read": true, ".write": true },
+    "online_users": { ".read": true, ".write": true }
   }
 }`;
 
