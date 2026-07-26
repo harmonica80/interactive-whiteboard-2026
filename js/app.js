@@ -8502,37 +8502,56 @@ const SECURITY_RULES_JSON = `{
     ".write": false,
     "questions": {
       ".read": true,
+      ".write": "newData.exists() || !data.exists()",
       "$questionId": {
-        ".write": "newData.exists() || !data.exists()",
-        ".validate": "newData.hasChildren(['content', 'timestamp'])",
-        "content": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000" },
-        "author": { ".validate": "newData.isString() && newData.val().length <= 100" },
-        "timestamp": { ".validate": "newData.isNumber()" },
-        "likes": { ".validate": "newData.isNumber()" },
-        "completed": { ".validate": "newData.isBoolean()" },
-        "commentsCount": { ".validate": "newData.isNumber()" },
-        "comments": {
-          "$commentId": {
-            ".write": "newData.exists() || !data.exists()",
-            ".validate": "newData.hasChildren(['content', 'timestamp'])",
-            "content": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" }
-          }
-        }
+        ".write": "newData.exists() || !data.exists()"
       }
     },
-    "images": { ".read": true, "$imageId": { ".write": "newData.exists() || !data.exists()" } },
-    "videos": { ".read": true, "$videoId": { ".write": "newData.exists() || !data.exists()" } },
-    "shares": { ".read": true, "$shareId": { ".write": "newData.exists() || !data.exists()" } },
+    "images": {
+      ".read": true,
+      ".write": "newData.exists() || !data.exists()",
+      "$imageId": {
+        ".write": "newData.exists() || !data.exists()"
+      }
+    },
+    "videos": {
+      ".read": true,
+      ".write": "newData.exists() || !data.exists()",
+      "$videoId": {
+        ".write": "newData.exists() || !data.exists()"
+      }
+    },
+    "teacherShares": {
+      ".read": true,
+      ".write": "newData.exists() || !data.exists()",
+      "$shareId": {
+        ".write": "newData.exists() || !data.exists()"
+      }
+    },
     "quiz": {
       ".read": true,
-      "current": { ".write": "newData.exists() || !data.exists()" },
-      "answers": { "$answerId": { ".write": "newData.exists() || !data.exists()" } },
-      "history": { "$historyId": { ".write": "newData.exists() || !data.exists()" } },
-      "timer": { ".write": "newData.exists() || !data.exists()" }
+      ".write": "newData.exists() || !data.exists()"
     },
-    "focus_game": { ".read": true, ".write": "newData.exists() || !data.exists()" },
-    "buzz_game": { ".read": true, ".write": "newData.exists() || !data.exists()" },
-    "online_users": { ".read": true, "$userKey": { ".write": "newData.exists() || !data.exists()" } }
+    "whiteboard": {
+      ".read": true,
+      ".write": "newData.exists() || !data.exists()"
+    },
+    "whiteboard_room": {
+      ".read": true,
+      ".write": "newData.exists() || !data.exists()"
+    },
+    "focus_game": {
+      ".read": true,
+      ".write": "newData.exists() || !data.exists()"
+    },
+    "buzz_game": {
+      ".read": true,
+      ".write": "newData.exists() || !data.exists()"
+    },
+    "online_users": {
+      ".read": true,
+      ".write": "newData.exists() || !data.exists()"
+    }
   }
 }`;
 
