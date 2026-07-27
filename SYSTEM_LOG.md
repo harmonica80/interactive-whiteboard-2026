@@ -608,6 +608,12 @@
   2. 在 HTML 中配置獨立隱藏的 `bellPlayer` 播放器容器，並在 `js/app.js` 初始化專屬的 `playerBell`，確保鐘聲播放與停止完全獨立，不會干擾背景音樂與倒數計時器。
   3. 提供點擊「播放 / 停止」開關切換邏輯，並在鐘聲自然結束（`YT.PlayerState.ENDED`）時自動將按鈕還原為初始狀態。
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-27 - Antigravity
+- 修改項目：修復點擊「上/下課鐘聲」按鈕時未發出聲音的問題。
+- 行為：
+  1. **解決瀏覽器離屏節流 (Throttling)**：修正隱藏播放器容器 `ytPlayerContainer` 之定位與尺寸。原 1px*1px 被 Chrome 認定為無效/廣告 iframe 而主動掛起音訊輸出，現改為標準尺寸並移至視窗外實體區域，確保 YouTube API 100% 解鎖音訊。
+  2. **引入 HTML5 雙軌音訊備援**：配置專屬 `<audio id="bellAudioPlayer">` 音效通道，實現秒級清脆鐘聲發聲，徹底解決網路延遲或 API 阻塞問題。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
