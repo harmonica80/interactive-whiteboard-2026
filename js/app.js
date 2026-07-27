@@ -5111,6 +5111,22 @@ class App {
       btn.style.background = '#7f8c8d';
     }
 
+    const bellAudio = document.getElementById('bellAudioPlayer');
+    if (bellAudio) {
+      bellAudio.currentTime = 0;
+      bellAudio.muted = false;
+      bellAudio.volume = 1.0;
+      bellAudio.onended = () => {
+        this.stopClassBell();
+      };
+      const playPromise = bellAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn("HTML5 bellAudioPlayer play catch:", err);
+        });
+      }
+    }
+
     if (this.ytBellReady && this.playerBell) {
       try {
         if (typeof this.playerBell.loadVideoById === 'function') {
@@ -5123,7 +5139,7 @@ class App {
         if (typeof this.playerBell.setVolume === 'function') this.playerBell.setVolume(100);
         if (typeof this.playerBell.playVideo === 'function') this.playerBell.playVideo();
       } catch (e) {
-        console.error("Error playing class bell:", e);
+        console.error("Error playing class bell via YouTube:", e);
       }
     } else if (this.ytPlayersReady && this.playerCanon) {
       try {
@@ -5139,8 +5155,6 @@ class App {
       } catch (e) {
         console.error("Error playing class bell fallback:", e);
       }
-    } else {
-      window.open('https://www.youtube.com/watch?v=N8Rh854U3H0', '_blank');
     }
   }
 
@@ -5150,6 +5164,12 @@ class App {
     if (btn) {
       btn.textContent = '🔔 上/下課鐘聲';
       btn.style.background = '#e74c3c';
+    }
+
+    const bellAudio = document.getElementById('bellAudioPlayer');
+    if (bellAudio) {
+      bellAudio.pause();
+      bellAudio.currentTime = 0;
     }
 
     if (this.playerBell && typeof this.playerBell.pauseVideo === 'function') {
