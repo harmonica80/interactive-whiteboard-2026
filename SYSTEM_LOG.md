@@ -601,6 +601,13 @@
   1. 將您提供圈選「把複製的內容貼到此處」並附帶複製按鈕箭頭導覽的最新圖 2 儲存更新為 `images/guide/step10.png`。
   2. 放置在第二大項第 2 點「📋 一鍵複製防護安全規則」按鈕正下方（第 3 點「按下發布」圖片上方），使貼上規則的操作流程更加清楚明白。
 - 影響檔案：`index.html`, `teacher-guide.html`, `images/guide/step10.png`, `SYSTEM_LOG.md`。
+## 2026-07-27 - Antigravity
+- 修改項目：新增「🔔 上/下課鐘聲」獨立播放按鈕（串接 YouTube 專屬鐘聲影片 `N8Rh854U3H0`）。
+- 行為：
+  1. 在 `index.html` 的「倒數計時管理」按鈕區（`adminResetTimerBtn` 右側）新增高亮紅色的「`🔔 上/下課鐘聲`」按鈕（`#classBellBtn`）。
+  2. 在 HTML 中配置獨立隱藏的 `bellPlayer` 播放器容器，並在 `js/app.js` 初始化專屬的 `playerBell`，確保鐘聲播放與停止完全獨立，不會干擾背景音樂與倒數計時器。
+  3. 提供點擊「播放 / 停止」開關切換邏輯，並在鐘聲自然結束（`YT.PlayerState.ENDED`）時自動將按鈕還原為初始狀態。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
