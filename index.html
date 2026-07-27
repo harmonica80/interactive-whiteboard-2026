@@ -454,6 +454,7 @@
                 <button id="adminPauseTimerBtn" class="preset-btn" style="background: #ff9800; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminPauseTimer()">暫停</button>
                 <button id="adminResumeTimerBtn" class="preset-btn" style="background: var(--success-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminResumeTimer()">繼續</button>
                 <button id="adminResetTimerBtn" class="preset-btn" style="border-color: var(--text-muted); color: var(--text-secondary); padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminResetTimer()">重設/關閉</button>
+                <button id="classBellBtn" class="preset-btn" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="playClassBell()">🔔 上/下課鐘聲</button>
               </div>
             </div>
           </div>
@@ -1178,6 +1179,7 @@ Python</pre>
   <audio id="bgAudioPlayer" loop preload="auto" style="display: none;"></audio>
   <div id="ytPlayerContainer" style="position: fixed; bottom: 0; right: 0; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; overflow: hidden; z-index: -1;">
     <div id="canonPlayer"></div>
+    <div id="bellPlayer"></div>
   </div>
 
   <!-- 影片播放彈出視窗 -->

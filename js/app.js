@@ -46,6 +46,8 @@ class App {
     this.currentAudioPlaying = 'none';
     this.playerCanon = null;
     this.playerBell = null;
+    this.ytBellReady = false;
+    this.isPlayingClassBell = false;
     
     // 群組資料夾變數
     this.questionFolders = [];
@@ -4859,6 +4861,42 @@ class App {
           }
         }
       });
+
+      const bellElem = document.getElementById('bellPlayer');
+      if (bellElem) {
+        this.playerBell = new YT.Player('bellPlayer', {
+          height: '200',
+          width: '200',
+          videoId: 'N8Rh854U3H0',
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            modestbranding: 1,
+            rel: 0,
+            showinfo: 0,
+            enablejsapi: 1,
+            origin: window.location.origin
+          },
+          events: {
+            onReady: () => {
+              this.ytBellReady = true;
+              if (this.playerBell && typeof this.playerBell.pauseVideo === 'function') {
+                this.playerBell.pauseVideo();
+              }
+            },
+            onStateChange: (event) => {
+              if (event.data === YT.PlayerState.ENDED) {
+                this.stopClassBell();
+              }
+            },
+            onError: (event) => {
+              console.warn("YouTube bell player error code:", event.data);
+            }
+          }
+        });
+      }
     } catch (e) {
       console.error("Failed to initialize YouTube players:", e);
     }
@@ -5047,11 +5085,81 @@ class App {
     try {
       if (this.timerMuted) {
         if (this.playerCanon && typeof this.playerCanon.mute === 'function') this.playerCanon.mute();
+        if (this.playerBell && typeof this.playerBell.mute === 'function') this.playerBell.mute();
       } else {
         if (this.playerCanon && typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
+        if (this.playerBell && typeof this.playerBell.unMute === 'function') this.playerBell.unMute();
       }
     } catch (e) {
       console.error("Error applying mute state:", e);
+    }
+  }
+
+  toggleClassBell() {
+    if (this.isPlayingClassBell) {
+      this.stopClassBell();
+    } else {
+      this.startClassBell();
+    }
+  }
+
+  startClassBell() {
+    this.isPlayingClassBell = true;
+    const btn = document.getElementById('classBellBtn');
+    if (btn) {
+      btn.textContent = '⏹️ 停止鐘聲';
+      btn.style.background = '#7f8c8d';
+    }
+
+    if (this.ytBellReady && this.playerBell) {
+      try {
+        if (typeof this.playerBell.loadVideoById === 'function') {
+          this.playerBell.loadVideoById({
+            videoId: 'N8Rh854U3H0',
+            startSeconds: 0
+          });
+        }
+        if (typeof this.playerBell.unMute === 'function') this.playerBell.unMute();
+        if (typeof this.playerBell.setVolume === 'function') this.playerBell.setVolume(100);
+        if (typeof this.playerBell.playVideo === 'function') this.playerBell.playVideo();
+      } catch (e) {
+        console.error("Error playing class bell:", e);
+      }
+    } else if (this.ytPlayersReady && this.playerCanon) {
+      try {
+        if (typeof this.playerCanon.loadVideoById === 'function') {
+          this.playerCanon.loadVideoById({
+            videoId: 'N8Rh854U3H0',
+            startSeconds: 0
+          });
+        }
+        if (typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
+        if (typeof this.playerCanon.setVolume === 'function') this.playerCanon.setVolume(100);
+        if (typeof this.playerCanon.playVideo === 'function') this.playerCanon.playVideo();
+      } catch (e) {
+        console.error("Error playing class bell fallback:", e);
+      }
+    } else {
+      window.open('https://www.youtube.com/watch?v=N8Rh854U3H0', '_blank');
+    }
+  }
+
+  stopClassBell() {
+    this.isPlayingClassBell = false;
+    const btn = document.getElementById('classBellBtn');
+    if (btn) {
+      btn.textContent = '🔔 上/下課鐘聲';
+      btn.style.background = '#e74c3c';
+    }
+
+    if (this.playerBell && typeof this.playerBell.pauseVideo === 'function') {
+      try {
+        this.playerBell.pauseVideo();
+      } catch (e) {}
+    } else if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+      try {
+        this.playerCanon.pauseVideo();
+      } catch (e) {}
     }
   }
   
@@ -8323,6 +8431,10 @@ function adminResumeTimer() {
 
 function adminResetTimer() {
   if (window.app) window.app.adminResetTimer();
+}
+
+function playClassBell() {
+  if (window.app) window.app.toggleClassBell();
 }
 
 // 課堂記錄備份全域呼叫介面
