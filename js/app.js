@@ -8656,16 +8656,8 @@ function clickSchulteGrid(num, btn) {
 
 const SECURITY_RULES_JSON = `{
   "rules": {
-    "questions": { ".read": true, ".write": true },
-    "images": { ".read": true, ".write": true },
-    "videos": { ".read": true, ".write": true },
-    "teacherShares": { ".read": true, ".write": true },
-    "quiz": { ".read": true, ".write": true },
-    "whiteboard": { ".read": true, ".write": true },
-    "whiteboard_room": { ".read": true, ".write": true },
-    "focus_game": { ".read": true, ".write": true },
-    "buzz_game": { ".read": true, ".write": true },
-    "online_users": { ".read": true, ".write": true }
+    ".read": "now < 1893456000000",
+    ".write": "now < 1893456000000"
   }
 }`;
 
