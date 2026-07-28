@@ -4464,37 +4464,44 @@ class App {
     const remainingSeconds = Math.ceil(remMs / 1000);
     this.updateTimerDisplay(remainingSeconds);
 
-    // 音樂播放與淡出邏輯 (為所有用戶播放背景音樂)
-    if (this.timerState.isPaused) {
-      this.playAudio('none');
-    } else if (remainingSeconds > 0) {
-      // 播放背景音樂
-      if (this.currentAudioPlaying !== 'canon') {
-        this.playAudio('canon');
-      }
-      
-      // 最後 10 秒音樂淡出
-      if (remMs <= 10000) {
-        const volRatio = Math.max(0, Math.min(1.0, remMs / 10000));
-        const bgAudio = document.getElementById('bgAudioPlayer');
-        if (bgAudio) {
-          bgAudio.volume = volRatio;
+    // 音樂播放與淡出邏輯 (僅在老師端/管理員端播放背景音樂，學生端保持靜音)
+    if (this.isAdmin) {
+      if (this.timerState.isPaused) {
+        this.playAudio('none');
+      } else if (remainingSeconds > 0) {
+        // 播放背景音樂
+        if (this.currentAudioPlaying !== 'canon') {
+          this.playAudio('canon');
         }
-        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
-          this.playerCanon.setVolume(Math.floor(volRatio * 100));
+        
+        // 最後 10 秒音樂淡出
+        if (remMs <= 10000) {
+          const volRatio = Math.max(0, Math.min(1.0, remMs / 10000));
+          const bgAudio = document.getElementById('bgAudioPlayer');
+          if (bgAudio) {
+            bgAudio.volume = volRatio;
+          }
+          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
+            this.playerCanon.setVolume(Math.floor(volRatio * 100));
+          }
+        } else {
+          // 正常音量 (100)
+          const bgAudio = document.getElementById('bgAudioPlayer');
+          if (bgAudio) {
+            bgAudio.volume = 1.0;
+          }
+          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
+            this.playerCanon.setVolume(100);
+          }
         }
       } else {
-        // 正常音量 (100)
-        const bgAudio = document.getElementById('bgAudioPlayer');
-        if (bgAudio) {
-          bgAudio.volume = 1.0;
-        }
-        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
-          this.playerCanon.setVolume(100);
+        // 時間到，停止播放
+        if (this.currentAudioPlaying !== 'none') {
+          this.playAudio('none');
         }
       }
     } else {
-      // 時間到，停止播放
+      // 學生端一律確保背景音樂處於關閉/靜音狀態
       if (this.currentAudioPlaying !== 'none') {
         this.playAudio('none');
       }
@@ -5016,6 +5023,16 @@ class App {
       const bgAudio = document.getElementById('bgAudioPlayer');
 
       if (track === 'canon') {
+        // 背景音樂僅限老師端 (管理員模式) 播放，學生端保持靜音
+        if (!this.isAdmin) {
+          this.currentAudioPlaying = 'none';
+          if (bgAudio) bgAudio.pause();
+          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+            this.playerCanon.pauseVideo();
+          }
+          return;
+        }
+
         this.currentAudioPlaying = 'canon';
 
         // 優先使用原生 HTML5 音訊引擎 (100% 必定響起)
