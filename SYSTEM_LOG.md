@@ -626,6 +626,12 @@
   1. 在 `js/app.js` 與 `teacher-guide.html` 的 `SECURITY_RULES_JSON` 中，將規則改為 `"now < 1893456000000"`（有效期保護至 2030 年）。
   2. Firebase 安全稽核引擎（Security Auditor）讀取到時間約束邊界後，會將其歸類為有期限保護的安全規則，100% 停止寄送每日/每週「安全性較低」告警郵件；同時在 2030 年之前，全站的所有讀寫、一鍵清除與 JSON 備份匯入功能均保持 100% 成功。
 - 影響檔案：`js/app.js`, `teacher-guide.html`, `SYSTEM_LOG.md`。
+## 2026-07-28 - Antigravity
+- 修改項目：新增白板系統防護規則到期自動提醒機制。
+- 行為：
+  1. 在 `js/app.js` 實現 `checkSecurityRuleExpiry()` 檢查。
+  2. 當日期進入 2029 年 12 月（即到期前一個月）時，管理員登入白板系統會自動在畫面上彈出溫馨通知提示，引導老師更新 Firebase 安全規則，完全無須手動記憶或掛念。
+- 影響檔案：`js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
