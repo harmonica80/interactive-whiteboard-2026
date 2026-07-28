@@ -614,6 +614,12 @@
   1. **解決瀏覽器離屏節流 (Throttling)**：修正隱藏播放器容器 `ytPlayerContainer` 之定位與尺寸。原 1px*1px 被 Chrome 認定為無效/廣告 iframe 而主動掛起音訊輸出，現改為標準尺寸並移至視窗外實體區域，確保 YouTube API 100% 解鎖音訊。
   2. **引入 HTML5 雙軌音訊備援**：配置專屬 `<audio id="bellAudioPlayer">` 音效通道，實現秒級清脆鐘聲發聲，徹底解決網路延遲或 API 阻塞問題。
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-28 - Antigravity
+- 修改項目：將倒數計時背景音樂調整為僅在「老師端（管理員模式）」播放，學生端保持完全靜音。
+- 行為：
+  1. 在 `js/app.js` 的 `tickTimer()` 與 `playAudio()` 方法中加入 `this.isAdmin` 防護判斷。
+  2. 當倒數計時啟動或即時同步時，僅有已登入管理員模式的老師端電腦會輸出背景音樂（與最後 10 秒淡出效果）；學生端電腦則保持視覺數字同步、音訊完全靜音，徹底防範全班數十台電腦同時發聲的嘈雜干擾。
+- 影響檔案：`js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
