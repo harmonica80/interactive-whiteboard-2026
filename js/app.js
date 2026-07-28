@@ -134,6 +134,7 @@ class App {
     this.initImageCanvasDrawing();
     this.initLuckyWheel();
     this.bindTldrawRealtimeSync();
+    this.checkSecurityRuleExpiry();
     
     // Global user interaction listener to resume audio if blocked by autoplay
     const resumeAudioOnGesture = () => {
@@ -5199,6 +5200,20 @@ class App {
       } catch (e) {}
     }
   }
+
+  checkSecurityRuleExpiry() {
+    // 預設規則防護效期至 2030 年 1 月 1 日 (1893456000000)
+    // 於到期前一個月 (2029 年 12 月 1 日 1890691200000) 自動提醒管理員
+    const warningTime = 1890691200000;
+    if (Date.now() >= warningTime && this.isAdmin) {
+      setTimeout(() => {
+        this.showNotification(
+          '⚠️ 防護規則到期提醒',
+          '您的 Firebase 安全防護規則即將於 2030/01/01 到期！請前往「教師指南」複製最新規則至 Firebase Console 貼上並發布更新。'
+        );
+      }, 1500);
+    }
+  }
   
   initThemeSwitcher() {
     const savedTheme = localStorage.getItem('whiteboard_theme') || 'light';
@@ -8307,6 +8322,7 @@ function submitAdminPassword() {
     if (window.app.timerState) {
       window.app.updateAdminTimerUI(window.app.timerState);
     }
+    window.app.checkSecurityRuleExpiry();
   } else {
     window.app.showNotification('錯誤', '密碼不正確！');
   }
