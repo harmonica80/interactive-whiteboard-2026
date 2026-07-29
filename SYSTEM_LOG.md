@@ -639,6 +639,12 @@
   2. **極致 3D 翻牌視覺與 Web Audio 動態音效**：運用 CSS 3D Preserve-3D Transform 與 Web Audio 合成音效引擎，實現順暢翻牌、配對成功亮綠光與和弦音（Match）、配對失敗搖晃與紅光（Mismatch）等極致反饋。
   3. **即時成績與排行榜連動**：全班同步隨機洗牌盤面進行競速與翻牌次數比拼，完成後觸發歡慶煙火動畫並自動上傳至「即時成績排行榜」。
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-29 - Antigravity
+- 修改項目：修復發起記憶翻牌遊戲時殘留舒爾特數字格子的問題。
+- 行為：
+  1. 將舊有的舒爾特數字盤面與頂部標籤完整包裹於 `#focusNumberGridContainer` 中。
+  2. 實現切換遊戲種類時的全自動互斥隱藏：選取「記憶翻牌配對」時自動關閉舒爾特數字區並展示 `#focusMemoryMatchBoard` 3D 卡片盤面。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
