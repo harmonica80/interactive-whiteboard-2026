@@ -645,6 +645,12 @@
   1. 將舊有的舒爾特數字盤面與頂部標籤完整包裹於 `#focusNumberGridContainer` 中。
   2. 實現切換遊戲種類時的全自動互斥隱藏：選取「記憶翻牌配對」時自動關閉舒爾特數字區並展示 `#focusMemoryMatchBoard` 3D 卡片盤面。
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-29 - Antigravity
+- 修改項目：將記憶翻牌卡片調整為 **1:1 正方形比例**（更省空間、緊湊美觀）。
+- 行為：
+  1. 將 `css/style.css` 中 `.memory-card` 的 `aspect-ratio` 由原先的 `3/4` 改為 `1 / 1` 正方形。
+  2. 垂直高度大幅縮減，使整體盤面更加精致緊湊，在行動端與平板畫面上皆可一目了然免滾動。
+- 影響檔案：`css/style.css`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
