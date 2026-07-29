@@ -5637,8 +5637,8 @@ class App {
     const countdownSecs = parseInt(document.getElementById('focusGameCountdown').value) || 10;
     
     // 記憶翻牌配對遊戲 (Memory Match)
-    const pairCount = parseInt(document.getElementById('selectedMemoryMatchPairCount')?.value) || 6;
-    const memoryMatchTheme = document.getElementById('memoryMatchTheme')?.value || 'emoji';
+    const pairCount = parseInt(document.getElementById('selectedMemoryMatchPairCount')?.value) || 8;
+    const memoryMatchTheme = document.getElementById('memoryMatchTheme')?.value || 'fruit';
     const memoryMatchDeck = gameType === 'memoryMatch'
       ? this.generateMemoryMatchDeck(pairCount, memoryMatchTheme)
       : null;
@@ -5693,7 +5693,15 @@ class App {
   }
 
   generateMemoryMatchDeck(pairCount, theme) {
-    const emojiPool = ['🍎', '🍌', '🍕', '🍔', '🎈', '🎁', '🚀', '🐱', '🐶', '🦄', '🌈', '⚽', '🍦', '🍩', '🎯', '🎨', '🎸', '🚗', '🦁', '🐼'];
+    const themePools = {
+      fruit: ['🍎', '🍌', '🍕', '🍔', '🍓', '🍇', '🥑', '🍩', '🍦', '🍣', '🌮', '🍒', '🍍', '🍉', '🍿', '🍰'],
+      animal: ['🐱', '🐶', '🦄', '🦁', '🐼', '🦊', '🐰', '🐯', '🐨', '🐵', '🐸', '🐙', '🐧', '🦉', '🐬', '🐝'],
+      space: ['🚀', '🛸', '🪐', '🌟', '🤖', '💻', '👾', '🛰️', '⚡', '🔭', '🌌', '🔮', '📡', '🔋', '🎮', '🛸'],
+      sports: ['⚽', '🏀', '🎾', '🏐', '⛳', '🚴', '🎿', '🎯', '🎨', '🎸', '🧩', '🚗', '✈️', '⛵', '🏆', '🎪'],
+      emoji: ['🍎', '🐱', '🚀', '⚽', '🦄', '🍕', '🤖', '🎾', '🍓', '🦁', '🪐', '🎸', '🍦', '🐼', '🎮', '🏆']
+    };
+
+    let selectedPool = themePools[theme] || themePools.fruit;
     let items = [];
 
     if (theme === 'images' && this.images && this.images.length > 0) {
@@ -5704,14 +5712,14 @@ class App {
           const img = availableImages.splice(randIdx, 1)[0];
           items.push({ type: 'image', value: img.url });
         } else {
-          const randEmoji = emojiPool[i % emojiPool.length];
+          const randEmoji = selectedPool[i % selectedPool.length];
           items.push({ type: 'emoji', value: randEmoji });
         }
       }
     } else {
-      const shuffledEmojis = [...emojiPool].sort(() => 0.5 - Math.random());
+      const shuffled = [...selectedPool].sort(() => 0.5 - Math.random());
       for (let i = 0; i < pairCount; i++) {
-        items.push({ type: 'emoji', value: shuffledEmojis[i] });
+        items.push({ type: 'emoji', value: shuffled[i % shuffled.length] });
       }
     }
 
@@ -6804,7 +6812,13 @@ class App {
 
     const grid = document.getElementById('focusMemoryGrid');
     if (grid) {
-      grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      const cardCount = this.memoryMatchDeck.length;
+      let cols = 4;
+      if (cardCount === 24) cols = 6;
+      else if (cardCount === 32) cols = 6;
+      if (window.innerWidth < 450 && cardCount >= 24) cols = 4;
+
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
       grid.innerHTML = this.memoryMatchDeck.map(card => {
         let backContent = '';
         if (card.type === 'image') {

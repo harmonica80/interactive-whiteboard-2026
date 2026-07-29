@@ -633,26 +633,30 @@
 
               <!-- 記憶翻牌配對遊戲設定 -->
               <div id="focusMemoryMatchSettings" style="margin-bottom: 16px; display: none;">
-                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 選擇卡片對數 / 難度：</label>
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 選擇卡片張數 (對數) / 難度：</label>
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;">
-                  <div class="grid-size-card memory-match-card" onclick="selectMemoryMatchPairCount(4, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
-                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">8張</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">4對 (輕鬆入門)</div>
-                  </div>
-                  <div class="grid-size-card memory-match-card active" onclick="selectMemoryMatchPairCount(6, this)" style="border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
-                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">12張</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">6對 (標準預設)</div>
-                  </div>
-                  <div class="grid-size-card memory-match-card" onclick="selectMemoryMatchPairCount(8, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                  <div class="grid-size-card memory-match-card active" onclick="selectMemoryMatchPairCount(8, this)" style="border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
                     <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">16張</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">8對 (挑戰大師)</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">8對 (輕鬆入門)</div>
+                  </div>
+                  <div class="grid-size-card memory-match-card" onclick="selectMemoryMatchPairCount(12, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">24張</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">12對 (標準難度)</div>
+                  </div>
+                  <div class="grid-size-card memory-match-card" onclick="selectMemoryMatchPairCount(16, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">32張</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">16對 (大師挑戰)</div>
                   </div>
                 </div>
-                <input type="hidden" id="selectedMemoryMatchPairCount" value="6">
+                <input type="hidden" id="selectedMemoryMatchPairCount" value="8">
 
-                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">3. 選擇圖案主題：</label>
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">3. 選擇圖案主題 (提供 6 大主題)：</label>
                 <select id="memoryMatchTheme" class="question-input" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px; height: 38px;">
-                  <option value="emoji">🎨 歡樂 Emoji 表情符號 (水果、動物、星空)</option>
+                  <option value="fruit">🍎 水果與美食派對 (水果、甜點、美饌)</option>
+                  <option value="animal">🐶 可愛動物世界 (萌寵、野生動物、海洋)</option>
+                  <option value="space">🚀 科技與宇宙探索 (火箭、行星、機器人)</option>
+                  <option value="sports">⚽ 運動與休閒娛樂 (球隊、藝術、娛樂)</option>
+                  <option value="emoji">🎨 歡樂綜合大集合 (綜合驚喜圖案)</option>
                   <option value="images">🖼️ 課堂圖片庫 (自動使用已上傳教材圖片)</option>
                 </select>
               </div>
