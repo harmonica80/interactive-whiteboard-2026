@@ -600,6 +600,7 @@
                 <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">1. 選擇遊戲類型：</label>
                 <select id="focusGameType" onchange="window.app && window.app.updateFocusGameAdminOptions()" class="question-input" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px; height: 38px;">
                   <option value="numberGrid">🔢 依序點選數字 (舒爾特方格 Schulte Grid)</option>
+                  <option value="memoryMatch">🃏 互動式記憶翻牌配對 (破冰遊戲)</option>
                   <option value="memoryPosition">🧩 位置序列記憶 (含反向模式)</option>
                   <option value="characterTest">✍️ 一字千金：字力測驗 (手寫/輸入)</option>
                   <option value="characterCrossword">✍️ 一字千金：字字珠璣 (十字選字)</option>
@@ -628,6 +629,32 @@
                   </div>
                 </div>
                 <input type="hidden" id="selectedFocusGridSize" value="36">
+              </div>
+
+              <!-- 記憶翻牌配對遊戲設定 -->
+              <div id="focusMemoryMatchSettings" style="margin-bottom: 16px; display: none;">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 選擇卡片對數 / 難度：</label>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;">
+                  <div class="grid-size-card memory-match-card" onclick="selectMemoryMatchPairCount(4, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">8張</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">4對 (輕鬆入門)</div>
+                  </div>
+                  <div class="grid-size-card memory-match-card active" onclick="selectMemoryMatchPairCount(6, this)" style="border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">12張</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">6對 (標準預設)</div>
+                  </div>
+                  <div class="grid-size-card memory-match-card" onclick="selectMemoryMatchPairCount(8, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">16張</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">8對 (挑戰大師)</div>
+                  </div>
+                </div>
+                <input type="hidden" id="selectedMemoryMatchPairCount" value="6">
+
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">3. 選擇圖案主題：</label>
+                <select id="memoryMatchTheme" class="question-input" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px; height: 38px;">
+                  <option value="emoji">🎨 歡樂 Emoji 表情符號 (水果、動物、星空)</option>
+                  <option value="images">🖼️ 課堂圖片庫 (自動使用已上傳教材圖片)</option>
+                </select>
               </div>
 
               <div style="margin-bottom: 20px;">
@@ -1194,7 +1221,7 @@ Python</pre>
       
       <div class="modal-body" style="padding: 0; text-align: center; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; max-height: 90vh;">
         <div style="width: 100%; height: calc(85vh - 250px); display: flex; align-items: center; justify-content: center; position: relative; min-height: 300px;">
-          <div id="videoPlayerContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #000;">
+        <div id="videoPlayerContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #000;">
             <!-- 將會動態渲染為 <video> 或是 <iframe> -->
           </div>
         </div>
@@ -1271,7 +1298,30 @@ Python</pre>
 
       <!-- 2. 遊戲進行階段畫面 -->
       <div id="focusPlayArea" style="display: none; width: 100%; flex-direction: column; align-items: center;">
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px; padding: 0 10px; box-sizing: border-box;">
+        <!-- 記憶翻牌配對遊戲獨立盤面 -->
+        <div id="focusMemoryMatchBoard" style="display: none; width: 100%; flex-direction: column; align-items: center;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 14px; padding: 10px 14px; box-sizing: border-box; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);">
+            <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">
+              🎯 配對：<span id="focusMemoryMatchedCount" style="color: var(--accent-color); font-size: 18px; font-weight: 900;">0</span> / <span id="focusMemoryTotalPairs">6</span> 對
+            </div>
+            <div style="font-size: 14px; font-weight: bold; color: var(--text-secondary);">
+              🔄 翻牌：<span id="focusMemoryFlips" style="color: #ff9500; font-size: 18px; font-weight: 900;">0</span> 次
+            </div>
+            <div style="font-size: 16px; font-weight: 900; color: var(--danger-color); font-family: monospace;">
+              ⏱️ <span id="focusMemoryTimer">0.00</span> 秒
+            </div>
+          </div>
+
+          <div id="focusMemoryGrid" class="memory-match-grid" style="display: grid; gap: 10px; width: 100%; max-width: 480px; margin: 8px 0; box-sizing: border-box;">
+            <!-- 動態生成記憶配對卡片 -->
+          </div>
+
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+            💡 翻開兩張相同的卡片進行配對，看誰能用最少的翻牌次數與最快的速度完成配對！
+          </div>
+        </div>
+
+        <div id="focusNumberGridHeader" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px; padding: 0 10px; box-sizing: border-box;">
           <div style="font-size: 16px; font-weight: bold; color: var(--text-primary);">
             目標：依序點擊數字 <span id="focusCurrentTarget" style="color: var(--accent-color); font-size: 20px; font-weight: 900;">1</span>
           </div>

@@ -2661,4 +2661,94 @@ body {
   transform: scale(0.95);
 }
 
+/* ===== 🃏 互動式記憶翻牌配對遊戲 CSS ===== */
+.memory-match-grid {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+  margin: 10px 0;
+  perspective: 1000px;
+  box-sizing: border-box;
+}
+
+.memory-card {
+  aspect-ratio: 3/4;
+  cursor: pointer;
+  perspective: 1000px;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.memory-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.memory-card.flipped .memory-card-inner {
+  transform: rotateY(180deg);
+}
+
+.memory-card.matched .memory-card-inner {
+  transform: rotateY(180deg);
+  box-shadow: 0 0 16px rgba(52, 199, 89, 0.7);
+  border: 2.5px solid #34c759;
+}
+
+.memory-card.shake {
+  animation: memoryShake 0.4s ease-in-out;
+}
+
+@keyframes memoryShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px) rotate(-2deg); }
+  40% { transform: translateX(6px) rotate(2deg); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.memory-card-front,
+.memory-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: bold;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.memory-card-front {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: 2px solid rgba(255,255,255,0.3);
+  font-size: 24px;
+}
+
+.memory-card-back {
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  transform: rotateY(180deg);
+  color: var(--text-primary);
+  padding: 4px;
+}
+
+.memory-card-back img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 

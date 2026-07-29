@@ -5636,6 +5636,13 @@ class App {
     const selectedSize = gameType === 'memoryPosition' ? memoryGridSize : numberGridSize;
     const countdownSecs = parseInt(document.getElementById('focusGameCountdown').value) || 10;
     
+    // 記憶翻牌配對遊戲 (Memory Match)
+    const pairCount = parseInt(document.getElementById('selectedMemoryMatchPairCount')?.value) || 6;
+    const memoryMatchTheme = document.getElementById('memoryMatchTheme')?.value || 'emoji';
+    const memoryMatchDeck = gameType === 'memoryMatch'
+      ? this.generateMemoryMatchDeck(pairCount, memoryMatchTheme)
+      : null;
+
     // OpenCode 修改：位置序列記憶第一版，由老師端產生共用序列並寫入 Firebase
     const memoryLengthInput = document.getElementById('focusMemoryLength');
     const memoryReverseInput = document.getElementById('focusMemoryReverse');
@@ -5668,6 +5675,9 @@ class App {
       status: 'countdown',
       gameType: gameType,
       gridSize: selectedSize,
+      pairCount: gameType === 'memoryMatch' ? pairCount : null,
+      theme: gameType === 'memoryMatch' ? memoryMatchTheme : null,
+      deck: memoryMatchDeck,
       sequenceLength: gameType === 'memoryPosition' ? memoryLength : null,
       reverseMode: gameType === 'memoryPosition' ? memoryReverse : false,
       sequence: memorySequence,
@@ -5676,10 +5686,48 @@ class App {
       countdownStartTime: firebase.database.ServerValue.TIMESTAMP,
       results: null
     }).then(() => {
-      this.showNotification('成功', '專注力遊戲已發起！');
+      this.showNotification('成功', '專注力/破冰遊戲已發起！');
     }).catch(err => {
       this.showNotification('錯誤', '發起失敗: ' + err.message);
     });
+  }
+
+  generateMemoryMatchDeck(pairCount, theme) {
+    const emojiPool = ['🍎', '🍌', '🍕', '🍔', '🎈', '🎁', '🚀', '🐱', '🐶', '🦄', '🌈', '⚽', '🍦', '🍩', '🎯', '🎨', '🎸', '🚗', '🦁', '🐼'];
+    let items = [];
+
+    if (theme === 'images' && this.images && this.images.length > 0) {
+      const availableImages = [...this.images];
+      for (let i = 0; i < pairCount; i++) {
+        if (availableImages.length > 0) {
+          const randIdx = Math.floor(Math.random() * availableImages.length);
+          const img = availableImages.splice(randIdx, 1)[0];
+          items.push({ type: 'image', value: img.url });
+        } else {
+          const randEmoji = emojiPool[i % emojiPool.length];
+          items.push({ type: 'emoji', value: randEmoji });
+        }
+      }
+    } else {
+      const shuffledEmojis = [...emojiPool].sort(() => 0.5 - Math.random());
+      for (let i = 0; i < pairCount; i++) {
+        items.push({ type: 'emoji', value: shuffledEmojis[i] });
+      }
+    }
+
+    const deck = [];
+    items.forEach((item, index) => {
+      const matchKey = 'pair_' + index;
+      deck.push({ id: `card_${index}_A`, matchKey, type: item.type, value: item.value });
+      deck.push({ id: `card_${index}_B`, matchKey, type: item.type, value: item.value });
+    });
+
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+
+    return deck;
   }
 
   // OpenCode 修改：管理後台依遊戲類型顯示對應設定，避免不同遊戲選項混在一起
@@ -5687,8 +5735,10 @@ class App {
     const gameType = document.getElementById('focusGameType')?.value || 'numberGrid';
     const numberGridSettings = document.getElementById('focusNumberGridSettings');
     const memorySettings = document.getElementById('focusMemorySettings');
+    const memoryMatchSettings = document.getElementById('focusMemoryMatchSettings');
     if (numberGridSettings) numberGridSettings.style.display = gameType === 'numberGrid' ? 'block' : 'none';
     if (memorySettings) memorySettings.style.display = gameType === 'memoryPosition' ? 'block' : 'none';
+    if (memoryMatchSettings) memoryMatchSettings.style.display = gameType === 'memoryMatch' ? 'block' : 'none';
   }
 
   // OpenCode 修改：倒數畫面依專注力遊戲類型顯示不同說明文字
@@ -5698,6 +5748,14 @@ class App {
     const hintEl = document.getElementById('focusCountdownHint');
     const gridSize = game.gridSize || 36;
     const sequenceLength = game.sequenceLength || 5;
+
+    if (game.gameType === 'memoryMatch') {
+      const pairCount = game.pairCount || 6;
+      if (titleEl) titleEl.textContent = '🃏 互動式記憶翻牌配對 (破冰遊戲)！';
+      if (descriptionEl) descriptionEl.textContent = `請展現敏捷反應與超強記憶，翻開兩張相同的卡片進行配對！共 ${pairCount} 對 (${pairCount * 2} 張卡片)`;
+      if (hintEl) hintEl.textContent = '破冰遊戲即將開始，請準備好專注眼力...';
+      return;
+    }
 
     if (game.gameType === 'memoryPosition') {
       if (titleEl) titleEl.textContent = game.reverseMode ? '位置序列記憶・反向挑戰！' : '位置序列記憶挑戰！';
@@ -6083,6 +6141,12 @@ class App {
     }
     this.stopFocusTimers();
     this.focusLocalGameKey = localGameKey;
+
+    // 記憶翻牌配對遊戲 (Memory Match)
+    if (game.gameType === 'memoryMatch') {
+      this.startMemoryMatchGame(game);
+      return;
+    }
 
     // OpenCode 修改：位置序列記憶第一版與舒爾特方格共用專注力遊戲 Overlay
     if (game.gameType === 'memoryPosition') {
@@ -6701,6 +6765,166 @@ class App {
     const helpInfo = document.getElementById('focusHelpInfo');
     if (helpInfo) helpInfo.textContent = `點錯 ${this.focusMemoryMistakes} 次，已加時 ${this.focusMemoryMistakes * 3} 秒。`;
     setTimeout(() => btn.classList.remove('memory-wrong'), 350);
+  }
+
+  // ===== 🃏 互動式記憶翻牌配對遊戲 (Memory Match) =====
+  startMemoryMatchGame(game) {
+    const memoryMatchBoard = document.getElementById('focusMemoryMatchBoard');
+    const numberGridHeader = document.getElementById('focusNumberGridHeader');
+    const numberGrid = document.getElementById('focusGameGrid');
+    const helpBtn = document.getElementById('focusHelpBtn');
+    const helpInfo = document.getElementById('focusHelpInfo');
+    const instEl = document.getElementById('focusGameInstruction');
+
+    if (memoryMatchBoard) memoryMatchBoard.style.display = 'flex';
+    if (numberGridHeader) numberGridHeader.style.display = 'none';
+    if (numberGrid) numberGrid.style.display = 'none';
+    if (helpBtn) helpBtn.style.display = 'none';
+    if (helpInfo) helpInfo.textContent = '';
+    if (instEl) instEl.textContent = '💡 翻開兩張相同的卡片進行配對，看誰能用最少的翻牌次數與最快的速度完成配對！';
+
+    this.memoryMatchDeck = game.deck || [];
+    this.memoryMatchTotalPairs = game.pairCount || 6;
+    this.memoryMatchMatchedPairs = 0;
+    this.memoryMatchFlips = 0;
+    this.memoryMatchFirstCard = null;
+    this.memoryMatchSecondCard = null;
+    this.memoryMatchIsLock = false;
+
+    const matchedEl = document.getElementById('focusMemoryMatchedCount');
+    const totalPairsEl = document.getElementById('focusMemoryTotalPairs');
+    const flipsEl = document.getElementById('focusMemoryFlips');
+    const timerEl = document.getElementById('focusMemoryTimer');
+
+    if (matchedEl) matchedEl.textContent = '0';
+    if (totalPairsEl) totalPairsEl.textContent = this.memoryMatchTotalPairs;
+    if (flipsEl) flipsEl.textContent = '0';
+    if (timerEl) timerEl.textContent = '0.00';
+
+    const grid = document.getElementById('focusMemoryGrid');
+    if (grid) {
+      grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      grid.innerHTML = this.memoryMatchDeck.map(card => {
+        let backContent = '';
+        if (card.type === 'image') {
+          backContent = `<img src="${card.value}" alt="card image" />`;
+        } else {
+          backContent = `<span>${card.value}</span>`;
+        }
+
+        return `
+          <div class="memory-card" data-card-id="${card.id}" data-match-key="${card.matchKey}" onclick="window.app.clickMemoryMatchCard('${card.id}', this)">
+            <div class="memory-card-inner">
+              <div class="memory-card-front">❓</div>
+              <div class="memory-card-back">${backContent}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    this.focusStartTimeLocal = Date.now();
+    this.focusTimerInterval = setInterval(() => {
+      if (timerEl) {
+        const elapsed = (Date.now() - this.focusStartTimeLocal) / 1000;
+        timerEl.textContent = elapsed.toFixed(2);
+      }
+    }, 50);
+  }
+
+  clickMemoryMatchCard(cardId, element) {
+    if (this.memoryMatchIsLock) return;
+    if (element.classList.contains('flipped') || element.classList.contains('matched')) return;
+
+    this.playFocusSound('flip');
+    element.classList.add('flipped');
+
+    if (!this.memoryMatchFirstCard) {
+      this.memoryMatchFirstCard = {
+        id: cardId,
+        matchKey: element.dataset.matchKey,
+        element: element
+      };
+      return;
+    }
+
+    this.memoryMatchSecondCard = {
+      id: cardId,
+      matchKey: element.dataset.matchKey,
+      element: element
+    };
+
+    this.memoryMatchFlips++;
+    const flipsEl = document.getElementById('focusMemoryFlips');
+    if (flipsEl) flipsEl.textContent = this.memoryMatchFlips;
+
+    this.memoryMatchIsLock = true;
+
+    const isMatch = this.memoryMatchFirstCard.matchKey === this.memoryMatchSecondCard.matchKey;
+
+    if (isMatch) {
+      this.playFocusSound('match');
+      this.memoryMatchFirstCard.element.classList.add('matched');
+      this.memoryMatchSecondCard.element.classList.add('matched');
+
+      this.memoryMatchMatchedPairs++;
+      const matchedEl = document.getElementById('focusMemoryMatchedCount');
+      if (matchedEl) matchedEl.textContent = this.memoryMatchMatchedPairs;
+
+      this.memoryMatchFirstCard = null;
+      this.memoryMatchSecondCard = null;
+      this.memoryMatchIsLock = false;
+
+      if (this.memoryMatchMatchedPairs >= this.memoryMatchTotalPairs) {
+        this.finishMemoryMatchGame();
+      }
+    } else {
+      this.playFocusSound('mismatch');
+      this.memoryMatchFirstCard.element.classList.add('shake');
+      this.memoryMatchSecondCard.element.classList.add('shake');
+
+      setTimeout(() => {
+        if (this.memoryMatchFirstCard && this.memoryMatchFirstCard.element) {
+          this.memoryMatchFirstCard.element.classList.remove('flipped', 'shake');
+        }
+        if (this.memoryMatchSecondCard && this.memoryMatchSecondCard.element) {
+          this.memoryMatchSecondCard.element.classList.remove('flipped', 'shake');
+        }
+        this.memoryMatchFirstCard = null;
+        this.memoryMatchSecondCard = null;
+        this.memoryMatchIsLock = false;
+      }, 700);
+    }
+  }
+
+  finishMemoryMatchGame() {
+    this.stopFocusTimers();
+    const timeSpent = (Date.now() - this.focusStartTimeLocal) / 1000;
+    const userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 5));
+    const userName = localStorage.getItem('user_name') || '匿名學生';
+
+    db.ref(`quiz/focusGame/results/${userId}`).set({
+      userId,
+      userName,
+      timeSpent,
+      flips: this.memoryMatchFlips,
+      completedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    document.getElementById('focusPlayArea').style.display = 'none';
+    document.getElementById('focusFinishArea').style.display = 'block';
+    document.getElementById('lblFinishTime').textContent = `${timeSpent.toFixed(2)} 秒 (共翻牌 ${this.memoryMatchFlips} 次)`;
+
+    const suffixEl = document.getElementById('lblFinishRankSuffix');
+    if (suffixEl) suffixEl.textContent = '完成記憶配對';
+
+    this.initFireworkCanvas();
+    this.triggerFireworkEffect();
+
+    if (!this.focusGameCompletedLocal) {
+      this.focusGameCompletedLocal = true;
+      this.playFocusSound('end');
+    }
   }
 
   clickSchulteGrid(num, btn) {
@@ -7981,6 +8205,45 @@ class App {
           osc.stop(noteTime + item.dur);
           osc2.stop(noteTime + item.dur);
         });
+      } else if (type === 'flip') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(350, t);
+        osc.frequency.exponentialRampToValueAtTime(700, t + 0.06);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.06);
+      } else if (type === 'match') {
+        const notes = [523.25, 659.25, 783.99];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const noteT = t + idx * 0.08;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, noteT);
+          gain.gain.setValueAtTime(0.25, noteT);
+          gain.gain.exponentialRampToValueAtTime(0.001, noteT + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(noteT);
+          osc.stop(noteT + 0.2);
+        });
+      } else if (type === 'mismatch') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, t);
+        osc.frequency.linearRampToValueAtTime(180, t + 0.15);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.15);
       }
     } catch (e) {
       console.warn("Focus sound play failed:", e);
@@ -8668,6 +8931,23 @@ function endFocusGame() {
 
 function clickSchulteGrid(num, btn) {
   if (window.app) window.app.clickSchulteGrid(num, btn);
+}
+
+function selectMemoryMatchPairCount(count, el) {
+  const hiddenInput = document.getElementById('selectedMemoryMatchPairCount');
+  if (hiddenInput) hiddenInput.value = count;
+  document.querySelectorAll('.memory-match-card').forEach(card => {
+    card.classList.remove('active');
+    card.style.border = '1px solid var(--border-color)';
+  });
+  if (el) {
+    el.classList.add('active');
+    el.style.border = '2px solid var(--accent-color)';
+  }
+}
+
+function clickMemoryMatchCard(cardId, element) {
+  if (window.app) window.app.clickMemoryMatchCard(cardId, element);
 }
 
 const SECURITY_RULES_JSON = `{
