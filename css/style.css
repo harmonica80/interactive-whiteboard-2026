@@ -2673,7 +2673,7 @@ body {
 }
 
 .memory-card {
-  aspect-ratio: 3/4;
+  aspect-ratio: 1 / 1;
   cursor: pointer;
   perspective: 1000px;
   user-select: none;
