@@ -6814,8 +6814,7 @@ class App {
     if (grid) {
       const cardCount = this.memoryMatchDeck.length;
       let cols = 4;
-      if (cardCount === 24) cols = 6;
-      else if (cardCount === 32) cols = 6;
+      if (cardCount >= 24) cols = 6;
       if (window.innerWidth < 450 && cardCount >= 24) cols = 4;
 
       grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;

@@ -634,18 +634,14 @@
               <!-- 記憶翻牌配對遊戲設定 -->
               <div id="focusMemoryMatchSettings" style="margin-bottom: 16px; display: none;">
                 <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 選擇卡片張數 (對數) / 難度：</label>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;">
                   <div class="grid-size-card memory-match-card active" onclick="selectMemoryMatchPairCount(8, this)" style="border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
                     <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">16張</div>
                     <div style="font-size: 12px; color: var(--text-secondary);">8對 (輕鬆入門)</div>
                   </div>
                   <div class="grid-size-card memory-match-card" onclick="selectMemoryMatchPairCount(12, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
                     <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">24張</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">12對 (標準難度)</div>
-                  </div>
-                  <div class="grid-size-card memory-match-card" onclick="selectMemoryMatchPairCount(16, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
-                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">32張</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">16對 (大師挑戰)</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">12對 (挑戰難度)</div>
                   </div>
                 </div>
                 <input type="hidden" id="selectedMemoryMatchPairCount" value="8">
