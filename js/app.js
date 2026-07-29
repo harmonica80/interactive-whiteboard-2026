@@ -6148,6 +6148,11 @@ class App {
       return;
     }
 
+    const numContainer = document.getElementById('focusNumberGridContainer');
+    const memBoard = document.getElementById('focusMemoryMatchBoard');
+    if (numContainer) numContainer.style.display = 'flex';
+    if (memBoard) memBoard.style.display = 'none';
+
     // OpenCode 修改：位置序列記憶第一版與舒爾特方格共用專注力遊戲 Overlay
     if (game.gameType === 'memoryPosition') {
       this.startMemoryPositionGame(game);
@@ -6770,16 +6775,12 @@ class App {
   // ===== 🃏 互動式記憶翻牌配對遊戲 (Memory Match) =====
   startMemoryMatchGame(game) {
     const memoryMatchBoard = document.getElementById('focusMemoryMatchBoard');
-    const numberGridHeader = document.getElementById('focusNumberGridHeader');
-    const numberGrid = document.getElementById('focusGameGrid');
-    const helpBtn = document.getElementById('focusHelpBtn');
+    const numberGridContainer = document.getElementById('focusNumberGridContainer');
     const helpInfo = document.getElementById('focusHelpInfo');
     const instEl = document.getElementById('focusGameInstruction');
 
     if (memoryMatchBoard) memoryMatchBoard.style.display = 'flex';
-    if (numberGridHeader) numberGridHeader.style.display = 'none';
-    if (numberGrid) numberGrid.style.display = 'none';
-    if (helpBtn) helpBtn.style.display = 'none';
+    if (numberGridContainer) numberGridContainer.style.display = 'none';
     if (helpInfo) helpInfo.textContent = '';
     if (instEl) instEl.textContent = '💡 翻開兩張相同的卡片進行配對，看誰能用最少的翻牌次數與最快的速度完成配對！';
 
