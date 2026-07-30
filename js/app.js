@@ -8,6 +8,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️ 入門',
     bpm: 90,
     noteCount: 32,
+    youtubeId: 'yCjJyiqpAuU',
     pattern: ['don', 'don', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don'],
     melody: [261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00, 349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63]
   },
@@ -18,6 +19,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️ 入門',
     bpm: 100,
     noteCount: 40,
+    youtubeId: '3CWJNqyub3o',
     pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don'],
     melody: [329.63, 329.63, 329.63, 329.63, 329.63, 329.63, 329.63, 392.00, 261.63, 293.66, 329.63]
   },
@@ -28,6 +30,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️ 初級',
     bpm: 110,
     noteCount: 48,
+    youtubeId: 'X6s6hTLRB6U',
     pattern: ['don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don'],
     melody: [329.63, 329.63, 349.23, 392.00, 392.00, 349.23, 329.63, 293.66, 261.63, 261.63, 293.66, 329.63, 329.63, 293.66, 293.66]
   },
@@ -38,6 +41,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️ 初級',
     bpm: 120,
     noteCount: 56,
+    youtubeId: 'by8oyJztzwo',
     pattern: ['don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka'],
     melody: [659.25, 587.33, 523.25, 493.88, 440.00, 392.00, 440.00, 493.88]
   },
@@ -48,6 +52,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️ 中級',
     bpm: 135,
     noteCount: 68,
+    youtubeId: 'vtNu7CFz0d8',
     pattern: ['don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka'],
     melody: [440.00, 415.30, 392.00, 369.99, 349.23, 329.63, 311.13, 293.66]
   },
@@ -58,6 +63,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️ 中級',
     bpm: 140,
     noteCount: 72,
+    youtubeId: 'Yiy4_2f22hU',
     pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don'],
     melody: [329.63, 392.00, 523.25, 659.25, 587.33, 523.25, 493.88, 523.25]
   },
@@ -68,6 +74,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️⭐️ 高級',
     bpm: 150,
     noteCount: 84,
+    youtubeId: '1T-qFp1q6wY',
     pattern: ['don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka'],
     melody: [493.88, 440.00, 415.30, 440.00, 523.25, 587.33, 659.25, 523.25]
   },
@@ -78,6 +85,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️⭐️ 高級',
     bpm: 155,
     noteCount: 90,
+    youtubeId: '_qtVnZPrrB4',
     pattern: ['don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don'],
     melody: [440.00, 440.00, 440.00, 369.99, 587.33, 493.88, 392.00]
   },
@@ -88,6 +96,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️⭐️⭐️ 專家',
     bpm: 165,
     noteCount: 104,
+    youtubeId: 'evr78qMrVbg',
     pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka'],
     melody: [392.00, 392.00, 392.00, 311.13, 349.23, 349.23, 349.23, 293.66]
   },
@@ -98,6 +107,7 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️⭐️⭐️ 專家',
     bpm: 175,
     noteCount: 120,
+    youtubeId: 'a724x72aL_o',
     pattern: ['don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'ka'],
     melody: [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 440.00]
   }
@@ -116,7 +126,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.0.2';
+    this.APP_VERSION = '2.0.3';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6950,8 +6960,72 @@ class App {
     this.playTaikoBackgroundMusic(track);
   }
 
+  initTaikoYoutubeApi() {
+    if (window.YT && window.YT.Player) return Promise.resolve();
+    if (this.ytApiPromise) return this.ytApiPromise;
+
+    this.ytApiPromise = new Promise((resolve) => {
+      const existing = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (existing) existing();
+        resolve();
+      };
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        if (firstScriptTag && firstScriptTag.parentNode) {
+          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        } else {
+          document.head.appendChild(tag);
+        }
+      }
+    });
+    return this.ytApiPromise;
+  }
+
   playTaikoBackgroundMusic(track) {
     this.stopTaikoBackgroundMusic();
+
+    if (track && track.youtubeId) {
+      this.initTaikoYoutubeApi().then(() => {
+        try {
+          if (!this.taikoYtPlayer) {
+            this.taikoYtPlayer = new YT.Player('taikoYoutubePlayer', {
+              height: '1',
+              width: '1',
+              videoId: track.youtubeId,
+              playerVars: {
+                autoplay: 1,
+                controls: 0,
+                loop: 1,
+                playlist: track.youtubeId
+              },
+              events: {
+                onReady: (event) => {
+                  if (!this.taikoIsEnded) {
+                    event.target.playVideo();
+                  }
+                }
+              }
+            });
+          } else {
+            this.taikoYtPlayer.loadVideoById(track.youtubeId);
+            this.taikoYtPlayer.playVideo();
+          }
+        } catch (err) {
+          console.warn("YouTube play failed, falling back to Web Audio Synth", err);
+          this.playTaikoSynthAudio(track);
+        }
+      }).catch(() => {
+        this.playTaikoSynthAudio(track);
+      });
+    } else {
+      this.playTaikoSynthAudio(track);
+    }
+  }
+
+  playTaikoSynthAudio(track) {
     this.initFocusAudio();
     const ctx = this.focusAudioCtx;
     if (!ctx) return;
@@ -6998,6 +7072,11 @@ class App {
   }
 
   stopTaikoBackgroundMusic() {
+    if (this.taikoYtPlayer && typeof this.taikoYtPlayer.pauseVideo === 'function') {
+      try {
+        this.taikoYtPlayer.pauseVideo();
+      } catch (e) {}
+    }
     if (this.taikoMusicTimers) {
       this.taikoMusicTimers.forEach(id => clearTimeout(id));
       this.taikoMusicTimers = [];
