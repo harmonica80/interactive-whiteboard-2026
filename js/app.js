@@ -116,7 +116,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.0.1';
+    this.APP_VERSION = '2.0.2';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -7356,6 +7356,42 @@ class App {
         }
       });
 
+      // 尋找下一個即將到達判定線的音符
+      let nextNote = null;
+      let minFutureTime = 999999;
+      this.taikoNotes.forEach(note => {
+        if (!note.hit) {
+          const timeDiff = note.targetTime - currentTime;
+          if (timeDiff > -100 && timeDiff < minFutureTime) {
+            minFutureTime = timeDiff;
+            nextNote = note;
+          }
+        }
+      });
+
+      // 鼓面 UI 動態高亮提示顏色與鍵位
+      const centerLeft = document.querySelector('.taiko-drum-center.center-left');
+      const centerRight = document.querySelector('.taiko-drum-center.center-right');
+      const rimLeft = document.querySelector('.taiko-drum-rim.rim-left');
+      const rimRight = document.querySelector('.taiko-drum-rim.rim-right');
+
+      if (nextNote && nextNote.type === 'don') {
+        if (centerLeft) centerLeft.classList.add('next-hint-don');
+        if (centerRight) centerRight.classList.add('next-hint-don');
+        if (rimLeft) rimLeft.classList.remove('next-hint-ka');
+        if (rimRight) rimRight.classList.remove('next-hint-ka');
+      } else if (nextNote && nextNote.type === 'ka') {
+        if (rimLeft) rimLeft.classList.add('next-hint-ka');
+        if (rimRight) rimRight.classList.add('next-hint-ka');
+        if (centerLeft) centerLeft.classList.remove('next-hint-don');
+        if (centerRight) centerRight.classList.remove('next-hint-don');
+      } else {
+        if (centerLeft) centerLeft.classList.remove('next-hint-don');
+        if (centerRight) centerRight.classList.remove('next-hint-don');
+        if (rimLeft) rimLeft.classList.remove('next-hint-ka');
+        if (rimRight) rimRight.classList.remove('next-hint-ka');
+      }
+
       if (allPassed) {
         this.finishTaikoGame();
       } else {
@@ -7371,6 +7407,15 @@ class App {
     this.stopTaikoBackgroundMusic();
     if (this.taikoAnimFrame) cancelAnimationFrame(this.taikoAnimFrame);
     if (this.taikoKeyHandler) window.removeEventListener('keydown', this.taikoKeyHandler);
+
+    const centerLeft = document.querySelector('.taiko-drum-center.center-left');
+    const centerRight = document.querySelector('.taiko-drum-center.center-right');
+    const rimLeft = document.querySelector('.taiko-drum-rim.rim-left');
+    const rimRight = document.querySelector('.taiko-drum-rim.rim-right');
+    if (centerLeft) centerLeft.classList.remove('next-hint-don');
+    if (centerRight) centerRight.classList.remove('next-hint-don');
+    if (rimLeft) rimLeft.classList.remove('next-hint-ka');
+    if (rimRight) rimRight.classList.remove('next-hint-ka');
 
     const userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 5));
     const userName = localStorage.getItem('user_name') || '匿名學生';

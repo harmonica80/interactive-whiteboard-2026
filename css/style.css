@@ -2914,4 +2914,41 @@ body {
   pointer-events: none;
 }
 
+/* 即將按下的音符 - 太鼓鼓面極致動態光圈提示特效 */
+.taiko-drum-center.next-hint-don {
+  filter: brightness(1.25);
+  box-shadow: inset 0 0 15px #ffffff, 0 0 20px rgba(255, 59, 48, 0.85);
+  animation: hintPulseDon 0.35s infinite alternate ease-in-out;
+}
+
+.taiko-drum-center.next-hint-don .key-hint {
+  color: #fff;
+  text-shadow: 0 0 10px #ffcc00, 0 0 20px #ff3b30;
+  transform: scale(1.3);
+  transition: transform 0.15s ease;
+}
+
+.taiko-drum-rim.next-hint-ka {
+  filter: brightness(1.25);
+  box-shadow: inset 0 0 15px #ffffff, 0 0 20px rgba(52, 152, 219, 0.85);
+  animation: hintPulseKa 0.35s infinite alternate ease-in-out;
+}
+
+.taiko-drum-rim.next-hint-ka .key-hint {
+  color: #fff;
+  text-shadow: 0 0 10px #00ffff, 0 0 20px #1d6fa5;
+  transform: scale(1.3);
+  transition: transform 0.15s ease;
+}
+
+@keyframes hintPulseDon {
+  0% { filter: brightness(1.1); transform: scale(1); }
+  100% { filter: brightness(1.4); transform: scale(1.03); }
+}
+
+@keyframes hintPulseKa {
+  0% { filter: brightness(1.1); transform: scale(1); }
+  100% { filter: brightness(1.4); transform: scale(1.03); }
+}
+
 
