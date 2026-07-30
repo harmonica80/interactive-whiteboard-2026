@@ -712,6 +712,12 @@
   3. **新增「大咚/大咔」打擊說明卡片 (Big Note Instruction Guide)**：於太鼓遊戲區底部新增精美的打擊圖例說明指南，清晰展示「咚」、「咔」、「大咚 (🔴🔴 F+J)」、「大咔 (🔵🔵 D+K)」之按鍵與高分雙打規則。
   4. **YouTube 音樂預緩衝與倒數對齊 (YouTube Pre-buffering Sync)**：實作 `preloadTaikoYoutubeAudio()`，在按下開始遊戲與進入倒數時進行 YouTube 音訊預載與 Ready 狀態偵測，確保 100% 音樂緩衝完畢後順暢發聲與音符對齊！
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-30 - Antigravity
+- 修改項目：升級版本號至 **ver 2.0.6**，太鼓得分全面切換為 **「課堂直觀 10 分以內 / 滿分制小分數體系」**。
+- 行為：
+  1. **小分數制調整 (Small Score System)**：將過往上千上萬的高分制，改為最符合教育課堂體驗的 10 分級別直觀小分數體系（良 PERFECT $+1$ 分、可 GOOD $+0.5$ 分、大良 $+2$ 分、大可 $+1$ 分）。
+  2. **分數格式化與排行榜相容**：分數即時動態格式化顯示（如 `8 分` 或 `8.5 分`），並自動同步至結算畫面與管理員後台排行榜。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
