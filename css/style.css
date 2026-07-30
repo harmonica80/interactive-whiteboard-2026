@@ -2755,22 +2755,22 @@ body {
 .taiko-track-lane {
   position: relative;
   width: 100%;
-  max-width: 520px;
-  height: 72px;
+  max-width: 580px;
+  height: 110px;
   background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
-  border-radius: 36px;
-  border: 3px solid rgba(255,255,255,0.2);
+  border-radius: 55px;
+  border: 4px solid rgba(255,255,255,0.3);
   overflow: hidden;
-  box-shadow: inset 0 4px 12px rgba(0,0,0,0.5), 0 8px 20px rgba(0,0,0,0.15);
+  box-shadow: inset 0 6px 16px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.25);
   margin: 10px 0 16px 0;
 }
 
 .taiko-judge-zone {
   position: absolute;
-  left: 36px;
+  left: 40px;
   top: 0;
   bottom: 0;
-  width: 60px;
+  width: 72px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2778,11 +2778,11 @@ body {
 }
 
 .taiko-judge-circle {
-  width: 52px;
-  height: 52px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
-  border: 4px dashed rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+  border: 4px dashed rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
   animation: judgePulse 1.2s infinite alternate;
 }
 
@@ -2802,17 +2802,17 @@ body {
 
 .taiko-note {
   position: absolute;
-  top: 10px;
-  width: 52px;
-  height: 52px;
+  top: 19px;
+  width: 66px;
+  height: 66px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 20px;
+  font-size: 22px;
   color: white;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   user-select: none;
   z-index: 2;
   transition: transform 0.1s ease-out;
@@ -2828,22 +2828,22 @@ body {
   border: 3px solid #ffffff;
 }
 
-/* 擬真太鼓鼓面 UI */
+/* 擬真太鼓鼓面 UI (適度縮小騰出視野) */
 .taiko-drum-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 10px 0;
+  margin: 6px 0;
 }
 
 .taiko-drum-container {
   position: relative;
-  width: 200px;
-  height: 200px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   background: #2b1d0c;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3), inset 0 0 15px rgba(0,0,0,0.6);
-  border: 4px solid #d4a359;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 0 12px rgba(0,0,0,0.6);
+  border: 3px solid #d4a359;
   user-select: none;
   touch-action: manipulation;
 }
@@ -2851,8 +2851,8 @@ body {
 .taiko-drum-rim {
   position: absolute;
   top: 0;
-  width: 100px;
-  height: 200px;
+  width: 75px;
+  height: 150px;
   background: radial-gradient(circle at 50% 50%, #3498db 0%, #1d6fa5 100%);
   cursor: pointer;
   display: flex;
@@ -2863,12 +2863,12 @@ body {
 
 .taiko-drum-rim.rim-left {
   left: 0;
-  border-radius: 100px 0 0 100px;
+  border-radius: 75px 0 0 75px;
 }
 
 .taiko-drum-rim.rim-right {
   right: 0;
-  border-radius: 0 100px 100px 0;
+  border-radius: 0 75px 75px 0;
 }
 
 .taiko-drum-rim:active, .taiko-drum-rim.active {
@@ -2878,9 +2878,9 @@ body {
 
 .taiko-drum-center {
   position: absolute;
-  top: 25px;
-  width: 75px;
-  height: 150px;
+  top: 18px;
+  width: 57px;
+  height: 114px;
   background: radial-gradient(circle at 50% 50%, #e74c3c 0%, #a93226 100%);
   cursor: pointer;
   display: flex;
@@ -2891,14 +2891,14 @@ body {
 }
 
 .taiko-drum-center.center-left {
-  left: 25px;
-  border-radius: 75px 0 0 75px;
+  left: 18px;
+  border-radius: 57px 0 0 57px;
   border-right: 1px solid rgba(0,0,0,0.2);
 }
 
 .taiko-drum-center.center-right {
-  right: 25px;
-  border-radius: 0 75px 75px 0;
+  right: 18px;
+  border-radius: 0 57px 57px 0;
 }
 
 .taiko-drum-center:active, .taiko-drum-center.active {
@@ -2953,32 +2953,32 @@ body {
 
 /* 太鼓達人 - 大音符雙打 (Big DON & Big KA) 視覺樣式 */
 .taiko-note.big_don {
-  width: 54px;
-  height: 54px;
+  width: 76px;
+  height: 76px;
+  top: 14px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #ff6b6b, #ff0000 70%, #990000);
   border: 3px solid #ffd700;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.9), inset 0 0 8px #ffffff;
-  font-size: 16px;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.95), inset 0 0 10px #ffffff;
+  font-size: 18px;
   font-weight: 900;
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-  top: -3px;
   animation: bigNoteGlow 0.5s infinite alternate ease-in-out;
 }
 
 .taiko-note.big_ka {
-  width: 54px;
-  height: 54px;
+  width: 76px;
+  height: 76px;
+  top: 14px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #4facfe, #00f2fe 70%, #006699);
   border: 3px solid #ffffff;
-  box-shadow: 0 0 15px rgba(0, 242, 254, 0.9), inset 0 0 8px #ffffff;
-  font-size: 16px;
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.95), inset 0 0 10px #ffffff;
+  font-size: 18px;
   font-weight: 900;
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-  top: -3px;
   animation: bigNoteGlow 0.5s infinite alternate ease-in-out;
 }
 

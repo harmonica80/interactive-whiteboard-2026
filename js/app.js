@@ -126,7 +126,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.0.4';
+    this.APP_VERSION = '2.0.5';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6062,6 +6062,11 @@ class App {
       document.getElementById('focusPlayArea').style.display = 'none';
       document.getElementById('focusFinishArea').style.display = 'none';
       this.updateFocusCountdownCopy(game);
+
+      if (game.gameType === 'taikoMaster') {
+        const track = game.taikoTrack || TAIKO_TRACK_LIBRARY.track_1;
+        this.preloadTaikoYoutubeAudio(track);
+      }
       
       this.startLocalCountdown(game);
     }
@@ -6984,11 +6989,21 @@ class App {
     return this.ytApiPromise;
   }
 
-  playTaikoBackgroundMusic(track) {
-    this.stopTaikoBackgroundMusic();
+  preloadTaikoYoutubeAudio(track) {
+    if (!track || !track.youtubeId) return Promise.resolve();
+    return this.initTaikoYoutubeApi().then(() => {
+      return new Promise((resolve) => {
+        let resolved = false;
+        const done = () => {
+          if (!resolved) {
+            resolved = true;
+            resolve();
+          }
+        };
 
-    if (track && track.youtubeId) {
-      this.initTaikoYoutubeApi().then(() => {
+        // 超時保底 1.5 秒，避免網路過慢無限卡住
+        setTimeout(done, 1500);
+
         try {
           if (!this.taikoYtPlayer) {
             this.taikoYtPlayer = new YT.Player('taikoYoutubePlayer', {
@@ -7003,18 +7018,36 @@ class App {
               },
               events: {
                 onReady: (event) => {
-                  if (!this.taikoIsEnded) {
-                    event.target.playVideo();
+                  try { event.target.playVideo(); } catch (e) {}
+                  done();
+                },
+                onStateChange: (event) => {
+                  if (event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.BUFFERING) {
+                    done();
                   }
                 }
               }
             });
           } else {
             this.taikoYtPlayer.loadVideoById(track.youtubeId);
-            this.taikoYtPlayer.playVideo();
+            try { this.taikoYtPlayer.playVideo(); } catch (e) {}
+            done();
           }
-        } catch (err) {
-          console.warn("YouTube play failed, falling back to Web Audio Synth", err);
+        } catch (e) {
+          done();
+        }
+      });
+    });
+  }
+
+  playTaikoBackgroundMusic(track) {
+    this.stopTaikoBackgroundMusic();
+
+    if (track && track.youtubeId) {
+      this.preloadTaikoYoutubeAudio(track).then(() => {
+        if (this.taikoYtPlayer && typeof this.taikoYtPlayer.playVideo === 'function') {
+          try { this.taikoYtPlayer.playVideo(); } catch (e) { this.playTaikoSynthAudio(track); }
+        } else {
           this.playTaikoSynthAudio(track);
         }
       }).catch(() => {
