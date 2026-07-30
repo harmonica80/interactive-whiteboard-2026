@@ -704,6 +704,14 @@
      - **大咚 (`big_don` 🔴🔴)**：音符直徑加大至 54px，標示「大咚 (F+J)」。需同時敲擊實體鍵盤 [`F` + `J`] 鍵或雙指同時點擊鼓面，判定為「🌟 大良 BIG PERFECT!」可額外獲得加倍高分（+2000分），並觸發全畫面震動波紋！鼓面 UI 左右 `[F]` 和 `[J]` **會同時閃耀金黃霓虹強光**！
      - **大咔 (`big_ka` 🔵🔵)**：音符直徑加大至 54px，標示「大咔 (D+K)」。需同時敲擊實體鍵盤 [`D` + `K`] 鍵或雙指同時點擊鼓邊，判定為「🌟 大良 BIG PERFECT!」可額外獲得加倍高分（+2000分）！鼓邊 UI 左右 `[D]` 和 `[K]` **會同時閃耀亮藍霓虹強光**！
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-30 - Antigravity
+- 修改項目：升級版本號至 **ver 2.0.5**，優化太鼓 UI 佈局（賽道加大、鼓面精簡）、新增「大咚/大咔」說明卡片與 YouTube 音樂預載與倒數對齊。
+- 行為：
+  1. **放大音符賽道與判定圈 (Enlarged Track & Notes)**：音符賽道高度由 `72px` 大幅升級至 `110px`，判定圈與音符直徑顯著放大（一般音符 66px，大音符 76px），視野更清晰廣闊！
+  2. **精簡太鼓鼓面 UI (Compact Drum UI)**：適度將鼓面尺寸縮小至 `150px x 150px`，提升視覺焦點並騰出大空間。
+  3. **新增「大咚/大咔」打擊說明卡片 (Big Note Instruction Guide)**：於太鼓遊戲區底部新增精美的打擊圖例說明指南，清晰展示「咚」、「咔」、「大咚 (🔴🔴 F+J)」、「大咔 (🔵🔵 D+K)」之按鍵與高分雙打規則。
+  4. **YouTube 音樂預緩衝與倒數對齊 (YouTube Pre-buffering Sync)**：實作 `preloadTaikoYoutubeAudio()`，在按下開始遊戲與進入倒數時進行 YouTube 音訊預載與 Ready 狀態偵測，確保 100% 音樂緩衝完畢後順暢發聲與音符對齊！
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。

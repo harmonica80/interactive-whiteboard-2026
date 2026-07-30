@@ -126,7 +126,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.0.5';
+    this.APP_VERSION = '2.0.6';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -7444,7 +7444,7 @@ class App {
         }
 
         if (minDiff <= 65) {
-          const addScore = (isBig && side === 'both') ? 2000 : (isBig ? 1500 : 1000);
+          const addScore = (isBig && side === 'both') ? 2 : (isBig ? 1.5 : 1);
           this.taikoScore += addScore;
           this.taikoCombo++;
           this.taikoPerfectCount++;
@@ -7453,7 +7453,7 @@ class App {
             judgeFeedbackEl.style.color = '#ffcc00';
           }
         } else {
-          const addScore = (isBig && side === 'both') ? 1000 : (isBig ? 750 : 500);
+          const addScore = (isBig && side === 'both') ? 1 : (isBig ? 0.75 : 0.5);
           this.taikoScore += addScore;
           this.taikoCombo++;
           this.taikoGoodCount++;
@@ -7478,7 +7478,8 @@ class App {
       this.taikoMaxCombo = this.taikoCombo;
     }
 
-    document.getElementById('taikoScoreText').textContent = this.taikoScore.toLocaleString();
+    const displayScore = (this.taikoScore % 1 === 0) ? this.taikoScore : this.taikoScore.toFixed(1);
+    document.getElementById('taikoScoreText').textContent = displayScore;
     document.getElementById('taikoComboText').textContent = this.taikoCombo;
   }
 
@@ -7600,7 +7601,8 @@ class App {
 
     const lblLabel = document.getElementById('lblFinishLabel');
     if (lblLabel) lblLabel.textContent = '最終成績：';
-    document.getElementById('lblFinishTime').textContent = `得分: ${this.taikoScore.toLocaleString()} 分 (最高連擊 ${this.taikoMaxCombo} Combo!)`;
+    const scoreStr = (this.taikoScore % 1 === 0) ? this.taikoScore : this.taikoScore.toFixed(1);
+    document.getElementById('lblFinishTime').textContent = `得分: ${scoreStr} 分 (最高連擊 ${this.taikoMaxCombo} Combo!)`;
     const lblUnit = document.getElementById('lblFinishUnit');
     if (lblUnit) lblUnit.style.display = 'none';
 
