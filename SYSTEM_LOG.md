@@ -671,6 +671,7 @@
   2. **鍵盤與雙打擊操控 (D/F/J/K & Touch)**：支援實體鍵盤 [`F` / `J`] 敲擊紅色「咚 DON」、[`D` / `K`] 敲擊藍色「咔 KA」；平板手機端可直接觸控 3D 太鼓鼓面，兼具極致打擊感與動態縮放回饋。
   3. **精準判定與連擊計分 (Perfect/Good/Miss & Web Audio)**：毫秒級音符賽道滾動判定，伴隨 Web Audio 重低音太鼓打擊音效，分數與最大 Combo 數即時上傳全班排行榜。
   4. **全動態背景樂曲旋律合成器**：運用 Web Audio API 為 10 首曲目即時合成背景歌曲旋律（小星星、叮叮當、歡樂頌...），達成 0 延遲且與音符 100% 毫秒級精準同步的現場課堂背景樂曲演奏！
+  5. **修復管理員後台即時排行榜**：擴充 `renderFocusGameLeaderboard` 支援太鼓達人高分 (Score) 降序排列、Combo 數、Perfect/Good/Miss 詳細評分展示與 `userName` 名稱相容性；確保管理員端於所有遊戲狀態（`playing`, `ended`）下皆能 100% 即時渲染後台排行榜。
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
