@@ -3000,4 +3000,91 @@ body {
   100% { transform: translate(0, 0); }
 }
 
+/* ===== 🥁 萬代 Namco 官方經典：左側動態提示小太鼓 (Namco Guidance Mini Drum) ===== */
+.taiko-guidance-drum {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 76px;
+  height: 76px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mini-drum-body {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #3d2612;
+  border: 3px solid #d4a359;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 0 8px rgba(0,0,0,0.8);
+  overflow: hidden;
+}
+
+/* 藍色鼓邊 */
+.mini-drum-rim {
+  position: absolute;
+  top: 0;
+  width: 35px;
+  height: 70px;
+  background: #1d334a;
+  transition: background 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease;
+}
+
+.mini-rim-left {
+  left: 0;
+  border-radius: 35px 0 0 35px;
+}
+
+.mini-rim-right {
+  right: 0;
+  border-radius: 0 35px 35px 0;
+}
+
+.mini-rim-left.active, .mini-rim-left.hint-active {
+  background: radial-gradient(circle at 50% 50%, #4facfe, #0066cc) !important;
+  box-shadow: inset 0 0 10px #ffffff, 0 0 12px #00f2fe;
+}
+
+.mini-rim-right.active, .mini-rim-right.hint-active {
+  background: radial-gradient(circle at 50% 50%, #4facfe, #0066cc) !important;
+  box-shadow: inset 0 0 10px #ffffff, 0 0 12px #00f2fe;
+}
+
+/* 白色鼓面 base，預設米白色 */
+.mini-drum-center {
+  position: absolute;
+  top: 8px;
+  width: 27px;
+  height: 54px;
+  background: #f7f1e3;
+  transition: background 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease;
+  z-index: 2;
+}
+
+.mini-center-left {
+  left: 8px;
+  border-radius: 27px 0 0 27px;
+  border-right: 1px solid rgba(0,0,0,0.15);
+}
+
+.mini-center-right {
+  right: 8px;
+  border-radius: 0 27px 27px 0;
+}
+
+.mini-center-left.active, .mini-center-left.hint-active {
+  background: radial-gradient(circle at 50% 50%, #ff4d4d, #cc0000) !important;
+  box-shadow: inset 0 0 10px #ffffff, 0 0 12px #ff3b30;
+}
+
+.mini-center-right.active, .mini-center-right.hint-active {
+  background: radial-gradient(circle at 50% 50%, #ff4d4d, #cc0000) !important;
+  box-shadow: inset 0 0 10px #ffffff, 0 0 12px #ff3b30;
+}
+
 

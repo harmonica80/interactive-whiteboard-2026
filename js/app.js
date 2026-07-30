@@ -126,7 +126,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.0.6';
+    this.APP_VERSION = '2.0.7';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -7393,18 +7393,24 @@ class App {
       const isDon = (type === 'don' || type === 'big_don');
       const el1 = document.querySelector(isDon ? '.center-left' : '.rim-left');
       const el2 = document.querySelector(isDon ? '.center-right' : '.rim-right');
+      const mel1 = document.querySelector(isDon ? '.mini-center-left' : '.mini-rim-left');
+      const mel2 = document.querySelector(isDon ? '.mini-center-right' : '.mini-rim-right');
       if (el1) { el1.classList.add('active'); setTimeout(() => el1.classList.remove('active'), 80); }
       if (el2) { el2.classList.add('active'); setTimeout(() => el2.classList.remove('active'), 80); }
+      if (mel1) { mel1.classList.add('active'); setTimeout(() => mel1.classList.remove('active'), 80); }
+      if (mel2) { mel2.classList.add('active'); setTimeout(() => mel2.classList.remove('active'), 80); }
     } else {
       const isDon = (type === 'don' || type === 'big_don');
       const selector = isDon
         ? (side === 'left' ? '.center-left' : '.center-right')
         : (side === 'left' ? '.rim-left' : '.rim-right');
+      const miniSelector = isDon
+        ? (side === 'left' ? '.mini-center-left' : '.mini-center-right')
+        : (side === 'left' ? '.mini-rim-left' : '.mini-rim-right');
       const el = document.querySelector(selector);
-      if (el) {
-        el.classList.add('active');
-        setTimeout(() => el.classList.remove('active'), 80);
-      }
+      const mel = document.querySelector(miniSelector);
+      if (el) { el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 80); }
+      if (mel) { mel.classList.add('active'); setTimeout(() => mel.classList.remove('active'), 80); }
     }
 
     const currentTime = Date.now() - this.taikoStartTime;
@@ -7531,22 +7537,53 @@ class App {
         }
       });
 
-      // 鼓面 UI 動態高亮提示顏色與鍵位
+      // 鼓面 UI 與 Namco 官方提示小太鼓動態高亮提示
       const centerLeft = document.querySelector('.taiko-drum-center.center-left');
       const centerRight = document.querySelector('.taiko-drum-center.center-right');
       const rimLeft = document.querySelector('.taiko-drum-rim.rim-left');
       const rimRight = document.querySelector('.taiko-drum-rim.rim-right');
 
-      if (nextNote && (nextNote.type === 'don' || nextNote.type === 'big_don')) {
+      const miniCLeft = document.querySelector('.mini-center-left');
+      const miniCRight = document.querySelector('.mini-center-right');
+      const miniRLeft = document.querySelector('.mini-rim-left');
+      const miniRRight = document.querySelector('.mini-rim-right');
+
+      // 清除提示小太鼓狀態
+      if (miniCLeft) miniCLeft.classList.remove('hint-active');
+      if (miniCRight) miniCRight.classList.remove('hint-active');
+      if (miniRLeft) miniRLeft.classList.remove('hint-active');
+      if (miniRRight) miniRRight.classList.remove('hint-active');
+
+      if (nextNote && nextNote.type === 'don') {
         if (centerLeft) centerLeft.classList.add('next-hint-don');
         if (centerRight) centerRight.classList.add('next-hint-don');
         if (rimLeft) rimLeft.classList.remove('next-hint-ka');
         if (rimRight) rimRight.classList.remove('next-hint-ka');
-      } else if (nextNote && (nextNote.type === 'ka' || nextNote.type === 'big_ka')) {
+        // 右半邊紅色 (呈現使用者提供的官方半紅半白小太鼓 UI 提示!)
+        if (miniCRight) miniCRight.classList.add('hint-active');
+      } else if (nextNote && nextNote.type === 'big_don') {
+        if (centerLeft) centerLeft.classList.add('next-hint-don');
+        if (centerRight) centerRight.classList.add('next-hint-don');
+        if (rimLeft) rimLeft.classList.remove('next-hint-ka');
+        if (rimRight) rimRight.classList.remove('next-hint-ka');
+        // 全紅 (大咚雙手同押提示!)
+        if (miniCLeft) miniCLeft.classList.add('hint-active');
+        if (miniCRight) miniCRight.classList.add('hint-active');
+      } else if (nextNote && nextNote.type === 'ka') {
         if (rimLeft) rimLeft.classList.add('next-hint-ka');
         if (rimRight) rimRight.classList.add('next-hint-ka');
         if (centerLeft) centerLeft.classList.remove('next-hint-don');
         if (centerRight) centerRight.classList.remove('next-hint-don');
+        // 右側藍邊亮起
+        if (miniRRight) miniRRight.classList.add('hint-active');
+      } else if (nextNote && nextNote.type === 'big_ka') {
+        if (rimLeft) rimLeft.classList.add('next-hint-ka');
+        if (rimRight) rimRight.classList.add('next-hint-ka');
+        if (centerLeft) centerLeft.classList.remove('next-hint-don');
+        if (centerRight) centerRight.classList.remove('next-hint-don');
+        // 全藍邊亮起 (大咔雙手同押提示!)
+        if (miniRLeft) miniRLeft.classList.add('hint-active');
+        if (miniRRight) miniRRight.classList.add('hint-active');
       } else {
         if (centerLeft) centerLeft.classList.remove('next-hint-don');
         if (centerRight) centerRight.classList.remove('next-hint-don');
