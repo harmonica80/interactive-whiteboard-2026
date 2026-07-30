@@ -1,4 +1,98 @@
 
+// ===== 🥁 太鼓達人 10 大精選曲目與譜面資料庫 =====
+const TAIKO_TRACK_LIBRARY = {
+  track_1: {
+    id: 'track_1',
+    name: '🌟 1. 小星星 歡樂版',
+    genre: '兒童歡樂',
+    difficulty: '⭐️ 入門',
+    bpm: 90,
+    noteCount: 32,
+    pattern: ['don', 'don', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don']
+  },
+  track_2: {
+    id: 'track_2',
+    name: '🔔 2. 叮叮當 聖誕節奏',
+    genre: '節慶輕快',
+    difficulty: '⭐️ 入門',
+    bpm: 100,
+    noteCount: 40,
+    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don']
+  },
+  track_3: {
+    id: 'track_3',
+    name: '🎵 3. 歡樂頌 (貝多芬第9號)',
+    genre: '經典古典',
+    difficulty: '⭐️⭐️ 初級',
+    bpm: 110,
+    noteCount: 48,
+    pattern: ['don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don']
+  },
+  track_4: {
+    id: 'track_4',
+    name: '🎹 4. 卡農 搖滾變奏曲',
+    genre: '搖滾流行',
+    difficulty: '⭐️⭐️ 初級',
+    bpm: 120,
+    noteCount: 56,
+    pattern: ['don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka']
+  },
+  track_5: {
+    id: 'track_5',
+    name: '🐝 5. 大黃蜂飛行 快速律動',
+    genre: '極速交響',
+    difficulty: '⭐️⭐️⭐️ 中級',
+    bpm: 135,
+    noteCount: 68,
+    pattern: ['don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka']
+  },
+  track_6: {
+    id: 'track_6',
+    name: '🎷 6. 威廉泰爾序曲 奔馳版',
+    genre: '進行曲',
+    difficulty: '⭐️⭐️⭐️ 中級',
+    bpm: 140,
+    noteCount: 72,
+    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don']
+  },
+  track_7: {
+    id: 'track_7',
+    name: '🎸 7. 土耳其進行曲 電吉他版',
+    genre: '熱血重金屬',
+    difficulty: '⭐️⭐️⭐️⭐️ 高級',
+    bpm: 150,
+    noteCount: 84,
+    pattern: ['don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka']
+  },
+  track_8: {
+    id: 'track_8',
+    name: '🎺 8. 拉德斯基進行曲 歡慶版',
+    genre: '宮廷進行曲',
+    difficulty: '⭐️⭐️⭐️⭐️ 高級',
+    bpm: 155,
+    noteCount: 90,
+    pattern: ['don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don']
+  },
+  track_9: {
+    id: 'track_9',
+    name: '⚡ 9. 命運交響曲 狂熱電子版',
+    genre: '迷幻電子',
+    difficulty: '⭐️⭐️⭐️⭐️⭐️ 專家',
+    bpm: 165,
+    noteCount: 104,
+    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka']
+  },
+  track_10: {
+    id: 'track_10',
+    name: '🎆 10. 夏日祭典 傳統太鼓魂',
+    genre: '和風太鼓祭',
+    difficulty: '⭐️⭐️⭐️⭐️⭐️ 專家',
+    bpm: 175,
+    noteCount: 120,
+    pattern: ['don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'ka']
+  }
+};
+
 // 主程式
 class App {
   constructor() {
@@ -5671,6 +5765,10 @@ class App {
       }
     }
     
+    // 太鼓達人 (Taiko Master)
+    const selectedTrackId = document.getElementById('taikoTrackSelect')?.value || 'track_1';
+    const taikoTrack = gameType === 'taikoMaster' ? (TAIKO_TRACK_LIBRARY[selectedTrackId] || TAIKO_TRACK_LIBRARY.track_1) : null;
+
     db.ref('quiz/focusGame').set({
       status: 'countdown',
       gameType: gameType,
@@ -5678,6 +5776,7 @@ class App {
       pairCount: gameType === 'memoryMatch' ? pairCount : null,
       theme: gameType === 'memoryMatch' ? memoryMatchTheme : null,
       deck: memoryMatchDeck,
+      taikoTrack: taikoTrack,
       sequenceLength: gameType === 'memoryPosition' ? memoryLength : null,
       reverseMode: gameType === 'memoryPosition' ? memoryReverse : false,
       sequence: memorySequence,
@@ -5738,15 +5837,30 @@ class App {
     return deck;
   }
 
+  updateTaikoTrackPreview() {
+    const trackId = document.getElementById('taikoTrackSelect')?.value || 'track_1';
+    const track = TAIKO_TRACK_LIBRARY[trackId] || TAIKO_TRACK_LIBRARY.track_1;
+    const previewEl = document.getElementById('taikoTrackPreview');
+    if (previewEl) {
+      previewEl.innerHTML = `🎼 <strong>風格</strong>：${track.genre} | ⭐️ <strong>難度</strong>：${track.difficulty} (BPM ${track.bpm}) | 🥁 <strong>音符總數</strong>：${track.noteCount} 個`;
+    }
+  }
+
   // OpenCode 修改：管理後台依遊戲類型顯示對應設定，避免不同遊戲選項混在一起
   updateFocusGameAdminOptions() {
     const gameType = document.getElementById('focusGameType')?.value || 'numberGrid';
     const numberGridSettings = document.getElementById('focusNumberGridSettings');
     const memorySettings = document.getElementById('focusMemorySettings');
     const memoryMatchSettings = document.getElementById('focusMemoryMatchSettings');
+    const taikoSettings = document.getElementById('focusTaikoSettings');
     if (numberGridSettings) numberGridSettings.style.display = gameType === 'numberGrid' ? 'block' : 'none';
     if (memorySettings) memorySettings.style.display = gameType === 'memoryPosition' ? 'block' : 'none';
     if (memoryMatchSettings) memoryMatchSettings.style.display = gameType === 'memoryMatch' ? 'block' : 'none';
+    if (taikoSettings) taikoSettings.style.display = gameType === 'taikoMaster' ? 'block' : 'none';
+
+    if (gameType === 'taikoMaster') {
+      this.updateTaikoTrackPreview();
+    }
   }
 
   // OpenCode 修改：倒數畫面依專注力遊戲類型顯示不同說明文字
@@ -5756,6 +5870,14 @@ class App {
     const hintEl = document.getElementById('focusCountdownHint');
     const gridSize = game.gridSize || 36;
     const sequenceLength = game.sequenceLength || 5;
+
+    if (game.gameType === 'taikoMaster') {
+      const track = game.taikoTrack || TAIKO_TRACK_LIBRARY.track_1;
+      if (titleEl) titleEl.textContent = `🥁 太鼓達人班級競速：《${track.name}》！`;
+      if (descriptionEl) descriptionEl.textContent = `風格：${track.genre} | 難度：${track.difficulty} | BPM ${track.bpm}！請準備好全神貫注進行太鼓打擊！`;
+      if (hintEl) hintEl.textContent = '電腦玩家可用鍵盤 D / F / J / K 鍵打擊；觸控裝置可點擊太鼓鼓面！';
+      return;
+    }
 
     if (game.gameType === 'memoryMatch') {
       const pairCount = game.pairCount || 6;
@@ -6150,6 +6272,12 @@ class App {
     this.stopFocusTimers();
     this.focusLocalGameKey = localGameKey;
 
+    // 太鼓達人 (Taiko Master)
+    if (game.gameType === 'taikoMaster') {
+      this.startTaikoGame(game);
+      return;
+    }
+
     // 記憶翻牌配對遊戲 (Memory Match)
     if (game.gameType === 'memoryMatch') {
       this.startMemoryMatchGame(game);
@@ -6158,8 +6286,10 @@ class App {
 
     const numContainer = document.getElementById('focusNumberGridContainer');
     const memBoard = document.getElementById('focusMemoryMatchBoard');
+    const taikoBoard = document.getElementById('focusTaikoBoard');
     if (numContainer) numContainer.style.display = 'flex';
     if (memBoard) memBoard.style.display = 'none';
+    if (taikoBoard) taikoBoard.style.display = 'none';
 
     // OpenCode 修改：位置序列記憶第一版與舒爾特方格共用專注力遊戲 Overlay
     if (game.gameType === 'memoryPosition') {
@@ -6931,6 +7061,247 @@ class App {
 
     const suffixEl = document.getElementById('lblFinishRankSuffix');
     if (suffixEl) suffixEl.textContent = '完成記憶配對';
+
+    this.initFireworkCanvas();
+    this.triggerFireworkEffect();
+
+    if (!this.focusGameCompletedLocal) {
+      this.focusGameCompletedLocal = true;
+      this.playFocusSound('end');
+    }
+  }
+
+  // ===== 🥁 太鼓達人 (Taiko Master) 遊戲核心機制 =====
+  startTaikoGame(game) {
+    const taikoBoard = document.getElementById('focusTaikoBoard');
+    const numContainer = document.getElementById('focusNumberGridContainer');
+    const memBoard = document.getElementById('focusMemoryMatchBoard');
+    const helpInfo = document.getElementById('focusHelpInfo');
+    const instEl = document.getElementById('focusGameInstruction');
+
+    if (taikoBoard) taikoBoard.style.display = 'flex';
+    if (numContainer) numContainer.style.display = 'none';
+    if (memBoard) memBoard.style.display = 'none';
+    if (helpInfo) helpInfo.textContent = '';
+    if (instEl) instEl.textContent = '💡 依音符精準敲擊太鼓！鍵盤 [F][J] 或點紅色打「咚」，鍵盤 [D][K] 或點藍框打「咔」！';
+
+    const track = game.taikoTrack || TAIKO_TRACK_LIBRARY.track_1;
+    const nameEl = document.getElementById('taikoTrackName');
+    if (nameEl) nameEl.textContent = track.name;
+
+    this.taikoScore = 0;
+    this.taikoCombo = 0;
+    this.taikoMaxCombo = 0;
+    this.taikoPerfectCount = 0;
+    this.taikoGoodCount = 0;
+    this.taikoMissCount = 0;
+    this.taikoIsEnded = false;
+
+    document.getElementById('taikoScoreText').textContent = '0';
+    document.getElementById('taikoComboText').textContent = '0';
+    document.getElementById('taikoJudgeFeedback').textContent = '';
+
+    const container = document.getElementById('taikoNotesContainer');
+    if (container) container.innerHTML = '';
+    
+    const notes = [];
+    const intervalMs = (60 / track.bpm) * 1000;
+    const initialDelayMs = 2200;
+
+    let currentPatternIndex = 0;
+    for (let i = 0; i < track.noteCount; i++) {
+      const type = track.pattern[currentPatternIndex % track.pattern.length];
+      const targetTime = initialDelayMs + i * intervalMs;
+      notes.push({
+        id: 'note_' + i,
+        type: type,
+        targetTime: targetTime,
+        hit: false,
+        element: null
+      });
+      currentPatternIndex++;
+    }
+
+    this.taikoNotes = notes;
+    this.taikoStartTime = Date.now();
+
+    if (container) {
+      this.taikoNotes.forEach(note => {
+        const div = document.createElement('div');
+        div.className = `taiko-note ${note.type}`;
+        div.textContent = note.type === 'don' ? '咚' : '咔';
+        div.style.transform = 'translateX(600px)';
+        container.appendChild(div);
+        note.element = div;
+      });
+    }
+
+    this.setupTaikoKeyListeners();
+    this.startTaikoAnimationLoop();
+  }
+
+  setupTaikoKeyListeners() {
+    if (this.taikoKeyHandler) {
+      window.removeEventListener('keydown', this.taikoKeyHandler);
+    }
+
+    this.taikoKeyHandler = (e) => {
+      if (this.taikoIsEnded) return;
+      const key = e.key.toLowerCase();
+      if (key === 'f' || key === 'j') {
+        this.hitTaiko('don', key === 'f' ? 'left' : 'right');
+      } else if (key === 'd' || key === 'k') {
+        this.hitTaiko('ka', key === 'd' ? 'left' : 'right');
+      }
+    };
+
+    window.addEventListener('keydown', this.taikoKeyHandler);
+  }
+
+  hitTaiko(type, side) {
+    if (this.taikoIsEnded) return;
+
+    this.playFocusSound(type === 'don' ? 'taiko_don' : 'taiko_ka');
+
+    const selector = type === 'don'
+      ? (side === 'left' ? '.center-left' : '.center-right')
+      : (side === 'left' ? '.rim-left' : '.rim-right');
+    const el = document.querySelector(selector);
+    if (el) {
+      el.classList.add('active');
+      setTimeout(() => el.classList.remove('active'), 80);
+    }
+
+    const currentTime = Date.now() - this.taikoStartTime;
+    
+    let closestNote = null;
+    let minDiff = 99999;
+
+    this.taikoNotes.forEach(note => {
+      if (!note.hit) {
+        const diff = Math.abs(currentTime - note.targetTime);
+        if (diff < minDiff && diff < 220) {
+          minDiff = diff;
+          closestNote = note;
+        }
+      }
+    });
+
+    const judgeFeedbackEl = document.getElementById('taikoJudgeFeedback');
+
+    if (closestNote) {
+      if (closestNote.type === type) {
+        closestNote.hit = true;
+        if (closestNote.element) closestNote.element.style.display = 'none';
+
+        if (minDiff <= 65) {
+          this.taikoScore += 1000;
+          this.taikoCombo++;
+          this.taikoPerfectCount++;
+          if (judgeFeedbackEl) {
+            judgeFeedbackEl.textContent = '🌟 良 PERFECT!';
+            judgeFeedbackEl.style.color = '#ffcc00';
+          }
+        } else {
+          this.taikoScore += 500;
+          this.taikoCombo++;
+          this.taikoGoodCount++;
+          if (judgeFeedbackEl) {
+            judgeFeedbackEl.textContent = '👍 可 GOOD!';
+            judgeFeedbackEl.style.color = '#34c759';
+          }
+        }
+      } else {
+        closestNote.hit = true;
+        if (closestNote.element) closestNote.element.style.display = 'none';
+        this.taikoCombo = 0;
+        this.taikoMissCount++;
+        if (judgeFeedbackEl) {
+          judgeFeedbackEl.textContent = '❌ 不可 MISS!';
+          judgeFeedbackEl.style.color = '#ff3b30';
+        }
+      }
+    }
+
+    if (this.taikoCombo > this.taikoMaxCombo) {
+      this.taikoMaxCombo = this.taikoCombo;
+    }
+
+    document.getElementById('taikoScoreText').textContent = this.taikoScore.toLocaleString();
+    document.getElementById('taikoComboText').textContent = this.taikoCombo;
+  }
+
+  startTaikoAnimationLoop() {
+    const judgeX = 66;
+    const noteSpeed = 0.35;
+
+    const animate = () => {
+      if (this.taikoIsEnded) return;
+
+      const currentTime = Date.now() - this.taikoStartTime;
+      let allPassed = true;
+
+      this.taikoNotes.forEach(note => {
+        if (!note.hit) {
+          const timeDiff = note.targetTime - currentTime;
+          const currentX = judgeX + timeDiff * noteSpeed;
+
+          if (currentX < -60) {
+            note.hit = true;
+            if (note.element) note.element.style.display = 'none';
+            this.taikoCombo = 0;
+            this.taikoMissCount++;
+            const judgeFeedbackEl = document.getElementById('taikoJudgeFeedback');
+            if (judgeFeedbackEl) {
+              judgeFeedbackEl.textContent = '❌ 不可 MISS!';
+              judgeFeedbackEl.style.color = '#ff3b30';
+            }
+            document.getElementById('taikoComboText').textContent = '0';
+          } else {
+            allPassed = false;
+            if (note.element) {
+              note.element.style.transform = `translateX(${currentX}px)`;
+            }
+          }
+        }
+      });
+
+      if (allPassed) {
+        this.finishTaikoGame();
+      } else {
+        this.taikoAnimFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    this.taikoAnimFrame = requestAnimationFrame(animate);
+  }
+
+  finishTaikoGame() {
+    this.taikoIsEnded = true;
+    if (this.taikoAnimFrame) cancelAnimationFrame(this.taikoAnimFrame);
+    if (this.taikoKeyHandler) window.removeEventListener('keydown', this.taikoKeyHandler);
+
+    const timeSpent = (Date.now() - this.taikoStartTime) / 1000;
+    const userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 5));
+    const userName = localStorage.getItem('user_name') || '匿名學生';
+
+    db.ref(`quiz/focusGame/results/${userId}`).set({
+      userId,
+      userName,
+      score: this.taikoScore,
+      maxCombo: this.taikoMaxCombo,
+      perfect: this.taikoPerfectCount,
+      good: this.taikoGoodCount,
+      miss: this.taikoMissCount,
+      completedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    document.getElementById('focusPlayArea').style.display = 'none';
+    document.getElementById('focusFinishArea').style.display = 'block';
+    document.getElementById('lblFinishTime').textContent = `得分: ${this.taikoScore.toLocaleString()} 分 (最高連擊 ${this.taikoMaxCombo} Combo!)`;
+
+    const suffixEl = document.getElementById('lblFinishRankSuffix');
+    if (suffixEl) suffixEl.textContent = '完成太鼓競速';
 
     this.initFireworkCanvas();
     this.triggerFireworkEffect();
@@ -8258,6 +8629,30 @@ class App {
         gain.connect(ctx.destination);
         osc.start(t);
         osc.stop(t + 0.15);
+      } else if (type === 'taiko_don') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(35, t + 0.12);
+        gain.gain.setValueAtTime(0.4, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.12);
+      } else if (type === 'taiko_ka') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, t);
+        osc.frequency.exponentialRampToValueAtTime(250, t + 0.05);
+        gain.gain.setValueAtTime(0.25, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.05);
       }
     } catch (e) {
       console.warn("Focus sound play failed:", e);
@@ -8962,6 +9357,10 @@ function selectMemoryMatchPairCount(count, el) {
 
 function clickMemoryMatchCard(cardId, element) {
   if (window.app) window.app.clickMemoryMatchCard(cardId, element);
+}
+
+function hitTaiko(type, side) {
+  if (window.app) window.app.hitTaiko(type, side);
 }
 
 const SECURITY_RULES_JSON = `{
