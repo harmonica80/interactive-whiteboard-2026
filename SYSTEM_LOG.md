@@ -689,6 +689,13 @@
      - 下一個音符為 🔴 紅色「咚 (DON)」：鼓面中間紅色區域進入 `.next-hint-don` 動態高亮，內部的鍵盤提示 `[F]` `[J]` 放大並發出金黃霓虹強光。
      - 下一個音符為 🔵 藍色「咔 (KA)」：鼓面外圍藍色邊框進入 `.next-hint-ka` 動態高亮，外圍的鍵盤提示 `[D]` `[K]` 放大並發出亮藍霓虹強光。
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-30 - Antigravity
+- 修改項目：升級版本號至 **ver 2.0.3**，太鼓達人升級為 **「YouTube 經典熱血原聲配樂 + 平滑備用合成器」**。
+- 行為：
+  1. **YouTube IFrame API 深度整合**：在 `index.html` 配置隱藏的 YouTube 音樂播放器容器 `#taikoYoutubePlayerContainer`，並在 `js/app.js` 實現 `initTaikoYoutubeApi()` 於背景調用。
+  2. **10 首曲目專屬 YouTube 音樂配置**：為 10 首精選曲目配置 YouTube 官方熱血樂曲/原聲帶（包含《小星星》、《叮叮當》、《歡樂頌》、《Canon Rock 搖滾卡農》、《大黃蜂飛行》、《威廉泰爾》、《土耳其進行曲 Rock》、《拉德斯基進行曲》、《命運交響曲 Rock》、《夏日祭典傳統太鼓》）。
+  3. **自動倒數對齊與平滑備援 (Seamless Fallback)**：遊戲開打對齊 YouTube 播放；若網頁被擋廣告外掛或瀏覽器政策限制，100% 自動無縫降級切換至 Web Audio Synth 合成器，確保遊戲絕對流暢不卡死！
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
