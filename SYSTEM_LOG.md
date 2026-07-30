@@ -681,6 +681,14 @@
   3. **結算畫面文字排版修復**：修正太鼓達人結算時 `lblFinishTime` 贅餘顯示「秒」字的問題，標題動態調整為「最終成績：得分: 11,500 分 (最高連擊 6 Combo!)」。
   4. **強制前後台排行榜渲染**：於結算觸發時同時即時觸發 `focusGameRankList` 與 `adminFocusGameRankList` 渲染。
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-30 - Antigravity
+- 修改項目：升級版本號至 **ver 2.0.2**，新增太鼓鼓面「即時打擊顏色與鍵盤 [F/J/D/K] 動態提示霓虹特效」。
+- 行為：
+  1. **目標音符即時追蹤 (Target Note Tracking)**：於 `startTaikoAnimationLoop()` 中每幀追蹤最接近判定線的下一顆未擊中音符。
+  2. **鼓面顏色與鍵盤提示高亮 (Visual Rhythm Guidance)**：
+     - 下一個音符為 🔴 紅色「咚 (DON)」：鼓面中間紅色區域進入 `.next-hint-don` 動態高亮，內部的鍵盤提示 `[F]` `[J]` 放大並發出金黃霓虹強光。
+     - 下一個音符為 🔵 藍色「咔 (KA)」：鼓面外圍藍色邊框進入 `.next-hint-ka` 動態高亮，外圍的鍵盤提示 `[D]` `[K]` 放大並發出亮藍霓虹強光。
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
