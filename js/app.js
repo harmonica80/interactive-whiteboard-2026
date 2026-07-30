@@ -116,7 +116,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.0.0';
+    this.APP_VERSION = '2.0.1';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6177,13 +6177,30 @@ class App {
 
   calculateFocusUserRank(results, targetUserId) {
     if (!results) return '-';
-    const sorted = Object.keys(results).map(uid => ({
+    const items = Object.keys(results).map(uid => ({
       uid,
       ...results[uid]
-    })).sort((a, b) => {
-      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
-      return a.completedAt - b.completedAt;
+    }));
+
+    const isTaiko = (this.focusGame && this.focusGame.gameType === 'taikoMaster') || items.some(item => item.score !== undefined);
+
+    const sorted = items.sort((a, b) => {
+      if (isTaiko) {
+        const scoreA = a.score || 0;
+        const scoreB = b.score || 0;
+        if (scoreA !== scoreB) return scoreB - scoreA;
+        const comboA = a.maxCombo || 0;
+        const comboB = b.maxCombo || 0;
+        if (comboA !== comboB) return comboB - comboA;
+        return (a.completedAt || 0) - (b.completedAt || 0);
+      } else {
+        const timeA = typeof a.timeSpent === 'number' ? a.timeSpent : 999999;
+        const timeB = typeof b.timeSpent === 'number' ? b.timeSpent : 999999;
+        if (timeA !== timeB) return timeA - timeB;
+        return (a.completedAt || 0) - (b.completedAt || 0);
+      }
     });
+
     const index = sorted.findIndex(item => item.uid === targetUserId);
     return index !== -1 ? index + 1 : '-';
   }
@@ -7351,30 +7368,52 @@ class App {
 
   finishTaikoGame() {
     this.taikoIsEnded = true;
+    this.stopTaikoBackgroundMusic();
     if (this.taikoAnimFrame) cancelAnimationFrame(this.taikoAnimFrame);
     if (this.taikoKeyHandler) window.removeEventListener('keydown', this.taikoKeyHandler);
 
-    const timeSpent = (Date.now() - this.taikoStartTime) / 1000;
     const userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 5));
     const userName = localStorage.getItem('user_name') || '匿名學生';
 
-    db.ref(`quiz/focusGame/results/${userId}`).set({
+    const myResult = {
       userId,
       userName,
+      name: userName,
       score: this.taikoScore,
       maxCombo: this.taikoMaxCombo,
       perfect: this.taikoPerfectCount,
       good: this.taikoGoodCount,
       miss: this.taikoMissCount,
       completedAt: firebase.database.ServerValue.TIMESTAMP
-    });
+    };
+
+    db.ref(`quiz/focusGame/results/${userId}`).set(myResult);
 
     document.getElementById('focusPlayArea').style.display = 'none';
     document.getElementById('focusFinishArea').style.display = 'block';
+
+    const lblLabel = document.getElementById('lblFinishLabel');
+    if (lblLabel) lblLabel.textContent = '最終成績：';
     document.getElementById('lblFinishTime').textContent = `得分: ${this.taikoScore.toLocaleString()} 分 (最高連擊 ${this.taikoMaxCombo} Combo!)`;
+    const lblUnit = document.getElementById('lblFinishUnit');
+    if (lblUnit) lblUnit.style.display = 'none';
 
     const suffixEl = document.getElementById('lblFinishRankSuffix');
     if (suffixEl) suffixEl.textContent = '完成太鼓競速';
+
+    if (this.focusGame) {
+      if (!this.focusGame.results) this.focusGame.results = {};
+      this.focusGame.results[userId] = { ...myResult, completedAt: Date.now() };
+
+      const rank = this.calculateFocusUserRank(this.focusGame.results, userId);
+      const rankEl = document.getElementById('lblFinishRank');
+      if (rankEl) rankEl.textContent = rank;
+
+      this.renderFocusGameLeaderboard('focusGameRankList', this.focusGame.results);
+      if (this.isAdmin) {
+        this.renderFocusGameLeaderboard('adminFocusGameRankList', this.focusGame.results);
+      }
+    }
 
     this.initFireworkCanvas();
     this.triggerFireworkEffect();
