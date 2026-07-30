@@ -6018,6 +6018,9 @@ class App {
         gameOverlay.style.display = 'none';
         gameOverlay.classList.remove('active');
       }
+      // 確保管理後台隨時擁有最新的即時排行榜數據
+      this.renderFocusGameLeaderboard('adminFocusGameRankList', game ? game.results : null);
+
       // 倒數階段仍需由管理員的背景計時觸發 status -> playing，因此倒數階段管理員不 return，其餘 status 一律 return
       if (game.status !== 'countdown') {
         this.stopFocusTimers();
@@ -7495,17 +7498,33 @@ class App {
       return;
     }
 
-    if (!results) {
-      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px 0;">目前尚無人完成</div>';
+    if (!results || Object.keys(results).length === 0) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 12px 0;">目前尚無人完成</div>';
       return;
     }
 
-    const sorted = Object.keys(results).map(uid => ({
+    const items = Object.keys(results).map(uid => ({
       uid,
       ...results[uid]
-    })).sort((a, b) => {
-      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
-      return a.completedAt - b.completedAt;
+    }));
+
+    const isTaiko = (this.focusGame && this.focusGame.gameType === 'taikoMaster') || items.some(item => item.score !== undefined);
+
+    const sorted = items.sort((a, b) => {
+      if (isTaiko) {
+        const scoreA = a.score || 0;
+        const scoreB = b.score || 0;
+        if (scoreA !== scoreB) return scoreB - scoreA; // 太鼓達人分數越高越靠前
+        const comboA = a.maxCombo || 0;
+        const comboB = b.maxCombo || 0;
+        if (comboA !== comboB) return comboB - comboA;
+        return (a.completedAt || 0) - (b.completedAt || 0);
+      } else {
+        const timeA = typeof a.timeSpent === 'number' ? a.timeSpent : 999999;
+        const timeB = typeof b.timeSpent === 'number' ? b.timeSpent : 999999;
+        if (timeA !== timeB) return timeA - timeB; // 耗時越少越靠前
+        return (a.completedAt || 0) - (b.completedAt || 0);
+      }
     });
 
     list.innerHTML = sorted.map((res, index) => {
@@ -7513,16 +7532,25 @@ class App {
       const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
       const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
       const fontWeight = isTop3 ? 'bold' : 'normal';
-      const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
-      const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
-      
+      const displayName = this.escapeHtml(res.userName || res.name || '匿名學生');
+
+      let detailHtml = '';
+      if (isTaiko) {
+        detailHtml = `<span style="color: var(--danger-color); font-weight: 900; font-size: 15px;">🎯 ${(res.score || 0).toLocaleString()} 分</span> <span style="font-size: 12px; color: var(--text-secondary); margin-left: 6px;">(🔥 ${res.maxCombo || 0} Combo | 🌟${res.perfect || 0}/👍${res.good || 0}/❌${res.miss || 0})</span>`;
+      } else {
+        const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
+        const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
+        const timeStr = typeof res.timeSpent === 'number' ? res.timeSpent.toFixed(2) : '-';
+        detailHtml = `<span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${timeStr} 秒 ${helpNote}${memoryNote}</span>`;
+      }
+
       return `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
-            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${displayName}</span>
           </div>
-          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒 ${helpNote}${memoryNote}</span>
+          <div>${detailHtml}</div>
         </div>
       `;
     }).join('');
