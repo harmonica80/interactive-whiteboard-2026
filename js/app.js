@@ -8,7 +8,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️ 入門',
     bpm: 90,
     noteCount: 32,
-    pattern: ['don', 'don', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don']
+    pattern: ['don', 'don', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don'],
+    melody: [261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00, 349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63]
   },
   track_2: {
     id: 'track_2',
@@ -17,7 +18,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️ 入門',
     bpm: 100,
     noteCount: 40,
-    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don']
+    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don'],
+    melody: [329.63, 329.63, 329.63, 329.63, 329.63, 329.63, 329.63, 392.00, 261.63, 293.66, 329.63]
   },
   track_3: {
     id: 'track_3',
@@ -26,7 +28,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️ 初級',
     bpm: 110,
     noteCount: 48,
-    pattern: ['don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don']
+    pattern: ['don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don'],
+    melody: [329.63, 329.63, 349.23, 392.00, 392.00, 349.23, 329.63, 293.66, 261.63, 261.63, 293.66, 329.63, 329.63, 293.66, 293.66]
   },
   track_4: {
     id: 'track_4',
@@ -35,7 +38,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️ 初級',
     bpm: 120,
     noteCount: 56,
-    pattern: ['don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka']
+    pattern: ['don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka'],
+    melody: [659.25, 587.33, 523.25, 493.88, 440.00, 392.00, 440.00, 493.88]
   },
   track_5: {
     id: 'track_5',
@@ -44,7 +48,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️ 中級',
     bpm: 135,
     noteCount: 68,
-    pattern: ['don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka']
+    pattern: ['don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka'],
+    melody: [440.00, 415.30, 392.00, 369.99, 349.23, 329.63, 311.13, 293.66]
   },
   track_6: {
     id: 'track_6',
@@ -53,7 +58,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️ 中級',
     bpm: 140,
     noteCount: 72,
-    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don']
+    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don'],
+    melody: [329.63, 392.00, 523.25, 659.25, 587.33, 523.25, 493.88, 523.25]
   },
   track_7: {
     id: 'track_7',
@@ -62,7 +68,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️⭐️ 高級',
     bpm: 150,
     noteCount: 84,
-    pattern: ['don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka']
+    pattern: ['don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka'],
+    melody: [493.88, 440.00, 415.30, 440.00, 523.25, 587.33, 659.25, 523.25]
   },
   track_8: {
     id: 'track_8',
@@ -71,7 +78,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️⭐️ 高級',
     bpm: 155,
     noteCount: 90,
-    pattern: ['don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don']
+    pattern: ['don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don'],
+    melody: [440.00, 440.00, 440.00, 369.99, 587.33, 493.88, 392.00]
   },
   track_9: {
     id: 'track_9',
@@ -80,7 +88,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️⭐️⭐️ 專家',
     bpm: 165,
     noteCount: 104,
-    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka']
+    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka'],
+    melody: [392.00, 392.00, 392.00, 311.13, 349.23, 349.23, 349.23, 293.66]
   },
   track_10: {
     id: 'track_10',
@@ -89,7 +98,8 @@ const TAIKO_TRACK_LIBRARY = {
     difficulty: '⭐️⭐️⭐️⭐️⭐️ 專家',
     bpm: 175,
     noteCount: 120,
-    pattern: ['don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'ka']
+    pattern: ['don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'ka'],
+    melody: [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 440.00]
   }
 };
 
@@ -6915,11 +6925,70 @@ class App {
     const memoryMatchBoard = document.getElementById('focusMemoryMatchBoard');
     const numberGridContainer = document.getElementById('focusNumberGridContainer');
     const helpInfo = document.getElementById('focusHelpInfo');
-    const instEl = document.getElementById('focusGameInstruction');
+      this.setupTaikoKeyListeners();
+    this.startTaikoAnimationLoop();
+    this.playTaikoBackgroundMusic(track);
+  }
 
-    if (memoryMatchBoard) memoryMatchBoard.style.display = 'flex';
-    if (numberGridContainer) numberGridContainer.style.display = 'none';
-    if (helpInfo) helpInfo.textContent = '';
+  playTaikoBackgroundMusic(track) {
+    this.stopTaikoBackgroundMusic();
+    this.initFocusAudio();
+    const ctx = this.focusAudioCtx;
+    if (!ctx) return;
+
+    const melody = track.melody || [261.63, 329.63, 392.00, 523.25];
+    const intervalSec = 60 / track.bpm;
+    const initialDelay = 2.2;
+
+    this.taikoMusicTimers = [];
+
+    const playLoop = () => {
+      if (this.taikoIsEnded) return;
+      const startTime = ctx.currentTime;
+
+      melody.forEach((freq, idx) => {
+        const noteTime = startTime + idx * intervalSec;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, noteTime);
+
+        gain.gain.setValueAtTime(0.12, noteTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteTime + intervalSec * 0.85);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(noteTime);
+        osc.stop(noteTime + intervalSec * 0.85);
+      });
+
+      const totalLoopTime = melody.length * intervalSec * 1000;
+      const timerId = setTimeout(() => {
+        if (!this.taikoIsEnded) playLoop();
+      }, totalLoopTime);
+      this.taikoMusicTimers.push(timerId);
+    };
+
+    const startTimerId = setTimeout(() => {
+      playLoop();
+    }, initialDelay * 1000);
+    this.taikoMusicTimers.push(startTimerId);
+  }
+
+  stopTaikoBackgroundMusic() {
+    if (this.taikoMusicTimers) {
+      this.taikoMusicTimers.forEach(id => clearTimeout(id));
+      this.taikoMusicTimers = [];
+    }
+  }
+
+  finishTaikoGame() {
+    this.taikoIsEnded = true;
+    this.stopTaikoBackgroundMusic();
+    if (this.taikoAnimFrame) cancelAnimationFrame(this.taikoAnimFrame);
+    if (this.taikoKeyHandler) window.removeEventListener('keydown', this.taikoKeyHandler); helpInfo.textContent = '';
     if (instEl) instEl.textContent = '💡 翻開兩張相同的卡片進行配對，看誰能用最少的翻牌次數與最快的速度完成配對！';
 
     this.memoryMatchDeck = game.deck || [];
@@ -7138,6 +7207,7 @@ class App {
 
     this.setupTaikoKeyListeners();
     this.startTaikoAnimationLoop();
+    this.playTaikoBackgroundMusic(track);
   }
 
   setupTaikoKeyListeners() {
