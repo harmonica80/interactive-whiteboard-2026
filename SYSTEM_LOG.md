@@ -673,6 +673,14 @@
   4. **全動態背景樂曲旋律合成器**：運用 Web Audio API 為 10 首曲目即時合成背景歌曲旋律（小星星、叮叮當、歡樂頌...），達成 0 延遲且與音符 100% 毫秒級精準同步的現場課堂背景樂曲演奏！
   5. **修復管理員後台即時排行榜**：擴充 `renderFocusGameLeaderboard` 支援太鼓達人高分 (Score) 降序排列、Combo 數、Perfect/Good/Miss 詳細評分展示與 `userName` 名稱相容性；確保管理員端於所有遊戲狀態（`playing`, `ended`）下皆能 100% 即時渲染後台排行榜。
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-30 - Antigravity
+- 修改項目：升級版本號至 **ver 2.0.1**，修復太鼓達人結算名次計算與結算畫面排版文字。
+- 行為：
+  1. **版本號升級**：將 `index.html` 頂部 badge 與 `js/app.js` 的 `APP_VERSION` 統一更新為 `ver 2.0.1`，便於使用者判斷快取狀態。
+  2. **修復太鼓達人名次計算 (`calculateFocusUserRank`)**：新增分數 (`score`) 與連擊數 (`maxCombo`) 比對邏輯，修復結算時顯示「你是第 - 位完成」的 Bug，現可精準算出第一名。
+  3. **結算畫面文字排版修復**：修正太鼓達人結算時 `lblFinishTime` 贅餘顯示「秒」字的問題，標題動態調整為「最終成績：得分: 11,500 分 (最高連擊 6 Combo!)」。
+  4. **強制前後台排行榜渲染**：於結算觸發時同時即時觸發 `focusGameRankList` 與 `adminFocusGameRankList` 渲染。
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
