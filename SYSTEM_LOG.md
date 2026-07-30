@@ -729,6 +729,12 @@
      - 當即將到達的是大「咔」 (🔵🔵)：提示小太鼓 **兩側同時亮起全藍邊**！
   3. **玩家敲擊即時閃爍**：玩家按下 `D` / `F` / `J` / `K` 鍵或觸控時，提示小太鼓瞬間呈現脈衝亮光閃爍回饋！
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-30 - Antigravity
+- 修改項目：升級版本號至 **ver 2.0.8**，修復 **「遊戲停止音樂未停靠問題」** 與 **「YouTube 樂曲 Ready 鎖定零延遲對齊」**。
+- 行為：
+  1. **背景音樂 4 重強制停播保護 (Forced Music Stop Guard)**：在 `stopTaikoBackgroundMusic()` 實作 `stopVideo()` + `pauseVideo()` + `mute()` + 清除定時器，並在結算 `finishTaikoGame()`、重置 `resetFocusGame()`、關閉 Modal 及 `stopFocusTimers()` 處強制全數連動，解決遊戲停止時音樂繼續播放之 Bug！
+  2. **YouTube 樂曲 Ready 鎖定系統 (Music Ready Lock)**：遊戲開始倒數前，先顯示 `🎵` 音樂載入面板，等待 YouTube IFrame 真正發出聲響並觸發 `YT.PlayerState.PLAYING`，瞬間將播放器置於 `0.0s` 歸零暫停 Ready，此時才解鎖啟動 3-2-1 倒數，達成音樂與音符 100% 毫秒級對齊！
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
