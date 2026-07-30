@@ -9,7 +9,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 90,
     noteCount: 32,
     youtubeId: 'yCjJyiqpAuU',
-    pattern: ['don', 'don', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don'],
+    pattern: ['don', 'don', 'don', 'big_don', 'ka', 'ka', 'don', 'big_ka', 'don', 'ka', 'don', 'big_don', 'ka', 'ka', 'don', 'don'],
     melody: [261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00, 349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63]
   },
   track_2: {
@@ -20,7 +20,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 100,
     noteCount: 40,
     youtubeId: '3CWJNqyub3o',
-    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don'],
+    pattern: ['don', 'don', 'big_don', 'ka', 'don', 'don', 'don', 'big_ka', 'don', 'ka', 'don', 'big_don', 'don', 'don', 'ka', 'don'],
     melody: [329.63, 329.63, 329.63, 329.63, 329.63, 329.63, 329.63, 392.00, 261.63, 293.66, 329.63]
   },
   track_3: {
@@ -31,7 +31,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 110,
     noteCount: 48,
     youtubeId: 'X6s6hTLRB6U',
-    pattern: ['don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don'],
+    pattern: ['don', 'don', 'ka', 'big_don', 'don', 'don', 'don', 'big_ka', 'ka', 'don', 'ka', 'big_don', 'don', 'ka', 'don', 'don'],
     melody: [329.63, 329.63, 349.23, 392.00, 392.00, 349.23, 329.63, 293.66, 261.63, 261.63, 293.66, 329.63, 329.63, 293.66, 293.66]
   },
   track_4: {
@@ -42,7 +42,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 120,
     noteCount: 56,
     youtubeId: 'by8oyJztzwo',
-    pattern: ['don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka'],
+    pattern: ['don', 'ka', 'big_don', 'ka', 'don', 'don', 'big_ka', 'don', 'ka', 'ka', 'big_don', 'don', 'don', 'ka', 'don', 'ka'],
     melody: [659.25, 587.33, 523.25, 493.88, 440.00, 392.00, 440.00, 493.88]
   },
   track_5: {
@@ -53,7 +53,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 135,
     noteCount: 68,
     youtubeId: 'vtNu7CFz0d8',
-    pattern: ['don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka'],
+    pattern: ['don', 'don', 'big_don', 'don', 'don', 'ka', 'big_ka', 'don', 'ka', 'don', 'big_don', 'ka', 'don', 'don', 'ka', 'big_ka'],
     melody: [440.00, 415.30, 392.00, 369.99, 349.23, 329.63, 311.13, 293.66]
   },
   track_6: {
@@ -64,7 +64,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 140,
     noteCount: 72,
     youtubeId: 'Yiy4_2f22hU',
-    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'ka', 'don', 'don', 'don', 'don'],
+    pattern: ['don', 'don', 'don', 'big_don', 'don', 'don', 'don', 'big_ka', 'don', 'ka', 'don', 'ka', 'big_don', 'don', 'don', 'don'],
     melody: [329.63, 392.00, 523.25, 659.25, 587.33, 523.25, 493.88, 523.25]
   },
   track_7: {
@@ -75,7 +75,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 150,
     noteCount: 84,
     youtubeId: '1T-qFp1q6wY',
-    pattern: ['don', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka'],
+    pattern: ['don', 'ka', 'big_don', 'don', 'ka', 'don', 'big_ka', 'ka', 'don', 'don', 'big_don', 'don', 'ka', 'don', 'don', 'big_ka'],
     melody: [493.88, 440.00, 415.30, 440.00, 523.25, 587.33, 659.25, 523.25]
   },
   track_8: {
@@ -86,7 +86,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 155,
     noteCount: 90,
     youtubeId: '_qtVnZPrrB4',
-    pattern: ['don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'ka', 'don'],
+    pattern: ['don', 'don', 'big_don', 'don', 'ka', 'don', 'big_ka', 'ka', 'don', 'don', 'big_don', 'ka', 'don', 'don', 'ka', 'big_don'],
     melody: [440.00, 440.00, 440.00, 369.99, 587.33, 493.88, 392.00]
   },
   track_9: {
@@ -97,7 +97,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 165,
     noteCount: 104,
     youtubeId: 'evr78qMrVbg',
-    pattern: ['don', 'don', 'don', 'ka', 'don', 'don', 'don', 'ka', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'don', 'ka'],
+    pattern: ['don', 'don', 'don', 'big_don', 'don', 'don', 'don', 'big_ka', 'ka', 'don', 'big_don', 'don', 'don', 'ka', 'don', 'big_ka'],
     melody: [392.00, 392.00, 392.00, 311.13, 349.23, 349.23, 349.23, 293.66]
   },
   track_10: {
@@ -108,7 +108,7 @@ const TAIKO_TRACK_LIBRARY = {
     bpm: 175,
     noteCount: 120,
     youtubeId: 'a724x72aL_o',
-    pattern: ['don', 'ka', 'don', 'don', 'ka', 'ka', 'don', 'don', 'don', 'ka', 'don', 'ka', 'don', 'don', 'ka', 'ka'],
+    pattern: ['don', 'ka', 'big_don', 'don', 'ka', 'ka', 'big_ka', 'don', 'don', 'ka', 'big_don', 'ka', 'don', 'don', 'ka', 'big_ka'],
     melody: [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 440.00]
   }
 };
@@ -126,7 +126,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.0.3';
+    this.APP_VERSION = '2.0.4';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -7297,7 +7297,7 @@ class App {
       this.taikoNotes.forEach(note => {
         const div = document.createElement('div');
         div.className = `taiko-note ${note.type}`;
-        div.textContent = note.type === 'don' ? '咚' : '咔';
+        div.textContent = note.type === 'don' ? '咚' : note.type === 'ka' ? '咔' : note.type === 'big_don' ? '大咚' : '大咔';
         div.style.transform = 'translateX(600px)';
         container.appendChild(div);
         note.element = div;
@@ -7314,14 +7314,38 @@ class App {
       window.removeEventListener('keydown', this.taikoKeyHandler);
     }
 
+    this.taikoActiveKeys = {};
+    this.taikoKeyTimer = null;
+
     this.taikoKeyHandler = (e) => {
       if (this.taikoIsEnded) return;
       const key = e.key.toLowerCase();
-      if (key === 'f' || key === 'j') {
-        this.hitTaiko('don', key === 'f' ? 'left' : 'right');
-      } else if (key === 'd' || key === 'k') {
-        this.hitTaiko('ka', key === 'd' ? 'left' : 'right');
-      }
+      if (!['f', 'j', 'd', 'k'].includes(key)) return;
+
+      this.taikoActiveKeys[key] = Date.now();
+
+      if (this.taikoKeyTimer) clearTimeout(this.taikoKeyTimer);
+
+      this.taikoKeyTimer = setTimeout(() => {
+        const keys = Object.keys(this.taikoActiveKeys);
+        const now = Date.now();
+        const active = keys.filter(k => now - this.taikoActiveKeys[k] < 45);
+
+        if (active.includes('f') && active.includes('j')) {
+          this.hitTaiko('big_don', 'both');
+        } else if (active.includes('d') && active.includes('k')) {
+          this.hitTaiko('big_ka', 'both');
+        } else if (active.includes('f')) {
+          this.hitTaiko('don', 'left');
+        } else if (active.includes('j')) {
+          this.hitTaiko('don', 'right');
+        } else if (active.includes('d')) {
+          this.hitTaiko('ka', 'left');
+        } else if (active.includes('k')) {
+          this.hitTaiko('ka', 'right');
+        }
+        this.taikoActiveKeys = {};
+      }, 25);
     };
 
     window.addEventListener('keydown', this.taikoKeyHandler);
@@ -7330,15 +7354,24 @@ class App {
   hitTaiko(type, side) {
     if (this.taikoIsEnded) return;
 
-    this.playFocusSound(type === 'don' ? 'taiko_don' : 'taiko_ka');
+    this.playFocusSound((type === 'don' || type === 'big_don') ? 'taiko_don' : 'taiko_ka');
 
-    const selector = type === 'don'
-      ? (side === 'left' ? '.center-left' : '.center-right')
-      : (side === 'left' ? '.rim-left' : '.rim-right');
-    const el = document.querySelector(selector);
-    if (el) {
-      el.classList.add('active');
-      setTimeout(() => el.classList.remove('active'), 80);
+    if (side === 'both') {
+      const isDon = (type === 'don' || type === 'big_don');
+      const el1 = document.querySelector(isDon ? '.center-left' : '.rim-left');
+      const el2 = document.querySelector(isDon ? '.center-right' : '.rim-right');
+      if (el1) { el1.classList.add('active'); setTimeout(() => el1.classList.remove('active'), 80); }
+      if (el2) { el2.classList.add('active'); setTimeout(() => el2.classList.remove('active'), 80); }
+    } else {
+      const isDon = (type === 'don' || type === 'big_don');
+      const selector = isDon
+        ? (side === 'left' ? '.center-left' : '.center-right')
+        : (side === 'left' ? '.rim-left' : '.rim-right');
+      const el = document.querySelector(selector);
+      if (el) {
+        el.classList.add('active');
+        setTimeout(() => el.classList.remove('active'), 80);
+      }
     }
 
     const currentTime = Date.now() - this.taikoStartTime;
@@ -7359,24 +7392,40 @@ class App {
     const judgeFeedbackEl = document.getElementById('taikoJudgeFeedback');
 
     if (closestNote) {
-      if (closestNote.type === type) {
+      const isSameType = (closestNote.type === type) || 
+        (closestNote.type === 'big_don' && (type === 'big_don' || type === 'don')) || 
+        (closestNote.type === 'big_ka' && (type === 'big_ka' || type === 'ka'));
+
+      if (isSameType) {
         closestNote.hit = true;
         if (closestNote.element) closestNote.element.style.display = 'none';
 
+        const isBig = closestNote.type === 'big_don' || closestNote.type === 'big_ka';
+
+        if (isBig) {
+          const board = document.getElementById('focusTaikoBoard');
+          if (board) {
+            board.classList.add('taiko-screen-shake');
+            setTimeout(() => board.classList.remove('taiko-screen-shake'), 150);
+          }
+        }
+
         if (minDiff <= 65) {
-          this.taikoScore += 1000;
+          const addScore = (isBig && side === 'both') ? 2000 : (isBig ? 1500 : 1000);
+          this.taikoScore += addScore;
           this.taikoCombo++;
           this.taikoPerfectCount++;
           if (judgeFeedbackEl) {
-            judgeFeedbackEl.textContent = '🌟 良 PERFECT!';
+            judgeFeedbackEl.textContent = isBig ? '🌟 大良 BIG PERFECT!' : '🌟 良 PERFECT!';
             judgeFeedbackEl.style.color = '#ffcc00';
           }
         } else {
-          this.taikoScore += 500;
+          const addScore = (isBig && side === 'both') ? 1000 : (isBig ? 750 : 500);
+          this.taikoScore += addScore;
           this.taikoCombo++;
           this.taikoGoodCount++;
           if (judgeFeedbackEl) {
-            judgeFeedbackEl.textContent = '👍 可 GOOD!';
+            judgeFeedbackEl.textContent = isBig ? '👍 大可 BIG GOOD!' : '👍 可 GOOD!';
             judgeFeedbackEl.style.color = '#34c759';
           }
         }
@@ -7454,12 +7503,12 @@ class App {
       const rimLeft = document.querySelector('.taiko-drum-rim.rim-left');
       const rimRight = document.querySelector('.taiko-drum-rim.rim-right');
 
-      if (nextNote && nextNote.type === 'don') {
+      if (nextNote && (nextNote.type === 'don' || nextNote.type === 'big_don')) {
         if (centerLeft) centerLeft.classList.add('next-hint-don');
         if (centerRight) centerRight.classList.add('next-hint-don');
         if (rimLeft) rimLeft.classList.remove('next-hint-ka');
         if (rimRight) rimRight.classList.remove('next-hint-ka');
-      } else if (nextNote && nextNote.type === 'ka') {
+      } else if (nextNote && (nextNote.type === 'ka' || nextNote.type === 'big_ka')) {
         if (rimLeft) rimLeft.classList.add('next-hint-ka');
         if (rimRight) rimRight.classList.add('next-hint-ka');
         if (centerLeft) centerLeft.classList.remove('next-hint-don');
