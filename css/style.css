@@ -2828,86 +2828,113 @@ body {
   border: 3px solid #ffffff;
 }
 
-/* 擬真太鼓鼓面 UI (適度縮小騰出視野) */
+/* 擬真太鼓鼓面 UI (完美呈現 Namco 官方視覺提示) */
 .taiko-drum-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 6px 0;
+  margin: 12px 0 6px 0;
 }
 
 .taiko-drum-container {
   position: relative;
-  width: 150px;
-  height: 150px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
-  background: #2b1d0c;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 0 12px rgba(0,0,0,0.6);
-  border: 3px solid #d4a359;
+  background: #3d2612;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.4), inset 0 0 14px rgba(0,0,0,0.8);
+  border: 4px solid #d4a359;
   user-select: none;
   touch-action: manipulation;
+  overflow: hidden;
 }
 
 .taiko-drum-rim {
   position: absolute;
   top: 0;
-  width: 75px;
-  height: 150px;
-  background: radial-gradient(circle at 50% 50%, #3498db 0%, #1d6fa5 100%);
+  width: 80px;
+  height: 160px;
+  background: #1d334a; /* 預設深藍邊框 */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.05s ease, filter 0.05s ease;
+  transition: background 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease, transform 0.05s ease;
 }
 
 .taiko-drum-rim.rim-left {
   left: 0;
-  border-radius: 75px 0 0 75px;
+  border-radius: 80px 0 0 80px;
 }
 
 .taiko-drum-rim.rim-right {
   right: 0;
-  border-radius: 0 75px 75px 0;
+  border-radius: 0 80px 80px 0;
 }
 
-.taiko-drum-rim:active, .taiko-drum-rim.active {
+.taiko-drum-rim.active, .taiko-drum-rim.hint-active, .taiko-drum-rim.next-hint-ka {
+  background: radial-gradient(circle at 50% 50%, #4facfe, #0066cc) !important;
+  box-shadow: inset 0 0 12px #ffffff, 0 0 16px #00f2fe;
+}
+
+.taiko-drum-rim:active {
   filter: brightness(1.3);
   transform: scale(0.97);
 }
 
+/* 經典米白色鼓面 base (完全比照使用者截圖) */
 .taiko-drum-center {
   position: absolute;
   top: 18px;
-  width: 57px;
-  height: 114px;
-  background: radial-gradient(circle at 50% 50%, #e74c3c 0%, #a93226 100%);
+  width: 62px;
+  height: 124px;
+  background: #f7f1e3; /* 經典米白 */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
-  transition: transform 0.05s ease, filter 0.05s ease;
+  transition: background 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease, transform 0.05s ease;
 }
 
 .taiko-drum-center.center-left {
   left: 18px;
-  border-radius: 57px 0 0 57px;
-  border-right: 1px solid rgba(0,0,0,0.2);
+  border-radius: 62px 0 0 62px;
+  border-right: 1px solid rgba(0,0,0,0.15);
 }
 
 .taiko-drum-center.center-right {
   right: 18px;
-  border-radius: 0 57px 57px 0;
+  border-radius: 0 62px 62px 0;
 }
 
-.taiko-drum-center:active, .taiko-drum-center.active {
+/* 敲擊或提示亮紅 (如圖片所示，半紅半白或全紅) */
+.taiko-drum-center.active, .taiko-drum-center.hint-active, .taiko-drum-center.next-hint-don {
+  background: radial-gradient(circle at 50% 50%, #ff4d4d, #cc0000) !important;
+  box-shadow: inset 0 0 12px #ffffff, 0 0 16px #ff3b30;
+}
+
+.taiko-drum-center:active {
   filter: brightness(1.35);
   transform: scale(0.96);
 }
 
 .key-hint {
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #333333;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+}
+
+.taiko-drum-center.active .key-hint,
+.taiko-drum-center.hint-active .key-hint,
+.taiko-drum-center.next-hint-don .key-hint,
+.taiko-drum-rim.active .key-hint,
+.taiko-drum-rim.hint-active .key-hint,
+.taiko-drum-rim.next-hint-ka .key-hint {
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
   font-weight: 900;
   color: white;
   text-shadow: 0 2px 4px rgba(0,0,0,0.6);

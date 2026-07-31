@@ -126,7 +126,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.0.8';
+    this.APP_VERSION = '2.0.9';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -7131,6 +7131,17 @@ class App {
         if (typeof this.taikoYtPlayer.pauseVideo === 'function') this.taikoYtPlayer.pauseVideo();
         if (typeof this.taikoYtPlayer.stopVideo === 'function') this.taikoYtPlayer.stopVideo();
         if (typeof this.taikoYtPlayer.mute === 'function') this.taikoYtPlayer.mute();
+        if (typeof this.taikoYtPlayer.destroy === 'function') this.taikoYtPlayer.destroy();
+      } catch (e) {}
+      this.taikoYtPlayer = null;
+    }
+    const container = document.getElementById('taikoYoutubePlayerContainer');
+    if (container) {
+      container.innerHTML = '<div id="taikoYoutubePlayer"></div>';
+    }
+    if (this.focusAudioCtx) {
+      try {
+        if (typeof this.focusAudioCtx.suspend === 'function') this.focusAudioCtx.suspend();
       } catch (e) {}
     }
     if (this.taikoMusicTimers) {
@@ -7560,58 +7571,31 @@ class App {
         }
       });
 
-      // 鼓面 UI 與 Namco 官方提示小太鼓動態高亮提示
+      // 鼓面 UI 動態高亮提示顏色與鍵位 (完美還原使用者圖片需求)
       const centerLeft = document.querySelector('.taiko-drum-center.center-left');
       const centerRight = document.querySelector('.taiko-drum-center.center-right');
       const rimLeft = document.querySelector('.taiko-drum-rim.rim-left');
       const rimRight = document.querySelector('.taiko-drum-rim.rim-right');
 
-      const miniCLeft = document.querySelector('.mini-center-left');
-      const miniCRight = document.querySelector('.mini-center-right');
-      const miniRLeft = document.querySelector('.mini-rim-left');
-      const miniRRight = document.querySelector('.mini-rim-right');
-
-      // 清除提示小太鼓狀態
-      if (miniCLeft) miniCLeft.classList.remove('hint-active');
-      if (miniCRight) miniCRight.classList.remove('hint-active');
-      if (miniRLeft) miniRLeft.classList.remove('hint-active');
-      if (miniRRight) miniRRight.classList.remove('hint-active');
+      if (centerLeft) { centerLeft.classList.remove('hint-active'); centerLeft.classList.remove('next-hint-don'); }
+      if (centerRight) { centerRight.classList.remove('hint-active'); centerRight.classList.remove('next-hint-don'); }
+      if (rimLeft) { rimLeft.classList.remove('hint-active'); rimLeft.classList.remove('next-hint-ka'); }
+      if (rimRight) { rimRight.classList.remove('hint-active'); rimRight.classList.remove('next-hint-ka'); }
 
       if (nextNote && nextNote.type === 'don') {
-        if (centerLeft) centerLeft.classList.add('next-hint-don');
-        if (centerRight) centerRight.classList.add('next-hint-don');
-        if (rimLeft) rimLeft.classList.remove('next-hint-ka');
-        if (rimRight) rimRight.classList.remove('next-hint-ka');
-        // 右半邊紅色 (呈現使用者提供的官方半紅半白小太鼓 UI 提示!)
-        if (miniCRight) miniCRight.classList.add('hint-active');
+        // 普通咚：右半邊紅色 (呈現使用者圖片中紅框箭頭指向下方的「半紅半白」鼓面 UI!)
+        if (centerRight) centerRight.classList.add('hint-active');
       } else if (nextNote && nextNote.type === 'big_don') {
-        if (centerLeft) centerLeft.classList.add('next-hint-don');
-        if (centerRight) centerRight.classList.add('next-hint-don');
-        if (rimLeft) rimLeft.classList.remove('next-hint-ka');
-        if (rimRight) rimRight.classList.remove('next-hint-ka');
-        // 全紅 (大咚雙手同押提示!)
-        if (miniCLeft) miniCLeft.classList.add('hint-active');
-        if (miniCRight) miniCRight.classList.add('hint-active');
+        // 大咚 (🔴🔴)：鼓面雙半邊同時亮紅 (全紅鼓面 UI!)
+        if (centerLeft) centerLeft.classList.add('hint-active');
+        if (centerRight) centerRight.classList.add('hint-active');
       } else if (nextNote && nextNote.type === 'ka') {
-        if (rimLeft) rimLeft.classList.add('next-hint-ka');
-        if (rimRight) rimRight.classList.add('next-hint-ka');
-        if (centerLeft) centerLeft.classList.remove('next-hint-don');
-        if (centerRight) centerRight.classList.remove('next-hint-don');
-        // 右側藍邊亮起
-        if (miniRRight) miniRRight.classList.add('hint-active');
+        // 普通咔：右側鼓邊亮藍 (右半藍鼓邊 UI!)
+        if (rimRight) rimRight.classList.add('hint-active');
       } else if (nextNote && nextNote.type === 'big_ka') {
-        if (rimLeft) rimLeft.classList.add('next-hint-ka');
-        if (rimRight) rimRight.classList.add('next-hint-ka');
-        if (centerLeft) centerLeft.classList.remove('next-hint-don');
-        if (centerRight) centerRight.classList.remove('next-hint-don');
-        // 全藍邊亮起 (大咔雙手同押提示!)
-        if (miniRLeft) miniRLeft.classList.add('hint-active');
-        if (miniRRight) miniRRight.classList.add('hint-active');
-      } else {
-        if (centerLeft) centerLeft.classList.remove('next-hint-don');
-        if (centerRight) centerRight.classList.remove('next-hint-don');
-        if (rimLeft) rimLeft.classList.remove('next-hint-ka');
-        if (rimRight) rimRight.classList.remove('next-hint-ka');
+        // 大咔 (🔵🔵)：鼓邊雙側同時亮藍 (全藍鼓邊 UI!)
+        if (rimLeft) rimLeft.classList.add('hint-active');
+        if (rimRight) rimRight.classList.add('hint-active');
       }
 
       if (allPassed) {
@@ -9918,6 +9902,17 @@ function copyText(elementId) {
     alert('連結已複製！');
   }
 }
+
+window.addEventListener('beforeunload', () => {
+  if (window.app && typeof window.app.stopTaikoBackgroundMusic === 'function') {
+    window.app.stopTaikoBackgroundMusic();
+  }
+});
+window.addEventListener('pagehide', () => {
+  if (window.app && typeof window.app.stopTaikoBackgroundMusic === 'function') {
+    window.app.stopTaikoBackgroundMusic();
+  }
+});
 
 
 
