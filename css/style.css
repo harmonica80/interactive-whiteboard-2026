@@ -2759,11 +2759,22 @@ body {
   border: 3px solid #d4a359 !important;
   box-shadow: 0 16px 48px rgba(0,0,0,0.8) !important;
   border-radius: 18px !important;
+  color: #ffffff !important;
 }
 
 #focusGameOverlay.taiko-mode .focus-header-text,
 #focusGameOverlay.taiko-mode .focus-instruction-card {
   display: none !important;
+}
+
+/* 強制所有子元素文字為白色，背景透明 */
+#focusGameOverlay.taiko-mode #focusPlayArea,
+#focusGameOverlay.taiko-mode #focusTaikoBoard {
+  color: #ffffff !important;
+}
+
+#focusGameOverlay.taiko-mode .focus-game-modal > * {
+  color: #ffffff;
 }
 
 /* ===== 賽道 (Track Lane) ===== */
