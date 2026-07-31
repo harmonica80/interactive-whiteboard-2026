@@ -126,7 +126,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.1.1';
+    this.APP_VERSION = '2.1.2';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -7143,13 +7143,7 @@ class App {
         if (typeof this.taikoYtPlayer.pauseVideo === 'function') this.taikoYtPlayer.pauseVideo();
         if (typeof this.taikoYtPlayer.stopVideo === 'function') this.taikoYtPlayer.stopVideo();
         if (typeof this.taikoYtPlayer.mute === 'function') this.taikoYtPlayer.mute();
-        if (typeof this.taikoYtPlayer.destroy === 'function') this.taikoYtPlayer.destroy();
       } catch (e) {}
-      this.taikoYtPlayer = null;
-    }
-    const container = document.getElementById('taikoYoutubePlayerContainer');
-    if (container) {
-      container.innerHTML = '<div id="taikoYoutubePlayer"></div>';
     }
     if (this.focusAudioCtx) {
       try {
