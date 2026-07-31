@@ -745,6 +745,16 @@
   2. **YouTube IFrame 終極銷毀停播保護 (Ultimate IFrame Destroy)**：
      - 在 `stopTaikoBackgroundMusic()` 中導入 `stopVideo()` + `pauseVideo()` + `mute()` + **`destroy()`** 終極銷毀與 IFrame 容器清空，並監聽全域 `beforeunload` 與 `pagehide` 事件，徹底解決停止遊戲或關閉視窗後背景音樂仍持續播放的 Bug！
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-31 - Antigravity
+- 修改項目：升級版本號至 **ver 2.1.0**，實作 **「全螢幕滿版劇院級太鼓舞台 (Full-Width Taiko Stage)」** 與 **「非同步 Race Condition 音樂防護鎖 (Audio Flag Lock)」**。
+- 行為：
+  1. **全螢幕滿版劇院級太鼓舞台**：
+     - 自動在太鼓模式下套用 `.taiko-mode` 全螢幕高奢黑金對話框，自動隱藏多餘白框、白色背景、教學說明卡片及頂部雜項標頭！
+     - 賽道橫貫 860px 滿版延伸，鼓面放大至 185px x 185px 擬真尺寸並顯著下移置中，完全對齊附圖要求。
+  2. **非同步競態條件防護鎖 (`taikoAllowMusicPlay`)**：
+     - 新增全域音效播放許可標誌 `this.taikoAllowMusicPlay`。只要呼叫 `stopTaikoBackgroundMusic()`，該標誌立即設為 `false`！
+     - 所有非同步 Promise、YouTube IFrame `onReady`/`onStateChange` 回呼欲執行 `playVideo()` 之前，均強制進行鎖定檢查，徹底抹殺非同步網路延遲造成的停止後音樂繼續播 Bug！
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
