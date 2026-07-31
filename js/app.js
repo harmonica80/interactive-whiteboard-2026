@@ -126,7 +126,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.0.9';
+    this.APP_VERSION = '2.1.0';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6040,6 +6040,11 @@ class App {
       if (gameOverlay) {
         gameOverlay.style.display = 'flex';
         gameOverlay.classList.add('active');
+        if (game.gameType === 'taikoMaster') {
+          gameOverlay.classList.add('taiko-mode');
+        } else {
+          gameOverlay.classList.remove('taiko-mode');
+        }
       }
     }
     
@@ -7057,29 +7062,34 @@ class App {
   }
 
   playTaikoBackgroundMusic(track) {
+    this.taikoAllowMusicPlay = true;
     if (this.taikoMusicTimers) {
       this.taikoMusicTimers.forEach(id => clearTimeout(id));
       this.taikoMusicTimers = [];
     }
 
+    if (!this.taikoAllowMusicPlay) return;
+
     if (track && track.youtubeId) {
       if (this.taikoYtPlayer && typeof this.taikoYtPlayer.playVideo === 'function') {
         try {
+          if (!this.taikoAllowMusicPlay) return;
           if (typeof this.taikoYtPlayer.unMute === 'function') this.taikoYtPlayer.unMute();
           this.taikoYtPlayer.seekTo(0);
           this.taikoYtPlayer.playVideo();
         } catch (e) {
-          this.playTaikoSynthAudio(track);
+          if (this.taikoAllowMusicPlay) this.playTaikoSynthAudio(track);
         }
       } else {
-        this.playTaikoSynthAudio(track);
+        if (this.taikoAllowMusicPlay) this.playTaikoSynthAudio(track);
       }
     } else {
-      this.playTaikoSynthAudio(track);
+      if (this.taikoAllowMusicPlay) this.playTaikoSynthAudio(track);
     }
   }
 
   playTaikoSynthAudio(track) {
+    if (!this.taikoAllowMusicPlay) return;
     this.initFocusAudio();
     const ctx = this.focusAudioCtx;
     if (!ctx) return;
@@ -7091,10 +7101,11 @@ class App {
     this.taikoMusicTimers = [];
 
     const playLoop = () => {
-      if (this.taikoIsEnded) return;
+      if (this.taikoIsEnded || !this.taikoAllowMusicPlay) return;
       const startTime = ctx.currentTime;
 
       melody.forEach((freq, idx) => {
+        if (!this.taikoAllowMusicPlay) return;
         const noteTime = startTime + idx * intervalSec;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -7114,18 +7125,19 @@ class App {
 
       const totalLoopTime = melody.length * intervalSec * 1000;
       const timerId = setTimeout(() => {
-        if (!this.taikoIsEnded) playLoop();
+        if (!this.taikoIsEnded && this.taikoAllowMusicPlay) playLoop();
       }, totalLoopTime);
       this.taikoMusicTimers.push(timerId);
     };
 
     const startTimerId = setTimeout(() => {
-      playLoop();
+      if (this.taikoAllowMusicPlay) playLoop();
     }, initialDelay * 1000);
     this.taikoMusicTimers.push(startTimerId);
   }
 
   stopTaikoBackgroundMusic() {
+    this.taikoAllowMusicPlay = false;
     if (this.taikoYtPlayer) {
       try {
         if (typeof this.taikoYtPlayer.pauseVideo === 'function') this.taikoYtPlayer.pauseVideo();
