@@ -755,6 +755,17 @@
      - 新增全域音效播放許可標誌 `this.taikoAllowMusicPlay`。只要呼叫 `stopTaikoBackgroundMusic()`，該標誌立即設為 `false`！
      - 所有非同步 Promise、YouTube IFrame `onReady`/`onStateChange` 回呼欲執行 `playVideo()` 之前，均強制進行鎖定檢查，徹底抹殺非同步網路延遲造成的停止後音樂繼續播 Bug！
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-31 - Antigravity
+- 修改項目：升級版本號至 **ver 2.1.1**，依據使用者最新截圖精準實作 **「原生 Web Audio 主旋律合成音效引擎 (零載入延遲)」**、**「鼓面左側大咚 🔴🔴 雙打告示牌」** 與 **「100% 萬代原廠擬真太鼓圖案」**。
+- 行為：
+  1. **原生樂曲發聲引擎 (零網路延遲 / 100% 瞬間停播)**：
+     - 徹底移除不穩定之 YouTube 網路載入機制，回歸全瀏覽器相容之 Web Audio 樂曲發聲引擎。
+     - 點擊「開始遊戲」時 0.00 秒免加載瞬間發聲；點擊停止/關閉時瞬間呼叫 `gain.setValueAtTime(0)` 與 `suspend()`，100% 瞬間安靜。
+  2. **鼓面左側「大咚 🔴🔴」打擊告示牌**：
+     - 依據使用者最新截圖紅色箭頭標註，在下移太鼓鼓面的左側添加醒目的 `🔴🔴 大咚 [同押 F+J]` 脈衝打擊告示標牌。
+  3. **100% 萬代 Namco 原廠視覺太鼓圖案**：
+     - 依據使用者最新截圖右下角貼圖，完整還原紅木底座 (`#a93226`)、天藍外鼓邊 (`#2980b9`)、米白內鼓面 (`#f7f1e3`) 與厚重黑輪廓 Outline 邊界。
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
