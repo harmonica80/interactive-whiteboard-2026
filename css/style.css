@@ -2842,33 +2842,76 @@ body {
   border: 4px solid #ffffff;
 }
 
-/* 擬真太鼓鼓面 UI (往下大幅平移，尺寸加大至 185px) */
+/* 擬真太鼓鼓面 UI (100% 比照使用者提供之原版太鼓圖片，包含紅木底座、水藍鼓邊、米白鼓面與黑框) */
 .taiko-drum-wrapper {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 24px auto 10px auto;
+  margin: 28px auto 12px auto;
 }
 
+/* 依據使用者需求：在鼓的左邊放置大咚雙手打擊提示標牌 */
+.taiko-big-don-left-hint {
+  position: absolute;
+  left: calc(50% - 215px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 59, 48, 0.15);
+  border: 3px solid #ff3b30;
+  border-radius: 16px;
+  padding: 8px 14px;
+  box-shadow: 0 4px 16px rgba(255, 59, 48, 0.4);
+  animation: bigDonPulse 1s infinite alternate;
+}
+
+@keyframes bigDonPulse {
+  0% { transform: translateY(-50%) scale(0.96); filter: brightness(1); }
+  100% { transform: translateY(-50%) scale(1.04); filter: brightness(1.25); box-shadow: 0 0 22px rgba(255, 59, 48, 0.7); }
+}
+
+.taiko-big-don-left-hint .hint-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #ff3b30;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.taiko-big-don-left-hint .hint-sub {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 2px;
+}
+
+/* 官方原版太鼓底座 (紅木色厚重黑包邊) */
 .taiko-drum-container {
   position: relative;
-  width: 185px;
-  height: 185px;
+  width: 190px;
+  height: 190px;
   border-radius: 50%;
-  background: #3d2612;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.5), inset 0 0 16px rgba(0,0,0,0.85);
-  border: 5px solid #d4a359;
+  background: #a93226; /* 100% 比照截圖的紅木底座 */
+  box-shadow: 0 14px 36px rgba(0,0,0,0.6), inset 0 0 0 6px #000000;
+  border: 6px solid #000000; /* 經典黑輪廓包邊 */
   user-select: none;
   touch-action: manipulation;
   overflow: hidden;
 }
 
+/* 官方天藍色外鼓边 (KA 咔) */
 .taiko-drum-rim {
   position: absolute;
   top: 0;
-  width: 92.5px;
-  height: 185px;
-  background: #1d334a;
+  width: 95px;
+  height: 190px;
+  background: #2980b9; /* 100% 比照截圖的天藍邊框 */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2878,17 +2921,18 @@ body {
 
 .taiko-drum-rim.rim-left {
   left: 0;
-  border-radius: 92.5px 0 0 92.5px;
+  border-radius: 95px 0 0 95px;
+  border-right: 2px solid #000000;
 }
 
 .taiko-drum-rim.rim-right {
   right: 0;
-  border-radius: 0 92.5px 92.5px 0;
+  border-radius: 0 95px 95px 0;
 }
 
 .taiko-drum-rim.active, .taiko-drum-rim.hint-active, .taiko-drum-rim.next-hint-ka {
-  background: radial-gradient(circle at 50% 50%, #4facfe, #0066cc) !important;
-  box-shadow: inset 0 0 14px #ffffff, 0 0 18px #00f2fe;
+  background: radial-gradient(circle at 50% 50%, #4facfe, #00f2fe) !important;
+  box-shadow: inset 0 0 14px #ffffff, 0 0 20px #00f2fe;
 }
 
 .taiko-drum-rim:active {
@@ -2896,30 +2940,34 @@ body {
   transform: scale(0.97);
 }
 
-/* 經典米白色鼓面 base (完全比照使用者截圖) */
+/* 官方經典米白色鼓面 base (100% 比照截圖) */
 .taiko-drum-center {
   position: absolute;
-  top: 21px;
-  width: 71px;
-  height: 142px;
-  background: #f7f1e3;
+  top: 20px;
+  width: 75px;
+  height: 150px;
+  background: #f7f1e3; /* 100% 官方米白 */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
+  border-top: 3px solid #000000;
+  border-bottom: 3px solid #000000;
   transition: background 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease, transform 0.05s ease;
 }
 
 .taiko-drum-center.center-left {
-  left: 21px;
-  border-radius: 71px 0 0 71px;
-  border-right: 1px solid rgba(0,0,0,0.15);
+  left: 20px;
+  border-radius: 75px 0 0 75px;
+  border-left: 3px solid #000000;
+  border-right: 2px solid rgba(0,0,0,0.3);
 }
 
 .taiko-drum-center.center-right {
-  right: 21px;
-  border-radius: 0 71px 71px 0;
+  right: 20px;
+  border-radius: 0 75px 75px 0;
+  border-right: 3px solid #000000;
 }
 
 /* 敲擊或提示亮紅 (如圖片所示，半紅半白或全紅) */

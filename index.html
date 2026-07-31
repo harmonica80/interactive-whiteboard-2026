@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.1.0</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.1.1</span>
         </p>
       </div>
       <div class="top-actions">
@@ -1344,8 +1344,14 @@ Python</pre>
             <div id="taikoNotesContainer" class="taiko-notes-container"></div>
           </div>
 
-          <!-- 擬真太鼓鼓面 UI (含鍵盤與觸控提示) -->
+          <!-- 擬真太鼓鼓面 UI (100% 官方原版樣式與左側大咚提示) -->
           <div class="taiko-drum-wrapper">
+            <!-- 依據使用者需求：在鼓的左邊放置大咚雙手打擊提示標牌 -->
+            <div id="taikoBigDonLeftHint" class="taiko-big-don-left-hint">
+              <div class="hint-title">🔴🔴 大咚</div>
+              <div class="hint-sub">同押 [F + J]</div>
+            </div>
+
             <div id="taikoDrumContainer" class="taiko-drum-container">
               <!-- 外圈藍色鼓邊 (咔 KA) -->
               <div class="taiko-drum-rim rim-left" onclick="window.app.hitTaiko('ka', 'left')">
@@ -1354,7 +1360,7 @@ Python</pre>
               <div class="taiko-drum-rim rim-right" onclick="window.app.hitTaiko('ka', 'right')">
                 <span class="key-hint">K</span>
               </div>
-              <!-- 內圈紅色鼓面 (咚 DON) -->
+              <!-- 內圈米白/紅色鼓面 (咚 DON) -->
               <div class="taiko-drum-center center-left" onclick="window.app.hitTaiko('don', 'left')">
                 <span class="key-hint">F</span>
               </div>
