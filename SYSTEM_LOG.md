@@ -735,6 +735,16 @@
   1. **背景音樂 4 重強制停播保護 (Forced Music Stop Guard)**：在 `stopTaikoBackgroundMusic()` 實作 `stopVideo()` + `pauseVideo()` + `mute()` + 清除定時器，並在結算 `finishTaikoGame()`、重置 `resetFocusGame()`、關閉 Modal 及 `stopFocusTimers()` 處強制全數連動，解決遊戲停止時音樂繼續播放之 Bug！
   2. **YouTube 樂曲 Ready 鎖定系統 (Music Ready Lock)**：遊戲開始倒數前，先顯示 `🎵` 音樂載入面板，等待 YouTube IFrame 真正發出聲響並觸發 `YT.PlayerState.PLAYING`，瞬間將播放器置於 `0.0s` 歸零暫停 Ready，此時才解鎖啟動 3-2-1 倒數，達成音樂與音符 100% 毫秒級對齊！
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+## 2026-07-31 - Antigravity
+- 修改項目：升級版本號至 **ver 2.0.9**，依據使用者圖片精準重構 **「太鼓 UI 賽道佈局」** 與 **「YouTube 播放器終極銷毀停播機制」**。
+- 行為：
+  1. **移除賽道左側提示鼓，大鼓面下方居中 (Track & Drum UI Redesign)**：
+     - 移除賽道左側的小鼓 `#taikoGuidanceDrum`，賽道完全回歸經典橫向寬版風格，左側保留燦爛星光判定圈。
+     - 將 160px 大型實體互動鼓面放在賽道下方中央。
+     - **鼓面本身內建動態提示**：預設為經典米白鼓面；單「咚」時右側鼓面高亮亮紅（呈現使用者圖片中紅框箭頭指向下方的「半紅半白」鼓面 UI）；大「咚」時鼓面全紅；單「咔」時右側鼓邊亮藍；大「咔」時鼓邊全藍！
+  2. **YouTube IFrame 終極銷毀停播保護 (Ultimate IFrame Destroy)**：
+     - 在 `stopTaikoBackgroundMusic()` 中導入 `stopVideo()` + `pauseVideo()` + `mute()` + **`destroy()`** 終極銷毀與 IFrame 容器清空，並監聽全域 `beforeunload` 與 `pagehide` 事件，徹底解決停止遊戲或關閉視窗後背景音樂仍持續播放的 Bug！
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
