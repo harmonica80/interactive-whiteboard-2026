@@ -9,7 +9,7 @@
 | 項目 | 網址 |
 |------|------|
 | **專案管理後台** | https://console.firebase.google.com/project/opencode-whiteboard/overview |
-| **上線網址** | https://opencode-whiteboard.web.app |
+| **上線網址** | https://harmonica80.github.io/interactive-whiteboard-2026/ |
 
 ---
 
