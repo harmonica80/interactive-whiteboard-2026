@@ -766,6 +766,16 @@
   3. **100% 萬代 Namco 原廠視覺太鼓圖案**：
      - 依據使用者最新截圖右下角貼圖，完整還原紅木底座 (`#a93226`)、天藍外鼓邊 (`#2980b9`)、米白內鼓面 (`#f7f1e3`) 與厚重黑輪廓 Outline 邊界。
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+
+---
+
+## 2026-08-06 - ver 2.1.3 專注力遊戲單元調整
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：依使用者需求先移除太鼓達人單元相關設定、UI 面板與邏輯。
+- 行為：
+  1. 移除 `index.html` 中的「太鼓達人 (同曲班級競速)」管理選單選項、後台曲目設定面板與前台太鼓賽道 / 鼓面獨立盤面 (`#focusTaikoBoard`)。
+  2. 移除 `css/style.css` 中所有 `.taiko-*` 相關特化樣式。
+  3. 移除 `js/app.js` 中 `TAIKO_TRACK_LIBRARY` 曲目資料庫以及 `startTaikoGame`、`hitTaiko`、`startTaikoAnimationLoop`、`finishTaikoGame` 等太鼓核心機制與樂曲發聲邏輯，保持程式碼簡潔穩定。
 - 修改項目：優化行動端白板 UI 佈局，解決選單重疊跑版與 `^` 箭頭顯示 Bug（方案 A 實作）。
 - 行為：
   1. 移除 `whiteboard.html` 中對 `.tlui-layout__bottom` 及工具列按鈕尺寸的所有暴力 CSS `!important` 覆寫，完整回歸 tldraw 原生 React 佈局與錨點計算。
