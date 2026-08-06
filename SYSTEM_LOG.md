@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-06 - ver 2.1.7 徹底修復專注力遊戲倒數計時凍結問題
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：解決專注力遊戲發起倒數時因 Firebase 廣播重複重置計時器，導致倒數永遠停在 `10` 之 Bug。
+- 行為：
+  1. **防重複重置機制**：在 `startLocalCountdown()` 頂部加入 `if (this.focusCountdownInterval) return;` 防護，防止 Firebase `on('value')` 多次推送導致倒數 Interval 被清空重置。
+  2. **固定時間基準 (`focusCountdownLocalStart`)**：單次倒數開始時只鎖定一次基準起點時間，後續以 `Math.floor((Date.now() - focusCountdownLocalStart) / 1000)` 精確計算已耗秒數，100% 保證數字順暢遞減 (10->9->...->0) 並自動推進至作答畫面。
+
+---
+
 ## 2026-08-06 - ver 2.1.6 修復專注力遊戲倒數計時凍結於 10 之問題
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：解決專注力遊戲發起倒數時數字停在 `10` 無法遞減之 Bug。

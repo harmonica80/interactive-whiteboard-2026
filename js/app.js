@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.1.6';
+    this.APP_VERSION = '2.1.7';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6059,6 +6059,7 @@ class App {
     this.focusTimerInterval = null;
     this.focusCountdownInterval = null;
     this.focusBuzzInterval = null;
+    this.focusCountdownLocalStart = null;
     if (this.fireworkAnimationId) cancelAnimationFrame(this.fireworkAnimationId);
     this.fireworkAnimationId = null;
     this.stopTaikoBackgroundMusic();
@@ -6100,30 +6101,36 @@ class App {
   }
 
   startLocalCountdown(game) {
-    this.stopFocusTimers(); // 重置先前的
+    // 若倒數計時已在進行中，避免被重複觸發並覆蓋中斷
+    if (this.focusCountdownInterval) {
+      return;
+    }
+
     this.focusGameCompletedLocal = false; // 重置完成音效狀態
     this.focusStartSoundPlayed = false;   // 重置開始音效狀態
     this.focusLastTickSecond = -1;        // 重置倒數秒數狀態
     
-    // 防禦性處理：若 countdownStartTime 無效或非數字，優先使用本地紀錄或當前時間
-    let startTime = (game && typeof game.countdownStartTime === 'number' && game.countdownStartTime > 0)
-      ? game.countdownStartTime 
+    // 解析倒數秒數
+    const totalSeconds = (game && Number.isFinite(Number(game.countdownSeconds)) && Number(game.countdownSeconds) > 0)
+      ? Number(game.countdownSeconds)
+      : 10;
+
+    // 解析開頭時間
+    let startTime = (game && Number.isFinite(Number(game.countdownStartTime)) && Number(game.countdownStartTime) > 0)
+      ? Number(game.countdownStartTime)
       : Date.now();
 
-    if (!this.focusCountdownLocalStart || Math.abs(this.focusCountdownLocalStart - startTime) > 15000) {
-      this.focusCountdownLocalStart = startTime;
-    } else {
-      startTime = this.focusCountdownLocalStart;
+    // 如果 startTime 大於目前時間或差距過遠，校正為當前本地時間
+    if (startTime > Date.now() || Math.abs(Date.now() - startTime) > (totalSeconds * 1000 + 5000)) {
+      startTime = Date.now();
     }
 
-    const totalSeconds = (game && typeof game.countdownSeconds === 'number' && game.countdownSeconds > 0)
-      ? game.countdownSeconds
-      : 10;
+    this.focusCountdownLocalStart = startTime;
       
     const countdownEl = document.getElementById('focusCountdownNumber');
     const updateCountdown = () => {
       const now = Date.now();
-      const elapsed = Math.floor((now - startTime) / 1000);
+      const elapsed = Math.floor((now - this.focusCountdownLocalStart) / 1000);
       const remaining = Math.max(0, totalSeconds - elapsed);
       
       if (countdownEl) {
@@ -6150,6 +6157,7 @@ class App {
           clearInterval(this.focusCountdownInterval);
           this.focusCountdownInterval = null;
         }
+        this.focusCountdownLocalStart = null;
         
         // 倒數結束，播放開始音效
         if (!this.focusStartSoundPlayed) {
@@ -6163,18 +6171,13 @@ class App {
             startTime: firebase.database.ServerValue.TIMESTAMP
           }).catch(err => console.error('Admin update focusGame status failed:', err));
         } else {
-          // OpenCode 修改：學生端本地防禦性啟動。如果倒數結束但 Firebase status 仍為 countdown（如老師背景休眠），學生端直接在本地樂觀切換進入遊戲
-          setTimeout(() => {
-            if (this.focusGame && this.focusGame.status === 'countdown') {
-              console.log('[DEBUG] Student optimistically switches focus game to playing due to timeout.');
-              const localPlayingGame = {
-                ...this.focusGame,
-                status: 'playing',
-                startTime: startTime + (totalSeconds * 1000)
-              };
-              this.handleFocusGameSync(localPlayingGame);
-            }
-          }, 400);
+          // 學生端樂觀切換進入遊戲作答狀態
+          const localPlayingGame = {
+            ...this.focusGame,
+            status: 'playing',
+            startTime: Date.now()
+          };
+          this.handleFocusGameSync(localPlayingGame);
         }
       }
     };
