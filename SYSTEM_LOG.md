@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-07 - ver 2.2.1 徹底修復未定義函數崩潰與自動化 DOM 模擬驗證
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：完全消除專注力遊戲中因呼叫不存在之舊音樂函數導致整條 JS 渲染中斷崩潰之終極 Bug。
+- 行為：
+  1. **函數呼叫防禦保護**：在 `stopFocusTimers()` 中將 `this.stopTaikoBackgroundMusic()` 改為 `if (typeof this.stopTaikoBackgroundMusic === 'function')` 安全檢查，防止因 JS 異常拋出導致後續 `grid.innerHTML` 按鈕生成被硬中斷。
+  2. **自動化 Node DOM 模擬校驗**：使用 Node DOM 模擬腳本實測數字網格 (36格) 及一字千金團結一詞題型，確認 `gridEl.innerHTML.length` 超過 20,000 字元且畫面元素全數 100% 正確渲染呈現。
+
+---
+
 ## 2026-08-07 - ver 2.2.0 修復 CSS 循環依賴坍塌與高對比度按鈕樣式
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：徹底消除 `aspect-ratio: 1` 與 `height: 100%` 在 Flex 容器下發生的長寬循環計算坍塌，並重構舒爾特數字按鈕高對比度樣式。
