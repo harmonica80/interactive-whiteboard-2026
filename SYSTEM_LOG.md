@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-06 - ver 2.1.5 管理員登入密碼彈窗與登出切換頁面修正
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：修復管理員輸入密碼後對話框未自動關閉，以及登出後未自動返回白板首頁之問題。
+- 行為：
+  1. **密碼對話框自動關閉與自動導向**：在 `submitAdminPassword()` 驗證密碼成功後，即時呼叫 `closeAdminPasswordModal()` 硬性隱藏對話框（`display: none` 並移除 `active`），並順暢自動導向至 `panel-admin` 管理後台分頁。
+  2. **登出自動跳轉白板首頁**：修復 `logoutAdmin()`，將登出後的目標頁籤修正為 `panel-whiteboard`（互動白板），確保登出後瞬間平滑切換回白板首頁。
+
+---
+
 ## 2026-08-06 - ver 2.1.4 新增「一字千金：團結一詞」專注力遊戲
 - 影響檔案：`index.html`, `js/app.js`, `js/character_pool.js`, `SYSTEM_LOG.md`。
 - 修改項目：依照《一字千金》「團結一詞」規則，新增全新部件組詞專注力遊戲模組與 150 題題庫。

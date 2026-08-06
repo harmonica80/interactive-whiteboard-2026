@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.1.4';
+    this.APP_VERSION = '2.1.5';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -272,9 +272,16 @@ class App {
   }
 
   openAdminPasswordModal() {
-    document.getElementById('adminPasswordInput').value = '';
-    document.getElementById('adminPasswordModal').classList.add('active');
-    setTimeout(() => document.getElementById('adminPasswordInput').focus(), 300);
+    const modal = document.getElementById('adminPasswordModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+    const input = document.getElementById('adminPasswordInput');
+    if (input) {
+      input.value = '';
+      setTimeout(() => input.focus(), 300);
+    }
     
     // 立即隱藏遊戲覆蓋層，讓使用者能正常輸入密碼
     if (this.focusGame) this.handleFocusGameSync(this.focusGame);
@@ -282,7 +289,11 @@ class App {
   }
   
   closeAdminPasswordModal() {
-    document.getElementById('adminPasswordModal').classList.remove('active');
+    const modal = document.getElementById('adminPasswordModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
     
     // 關閉後台密碼對話框時重新觸發遊戲同步以確認是否需開啟遊戲覆蓋層
     if (this.focusGame) this.handleFocusGameSync(this.focusGame);
@@ -8740,14 +8751,15 @@ function closeAdminPasswordModal() {
 }
 
 function submitAdminPassword() {
-  const pwd = document.getElementById('adminPasswordInput').value;
+  const inputEl = document.getElementById('adminPasswordInput');
+  const pwd = inputEl ? inputEl.value : '';
   if (pwd === '1234') {
     window.app.isAdmin = true;
+    window.app.closeAdminPasswordModal(); // 關閉彈窗
+    window.app.switchToTab('panel-admin'); // 自動進入「管理後台」分頁
     window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
     window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
     window.app.updateFocusGameAdminOptions();
-    window.app.closeAdminPasswordModal();
-    window.app.switchToTab('panel-admin');
     window.app.showNotification('成功', '已進入管理員模式！');
     if (window.app.timerState) {
       window.app.updateAdminTimerUI(window.app.timerState);
@@ -8760,9 +8772,10 @@ function submitAdminPassword() {
 
 function logoutAdmin() {
   window.app.isAdmin = false;
+  window.app.closeAdminPasswordModal();
+  window.app.switchToTab('panel-whiteboard'); // 登出後切換回到「互動白板」首頁
   window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
   window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
-  window.app.switchToTab('panel-questions');
   window.app.showNotification('提示', '已登出管理員模式');
   
   const volBtn = document.getElementById('timerVolumeBtn');
