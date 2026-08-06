@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.1.8';
+    this.APP_VERSION = '2.1.9';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6252,17 +6252,18 @@ class App {
     const grid = document.getElementById('focusGameGrid');
     if (grid) {
       grid.style.display = 'grid';
+      grid.style.width = '100%';
+      grid.style.maxWidth = '450px';
       grid.style.aspectRatio = '1';
       grid.style.flexDirection = '';
       grid.style.gap = '8px';
-      grid.style.maxWidth = '450px';
 
       const cols = Math.sqrt(this.focusGridSize);
       grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
       
       const numbers = this.generateSchulteGrid(this.focusGridSize);
       grid.innerHTML = numbers.map(num => `
-        <button class="schulte-btn" data-number="${num}" onclick="window.app.clickSchulteGrid(${num}, this)" style="width: 100%; height: 100%; border-radius: 12px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.15); color: var(--accent-color); font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.05); user-select: none;">${num}</button>
+        <button class="schulte-btn" data-number="${num}" onclick="window.app.clickSchulteGrid(${num}, this)" style="width: 100%; height: 100%; min-height: 44px; border-radius: 12px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.15); color: var(--accent-color); font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.05); user-select: none;">${num}</button>
       `).join('');
     }
 
