@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-07 - ver 2.2.0 修復 CSS 循環依賴坍塌與高對比度按鈕樣式
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：徹底消除 `aspect-ratio: 1` 與 `height: 100%` 在 Flex 容器下發生的長寬循環計算坍塌，並重構舒爾特數字按鈕高對比度樣式。
+- 行為：
+  1. **按鈕正方形長寬比獨立化**：將每一個 `.schulte-btn` 按鈕獨立賦予 `width: 100%; aspect-ratio: 1; min-height: 48px;`，解除對外部父容器高度的相依性。
+  2. **高對比視覺標竿**：按鈕採用高對比度 `2.5px solid var(--accent-color)` 邊框與 `26px` 超大粗體數字，保證在任何裝置與背景下 100% 清晰可見。
+
+---
+
 ## 2026-08-07 - ver 2.1.9 修復 Flexbox 寬度坍塌導致之遊戲盤面空白問題
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：解決專注力遊戲中數字網格 (`focusGameGrid`) 因 Flexbox `align-items: center` 導致容器寬度坍塌為 0px 使得按鈕全隱形之 Bug。
