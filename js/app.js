@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.1.3';
+    this.APP_VERSION = '2.1.4';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5669,6 +5669,13 @@ class App {
         const randIdx = Math.floor(Math.random() * pool.length);
         selectedQuestions.push(pool[randIdx]);
       }
+    } else if (gameType === 'characterUnitedWords') {
+      const pool = [...CHARACTER_UNITED_WORDS_POOL];
+      selectedQuestions = [];
+      if (pool.length > 0) {
+        const randIdx = Math.floor(Math.random() * pool.length);
+        selectedQuestions.push(pool[randIdx]);
+      }
     }
     
     db.ref('quiz/focusGame').set({
@@ -5790,6 +5797,13 @@ class App {
       return;
     }
 
+    if (game.gameType === 'characterUnitedWords') {
+      if (titleEl) titleEl.textContent = '一字千金：團結一詞！';
+      if (descriptionEl) descriptionEl.textContent = '請根據畫面上的部件組合與提示，將部件組合拼出正確的二字詞。只有 1 題喔！';
+      if (hintEl) hintEl.textContent = '挑戰即將開始，請準備好輸入...';
+      return;
+    }
+
     if (titleEl) titleEl.textContent = '提升專注力挑戰！';
     if (descriptionEl) descriptionEl.innerHTML = `請準備好眼睛和滑鼠，依序尋找並點擊數字 1 到 <span id="lblTargetCount">${gridSize}</span> 喔！`;
     if (hintEl) hintEl.textContent = '挑戰即將開始...';
@@ -5908,6 +5922,8 @@ class App {
         instEl.textContent = '💡 請寫出正確的國字，填寫完後點選「送出答案」讓老師評分。';
       } else if (game.gameType === 'characterCrossword') {
         instEl.textContent = '💡 請寫出中心挖空的關鍵字，填寫完後點選「送出答案」讓老師評分。';
+      } else if (game.gameType === 'characterUnitedWords') {
+        instEl.textContent = '💡 請運用畫面上的部件組合出正確的二字詞，填寫完後點選「送出答案」。';
       } else if (game.gameType === 'memoryPosition') {
         instEl.textContent = '💡 請依序或反向點選剛才閃爍位置的格子，加油！';
       } else {
@@ -5930,7 +5946,7 @@ class App {
       const hasCompleted = !!result;
 
       if (hasCompleted) {
-        if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword') {
+        if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
           if (result.status === 'correct') {
             document.getElementById('focusPlayArea').style.display = 'none';
             document.getElementById('focusFinishArea').style.display = 'block';
@@ -5997,7 +6013,7 @@ class App {
       const result = game.results && game.results[userId];
       if (result) {
         document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
-        if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword') {
+        if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
           const correctRank = this.calculateFocusUserCorrectRank(game.results, userId);
           document.getElementById('lblFinishRank').textContent = correctRank;
           const suffixEl = document.getElementById('lblFinishRankSuffix');
@@ -6176,7 +6192,7 @@ class App {
       return;
     }
     
-    if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword') {
+    if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
       this.startCharacterTestGame(game);
       return;
     }
@@ -7135,9 +7151,47 @@ class App {
     
     const questions = game.questions || [];
     const isCrossword = game.gameType === 'characterCrossword';
+    const isUnitedWords = game.gameType === 'characterUnitedWords';
     
     let html = '';
-    if (isCrossword) {
+    if (isUnitedWords) {
+      html += `
+        <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; text-align: center; width: 100%;">
+          ✍️ 一字千金：團結一詞 (部件組詞)
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+      `;
+      questions.forEach((q, idx) => {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 14px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.04); width: 100%; box-sizing: border-box;">
+            <!-- 上方：部件標牌區 -->
+            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); text-align: center;">🧩 題目部件：</div>
+            <div style="display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap;">
+              ${(q.components || []).map(comp => `
+                <div onclick="window.app.appendUnitedComponent('${comp}', ${idx})" style="padding: 6px 14px; background: rgba(0, 122, 255, 0.08); border: 1.5px solid rgba(0, 122, 255, 0.3); border-radius: 8px; font-size: 20px; font-weight: bold; color: var(--accent-color); cursor: pointer; user-select: none;">
+                  ${comp}
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- 中間：雙字九宮格輸入區 -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 6px;">
+              <div class="chinese-writing-grid">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}-0" maxlength="1" placeholder="字1" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); document.getElementById('char-test-input-${idx}-1')?.focus(); }">
+              </div>
+              <div class="chinese-writing-grid">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}-1" maxlength="1" placeholder="字2" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); }">
+              </div>
+            </div>
+
+            <!-- 下方：提示說明 -->
+            <div style="text-align: center; font-size: 15px; color: var(--text-secondary); margin-top: 4px; font-weight: bold;">
+              💡 提示：${q.clue}
+            </div>
+          </div>
+        `;
+      });
+    } else if (isCrossword) {
       html += `
         <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; text-align: center; width: 100%;">
           ✍️ 一字千金：字字珠璣 (十字選字)
@@ -7225,12 +7279,28 @@ class App {
     }, 10);
   }
 
+  appendUnitedComponent(comp, qIdx) {
+    const input0 = document.getElementById(`char-test-input-${qIdx}-0`);
+    const input1 = document.getElementById(`char-test-input-${qIdx}-1`);
+    if (input0 && !input0.value.trim()) {
+      input0.value = comp;
+      const g0 = input0.closest('.chinese-writing-grid');
+      if (g0) g0.classList.remove('unfilled-fluorescent-highlight');
+      if (input1) input1.focus();
+    } else if (input1 && !input1.value.trim()) {
+      input1.value = comp;
+      const g1 = input1.closest('.chinese-writing-grid');
+      if (g1) g1.classList.remove('unfilled-fluorescent-highlight');
+    }
+  }
+
   submitCharTestAnswers() {
     if (!this.focusGame || this.focusGame.status !== 'playing') return;
     
     const userId = localStorage.getItem('user_id') || 'guest';
     const isCrossword = this.focusGame.gameType === 'characterCrossword';
-    const totalAnsCount = isCrossword ? 1 : 3;
+    const isUnitedWords = this.focusGame.gameType === 'characterUnitedWords';
+    const questions = this.focusGame.questions || [];
     
     // 先清除畫面上所有的未填寫螢光框標示
     document.querySelectorAll('.chinese-writing-grid').forEach(gridEl => {
@@ -7241,26 +7311,49 @@ class App {
     let firstUnfilledInput = null;
     const answers = [];
     
-    for (let i = 0; i < totalAnsCount; i++) {
-      const input = document.getElementById(`char-test-input-${i}`);
-      const val = input ? input.value.trim() : '';
-      const gridBox = input ? input.closest('.chinese-writing-grid') : null;
-      
-      if (!val) {
-        hasUnfilled = true;
-        if (gridBox) {
-          gridBox.classList.add('unfilled-fluorescent-highlight');
+    if (isUnitedWords) {
+      questions.forEach((q, i) => {
+        const in0 = document.getElementById(`char-test-input-${i}-0`);
+        const in1 = document.getElementById(`char-test-input-${i}-1`);
+        const v0 = in0 ? in0.value.trim() : '';
+        const v1 = in1 ? in1.value.trim() : '';
+        if (!v0 || !v1) {
+          hasUnfilled = true;
+          if (in0 && !v0) {
+            in0.closest('.chinese-writing-grid')?.classList.add('unfilled-fluorescent-highlight');
+            if (!firstUnfilledInput) firstUnfilledInput = in0;
+          }
+          if (in1 && !v1) {
+            in1.closest('.chinese-writing-grid')?.classList.add('unfilled-fluorescent-highlight');
+            if (!firstUnfilledInput) firstUnfilledInput = in1;
+          }
+        } else {
+          answers.push(v0 + v1);
         }
-        if (!firstUnfilledInput && input) {
-          firstUnfilledInput = input;
+      });
+    } else {
+      const totalAnsCount = isCrossword ? 1 : 3;
+      for (let i = 0; i < totalAnsCount; i++) {
+        const input = document.getElementById(`char-test-input-${i}`);
+        const val = input ? input.value.trim() : '';
+        const gridBox = input ? input.closest('.chinese-writing-grid') : null;
+        
+        if (!val) {
+          hasUnfilled = true;
+          if (gridBox) {
+            gridBox.classList.add('unfilled-fluorescent-highlight');
+          }
+          if (!firstUnfilledInput && input) {
+            firstUnfilledInput = input;
+          }
+        } else {
+          answers.push(val);
         }
-      } else {
-        answers.push(val);
       }
     }
 
     if (hasUnfilled) {
-      this.showNotification('提示', isCrossword ? '請填寫關鍵字的國字！' : '請在未填寫螢光框處輸入正確國字！');
+      this.showNotification('提示', isUnitedWords ? '請完整填寫二字詞答案！' : (isCrossword ? '請填寫關鍵字的國字！' : '請在未填寫螢光框處輸入正確國字！'));
       if (firstUnfilledInput) {
         firstUnfilledInput.focus();
       }
@@ -7274,20 +7367,38 @@ class App {
     const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名';
     const currentGameType = this.focusGame.gameType || 'characterTest';
     
+    // 團結一詞自動校對是否正確
+    let autoStatus = 'pending';
+    if (isUnitedWords && questions.length > 0) {
+      const isCorrect = questions.every((q, idx) => {
+        const userAns = answers[idx];
+        return userAns === q.targetWord || userAns === (q.chars ? q.chars.join('') : '');
+      });
+      if (isCorrect) {
+        autoStatus = 'correct';
+      } else {
+        autoStatus = 'incorrect';
+      }
+    }
+
     db.ref(`quiz/focusGame/results/${userId}`).set({
       name: userName,
       answers: answers,
       timeSpent: timeSpent + (this.focusHelpPenaltySeconds || 0),
       completedAt: firebase.database.ServerValue.TIMESTAMP,
-      status: 'pending',
+      status: autoStatus,
       gameType: currentGameType,
       helpCount: this.focusHelpCount || 0,
       penaltySeconds: this.focusHelpPenaltySeconds || 0
     }).then(() => {
-      this.showNotification('成功', '答案已送出，等待老師評分！');
+      if (autoStatus === 'correct') {
+        this.showNotification('太棒了！', '恭喜答對！完成團結一詞！');
+      } else {
+        this.showNotification('成功', '答案已送出！');
+      }
       this.renderCharacterTestPlayCompleted(this.focusGame, {
         answers: answers,
-        status: 'pending'
+        status: autoStatus
       });
     }).catch(err => {
       this.showNotification('錯誤', '送出失敗: ' + err.message);
@@ -7388,14 +7499,15 @@ class App {
     const answers = result.answers || ['', '', ''];
     const status = result.status || 'pending';
     const isCrossword = game.gameType === 'characterCrossword';
+    const isUnitedWords = game.gameType === 'characterUnitedWords';
     
     let statusText = '⏳ 等待老師評分中...';
     let statusColor = 'var(--text-secondary)';
     if (status === 'correct') {
-      statusText = '🎉 老師判定：全部答對！';
+      statusText = '🎉 全部答對！能力超群！';
       statusColor = '#28a745';
     } else if (status === 'incorrect') {
-      statusText = '❌ 老師判定：答錯了，再加把勁！';
+      statusText = '❌ 答錯了，再加把勁！';
       statusColor = '#dc3545';
     }
     
@@ -7408,10 +7520,28 @@ class App {
     
     const questions = game.questions || [];
     questions.forEach((q, idx) => {
-      const displayChar = status === 'incorrect' ? q.char : (answers[idx] || '');
+      const userWord = answers[idx] || '';
+      const displayWord = status === 'incorrect' ? q.targetWord : userWord;
       const displayColor = status === 'incorrect' ? '#dc3545' : 'var(--accent-color)';
       
-      if (isCrossword) {
+      if (isUnitedWords) {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.9;">
+            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); text-align: center;">🧩 題目部件：${(q.components || []).join(' ')}</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+              <div class="chinese-writing-grid">
+                <span style="font-size: 38px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord.charAt(0) || '')}</span>
+              </div>
+              <div class="chinese-writing-grid">
+                <span style="font-size: 38px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord.charAt(1) || '')}</span>
+              </div>
+            </div>
+            <div style="text-align: center; font-size: 15px; color: var(--text-secondary); margin-top: 4px; font-weight: bold;">
+              解答詞語：${q.targetWord} (${q.clue})
+            </div>
+          </div>
+        `;
+      } else if (isCrossword) {
         html += `
           <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
@@ -7423,7 +7553,7 @@ class App {
                 
                 <div class="character-crossword-cell empty"></div>
                 <div class="chinese-writing-grid" style="width: 80px; height: 80px;">
-                  <span style="font-size: 40px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayChar)}</span>
+                  <span style="font-size: 40px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord)}</span>
                 </div>
                 <div class="character-crossword-cell empty"></div>
                 
@@ -7442,7 +7572,7 @@ class App {
           <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
               <div class="chinese-writing-grid">
-                <span style="font-size: 44px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayChar)}</span>
+                <span style="font-size: 44px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord)}</span>
               </div>
               <div class="chinese-writing-grid">
                 <div class="zhuyin-text">${q.zhuyin}</div>
