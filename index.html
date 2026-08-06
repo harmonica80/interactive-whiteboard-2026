@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>即時互動白板 - 課堂互動系統</title>
+  <link rel="stylesheet" href="css/style.css?v=166">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- 頂部工具列 -->
+    <div class="top-bar">
+      <div class="header">
+        <div class="header-title-container">
+          <h1 class="header-title">📚 即時互動白板</h1>
+          <button class="menu-tab teacher-share-top-btn desktop-only" data-target="panel-teacher-shares" title="教師分享">📢 教師分享</button>
+        </div>
+        <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span>課堂互動、提問、測驗、分享</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.1.8</span>
+        </p>
+      </div>
+      <div class="top-actions">
+        <div class="status-group">
+          <div id="onlineCount" class="online-count">線上人數 0 人</div>
+          <div id="connectionStatus" class="connection-status disconnected">連線中...</div>
+        </div>
+        <div class="header-buttons">
+          <button class="menu-tab teacher-share-top-btn mobile-only" data-target="panel-teacher-shares" title="教師分享">📢 教師分享</button>
+          <!-- 管理後台按鈕移至右上角 -->
+          <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️ 管理後台</button>
+        </div>
+        <div class="theme-switcher">
+          <button class="theme-btn light active" data-theme="light" title="淺色"></button>
+          <button class="theme-btn dark" data-theme="dark" title="深色"></button>
+          <button class="theme-btn pink" data-theme="pink" title="粉色"></button>
+          <button class="theme-btn brown" data-theme="brown" title="淺棕色"></button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="function-menu-wrapper">
+      <button class="nav-scroll-btn left-scroll-btn" id="menuScrollLeft" title="向左查看更多選單">◀</button>
+      <div class="function-menu" id="functionMenuContainer">
+        <button class="menu-tab active" data-target="panel-questions">💬 提問區</button>
+        <button class="menu-tab" data-target="panel-images">🖼️ 圖片分享</button>
+        <button class="menu-tab" data-target="panel-videos">🎥 影片分享</button>
+        <button class="menu-tab" data-target="panel-quiz">📝 選擇題測驗</button>
+        <button class="menu-tab" data-target="panel-lucky-wheel">🎡 抽人轉盤</button>
+        <button class="menu-tab" data-target="panel-whiteboard">🎨 互動白板</button>
+        <button class="menu-tab" data-target="panel-focus-game" style="display: none;">🧠 專注力遊戲</button>
+        <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
+      </div>
+      <button class="nav-scroll-btn right-scroll-btn" id="menuScrollRight" title="向右查看更多選單">▶</button>
+    </div>
+
+    <!-- 主要內容 -->
+    <div class="main-content">
+      <!-- 提問區 -->
+      <div class="panel-card active" id="panel-questions">
+        <div class="panel-body">
+          <div class="question-input-group">
+            <input type="text" id="questionInput" class="question-input" placeholder="輸入您的問題...">
+            <button id="askBtn" class="ask-btn">提問</button>
+          </div>
+          <ul id="questionList" class="question-list" style="margin-bottom: 16px;"></ul>
+          <div id="questionsGroupedContainer" class="grouped-folders-container"></div>
+        </div>
+      </div>
+      
+      <!-- 圖片分享 -->
+      <div class="panel-card" id="panel-images">
+        <div class="panel-body">
+          <div id="uploadZone" class="upload-zone">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">點擊/拖曳圖片至此處，或直接 Ctrl+V 貼上</div>
+          </div>
+          <input type="file" id="imageInput" accept="image/*">
+          <div id="imagePreview" class="image-preview" style="margin-bottom: 16px;"></div>
+          <div id="imagesGroupedContainer" class="grouped-folders-container"></div>
+          <div class="upload-note" style="margin-top: 16px; font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.5;">
+            💡 提示：單張圖片大小限制為 5MB。為了維持系統即時同步的順暢度，上傳時系統會自動進行輕量化壓縮。
+          </div>
+        </div>
+      </div>
+      
+      <!-- 影片分享 -->
+      <div class="panel-card" id="panel-videos">
+        <div class="panel-body">
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input type="text" id="videoLinkInput" class="question-input" placeholder="貼上 YouTube 或 Google Drive 影片網址..." style="flex: 1; margin: 0; min-height: 38px;">
+            <button id="videoLinkBtn" onclick="window.app.submitVideoLink()" class="ask-btn" style="white-space: nowrap; padding: 0 16px;">分享連結</button>
+          </div>
+          
+          <div id="videoUploadZone" class="upload-zone" style="min-height: 80px; padding: 12px; cursor: pointer;">
+            <div class="upload-icon" style="font-size: 24px; margin-bottom: 4px;">📁</div>
+            <div class="upload-text" style="font-size: 12px;">或點擊/拖曳本地影片檔至此（限制 10MB，支援大檔自動壓縮）</div>
+          </div>
+          <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime" style="display: none;">
+          
+          <div id="videoPreview" class="image-preview" style="margin-bottom: 16px; margin-top: 12px;"></div>
+          <div id="videosGroupedContainer" class="grouped-folders-container"></div>
+          <div class="upload-note" style="margin-top: 16px; font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5;">
+            💡 提示：影片大小上限為 10MB（支援 100MB 影片自動壓縮）。較大影片請上傳至 YouTube 或 Google Drive 後貼上連結分享。
+          </div>
+        </div>
+      </div>
+
+      <!-- 教師分享區 -->
+      <div class="panel-card" id="panel-teacher-shares">
+        <div class="panel-body">
+          <div id="teacherSharesContainer" class="grouped-folders-container"></div>
+        </div>
+      </div>
+
+      <!-- 選擇題測驗 -->
+      <div class="panel-card" id="panel-quiz">
+        <div class="panel-body">
+          <div id="quizStatus"></div>
+          <div id="answerOptions" style="display: none;"></div>
+          <div id="quizResults" class="quiz-results"></div>
+        </div>
+      </div>
+
+      <!-- 抽人轉盤 -->
+      <div class="panel-card" id="panel-lucky-wheel">
+        <div class="panel-body">
+          <div class="lucky-wheel-container">
+            <!-- 左側轉盤區 -->
+            <div class="wheel-display-area">
+              <div style="position: relative; display: inline-block;">
+                <canvas id="wheelCanvas" width="550" height="550" style="max-width: 100%; height: auto; background: transparent; cursor: pointer;"></canvas>
+                <div class="wheel-pointer"></div>
+              </div>
+              <div id="wheelWinnerDisplay" class="wheel-winner-banner" style="display: none;">
+                恭喜抽中：<span id="lblWheelWinner" class="winner-name">-</span>
+              </div>
+            </div>
+            
+            <!-- 右側設定區 (僅教師/後台可見) -->
+            <div class="wheel-control-panel" id="wheelControlPanel" style="display: none;">
+              <div class="control-header">
+                <h3>🎡 轉盤設定 (教師專屬)</h3>
+                <span class="badge" id="lblWheelCount">0 人</span>
+              </div>
+              
+              <div class="control-group">
+                <label for="wheelNamesInput" style="font-weight: bold; font-size: 14px;">名單列表 (每行一人)：</label>
+                <textarea id="wheelNamesInput" rows="10" placeholder="請貼上或輸入學生名單，每行一人&#10;&#10;例：&#10;王小明 01&#10;李小花 02&#10;張大偉 03" style="width: 100%; box-sizing: border-box; resize: vertical; margin-top: 6px; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: monospace;"></textarea>
+              </div>
+              
+              <div class="control-actions" style="display: flex; gap: 8px; margin-top: 8px;">
+                <button class="btn btn-secondary" onclick="window.app.shuffleWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔀 隨機打亂</button>
+                <button class="btn btn-secondary" onclick="window.app.sortWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔤 排序名單</button>
+              </div>
+              
+              <div class="control-options" style="margin: 14px 0;">
+                <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; font-size: 13px; color: var(--text-secondary);">
+                  <input type="checkbox" id="chkRemoveWinner" onchange="window.app.toggleRemoveWinner(this.checked)" style="width: 16px; height: 16px;">
+                  <span>抽中後，自動從名單移除</span>
+                </label>
+              </div>
+
+              <div class="control-group" style="margin: 14px 0;">
+                <label for="selWheelColor" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎨 轉盤色系：</label>
+                <select id="selWheelColor" onchange="window.app.changeWheelColor(parseInt(this.value))" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer;">
+                  <option value="0">🍭 馬卡龍 Macaron</option>
+                  <option value="1">🎪 遊樂場 Playground</option>
+                  <option value="2">🧊 冰巖 Ice & Slate</option>
+                  <option value="3">🌙 月光 Moon</option>
+                  <option value="4">🎨 現代沉穩 Modern Muted</option>
+                  <option value="5">🍬 棉花糖 Cotton Candy</option>
+                  <option value="6">🍋 薄荷檸檬 Mint Lemonade</option>
+                </select>
+              </div>
+
+              <div class="control-group" style="margin: 14px 0;">
+                <label for="selWheelSound" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎵 旋轉音效風格：</label>
+                <select id="selWheelSound" onchange="window.app.changeWheelSound(parseInt(this.value))" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer;">
+                  <option value="0">🎹 歡樂鋼琴</option>
+                  <option value="1">👾 復古電玩</option>
+                  <option value="2">🥁 爵士鼓點</option>
+                  <option value="3">🪘 民族打擊</option>
+                  <option value="4">🚀 太空電音</option>
+                </select>
+              </div>
+              
+              <button class="btn btn-primary" id="btnSpinWheel" onclick="window.app.triggerWheelSpin()" style="width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; font-weight: bold; border-radius: 8px;">🔥 開始旋轉 (或按 Ctrl+Enter)</button>
+              
+              <div class="results-history" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary);">🏆 本次抽中記錄：</h4>
+                <ul id="wheelHistoryList" style="list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto;">
+                  <li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 專注力遊戲 -->
+      <div class="panel-card" id="panel-focus-game">
+        <div class="panel-body">
+          <!-- 遊戲大廳面板，平常沒開始時顯示 -->
+          <div id="focusGameLobby">
+            <!-- 學生視角 lobby -->
+            <div id="studentGameLobby" style="text-align: center; padding: 24px;">
+              <div style="font-size: 48px; margin-bottom: 12px;">🧠</div>
+              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-primary); font-weight: bold;">專注力遊戲大廳</h3>
+              <p style="color: var(--text-secondary); font-size: 14px;">等待老師發起專注力活動... 請保持此頁面開啟喔！</p>
+            </div>
+            
+            <!-- 即時排行榜顯示區 (Lobby 下方) -->
+            <div id="focusGameRankSection" style="display: none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+              <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">🏆 即時成績排行榜</h4>
+              <div id="focusGameLobbyRankList" style="display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto;">
+                <!-- 排行榜清單 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 互動白板 (tldraw) -->
+      <div class="panel-card" id="panel-whiteboard">
+        <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 160px); min-height: 480px; display: flex; flex-direction: column;">
+          <iframe id="whiteboardFrame" src="whiteboard_v146.html?v=160" style="width: 100%; flex: 1; min-height: 380px; border: none; display: block;" title="tldraw 互動白板"></iframe>
+          <div class="whiteboard-instructions" style="background: var(--bg-card); border-top: 1px solid var(--border-color); padding: 10px 16px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; border-radius: 0 0 16px 16px;">
+            <div style="font-weight: bold; color: var(--text-primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              💡 互動白板使用說明：
+            </div>
+            <ol style="margin: 0; padding-left: 20px; line-height: 1.6;">
+              <li>可以將您的文字、圖片、網頁連結貼到白板上</li>
+              <li><strong>白板放大/縮小</strong>：雙指在螢幕擴張/捏合（或電腦 Ctrl + 滑鼠滾輪）</li>
+              <li><strong>白板平移/工具滑動</strong>：雙指在白板上拖曳平移，或點選「🖐️ 手掌工具」單指拖曳；<strong>下方工具列可左右滑動</strong>切換更多工具（電腦：按住空白鍵或滾輪拖曳）</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- 建立自己的白板 -->
+      <div class="panel-card" id="panel-guide">
+        <div class="panel-body">
+          <div class="guide-header" style="text-align: center; margin-bottom: 28px; background: var(--bg-card); padding: 24px; border-radius: 14px; border: 1px solid var(--border-color);">
+            <h1 style="margin: 0 0 10px 0; color: var(--accent-color); font-size: 24px;">📚 教師專屬建置與連線指南</h1>
+            <p style="margin: 0; color: var(--text-secondary); font-size: 15px;">只需要 3 分鐘簡單 4 步驟，立刻為您的班級建立免費專屬的即時互動白板！</p>
+          </div>
+
+          <!-- 步驟 1 -->
+          <div class="step-card" style="border-left: 6px solid var(--accent-color); padding: 24px; margin-bottom: 28px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-color);">
+            <div class="step-title" style="font-size: 18px; font-weight: bold; margin-bottom: 18px; display: flex; align-items: center; gap: 12px;">
+              <span class="step-num" style="background: var(--accent-color); color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">1</span>
+              <span>建立免費的 Firebase 即時資料庫專案</span>
+            </div>
+            <ol style="font-size: 14px; margin: 0; padding-left: 22px; color: var(--text-primary);">
+              <li style="margin-bottom: 24px; line-height: 1.8;">前往 <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--accent-color); font-weight: bold;">Firebase 主控台 🔗</a>，登入您的 Google 帳號。</li>
+              <li style="margin-bottom: 24px; line-height: 1.8;">點選「<strong>+ 新增專案</strong>」，輸入班級名稱（例如：<code>my-class-whiteboard</code>），一路點選「繼續」完成建立：
+                <div class="step-img-box"><img src="images/guide/step01.png" alt="步驟1-1" class="step-img"></div>
+                <div class="step-img-box"><img src="images/guide/step02.png" alt="步驟1-2" class="step-img"></div>
+                <div class="step-img-box"><img src="images/guide/step03.png" alt="步驟1-3" class="step-img"></div>
+                <div class="step-img-box"><img src="images/guide/step04.png" alt="步驟1-4" class="step-img"></div>
+              </li>
+              <li style="margin-bottom: 24px; line-height: 1.8;">建立完成後，在左側選單點選「<strong>資料庫和儲存空間</strong>」 ➔ 「<strong>Realtime Database</strong>」：
+                <div class="step-img-box"><img src="images/guide/step05.png" alt="步驟1-5 選單導覽" class="step-img"></div>
+              </li>
+              <li style="margin-bottom: 24px; line-height: 1.8;">點選頁面中的「<strong>建立資料庫</strong>」按鈕：
+                <div class="step-img-box"><img src="images/guide/step06.png" alt="步驟1-6 建立資料庫" class="step-img"></div>
+              </li>
+              <li style="margin-bottom: 24px; line-height: 1.8;">資料庫位置建議選擇 <span style="color:#ff3b30; font-weight:bold;">新加坡 (asia-southeast1)</span>，點選「下一步」：
+                <div class="step-img-box"><img src="images/guide/step07.png" alt="步驟1-7 選擇位置" class="step-img"></div>
+              </li>
+              <li style="margin-bottom: 24px; line-height: 1.8;">安全規則選擇「<strong>以測試模式啟動</strong>」，最後點選「<strong>啟用</strong>」：
+                <div class="step-img-box"><img src="images/guide/step08.png" alt="步驟1-8 以測試模式啟動" class="step-img"></div>
+              </li>
+            </ol>
+          </div>
+
+          <!-- 步驟 2 -->
+          <div class="step-card" style="border-left: 6px solid #ff9500; padding: 24px; margin-bottom: 28px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-color);">
+            <div class="step-title" style="font-size: 18px; font-weight: bold; margin-bottom: 18px; display: flex; align-items: center; gap: 12px;">
+              <span class="step-num" style="background: #ff9500; color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">2</span>
+              <span>貼上防護安全規則 (徹底避免系統警告信)</span>
+            </div>
+            <ol style="font-size: 14px; margin: 0; padding-left: 22px; color: var(--text-primary);">
+              <li style="margin-bottom: 24px; line-height: 1.8;">在 Realtime Database 頁面上方，點選 <span style="color:#ff9500; font-weight:bold;">規則 (Rules)</span> 頁籤。</li>
+              <li style="margin-bottom: 24px; line-height: 1.8;">點擊下方按鈕一鍵複製防護規則：
+                <div style="margin: 14px 0;">
+                  <button onclick="copySecurityRules()" class="preset-btn" style="background: #ff9500; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 8px; cursor: pointer;">📋 一鍵複製防護安全規則</button>
+                </div>
+                <div class="step-img-box"><img src="images/guide/step10.png" alt="步驟2-2 貼上位置" class="step-img"></div>
+              </li>
+              <li style="margin-bottom: 24px; line-height: 1.8;">清空頁面原本內容，將複製的規則貼上，最後點選右上角的「<strong>發布 (Publish)</strong>」即完成設定！
+                <div class="step-img-box"><img src="images/guide/step10-01.png" alt="步驟2-3 按下發布" class="step-img"></div>
+              </li>
+            </ol>
+          </div>
+
+          <!-- 步驟 3 -->
+          <div class="step-card" style="border-left: 6px solid #34c759; padding: 24px; margin-bottom: 28px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-color);">
+            <div class="step-title" style="font-size: 18px; font-weight: bold; margin-bottom: 18px; display: flex; align-items: center; gap: 12px;">
+              <span class="step-num" style="background: #34c759; color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">3</span>
+              <span>複製您的資料庫 URL 網址</span>
+            </div>
+            <ol style="font-size: 14px; margin: 0; padding-left: 22px; color: var(--text-primary);">
+              <li style="margin-bottom: 16px; line-height: 1.8;">切換回 <span style="color:#34c759; font-weight:bold;">資料 (Data)</span> 頁籤。</li>
+              <li style="margin-bottom: 16px; line-height: 1.8;">在頁面頂部會看到一串以 <code>https://</code> 開頭的資料庫網址，點選該網址右側的「<strong>複製</strong>」按鈕：
+                <div class="step-img-box"><img src="images/guide/step11.png" alt="步驟3-2 複製資料庫網址" class="step-img"></div>
+              </li>
+            </ol>
+          </div>
+
+          <!-- 產生連結工具 -->
+          <div class="tool-box" style="background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(52, 199, 89, 0.05) 100%); border: 2px dashed var(--accent-color); border-radius: 16px; padding: 20px; margin: 20px 0;">
+            <div class="tool-title" style="font-size: 18px; font-weight: bold; color: var(--accent-color); text-align: center; margin-bottom: 14px;">⚡ 步驟 4：產生班級專屬連線網址與 QR Code</div>
+            <div class="generator-group" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;">
+              <input type="text" id="dbUrlInput" class="question-input" style="flex: 1; min-width: 240px; padding: 10px; margin: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;" placeholder="在此貼上您複製的 Firebase Database URL (例如：https://...)">
+              <button onclick="generateLinks()" class="preset-btn" style="background: var(--accent-color); color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 8px; cursor: pointer;">🚀 產生專屬連結</button>
+            </div>
+
+            <div id="resultArea" class="result-group" style="display: none; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-top: 14px;">
+              <div class="result-item" style="margin-bottom: 14px;">
+                <span class="result-label" style="font-weight: bold; display: block; margin-bottom: 6px; font-size: 13px; width: auto !important;">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
+                <div class="result-field" style="display: flex; gap: 8px;">
+                  <input type="text" id="shareUrl" class="question-input" style="flex: 1; padding: 8px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px;" readonly>
+                  <button onclick="copyText('shareUrl')" class="preset-btn" style="background: var(--success-color); color: white; border: none; padding: 8px 14px; font-weight: bold; border-radius: 8px; cursor: pointer;">📋 複製連結</button>
+                </div>
+              </div>
+
+              <!-- 專屬短網址 -->
+              <div class="result-item" style="margin-bottom: 14px;">
+                <span style="font-weight: bold; display: block; margin-bottom: 6px; font-size: 13px;">🔗 班級專屬短網址（更方便輸入與分享）：</span>
+                <div class="result-field" style="display: flex; gap: 8px;">
+                  <input type="text" id="shortUrl" class="question-input" style="flex: 1; padding: 8px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px;" placeholder="正在自動產生短網址..." readonly>
+                  <button id="btnCopyShort" onclick="copyText('shortUrl')" class="preset-btn" style="background: var(--success-color); color: white; border: none; padding: 8px 14px; font-weight: bold; border-radius: 8px; cursor: pointer;" disabled>📋 複製短網址</button>
+                </div>
+              </div>
+
+              <!-- 班級專屬 QR Code 雙軌並陳 -->
+              <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 16px; width: 100%;">
+                <!-- 長網址 QR Code -->
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); width: 210px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                  <div style="color: #333; font-weight: bold; margin-bottom: 10px; font-size: 13px; text-align: center;">📱 原始長連結 QR Code</div>
+                  <div id="qrcode"></div>
+                </div>
+                <!-- 短網址 QR Code -->
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); width: 210px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                  <div style="color: #333; font-weight: bold; margin-bottom: 10px; font-size: 13px; text-align: center;">📱 專屬短網址 QR Code</div>
+                  <div id="qrcode-short" style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px; border: 1px dashed #ccc; border-radius: 6px; background: #fafafa; box-sizing: border-box; text-align: center; padding: 10px;">
+                    等待短網址生成後自動產生...
+                  </div>
+                </div>
+              </div>
+
+              <div class="alert-tip" style="background: rgba(255, 149, 0, 0.1); border-left: 4px solid #ff9500; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-top: 14px;">
+                💡 <strong>如何進入管理員模式？</strong><br>
+                老師點擊上方連結進入白板後，點選右上角的「⚙️ 管理後台」並輸入預設密碼 <strong><code>1234</code></strong>，即可解鎖測驗發布、清除資料、刪除提問等管理權限。一般學生直接在原頁面作答與提問即可。
+              </div>
+            </div>
+          </div>
+
+          <!-- 自行架設說明 -->
+          <div class="step-card" style="border-left-color: var(--text-muted); background: var(--bg-card); margin-bottom: 0;">
+            <div class="step-title" style="color: var(--text-secondary);">
+              <span class="step-num" style="background: var(--text-muted);">🛠️</span>
+              <span>進階：自行託管並綁定專屬網站</span>
+            </div>
+            <ol style="font-size: 13px;">
+              <li>下載本白板專案的完整原始碼：<a href="https://github.com/harmonica80/interactive-whiteboard-2026/archive/refs/heads/main.zip" target="_blank" style="color: var(--accent-color); font-weight: bold;">⬇️ 點此下載原始碼 (.zip)</a>（或至 <a href="https://github.com/harmonica80/interactive-whiteboard-2026" target="_blank" style="color: var(--accent-color);">GitHub 原始碼頁面</a> 查看）。</li>
+              <li>打開 <code>js/firebase-config.js</code>，將 <code>firebaseConfig</code> 內的預設設定值取代為您自己的 Firebase 專案設定值。</li>
+              <li>儲存檔案後，將整個資料庫目錄拖曳至 <a href="https://app.netlify.com/drop" target="_blank" style="color: var(--accent-color);">Netlify Drop</a> 完成免費網站架設，即可擁有專屬網址。</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- 管理員後台 -->
+      <div class="panel-card" id="panel-admin">
+        <div class="panel-body">
+          <!-- 登出按鈕 -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+            <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">您已進入管理員模式</span>
+            <button class="preset-btn" onclick="logoutAdmin()" style="border-color: var(--danger-color); color: var(--danger-color); padding: 6px 12px; font-weight: bold;">登出管理員</button>
+          </div>
+          
+          <!-- 系統重設與備份管理區 (兩欄配置) -->
+          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+              <!-- 系統重設欄 -->
+              <div style="flex: 1; min-width: 250px;">
+                <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">🔄 系統重設</h3>
+                <button class="reset-btn" onclick="confirmReset()" style="width: 100%; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; box-sizing: border-box; margin: 0;">🔄 清除所有資料 (提問、測驗、圖片及白板)</button>
+              </div>
+              
+              <!-- 課堂記錄備份管理欄 -->
+              <div style="flex: 1; min-width: 280px;">
+                <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">💾 課堂記錄備份管理</h3>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                  <button class="preset-btn" onclick="adminExportRecord()" style="flex: 1; min-width: 120px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1; box-sizing: border-box; margin: 0;">📤 匯出 JSON 記錄</button>
+                  <button class="preset-btn" onclick="triggerImportInput()" style="flex: 1; min-width: 120px; justify-content: center; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1; box-sizing: border-box; margin: 0;">📥 匯入 JSON 記錄</button>
+                  <input type="file" id="importRecordInput" accept=".json" style="display: none;" onchange="adminImportRecord(event)">
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- 倒數計時管理區 -->
+          <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+            <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">⏱️ 倒數計時管理</h3>
+            <div class="timer-controls" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label for="timerMinutes" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">時間：</label>
+                <input type="number" id="timerMinutes" class="question-input" style="width: 70px; padding: 6px; text-align: center; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" min="1" max="180" value="10">
+                <span style="font-size: 14px; color: var(--text-secondary);">分鐘</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label for="timerStyle" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">預設風格：</label>
+                <select id="timerStyle" class="question-input" style="width: 120px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                  <option value="flip">⏱️ 經典翻頁</option>
+                  <option value="digital">🚨 LED 數位</option>
+                  <option value="ring">⭕ 簡約圓環</option>
+                </select>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label for="timerMusicSelect" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">背景音樂：</label>
+                <select id="timerMusicSelect" class="question-input" onchange="window.app.onTimerMusicSelectChange(this.value)" style="width: 200px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                  <optgroup label="── 巴洛克 ──">
+                    <option value="https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1">🎵 帕海貝爾 - 卡農</option>
+                    <option value="https://www.youtube.com/watch?v=GUrkvBPXmDQ">🎵 英格蘭民謠 - 綠袖子</option>
+                    <option value="https://www.youtube.com/watch?v=1h4mAceHmrI">🎵 韓德爾 - 水上音樂</option>
+                    <option value="https://www.youtube.com/watch?v=Uum5rmPLVZw">🎵 海頓 - 降E大調小號協奏曲「快板」</option>
+                    <option value="https://www.youtube.com/watch?v=xVxwuirUX-M">🎵 巴哈 - 諧謔曲</option>
+                    <option value="https://www.youtube.com/watch?v=k3AWRUYV9ds">🎵 韋瓦第 - 四季（春）</option>
+                    <option value="https://www.youtube.com/watch?v=vG_FBIbGuvg">🎵 莫札特 - G大調第13號小夜曲 K.525</option>
+                  </optgroup>
+                  <optgroup label="── 古典鋼琴 ──">
+                    <option value="https://www.youtube.com/watch?v=HJDLHuixqG8">🎵 理查克萊德門 - 夢中的婚禮</option>
+                    <option value="https://www.youtube.com/watch?v=vDlqmTIw8y0">🎵 理查克萊德門 - 給愛麗絲</option>
+                  </optgroup>
+                  <optgroup label="── 輕音樂 ──">
+                    <option value="https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-study-112191.mp3">🎵 專注 Lofi</option>
+                    <option value="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=soft-relaxing-piano-jazz-11428.mp3">🎵 爵士鋼琴</option>
+                  </optgroup>
+                  <option value="custom">✍️ 自訂 YouTube 網址...</option>
+                </select>
+              </div>
+              <div id="customMusicInputWrapper" style="display: none; align-items: center; gap: 6px;">
+                <label for="timerMusicCustomUrl" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">網址：</label>
+                <input type="text" id="timerMusicCustomUrl" class="question-input" oninput="window.app.updateMusicSource(this.value)" onchange="window.app.updateMusicSource(this.value)" style="width: 260px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="貼上 YouTube 網址 (支援 &t= 秒數)...">
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="adminStartTimerBtn" class="preset-btn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminStartTimer()">啟動倒數</button>
+                <button id="adminPauseTimerBtn" class="preset-btn" style="background: #ff9800; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminPauseTimer()">暫停</button>
+                <button id="adminResumeTimerBtn" class="preset-btn" style="background: var(--success-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminResumeTimer()">繼續</button>
+                <button id="adminResetTimerBtn" class="preset-btn" style="border-color: var(--text-muted); color: var(--text-secondary); padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminResetTimer()">重設/關閉</button>
+                <button id="classBellBtn" class="preset-btn" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="playClassBell()">🔔 上/下課鐘聲</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 測驗管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>📝 選擇題測驗管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <div id="quizForm" class="quiz-controls">
+                <!-- 1. 題目輸入框 (獨佔整行 100%) -->
+                <div style="margin-bottom: 10px;">
+                  <input type="text" id="quizQuestion" class="quiz-input" placeholder="輸入題目..." style="width: 100%; margin-bottom: 0; box-sizing: border-box;">
+                </div>
+
+                <!-- 2. 題型選擇器 (移動至題目下方) -->
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); width: fit-content;">
+                  <span style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">題型：</span>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: bold; cursor: pointer; color: var(--text-primary);">
+                    <input type="radio" name="quizTypeRadio" value="single" checked style="cursor: pointer;"> 🔘 單選題
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: bold; cursor: pointer; color: var(--accent-color);">
+                    <input type="radio" name="quizTypeRadio" value="multiple" style="cursor: pointer;"> ☑️ 複選題
+                  </label>
+                </div>
+
+                <!-- 3. 預設選項與快速選項按鈕 -->
+                <div class="preset-options" style="margin-bottom: 12px;">
+                  <span class="preset-label">快速選項：</span>
+                  <div class="preset-btns" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="preset-btn" onclick="loadPreset('yesno')">是/否</button>
+                    <button class="preset-btn" onclick="loadPreset('truefalse')">正確/錯誤</button>
+                    <button class="preset-btn" onclick="loadPreset('abcd')">A/B/C/D</button>
+                    <button class="preset-btn" onclick="loadPreset('1234')">1/2/3/4</button>
+                    <button class="preset-btn" onclick="loadPreset('star')" style="background: rgba(255,149,0,0.1); color: #ff9500; border-color: rgba(255,149,0,0.3);">⭐ 1~5星</button>
+                    <button class="preset-btn" onclick="loadPreset('emoji')" style="background: rgba(255,45,85,0.1); color: #ff2d55; border-color: rgba(255,45,85,0.3);">😍 五大表情</button>
+                  </div>
+                </div>
+
+                <!-- 4. 題庫匯入與格式說明按鈕列 (已刪除重複的匯出按鈕) -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary" onclick="document.getElementById('quizFileInput').click()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    📤 匯入題目 TXT
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="openQuizFormatModal()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    📄 TXT 範例格式
+                  </button>
+                  <input type="file" id="quizFileInput" accept=".txt,.json" style="display: none;" onchange="window.quiz.importQuizBankTxtFile(event)">
+                </div>
+                
+                <div id="optionsContainer" class="options-container">
+                  <div class="option-input">
+                    <input type="text" class="option-field" placeholder="選項 1">
+                    <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+                  </div>
+                  <div class="option-input">
+                    <input type="text" class="option-field" placeholder="選項 2">
+                    <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+                  </div>
+                </div>
+                <button class="add-option-btn" onclick="addOption()">+ 新增選項</button>
+                <button id="startQuizBtn" class="start-quiz-btn" onclick="startQuiz()">🚀 開始測驗</button>
+              </div>
+              <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="display: none; margin-top: 10px; padding: 12px; width: 100%; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color);">結束測驗</button>
+
+              <!-- 5. 📚 歷屆題目庫 (支援全選與勾選 TXT 匯出) -->
+              <div id="quizHistorySection" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                  <h4 style="font-size: 14px; color: var(--text-primary); margin: 0; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                    📚 歷屆題目庫 <span id="quizHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 題)</span>
+                  </h4>
+                  <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="window.quiz.exportSelectedQuizBankTxt()" style="padding: 4px 10px; font-size: 12px; font-weight: bold;">
+                      📥 匯出選取題目 TXT
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 批次勾選列 -->
+                <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 12px;">
+                  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: bold; color: var(--text-secondary);">
+                    <input type="checkbox" id="chkSelectAllQuiz" onchange="window.quiz.toggleSelectAllHistory(this.checked)" style="cursor: pointer;">
+                    <span>全選 / 全不選</span>
+                  </label>
+                  <button type="button" onclick="window.quiz.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
+                    🗑️ 清空歷屆題庫
+                  </button>
+                </div>
+
+                <!-- 歷史題目清單 -->
+                <div id="quizHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
+                  <!-- 動態渲染歷史題目項目 -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ⚡ 搶答管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>⚡ 搶答管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <div style="margin-bottom: 20px;">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">設定搶答開始倒數秒數：</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input type="number" id="buzzGameCountdown" class="question-input" min="3" max="60" value="5" style="width: 80px; text-align: center; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px;">
+                  <span style="font-size: 14px; color: var(--text-secondary);">秒</span>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                <button onclick="window.app.startBuzzGameAdmin()" style="flex: 1; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 42px;">
+                  🚀 開始搶答
+                </button>
+                <button onclick="window.app.endBuzzGameAdmin()" style="flex: 1; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 42px;">
+                  🛑 停止搶答
+                </button>
+              </div>
+
+              <!-- 搶答即時排行榜 -->
+              <div id="adminBuzzGameRankSection" style="display: none; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">🏆 搶答即時排行榜</h4>
+                <div id="adminBuzzGameRankList" style="display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto;">
+                  <!-- 搶答排行清單 -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 專注力遊戲管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>🧠 專注力遊戲管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              
+              <div style="margin-bottom: 16px;">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">1. 選擇遊戲類型：</label>
+                <select id="focusGameType" onchange="window.app && window.app.updateFocusGameAdminOptions()" class="question-input" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px; height: 38px;">
+                  <option value="numberGrid">🔢 依序點選數字 (舒爾特方格 Schulte Grid)</option>
+                  <option value="memoryMatch">🃏 互動式記憶翻牌配對 (破冰遊戲)</option>
+                  <option value="memoryPosition">🧩 位置序列記憶 (含反向模式)</option>
+                  <option value="characterTest">✍️ 一字千金：字力測驗 (手寫/輸入)</option>
+                  <option value="characterCrossword">✍️ 一字千金：字字珠璣 (十字選字)</option>
+                  <option value="characterUnitedWords">✍️ 一字千金：團結一詞 (部件組詞)</option>
+                </select>
+              </div>
+              <div id="focusNumberGridSettings" style="margin-bottom: 16px;">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 設定數字數量 (格子數)：</label>
+                <div class="grid-size-selector" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                  <div class="grid-size-card" onclick="selectFocusGridSize(9, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">9</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">3×3 格子</div>
+                  </div>
+                  <div class="grid-size-card" onclick="selectFocusGridSize(16, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">16</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">4×4 格子</div>
+                  </div>
+                  <div class="grid-size-card" onclick="selectFocusGridSize(25, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">25</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">5×5 格子</div>
+                  </div>
+                  <div class="grid-size-card active" onclick="selectFocusGridSize(36, this)" style="border: 2px solid var(--accent-color); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);">36</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">6×6 格子 (預設)</div>
+                  </div>
+                </div>
+                <input type="hidden" id="selectedFocusGridSize" value="36">
+              </div>
+
+              <!-- 記憶翻牌配對遊戲設定 -->
+              <div id="focusMemoryMatchSettings" style="margin-bottom: 16px; display: none;">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 選擇卡片張數 (對數) / 難度：</label>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;">
+                  <div class="grid-size-card memory-match-card active" onclick="selectMemoryMatchPairCount(8, this)" style="border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">16張</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">8對 (輕鬆入門)</div>
+                  </div>
+                  <div class="grid-size-card memory-match-card" onclick="selectMemoryMatchPairCount(12, this)" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; background: var(--bg-card);">
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-primary);">24張</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">12對 (挑戰難度)</div>
+                  </div>
+                </div>
+                <input type="hidden" id="selectedMemoryMatchPairCount" value="8">
+
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">3. 選擇圖案主題 (提供 6 大主題)：</label>
+                <select id="memoryMatchTheme" class="question-input" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px; height: 38px;">
+                  <option value="fruit">🍎 水果與美食派對 (水果、甜點、美饌)</option>
+                  <option value="animal">🐶 可愛動物世界 (萌寵、野生動物、海洋)</option>
+                  <option value="space">🚀 科技與宇宙探索 (火箭、行星、機器人)</option>
+                  <option value="sports">⚽ 運動與休閒娛樂 (球隊、藝術、娛樂)</option>
+                  <option value="emoji">🎨 歡樂綜合大集合 (綜合驚喜圖案)</option>
+                  <option value="images">🖼️ 課堂圖片庫 (自動使用已上傳教材圖片)</option>
+                </select>
+              </div>
+
+              <div style="margin-bottom: 20px;">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 共用設定：開始倒數秒數</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input type="number" id="focusGameCountdown" class="question-input" min="3" max="60" value="10" style="width: 80px; text-align: center; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 8px;">
+                  <span style="font-size: 14px; color: var(--text-secondary);">秒</span>
+                </div>
+              </div>
+
+              <!-- OpenCode 修改：位置序列記憶第一版設定，可選序列長度與反向模式 -->
+              <div id="focusMemorySettings" style="display: none; margin-bottom: 20px; padding: 12px; border: 1px dashed var(--border-color); border-radius: 10px; background: var(--bg-input);">
+                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">3. 位置序列記憶設定：</label>
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); font-weight: bold;">
+                    盤面大小
+                    <select id="focusMemoryGridSize" class="question-input" style="width: 105px; margin: 0; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px; border-radius: 8px;">
+                      <option value="9">3×3 格子</option>
+                      <option value="16" selected>4×4 格子</option>
+                      <option value="25">5×5 格子</option>
+                      <option value="36">6×6 格子</option>
+                    </select>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); font-weight: bold;">
+                    序列長度
+                    <input type="number" id="focusMemoryLength" class="question-input" min="3" max="12" value="5" style="width: 70px; text-align: center; margin: 0; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px; border-radius: 8px;">
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); font-weight: bold; cursor: pointer;">
+                    <input type="checkbox" id="focusMemoryReverse" style="width: 16px; height: 16px; margin: 0;">
+                    啟用反向模式
+                  </label>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">選擇「位置序列記憶」時使用：學生需記住閃爍格子，並依正常或反向順序點回。</div>
+              </div>
+
+              <div style="display: flex; gap: 8px;">
+                <button onclick="window.app.startFocusGame()" style="flex: 1; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 42px;">
+                  🚀 開始遊戲
+                </button>
+                <button onclick="window.app.endFocusGame()" style="flex: 1; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 42px;">
+                  ❌ 結束遊戲
+                </button>
+              </div>
+
+              <!-- 控制台即時排行榜 -->
+              <div id="adminFocusGameRankSection" style="display: none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">🏆 即時成績排行榜</h4>
+                <div id="adminFocusGameRankList" style="display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto;">
+                  <!-- 排行榜清單 -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 提問管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>💬 提問管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <!-- 新建群組與清單 -->
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="newQuestionFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新提問群組名稱（如：第一組）...">
+                <button class="preset-btn" onclick="window.app.adminCreateQuestionFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+              </div>
+              
+              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">提問群組清單：</div>
+              <div id="adminQuestionFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <!-- 提問群組清單 -->
+              </div>
+
+              <!-- 提問批次管理工具列 -->
+              <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
+                <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次提問歸檔：</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">已選 💬 <strong id="batchQuestionSelectCount">0</strong> 項</span>
+                <select id="batchQuestionFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                  <option value="">📁 移出提問群組 (無群組)</option>
+                </select>
+                <button class="preset-btn" onclick="window.app.applyBatchQuestionArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              </div>
+
+              <div id="adminQuestionsGroupedContainer" class="grouped-folders-container"></div>
+              
+              <!-- 全選提問與批次刪除區塊 -->
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" id="selectAllQuestions" onchange="window.app.toggleSelectAllQuestions(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選提問
+                </label>
+                <button class="preset-btn" onclick="window.app.deleteSelectedQuestions()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              </div>
+              
+              <ul id="adminQuestionList" class="question-list"></ul>
+            </div>
+          </div>
+
+          <!-- 圖片管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>🖼️ 圖片管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <!-- 新建圖片群組與清單 -->
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="newImageFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新圖片群組名稱（如：第一組圖片）...">
+                <button class="preset-btn" onclick="window.app.adminCreateImageFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+              </div>
+
+              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">圖片群組清單：</div>
+              <div id="adminImageFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <!-- 圖片群組清單 -->
+              </div>
+
+              <!-- 圖片批次管理工具列 -->
+              <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(175, 82, 222, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
+                <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次圖片歸檔：</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">已選 🖼️ <strong id="batchImageSelectCount">0</strong> 項</span>
+                <select id="batchImageFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                  <option value="">📁 移出圖片群組 (無群組)</option>
+                </select>
+                <button class="preset-btn" onclick="window.app.applyBatchImageArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              </div>
+
+              <div id="adminImagesGroupedContainer" class="grouped-folders-container"></div>
+              
+              <!-- 全選圖片與批次刪除區塊 -->
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" id="selectAllImages" onchange="window.app.toggleSelectAllImages(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選圖片
+                </label>
+                <button class="preset-btn" onclick="window.app.deleteSelectedImages()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              </div>
+              
+              <div id="adminImagePreview" class="image-preview"></div>
+            </div>
+          </div>
+
+          <!-- 影片管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>🎥 影片管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+                <button onclick="window.app.stopBroadcastVideo()" class="preset-btn" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto; margin: 0;">⏹️ 停止全體廣播</button>
+              </div>
+
+              <!-- 新建影片群組與清單 -->
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="newVideoFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新影片群組名稱（如：第一組影片）...">
+                <button class="preset-btn" onclick="window.app.adminCreateVideoFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+              </div>
+
+              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">影片群組清單：</div>
+              <div id="adminVideoFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <!-- 影片群組清單 -->
+              </div>
+
+              <!-- 影片批次管理工具列 -->
+              <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(52, 199, 89, 0.1); border: 1px solid #34c759; border-radius: 8px;">
+                <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次影片歸檔：</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">已選 🎥 <strong id="batchVideoSelectCount">0</strong> 項</span>
+                <select id="batchVideoFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                  <option value="">📁 移出影片群組 (無群組)</option>
+                </select>
+                <button class="preset-btn" onclick="window.app.applyBatchVideoArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸檔</button>
+              </div>
+
+              <div id="adminVideosGroupedContainer" class="grouped-folders-container"></div>
+              
+              <!-- 全選影片與批次刪除區塊 -->
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" id="selectAllVideos" onchange="window.app.toggleSelectAllVideos(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選影片
+                </label>
+                <button class="preset-btn" onclick="window.app.deleteSelectedVideos()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              </div>
+
+              <div id="adminVideoPreview" class="image-preview"></div>
+            </div>
+          </div>
+
+          <!-- 教師分享管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed">
+            <div class="admin-section-header">
+              <h3>📢 教師分享管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <!-- 新建分享資料夾 -->
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="newShareFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新分享資料夾名稱（如：課堂講義）...">
+                <button class="preset-btn" onclick="window.app.adminCreateShareFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+              </div>
+
+              <!-- 分享資料夾清單 -->
+              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">資料夾清單：</div>
+              <div id="adminShareFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <!-- 渲染資料夾 -->
+              </div>
+
+              <!-- 新增分享內容區 -->
+              <div class="share-creation-box" style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 16px;">
+                <div style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-primary);">➕ 新增分享內容</div>
+                
+                <!-- 類型切換按鈕 -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                  <button class="preset-btn active-share-type" id="shareTypeBtnText" onclick="window.app.switchShareFormType('text')" style="flex: 1; padding: 6px; font-size: 13px; font-weight: bold;">💬 文字</button>
+                  <button class="preset-btn" id="shareTypeBtnImage" onclick="window.app.switchShareFormType('image')" style="flex: 1; padding: 6px; font-size: 13px;">🖼️ 圖片</button>
+                  <button class="preset-btn" id="shareTypeBtnLink" onclick="window.app.switchShareFormType('link')" style="flex: 1; padding: 6px; font-size: 13px;">🔗 網址</button>
+                </div>
+
+                <!-- 動態表單欄位 -->
+                <div id="shareFormFields">
+                  <!-- 文字輸入欄位 -->
+                  <div id="shareFieldText">
+                    <textarea id="shareInputText" class="question-input" style="width: 100%; height: 80px; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入要分享給學生的文字訊息..."></textarea>
+                  </div>
+                  <!-- 圖片選擇欄位 -->
+                  <div id="shareFieldImage" style="display: none;">
+                    <div id="shareImageUploadZone" class="upload-zone" style="min-height: 80px; padding: 12px; cursor: pointer; text-align: center;">
+                      <div style="font-size: 24px; margin-bottom: 4px;">📁</div>
+                      <div style="font-size: 12px;">點擊或拖曳圖片檔至此（限制 5MB）</div>
+                      <div id="shareImageFilename" style="font-size: 11px; color: var(--accent-color); margin-top: 4px; font-weight: bold;"></div>
+                    </div>
+                    <input type="file" id="shareImageFileInput" accept="image/*" style="display: none;">
+                  </div>
+                  <!-- 網址輸入欄位 -->
+                  <div id="shareFieldLink" style="display: none;">
+                    <input type="text" id="shareInputLinkTitle" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="連結標題（例如：Google 首頁，選填）">
+                    <input type="url" id="shareInputLinkUrl" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入連結網址（如 https://google.com）">
+                  </div>
+                </div>
+
+                <!-- 選擇要放入的資料夾 -->
+                <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                  <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary); white-space: nowrap;">歸類到資料夾：</label>
+                  <select id="shareFolderSelect" class="folder-select" style="flex: 1; margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);">
+                    <option value="">📁 未分類</option>
+                  </select>
+                </div>
+
+                <button class="preset-btn" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 12px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
+              </div>
+
+              <!-- 分享內容批次管理與列表 -->
+              <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
+                <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次歸類分享：</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">已選 📢 <strong id="batchShareSelectCount">0</strong> 項</span>
+                <select id="batchShareFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                  <option value="">📁 移出資料夾 (未分類)</option>
+                </select>
+                <button class="preset-btn" onclick="window.app.applyBatchShareArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸類</button>
+              </div>
+
+              <div id="adminSharesContainer" class="grouped-folders-container"></div>
+
+              <!-- 全選與刪除 -->
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" id="selectAllShares" onchange="window.app.toggleSelectAllShares(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選分享項目
+                </label>
+                <button class="preset-btn" onclick="window.app.deleteSelectedShares()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 題目庫 TXT 純文字檔範例格式說明對話框 -->
+  <div id="quizFormatModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 580px; width: 90%; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;">
+      <button onclick="closeQuizFormatModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer;">✕</button>
+      <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+        📄 題目庫純文字檔 (.txt) 格式說明
+      </h3>
+      <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
+        您可以使用任何記事本，將題目寫成簡單的純文字檔格式！<strong>第 1 行為題目</strong>，<strong>第 2 行填單選或複選</strong>，<strong>第 3 行起每行一個選項</strong>。題目間以 <code>---</code> 或空行分隔：
+      </p>
+
+      <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 240px; line-height: 1.4;">
+您對今天的課堂內容滿意度如何？
+單選
+⭐ 1 星
+⭐⭐ 2 星
+⭐⭐⭐ 3 星
+⭐⭐⭐⭐ 4 星
+⭐⭐⭐⭐⭐ 5 星
+
+---
+
+請問下列哪些是網頁開發的三大核心語言？
+複選
+HTML
+CSS
+JavaScript
+Python</pre>
+
+      <div style="display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="window.quiz.exportQuizBankTxt()" style="padding: 8px 14px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">
+          ⬇️ 下載範例題目檔 (sample_quiz_bank.txt)
+        </button>
+        <button class="btn btn-secondary" onclick="closeQuizFormatModal()" style="padding: 8px 14px; font-size: 13px;">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
+  
+  <script src="js/firebase-config.js?v=151"></script>
+  <script src="js/character_pool.js?v=151"></script>
+  <script src="js/quiz.js?v=200"></script>
+  <script src="js/app.js?v=200"></script>
+  
+  <!-- 問題彈出視窗 -->
+  <div id="questionModal" class="modal-overlay question-modal">
+    <div class="modal-content" style="position: relative; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; border-radius: 16px; background: var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+      <button id="questionModalClose" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 120; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.05);" title="關閉">✕</button>
+      
+      <!-- 左右導覽按鈕 -->
+      <button id="questionModalPrev" class="modal-nav-btn" style="left: 15px;" title="上一個">◀</button>
+      <button id="questionModalNext" class="modal-nav-btn" style="right: 15px;" title="下一個">▶</button>
+      
+      <div class="modal-body" style="padding: 40px 30px 30px 30px;">
+        <div id="questionModalUser" class="question-user" style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-secondary); text-align: center;"></div>
+        <div id="questionModalText" class="question-text" style="font-size: 18px; color: var(--text-primary); line-height: 1.6; word-break: break-all; margin-bottom: 24px; text-align: center; white-space: pre-wrap;"></div>
+        
+        <!-- 複製內容與表情符號回饋 -->
+        <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px; flex-wrap: wrap;">
+          <button id="questionCopyBtn" class="download-btn" style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; flex-shrink: 0;">📋 複製內容</button>
+          <div id="questionModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border: none; padding: 0; margin: 0; flex-shrink: 0;">
+            <!-- 動態渲染的表情按鈕 -->
+          </div>
+        </div>
+
+        <!-- 留言回饋區塊 -->
+        <div class="modal-comments-section" style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-primary); text-align: left;">💬 留言回饋</h3>
+          <div id="questionCommentsList" class="comments-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <!-- 留言內容 -->
+          </div>
+          <div class="comment-input-group" style="display: flex; gap: 8px;">
+            <input type="text" id="questionCommentNickname" placeholder="您的名字" style="width: 80px; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+            <input type="text" id="questionCommentInput" placeholder="輸入留言內容..." style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+            <button onclick="window.app.submitComment('questions', window.app.activeQuestionId)" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">送出</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 圖片彈出視窗 -->
+  <div id="imageModal" class="modal-overlay image-modal">
+    <div class="modal-content" style="position: relative; max-width: 90vw; max-height: 95vh; display: flex; flex-direction: column;">
+      <button id="imageModalClose" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 120; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.4);" title="關閉">✕</button>
+      
+      <!-- 左右導覽按鈕 -->
+      <button id="imageModalPrev" class="modal-nav-btn" style="left: 20px;" title="上一個">◀</button>
+      <button id="imageModalNext" class="modal-nav-btn" style="right: 20px;" title="下一個">▶</button>
+      
+      <div class="modal-body" style="padding: 0; text-align: center; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; max-height: 90vh;">
+        <div id="imageZoomContainer" class="image-zoom-container" style="width: 100%; height: calc(85vh - 250px); min-height: 300px;">
+          <div id="imageCanvasWrapper" style="position: relative; display: inline-block;">
+            <img id="modalImage" class="modal-image" src="" alt="" draggable="false">
+            <canvas id="imageMarkupCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; cursor: crosshair;"></canvas>
+          </div>
+        </div>
+        <div id="zoomInfo" class="zoom-info">100%</div>
+        <div class="zoom-controls">
+          <!-- 繪圖細項面版（在左側展開） -->
+          <div id="drawSettingsPanel" class="draw-settings-panel">
+            <!-- 顏色選擇 -->
+            <div id="markupColorPicker" style="display: flex; gap: 6px;">
+              <button class="color-dot active" onclick="window.app.setImageColor('#ff3b30', this)" style="background: #ff3b30;" title="紅色"></button>
+              <button class="color-dot" onclick="window.app.setImageColor('#ffcc00', this)" style="background: #ffcc00;" title="黃色"></button>
+              <button class="color-dot" onclick="window.app.setImageColor('#34c759', this)" style="background: #34c759;" title="綠色"></button>
+              <button class="color-dot" onclick="window.app.setImageColor('#007aff', this)" style="background: #007aff;" title="藍色"></button>
+              <button class="color-dot" onclick="window.app.setImageColor('#ffffff', this)" style="background: #ffffff;" title="白色"></button>
+            </div>
+            <!-- 粗細調整 -->
+            <div id="markupSizePicker" style="display: flex; align-items: center; gap: 4px; width: 100%;">
+              <select onchange="window.app.setImageBrushSize(this.value)" style="width: 100%; padding: 4px; border-radius: 4px; background: #222; border: 1px solid #444; color: white; font-size: 11px; cursor: pointer;">
+                <option value="2">細線</option>
+                <option value="5" selected>中等</option>
+                <option value="10">粗線</option>
+                <option value="20">超粗</option>
+              </select>
+            </div>
+            <!-- 清除按鈕 -->
+            <button id="markupClearBtn" onclick="window.app.clearImageMarkup()" style="width: 100%; padding: 4px 8px; border: 1px solid var(--danger-color); color: var(--danger-color); background: transparent; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; text-align: center;" title="清除所有畫跡">🗑️ 清除</button>
+          </div>
+
+          <!-- 主工具列（垂直排列） -->
+          <div class="zoom-buttons-container">
+            <!-- 模式選擇 (單個畫筆按鈕，按一下開啟，再按一下關閉切回拖動) -->
+            <button id="modeDrawBtn" class="zoom-btn" onclick="window.app.toggleImageMode()" title="✏️ 畫筆標記">✏️</button>
+            
+            <!-- 分割線 -->
+            <div style="width: 20px; height: 1px; background: rgba(255, 255, 255, 0.25); margin: 3px 0;"></div>
+            
+            <!-- 重設 -->
+            <button id="zoomResetBtn" class="zoom-btn" title="重設縮放平移">⟲</button>
+          </div>
+        </div>
+        
+        <div class="image-info" style="display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.85); color: white; width: 100%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; flex-wrap: wrap;">
+            <div style="text-align: left;">
+              <div id="modalImageUser" class="image-user" style="color: #aaa; font-size: 13px;"></div>
+              <div id="modalImageFilename" class="image-filename" style="color: #fff; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;"></div>
+            </div>
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+              <div style="display: flex; gap: 8px;">
+                <button id="imageCopyBtn" class="download-btn" style="padding: 6px 12px; background: #34c759; color: white; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer;">📋 複製圖片</button>
+                <a id="modalDownloadBtn" class="download-btn" href="" download style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">⬇ 下載</a>
+              </div>
+              <div id="imageModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border: none; padding: 0; margin: 0; display: flex;">
+                <!-- 動態渲染的表情按鈕 -->
+              </div>
+            </div>
+          </div>
+          
+          <!-- 表情符號回饋 -->
+          <div id="imageModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%;">
+            <!-- 動態渲染的表情按鈕 -->
+          </div>
+
+          <!-- 留言區 -->
+          <div class="modal-comments-section" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%; text-align: left;">
+            <h3 style="font-size: 14px; margin-bottom: 8px; color: #fff;">💬 留言回饋</h3>
+            <div id="imageCommentsList" class="comments-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; color: #fff;">
+              <!-- 留言內容 -->
+            </div>
+            <div class="comment-input-group" style="display: flex; gap: 8px; width: 100%; box-sizing: border-box;">
+              <input type="text" id="imageCommentNickname" placeholder="名字" style="width: 70px; flex-shrink: 0; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 12px; box-sizing: border-box;">
+              <input type="text" id="imageCommentInput" placeholder="輸入留言內容..." style="flex: 1; min-width: 0; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 12px; box-sizing: border-box;">
+              <button onclick="window.app.submitComment('images', window.app.activeImageId)" style="flex-shrink: 0; padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-sizing: border-box;">送出</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 整合通用確認彈出視窗 -->
+  <div id="customConfirmModal" class="modal-overlay confirm-modal">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div id="confirmModalIcon" style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
+        <div id="confirmModalText" style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: var(--text-primary);">確定要重設嗎？</div>
+        <div id="confirmModalSubtext" style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">這將清除所有提問、測驗及圖片資料</div>
+        <div class="confirm-actions">
+          <button class="confirm-btn cancel" onclick="closeCustomConfirmModal()">取消</button>
+          <button id="confirmModalBtn" class="confirm-btn confirm">確定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 通知彈出視窗（用於投票成功、重複投票等提示） -->
+  <div id="notifyModal" class="modal-overlay question-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="notifyModalTitle">提示</span>
+        <button id="notifyModalClose" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="notifyModalText" class="question-text" style="text-align: center; font-size: 16px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 管理員密碼彈出視窗 -->
+  <div id="adminPasswordModal" class="modal-overlay confirm-modal">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div style="font-size: 32px; margin-bottom: 12px;">🔒</div>
+        <div style="font-weight: bold; font-size: 16px; margin-bottom: 16px; color: var(--text-primary);">請輸入管理員密碼</div>
+        <input type="password" id="adminPasswordInput" class="question-input" placeholder="密碼">
+        <div class="confirm-actions">
+          <button class="confirm-btn cancel" onclick="closeAdminPasswordModal()">取消</button>
+          <button class="confirm-btn confirm" onclick="submitAdminPassword()">確認</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 懸浮倒數計時器 -->
+  <div id="floatingTimer" class="floating-timer" style="display: none;">
+    <!-- 計時器主體 (展開狀態) -->
+    <div id="timerExpandedContent" class="timer-expanded-content">
+      <div class="timer-header">
+        <span class="timer-drag-handle">⏱️ 倒數計時</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <select id="localTimerStyle" class="local-style-select" onchange="window.app.changeLocalTimerStyle(this.value)">
+            <option value="flip">經典翻頁</option>
+            <option value="digital">LED 數位</option>
+            <option value="ring">簡約圓環</option>
+          </select>
+          <button id="timerVolumeBtn" class="timer-min-btn" onclick="window.app.toggleTimerMute()" title="靜音/取消靜音">🔊</button>
+          <button class="timer-min-btn" onclick="window.app.toggleMinimizeTimer(true)" title="最小化">−</button>
+        </div>
+      </div>
+      <div class="timer-body">
+        <!-- 1. 翻頁風格 -->
+        <div id="timerStyleFlip" class="timer-display-style flip-style">
+          <div class="flip-unit" id="flipMinTens"><span class="digit">0</span></div>
+          <div class="flip-unit" id="flipMinOnes"><span class="digit">0</span></div>
+          <span class="flip-colon">:</span>
+          <div class="flip-unit" id="flipSecTens"><span class="digit">0</span></div>
+          <div class="flip-unit" id="flipSecOnes"><span class="digit">0</span></div>
+        </div>
+        
+        <!-- 2. LED 數位風格 -->
+        <div id="timerStyleDigital" class="timer-display-style digital-style" style="display: none;">
+          <div class="led-display">00:00</div>
+        </div>
+        
+        <!-- 3. 簡約圓環風格 -->
+        <div id="timerStyleRing" class="timer-display-style ring-style" style="display: none;">
+          <svg class="ring-svg" viewBox="0 0 100 100">
+            <circle class="ring-bg" cx="50" cy="50" r="40"></circle>
+            <circle id="ringProgress" class="ring-fg" cx="50" cy="50" r="40"></circle>
+          </svg>
+          <div class="ring-text" id="ringTimeText">00:00</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 計時器主體 (最小化狀態) -->
+    <div id="timerMinimizedContent" class="timer-minimized-content" style="display: none;" onclick="window.app.toggleMinimizeTimer(false)">
+      <span style="font-size: 16px; margin-right: 4px;">⏱️</span>
+      <span id="minimizedTimeText">10:00</span>
+    </div>
+  </div>
+
+  <!-- 原生 HTML5 音訊與 YouTube 播放器 -->
+  <audio id="bgAudioPlayer" loop preload="auto" style="display: none;"></audio>
+  <audio id="bellAudioPlayer" preload="auto" style="display: none;" src="https://actions.google.com/sounds/v1/alarms/school_bell.ogg"></audio>
+  <div id="ytPlayerContainer" style="position: fixed; left: -9999px; top: -9999px; width: 300px; height: 200px; opacity: 0.001; pointer-events: none; overflow: hidden; z-index: -1000;">
+    <div id="canonPlayer"></div>
+    <div id="bellPlayer"></div>
+  </div>
+
+  <!-- 影片播放彈出視窗 -->
+  <div id="videoModal" class="modal-overlay image-modal">
+    <div class="modal-content" style="position: relative; max-width: 90vw; max-height: 95vh; display: flex; flex-direction: column;">
+      <button id="videoModalClose" onclick="window.app.closeVideoModal()" class="modal-close" style="position: absolute; top: 15px; right: 15px; z-index: 120; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.4);" title="關閉">✕</button>
+      
+      <!-- 左右導覽按鈕 -->
+      <button id="videoModalPrev" class="modal-nav-btn" style="left: 20px;" title="上一個">◀</button>
+      <button id="videoModalNext" class="modal-nav-btn" style="right: 20px;" title="下一個">▶</button>
+      
+      <div class="modal-body" style="padding: 0; text-align: center; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; max-height: 90vh;">
+        <div style="width: 100%; height: calc(85vh - 250px); display: flex; align-items: center; justify-content: center; position: relative; min-height: 300px;">
+        <div id="videoPlayerContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #000;">
+            <!-- 將會動態渲染為 <video> 或是 <iframe> -->
+          </div>
+        </div>
+        
+        <div class="image-info" style="display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.85); color: white; width: 100%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; flex-wrap: wrap;">
+            <div style="text-align: left;">
+              <div id="modalVideoUser" class="image-user" style="color: #aaa; font-size: 13px;"></div>
+              <div id="modalVideoFilename" class="image-filename" style="color: #fff; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;"></div>
+            </div>
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+              <a id="modalVideoDownloadBtn" class="download-btn" href="" download target="_blank" style="padding: 6px 12px; background: var(--accent-color); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; display: block;">⬇ 下載影片</a>
+              <div id="videoModalReactions" class="reactions-bar" style="justify-content: center; gap: 12px; border: none; padding: 0; margin: 0; display: flex;">
+                <!-- 動態渲染的表情按鈕 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 留言區 -->
+          <div class="modal-comments-section" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; width: 100%; text-align: left;">
+            <h3 style="font-size: 14px; margin-bottom: 8px; color: #fff;">💬 留言回饋</h3>
+            <div id="videoCommentsList" class="comments-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; color: #fff;">
+              <!-- 留言內容 -->
+            </div>
+            <div class="comment-input-group" style="display: flex; gap: 8px; width: 100%; box-sizing: border-box;">
+              <input type="text" id="videoCommentNickname" placeholder="名字" style="width: 70px; flex-shrink: 0; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 12px; box-sizing: border-box;">
+              <input type="text" id="videoCommentInput" placeholder="輸入留言內容..." style="flex: 1; min-width: 0; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; font-size: 12px; box-sizing: border-box;">
+              <button onclick="window.app.submitComment('videos', window.app.activeVideoId)" style="flex-shrink: 0; padding: 6px 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-sizing: border-box;">送出</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 影片廣播全螢幕覆蓋層 -->
+  <div id="broadcastVideoOverlay" class="modal-overlay" style="display: none; z-index: 2000; background: rgba(0,0,0,0.95); align-items: center; justify-content: center;">
+    <div style="position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+      <button onclick="window.app.closeBroadcastOverlayLocal()" style="position: absolute; top: 20px; right: 20px; z-index: 2010; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      
+      <div id="broadcastTitle" style="font-size: 18px; font-weight: bold; margin-bottom: 12px; color: var(--accent-color);">📢 老師正在播放影片</div>
+      
+      <div id="broadcastPlayerContainer" style="width: 90vw; height: 70vh; background: #000; display: flex; align-items: center; justify-content: center; border-radius: 12px; overflow: hidden; position: relative;">
+        <!-- 動態渲染的影片播放器 -->
+      </div>
+      
+      <!-- 靜音提示按鈕 -->
+      <button id="broadcastUnmuteBtn" onclick="window.app.unmuteBroadcastVideo()" style="margin-top: 16px; padding: 10px 24px; background: #34c759; color: white; border: none; border-radius: 30px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(52,199,89,0.4); display: flex; align-items: center; gap: 8px;">
+        <span>🔊 點擊播放聲音 (Tap to Unmute)</span>
+      </button>
+    </div>
+  </div>
+  <!-- 教師分享圖片放大預覽視窗 -->
+  <div id="shareImageZoomModal" class="modal-overlay" style="display: none; justify-content: center; align-items: center; background: rgba(0,0,0,0.9); z-index: 2100;" onclick="window.app.closeShareImageZoom()">
+    <button class="modal-close" style="position: absolute; top: 20px; right: 20px; color: white; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+    <img id="shareZoomedImage" src="" style="max-width: 95%; max-height: 95%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: contain; cursor: zoom-out;" onclick="event.stopPropagation(); window.app.closeShareImageZoom()">
+  </div>
+
+  <!-- 專注力遊戲全螢幕覆蓋層 -->
+  <div id="focusGameOverlay" class="modal-overlay" style="display: none; z-index: 2500; background: rgba(240, 244, 248, 0.98); align-items: center; justify-content: center; backdrop-filter: blur(8px); overflow: hidden;">
+    <div id="focusGameOverlayContent" style="width: 95%; max-width: 600px; padding: 24px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--border-color); position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; max-height: 95vh; overflow-y: auto;">
+      
+      <!-- 教師強行關閉按鈕，只對教師顯示 -->
+      <button id="focusGameTeacherCloseBtn" onclick="window.app.endFocusGame()" style="display: none; position: absolute; top: 15px; right: 15px; background: var(--danger-color); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(255,59,48,0.2);">結束遊戲 ❌</button>
+
+      <!-- 1. 倒數階段畫面 -->
+      <div id="focusCountdownArea" style="display: none; width: 100%; overflow: hidden;">
+        <div style="font-size: 64px; margin-bottom: 12px;">🧠</div>
+        <h2 id="focusCountdownTitle" style="font-size: 22px; color: var(--text-primary); margin-bottom: 8px; font-weight: bold;">提升專注力挑戰！</h2>
+        <p id="focusCountdownDescription" style="color: var(--text-secondary); font-size: 14px; margin-bottom: 24px;">請準備好眼睛和滑鼠，依序尋找並點擊數字 1 到 <span id="lblTargetCount">36</span> 喔！</p>
+        <div id="focusCountdownNumber" style="font-size: 80px; font-weight: 900; color: var(--accent-color); margin: 20px 0; text-shadow: 0 4px 12px rgba(0,122,255,0.2); transform: scale(1);">10</div>
+        <div id="focusCountdownHint" style="font-size: 14px; color: var(--text-muted);">挑戰即將開始...</div>
+      </div>
+
+      <!-- 2. 遊戲進行階段畫面 -->
+      <div id="focusPlayArea" style="display: none; width: 100%; flex-direction: column; align-items: center;">
+        <!-- 記憶翻牌配對遊戲獨立盤面 -->
+        <div id="focusMemoryMatchBoard" style="display: none; width: 100%; flex-direction: column; align-items: center;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 14px; padding: 10px 14px; box-sizing: border-box; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);">
+            <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">
+              🎯 配對：<span id="focusMemoryMatchedCount" style="color: var(--accent-color); font-size: 18px; font-weight: 900;">0</span> / <span id="focusMemoryTotalPairs">6</span> 對
+            </div>
+            <div style="font-size: 14px; font-weight: bold; color: var(--text-secondary);">
+              🔄 翻牌：<span id="focusMemoryFlips" style="color: #ff9500; font-size: 18px; font-weight: 900;">0</span> 次
+            </div>
+            <div style="font-size: 16px; font-weight: 900; color: var(--danger-color); font-family: monospace;">
+              ⏱️ <span id="focusMemoryTimer">0.00</span> 秒
+            </div>
+          </div>
+
+          <div id="focusMemoryGrid" class="memory-match-grid" style="display: grid; gap: 10px; width: 100%; max-width: 480px; margin: 8px 0; box-sizing: border-box;">
+            <!-- 動態生成記憶配對卡片 -->
+          </div>
+
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+            💡 翻開兩張相同的卡片進行配對，看誰能用最少的翻牌次數與最快的速度完成配對！
+          </div>
+        </div>
+
+        <!-- 舒爾特數字與序列記憶區塊 -->
+        <div id="focusNumberGridContainer" style="display: flex; width: 100%; flex-direction: column; align-items: center;">
+          <div id="focusNumberGridHeader" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px; padding: 0 10px; box-sizing: border-box;">
+            <div style="font-size: 16px; font-weight: bold; color: var(--text-primary);">
+              目標：依序點擊數字 <span id="focusCurrentTarget" style="color: var(--accent-color); font-size: 20px; font-weight: 900;">1</span>
+            </div>
+            <div style="font-size: 18px; font-weight: 900; color: var(--danger-color); font-family: monospace;">
+              ⏱️ <span id="focusTimer">0.00</span> 秒
+            </div>
+          </div>
+
+          <div id="focusGameGrid" style="display: grid; gap: 8px; width: 100%; max-width: 450px; aspect-ratio: 1; margin: 10px 0; box-sizing: border-box;">
+            <!-- 動態生成數字格子 -->
+          </div>
+
+          <!-- OpenCode 修改：專注力遊戲求救提示按鈕，每次使用加 5 秒懲罰時間 -->
+          <button id="focusHelpBtn" onclick="window.app.requestFocusHelp()" style="margin-top: 8px; padding: 10px 18px; background: #ffcc00; color: #3a2a00; border: none; border-radius: 999px; font-size: 14px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 18px rgba(255, 204, 0, 0.35);">
+            🆘 找不到？提示下一個數字（+5 秒）
+          </button>
+          <div id="focusHelpInfo" style="font-size: 12px; color: var(--text-muted); margin-top: 6px; min-height: 18px;"></div>
+        </div>
+
+        <!-- 說明提示區 -->
+        <div id="focusGameInstruction" style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;">
+          💡 點擊正確數字它將會消失，看誰能用最快的速度完成！
+        </div>
+      </div>
+
+      <!-- 3. 遊戲完成/結算畫面 -->
+      <div id="focusFinishArea" style="display: none; width: 100%;">
+        <div style="font-size: 64px; margin-bottom: 12px;">🎉</div>
+        <h2 style="font-size: 24px; color: #34c759; margin-bottom: 8px; font-weight: bold;">完成挑戰！</h2>
+        
+        <!-- 動畫展示第幾名完成 -->
+        <div id="lblFinishRankAnimation" style="font-size: 22px; font-weight: bold; color: var(--accent-color); margin: 16px 0; display: inline-block; padding: 10px 24px; border-radius: 40px; background: rgba(0,122,255,0.08);">
+          你是第 <span id="lblFinishRank">-</span> 位<span id="lblFinishRankSuffix">完成</span>的！
+        </div>
+
+        <p style="font-size: 16px; color: var(--text-primary); margin-bottom: 20px;">
+          <span id="lblFinishLabel">完成時間：</span><span id="lblFinishTime" style="font-weight: 900; color: var(--danger-color); font-size: 22px;">0.00</span> <span id="lblFinishUnit">秒</span>
+        </p>
+
+        <!-- 排行榜 -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: left; width: 100%;">
+          <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">🏆 即時成績排行榜</h3>
+          <div id="focusGameRankList" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;">
+            <!-- 實時排名清單 -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- 煙火畫布 -->
+    <canvas id="focusFireworkCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2490;"></canvas>
+  </div>
+
+  <script>
+    function selectFocusGridSize(size, el) {
+      const cards = document.querySelectorAll('.grid-size-card');
+      cards.forEach(card => {
+        card.style.border = '1px solid var(--border-color)';
+        card.classList.remove('active');
+      });
+      el.style.border = '2px solid var(--accent-color)';
+      el.classList.add('active');
+      document.getElementById('selectedFocusGridSize').value = size;
+    }
+  </script>
+  <!-- 搶答遊戲全螢幕覆蓋層 -->
+  <div id="buzzGameOverlay" class="modal-overlay" style="display: none; z-index: 2550; background: rgba(240, 244, 248, 0.98); align-items: center; justify-content: center; backdrop-filter: blur(8px); overflow: hidden;">
+    <div id="buzzGameOverlayContent" style="width: 95%; max-width: 650px; padding: 30px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); border: 1px solid var(--border-color); position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; max-height: 95vh; overflow-y: auto; overflow-x: hidden;">
+      
+      <!-- 教師結束按鈕，僅對教師顯示 -->
+      <button id="buzzGameTeacherCloseBtn" onclick="window.app.endBuzzGameAdmin()" style="display: none; position: absolute; top: 15px; right: 15px; background: var(--danger-color); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(255,59,48,0.2);">結束搶答 ❌</button>
+
+      <!-- 1. 倒數階段畫面 -->
+      <div id="buzzCountdownArea" style="display: none; width: 100%; text-align: center; overflow: hidden;">
+        <div style="font-size: 64px; margin-bottom: 12px;">⚡</div>
+        <h2 style="font-size: 24px; color: var(--text-primary); margin-bottom: 8px; font-weight: bold;">⚡ 搶答挑戰！</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 24px;">請準備好你的滑鼠，快速點擊畫面上隨機移動的紅色圓圈！</p>
+        <div id="buzzCountdownNumber" style="font-size: 80px; font-weight: 900; color: var(--accent-color); margin: 20px 0; text-shadow: 0 4px 12px rgba(0,122,255,0.2); animation: countdownPulse 1s infinite;">5</div>
+        <div style="font-size: 14px; color: var(--text-muted);">準備好你的滑鼠...</div>
+      </div>
+
+      <!-- 2. 搶答進行階段畫面 -->
+      <div id="buzzPlayArea" style="display: none; width: 100%; flex-direction: column; align-items: center;">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 24px; background: #fff3cd; padding: 6px 12px; border-radius: 8px; color: #5a3b00; font-weight: bold;">⚡ 搶答題</span>
+          </div>
+          <div style="font-size: 14px; color: var(--text-secondary); background: var(--bg-input); padding: 6px 16px; border-radius: 20px; border: 1px solid var(--border-color);">
+            搶答開始！快點擊按鈕！
+          </div>
+        </div>
+
+        <!-- 搶答活動專用隨機位移區 -->
+        <div id="buzzMoveArea" style="width: 100%; height: 350px; background: rgba(0,0,0,0.02); border: 1px dashed var(--border-color); border-radius: 16px; position: relative; margin: 10px 0; overflow: hidden; box-sizing: border-box;">
+          <button id="buzzCircleButton" onclick="window.app.buzzIn()" style="position: absolute; width: 140px; height: 140px; border-radius: 50%; border: none; background: linear-gradient(135deg, #ff5e3a 0%, #ff2a68 100%); color: white; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 8px 24px rgba(255, 42, 104, 0.4); transition: all 0.25s ease-out; display: flex; align-items: center; justify-content: center; outline: none; user-select: none;">
+            快點我
+          </button>
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
+          💡 按下按鈕搶答！
+        </div>
+      </div>
+
+      <!-- 3. 搶答結束/排行榜畫面 -->
+      <div id="buzzFinishArea" style="display: none; width: 100%; text-align: center;">
+        <div style="font-size: 64px; margin-bottom: 12px;">🎉</div>
+        <h2 id="buzzFinishTitle" style="font-size: 24px; color: #34c759; margin-bottom: 8px; font-weight: bold;">搶答成功！</h2>
+        
+        <div id="buzzFinishRankBlock" style="font-size: 20px; font-weight: bold; color: var(--accent-color); margin: 16px 0; display: inline-block; padding: 10px 24px; border-radius: 40px; background: rgba(0,122,255,0.08);">
+          你是第 <span id="lblBuzzRank">-</span> 位搶答的！
+        </div>
+
+        <p id="buzzFinishTimeBlock" style="font-size: 16px; color: var(--text-primary); margin-bottom: 20px;">
+          反應時間：<span id="lblBuzzTime" style="font-weight: 900; color: var(--danger-color); font-size: 22px;">0.00</span> 秒
+        </p>
+
+        <!-- 即時排行榜 -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: left; width: 100%;">
+          <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">🏆 搶答即時排行榜</h3>
+          <div id="buzzGameRankList" style="display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto;">
+            <!-- 實時排名清單 -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 強制繞過 iframe 快取的版本控制腳本 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const iframe = document.getElementById('whiteboardFrame');
+      if (iframe) {
+        iframe.src = "whiteboard_v146.html?v=160";
+      }
+    });
+  </script>
+</body>
+</html>

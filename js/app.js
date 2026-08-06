@@ -1,0 +1,9332 @@
+
+// 主程式
+class App {
+  constructor() {
+    this.quiz = null;
+    this.imageRef = db.ref('images');
+    this.videoRef = db.ref('videos');
+    this.sharesRef = db.ref('teacherShares');
+    this.shareFoldersRef = db.ref('quiz/teacherShareFolders');
+    this.currentZoom = 1;
+    this.isDragging = false;
+    this.dragStart = { x: 0, y: 0 };
+    this.imagePos = { x: 0, y: 0 };
+    
+    this.APP_VERSION = '2.1.8';
+    // 初始化狀態快取
+    this.questions = [];
+    this.images = [];
+    this.videos = [];
+    this.shares = [];
+    this.shareFolders = [];
+    this.selectedShareFormType = 'text';
+    this.isUploadingShareImage = false;
+    this.shareImageFile = null;
+    this.currentQuiz = null;
+    this.quizAnswers = {};
+    this.isAdmin = false;
+    this.activeQuestionId = null;
+    this.activeImageId = null;
+    this.activeVideoId = null;
+    this.activeCommentsRef = null;
+    this.isUploadingImage = false;
+    this.isUploadingVideo = false;
+    
+    // 計時器與音訊狀態
+    this.timerRef = db.ref('quiz/timer');
+    this.localTimerStyle = 'flip';
+    this.isTimerMinimized = false;
+    this.timerInterval = null;
+    this.timerState = null;
+    this.lastRenderedDigits = { minTens: '', minOnes: '', secTens: '', secOnes: '' };
+    this.isFirstTimerSync = true;
+    
+    this.ytPlayersReady = false;
+    this.timerMuted = localStorage.getItem('timer_muted') === 'true';
+    this.currentAudioPlaying = 'none';
+    this.playerCanon = null;
+    this.playerBell = null;
+    this.ytBellReady = false;
+    this.isPlayingClassBell = false;
+    
+    // 群組資料夾變數
+    this.questionFolders = [];
+    this.imageFolders = [];
+    this.videoFolders = [];
+    this.expandedFolders = new Set();
+    
+    // 專注力與搶答遊戲音效屬性
+    this.focusGame = null;
+    this.focusAudioCtx = null;
+    this.focusGameCompletedLocal = false;
+    this.focusPrevStatus = null;
+    this.focusStartSoundPlayed = false;
+    this.focusLastTickSecond = -1;
+    
+    // 獨立搶答遊戲屬性
+    this.buzzGame = null;
+    this.buzzGameCompletedLocal = false;
+    this.buzzPrevStatus = null;
+    this.buzzStartSoundPlayed = false;
+    this.buzzLastTickSecond = -1;
+    this.buzzTimerInterval = null;
+    this.buzzCountdownInterval = null;
+    this.buzzCircleInterval = null;
+    this.buzzStartTimeLocal = 0;
+    this.focusTimerInterval = null;
+    this.focusCountdownInterval = null;
+
+    // 透過任一次使用者手勢預先解鎖 Web Audio Context，確保音效不被瀏覽器擋下
+    ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+      window.addEventListener(evt, () => {
+        this.initFocusAudio();
+      }, { passive: true });
+    });
+    
+    // 自動初始化 YouTube iframe API
+    this.loadYoutubeAPI();
+    this.focusStartTimeLocal = 0;
+    this.focusCurrentExpected = 1;
+    this.focusGridSize = 36;
+    // OpenCode 修改：專注力遊戲求救提示狀態，每次使用加 5 秒懲罰時間
+    this.focusHelpPenaltySeconds = 0;
+    this.focusHelpCount = 0;
+    // OpenCode 修改：位置序列記憶遊戲狀態
+    this.focusLocalGameKey = null;
+    this.focusMemorySequence = [];
+    this.focusMemoryAnswerOrder = [];
+    this.focusMemoryInputIndex = 0;
+    this.focusMemoryAcceptInput = false;
+    this.focusMemoryMistakes = 0;
+    this.fireworkParticles = [];
+    this.fireworkAnimationId = null;
+    
+    this.init();
+  }
+  
+  init() {
+    // 初始化學生端唯一使用者 ID
+    if (!localStorage.getItem('user_id')) {
+      const uniqueId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('user_id', uniqueId);
+    }
+
+    this.quiz = new Quiz();
+    window.quiz = this.quiz;
+    
+    // 記錄目前選按的功能選單（預設是提問區）
+    this.activeTabId = 'panel-questions';
+    
+    // 移除舊的 lastClickedSectionType mousedown 追蹤，改用選單追蹤
+    this.bindCollapseEvents();
+    this.bindQuestionEvents();
+    this.bindImageUpload();
+    this.bindVideoUpload();
+    this.bindTeacherShareEvents();
+    this.setupRealtimeSync();
+    this.setupConnectionStatus();
+    this.initModals();
+    this.initImageZoom();
+    this.initThemeSwitcher();
+    this.initFunctionMenu();
+    this.setupTimerSync();
+    this.initTimerDragging();
+    this.initImageCanvasDrawing();
+    this.initLuckyWheel();
+    this.bindTldrawRealtimeSync();
+    this.checkSecurityRuleExpiry();
+    
+    // Global user interaction listener to resume audio if blocked by autoplay
+    const resumeAudioOnGesture = () => {
+      if (this.timerState && this.timerState.isActive && !this.timerState.isPaused) {
+        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
+          this.playerCanon.playVideo();
+          
+          document.removeEventListener('click', resumeAudioOnGesture);
+          document.removeEventListener('keydown', resumeAudioOnGesture);
+          document.removeEventListener('touchstart', resumeAudioOnGesture);
+        }
+      } else {
+        document.removeEventListener('click', resumeAudioOnGesture);
+        document.removeEventListener('keydown', resumeAudioOnGesture);
+        document.removeEventListener('touchstart', resumeAudioOnGesture);
+      }
+    };
+    document.addEventListener('click', resumeAudioOnGesture);
+    document.addEventListener('keydown', resumeAudioOnGesture);
+    document.addEventListener('touchstart', resumeAudioOnGesture);
+  }
+  
+  initFunctionMenu() {
+    const tabs = document.querySelectorAll('.menu-tab');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const targetId = tab.dataset.target;
+        
+        // 攔截管理員後台分頁
+        if (targetId === 'panel-admin' && !this.isAdmin) {
+          e.preventDefault();
+          this.openAdminPasswordModal();
+          return;
+        }
+        
+        this.switchToTab(targetId);
+      });
+    });
+
+    // 綁定選單左右平滑滾動導覽箭頭按鈕
+    const container = document.getElementById('functionMenuContainer');
+    const btnLeft = document.getElementById('menuScrollLeft');
+    const btnRight = document.getElementById('menuScrollRight');
+
+    if (container && btnLeft && btnRight) {
+      const updateScrollButtons = () => {
+        const scrollLeft = container.scrollLeft;
+        const scrollWidth = container.scrollWidth;
+        const clientWidth = container.clientWidth;
+
+        // 若超出現有寬度
+        if (scrollWidth > clientWidth + 5) {
+          if (scrollLeft > 5) {
+            btnLeft.classList.add('visible');
+          } else {
+            btnLeft.classList.remove('visible');
+          }
+
+          if (scrollLeft + clientWidth < scrollWidth - 5) {
+            btnRight.classList.add('visible');
+          } else {
+            btnRight.classList.remove('visible');
+          }
+        } else {
+          btnLeft.classList.remove('visible');
+          btnRight.classList.remove('visible');
+        }
+      };
+
+      btnLeft.addEventListener('click', () => {
+        container.scrollBy({ left: -220, behavior: 'smooth' });
+      });
+
+      btnRight.addEventListener('click', () => {
+        container.scrollBy({ left: 220, behavior: 'smooth' });
+      });
+
+      container.addEventListener('scroll', updateScrollButtons);
+      window.addEventListener('resize', updateScrollButtons);
+      
+      // 延遲更新以防瀏覽器與字型動態渲染
+      setTimeout(updateScrollButtons, 300);
+      setTimeout(updateScrollButtons, 1000);
+    }
+  }
+  
+  switchToTab(targetId) {
+    const tabs = document.querySelectorAll('.menu-tab');
+    const panels = document.querySelectorAll('.main-content .panel-card');
+    
+    tabs.forEach(tab => {
+      if (tab.dataset.target === targetId) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+    
+    panels.forEach(panel => {
+      if (panel.id === targetId) {
+        panel.classList.add('active');
+      } else {
+        panel.classList.remove('active');
+      }
+    });
+    
+    // 記錄目前選按的功能選單，供貼上事件判斷用
+    this.activeTabId = targetId;
+
+    if (targetId === 'panel-focus-game') {
+      this.handleFocusGameSync(this.focusGame);
+    }
+    
+    if (targetId === 'panel-lucky-wheel') {
+      this.updateWheelControlPanelVisibility();
+      this.drawWheelLocal();
+    }
+    
+    if (targetId === 'panel-admin') {
+      const focusOverlay = document.getElementById('focusGameOverlay');
+      if (focusOverlay) {
+        focusOverlay.style.display = 'none';
+        focusOverlay.classList.remove('active');
+      }
+      const buzzOverlay = document.getElementById('buzzGameOverlay');
+      if (buzzOverlay) {
+        buzzOverlay.style.display = 'none';
+        buzzOverlay.classList.remove('active');
+      }
+    } else {
+      if (this.focusGame) this.handleFocusGameSync(this.focusGame);
+      if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
+    }
+  }
+
+  openAdminPasswordModal() {
+    const modal = document.getElementById('adminPasswordModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+    const input = document.getElementById('adminPasswordInput');
+    if (input) {
+      input.value = '';
+      setTimeout(() => input.focus(), 300);
+    }
+    
+    // 立即隱藏遊戲覆蓋層，讓使用者能正常輸入密碼
+    if (this.focusGame) this.handleFocusGameSync(this.focusGame);
+    if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
+  }
+  
+  closeAdminPasswordModal() {
+    const modal = document.getElementById('adminPasswordModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
+    
+    // 關閉後台密碼對話框時重新觸發遊戲同步以確認是否需開啟遊戲覆蓋層
+    if (this.focusGame) this.handleFocusGameSync(this.focusGame);
+    if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
+  }
+
+  showConfirmModal(icon, title, subtitle, onConfirm) {
+    document.getElementById('confirmModalIcon').textContent = icon;
+    document.getElementById('confirmModalText').textContent = title;
+    document.getElementById('confirmModalSubtext').textContent = subtitle;
+    
+    const confirmBtn = document.getElementById('confirmModalBtn');
+    
+    // 複製按鈕以清除之前的事件監聽器，避免重疊執行
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    
+    newConfirmBtn.addEventListener('click', () => {
+      onConfirm();
+      this.closeConfirmModal();
+    });
+    
+    document.getElementById('customConfirmModal').classList.add('active');
+  }
+
+  closeConfirmModal() {
+    document.getElementById('customConfirmModal').classList.remove('active');
+  }
+  
+  setupRealtimeSync() {
+    // 即時監聽全域留言資料庫以計算與更新卡片右上角留言數量通知徽章
+    this.allCommentCounts = { questions: {}, images: {}, videos: {}, shares: {} };
+    db.ref('comments').on('value', (snapshot) => {
+      const data = snapshot.val() || {};
+      const counts = { questions: {}, images: {}, videos: {}, shares: {} };
+      
+      Object.keys(data).forEach(type => {
+        if (data[type]) {
+          Object.keys(data[type]).forEach(itemId => {
+            const itemComments = data[type][itemId];
+            counts[type] = counts[type] || {};
+            counts[type][itemId] = itemComments ? Object.keys(itemComments).length : 0;
+          });
+        }
+      });
+
+      this.allCommentCounts = counts;
+      this.renderQuestions();
+      this.renderImages();
+      this.renderVideos();
+      this.renderTeacherShares();
+    });
+
+    // 監聽問題資料庫
+    db.ref('questions').on('value', (snapshot) => {
+      const questions = [];
+      snapshot.forEach(child => {
+        questions.push({ id: child.key, ...child.val() });
+      });
+      questions.sort((a, b) => b.timestamp - a.timestamp);
+      this.questions = questions;
+      this.renderQuestions();
+      this.renderAdminQuestions();
+    });
+
+    // 監聽圖片資料庫
+    this.imageRef.on('value', (snapshot) => {
+      const images = [];
+      snapshot.forEach(child => {
+        images.push({ id: child.key, ...child.val() });
+      });
+      images.sort((a, b) => b.timestamp - a.timestamp);
+      this.images = images;
+      this.renderImages();
+      this.renderAdminImages();
+    });
+
+    // 監聽測驗狀態
+    db.ref('quiz/current').on('value', (snapshot) => {
+      this.currentQuiz = snapshot.val();
+    });
+
+    db.ref('quiz/answers').on('value', (snapshot) => {
+      this.quizAnswers = snapshot.val() || {};
+    });
+
+    db.ref('quiz/focusGame').on('value', (snapshot) => {
+      this.handleFocusGameSync(snapshot.val());
+    });
+
+    db.ref('quiz/buzzGame').on('value', (snapshot) => {
+      this.handleBuzzGameSync(snapshot.val());
+    });
+
+    // 監聽提問與圖片群組資料庫
+    db.ref('quiz/questionFolders').on('value', (snapshot) => {
+      const folders = [];
+      snapshot.forEach(child => {
+        folders.push({ id: child.key, ...child.val() });
+      });
+      folders.sort((a, b) => {
+        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
+        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'zh-hant');
+      });
+      this.questionFolders = folders;
+      this.renderQuestionFoldersList();
+      this.renderBatchQuestionFolderOptions();
+      this.renderQuestions();
+      this.renderAdminQuestions();
+    });
+
+    db.ref('quiz/imageFolders').on('value', (snapshot) => {
+      const folders = [];
+      snapshot.forEach(child => {
+        folders.push({ id: child.key, ...child.val() });
+      });
+      folders.sort((a, b) => {
+        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
+        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'zh-hant');
+      });
+      this.imageFolders = folders;
+      this.renderImageFoldersList();
+      this.renderBatchImageFolderOptions();
+      this.renderImages();
+      this.renderAdminImages();
+    });
+
+    // 監聽影片資料庫
+    this.videoRef.on('value', (snapshot) => {
+      const videos = [];
+      snapshot.forEach(child => {
+        videos.push({ id: child.key, ...child.val() });
+      });
+      videos.sort((a, b) => b.timestamp - a.timestamp);
+      this.videos = videos;
+      this.renderVideos();
+      this.renderAdminVideos();
+      this.updateActiveVideoModal();
+    });
+
+    // 監聽影片群組資料庫
+    db.ref('quiz/videoFolders').on('value', (snapshot) => {
+      const folders = [];
+      snapshot.forEach(child => {
+        folders.push({ id: child.key, ...child.val() });
+      });
+      folders.sort((a, b) => {
+        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
+        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'zh-hant');
+      });
+      this.videoFolders = folders;
+      this.renderVideoFoldersList();
+      this.renderBatchVideoFolderOptions();
+      this.renderVideos();
+      this.renderAdminVideos();
+    });
+
+    // 監聽影片廣播狀態
+    db.ref('quiz/broadcastVideo').on('value', (snapshot) => {
+      const broadcastObj = snapshot.val();
+      this.handleVideoBroadcastSync(broadcastObj);
+    });
+
+    // 監聽教師分享資料庫
+    this.sharesRef.on('value', (snapshot) => {
+      const shares = [];
+      snapshot.forEach(child => {
+        shares.push({ id: child.key, ...child.val() });
+      });
+      shares.sort((a, b) => b.timestamp - a.timestamp);
+      this.shares = shares;
+      this.renderTeacherShares();
+      this.renderAdminShares();
+    });
+
+    // 監聽教師分享資料庫資料夾
+    this.shareFoldersRef.on('value', (snapshot) => {
+      const folders = [];
+      snapshot.forEach(child => {
+        folders.push({ id: child.key, ...child.val() });
+      });
+      folders.sort((a, b) => {
+        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
+        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name, 'zh-hant');
+      });
+      this.shareFolders = folders;
+      this.renderShareFoldersList();
+      this.updateShareFolderDropdowns();
+      this.renderTeacherShares();
+      this.renderAdminShares();
+    });
+  }
+  
+  initModals() {
+    const questionModal = document.getElementById('questionModal');
+    const questionModalClose = document.getElementById('questionModalClose');
+    
+    questionModalClose.addEventListener('click', () => {
+      questionModal.classList.remove('active');
+      this.activeQuestionId = null;
+      this.cleanupCommentsSync();
+    });
+    questionModal.addEventListener('click', (e) => {
+      if (e.target === questionModal) {
+        questionModal.classList.remove('active');
+        this.activeQuestionId = null;
+        this.cleanupCommentsSync();
+      }
+    });
+
+    const questionCopyBtn = document.getElementById('questionCopyBtn');
+    if (questionCopyBtn) {
+      questionCopyBtn.addEventListener('click', () => this.copyQuestionText());
+    }
+    
+    const imageModal = document.getElementById('imageModal');
+    const imageModalClose = document.getElementById('imageModalClose');
+    
+    imageModalClose.addEventListener('click', () => {
+      imageModal.classList.remove('active');
+      this.activeImageId = null;
+      this.cleanupCommentsSync();
+    });
+    imageModal.addEventListener('click', (e) => {
+      if (e.target === imageModal) {
+        imageModal.classList.remove('active');
+        this.activeImageId = null;
+        this.cleanupCommentsSync();
+      }
+    });
+
+    const imageCopyBtn = document.getElementById('imageCopyBtn');
+    if (imageCopyBtn) {
+      imageCopyBtn.addEventListener('click', () => this.copyImageToClipboard());
+    }
+    
+    // 左右導覽按鈕事件註冊
+    const questionModalPrev = document.getElementById('questionModalPrev');
+    const questionModalNext = document.getElementById('questionModalNext');
+    if (questionModalPrev) {
+      questionModalPrev.addEventListener('click', () => {
+        if (!this.activeQuestionId || this.questions.length <= 1) return;
+        const index = this.questions.findIndex(q => q.id === this.activeQuestionId);
+        if (index > -1) {
+          const prevIndex = (index - 1 + this.questions.length) % this.questions.length;
+          this.showQuestionModal(this.questions[prevIndex].id);
+        }
+      });
+    }
+    if (questionModalNext) {
+      questionModalNext.addEventListener('click', () => {
+        if (!this.activeQuestionId || this.questions.length <= 1) return;
+        const index = this.questions.findIndex(q => q.id === this.activeQuestionId);
+        if (index > -1) {
+          const nextIndex = (index + 1) % this.questions.length;
+          this.showQuestionModal(this.questions[nextIndex].id);
+        }
+      });
+    }
+
+    const imageModalPrev = document.getElementById('imageModalPrev');
+    const imageModalNext = document.getElementById('imageModalNext');
+    if (imageModalPrev) {
+      imageModalPrev.addEventListener('click', () => {
+        if (!this.activeImageId || this.images.length <= 1) return;
+        const index = this.images.findIndex(img => img.id === this.activeImageId);
+        if (index > -1) {
+          const prevIndex = (index - 1 + this.images.length) % this.images.length;
+          this.showImageModal(this.images[prevIndex].id);
+        }
+      });
+    }
+    if (imageModalNext) {
+      imageModalNext.addEventListener('click', () => {
+        if (!this.activeImageId || this.images.length <= 1) return;
+        const index = this.images.findIndex(img => img.id === this.activeImageId);
+        if (index > -1) {
+          const nextIndex = (index + 1) % this.images.length;
+          this.showImageModal(this.images[nextIndex].id);
+        }
+      });
+    }
+
+    // 影片視窗事件註冊
+    const videoModal = document.getElementById('videoModal');
+    if (videoModal) {
+      videoModal.addEventListener('click', (e) => {
+        if (e.target === videoModal) {
+          this.closeVideoModal();
+        }
+      });
+    }
+
+    const videoModalPrev = document.getElementById('videoModalPrev');
+    const videoModalNext = document.getElementById('videoModalNext');
+    if (videoModalPrev) {
+      videoModalPrev.addEventListener('click', () => {
+        if (!this.activeVideoId || this.videos.length <= 1) return;
+        const index = this.videos.findIndex(v => v.id === this.activeVideoId);
+        if (index > -1) {
+          const prevIndex = (index - 1 + this.videos.length) % this.videos.length;
+          this.showVideoModal(this.videos[prevIndex].id);
+        }
+      });
+    }
+    if (videoModalNext) {
+      videoModalNext.addEventListener('click', () => {
+        if (!this.activeVideoId || this.videos.length <= 1) return;
+        const index = this.videos.findIndex(v => v.id === this.activeVideoId);
+        if (index > -1) {
+          const nextIndex = (index + 1) % this.videos.length;
+          this.showVideoModal(this.videos[nextIndex].id);
+        }
+      });
+    }
+    
+    const customConfirmModal = document.getElementById('customConfirmModal');
+    customConfirmModal.addEventListener('click', (e) => {
+      if (e.target === customConfirmModal) this.closeConfirmModal();
+    });
+    
+    const notifyModal = document.getElementById('notifyModal');
+    const notifyModalClose = document.getElementById('notifyModalClose');
+    
+    notifyModalClose.addEventListener('click', () => notifyModal.classList.remove('active'));
+    notifyModal.addEventListener('click', (e) => {
+      if (e.target === notifyModal) notifyModal.classList.remove('active');
+    });
+    
+    const adminPasswordModal = document.getElementById('adminPasswordModal');
+    adminPasswordModal.addEventListener('click', (e) => {
+      if (e.target === adminPasswordModal) this.closeAdminPasswordModal();
+    });
+    
+    document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') submitAdminPassword();
+    });
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        questionModal.classList.remove('active');
+        imageModal.classList.remove('active');
+        const videoModal = document.getElementById('videoModal');
+        if (videoModal) videoModal.classList.remove('active');
+        customConfirmModal.classList.remove('active');
+        notifyModal.classList.remove('active');
+        adminPasswordModal.classList.remove('active');
+        this.activeQuestionId = null;
+        this.activeImageId = null;
+        this.activeVideoId = null;
+        this.cleanupCommentsSync();
+      }
+    });
+  }
+  
+  showNotification(title, message, isProgress = false) {
+    const notifyModal = document.getElementById('notifyModal');
+    document.getElementById('notifyModalTitle').textContent = title;
+    
+    const textEl = document.getElementById('notifyModalText');
+    if (isProgress) {
+      const msgDiv = document.getElementById('notifyProgressMessage');
+      const btn = document.getElementById('cancelVideoCompressBtn');
+      if (msgDiv && btn) {
+        msgDiv.textContent = message;
+      } else {
+        textEl.innerHTML = `
+          <div id="notifyProgressMessage" style="margin-bottom: 10px;">${message}</div>
+          <button id="cancelVideoCompressBtn" style="
+            margin: 10px auto 0;
+            padding: 8px 20px;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            display: block;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+          ">取消上傳</button>
+        `;
+        setTimeout(() => {
+          const cancelBtn = document.getElementById('cancelVideoCompressBtn');
+          if (cancelBtn) {
+            cancelBtn.onclick = () => {
+              if (window.app) window.app.cancelVideoCompression();
+            };
+          }
+        }, 0);
+      }
+    } else {
+      textEl.textContent = message;
+    }
+    
+    notifyModal.classList.add('active');
+    
+    if (this.notifyTimer) clearTimeout(this.notifyTimer);
+    if (!isProgress) {
+      this.notifyTimer = setTimeout(() => {
+        notifyModal.classList.remove('active');
+      }, 1500);
+    }
+  }
+  
+  initImageZoom() {
+    const zoomContainer = document.getElementById('imageZoomContainer');
+    const zoomResetBtn = document.getElementById('zoomResetBtn');
+    
+    zoomContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      this.currentZoom = Math.max(0.5, Math.min(5, this.currentZoom + delta));
+      this.updateImageTransform();
+    });
+    
+    let initialDistance = 0;
+    let initialZoom = 1;
+    
+    zoomContainer.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        initialDistance = this.getDistance(e.touches[0], e.touches[1]);
+        initialZoom = this.currentZoom;
+      }
+    });
+    
+    zoomContainer.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const distance = this.getDistance(e.touches[0], e.touches[1]);
+        this.currentZoom = Math.max(0.5, Math.min(5, initialZoom * (distance / initialDistance)));
+        this.updateImageTransform();
+      }
+    });
+    
+    zoomContainer.addEventListener('mousedown', (e) => {
+      if (this.imageMode === 'draw') return;
+      this.isDragging = true;
+      this.dragStart = { x: e.clientX - this.imagePos.x, y: e.clientY - this.imagePos.y };
+      zoomContainer.style.cursor = 'grabbing';
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (this.isDragging && this.imageMode !== 'draw') {
+        this.imagePos.x = e.clientX - this.dragStart.x;
+        this.imagePos.y = e.clientY - this.dragStart.y;
+        this.updateImageTransform();
+      }
+    });
+    
+    document.addEventListener('mouseup', () => {
+      this.isDragging = false;
+      zoomContainer.style.cursor = 'grab';
+    });
+    
+    let touchStartPos = { x: 0, y: 0 };
+    
+    zoomContainer.addEventListener('touchstart', (e) => {
+      if (this.imageMode === 'draw') return;
+      if (e.touches.length === 1) {
+        touchStartPos = { x: e.touches[0].clientX - this.imagePos.x, y: e.touches[0].clientY - this.imagePos.y };
+      }
+    });
+    
+    zoomContainer.addEventListener('touchmove', (e) => {
+      if (this.imageMode === 'draw') return;
+      if (e.touches.length === 1) {
+        this.imagePos.x = e.touches[0].clientX - touchStartPos.x;
+        this.imagePos.y = e.touches[0].clientY - touchStartPos.y;
+        this.updateImageTransform();
+      }
+    });
+    
+    
+    
+    zoomResetBtn.addEventListener('click', () => {
+      this.currentZoom = 1;
+      this.imagePos = { x: 0, y: 0 };
+      this.updateImageTransform();
+    });
+  }
+  
+  getDistance(t1, t2) {
+    return Math.sqrt(Math.pow(t2.clientX - t1.clientX, 2) + Math.pow(t2.clientY - t1.clientY, 2));
+  }
+  
+  updateImageTransform() {
+    const wrapper = document.getElementById('imageCanvasWrapper');
+    const zoomInfo = document.getElementById('zoomInfo');
+    if (wrapper) {
+      wrapper.style.transform = `translate(${this.imagePos.x}px, ${this.imagePos.y}px) scale(${this.currentZoom})`;
+    }
+    if (zoomInfo) {
+      zoomInfo.textContent = `${Math.round(this.currentZoom * 100)}%`;
+    }
+  }
+
+  initImageCanvasDrawing() {
+    const canvas = document.getElementById('imageMarkupCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0, lastY = 0;
+    
+    this.imageBrushColor = '#ff3b30';
+    this.imageBrushSize = 5;
+    this.imageMode = 'pan';
+    
+    const getPos = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      
+      const clientX = (e.clientX !== undefined) ? e.clientX : e.touches[0].clientX;
+      const clientY = (e.clientY !== undefined) ? e.clientY : e.touches[0].clientY;
+      
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    };
+    
+    const startDrawing = (e) => {
+      if (this.imageMode !== 'draw') return;
+      isDrawing = true;
+      const pos = getPos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+      
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, this.imageBrushSize / 2, 0, Math.PI * 2);
+      ctx.fillStyle = this.imageBrushColor;
+      ctx.fill();
+    };
+    
+    const draw = (e) => {
+      if (!isDrawing || this.imageMode !== 'draw') return;
+      if (e.cancelable) e.preventDefault();
+      
+      const pos = getPos(e);
+      
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(pos.x, pos.y);
+      
+      ctx.strokeStyle = this.imageBrushColor;
+      ctx.lineWidth = this.imageBrushSize;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      
+      lastX = pos.x;
+      lastY = pos.y;
+    };
+    
+    const stopDrawing = () => {
+      isDrawing = false;
+    };
+    
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+    
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+  }
+
+  toggleImageMode() {
+    const nextMode = (this.imageMode === 'draw') ? 'pan' : 'draw';
+    this.setImageMode(nextMode);
+  }
+
+  setImageMode(mode) {
+    this.imageMode = mode;
+    const canvas = document.getElementById('imageMarkupCanvas');
+    const drawBtn = document.getElementById('modeDrawBtn');
+    const settingsPanel = document.getElementById('drawSettingsPanel');
+    const zoomContainer = document.getElementById('imageZoomContainer');
+    
+    if (mode === 'draw') {
+      if (canvas) canvas.style.pointerEvents = 'auto';
+      if (drawBtn) drawBtn.classList.add('active');
+      if (settingsPanel) settingsPanel.style.display = 'flex';
+      if (zoomContainer) zoomContainer.style.cursor = 'crosshair';
+    } else {
+      if (canvas) canvas.style.pointerEvents = 'none';
+      if (drawBtn) drawBtn.classList.remove('active');
+      if (settingsPanel) settingsPanel.style.display = 'none';
+      if (zoomContainer) zoomContainer.style.cursor = 'grab';
+    }
+  }
+
+  setImageColor(color, btn) {
+    this.imageBrushColor = color;
+    document.querySelectorAll('#markupColorPicker .color-dot').forEach(d => {
+      d.classList.remove('active');
+    });
+    btn.classList.add('active');
+  }
+
+  setImageBrushSize(size) {
+    this.imageBrushSize = parseInt(size) || 5;
+  }
+
+  clearImageMarkup() {
+    const canvas = document.getElementById('imageMarkupCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // ===== 群組資料夾與心情回饋方法 =====
+  // ===== 提問與圖片群組分開管理 =====
+  adminCreateQuestionFolder() {
+    const input = document.getElementById('newQuestionFolderName');
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) {
+      this.showNotification('提示', '請輸入提問群組名稱');
+      return;
+    }
+    db.ref('quiz/questionFolders').push({ name: name }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '提問群組已建立');
+    });
+  }
+
+  adminDeleteQuestionFolder(folderId) {
+    if (confirm('確定要刪除此提問群組嗎？\n（其中的提問不會被刪除，會移回無群組狀態）')) {
+      db.ref(`quiz/questionFolders/${folderId}`).remove().then(() => {
+        this.questions.forEach(q => {
+          if (q.folderId === folderId) {
+            db.ref(`questions/${q.id}/folderId`).remove();
+          }
+        });
+        this.showNotification('成功', '提問群組已刪除');
+      });
+    }
+  }
+
+  adminCreateImageFolder() {
+    const input = document.getElementById('newImageFolderName');
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) {
+      this.showNotification('提示', '請輸入圖片群組名稱');
+      return;
+    }
+    db.ref('quiz/imageFolders').push({ name: name }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '圖片群組已建立');
+    });
+  }
+
+  adminDeleteImageFolder(folderId) {
+    if (confirm('確定要刪除此圖片群組嗎？\n（其中的圖片不會被刪除，會移回無群組狀態）')) {
+      db.ref(`quiz/imageFolders/${folderId}`).remove().then(() => {
+        this.images.forEach(img => {
+          if (img.folderId === folderId) {
+            db.ref(`images/${img.id}/folderId`).remove();
+          }
+        });
+        this.showNotification('成功', '圖片群組已刪除');
+      });
+    }
+  }
+
+  assignQuestionFolder(questionId, folderId) {
+    if (!folderId) {
+      db.ref(`questions/${questionId}/folderId`).remove();
+    } else {
+      db.ref(`questions/${questionId}/folderId`).set(folderId);
+    }
+  }
+
+  assignImageFolder(imageId, folderId) {
+    if (!folderId) {
+      db.ref(`images/${imageId}/folderId`).remove();
+    } else {
+      db.ref(`images/${imageId}/folderId`).set(folderId);
+    }
+  }
+
+  assignVideoFolder(videoId, folderId) {
+    if (!folderId) {
+      db.ref(`videos/${videoId}/folderId`).remove();
+    } else {
+      db.ref(`videos/${videoId}/folderId`).set(folderId);
+    }
+  }
+
+  reactToQuestion(id, type) {
+    db.ref(`questions/${id}/reactions/${type}`).transaction(count => {
+      return (count || 0) + 1;
+    });
+  }
+
+  reactToImage(id, type) {
+    db.ref(`images/${id}/reactions/${type}`).transaction(count => {
+      return (count || 0) + 1;
+    });
+  }
+
+  reactToVideo(id, type) {
+    db.ref(`videos/${id}/reactions/${type}`).transaction(count => {
+      return (count || 0) + 1;
+    });
+  }
+
+  toggleFolderCollapse(folderId) {
+    if (this.expandedFolders.has(folderId)) {
+      this.expandedFolders.delete(folderId);
+    } else {
+      this.expandedFolders.add(folderId);
+    }
+    this.renderQuestions();
+    this.renderImages();
+    this.renderVideos();
+    this.renderTeacherShares();
+    this.renderAdminQuestions();
+    this.renderAdminImages();
+    this.renderAdminVideos();
+    this.renderAdminShares();
+  }
+
+  isFolderCollapsed(folderId) {
+    return !this.expandedFolders.has(folderId);
+  }
+
+  updateBatchSelectCount() {
+    const qBoxesChecked = document.querySelectorAll('.admin-select-question:checked');
+    const qCountEl = document.getElementById('batchQuestionSelectCount');
+    if (qCountEl) qCountEl.textContent = qBoxesChecked.length;
+
+    const imgBoxesChecked = document.querySelectorAll('.admin-select-image:checked');
+    const imgCountEl = document.getElementById('batchImageSelectCount');
+    if (imgCountEl) imgCountEl.textContent = imgBoxesChecked.length;
+
+    const vidBoxesChecked = document.querySelectorAll('.admin-select-video:checked');
+    const vidCountEl = document.getElementById('batchVideoSelectCount');
+    if (vidCountEl) vidCountEl.textContent = vidBoxesChecked.length;
+  }
+
+  applyBatchQuestionArchive() {
+    const select = document.getElementById('batchQuestionFolderSelect');
+    if (!select) return;
+    const folderId = select.value;
+    const qBoxes = document.querySelectorAll('.admin-select-question:checked');
+    
+    if (qBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選下方的提問項目');
+      return;
+    }
+
+    const updates = {};
+    qBoxes.forEach(box => {
+      const qId = box.value;
+      updates[`questions/${qId}/folderId`] = folderId === "" ? null : folderId;
+    });
+    
+    db.ref().update(updates).then(() => {
+      this.showNotification('成功', '提問批次分組歸檔完成！');
+      const selectAll = document.getElementById('selectAllQuestions');
+      if (selectAll) selectAll.checked = false;
+      this.updateBatchSelectCount();
+    }).catch(err => {
+      this.showNotification('錯誤', '歸檔失敗: ' + err.message);
+    });
+  }
+
+  applyBatchImageArchive() {
+    const select = document.getElementById('batchImageFolderSelect');
+    if (!select) return;
+    const folderId = select.value;
+    const imgBoxes = document.querySelectorAll('.admin-select-image:checked');
+    
+    if (imgBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選下方的圖片項目');
+      return;
+    }
+
+    const updates = {};
+    imgBoxes.forEach(box => {
+      const imgId = box.value;
+      updates[`images/${imgId}/folderId`] = folderId === "" ? null : folderId;
+    });
+    
+    db.ref().update(updates).then(() => {
+      this.showNotification('成功', '圖片批次分組歸檔完成！');
+      const selectAll = document.getElementById('selectAllImages');
+      if (selectAll) selectAll.checked = false;
+      this.updateBatchSelectCount();
+    }).catch(err => {
+      this.showNotification('錯誤', '歸檔失敗: ' + err.message);
+    });
+  }
+
+  toggleSelectAllQuestions(checked) {
+    const qBoxes = document.querySelectorAll('#adminQuestionList .admin-select-question');
+    qBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  toggleSelectAllImages(checked) {
+    const imgBoxes = document.querySelectorAll('#adminImagePreview .admin-select-image');
+    imgBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  toggleSelectAllFolderQuestions(folderId, checked) {
+    const qBoxes = document.querySelectorAll(`.folder-questions-${folderId} .admin-select-question`);
+    qBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  toggleSelectAllFolderImages(folderId, checked) {
+    const imgBoxes = document.querySelectorAll(`.folder-images-${folderId} .admin-select-image`);
+    imgBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  deleteSelectedQuestions() {
+    const qBoxes = document.querySelectorAll('.admin-select-question:checked');
+    if (qBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選要刪除的提問！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🗑️',
+      `確定要刪除這 ${qBoxes.length} 個提問嗎？`,
+      '此動作將永久刪除所選提問，且無法復原。',
+      () => {
+        const updates = {};
+        qBoxes.forEach(box => {
+          updates[`questions/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除 ${qBoxes.length} 個提問！`);
+          const selectAll = document.getElementById('selectAllQuestions');
+          if (selectAll) selectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  deleteSelectedImages() {
+    const imgBoxes = document.querySelectorAll('.admin-select-image:checked');
+    if (imgBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選要刪除的圖片！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🖼️',
+      `確定要刪除這 ${imgBoxes.length} 張圖片嗎？`,
+      '此動作將永久刪除所選圖片，且無法復原。',
+      () => {
+        const updates = {};
+        imgBoxes.forEach(box => {
+          updates[`images/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除 ${imgBoxes.length} 張圖片！`);
+          const selectAll = document.getElementById('selectAllImages');
+          if (selectAll) selectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  deleteSelectedFolderQuestions(folderId) {
+    const qBoxes = document.querySelectorAll(`.folder-questions-${folderId} .admin-select-question:checked`);
+    if (qBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選此群組中要刪除的提問！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🗑️',
+      `確定要刪除此群組中的 ${qBoxes.length} 個提問嗎？`,
+      '此動作將永久刪除所選提問，且無法復原。',
+      () => {
+        const updates = {};
+        qBoxes.forEach(box => {
+          updates[`questions/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除群組中的 ${qBoxes.length} 個提問！`);
+          const folderSelectAll = document.querySelector(`.folder-select-all-checkbox-${folderId}`);
+          if (folderSelectAll) folderSelectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  deleteSelectedFolderImages(folderId) {
+    const imgBoxes = document.querySelectorAll(`.folder-images-${folderId} .admin-select-image:checked`);
+    if (imgBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選此群組中要刪除的圖片！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🖼️',
+      `確定要刪除此群組中的 ${imgBoxes.length} 張圖片嗎？`,
+      '此動作將永久刪除所選圖片，且無法復原。',
+      () => {
+        const updates = {};
+        imgBoxes.forEach(box => {
+          updates[`images/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除群組中的 ${imgBoxes.length} 張圖片！`);
+          const folderSelectAll = document.querySelector(`.folder-select-all-checkbox-${folderId}`);
+          if (folderSelectAll) folderSelectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  adminCreateVideoFolder() {
+    const input = document.getElementById('newVideoFolderName');
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) {
+      this.showNotification('提示', '請輸入影片群組名稱');
+      return;
+    }
+    db.ref('quiz/videoFolders').push({ name: name }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '影片群組已建立');
+    });
+  }
+
+  adminDeleteVideoFolder(folderId) {
+    if (confirm('確定要刪除此影片群組嗎？\n（其中的影片不會被刪除，會移回無群組狀態）')) {
+      db.ref(`quiz/videoFolders/${folderId}`).remove().then(() => {
+        this.videos.forEach(vid => {
+          if (vid.folderId === folderId) {
+            db.ref(`videos/${vid.id}/folderId`).remove();
+          }
+        });
+        this.showNotification('成功', '影片群組已刪除');
+      });
+    }
+  }
+
+  renderVideoFoldersList() {
+    const container = document.getElementById('adminVideoFolderList');
+    if (!container) return;
+
+    if (this.videoFolders.length === 0) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 12px 0;">暫無群組</div>';
+      return;
+    }
+
+    container.innerHTML = this.videoFolders.map(f => `
+      <div class="draggable-folder" draggable="true" data-id="${f.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 4px; cursor: grab; transition: background 0.2s;">
+        <span style="font-weight: bold; color: var(--text-primary); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+          <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
+          📁 ${this.escapeHtml(f.name)}
+        </span>
+        <button class="preset-btn" onclick="window.app.adminDeleteVideoFolder('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">刪除</button>
+      </div>
+    `).join('');
+
+    this.initFolderDragAndDrop('adminVideoFolderList', 'videos', 'quiz/videoFolders');
+  }
+
+  renderBatchVideoFolderOptions() {
+    const select = document.getElementById('batchVideoFolderSelect');
+    if (!select) return;
+    const currentVal = select.value;
+    
+    let html = '<option value="">📁 移出影片群組 (無群組)</option>';
+    this.videoFolders.forEach(f => {
+      html += `<option value="${f.id}">📁 ${this.escapeHtml(f.name)}</option>`;
+    });
+    
+    select.innerHTML = html;
+    select.value = currentVal;
+  }
+
+  applyBatchVideoArchive() {
+    const select = document.getElementById('batchVideoFolderSelect');
+    if (!select) return;
+    const folderId = select.value;
+    const vidBoxes = document.querySelectorAll('.admin-select-video:checked');
+    
+    if (vidBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選下方的影片項目');
+      return;
+    }
+
+    const updates = {};
+    vidBoxes.forEach(box => {
+      const vidId = box.value;
+      updates[`videos/${vidId}/folderId`] = folderId === "" ? null : folderId;
+    });
+    
+    db.ref().update(updates).then(() => {
+      this.showNotification('成功', '影片批次分組歸檔完成！');
+      const selectAll = document.getElementById('selectAllVideos');
+      if (selectAll) selectAll.checked = false;
+      this.updateBatchSelectCount();
+    }).catch(err => {
+      this.showNotification('錯誤', '歸檔失敗: ' + err.message);
+    });
+  }
+
+  toggleSelectAllVideos(checked) {
+    const vidBoxes = document.querySelectorAll('#adminVideoPreview .admin-select-video, #adminVideosGroupedContainer .admin-select-video');
+    vidBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  toggleSelectAllFolderVideos(folderId, checked) {
+    const vidBoxes = document.querySelectorAll(`.folder-videos-${folderId} .admin-select-video`);
+    vidBoxes.forEach(box => box.checked = checked);
+    this.updateBatchSelectCount();
+  }
+
+  deleteSelectedVideos() {
+    const vidBoxes = document.querySelectorAll('.admin-select-video:checked');
+    if (vidBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選要刪除的影片！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🎥',
+      `確定要刪除這 ${vidBoxes.length} 個影片嗎？`,
+      '此動作將永久刪除所選影片，且無法復原。',
+      () => {
+        const updates = {};
+        vidBoxes.forEach(box => {
+          updates[`videos/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除 ${vidBoxes.length} 個影片！`);
+          const selectAll = document.getElementById('selectAllVideos');
+          if (selectAll) selectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  deleteSelectedFolderVideos(folderId) {
+    const vidBoxes = document.querySelectorAll(`.folder-videos-${folderId} .admin-select-video:checked`);
+    if (vidBoxes.length === 0) {
+      this.showNotification('提示', '請先勾選此群組中要刪除的影片！');
+      return;
+    }
+    
+    this.showConfirmModal(
+      '🎥',
+      `確定要刪除此群組中的 ${vidBoxes.length} 個影片嗎？`,
+      '此動作將永久刪除所選影片，且無法復原。',
+      () => {
+        const updates = {};
+        vidBoxes.forEach(box => {
+          updates[`videos/${box.value}`] = null;
+        });
+        
+        db.ref().update(updates).then(() => {
+          this.showNotification('成功', `已成功刪除群組中的 ${vidBoxes.length} 個影片！`);
+          const folderSelectAll = document.querySelector(`.folder-select-all-checkbox-${folderId}`);
+          if (folderSelectAll) folderSelectAll.checked = false;
+          this.updateBatchSelectCount();
+        }).catch(err => {
+          this.showNotification('錯誤', '刪除失敗: ' + err.message);
+        });
+      }
+    );
+  }
+
+  renderAdminVideos() {
+    const adminVideoPreview = document.getElementById('adminVideoPreview');
+    const adminVideosGroupedContainer = document.getElementById('adminVideosGroupedContainer');
+    if (!adminVideoPreview || !adminVideosGroupedContainer) return;
+
+    if (this.videos.length === 0) {
+      adminVideosGroupedContainer.innerHTML = '';
+      adminVideoPreview.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px; width: 100%;">暫無影片</div>';
+      return;
+    }
+
+    const getThumbnailUrl = (vid) => {
+      if (vid.type === 'youtube' && vid.youtubeId) {
+        return `https://img.youtube.com/vi/${vid.youtubeId}/0.jpg`;
+      }
+      if (vid.thumbnail) {
+        return vid.thumbnail;
+      }
+      return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'><rect width='100%' height='100%' fill='%232c2c2e'/><path d='M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z' fill='%238e8e93' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
+    };
+
+    const renderAdminVideoItemHtml = (vid) => `
+      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); position: relative; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 4px;">
+          <input type="checkbox" class="admin-select-video" value="${vid.id}" onchange="window.app.updateBatchSelectCount()" style="width: 14px; height: 14px; margin: 0; cursor: pointer;">
+          <button onclick="window.app.broadcastVideo('${vid.id}')" style="background: var(--accent-color); color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;" title="廣播播放此影片到學生端螢幕">📢 廣播</button>
+        </div>
+        <div class="preview-item video-item" style="cursor: pointer; margin: 0; position: relative;">
+          <img src="${getThumbnailUrl(vid)}" onclick="window.app.showVideoModal('${vid.id}')" alt="${vid.filename}" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
+          <button onclick="deleteVideo('${vid.id}')" title="刪除影片" style="
+            position: absolute; top: -6px; right: -6px;
+            width: 20px; height: 20px; border: none;
+            background: var(--danger-color); color: white;
+            border-radius: 50%; cursor: pointer;
+            font-size: 10px; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            z-index: 5;
+          ">✕</button>
+          <div style="position: absolute; bottom: 2px; left: 2px; right: 2px; background: rgba(0,0,0,0.7); color: white; font-size: 9px; padding: 1px 2px; border-radius: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
+            ${this.escapeHtml(vid.filename)}
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 1. Grouped Folders
+    let groupedHtml = '';
+    this.videoFolders.forEach(f => {
+      const folderVideos = this.videos.filter(vid => vid.folderId === f.id);
+      if (folderVideos.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        groupedHtml += `
+          <div class="folder-group-row folder-videos-${f.id}" style="margin-bottom: 16px; border-left: 6px solid #34c759; background: var(--bg-card); border-radius: 12px; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" style="padding: 10px 14px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; user-select: none;">
+              <span onclick="window.app.toggleFolderCollapse('${f.id}')" style="font-size: 13px; font-weight: bold; color: var(--text-primary); cursor: pointer; flex: 1;">
+                📁 ${this.escapeHtml(f.name)} (${folderVideos.length} 個影片)
+              </span>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <label style="font-size: 11px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none; margin: 0;">
+                  <input type="checkbox" class="folder-select-all-checkbox-${f.id}" onchange="window.app.toggleSelectAllFolderVideos('${f.id}', this.checked)" style="width: 12px; height: 12px; margin: 0;"> 全選
+                </label>
+                <button onclick="window.app.deleteSelectedFolderVideos('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">🗑️ 刪除選取</button>
+                <button onclick="window.app.toggleFolderCollapse('${f.id}')" style="background: transparent; border: none; font-size: 12px; color: var(--accent-color); cursor: pointer; font-weight: bold;">${isCollapsed ? '展開' : '折疊'}</button>
+              </div>
+            </div>
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 12px; background: var(--bg-card);">
+              <div class="image-preview" style="margin: 0; padding: 0;">
+                ${folderVideos.map(vid => renderAdminVideoItemHtml(vid)).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    });
+    adminVideosGroupedContainer.innerHTML = groupedHtml;
+
+    // 2. Unassigned Videos
+    const unassignedVideos = this.videos.filter(vid => {
+      if (!vid.folderId) return true;
+      return !this.videoFolders.some(f => f.id === vid.folderId);
+    });
+
+    if (unassignedVideos.length > 0) {
+      adminVideoPreview.innerHTML = unassignedVideos.map(vid => renderAdminVideoItemHtml(vid)).join('');
+    } else {
+      adminVideoPreview.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px; width: 100%; font-size: 12px;">暫無未分類影片</div>';
+    }
+
+    // Bind click events on all admin video wrappers to toggle checkbox selection (same as image cards)
+    document.querySelectorAll('#adminVideoPreview .preview-item-wrapper, #adminVideosGroupedContainer .preview-item-wrapper').forEach(wrapper => {
+      wrapper.style.cursor = 'pointer';
+      wrapper.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) {
+          return;
+        }
+        const checkbox = wrapper.querySelector('.admin-select-video');
+        if (checkbox) {
+          checkbox.checked = !checkbox.checked;
+          window.app.updateBatchSelectCount();
+        }
+      });
+    });
+  }
+
+  renderBatchQuestionFolderOptions() {
+    const select = document.getElementById('batchQuestionFolderSelect');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = `
+      <option value="">📁 移出提問群組 (無群組)</option>
+      ${this.questionFolders.map(f => `<option value="${f.id}">${this.escapeHtml(f.name)}</option>`).join('')}
+    `;
+    select.value = currentVal;
+  }
+
+  renderBatchImageFolderOptions() {
+    const select = document.getElementById('batchImageFolderSelect');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = `
+      <option value="">📁 移出圖片群組 (無群組)</option>
+      ${this.imageFolders.map(f => `<option value="${f.id}">${this.escapeHtml(f.name)}</option>`).join('')}
+    `;
+    select.value = currentVal;
+  }
+
+  renderQuestionFoldersList() {
+    const list = document.getElementById('adminQuestionFolderList');
+    if (!list) return;
+    if (this.questionFolders.length === 0) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 8px; font-size: 13px;">暫無提問群組</div>';
+      return;
+    }
+    list.innerHTML = this.questionFolders.map(f => `
+      <div class="draggable-folder" draggable="true" data-id="${f.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: grab; transition: background 0.2s;">
+        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+          <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
+          📁 ${this.escapeHtml(f.name)}
+        </span>
+        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteQuestionFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+      </div>
+    `).join('');
+
+    this.initFolderDragAndDrop('adminQuestionFolderList', 'questions', 'quiz/questionFolders');
+  }
+
+  // ===== 留言回饋同步機制 =====
+  setupCommentsSync(type, itemId, listContainerId, nicknameInputId, inputId) {
+    this.cleanupCommentsSync();
+
+    const listContainer = document.getElementById(listContainerId);
+    const nicknameInput = document.getElementById(nicknameInputId);
+    const textInput = document.getElementById(inputId);
+    if (!listContainer) return;
+
+    // 設定預設暱稱：優先使用之前的留言暱稱，再來是登入暱稱，最後預設「訪客」
+    const savedName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '訪客';
+    if (nicknameInput) {
+      nicknameInput.value = savedName;
+    }
+
+    if (textInput) {
+      textInput.value = '';
+      // 綁定 Enter 鍵直接發送留言
+      textInput.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+          this.submitComment(type, itemId, listContainerId, nicknameInputId, inputId);
+        }
+      };
+    }
+
+    // 監聽 Firebase 留言（取最近 10 筆）
+    this.activeCommentsRef = db.ref('comments').child(type).child(itemId).orderByChild('timestamp').limitToLast(10);
+    this.activeCommentsRef.on('value', (snapshot) => {
+      let html = '';
+      const comments = [];
+      snapshot.forEach((child) => {
+        comments.push({ id: child.key, ...child.val() });
+      });
+
+      if (comments.length === 0) {
+        html = `<div style="text-align: center; color: var(--text-muted); padding: 12px; font-size: 13px;">💬 暫無留言，快來搶沙發！</div>`;
+      } else {
+        html = comments.map(c => {
+          const timeStr = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+          return `
+            <div class="comment-item">
+              <div class="comment-header">
+                <span class="comment-user">${this.escapeHtml(c.user || '匿名')}</span>
+                <span class="comment-time">${timeStr}</span>
+              </div>
+              <div class="comment-text">${this.escapeHtml(c.text || '')}</div>
+            </div>
+          `;
+        }).join('');
+      }
+      listContainer.innerHTML = html;
+      // 自動捲動到最底下
+      listContainer.scrollTop = listContainer.scrollHeight;
+    });
+  }
+
+  cleanupCommentsSync() {
+    if (this.activeCommentsRef) {
+      this.activeCommentsRef.off();
+      this.activeCommentsRef = null;
+    }
+  }
+
+  submitComment(type, itemId, listContainerId, nicknameInputId, inputId) {
+    // 若沒有傳入，則根據 type 猜測
+    const nickId = nicknameInputId || (type === 'questions' ? 'questionCommentNickname' : type === 'images' ? 'imageCommentNickname' : 'videoCommentNickname');
+    const inpId = inputId || (type === 'questions' ? 'questionCommentInput' : type === 'images' ? 'imageCommentInput' : 'videoCommentInput');
+    
+    const nicknameInput = document.getElementById(nickId);
+    const textInput = document.getElementById(inpId);
+    if (!textInput) return;
+
+    const nickname = (nicknameInput ? nicknameInput.value.trim() : '') || '匿名';
+    const text = textInput.value.trim();
+    if (!text) {
+      this.showNotification('提示', '請輸入留言內容');
+      return;
+    }
+
+    // 保存暱稱
+    localStorage.setItem('comment_nickname', nickname);
+
+    db.ref('comments').child(type).child(itemId).push({
+      user: nickname,
+      text: text,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      textInput.value = '';
+    }).catch(err => {
+      this.showNotification('錯誤', '留言發送失敗: ' + err.message);
+    });
+  }
+
+  copyQuestionText() {
+    if (!this.activeQuestionId) return;
+    const q = this.questions.find(item => item.id === this.activeQuestionId);
+    if (!q) return;
+    navigator.clipboard.writeText(q.text)
+      .then(() => this.showNotification('成功', '問題內容已複製到剪貼簿！'))
+      .catch(err => this.showNotification('錯誤', '複製失敗: ' + err.message));
+  }
+
+  async copyImageToClipboard() {
+    if (!this.activeImageId) return;
+    const img = this.images.find(item => item.id === this.activeImageId);
+    if (!img) return;
+
+    this.showNotification('提示', '正在複製圖片，請稍候...');
+
+    try {
+      // 若是 Base64 格式
+      if (img.url.startsWith('data:')) {
+        const response = await fetch(img.url);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob })
+        ]);
+        this.showNotification('成功', '圖片已成功複製到剪貼簿！');
+        return;
+      }
+
+      // 若是 Firebase Storage 的 URL，需要跨網域 Fetch
+      // 藉由建立一個 Image 並畫到 Canvas 上來規避 CORS 的 restrictions 
+      const image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.src = img.url;
+      image.onload = async () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = image.naturalWidth;
+          canvas.height = image.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(image, 0, 0);
+          canvas.toBlob(async (blob) => {
+            if (!blob) {
+              this.showNotification('錯誤', '圖片轉檔失敗');
+              return;
+            }
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ [blob.type]: blob })
+              ]);
+              this.showNotification('成功', '圖片已成功複製到剪貼簿！');
+            } catch (err) {
+              this.showNotification('錯誤', '瀏覽器不支援複製此類型檔案，請直接點下載！');
+            }
+          }, 'image/png');
+        } catch (err) {
+          this.showNotification('錯誤', '複製圖片失敗: ' + err.message);
+        }
+      };
+      image.onerror = () => {
+        this.showNotification('錯誤', '讀取圖片失敗，請改用下載功能！');
+      };
+    } catch (err) {
+      this.showNotification('錯誤', '複製圖片出錯: ' + err.message);
+    }
+  }
+
+  extractVideoThumbnail(fileOrUrl) {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      
+      let videoUrl = '';
+      if (typeof fileOrUrl === 'string') {
+        videoUrl = fileOrUrl;
+      } else if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+        videoUrl = URL.createObjectURL(fileOrUrl);
+      } else {
+        resolve(null);
+        return;
+      }
+
+      video.src = videoUrl;
+
+      // 影片載入 metadata 後，跳到第 1.5 秒
+      video.onloadedmetadata = () => {
+        video.currentTime = Math.min(1.5, video.duration / 2);
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          // 設定截圖寬高 (上限為 320x240，大小適中，節省 Firebase 儲存空間)
+          const scale = Math.min(320 / video.videoWidth, 240 / video.videoHeight, 1);
+          canvas.width = video.videoWidth * scale;
+          canvas.height = video.videoHeight * scale;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // 稍微壓縮以縮減體積
+
+          if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+            URL.revokeObjectURL(videoUrl);
+          }
+          resolve(dataUrl);
+        } catch (err) {
+          console.error('Extract thumbnail error:', err);
+          resolve(null);
+        }
+      };
+
+      video.onerror = () => {
+        if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+          URL.revokeObjectURL(videoUrl);
+        }
+        resolve(null);
+      };
+    });
+  }
+
+  renderImageFoldersList() {
+    const list = document.getElementById('adminImageFolderList');
+    if (!list) return;
+    if (this.imageFolders.length === 0) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 8px; font-size: 13px;">暫無圖片群組</div>';
+      return;
+    }
+    list.innerHTML = this.imageFolders.map(f => `
+      <div class="draggable-folder" draggable="true" data-id="${f.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: grab; transition: background 0.2s;">
+        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+          <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
+          📁 ${this.escapeHtml(f.name)}
+        </span>
+        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteImageFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+      </div>
+    `).join('');
+
+    this.initFolderDragAndDrop('adminImageFolderList', 'images', 'quiz/imageFolders');
+  }
+
+  showQuestionModal(id) {
+    this.activeQuestionId = id;
+    const questionModal = document.getElementById('questionModal');
+    const q = this.questions.find(item => item.id === id);
+    if (!q) {
+      questionModal.classList.remove('active');
+      this.activeQuestionId = null;
+      return;
+    }
+    
+    document.getElementById('questionModalUser').textContent = (q.user && q.user !== '匿名') ? q.user : '';
+    document.getElementById('questionModalText').innerHTML = this.linkify(q.text);
+    
+    this.updateActiveQuestionModal();
+    
+    // 初始化留言區同步
+    this.setupCommentsSync('questions', id, 'questionCommentsList', 'questionCommentNickname', 'questionCommentInput');
+    
+    const prevBtn = document.getElementById('questionModalPrev');
+    const nextBtn = document.getElementById('questionModalNext');
+    if (this.questions.length <= 1) {
+      if (prevBtn) prevBtn.style.display = 'none';
+      if (nextBtn) nextBtn.style.display = 'none';
+    } else {
+      if (prevBtn) prevBtn.style.display = 'flex';
+      if (nextBtn) nextBtn.style.display = 'flex';
+    }
+    
+    questionModal.classList.add('active');
+  }
+
+  updateActiveQuestionModal() {
+    if (!this.activeQuestionId) return;
+    const q = this.questions.find(item => item.id === this.activeQuestionId);
+    if (!q) return;
+    
+    const container = document.getElementById('questionModalReactions');
+    if (container) {
+      container.innerHTML = `
+        <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'like')" title="讚">
+          <span class="reaction-emoji">👍</span>
+          <span class="reaction-count">${q.reactions?.like || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'love')" title="愛心">
+          <span class="reaction-emoji">❤️</span>
+          <span class="reaction-count">${q.reactions?.love || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'laugh')" title="大笑">
+          <span class="reaction-emoji">😆</span>
+          <span class="reaction-count">${q.reactions?.laugh || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'wow')" title="驚訝">
+          <span class="reaction-emoji">😮</span>
+          <span class="reaction-count">${q.reactions?.wow || 0}</span>
+        </button>
+      `;
+    }
+  }
+  
+  showImageModal(id) {
+    this.activeImageId = id;
+    const imageModal = document.getElementById('imageModal');
+    const img = this.images.find(item => item.id === id);
+    if (!img) {
+      imageModal.classList.remove('active');
+      this.activeImageId = null;
+      return;
+    }
+    
+    const modalImage = document.getElementById('modalImage');
+    const canvas = document.getElementById('imageMarkupCanvas');
+    
+    modalImage.src = img.url;
+    document.getElementById('modalImageUser').textContent = (img.user && img.user !== '匿名') ? '上傳者: ' + img.user : '';
+    document.getElementById('modalImageFilename').textContent = img.filename;
+    document.getElementById('modalDownloadBtn').href = img.url;
+    document.getElementById('modalDownloadBtn').download = img.filename;
+    
+    this.currentZoom = 1;
+    this.imagePos = { x: 0, y: 0 };
+    
+    const wrapper = document.getElementById('imageCanvasWrapper');
+    if (wrapper) {
+      wrapper.style.transform = 'translate(0px, 0px) scale(1)';
+    }
+    
+    document.getElementById('zoomInfo').textContent = '100%';
+    this.setImageMode('pan');
+    
+    modalImage.onload = () => {
+      if (canvas) {
+        canvas.width = modalImage.naturalWidth;
+        canvas.height = modalImage.naturalHeight;
+        this.clearImageMarkup();
+      }
+    };
+    
+    this.updateActiveImageModal();
+    
+    // 初始化留言區同步
+    this.setupCommentsSync('images', id, 'imageCommentsList', 'imageCommentNickname', 'imageCommentInput');
+    
+    const prevBtn = document.getElementById('imageModalPrev');
+    const nextBtn = document.getElementById('imageModalNext');
+    if (this.images.length <= 1) {
+      if (prevBtn) prevBtn.style.display = 'none';
+      if (nextBtn) nextBtn.style.display = 'none';
+    } else {
+      if (prevBtn) prevBtn.style.display = 'flex';
+      if (nextBtn) nextBtn.style.display = 'flex';
+    }
+    
+    imageModal.classList.add('active');
+  }
+
+  updateActiveImageModal() {
+    if (!this.activeImageId) return;
+    const img = this.images.find(item => item.id === this.activeImageId);
+    if (!img) return;
+    
+    const container = document.getElementById('imageModalReactions');
+    if (container) {
+      container.innerHTML = `
+        <button class="reaction-btn" onclick="reactToImage('${img.id}', 'like')" style="min-width: 32px; padding: 2px 6px;" title="讚">
+          <span class="reaction-emoji" style="font-size: 11px;">👍</span>
+          <span class="reaction-count" style="font-size: 9px;">${img.reactions?.like || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToImage('${img.id}', 'love')" style="min-width: 32px; padding: 2px 6px;" title="愛心">
+          <span class="reaction-emoji" style="font-size: 11px;">❤️</span>
+          <span class="reaction-count" style="font-size: 9px;">${img.reactions?.love || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToImage('${img.id}', 'laugh')" style="min-width: 32px; padding: 2px 6px;" title="大笑">
+          <span class="reaction-emoji" style="font-size: 11px;">😆</span>
+          <span class="reaction-count" style="font-size: 9px;">${img.reactions?.laugh || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToImage('${img.id}', 'wow')" style="min-width: 32px; padding: 2px 6px;" title="驚訝">
+          <span class="reaction-emoji" style="font-size: 11px;">😮</span>
+          <span class="reaction-count" style="font-size: 9px;">${img.reactions?.wow || 0}</span>
+        </button>
+      `;
+    }
+  }
+
+  showVideoModal(id) {
+    this.activeVideoId = id;
+    const videoModal = document.getElementById('videoModal');
+    const vid = this.videos.find(item => item.id === id);
+    if (!vid) {
+      if (videoModal) videoModal.classList.remove('active');
+      this.activeVideoId = null;
+      return;
+    }
+
+    document.getElementById('modalVideoUser').textContent = (vid.user && vid.user !== '匿名') ? '分享者: ' + vid.user : '';
+    document.getElementById('modalVideoFilename').textContent = vid.filename;
+
+    const downloadBtn = document.getElementById('modalVideoDownloadBtn');
+    if (downloadBtn) {
+      downloadBtn.href = vid.url || '';
+      downloadBtn.style.display = 'block';
+      if (vid.type === 'youtube') {
+        downloadBtn.textContent = '⬇ 觀看 YouTube 影片';
+        downloadBtn.removeAttribute('download');
+      } else {
+        downloadBtn.textContent = '⬇ 下載影片';
+        downloadBtn.setAttribute('download', vid.filename || 'video');
+      }
+    }
+
+    const playerContainer = document.getElementById('videoPlayerContainer');
+    playerContainer.innerHTML = '';
+
+    if (vid.type === 'youtube' && vid.youtubeId) {
+      playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${vid.youtubeId}?autoplay=1&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>`;
+    } else if (vid.type === 'drive') {
+      const driveMatch = vid.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || vid.url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      const embedUrl = driveMatch ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : vid.url;
+      playerContainer.innerHTML = `<iframe src="${embedUrl}" allow="autoplay" allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>`;
+    } else {
+      playerContainer.innerHTML = `<video src="${vid.url}" controls autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>`;
+    }
+
+    this.updateActiveVideoModal();
+
+    // 初始化留言區同步
+    this.setupCommentsSync('videos', id, 'videoCommentsList', 'videoCommentNickname', 'videoCommentInput');
+
+    const prevBtn = document.getElementById('videoModalPrev');
+    const nextBtn = document.getElementById('videoModalNext');
+    if (this.videos.length <= 1) {
+      if (prevBtn) prevBtn.style.display = 'none';
+      if (nextBtn) nextBtn.style.display = 'none';
+    } else {
+      if (prevBtn) prevBtn.style.display = 'flex';
+      if (nextBtn) nextBtn.style.display = 'flex';
+    }
+
+    if (videoModal) videoModal.classList.add('active');
+  }
+
+  closeVideoModal() {
+    const videoModal = document.getElementById('videoModal');
+    if (videoModal) videoModal.classList.remove('active');
+    
+    const playerContainer = document.getElementById('videoPlayerContainer');
+    if (playerContainer) playerContainer.innerHTML = '';
+    
+    this.activeVideoId = null;
+    this.cleanupCommentsSync();
+  }
+
+  updateActiveVideoModal() {
+    if (!this.activeVideoId) return;
+    const vid = this.videos.find(item => item.id === this.activeVideoId);
+    if (!vid) return;
+
+    const container = document.getElementById('videoModalReactions');
+    if (container) {
+      container.innerHTML = `
+        <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'like')" style="min-width: 32px; padding: 2px 6px;" title="讚">
+          <span class="reaction-emoji" style="font-size: 11px;">👍</span>
+          <span class="reaction-count" style="font-size: 9px;">${vid.reactions?.like || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'love')" style="min-width: 32px; padding: 2px 6px;" title="愛心">
+          <span class="reaction-emoji" style="font-size: 11px;">❤️</span>
+          <span class="reaction-count" style="font-size: 9px;">${vid.reactions?.love || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'laugh')" style="min-width: 32px; padding: 2px 6px;" title="大笑">
+          <span class="reaction-emoji" style="font-size: 11px;">😆</span>
+          <span class="reaction-count" style="font-size: 9px;">${vid.reactions?.laugh || 0}</span>
+        </button>
+        <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'wow')" style="min-width: 32px; padding: 2px 6px;" title="驚訝">
+          <span class="reaction-emoji" style="font-size: 11px;">😮</span>
+          <span class="reaction-count" style="font-size: 9px;">${vid.reactions?.wow || 0}</span>
+        </button>
+      `;
+    }
+  }
+
+  handleVideoBroadcastSync(broadcastObj) {
+    const overlay = document.getElementById('broadcastVideoOverlay');
+    const container = document.getElementById('broadcastPlayerContainer');
+    if (!overlay || !container) return;
+
+    if (!broadcastObj) {
+      overlay.style.display = 'none';
+      overlay.classList.remove('active');
+      container.innerHTML = '';
+      return;
+    }
+
+    overlay.style.display = 'flex';
+    overlay.classList.add('active');
+    container.innerHTML = '';
+    
+    const unmuteBtn = document.getElementById('broadcastUnmuteBtn');
+    if (unmuteBtn) unmuteBtn.style.display = 'flex';
+
+    if (broadcastObj.type === 'youtube' && broadcastObj.youtubeId) {
+      container.innerHTML = `<iframe id="broadcastIframe" src="https://www.youtube.com/embed/${broadcastObj.youtubeId}?autoplay=1&mute=1&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen style="width:100%; height:100%;"></iframe>`;
+    } else if (broadcastObj.type === 'drive') {
+      const driveMatch = broadcastObj.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || broadcastObj.url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      const embedUrl = driveMatch ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : broadcastObj.url;
+      container.innerHTML = `<iframe id="broadcastIframe" src="${embedUrl}" allow="autoplay" allowfullscreen style="width:100%; height:100%;"></iframe>`;
+    } else {
+      container.innerHTML = `<video id="broadcastVideoEl" src="${broadcastObj.url}" autoplay muted playsinline controls style="width: 100%; height: 100%; object-fit: contain;"></video>`;
+    }
+  }
+
+  unmuteBroadcastVideo() {
+    const unmuteBtn = document.getElementById('broadcastUnmuteBtn');
+    if (unmuteBtn) unmuteBtn.style.display = 'none';
+
+    const videoEl = document.getElementById('broadcastVideoEl');
+    if (videoEl) {
+      videoEl.muted = false;
+      return;
+    }
+
+    const iframe = document.getElementById('broadcastIframe');
+    if (iframe) {
+      iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+      iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+    }
+  }
+
+  closeBroadcastOverlayLocal() {
+    const overlay = document.getElementById('broadcastVideoOverlay');
+    const container = document.getElementById('broadcastPlayerContainer');
+    if (overlay) {
+      overlay.style.display = 'none';
+      overlay.classList.remove('active');
+    }
+    if (container) container.innerHTML = '';
+  }
+
+  broadcastVideo(id) {
+    if (!this.isAdmin) {
+      this.showNotification('提示', '只有管理員老師可以進行廣播');
+      return;
+    }
+    const vid = this.videos.find(item => item.id === id);
+    if (!vid) return;
+
+    db.ref('quiz/broadcastVideo').set({
+      url: vid.url,
+      type: vid.type,
+      filename: vid.filename,
+      youtubeId: vid.youtubeId || null,
+      timestamp: Date.now()
+    }).then(() => {
+      this.showNotification('成功', '已對全班廣播播放該影片！');
+    });
+  }
+
+  stopBroadcastVideo() {
+    if (!this.isAdmin) return;
+    db.ref('quiz/broadcastVideo').set(null).then(() => {
+      this.showNotification('提示', '已停止全體影片廣播');
+    });
+  }
+  
+  bindCollapseEvents() {
+    // 綁定管理後台摺疊區塊事件（手風琴獨佔展開 Mode：展開任一功能時自動閉合其他功能）
+    document.querySelectorAll('.admin-section-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const currentSection = header.closest('.admin-section-collapsible');
+        const isCurrentlyCollapsed = currentSection.classList.contains('collapsed');
+
+        if (isCurrentlyCollapsed) {
+          // 自動收合後台所有其他區塊
+          document.querySelectorAll('.admin-section-collapsible').forEach(sec => {
+            sec.classList.add('collapsed');
+          });
+          // 展開當前點擊的區塊
+          currentSection.classList.remove('collapsed');
+        } else {
+          // 點擊已展開區塊則正常收合
+          currentSection.classList.add('collapsed');
+        }
+      });
+    });
+  }
+  
+  bindQuestionEvents() {
+    this.questionInput = document.getElementById('questionInput');
+    this.askBtn = document.getElementById('askBtn');
+    this.questionList = document.getElementById('questionList');
+    this.questionsRef = db.ref('questions');
+    
+    const submitQuestion = () => {
+      if (this.askBtn.disabled) return;
+      
+      const now = Date.now();
+      if (this.lastQuestionSubmitTime && now - this.lastQuestionSubmitTime < 2000) {
+        this.showNotification('提示', '提問頻率太快，請稍候再試...');
+        return;
+      }
+      this.lastQuestionSubmitTime = now;
+      
+      const text = this.questionInput.value.trim();
+      if (!text) {
+        this.showNotification('提示', '請輸入問題');
+        return;
+      }
+      
+      this.askBtn.disabled = true;
+      this.askBtn.textContent = '提交中...';
+      
+      this.questionsRef.push({ 
+        text: text, 
+        user: '匿名', 
+        timestamp: Date.now() 
+      }).then(() => {
+        this.questionInput.value = '';
+        this.questionInput.focus();
+        this.askBtn.disabled = false;
+        this.askBtn.textContent = '提問';
+        this.showNotification('成功', '問題已提交！');
+      }).catch((error) => {
+        console.error('提問失敗:', error);
+        this.askBtn.disabled = false;
+        this.askBtn.textContent = '提問';
+        this.showNotification('錯誤', '提問失敗，請稍後再試');
+      });
+    };
+    
+    this.askBtn.addEventListener('click', submitQuestion);
+    this.questionInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') submitQuestion();
+    });
+  }
+  
+  renderQuestions() {
+    const questionList = document.getElementById('questionList');
+    const questionsGroupedContainer = document.getElementById('questionsGroupedContainer');
+    if (!questionList || !questionsGroupedContainer) return;
+
+    if (this.questions.length === 0) {
+      questionsGroupedContainer.innerHTML = '';
+      questionList.innerHTML = '<li style="text-align: center; color: var(--text-muted); padding: 20px; width: 100%;">暫無問題</li>';
+      return;
+    }
+    
+    const total = this.questions.length;
+    
+    const renderQuestionItemHtml = (q, idx) => {
+      const commentCount = (this.allCommentCounts && this.allCommentCounts.questions && this.allCommentCounts.questions[q.id]) || (q.comments ? (Array.isArray(q.comments) ? q.comments.length : Object.keys(q.comments).length) : 0);
+      return `
+        <li class="question-item card-style" data-id="${q.id}" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px; position: relative;">
+          ${commentCount > 0 ? `
+            <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showQuestionModal ? window.app.showQuestionModal('${q.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
+          ` : ''}
+          <div class="question-card-header">
+            <div class="header-left">
+              <span class="question-badge">#${total - idx}</span>
+              ${q.user && q.user !== '匿名' ? `<span class="user">${this.escapeHtml(q.user)}</span>` : ''}
+            </div>
+            <span class="time">${this.formatTime(q.timestamp)}</span>
+          </div>
+          <div class="text">${this.linkify(q.text)}</div>
+          <div class="reactions-bar" onclick="event.stopPropagation()">
+            <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'like')" title="讚">
+              <span class="reaction-emoji">👍</span>
+              <span class="reaction-count">${q.reactions?.like || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'love')" title="愛心">
+              <span class="reaction-emoji">❤️</span>
+              <span class="reaction-count">${q.reactions?.love || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'laugh')" title="大笑">
+              <span class="reaction-emoji">😆</span>
+              <span class="reaction-count">${q.reactions?.laugh || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'wow')" title="驚訝">
+              <span class="reaction-emoji">😮</span>
+              <span class="reaction-count">${q.reactions?.wow || 0}</span>
+            </button>
+          </div>
+        </li>
+      `;
+    };
+
+    // 1. Render Grouped Folders (takes full rows)
+    let groupedHtml = '';
+    this.questionFolders.forEach(f => {
+      const folderQuestions = this.questions.filter(q => q.folderId === f.id);
+      if (folderQuestions.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        groupedHtml += `
+          <div class="folder-group-row" style="margin-bottom: 16px; border-left: 6px solid #ff9500; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
+              <span style="font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                📁 ${this.escapeHtml(f.name)} 
+                <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderQuestions.length} 個提問)</span>
+              </span>
+              <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+            </div>
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
+              <ul class="question-list" style="margin: 0; padding: 0; list-style: none;">
+                ${folderQuestions.map(q => {
+                  const idx = this.questions.indexOf(q);
+                  return renderQuestionItemHtml(q, idx);
+                }).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
+      }
+    });
+    questionsGroupedContainer.innerHTML = groupedHtml;
+    
+    // 2. Render Unassigned Questions
+    const unassignedQuestions = this.questions.filter(q => {
+      if (!q.folderId) return true;
+      return !this.questionFolders.some(f => f.id === q.folderId);
+    });
+    
+    let ungroupedHtml = '';
+    if (unassignedQuestions.length > 0) {
+      ungroupedHtml = unassignedQuestions.map(q => {
+        const idx = this.questions.indexOf(q);
+        return renderQuestionItemHtml(q, idx);
+      }).join('');
+    } else {
+      ungroupedHtml = '<li style="text-align: center; color: var(--text-muted); padding: 20px; width: 100%;">暫無未分類提問</li>';
+    }
+    questionList.innerHTML = ungroupedHtml;
+    
+    // Bind click events
+    document.querySelectorAll('.panel-body .question-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('a') || e.target.closest('.reactions-bar')) {
+          return;
+        }
+        this.showQuestionModal(item.dataset.id);
+      });
+    });
+    
+    // Reactively update active question modal reactions
+    this.updateActiveQuestionModal();
+  }
+  
+  bindImageUpload() {
+    const uploadZone = document.getElementById('uploadZone');
+    const imageInput = document.getElementById('imageInput');
+    
+    // 點擊上傳
+    uploadZone.addEventListener('click', (e) => {
+      e.stopPropagation();
+      imageInput.click();
+    });
+    
+    // 拖曳上傳
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.classList.add('dragover');
+    });
+    
+    uploadZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.classList.remove('dragover');
+    });
+    
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        this.handleImageUpload(e.dataTransfer.files[0]);
+      }
+    });
+    
+    // 選擇檔案
+    imageInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        this.handleImageUpload(e.target.files[0]);
+        imageInput.value = '';
+      }
+    });
+    
+    // 剪貼簿貼上圖片 - 在上傳區域貼上
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items || [];
+      for (let item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          e.stopPropagation(); // 阻止事件冒泡到 document 造成重複觸發
+          const file = item.getAsFile();
+          if (file) {
+            this.handleImageUpload(file);
+          }
+          break;
+        }
+      }
+    };
+    
+    uploadZone.addEventListener('paste', handlePaste);
+    
+    // 全域貼上支援 — 以目前選按的功能選單 (activeTabId) 判斷貼到哪一區
+    document.addEventListener('paste', (e) => {
+      // 如果焦點在輸入框，不處理
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+        return;
+      }
+      
+      const tab = this.activeTabId;
+      
+      // 前台：選按「圖片分享」選單時，直接貼到圖片分享區
+      if (tab === 'panel-images') {
+        handlePaste(e);
+        return;
+      }
+      
+      // 後台：選按「管理後台」選單時，判斷哪個折疊區塊是展開的
+      if (tab === 'panel-admin') {
+        const adminImageSection = document.getElementById('newImageFolderName')?.closest('.admin-section-collapsible');
+        const isAdminImageOpen = adminImageSection && !adminImageSection.classList.contains('collapsed');
+        if (isAdminImageOpen) {
+          handlePaste(e);
+        }
+        // 教師分享區的貼上由 bindTeacherShareEvents 的 listener 處理
+        return;
+      }
+      
+      // 其他選單頁不處理貼上
+    });
+  }
+  
+  handleImageUpload(file) {
+    const now = Date.now();
+    if (this.lastImageUploadTime && now - this.lastImageUploadTime < 2000) {
+      this.showNotification('提示', '貼上/上傳頻率太快，請稍候再試...');
+      return;
+    }
+    this.lastImageUploadTime = now;
+
+    if (this.isUploadingImage) {
+      this.showNotification('提示', '上傳中，請稍候...');
+      return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+      this.showNotification('提示', '請上傳圖片檔案（JPG、PNG、GIF 等）');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      this.showNotification('提示', '圖片大小不能超過 5MB');
+      return;
+    }
+    
+    this.isUploadingImage = true;
+    this.showNotification('提示', '圖片上傳中...');
+    
+    const compressAndUpload = () => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX = 1000; // 限制最大寬高為 1000px 以便看清圖片中的文字
+            let w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+              const ratio = Math.min(MAX / w, MAX / h);
+              w = Math.round(w * ratio);
+              h = Math.round(h * ratio);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            // 壓縮成 JPEG，品質設為 0.8，既能看清文字又能保持體積在合理範圍（約 80KB - 150KB）
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          img.onerror = () => reject(new Error('讀取圖片失敗'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('讀取檔案失敗'));
+        reader.readAsDataURL(file);
+      }).then(dataUrl => {
+        return this.imageRef.push({
+          url: dataUrl,
+          user: '匿名',
+          filename: file.name,
+          timestamp: Date.now()
+        });
+      });
+    };
+
+    const tryStorageUpload = () => {
+      return new Promise((resolve, reject) => {
+        if (typeof storage === 'undefined' || !storage) {
+          return reject(new Error('Storage not initialized'));
+        }
+        const fileRef = storage.ref().child('images/' + Date.now() + '_' + file.name);
+        fileRef.put(file).then((snapshot) => {
+          return snapshot.ref.getDownloadURL();
+        }).then((downloadURL) => {
+          return this.imageRef.push({ 
+            url: downloadURL, 
+            user: '匿名', 
+            filename: file.name, 
+            timestamp: Date.now() 
+          });
+        }).then(resolve).catch(reject);
+      });
+    };
+
+    tryStorageUpload()
+      .then(() => {
+        this.showNotification('成功', '圖片上傳成功！');
+        this.isUploadingImage = false;
+      })
+      .catch((error) => {
+        console.warn('Firebase Storage 上傳失敗，啟用本地壓縮備用方案:', error);
+        this.showNotification('提示', '正在進行圖片輕量化壓縮並寫入資料庫...');
+        compressAndUpload()
+          .then(() => {
+            this.showNotification('成功', '圖片上傳成功！');
+            this.isUploadingImage = false;
+          })
+          .catch((err) => {
+            console.error('備用圖片上傳失敗:', err);
+            this.showNotification('錯誤', '圖片上傳失敗，請稍後再試');
+            this.isUploadingImage = false;
+          });
+      });
+  }
+
+  bindVideoUpload() {
+    const videoUploadZone = document.getElementById('videoUploadZone');
+    const videoFileInput = document.getElementById('videoFileInput');
+    if (!videoUploadZone || !videoFileInput) return;
+
+    videoUploadZone.addEventListener('click', (e) => {
+      e.stopPropagation();
+      videoFileInput.click();
+    });
+
+    videoUploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      videoUploadZone.classList.add('dragover');
+    });
+
+    videoUploadZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      videoUploadZone.classList.remove('dragover');
+    });
+
+    videoUploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      videoUploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        this.handleVideoUpload(e.dataTransfer.files[0]);
+      }
+    });
+
+    videoFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        this.handleVideoUpload(e.target.files[0]);
+        videoFileInput.value = '';
+      }
+    });
+  }
+
+  compressVideo(file, progressCallback) {
+    return new Promise(async (resolve, reject) => {
+      let objectUrl = null;
+      try {
+        const video = document.createElement('video');
+        objectUrl = URL.createObjectURL(file);
+        video.src = objectUrl;
+        video.muted = true;
+        video.playsInline = true;
+        
+        await new Promise((res, rej) => {
+          video.onloadedmetadata = () => res();
+          video.onerror = (e) => rej(new Error("無法讀取影片元資料"));
+        });
+        
+        let targetWidth = video.videoWidth;
+        let targetHeight = video.videoHeight;
+        const MAX_SIZE = 640;
+        if (targetWidth > MAX_SIZE || targetHeight > MAX_SIZE) {
+          if (targetWidth > targetHeight) {
+            targetHeight = Math.round((targetHeight * MAX_SIZE) / targetWidth);
+            targetWidth = MAX_SIZE;
+          } else {
+            targetWidth = Math.round((targetWidth * MAX_SIZE) / targetHeight);
+            targetHeight = MAX_SIZE;
+          }
+        }
+        targetWidth = targetWidth - (targetWidth % 2);
+        targetHeight = targetHeight - (targetHeight % 2);
+        
+        const duration = video.duration;
+        const fps = 25;
+        const interval = 1 / fps;
+        
+        let audioBuffer = null;
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        } catch (err) {
+          console.warn("無法解碼音軌，將以無聲模式壓縮:", err);
+        }
+        
+        const muxerConfig = {
+          target: new Mp4Muxer.ArrayBufferTarget(),
+          video: {
+            codec: 'avc',
+            width: targetWidth,
+            height: targetHeight
+          },
+          fastStart: 'in-memory'
+        };
+        
+        if (audioBuffer) {
+          muxerConfig.audio = {
+            codec: 'aac',
+            numberOfChannels: Math.min(2, audioBuffer.numberOfChannels),
+            sampleRate: audioBuffer.sampleRate
+          };
+        }
+        
+        const muxer = new Mp4Muxer.Muxer(muxerConfig);
+        
+        const videoEncoder = new VideoEncoder({
+          output: (chunk, metadata) => muxer.addVideoChunk(chunk, metadata),
+          error: (e) => {
+            console.error("VideoEncoder 發生錯誤:", e);
+            reject(e);
+          }
+        });
+        
+        const codecs = ['avc1.42001f', 'avc1.4d401f', 'avc1.64001f', 'avc1.42e01f'];
+        let selectedCodec = null;
+        for (const c of codecs) {
+          try {
+            const supported = await VideoEncoder.isConfigSupported({
+              codec: c,
+              width: targetWidth,
+              height: targetHeight,
+              bitrate: 500000,
+              framerate: fps
+            });
+            if (supported && supported.supported) {
+              selectedCodec = c;
+              break;
+            }
+          } catch (e) {
+            console.warn(`Codec ${c} test failed:`, e);
+          }
+        }
+        if (!selectedCodec) {
+          selectedCodec = 'avc1.42001f';
+        }
+        
+        videoEncoder.configure({
+          codec: selectedCodec,
+          width: targetWidth,
+          height: targetHeight,
+          bitrate: 500000,
+          framerate: fps,
+          latencyMode: 'quality'
+        });
+        
+        let audioEncoder = null;
+        if (audioBuffer) {
+          try {
+            audioEncoder = new AudioEncoder({
+              output: (chunk, metadata) => muxer.addAudioChunk(chunk, metadata),
+              error: (e) => {
+                console.error("AudioEncoder 發生錯誤:", e);
+              }
+            });
+            audioEncoder.configure({
+              codec: 'mp4a.40.2',
+              numberOfChannels: Math.min(2, audioBuffer.numberOfChannels),
+              sampleRate: audioBuffer.sampleRate,
+              bitrate: 64000
+            });
+          } catch (err) {
+            console.warn("瀏覽器不支援 AAC 音訊編碼，改為無聲壓縮:", err);
+            audioEncoder = null;
+          }
+        }
+        
+        let currentTime = 0;
+        video.pause();
+        
+        while (currentTime < duration) {
+          if (window.app && window.app.videoCompressionCancelled) {
+            reject(new Error("使用者取消壓縮"));
+            return;
+          }
+          video.currentTime = currentTime;
+          await new Promise(res => {
+            video.onseeked = () => res();
+          });
+          
+          const timestampUs = Math.round(currentTime * 1000000);
+          const frame = new VideoFrame(video, { timestamp: timestampUs });
+          
+          videoEncoder.encode(frame);
+          frame.close();
+          
+          currentTime += interval;
+          if (progressCallback) {
+            const percent = Math.min(80, Math.round((currentTime / duration) * 80));
+            progressCallback(percent);
+          }
+        }
+        
+        await videoEncoder.flush();
+        videoEncoder.close();
+        
+        if (audioBuffer && audioEncoder) {
+          const sampleRate = audioBuffer.sampleRate;
+          const channels = Math.min(2, audioBuffer.numberOfChannels);
+          const length = audioBuffer.length;
+          const chunkSize = 1024;
+          let offset = 0;
+          
+          while (offset < length) {
+            if (window.app && window.app.videoCompressionCancelled) {
+              reject(new Error("使用者取消壓縮"));
+              return;
+            }
+            const currentChunkSize = Math.min(chunkSize, length - offset);
+            const audioDataBuffer = new Float32Array(channels * currentChunkSize);
+            
+            for (let c = 0; c < channels; c++) {
+              const channelData = audioBuffer.getChannelData(c);
+              const subarray = channelData.subarray(offset, offset + currentChunkSize);
+              audioDataBuffer.set(subarray, c * currentChunkSize);
+            }
+            
+            const timestampUs = Math.round((offset / sampleRate) * 1000000);
+            const audioFrame = new AudioData({
+              format: 'f32-planar',
+              sampleRate: sampleRate,
+              numberOfFrames: currentChunkSize,
+              numberOfChannels: channels,
+              timestamp: timestampUs,
+              data: audioDataBuffer
+            });
+            
+            audioEncoder.encode(audioFrame);
+            audioFrame.close();
+            
+            offset += currentChunkSize;
+            if (progressCallback) {
+              const percent = 80 + Math.min(18, Math.round((offset / length) * 18));
+              progressCallback(percent);
+            }
+          }
+          
+          await audioEncoder.flush();
+          audioEncoder.close();
+        }
+        
+        muxer.finalize();
+        
+        const { buffer } = muxer.target;
+        const compressedBlob = new Blob([buffer], { type: 'video/mp4' });
+        
+        if (progressCallback) progressCallback(100);
+        resolve(compressedBlob);
+        
+      } catch (err) {
+        console.error("影片壓縮失敗:", err);
+        reject(err);
+      } finally {
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+      }
+    });
+  }
+
+  cancelVideoCompression() {
+    this.videoCompressionCancelled = true;
+    this.showNotification('提示', '正在取消，請稍候...');
+  }
+
+  handleVideoUpload(file) {
+    this.videoCompressionCancelled = false;
+    const now = Date.now();
+    if (this.lastVideoUploadTime && now - this.lastVideoUploadTime < 2000) {
+      this.showNotification('提示', '上傳頻率太快，請稍候再試...');
+      return;
+    }
+    this.lastVideoUploadTime = now;
+
+    if (this.isUploadingVideo) {
+      this.showNotification('提示', '影片上傳中，請稍候...');
+      return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+      this.showNotification('提示', '請上傳影片檔案（MP4、WebM 等）');
+      return;
+    }
+
+    const isWebCodecsSupported = typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined';
+    
+    if (isWebCodecsSupported) {
+      if (file.size > 100 * 1024 * 1024) {
+        this.showNotification('提示', '本地影片最大限制為 100MB！');
+        return;
+      }
+    } else {
+      if (file.size > 10 * 1024 * 1024) {
+        this.showNotification('提示', '您的瀏覽器不支援影片壓縮，直接上傳大小不能超過 10MB！');
+        return;
+      }
+    }
+
+    this.isUploadingVideo = true;
+
+    const startUpload = async (uploadFile) => {
+      this.showNotification('提示', '正在解析影片縮圖...');
+      const thumbnail = await this.extractVideoThumbnail(uploadFile);
+
+      this.showNotification('提示', '正在上傳影片...');
+
+      const base64UploadFallback = () => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            resolve(e.target.result);
+          };
+          reader.onerror = () => reject(new Error('讀取檔案失敗'));
+          reader.readAsDataURL(uploadFile);
+        }).then(dataUrl => {
+          return this.videoRef.push({
+            url: dataUrl,
+            user: '匿名',
+            filename: file.name,
+            timestamp: Date.now(),
+            type: 'upload',
+            thumbnail: thumbnail || null
+          });
+        });
+      };
+
+      const tryStorageUpload = () => {
+        return new Promise((resolve, reject) => {
+          if (typeof storage === 'undefined' || !storage) {
+            return reject(new Error('Storage not initialized'));
+          }
+          const fileRef = storage.ref().child('videos/' + Date.now() + '_' + file.name);
+          fileRef.put(uploadFile).then((snapshot) => {
+            return snapshot.ref.getDownloadURL();
+          }).then((downloadURL) => {
+            return this.videoRef.push({ 
+              url: downloadURL, 
+              user: '匿名', 
+              filename: file.name, 
+              timestamp: Date.now(),
+              type: 'upload',
+              thumbnail: thumbnail || null
+            });
+          }).then(resolve).catch(reject);
+        });
+      };
+
+      tryStorageUpload()
+        .then(() => {
+          this.showNotification('成功', '影片上傳成功！');
+          this.isUploadingVideo = false;
+        })
+        .catch((error) => {
+          console.warn('Firebase Storage 上傳影片失敗，啟用本地 Base64 備用方案:', error);
+          this.showNotification('提示', '正在將影片轉換為 Base64 並寫入資料庫...');
+          base64UploadFallback()
+            .then(() => {
+              this.showNotification('成功', '影片上傳成功！');
+              this.isUploadingVideo = false;
+            })
+            .catch((err) => {
+              console.error('備用影片上傳失敗:', err);
+              this.showNotification('錯誤', '影片上傳失敗，請稍後再試');
+              this.isUploadingVideo = false;
+            });
+        });
+    };
+
+    if (isWebCodecsSupported) {
+      this.showNotification('提示', '正在準備壓縮影片，請稍候...', true);
+      
+      const updateProgressNotification = (percent) => {
+        this.showNotification('提示', `🎬 正在壓縮影片中... ${percent}%`, true);
+      };
+
+      this.compressVideo(file, updateProgressNotification)
+        .then(compressedBlob => {
+          console.log(`Original: ${file.size} bytes, Compressed: ${compressedBlob.size} bytes`);
+          if (compressedBlob.size > 10 * 1024 * 1024) {
+            this.showNotification('提示', `影片壓縮後大小為 ${(compressedBlob.size / 1024 / 1024).toFixed(1)}MB (超過 10MB)，請使用較短的影片。`);
+            this.isUploadingVideo = false;
+            return;
+          }
+          this.showNotification('成功', `影片壓縮成功！(${(file.size / 1024 / 1024).toFixed(1)}MB -> ${(compressedBlob.size / 1024 / 1024).toFixed(1)}MB)`);
+          const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.mp4", { type: 'video/mp4' });
+          startUpload(compressedFile);
+        })
+        .catch(err => {
+          if (err.message === "使用者取消壓縮") {
+            this.showNotification('提示', '已取消影片上傳');
+            this.isUploadingVideo = false;
+            return;
+          }
+          console.error("Compression failed, fallback to original upload:", err);
+          this.showNotification('提示', `影片壓縮失敗 (${err.message || '不支援的格式'})，嘗試直接上傳原始檔案...`);
+          if (file.size > 10 * 1024 * 1024) {
+            this.showNotification('提示', '原始影片大小超過 10MB，無法上傳！');
+            this.isUploadingVideo = false;
+            return;
+          }
+          startUpload(file);
+        });
+    } else {
+      startUpload(file);
+    }
+  }
+
+  submitVideoLink() {
+    const input = document.getElementById('videoLinkInput');
+    if (!input) return;
+    const url = input.value.trim();
+    if (!url) {
+      this.showNotification('提示', '請輸入影片網址');
+      return;
+    }
+
+    const now = Date.now();
+    if (this.lastVideoUploadTime && now - this.lastVideoUploadTime < 2000) {
+      this.showNotification('提示', '操作頻率太快，請稍候再試...');
+      return;
+    }
+    this.lastVideoUploadTime = now;
+
+    let ytId = null;
+    let type = '';
+    
+    const ytReg1 = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
+    const match1 = url.match(ytReg1);
+    if (match1) {
+      ytId = match1[1];
+      type = 'youtube';
+    } else if (url.includes('drive.google.com')) {
+      type = 'drive';
+    } else {
+      type = 'external';
+    }
+
+    if (type === 'external' && !url.startsWith('http')) {
+      this.showNotification('提示', '請輸入正確的網址連結');
+      return;
+    }
+
+    let filename = '分享影片';
+    if (type === 'youtube') {
+      filename = `YouTube 影片 (${ytId})`;
+    } else if (type === 'drive') {
+      filename = 'Google Drive 共享影片';
+    } else {
+      filename = '外部影片連結';
+    }
+
+    this.videoRef.push({
+      url: url,
+      user: '匿名',
+      filename: filename,
+      timestamp: Date.now(),
+      type: type,
+      youtubeId: ytId || null
+    }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '影片連結分享成功！');
+    }).catch(err => {
+      this.showNotification('錯誤', '分享失敗: ' + err.message);
+    });
+  }
+
+  // ===== 教師分享區功能 =====
+  bindTeacherShareEvents() {
+    const uploadZone = document.getElementById('shareImageUploadZone');
+    const fileInput = document.getElementById('shareImageFileInput');
+    if (!uploadZone || !fileInput) return;
+
+    uploadZone.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        this.handleTeacherShareImageSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        this.handleTeacherShareImageSelect(e.target.files[0]);
+      }
+    });
+
+    // 剪貼簿貼上圖片支援
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items || [];
+      for (let item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          e.stopPropagation();
+          const file = item.getAsFile();
+          if (file) {
+            this.handleTeacherShareImageSelect(file);
+          }
+          break;
+        }
+      }
+    };
+
+    uploadZone.addEventListener('paste', handlePaste);
+    uploadZone.setAttribute('tabindex', '0');
+    uploadZone.style.outline = 'none';
+
+    // 全域貼上支援 — 以目前選按的功能選單 (activeTabId) 判斷是否貼到教師分享區
+    document.addEventListener('paste', (e) => {
+      if (this.selectedShareFormType !== 'image') return;
+      
+      // 必須在管理後台選單才有效
+      if (this.activeTabId !== 'panel-admin') return;
+      
+      // 必須教師分享管理的折疊區塊是展開的
+      const shareSection = document.getElementById('newShareFolderName')?.closest('.admin-section-collapsible');
+      if (!shareSection || shareSection.classList.contains('collapsed')) return;
+
+      // 如果焦點在其他輸入框，如文字分享的 input/textarea，我們不攔截（除非焦點是在 uploadZone）
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl !== uploadZone && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+        return;
+      }
+
+      handlePaste(e);
+    });
+  }
+
+  handleTeacherShareImageSelect(file) {
+    if (!file.type.startsWith('image/')) {
+      this.showNotification('提示', '請選擇圖片檔案');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.showNotification('提示', '圖片大小不能超過 5MB');
+      return;
+    }
+    this.shareImageFile = file;
+    
+    // 建立並顯示圖片縮圖預覽
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const filenameDiv = document.getElementById('shareImageFilename');
+      if (filenameDiv) {
+        filenameDiv.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px;">
+            <img src="${e.target.result}" style="max-width: 100px; max-height: 100px; border-radius: 6px; border: 1px solid var(--border-color); object-fit: cover; box-shadow: var(--shadow);">
+            <div style="font-size: 11px; color: var(--accent-color); font-weight: bold;">
+              已選取：${this.escapeHtml(file.name)} (${(file.size/1024/1024).toFixed(2)}MB)
+            </div>
+          </div>
+        `;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  switchShareFormType(type) {
+    this.selectedShareFormType = type;
+    
+    const btns = {
+      'text': document.getElementById('shareTypeBtnText'),
+      'image': document.getElementById('shareTypeBtnImage'),
+      'link': document.getElementById('shareTypeBtnLink')
+    };
+    
+    Object.keys(btns).forEach(key => {
+      const btn = btns[key];
+      if (btn) {
+        if (key === type) {
+          btn.classList.add('active-share-type');
+        } else {
+          btn.classList.remove('active-share-type');
+        }
+      }
+    });
+
+    const fields = {
+      'text': document.getElementById('shareFieldText'),
+      'image': document.getElementById('shareFieldImage'),
+      'link': document.getElementById('shareFieldLink')
+    };
+    
+    Object.keys(fields).forEach(key => {
+      const field = fields[key];
+      if (field) {
+        field.style.display = (key === type) ? 'block' : 'none';
+      }
+    });
+  }
+
+  submitTeacherShare() {
+    const type = this.selectedShareFormType;
+    const folderId = document.getElementById('shareFolderSelect').value || '';
+    
+    if (type === 'text') {
+      const input = document.getElementById('shareInputText');
+      const val = input.value.trim();
+      if (!val) {
+        this.showNotification('提示', '請輸入分享文字內容');
+        return;
+      }
+      this.sharesRef.push({
+        type: 'text',
+        content: val,
+        folderId: folderId,
+        timestamp: Date.now()
+      }).then(() => {
+        input.value = '';
+        this.showNotification('成功', '文字發佈成功！');
+      }).catch(err => {
+        this.showNotification('錯誤', '發佈失敗: ' + err.message);
+      });
+    } else if (type === 'link') {
+      const titleInput = document.getElementById('shareInputLinkTitle');
+      const urlInput = document.getElementById('shareInputLinkUrl');
+      const title = titleInput.value.trim();
+      const url = urlInput.value.trim();
+      if (!url) {
+        this.showNotification('提示', '請輸入連結網址');
+        return;
+      }
+      if (!url.startsWith('http')) {
+        this.showNotification('提示', '網址必須以 http:// 或 https:// 開頭');
+        return;
+      }
+
+      const publishLink = (finalTitle) => {
+        this.sharesRef.push({
+          type: 'link',
+          title: finalTitle || '',
+          content: url,
+          folderId: folderId,
+          timestamp: Date.now()
+        }).then(() => {
+          titleInput.value = '';
+          urlInput.value = '';
+          this.showNotification('成功', '連結發佈成功！');
+        }).catch(err => {
+          this.showNotification('錯誤', '發佈失敗: ' + err.message);
+        });
+      };
+
+      if (!title) {
+        this.showNotification('提示', '正在自動抓取網址標題，請稍候...');
+        this.fetchWebsiteTitle(url)
+          .then(fetchedTitle => {
+            publishLink(fetchedTitle);
+          })
+          .catch(err => {
+            console.warn('無法抓取網址標題，將直接顯示網址:', err);
+            publishLink('');
+          });
+      } else {
+        publishLink(title);
+      }
+    } else if (type === 'image') {
+      if (!this.shareImageFile) {
+        this.showNotification('提示', '請拖曳或選擇要分享的圖片');
+        return;
+      }
+      if (this.isUploadingShareImage) {
+        this.showNotification('提示', '圖片上傳中，請稍候...');
+        return;
+      }
+      
+      this.isUploadingShareImage = true;
+      this.showNotification('提示', '圖片處理中，請稍候...');
+      
+      const file = this.shareImageFile;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1000;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) {
+              h = Math.round(h * MAX / w);
+              w = MAX;
+            } else {
+              w = Math.round(w * MAX / h);
+              h = MAX;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          
+          const uploadToDatabase = (finalUrl) => {
+            return this.sharesRef.push({
+              type: 'image',
+              title: file.name,
+              content: finalUrl,
+              folderId: folderId,
+              timestamp: Date.now()
+            });
+          };
+          
+          const tryStorageUpload = () => {
+            return new Promise((resolve, reject) => {
+              if (typeof storage === 'undefined' || !storage) {
+                return reject(new Error('Storage not initialized'));
+              }
+              const fetchPromise = fetch(dataUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                  const fileRef = storage.ref().child('shares/' + Date.now() + '_' + file.name);
+                  return fileRef.put(blob).then(snapshot => snapshot.ref.getDownloadURL());
+                });
+              resolve(fetchPromise);
+            });
+          };
+
+          this.showNotification('提示', '上傳分享圖片中...');
+          tryStorageUpload()
+            .then(downloadURL => {
+              return uploadToDatabase(downloadURL);
+            })
+            .then(() => {
+              this.showNotification('成功', '圖片分享成功！');
+              this.isUploadingShareImage = false;
+              this.shareImageFile = null;
+              const filenameDiv = document.getElementById('shareImageFilename');
+              if (filenameDiv) filenameDiv.textContent = '';
+              const fileInput = document.getElementById('shareImageFileInput');
+              if (fileInput) fileInput.value = '';
+            })
+            .catch(error => {
+              console.warn('Firebase Storage 失敗，啟用 Base64 備用方案:', error);
+              uploadToDatabase(dataUrl)
+                .then(() => {
+                  this.showNotification('成功', '圖片分享成功 (Base64)！');
+                  this.isUploadingShareImage = false;
+                  this.shareImageFile = null;
+                  const filenameDiv = document.getElementById('shareImageFilename');
+                  if (filenameDiv) filenameDiv.textContent = '';
+                  const fileInput = document.getElementById('shareImageFileInput');
+                  if (fileInput) fileInput.value = '';
+                })
+                .catch(err => {
+                  console.error(err);
+                  this.showNotification('錯誤', '分享失敗，請稍後再試');
+                  this.isUploadingShareImage = false;
+                });
+            });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  fetchWebsiteTitle(url) {
+    const isYoutube = url.includes('youtube.com/') || url.includes('youtu.be/');
+    
+    if (isYoutube) {
+      // 針對 YouTube 使用官方 oEmbed API，無限制、極速且免 proxy
+      const oembedUrl = 'https://www.youtube.com/oembed?url=' + encodeURIComponent(url) + '&format=json';
+      return fetch(oembedUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('YouTube oEmbed Status ' + res.status);
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.title) return data.title;
+          throw new Error('No title in YouTube oEmbed');
+        })
+        .catch(err => {
+          console.warn('YouTube oEmbed failed, falling back to Microlink:', err.message);
+          return this.fetchTitleViaMicrolink(url);
+        });
+    } else {
+      return this.fetchTitleViaMicrolink(url);
+    }
+  }
+
+  fetchTitleViaMicrolink(url) {
+    const microlinkUrl = 'https://api.microlink.io/?url=' + encodeURIComponent(url);
+    
+    const fetchPromise = fetch(microlinkUrl)
+      .then(res => {
+        if (!res.ok) throw new Error('Microlink Status ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.data && data.data.title) {
+          return data.data.title;
+        }
+        throw new Error('No title in Microlink response');
+      });
+
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Microlink Timeout')), 3500)
+    );
+
+    return Promise.race([fetchPromise, timeoutPromise])
+      .catch(err => {
+        console.warn('Microlink failed, trying backup AllOrigins proxy:', err.message);
+        return this.fetchTitleViaAllOrigins(url);
+      });
+  }
+
+  fetchTitleViaAllOrigins(url) {
+    const backupProxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+    
+    const fetchPromise = fetch(backupProxy)
+      .then(res => {
+        if (!res.ok) throw new Error('AllOrigins Status ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        const html = data.contents;
+        if (!html) throw new Error('Empty content from AllOrigins');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const titleEl = doc.querySelector('title');
+        if (titleEl && titleEl.innerText) {
+          const title = titleEl.innerText.trim();
+          if (title) return title;
+        }
+        throw new Error('Title not found in AllOrigins HTML');
+      });
+
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('AllOrigins Timeout')), 4500)
+    );
+
+    return Promise.race([fetchPromise, timeoutPromise]);
+  }
+
+  renderTeacherShares() {
+    const container = document.getElementById('teacherSharesContainer');
+    if (!container) return;
+    
+    if (this.shares.length === 0) {
+      container.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無分享內容</div>';
+      return;
+    }
+
+    const grouped = {};
+    this.shares.forEach(item => {
+      const fid = item.folderId || '';
+      if (!grouped[fid]) grouped[fid] = [];
+      grouped[fid].push(item);
+    });
+
+    let html = '';
+
+    if (grouped[''] && grouped[''].length > 0) {
+      html += `<div class="folder-card" style="border-left: 5px solid var(--accent-color) !important;">
+        <div class="folder-card-header">
+          <span>📁 未分類分享</span>
+        </div>
+        <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px;">
+          ${grouped[''].map(item => this.buildShareItemHTML(item)).join('')}
+        </div>
+      </div>`;
+    }
+
+    this.shareFolders.forEach(folder => {
+      const fShares = grouped[folder.id] || [];
+      if (fShares.length === 0) return;
+      
+      const isCollapsed = this.isFolderCollapsed(folder.id);
+      
+      html += `<div class="folder-card">
+        <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${folder.id}')" style="cursor: pointer;">
+          <span>📁 ${folder.name} (${fShares.length})</span>
+          <button class="folder-toggle-btn">${isCollapsed ? '展開 ▼' : '折疊 ▲'}</button>
+        </div>
+        <div style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 12px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px;">
+            ${fShares.map(item => this.buildShareItemHTML(item)).join('')}
+          </div>
+        </div>
+      </div>`;
+    });
+
+    container.innerHTML = html;
+  }
+
+  buildShareItemHTML(item) {
+    const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const commentCount = (this.allCommentCounts && this.allCommentCounts.shares && this.allCommentCounts.shares[item.id]) || (item.comments ? (Array.isArray(item.comments) ? item.comments.length : Object.keys(item.comments).length) : 0);
+    let contentHTML = '';
+    
+    if (item.type === 'text') {
+      contentHTML = `
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+          <div class="share-item-content-text" style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 80px;">${this.escapeHtml(item.content)}</div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+            <button class="share-copy-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)">📋 複製文字</button>
+          </div>
+        </div>
+      `;
+    } else if (item.type === 'link') {
+      contentHTML = `
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 60px; text-align: center;">
+          <a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>
+        </div>
+      `;
+    } else if (item.type === 'image') {
+      contentHTML = `
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+          <div style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 140px;">
+            <img src="${item.content}" class="share-item-content-image" onclick="window.app.zoomShareImage('${item.content}')" alt="Shared Image">
+          </div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+            <button class="share-copy-btn" onclick="window.app.copyShareImage('${item.content}')">📋 複製圖片</button>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="share-item-card" style="height: 100%; display: flex; flex-direction: column; margin-top: 0; justify-content: space-between; position: relative;">
+        ${commentCount > 0 ? `
+          <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showShareModal ? window.app.showShareModal('${item.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
+        ` : ''}
+        <div class="share-item-header" style="justify-content: flex-end; margin-bottom: 8px;">
+          <span>${timeStr}</span>
+        </div>
+        <div class="share-item-body" style="flex: 1; display: flex; flex-direction: column;">
+          ${contentHTML}
+        </div>
+      </div>
+    `;
+  }
+
+  copyShareText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      this.showNotification('成功', '已複製文字到剪貼簿！');
+    }).catch(err => {
+      this.showNotification('錯誤', '複製失敗: ' + err.message);
+    });
+  }
+
+  zoomShareImage(src) {
+    const modal = document.getElementById('shareImageZoomModal');
+    const img = document.getElementById('shareZoomedImage');
+    if (!modal || !img) return;
+    img.src = src;
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+  }
+
+  closeShareImageZoom() {
+    const modal = document.getElementById('shareImageZoomModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
+  }
+
+  copyShareImage(src) {
+    this.showNotification('提示', '正在複製圖片，請稍候...');
+    
+    const copyBlobToClipboard = (blob) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(pngBlob => {
+          if (!pngBlob) {
+            this.showNotification('錯誤', '轉換圖片格式失敗');
+            return;
+          }
+          navigator.clipboard.write([
+            new ClipboardItem({
+              [pngBlob.type]: pngBlob
+            })
+          ]).then(() => {
+            this.showNotification('成功', '圖片已複製到剪貼簿！');
+          }).catch(err => {
+            console.error('Clipboard write error:', err);
+            this.showNotification('錯誤', '複製失敗: ' + err.message);
+          });
+        }, 'image/png');
+      };
+      img.onerror = () => {
+        navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob
+          })
+        ]).then(() => {
+          this.showNotification('成功', '圖片已複製到剪貼簿！');
+        }).catch(err => {
+          console.error('Clipboard write error:', err);
+          this.showNotification('錯誤', '複製失敗: ' + err.message);
+        });
+      };
+      img.src = URL.createObjectURL(blob);
+    };
+
+    if (src.startsWith('data:')) {
+      const parts = src.split(',');
+      const mime = parts[0].match(/:(.*?);/)[1];
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      copyBlobToClipboard(blob);
+    } else {
+      fetch(src)
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP error ' + res.status);
+          return res.blob();
+        })
+        .then(blob => {
+          copyBlobToClipboard(blob);
+        })
+        .catch(err => {
+          console.error('Fetch image failed, fallback to canvas proxy:', err);
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob(pngBlob => {
+              if (!pngBlob) {
+                this.showNotification('錯誤', '轉換圖片格式失敗');
+                return;
+              }
+              navigator.clipboard.write([
+                new ClipboardItem({
+                  [pngBlob.type]: pngBlob
+                })
+              ]).then(() => {
+                this.showNotification('成功', '圖片已複製到剪貼簿！');
+              }).catch(e => {
+                this.showNotification('錯誤', '複製失敗: ' + e.message);
+              });
+            }, 'image/png');
+          };
+          img.onerror = () => {
+            this.showNotification('錯誤', '載入圖片失敗，無法複製');
+          };
+          img.src = src;
+        });
+    }
+  }
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  escapeQuote(str) {
+    if (!str) return '';
+    return str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+  }
+
+  renderAdminShares() {
+    const container = document.getElementById('adminSharesContainer');
+    if (!container) return;
+    
+    if (this.shares.length === 0) {
+      container.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無分享內容</div>';
+      return;
+    }
+
+    const grouped = {};
+    this.shares.forEach(item => {
+      const fid = item.folderId || '';
+      if (!grouped[fid]) grouped[fid] = [];
+      grouped[fid].push(item);
+    });
+
+    let html = '';
+
+    if (grouped[''] && grouped[''].length > 0) {
+      html += `<div class="folder-card" style="border-left: 5px solid var(--accent-color) !important;">
+        <div class="folder-card-header">
+          <span>📁 未分類分享 (${grouped[''].length})</span>
+        </div>
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+          ${grouped[''].map(item => this.buildAdminShareItemHTML(item)).join('')}
+        </div>
+      </div>`;
+    }
+
+    this.shareFolders.forEach(folder => {
+      const fShares = grouped[folder.id] || [];
+      const isCollapsed = this.isFolderCollapsed(folder.id);
+      
+      html += `<div class="folder-card">
+        <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${folder.id}')" style="cursor: pointer;">
+          <span>📁 ${folder.name} (${fShares.length})</span>
+          <button class="folder-toggle-btn">${isCollapsed ? '展開 ▼' : '折疊 ▲'}</button>
+        </div>
+        <div style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${fShares.length > 0 ? fShares.map(item => this.buildAdminShareItemHTML(item)).join('') : '<div style="color: var(--text-muted); padding: 6px; font-size: 13px;">資料夾為空</div>'}
+          </div>
+        </div>
+      </div>`;
+    });
+
+    container.innerHTML = html;
+    this.updateBatchShareSelectCount();
+  }
+
+  buildAdminShareItemHTML(item) {
+    const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let preview = '';
+    
+    if (item.type === 'text') {
+      preview = `<div class="share-item-content-text" style="max-height: 50px; overflow: hidden; text-overflow: ellipsis;">${this.escapeHtml(item.content)}</div>`;
+    } else if (item.type === 'link') {
+      preview = `<a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>`;
+    } else if (item.type === 'image') {
+      preview = `<img src="${item.content}" class="share-item-content-image" style="max-width: 60px; max-height: 60px;" onclick="window.app.zoomShareImage('${item.content}')">`;
+    }
+
+    return `
+      <div style="display: flex; flex-direction: column; padding: 8px; border-bottom: 1px dashed var(--border-color); gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+          <input type="checkbox" class="share-select-checkbox" data-id="${item.id}" onchange="window.app.updateBatchShareSelectCount()" style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
+              <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
+              <span>${timeStr}</span>
+            </div>
+            <div id="share-preview-${item.id}" style="word-break: break-all;">${preview}</div>
+          </div>
+          <div style="display: flex; gap: 4px; flex-shrink: 0;">
+            <button class="preset-btn" onclick="window.app.adminEditShare('${item.id}')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">✏️ 編輯</button>
+            <button class="preset-btn" onclick="window.app.deleteShareItem('${item.id}')" style="background: var(--danger-color); color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
+          </div>
+        </div>
+        
+        <!-- 內嵌編輯區塊 -->
+        <div id="share-edit-${item.id}" style="display: none; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 6px; margin-top: 4px; width: 100%; box-sizing: border-box;">
+          ${item.type === 'text' ? `
+            <textarea id="share-edit-content-${item.id}" style="width: 100%; min-height: 60px; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box; resize: vertical;">${this.escapeHtml(item.content)}</textarea>
+          ` : item.type === 'link' ? `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <input type="text" id="share-edit-title-${item.id}" value="${this.escapeHtml(item.title || '')}" placeholder="連結標題" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
+              <input type="text" id="share-edit-content-${item.id}" value="${this.escapeHtml(item.content)}" placeholder="連結網址" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
+            </div>
+          ` : `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <input type="text" id="share-edit-content-${item.id}" value="${this.escapeHtml(item.content)}" placeholder="圖片 URL (Base64 或遠端網址)" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
+            </div>
+          `}
+          <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
+            <button onclick="window.app.adminSaveShare('${item.id}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 儲存</button>
+            <button onclick="window.app.adminCancelEditShare('${item.id}')" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer;">取消</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  adminCreateShareFolder() {
+    const input = document.getElementById('newShareFolderName');
+    const name = input.value.trim();
+    if (!name) {
+      this.showNotification('提示', '請輸入資料夾名稱');
+      return;
+    }
+    
+    this.shareFoldersRef.push({
+      name: name
+    }).then(() => {
+      input.value = '';
+      this.showNotification('成功', '資料夾已建立');
+    }).catch(err => {
+      this.showNotification('錯誤', '建立失敗: ' + err.message);
+    });
+  }
+
+  adminDeleteShareFolder(folderId) {
+    if (!confirm('確定要刪除此資料夾嗎？（資料夾內的分享內容將會保留為「未分類」）')) return;
+    
+    this.shareFoldersRef.child(folderId).remove()
+      .then(() => {
+        this.sharesRef.once('value').then(snapshot => {
+          const updates = {};
+          snapshot.forEach(child => {
+            if (child.val().folderId === folderId) {
+              updates[`${child.key}/folderId`] = '';
+            }
+          });
+          if (Object.keys(updates).length > 0) {
+            this.sharesRef.update(updates);
+          }
+        });
+        this.showNotification('成功', '資料夾已刪除');
+      })
+      .catch(err => {
+        this.showNotification('錯誤', '刪除失敗: ' + err.message);
+      });
+  }
+
+  renderShareFoldersList() {
+    const container = document.getElementById('adminShareFolderList');
+    if (!container) return;
+    
+    if (this.shareFolders.length === 0) {
+      container.innerHTML = '<div style="color: var(--text-muted); padding: 6px; font-size: 13px; text-align: center;">暫無自訂資料夾</div>';
+      return;
+    }
+
+    container.innerHTML = this.shareFolders.map(folder => `
+      <div class="draggable-folder" draggable="true" data-id="${folder.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-input); border-radius: 6px; font-size: 13px; margin-bottom: 4px; cursor: grab; transition: background 0.2s;">
+        <span style="font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+          <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
+          📁 ${this.escapeHtml(folder.name)}
+        </span>
+        <button class="preset-btn" onclick="window.app.adminDeleteShareFolder('${folder.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
+      </div>
+    `).join('');
+
+    this.initFolderDragAndDrop('adminShareFolderList', 'shares', 'quiz/teacherShareFolders');
+  }
+
+  initFolderDragAndDrop(containerId, type, dbPath) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const items = container.querySelectorAll('.draggable-folder');
+    items.forEach(item => {
+      item.addEventListener('dragstart', (e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        item.classList.add('dragging');
+        // 為了移動端的拖放或未來需要，設定屬性
+        container.setAttribute('data-dragging-id', item.getAttribute('data-id'));
+      });
+
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        container.removeAttribute('data-dragging-id');
+
+        // 讀取當下 DOM 的排序
+        const currentItems = [...container.querySelectorAll('.draggable-folder')];
+        const updates = {};
+        currentItems.forEach((el, index) => {
+          const id = el.getAttribute('data-id');
+          updates[`${id}/sortOrder`] = index;
+        });
+
+        db.ref(dbPath).update(updates)
+          .then(() => {
+            this.showNotification('成功', '排序已調整！');
+          })
+          .catch(err => {
+            this.showNotification('錯誤', '更新排序失敗: ' + err.message);
+          });
+      });
+    });
+
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const draggingItem = container.querySelector('.dragging');
+      if (!draggingItem) return;
+
+      const siblings = [...container.querySelectorAll('.draggable-folder:not(.dragging)')];
+      const nextSibling = siblings.find(sibling => {
+        const box = sibling.getBoundingClientRect();
+        return e.clientY <= box.top + box.height / 2;
+      });
+
+      if (nextSibling) {
+        container.insertBefore(draggingItem, nextSibling);
+      } else {
+        container.appendChild(draggingItem);
+      }
+    });
+  }
+
+  updateShareFolderDropdowns() {
+    const selectors = [
+      document.getElementById('shareFolderSelect'),
+      document.getElementById('batchShareFolderSelect')
+    ];
+    
+    selectors.forEach((select, idx) => {
+      if (!select) return;
+      
+      const firstOptHTML = idx === 0 
+        ? '<option value="">📁 未分類</option>'
+        : '<option value="">📁 移出資料夾 (未分類)</option>';
+      
+      select.innerHTML = firstOptHTML + this.shareFolders.map(folder => `
+        <option value="${folder.id}">📁 ${this.escapeHtml(folder.name)}</option>
+      `).join('');
+    });
+  }
+
+  updateBatchShareSelectCount() {
+    const checkboxes = document.querySelectorAll('.share-select-checkbox:checked');
+    const countEl = document.getElementById('batchShareSelectCount');
+    if (countEl) countEl.textContent = checkboxes.length;
+  }
+
+  toggleSelectAllShares(checked) {
+    const checkboxes = document.querySelectorAll('.share-select-checkbox');
+    checkboxes.forEach(cb => {
+      cb.checked = checked;
+    });
+    this.updateBatchShareSelectCount();
+  }
+
+  applyBatchShareArchive() {
+    const checkboxes = document.querySelectorAll('.share-select-checkbox:checked');
+    if (checkboxes.length === 0) {
+      this.showNotification('提示', '請先勾選要歸類的項目');
+      return;
+    }
+    const targetFolderId = document.getElementById('batchShareFolderSelect').value || '';
+    const updates = {};
+    checkboxes.forEach(cb => {
+      const id = cb.getAttribute('data-id');
+      updates[`${id}/folderId`] = targetFolderId;
+    });
+
+    this.showNotification('提示', '正在更新歸類...');
+    this.sharesRef.update(updates)
+      .then(() => {
+        this.showNotification('成功', '批次歸類完成！');
+        checkboxes.forEach(cb => { cb.checked = false; });
+        const selectAll = document.getElementById('selectAllShares');
+        if (selectAll) selectAll.checked = false;
+        this.updateBatchShareSelectCount();
+      })
+      .catch(err => {
+        this.showNotification('錯誤', '歸類失敗: ' + err.message);
+      });
+  }
+
+  deleteShareItem(id) {
+    if (!confirm('確定要刪除此分享項目嗎？')) return;
+    this.sharesRef.child(id).remove()
+      .then(() => {
+        this.showNotification('成功', '已刪除分享項目');
+      })
+      .catch(err => {
+        this.showNotification('錯誤', '刪除失敗: ' + err.message);
+      });
+  }
+
+  deleteSelectedShares() {
+    const checkboxes = document.querySelectorAll('.share-select-checkbox:checked');
+    if (checkboxes.length === 0) {
+      this.showNotification('提示', '請先勾選要刪除的項目！');
+      return;
+    }
+    if (!confirm(`確定要刪除這 ${checkboxes.length} 個分享項目嗎？`)) return;
+
+    this.showNotification('提示', '正在刪除項目...');
+    const promises = Array.from(checkboxes).map(cb => {
+      const id = cb.getAttribute('data-id');
+      return this.sharesRef.child(id).remove();
+    });
+
+    Promise.all(promises)
+      .then(() => {
+        this.showNotification('成功', '選取的項目已刪除！');
+        const selectAll = document.getElementById('selectAllShares');
+        if (selectAll) selectAll.checked = false;
+        this.updateBatchShareSelectCount();
+      })
+      .catch(err => {
+        this.showNotification('錯誤', '刪除失敗: ' + err.message);
+      });
+  }
+
+  renderImages() {
+    const imagePreview = document.getElementById('imagePreview');
+    const imagesGroupedContainer = document.getElementById('imagesGroupedContainer');
+    if (!imagePreview || !imagesGroupedContainer) return;
+    
+    if (this.images.length === 0) {
+      imagesGroupedContainer.innerHTML = '';
+      imagePreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無圖片</div>';
+      return;
+    }
+
+    const renderImageItemHtml = (img) => {
+      const commentCount = (this.allCommentCounts && this.allCommentCounts.images && this.allCommentCounts.images[img.id]) || (img.comments ? (Array.isArray(img.comments) ? img.comments.length : Object.keys(img.comments).length) : 0);
+      return `
+        <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div class="preview-item" data-id="${img.id}" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0; position: relative;">
+            ${commentCount > 0 ? `
+              <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showImageModal ? window.app.showImageModal('${img.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
+            ` : ''}
+            <img src="${img.url}" alt="${img.filename}">
+          </div>
+          <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px;">
+            <button class="reaction-btn" onclick="reactToImage('${img.id}', 'like')" style="min-width: 32px; padding: 2px 6px;" title="讚">
+              <span class="reaction-emoji" style="font-size: 11px;">👍</span>
+              <span class="reaction-count" style="font-size: 9px;">${img.reactions?.like || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToImage('${img.id}', 'love')" style="min-width: 32px; padding: 2px 6px;" title="愛心">
+              <span class="reaction-emoji" style="font-size: 11px;">❤️</span>
+              <span class="reaction-count" style="font-size: 9px;">${img.reactions?.love || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToImage('${img.id}', 'laugh')" style="min-width: 32px; padding: 2px 6px;" title="大笑">
+              <span class="reaction-emoji" style="font-size: 11px;">😆</span>
+              <span class="reaction-count" style="font-size: 9px;">${img.reactions?.laugh || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToImage('${img.id}', 'wow')" style="min-width: 32px; padding: 2px 6px;" title="驚訝">
+              <span class="reaction-emoji" style="font-size: 11px;">😮</span>
+              <span class="reaction-count" style="font-size: 9px;">${img.reactions?.wow || 0}</span>
+            </button>
+          </div>
+        </div>
+      `;
+    };
+
+    // 1. Grouped Folders (takes full rows)
+    let groupedHtml = '';
+    this.imageFolders.forEach(f => {
+      const folderImages = this.images.filter(img => img.folderId === f.id);
+      if (folderImages.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        groupedHtml += `
+          <div class="folder-group-row" style="margin-bottom: 16px; border-left: 6px solid #af52de; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
+              <span style="font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                📁 ${this.escapeHtml(f.name)} 
+                <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderImages.length} 張圖片)</span>
+              </span>
+              <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+            </div>
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
+              <div class="image-preview" style="margin: 0; padding: 0;">
+                ${folderImages.map(img => renderImageItemHtml(img)).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    });
+    imagesGroupedContainer.innerHTML = groupedHtml;
+    
+    // 2. Unassigned Images
+    const unassignedImages = this.images.filter(img => {
+      if (!img.folderId) return true;
+      return !this.imageFolders.some(f => f.id === img.folderId);
+    });
+    
+    if (unassignedImages.length > 0) {
+      imagePreview.innerHTML = unassignedImages.map(img => renderImageItemHtml(img)).join('');
+    } else {
+      imagePreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無未分類圖片</div>';
+    }
+    
+    // Bind click events
+    document.querySelectorAll('.panel-body .preview-item').forEach(item => {
+      item.addEventListener('click', () => {
+        this.showImageModal(item.dataset.id);
+      });
+    });
+    
+    // Reactively update active image modal reactions
+    this.updateActiveImageModal();
+  }
+
+  renderVideos() {
+    const videoPreview = document.getElementById('videoPreview');
+    const videosGroupedContainer = document.getElementById('videosGroupedContainer');
+    if (!videoPreview || !videosGroupedContainer) return;
+    
+    if (this.videos.length === 0) {
+      videosGroupedContainer.innerHTML = '';
+      videoPreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無影片</div>';
+      return;
+    }
+
+    const getThumbnailUrl = (vid) => {
+      if (vid.type === 'youtube' && vid.youtubeId) {
+        return `https://img.youtube.com/vi/${vid.youtubeId}/0.jpg`;
+      }
+      if (vid.thumbnail) {
+        return vid.thumbnail;
+      }
+      return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'><rect width='100%' height='100%' fill='%232c2c2e'/><path d='M35,45 L75,45 L75,85 L35,85 Z M80,50 L105,35 L105,95 L80,80 Z' fill='%238e8e93' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
+    };
+
+    const renderVideoItemHtml = (vid) => {
+      const commentCount = (this.allCommentCounts && this.allCommentCounts.videos && this.allCommentCounts.videos[vid.id]) || (vid.comments ? (Array.isArray(vid.comments) ? vid.comments.length : Object.keys(vid.comments).length) : 0);
+      return `
+        <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div class="preview-item video-item" data-id="${vid.id}" style="cursor: pointer; margin: 0; position: relative;">
+            ${commentCount > 0 ? `
+              <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showVideoModal ? window.app.showVideoModal('${vid.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
+            ` : ''}
+            <img src="${getThumbnailUrl(vid)}" alt="${vid.filename}" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
+          <div style="position: absolute; bottom: 4px; left: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 2px 4px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
+            ${this.escapeHtml(vid.filename)}
+          </div>
+        </div>
+        <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px; width: 100%; flex-wrap: wrap;">
+          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'like')" style="min-width: 28px; padding: 2px 4px;" title="讚">
+            <span class="reaction-emoji" style="font-size: 10px;">👍</span>
+            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.like || 0}</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'love')" style="min-width: 28px; padding: 2px 4px;" title="愛心">
+            <span class="reaction-emoji" style="font-size: 10px;">❤️</span>
+            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.love || 0}</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'laugh')" style="min-width: 28px; padding: 2px 4px;" title="大笑">
+            <span class="reaction-emoji" style="font-size: 10px;">😆</span>
+            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.laugh || 0}</span>
+          </button>
+          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'wow')" style="min-width: 28px; padding: 2px 4px;" title="驚訝">
+            <span class="reaction-emoji" style="font-size: 10px;">😮</span>
+            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.wow || 0}</span>
+          </button>
+        </div>
+      </div>
+    `;
+    };
+
+    // 1. Grouped Folders
+    let groupedHtml = '';
+    this.videoFolders.forEach(f => {
+      const folderVideos = this.videos.filter(vid => vid.folderId === f.id);
+      if (folderVideos.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        groupedHtml += `
+          <div class="folder-group-row" style="margin-bottom: 16px; border-left: 6px solid #34c759; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
+              <span style="font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                📁 ${this.escapeHtml(f.name)} 
+                <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderVideos.length} 個影片)</span>
+              </span>
+              <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+            </div>
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
+              <div class="image-preview" style="margin: 0; padding: 0;">
+                ${folderVideos.map(vid => renderVideoItemHtml(vid)).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    });
+    videosGroupedContainer.innerHTML = groupedHtml;
+    
+    // 2. Unassigned Videos
+    const unassignedVideos = this.videos.filter(vid => {
+      if (!vid.folderId) return true;
+      return !this.videoFolders.some(f => f.id === vid.folderId);
+    });
+    
+    if (unassignedVideos.length > 0) {
+      videoPreview.innerHTML = unassignedVideos.map(vid => renderVideoItemHtml(vid)).join('');
+    } else {
+      videoPreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無未分類影片</div>';
+    }
+    
+    // Bind click events for all video preview items
+    document.querySelectorAll('#panel-videos .preview-item').forEach(item => {
+      item.addEventListener('click', () => {
+        this.showVideoModal(item.dataset.id);
+      });
+    });
+    
+    this.updateActiveVideoModal();
+  }
+  
+  renderAdminQuestions() {
+    const adminQuestionList = document.getElementById('adminQuestionList');
+    const adminQuestionsGroupedContainer = document.getElementById('adminQuestionsGroupedContainer');
+    if (!adminQuestionList || !adminQuestionsGroupedContainer) return;
+
+    if (this.questions.length === 0) {
+      adminQuestionsGroupedContainer.innerHTML = '';
+      adminQuestionList.innerHTML = '<li style="text-align: center; color: var(--text-muted); padding: 20px; width: 100%;">暫無問題</li>';
+      return;
+    }
+    
+    const total = this.questions.length;
+    
+    const renderQuestionItemHtml = (q, idx) => `
+      <li class="question-item card-style admin-card" style="border-left-color: var(--danger-color); cursor: default; flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+          <input type="checkbox" class="admin-select-question" value="${q.id}" onchange="window.app.updateBatchSelectCount()" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; margin-top: 4px; margin-right: 12px;">
+          
+          <div style="flex: 1; min-width: 0;">
+            <div class="question-card-header">
+              <div class="header-left">
+                <span class="question-badge admin-badge">#${total - idx}</span>
+                ${q.user && q.user !== '匿名' ? `<span class="user" style="color: var(--danger-color);">${this.escapeHtml(q.user)}</span>` : ''}
+              </div>
+              <span class="time">${this.formatTime(q.timestamp)}</span>
+            </div>
+            <div class="text" id="q-text-${q.id}">${this.linkify(q.text)}</div>
+            <!-- 內嵌編輯區 -->
+            <div id="q-edit-${q.id}" style="display:none; margin-top: 8px;">
+              <textarea id="q-textarea-${q.id}" style="width:100%; min-height:70px; padding:8px; border-radius:8px; border:1px solid var(--accent-color); background:var(--bg-input); color:var(--text-primary); font-size:14px; resize:vertical; box-sizing:border-box;">${this.escapeHtml(q.text)}</textarea>
+              <div style="display:flex; gap:8px; margin-top:6px; justify-content:flex-end;">
+                <button onclick="adminSaveQuestion('${q.id}')" style="background:var(--accent-color);color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">💾 儲存</button>
+                <button onclick="adminCancelEditQuestion('${q.id}')" style="background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border-color);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">取消</button>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: 12px;">
+            <button onclick="adminEditQuestion('${q.id}')" title="編輯問題" style="width:28px;height:28px;font-size:13px;background:transparent;border:1px solid var(--accent-color);border-radius:6px;cursor:pointer;color:var(--accent-color);">✏️</button>
+            <button class="remove-option-btn" onclick="deleteQuestion('${q.id}')" title="刪除問題" style="width: 28px; height: 28px; font-size: 13px;">✕</button>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.02); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; width: 100%;">
+          <span style="font-weight: bold; color: var(--text-secondary);">回饋統計:</span>
+          <span>👍 ${q.reactions?.like || 0}</span>
+          <span>❤️ ${q.reactions?.love || 0}</span>
+          <span>😆 ${q.reactions?.laugh || 0}</span>
+          <span>😮 ${q.reactions?.wow || 0}</span>
+        </div>
+      </li>
+    `;
+
+    // 1. Grouped Folders
+    let groupedHtml = '';
+    this.questionFolders.forEach(f => {
+      const folderQuestions = this.questions.filter(q => q.folderId === f.id);
+      if (folderQuestions.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        groupedHtml += `
+          <div class="folder-group-row" style="margin-bottom: 16px; border-left: 6px solid #ff9500; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
+              <span style="font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                📁 ${this.escapeHtml(f.name)} 
+                <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderQuestions.length} 個提問)</span>
+              </span>
+              <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+            </div>
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 10px; width: 100%;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" class="folder-select-all-checkbox-${f.id}" onchange="window.app.toggleSelectAllFolderQuestions('${f.id}', this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選群組提問
+                </label>
+                <button onclick="window.app.deleteSelectedFolderQuestions('${f.id}')" style="
+                  background: var(--danger-color); color: white; border: none;
+                  padding: 4px 8px; border-radius: 6px; font-size: 11px;
+                  cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 4px;
+                ">🗑️ 刪除所選</button>
+              </div>
+              <ul class="question-list folder-questions-${f.id}" style="margin: 0; padding: 0; list-style: none;">
+                ${folderQuestions.map(q => {
+                  const idx = this.questions.indexOf(q);
+                  return renderQuestionItemHtml(q, idx);
+                }).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
+      }
+    });
+    adminQuestionsGroupedContainer.innerHTML = groupedHtml;
+    
+    // 2. Unassigned Questions
+    const unassignedQuestions = this.questions.filter(q => {
+      if (!q.folderId) return true;
+      return !this.questionFolders.some(f => f.id === q.folderId);
+    });
+    
+    let ungroupedHtml = '';
+    if (unassignedQuestions.length > 0) {
+      ungroupedHtml = unassignedQuestions.map(q => {
+        const idx = this.questions.indexOf(q);
+        return renderQuestionItemHtml(q, idx);
+      }).join('');
+    } else {
+      ungroupedHtml = '<li style="text-align: center; color: var(--text-muted); padding: 20px; width: 100%;">暫無未分類提問</li>';
+    }
+    adminQuestionList.innerHTML = ungroupedHtml;
+    
+    // Bind click events on all admin cards to toggle checkbox selection
+    document.querySelectorAll('#adminQuestionList .admin-card, #adminQuestionsGroupedContainer .admin-card').forEach(card => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input[type="checkbox"]')) {
+          return;
+        }
+        const checkbox = card.querySelector('.admin-select-question');
+        if (checkbox) {
+          checkbox.checked = !checkbox.checked;
+          window.app.updateBatchSelectCount();
+        }
+      });
+    });
+  }
+
+  renderAdminImages() {
+    const adminImagePreview = document.getElementById('adminImagePreview');
+    const adminImagesGroupedContainer = document.getElementById('adminImagesGroupedContainer');
+    if (!adminImagePreview || !adminImagesGroupedContainer) return;
+    
+    if (this.images.length === 0) {
+      adminImagesGroupedContainer.innerHTML = '';
+      adminImagePreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無圖片</div>';
+      return;
+    }
+
+    const renderImageItemHtml = (img) => `
+      <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg-card); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); position: relative; margin-bottom: 12px;">
+        <div class="preview-item" style="position: relative; margin: 0;">
+          <img src="${img.url}" alt="${img.filename}">
+          <button onclick="deleteImage('${img.id}')" title="刪除圖片" style="
+            position: absolute; top: -6px; right: -6px;
+            width: 24px; height: 24px; border: none;
+            background: var(--danger-color); color: white;
+            border-radius: 50%; cursor: pointer;
+            font-size: 12px; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 5;
+          ">✕</button>
+        </div>
+        
+        <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; margin-top: 2px; user-select: none;">
+          <input type="checkbox" class="admin-select-image" value="${img.id}" onchange="window.app.updateBatchSelectCount()" style="width: 14px; height: 14px; margin: 0;">
+          <span>選取</span>
+        </label>
+        
+        <div style="font-size: 10px; color: var(--text-secondary); display: flex; gap: 6px; justify-content: center; width: 100%;">
+          <span>👍 ${img.reactions?.like || 0}</span>
+          <span>❤️ ${img.reactions?.love || 0}</span>
+          <span>😆 ${img.reactions?.laugh || 0}</span>
+          <span>😮 ${img.reactions?.wow || 0}</span>
+        </div>
+      </div>
+    `;
+
+    // 1. Grouped Folders
+    let groupedHtml = '';
+    this.imageFolders.forEach(f => {
+      const folderImages = this.images.filter(img => img.folderId === f.id);
+      if (folderImages.length > 0) {
+        const isCollapsed = this.isFolderCollapsed(f.id);
+        groupedHtml += `
+          <div class="folder-group-row" style="margin-bottom: 16px; border-left: 6px solid #af52de; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
+            <div class="folder-group-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
+              <span style="font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                📁 ${this.escapeHtml(f.name)} 
+                <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderImages.length} 張圖片)</span>
+              </span>
+              <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+            </div>
+            <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 10px; width: 100%;">
+                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                  <input type="checkbox" class="folder-select-all-checkbox-${f.id}" onchange="window.app.toggleSelectAllFolderImages('${f.id}', this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選群組圖片
+                </label>
+                <button onclick="window.app.deleteSelectedFolderImages('${f.id}')" style="
+                  background: var(--danger-color); color: white; border: none;
+                  padding: 4px 8px; border-radius: 6px; font-size: 11px;
+                  cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 4px;
+                ">🗑️ 刪除所選</button>
+              </div>
+              <div class="image-preview folder-images-${f.id}" style="margin: 0; padding: 0;">
+                ${folderImages.map(img => renderImageItemHtml(img)).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    });
+    adminImagesGroupedContainer.innerHTML = groupedHtml;
+    
+    // 2. Unassigned Images
+    const unassignedImages = this.images.filter(img => {
+      if (!img.folderId) return true;
+      return !this.imageFolders.some(f => f.id === img.folderId);
+    });
+    
+    if (unassignedImages.length > 0) {
+      adminImagePreview.innerHTML = unassignedImages.map(img => renderImageItemHtml(img)).join('');
+    } else {
+      adminImagePreview.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無未分類圖片</div>';
+    }
+    
+    // Bind click events on all admin image wrappers to toggle checkbox selection
+    document.querySelectorAll('#adminImagePreview .preview-item-wrapper, #adminImagesGroupedContainer .preview-item-wrapper').forEach(wrapper => {
+      wrapper.style.cursor = 'pointer';
+      wrapper.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) {
+          return;
+        }
+        const checkbox = wrapper.querySelector('.admin-select-image');
+        if (checkbox) {
+          checkbox.checked = !checkbox.checked;
+          window.app.updateBatchSelectCount();
+        }
+      });
+    });
+  }
+
+  setupConnectionStatus() {
+    const statusEl = document.getElementById('connectionStatus');
+    const onlineEl = document.getElementById('onlineCount');
+    
+    const presenceRef = db.ref('quiz/presence');
+    let myPresenceRef = null;
+
+    db.ref('.info/connected').on('value', (snapshot) => {
+      if (snapshot.val()) {
+        statusEl.textContent = '已連線';
+        statusEl.className = 'connection-status connected';
+        
+        // Clean up previous reference if it exists
+        if (myPresenceRef) {
+          myPresenceRef.remove();
+        }
+        
+        // Register connection session
+        myPresenceRef = presenceRef.push();
+        myPresenceRef.set({
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+        myPresenceRef.onDisconnect().remove();
+      } else {
+        statusEl.textContent = '斷線中...';
+        statusEl.className = 'connection-status disconnected';
+      }
+    });
+
+    // Listen for changes in the presence list and count active users
+    presenceRef.on('value', (snapshot) => {
+      let count = 0;
+      if (snapshot.exists()) {
+        count = snapshot.numChildren();
+      }
+      if (onlineEl) {
+        onlineEl.textContent = `線上人數 ${count} 人`;
+      }
+    });
+  }
+
+  setupTimerSync() {
+    this.timerRef.on('value', (snapshot) => {
+      try {
+        const data = snapshot.val();
+        
+        const wasActive = this.timerState ? this.timerState.isActive : false;
+        this.timerState = data;
+        
+        const isInitialLoad = this.isFirstTimerSync;
+        this.isFirstTimerSync = false;
+        
+        const floatingTimer = document.getElementById('floatingTimer');
+        const localStyleSelect = document.getElementById('localTimerStyle');
+        const volBtn = document.getElementById('timerVolumeBtn');
+        
+        // Show volume toggle only for admin
+        if (volBtn) {
+          volBtn.style.display = this.isAdmin ? 'inline-block' : 'none';
+        }
+        
+        // Update admin UI buttons if user is admin
+        if (this.isAdmin) {
+          this.updateAdminTimerUI(data);
+        }
+        
+        if (!data || !data.isActive) {
+          // Hide timer
+          if (floatingTimer) floatingTimer.style.display = 'none';
+          if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+          }
+          // Stop music
+          this.playAudio('none');
+          return;
+        }
+        
+        // Show timer
+        if (floatingTimer) {
+          floatingTimer.style.display = 'block';
+        }
+        
+        // Handle centering vs corner display based on initial load vs dynamic start
+        if (isInitialLoad) {
+          // Page load: minimize by default to avoid blocking student screen
+          this.toggleMinimizeTimer(true);
+        } else if (!wasActive) {
+          // Dynamic start by admin: show expanded in center
+          this.toggleMinimizeTimer(false);
+        }
+        
+        // Set timer style
+        if (localStyleSelect && !localStyleSelect.dataset.userChanged) {
+          localStyleSelect.value = data.style;
+          this.changeLocalTimerStyle(data.style, false);
+        }
+        
+        // 同步音樂來源
+        this.updateMusicSource(data.musicUrl || 'https://www.youtube.com/watch?v=MnhXZRw_ATU');
+        
+        // Sync inputs in admin if not active focus
+        const minsInput = document.getElementById('timerMinutes');
+        const styleInput = document.getElementById('timerStyle');
+        if (minsInput && document.activeElement !== minsInput) {
+          minsInput.value = Math.round((data.duration || 600) / 60);
+        }
+        if (styleInput) {
+          styleInput.value = data.style;
+        }
+        
+        if (this.isAdmin) {
+          const musicSelect = document.getElementById('timerMusicSelect');
+          const customUrlInput = document.getElementById('timerMusicCustomUrl');
+          const customWrapper = document.getElementById('customMusicInputWrapper');
+          
+          if (musicSelect && data.musicUrl) {
+            const presetExists = Array.from(musicSelect.options).some(opt => opt.value === data.musicUrl);
+            if (presetExists) {
+              musicSelect.value = data.musicUrl;
+              if (customWrapper) customWrapper.style.display = 'none';
+            } else {
+              musicSelect.value = 'custom';
+              if (customWrapper) customWrapper.style.display = 'flex';
+              if (customUrlInput && document.activeElement !== customUrlInput) {
+                customUrlInput.value = data.musicUrl;
+              }
+            }
+          }
+        }
+        
+        // Start/maintain ticking interval
+        if (!this.timerInterval) {
+          this.timerInterval = setInterval(() => this.tickTimer(), 250);
+        }
+        this.tickTimer();
+      } catch (err) {
+        console.error("Timer sync error:", err);
+      }
+    }, (error) => {
+      console.error("Timer database sync error:", error);
+    });
+  }
+
+  updateAdminTimerUI(data) {
+    const startBtn = document.getElementById('adminStartTimerBtn');
+    const pauseBtn = document.getElementById('adminPauseTimerBtn');
+    const resumeBtn = document.getElementById('adminResumeTimerBtn');
+    
+    if (!data || !data.isActive) {
+      if (startBtn) startBtn.style.display = 'inline-block';
+      if (pauseBtn) pauseBtn.style.display = 'none';
+      if (resumeBtn) resumeBtn.style.display = 'none';
+    } else if (data.isPaused) {
+      if (startBtn) startBtn.style.display = 'none';
+      if (pauseBtn) pauseBtn.style.display = 'none';
+      if (resumeBtn) resumeBtn.style.display = 'inline-block';
+    } else {
+      if (startBtn) startBtn.style.display = 'none';
+      if (pauseBtn) pauseBtn.style.display = 'inline-block';
+      if (resumeBtn) resumeBtn.style.display = 'none';
+    }
+  }
+
+  tickTimer() {
+    if (!this.timerState || !this.timerState.isActive) return;
+    
+    let remMs = 0;
+    if (this.timerState.isPaused) {
+      remMs = this.timerState.remainingTime * 1000;
+    } else {
+      remMs = Math.max(0, this.timerState.endTime - Date.now());
+    }
+    
+    const remainingSeconds = Math.ceil(remMs / 1000);
+    this.updateTimerDisplay(remainingSeconds);
+
+    // 音樂播放與淡出邏輯 (僅在老師端/管理員端播放背景音樂，學生端保持靜音)
+    if (this.isAdmin) {
+      if (this.timerState.isPaused) {
+        this.playAudio('none');
+      } else if (remainingSeconds > 0) {
+        // 播放背景音樂
+        if (this.currentAudioPlaying !== 'canon') {
+          this.playAudio('canon');
+        }
+        
+        // 最後 10 秒音樂淡出
+        if (remMs <= 10000) {
+          const volRatio = Math.max(0, Math.min(1.0, remMs / 10000));
+          const bgAudio = document.getElementById('bgAudioPlayer');
+          if (bgAudio) {
+            bgAudio.volume = volRatio;
+          }
+          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
+            this.playerCanon.setVolume(Math.floor(volRatio * 100));
+          }
+        } else {
+          // 正常音量 (100)
+          const bgAudio = document.getElementById('bgAudioPlayer');
+          if (bgAudio) {
+            bgAudio.volume = 1.0;
+          }
+          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.setVolume === 'function') {
+            this.playerCanon.setVolume(100);
+          }
+        }
+      } else {
+        // 時間到，停止播放
+        if (this.currentAudioPlaying !== 'none') {
+          this.playAudio('none');
+        }
+      }
+    } else {
+      // 學生端一律確保背景音樂處於關閉/靜音狀態
+      if (this.currentAudioPlaying !== 'none') {
+        this.playAudio('none');
+      }
+    }
+  }
+
+  updateTimerDisplay(totalSeconds) {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    
+    const minStr = String(mins).padStart(2, '0');
+    const secStr = String(secs).padStart(2, '0');
+    const timeStr = `${minStr}:${secStr}`;
+    
+    // 1. Update Minimized Display
+    const minimizedText = document.getElementById('minimizedTimeText');
+    if (minimizedText) minimizedText.textContent = timeStr;
+    
+    // 2. Update style: Flip style
+    if (this.localTimerStyle === 'flip') {
+      this.updateFlipCard('flipMinTens', minStr[0]);
+      this.updateFlipCard('flipMinOnes', minStr[1]);
+      this.updateFlipCard('flipSecTens', secStr[0]);
+      this.updateFlipCard('flipSecOnes', secStr[1]);
+    }
+    
+    // 3. Update style: LED Digital style
+    const ledDisplay = document.querySelector('.led-display');
+    if (ledDisplay) ledDisplay.textContent = timeStr;
+    
+    // 4. Update style: SVG Ring style
+    const ringText = document.getElementById('ringTimeText');
+    if (ringText) ringText.textContent = timeStr;
+    
+    const ringProgress = document.getElementById('ringProgress');
+    if (ringProgress && this.timerState) {
+      const total = this.timerState.duration || 600;
+      const pct = totalSeconds / total;
+      const offset = 251.32 * (1 - pct);
+      ringProgress.style.strokeDashoffset = offset;
+    }
+  }
+
+  updateFlipCard(cardId, digit) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    
+    const digitEl = card.querySelector('.digit');
+    if (!digitEl) return;
+    
+    if (digitEl.textContent !== digit) {
+      card.classList.remove('flipping');
+      void card.offsetWidth; // Trigger reflow
+      digitEl.textContent = digit;
+      card.classList.add('flipping');
+    }
+  }
+
+  changeLocalTimerStyle(style, userInitiated = true) {
+    this.localTimerStyle = style;
+    
+    if (userInitiated) {
+      const localStyleSelect = document.getElementById('localTimerStyle');
+      if (localStyleSelect) {
+        localStyleSelect.dataset.userChanged = "true";
+      }
+    }
+    
+    const styles = ['flip', 'digital', 'ring'];
+    styles.forEach(s => {
+      const el = document.getElementById(`timerStyle${s.charAt(0).toUpperCase() + s.slice(1)}`);
+      if (el) {
+        if (s === style) {
+          el.style.display = (s === 'flip') ? 'flex' : 'block';
+        } else {
+          el.style.display = 'none';
+        }
+      }
+    });
+    
+    this.tickTimer();
+  }
+
+  toggleMinimizeTimer(minimize) {
+    this.isTimerMinimized = minimize;
+    
+    const expanded = document.getElementById('timerExpandedContent');
+    const minimized = document.getElementById('timerMinimizedContent');
+    const floatingTimer = document.getElementById('floatingTimer');
+    
+    if (minimize) {
+      if (expanded) expanded.style.display = 'none';
+      if (minimized) minimized.style.display = 'flex';
+      if (floatingTimer) {
+        // Save expanded position details before minimizing
+        this.expandedPosition = {
+          left: floatingTimer.style.left,
+          top: floatingTimer.style.top,
+          transform: floatingTimer.style.transform
+        };
+        
+        floatingTimer.style.background = 'none';
+        floatingTimer.style.border = 'none';
+        floatingTimer.style.boxShadow = 'none';
+        floatingTimer.style.backdropFilter = 'none';
+        floatingTimer.style.top = 'auto';
+        floatingTimer.style.left = 'auto';
+        floatingTimer.style.bottom = '24px';
+        floatingTimer.style.right = '24px';
+        floatingTimer.style.transform = 'none';
+      }
+    } else {
+      if (expanded) expanded.style.display = 'block';
+      if (minimized) minimized.style.display = 'none';
+      if (floatingTimer) {
+        floatingTimer.style.background = 'var(--bg-card)';
+        floatingTimer.style.border = '1px solid var(--border-color)';
+        floatingTimer.style.boxShadow = '0 15px 50px rgba(0,0,0,0.2)';
+        floatingTimer.style.backdropFilter = 'blur(12px)';
+        
+        // Restore expanded position or center
+        if (this.expandedPosition && this.expandedPosition.left) {
+          floatingTimer.style.top = this.expandedPosition.top;
+          floatingTimer.style.left = this.expandedPosition.left;
+          floatingTimer.style.bottom = 'auto';
+          floatingTimer.style.right = 'auto';
+          floatingTimer.style.transform = this.expandedPosition.transform;
+        } else {
+          floatingTimer.style.top = '50%';
+          floatingTimer.style.left = '50%';
+          floatingTimer.style.bottom = 'auto';
+          floatingTimer.style.right = 'auto';
+          floatingTimer.style.transform = 'translate(-50%, -50%)';
+        }
+      }
+    }
+  }
+
+  initTimerDragging() {
+    const timer = document.getElementById('floatingTimer');
+    const handle = timer ? timer.querySelector('.timer-drag-handle') : null;
+    if (!timer || !handle) return;
+    
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let initialX = 0, initialY = 0;
+    
+    const onStart = (e) => {
+      if (this.isTimerMinimized) return;
+      
+      const clientX = (e.clientX !== undefined) ? e.clientX : e.touches[0].clientX;
+      const clientY = (e.clientY !== undefined) ? e.clientY : e.touches[0].clientY;
+      
+      isDragging = true;
+      startX = clientX;
+      startY = clientY;
+      
+      const rect = timer.getBoundingClientRect();
+      initialX = rect.left;
+      initialY = rect.top;
+      
+      // Remove transform so it doesn't offset absolute coordinates
+      timer.style.transform = 'none';
+      timer.style.bottom = 'auto';
+      timer.style.right = 'auto';
+      timer.style.left = `${initialX}px`;
+      timer.style.top = `${initialY}px`;
+      
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onEnd);
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onEnd);
+    };
+    
+    const onMove = (e) => {
+      if (!isDragging) return;
+      if (e.cancelable) e.preventDefault();
+      
+      const clientX = (e.clientX !== undefined) ? e.clientX : e.touches[0].clientX;
+      const clientY = (e.clientY !== undefined) ? e.clientY : e.touches[0].clientY;
+      
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+      
+      let newLeft = initialX + dx;
+      let newTop = initialY + dy;
+      
+      const maxLeft = window.innerWidth - timer.offsetWidth;
+      const maxTop = window.innerHeight - timer.offsetHeight;
+      
+      newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+      newTop = Math.max(0, Math.min(newTop, maxTop));
+      
+      timer.style.left = `${newLeft}px`;
+      timer.style.top = `${newTop}px`;
+    };
+    
+    const onEnd = () => {
+      isDragging = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+    
+    handle.addEventListener('mousedown', onStart);
+    handle.addEventListener('touchstart', onStart, { passive: true });
+  }
+
+  adminStartTimer() {
+    try {
+      if (this.ytPlayersReady && this.playerCanon) {
+        if (typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
+        if (typeof this.playerCanon.setVolume === 'function') this.playerCanon.setVolume(100);
+      }
+      const mins = parseInt(document.getElementById('timerMinutes').value) || 10;
+      const style = document.getElementById('timerStyle').value || 'flip';
+      const duration = mins * 60;
+      
+      const musicSelect = document.getElementById('timerMusicSelect');
+      let musicUrl = 'https://www.youtube.com/watch?v=MnhXZRw_ATU'; // Default Canon
+      if (musicSelect) {
+        if (musicSelect.value === 'custom') {
+          const customInput = document.getElementById('timerMusicCustomUrl');
+          if (customInput && customInput.value.trim() !== '') {
+            musicUrl = customInput.value.trim();
+          }
+        } else {
+          musicUrl = musicSelect.value;
+        }
+      }
+      
+      this.timerRef.set({
+        duration: duration,
+        endTime: Date.now() + duration * 1000,
+        isActive: true,
+        isPaused: false,
+        remainingTime: duration,
+        style: style,
+        musicUrl: musicUrl
+      }).catch(err => {
+        console.error("Timer set error:", err);
+        this.showNotification('資料庫錯誤', '無法設定計時器: ' + err.message);
+      });
+    } catch (e) {
+      console.error("Start timer exception:", e);
+      this.showNotification('錯誤', '啟動失敗: ' + e.message);
+    }
+  }
+
+  adminPauseTimer() {
+    try {
+      this.timerRef.once('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data || !data.isActive || data.isPaused) return;
+        
+        const remaining = Math.max(0, Math.ceil((data.endTime - Date.now()) / 1000));
+        this.timerRef.update({
+          isPaused: true,
+          remainingTime: remaining
+        }).catch(err => {
+          this.showNotification('資料庫錯誤', '無法暫停計時器: ' + err.message);
+        });
+      });
+    } catch (e) {
+      this.showNotification('錯誤', '暫停失敗: ' + e.message);
+    }
+  }
+
+  adminResumeTimer() {
+    try {
+      this.timerRef.once('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data || !data.isActive || !data.isPaused) return;
+        
+        this.timerRef.update({
+          isPaused: false,
+          endTime: Date.now() + data.remainingTime * 1000
+        }).catch(err => {
+          this.showNotification('資料庫錯誤', '無法繼續計時器: ' + err.message);
+        });
+      });
+    } catch (e) {
+      this.showNotification('錯誤', '繼續計時失敗: ' + e.message);
+    }
+  }
+
+  adminResetTimer() {
+    try {
+      this.timerRef.update({
+        isActive: false
+      }).catch(err => {
+        this.showNotification('資料庫錯誤', '無法重設計時器: ' + err.message);
+      });
+    } catch (e) {
+      this.showNotification('錯誤', '重設失敗: ' + e.message);
+    }
+  }
+
+  loadYoutubeAPI() {
+    if (window.YT && window.YT.Player) {
+      this.initYoutubePlayers();
+      return;
+    }
+
+    const prevReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof prevReady === 'function') prevReady();
+      this.initYoutubePlayers();
+    };
+
+    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+      const tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      if (firstScriptTag && firstScriptTag.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      } else {
+        document.head.appendChild(tag);
+      }
+    }
+  }
+
+  initYoutubePlayers() {
+    try {
+      this.playerCanon = new YT.Player('canonPlayer', {
+        height: '200',
+        width: '200',
+        videoId: this.currentVideoId || 'MnhXZRw_ATU',
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0,
+          enablejsapi: 1,
+          origin: window.location.origin
+        },
+        events: {
+          onReady: () => {
+            this.ytPlayersReady = true;
+            if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+              this.playerCanon.pauseVideo();
+            }
+            this.applyMuteState();
+            if (this.pendingMusicUrl) {
+              this.updateMusicSource(this.pendingMusicUrl);
+              this.pendingMusicUrl = null;
+            }
+          },
+          onStateChange: (event) => {
+            // Loop video: when ended, seek to start time and play
+            if (event.data === YT.PlayerState.ENDED) {
+              if (this.playerCanon && typeof this.playerCanon.seekTo === 'function') {
+                this.playerCanon.seekTo(this.currentVideoStart || 0, true);
+                this.playerCanon.playVideo();
+              }
+            }
+          },
+          onError: (event) => {
+            console.warn("YouTube player error code:", event.data);
+          }
+        }
+      });
+
+      const bellElem = document.getElementById('bellPlayer');
+      if (bellElem) {
+        this.playerBell = new YT.Player('bellPlayer', {
+          height: '200',
+          width: '200',
+          videoId: 'N8Rh854U3H0',
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            modestbranding: 1,
+            rel: 0,
+            showinfo: 0,
+            enablejsapi: 1,
+            origin: window.location.origin
+          },
+          events: {
+            onReady: () => {
+              this.ytBellReady = true;
+              if (this.playerBell && typeof this.playerBell.pauseVideo === 'function') {
+                this.playerBell.pauseVideo();
+              }
+            },
+            onStateChange: (event) => {
+              if (event.data === YT.PlayerState.ENDED) {
+                this.stopClassBell();
+              }
+            },
+            onError: (event) => {
+              console.warn("YouTube bell player error code:", event.data);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Failed to initialize YouTube players:", e);
+    }
+  }
+
+  parseYoutubeUrl(url) {
+    if (!url) return { videoId: 'MnhXZRw_ATU', startTime: 0 };
+    
+    let videoId = 'MnhXZRw_ATU';
+    let startTime = 0;
+    
+    try {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      if (match && match[2] && match[2].length === 11) {
+        videoId = match[2];
+      } else if (url.trim().length === 11) {
+        videoId = url.trim();
+      }
+      
+      if (url.includes('t=')) {
+        const tMatch = url.match(/[?&#]t=([0-9m-s]+)/);
+        if (tMatch && tMatch[1]) {
+          let t = tMatch[1];
+          let mins = 0, secs = 0;
+          if (t.includes('m')) {
+            const mParts = t.split('m');
+            mins = parseInt(mParts[0]) || 0;
+            t = mParts[1] || '';
+          }
+          secs = parseInt(t.replace('s', '')) || 0;
+          startTime = mins * 60 + secs;
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing YouTube URL:", e);
+    }
+    
+    return { videoId, startTime };
+  }
+
+  updateMusicSource(url) {
+    this.currentMusicUrl = url;
+    const bgAudio = document.getElementById('bgAudioPlayer');
+    
+    // 若為直連音訊 (MP3 或非 YouTube 網址)
+    if (url && (url.includes('.mp3') || url.includes('pixabay') || !url.includes('youtu'))) {
+      this.isHtml5Audio = true;
+      if (bgAudio) {
+        if (bgAudio.src !== url) {
+          bgAudio.src = url;
+          bgAudio.load();
+        }
+      }
+      return;
+    }
+
+    // 若為自訂 YouTube 網址
+    this.isHtml5Audio = false;
+    if (bgAudio) bgAudio.pause();
+
+    if (!this.ytPlayersReady) {
+      this.pendingMusicUrl = url;
+      return;
+    }
+    
+    const { videoId, startTime } = this.parseYoutubeUrl(url);
+    if (this.currentVideoId === videoId && this.currentVideoStart === startTime) {
+      return;
+    }
+    
+    this.currentVideoId = videoId;
+    this.currentVideoStart = startTime;
+    
+    if (this.playerCanon) {
+      try {
+        if (this.currentAudioPlaying === 'canon') {
+          if (typeof this.playerCanon.loadVideoById === 'function') {
+            this.playerCanon.loadVideoById({
+              videoId: videoId,
+              startSeconds: startTime
+            });
+            if (typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
+            if (typeof this.playerCanon.setVolume === 'function') this.playerCanon.setVolume(100);
+            return;
+          }
+        }
+        
+        if (typeof this.playerCanon.cueVideoById === 'function') {
+          this.playerCanon.cueVideoById({
+            videoId: videoId,
+            startSeconds: startTime
+          });
+        }
+      } catch (e) {
+        console.error("Error updating music source:", e);
+      }
+    }
+  }
+
+  onTimerMusicSelectChange(val) {
+    const customWrapper = document.getElementById('customMusicInputWrapper');
+    if (val === 'custom') {
+      if (customWrapper) customWrapper.style.display = 'flex';
+      const customInput = document.getElementById('timerMusicCustomUrl');
+      if (customInput && customInput.value.trim() !== '') {
+        this.updateMusicSource(customInput.value.trim());
+      }
+    } else {
+      if (customWrapper) customWrapper.style.display = 'none';
+      this.updateMusicSource(val);
+    }
+  }
+
+  playAudio(track) {
+    try {
+      const bgAudio = document.getElementById('bgAudioPlayer');
+
+      if (track === 'canon') {
+        // 背景音樂僅限老師端 (管理員模式) 播放，學生端保持靜音
+        if (!this.isAdmin) {
+          this.currentAudioPlaying = 'none';
+          if (bgAudio) bgAudio.pause();
+          if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+            this.playerCanon.pauseVideo();
+          }
+          return;
+        }
+
+        this.currentAudioPlaying = 'canon';
+
+        // 優先使用原生 HTML5 音訊引擎 (100% 必定響起)
+        if (this.isHtml5Audio || !this.currentMusicUrl || this.currentMusicUrl.includes('.mp3')) {
+          if (bgAudio) {
+            bgAudio.muted = this.timerMuted;
+            if (!this.timerMuted) bgAudio.volume = 1.0;
+            const playPromise = bgAudio.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(error => {
+                console.warn("HTML5 Audio play catch:", error);
+              });
+            }
+          }
+          return;
+        }
+
+        // 備用/自訂 YouTube 引擎 (支援全系列自訂 YouTube 連結)
+        if (this.ytPlayersReady && this.playerCanon) {
+          if (typeof this.playerCanon.loadVideoById === 'function' && this.currentVideoId) {
+            this.playerCanon.loadVideoById({
+              videoId: this.currentVideoId,
+              startSeconds: this.currentVideoStart || 0
+            });
+          }
+          if (!this.timerMuted && typeof this.playerCanon.unMute === 'function') {
+            this.playerCanon.unMute();
+          }
+          if (typeof this.playerCanon.setVolume === 'function') {
+            this.playerCanon.setVolume(100);
+          }
+          if (typeof this.playerCanon.playVideo === 'function') {
+            this.playerCanon.playVideo();
+          }
+        }
+      } else {
+        this.currentAudioPlaying = 'none';
+        if (bgAudio) bgAudio.pause();
+        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+          this.playerCanon.pauseVideo();
+        }
+      }
+    } catch (e) {
+      console.error("Error playing audio track:", track, e);
+    }
+  }
+
+  toggleTimerMute() {
+    this.timerMuted = !this.timerMuted;
+    localStorage.setItem('timer_muted', this.timerMuted ? 'true' : 'false');
+    this.applyMuteState();
+  }
+
+  applyMuteState() {
+    const volBtn = document.getElementById('timerVolumeBtn');
+    if (volBtn) {
+      volBtn.textContent = this.timerMuted ? '🔇' : '🔊';
+    }
+    
+    const bgAudio = document.getElementById('bgAudioPlayer');
+    if (bgAudio) {
+      bgAudio.muted = this.timerMuted;
+    }
+
+    if (!this.ytPlayersReady) return;
+    
+    try {
+      if (this.timerMuted) {
+        if (this.playerCanon && typeof this.playerCanon.mute === 'function') this.playerCanon.mute();
+        if (this.playerBell && typeof this.playerBell.mute === 'function') this.playerBell.mute();
+      } else {
+        if (this.playerCanon && typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
+        if (this.playerBell && typeof this.playerBell.unMute === 'function') this.playerBell.unMute();
+      }
+    } catch (e) {
+      console.error("Error applying mute state:", e);
+    }
+  }
+
+  toggleClassBell() {
+    if (this.isPlayingClassBell) {
+      this.stopClassBell();
+    } else {
+      this.startClassBell();
+    }
+  }
+
+  startClassBell() {
+    this.isPlayingClassBell = true;
+    const btn = document.getElementById('classBellBtn');
+    if (btn) {
+      btn.textContent = '⏹️ 停止鐘聲';
+      btn.style.background = '#7f8c8d';
+    }
+
+    const bellAudio = document.getElementById('bellAudioPlayer');
+    if (bellAudio) {
+      bellAudio.currentTime = 0;
+      bellAudio.muted = false;
+      bellAudio.volume = 1.0;
+      bellAudio.onended = () => {
+        this.stopClassBell();
+      };
+      const playPromise = bellAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn("HTML5 bellAudioPlayer play catch:", err);
+        });
+      }
+    }
+
+    if (this.ytBellReady && this.playerBell) {
+      try {
+        if (typeof this.playerBell.loadVideoById === 'function') {
+          this.playerBell.loadVideoById({
+            videoId: 'N8Rh854U3H0',
+            startSeconds: 0
+          });
+        }
+        if (typeof this.playerBell.unMute === 'function') this.playerBell.unMute();
+        if (typeof this.playerBell.setVolume === 'function') this.playerBell.setVolume(100);
+        if (typeof this.playerBell.playVideo === 'function') this.playerBell.playVideo();
+      } catch (e) {
+        console.error("Error playing class bell via YouTube:", e);
+      }
+    } else if (this.ytPlayersReady && this.playerCanon) {
+      try {
+        if (typeof this.playerCanon.loadVideoById === 'function') {
+          this.playerCanon.loadVideoById({
+            videoId: 'N8Rh854U3H0',
+            startSeconds: 0
+          });
+        }
+        if (typeof this.playerCanon.unMute === 'function') this.playerCanon.unMute();
+        if (typeof this.playerCanon.setVolume === 'function') this.playerCanon.setVolume(100);
+        if (typeof this.playerCanon.playVideo === 'function') this.playerCanon.playVideo();
+      } catch (e) {
+        console.error("Error playing class bell fallback:", e);
+      }
+    }
+  }
+
+  stopClassBell() {
+    this.isPlayingClassBell = false;
+    const btn = document.getElementById('classBellBtn');
+    if (btn) {
+      btn.textContent = '🔔 上/下課鐘聲';
+      btn.style.background = '#e74c3c';
+    }
+
+    const bellAudio = document.getElementById('bellAudioPlayer');
+    if (bellAudio) {
+      bellAudio.pause();
+      bellAudio.currentTime = 0;
+    }
+
+    if (this.playerBell && typeof this.playerBell.pauseVideo === 'function') {
+      try {
+        this.playerBell.pauseVideo();
+      } catch (e) {}
+    } else if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
+      try {
+        this.playerCanon.pauseVideo();
+      } catch (e) {}
+    }
+  }
+
+  checkSecurityRuleExpiry() {
+    // 預設規則防護效期至 2030 年 1 月 1 日 (1893456000000)
+    // 於到期前一個月 (2029 年 12 月 1 日 1890691200000) 自動提醒管理員
+    const warningTime = 1890691200000;
+    if (Date.now() >= warningTime && this.isAdmin) {
+      setTimeout(() => {
+        this.showNotification(
+          '⚠️ 防護規則到期提醒',
+          '您的 Firebase 安全防護規則即將於 2030/01/01 到期！請前往「教師指南」複製最新規則至 Firebase Console 貼上並發布更新。'
+        );
+      }, 1500);
+    }
+  }
+  
+  initThemeSwitcher() {
+    const savedTheme = localStorage.getItem('whiteboard_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      if (btn.dataset.theme === savedTheme) btn.classList.add('active');
+      else btn.classList.remove('active');
+      
+      btn.addEventListener('click', () => {
+        const theme = btn.dataset.theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('whiteboard_theme', theme);
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  }
+  
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  linkify(text) {
+    if (!text) return '';
+    const escaped = this.escapeHtml(text);
+    const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/g;
+    
+    return escaped.replace(urlRegex, (match) => {
+      let cleanUrl = match;
+      let trailing = '';
+      
+      const punc = ['.', ',', '!', '?', ';', ':', ')', ']', '}', '。', '，', '！', '？', '；', '：'];
+      while (cleanUrl.length > 0 && punc.includes(cleanUrl[cleanUrl.length - 1])) {
+        trailing = cleanUrl[cleanUrl.length - 1] + trailing;
+        cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+      }
+      
+      const href = cleanUrl.startsWith('www.') ? `https://${cleanUrl}` : cleanUrl;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="linkified">${cleanUrl}</a>${trailing}`;
+    });
+  }
+
+  formatTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    const now = new Date();
+    if (date.toDateString() === now.toDateString()) {
+      return `${hours}:${minutes}`;
+    } else {
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${month}-${day} ${hours}:${minutes}`;
+    }
+  }
+
+  getTldrawSnapshot() {
+    return new Promise((resolve) => {
+      const iframe = document.getElementById('whiteboardFrame');
+      if (!iframe || !iframe.contentWindow) {
+        resolve(null);
+        return;
+      }
+      const requestId = 'export_' + Date.now();
+      const handleMessage = (event) => {
+        if (event.data && event.data.type === 'TLDRAW_SNAPSHOT_RESPONSE' && event.data.requestId === requestId) {
+          window.removeEventListener('message', handleMessage);
+          resolve(event.data.snapshot || null);
+        }
+      };
+      window.addEventListener('message', handleMessage);
+      try {
+        iframe.contentWindow.postMessage({ type: 'GET_TLDRAW_SNAPSHOT', requestId: requestId }, '*');
+      } catch (e) {
+        console.warn('Could not postMessage to iframe:', e);
+        window.removeEventListener('message', handleMessage);
+        resolve(null);
+        return;
+      }
+      
+      // 超時 1.5 秒無回應時自動跳過，避免阻塞整體匯出
+      setTimeout(() => {
+        window.removeEventListener('message', handleMessage);
+        resolve(null);
+      }, 1500);
+    });
+  }
+
+  loadTldrawSnapshot(snapshot) {
+    const iframe = document.getElementById('whiteboardFrame');
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage({
+          type: 'LOAD_TLDRAW_SNAPSHOT',
+          snapshot: snapshot
+        }, '*');
+      } catch (e) {
+        console.warn('Failed to send tldraw snapshot to iframe:', e);
+      }
+    }
+  }
+
+  clearTldrawWhiteboard() {
+    const iframe = document.getElementById('whiteboardFrame');
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage({ type: 'CLEAR_TLDRAW' }, '*');
+      } catch (e) {
+        console.warn('Failed to send CLEAR_TLDRAW to iframe:', e);
+      }
+    }
+  }
+
+  bindTldrawRealtimeSync() {
+    this.tldrawSyncRef = db.ref('whiteboard_room');
+    this.isPublishingTldraw = false;
+    this.myTldrawClientId = 'client_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+
+    // 1. 監聽 Firebase 遠端推播過來的即時白板畫稿變更
+    this.tldrawSyncRef.on('value', (snapshot) => {
+      const val = snapshot.val();
+      if (!val || !val.data) return;
+
+      // 若是自己剛剛發送至 Firebase 的異動，跳過避免循環刷新
+      if (this.isPublishingTldraw || val.updatedBy === this.myTldrawClientId) {
+        return;
+      }
+
+      try {
+        const parsedSnapshot = JSON.parse(val.data);
+        const iframe = document.getElementById('whiteboardFrame');
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({
+            type: 'LOAD_TLDRAW_SNAPSHOT',
+            snapshot: parsedSnapshot
+          }, '*');
+        }
+      } catch (err) {
+        console.error('Failed to parse remote tldraw snapshot:', err);
+      }
+    });
+
+    // 2. 監聽來自 iframe (whiteboard.html) 的使用者繪圖與就緒事件
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+
+      if (data.type === 'TLDRAW_LOCAL_CHANGE' && data.snapshot) {
+        this.isPublishingTldraw = true;
+        
+        try {
+          const jsonStr = JSON.stringify(data.snapshot);
+          // 將畫稿 Snapshot 序列化為純文字 JSON 字串寫入 Firebase (避免 Firebase 物件 Key 包含 "." 的非法字元錯誤)
+          this.tldrawSyncRef.set({
+            data: jsonStr,
+            updatedBy: this.myTldrawClientId,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          }).catch(err => {
+            console.error('Failed to push tldraw snapshot to Firebase:', err);
+          }).finally(() => {
+            setTimeout(() => {
+              this.isPublishingTldraw = false;
+            }, 350);
+          });
+        } catch (err) {
+          this.isPublishingTldraw = false;
+          console.error('Failed to stringify tldraw snapshot:', err);
+        }
+      } else if (data.type === 'TLDRAW_READY') {
+        // 當白板載入完成時，主動向 Firebase 拉取最新畫稿給 iframe 展示
+        this.tldrawSyncRef.once('value').then(snapshot => {
+          const val = snapshot.val();
+          if (val && val.data) {
+            try {
+              const parsedSnapshot = JSON.parse(val.data);
+              const iframe = document.getElementById('whiteboardFrame');
+              if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                  type: 'LOAD_TLDRAW_SNAPSHOT',
+                  snapshot: parsedSnapshot
+                }, '*');
+              }
+            } catch (e) {
+              console.error('Failed to parse initial tldraw snapshot:', e);
+            }
+          }
+        });
+      }
+    });
+  }
+
+  async adminExportRecord() {
+    this.showNotification('提示', '正在準備匯出檔案（含 tldraw 白板畫稿），請稍候...');
+    
+    try {
+      const [questionsSnap, imagesSnap, videosSnap, sharesSnap, quizSnap, whiteboardSnap, tldrawSnapshot] = await Promise.all([
+        db.ref('questions').once('value'),
+        db.ref('images').once('value'),
+        db.ref('videos').once('value'),
+        db.ref('teacherShares').once('value'),
+        db.ref('quiz').once('value'),
+        db.ref('whiteboard').once('value'),
+        this.getTldrawSnapshot()
+      ]);
+      
+      const quizData = quizSnap.val() || {};
+      
+      const exportData = {
+        questions: questionsSnap.val() || {},
+        images: imagesSnap.val() || {},
+        videos: videosSnap.val() || {},
+        teacherShares: sharesSnap.val() || {},
+        whiteboard: whiteboardSnap.val() || {},
+        tldrawSnapshot: tldrawSnapshot || null,
+        quiz: {
+          current: quizData.current || null,
+          answers: quizData.answers || null,
+          timer: quizData.timer || null,
+          questionFolders: quizData.questionFolders || null,
+          imageFolders: quizData.imageFolders || null,
+          videoFolders: quizData.videoFolders || null,
+          teacherShareFolders: quizData.teacherShareFolders || null,
+          // 抽人轉盤設定
+          luckyWheel: quizData.luckyWheel ? {
+            names: quizData.luckyWheel.names || null,
+            colorTheme: quizData.luckyWheel.colorTheme ?? 0,
+            soundStyle: quizData.luckyWheel.soundStyle ?? 0,
+            removeWinner: quizData.luckyWheel.removeWinner ?? false
+          } : null
+        },
+        exportedAt: new Date().toISOString(),
+        dbUrl: db.app.options.databaseURL || ""
+      };
+      
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const downloadAnchor = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      downloadAnchor.setAttribute("href", url);
+      downloadAnchor.setAttribute("download", `classroom_record_${dateStr}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      
+      // Clean up
+      setTimeout(() => {
+        downloadAnchor.remove();
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      this.showNotification('成功', '匯出記錄檔完成！');
+    } catch (err) {
+      console.error("Export failed:", err);
+      this.showNotification('錯誤', '匯出失敗: ' + err.message);
+    }
+  }
+
+  adminImportRecord(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        
+        // Validate format
+        if (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard && !importedData.tldrawSnapshot) {
+          this.showNotification('錯誤', '無效的記錄檔格式！');
+          return;
+        }
+
+        // 若包含 tldraw 白板畫稿快照，發送給 iframe 恢復
+        if (importedData.tldrawSnapshot) {
+          this.loadTldrawSnapshot(importedData.tldrawSnapshot);
+        }
+        
+        this.showConfirmModal(
+          '📥',
+          '確定要匯入此記錄檔嗎？',
+          '此動作會覆蓋當前資料庫的所有資料（提問、測驗與白板畫跡），且無法復原。',
+          () => {
+            this.showNotification('提示', '正在匯入資料，請稍候...');
+            
+            const promises = [];
+            
+            // Set data nodes
+            promises.push(db.ref('questions').set(importedData.questions || null));
+            promises.push(db.ref('whiteboard').set(importedData.whiteboard || null));
+            promises.push(db.ref('quiz/broadcastVideo').remove()); // Reset broadcast state
+            
+            // Write images sequentially to prevent WebSocket connection frame overflow & disconnects
+            const writeImagesSequentially = async () => {
+              await db.ref('images').remove();
+              const imagesObj = importedData.images || {};
+              const keys = Object.keys(imagesObj);
+              for (const imgId of keys) {
+                await db.ref(`images/${imgId}`).set(imagesObj[imgId]);
+              }
+            };
+            promises.push(writeImagesSequentially());
+
+            // Write videos sequentially
+            const writeVideosSequentially = async () => {
+              await db.ref('videos').remove();
+              const videosObj = importedData.videos || {};
+              const keys = Object.keys(videosObj);
+              for (const vidId of keys) {
+                await db.ref(`videos/${vidId}`).set(videosObj[vidId]);
+              }
+            };
+            promises.push(writeVideosSequentially());
+
+            // Write teacher shares sequentially
+            const writeSharesSequentially = async () => {
+              await db.ref('teacherShares').remove();
+              const sharesObj = importedData.teacherShares || {};
+              const keys = Object.keys(sharesObj);
+              for (const shareId of keys) {
+                await db.ref(`teacherShares/${shareId}`).set(sharesObj[shareId]);
+              }
+            };
+            promises.push(writeSharesSequentially());
+            
+            // Set subnodes of quiz explicitly (excluding presence to prevent connection issues)
+            const quizNode = importedData.quiz || {};
+            
+            // Defensive check: If the imported file has no folders but the current database has folders, preserve them!
+            let questionFolders = quizNode.questionFolders;
+            if (!questionFolders && this.questionFolders && this.questionFolders.length > 0) {
+              questionFolders = {};
+              this.questionFolders.forEach(f => {
+                questionFolders[f.id] = { name: f.name };
+              });
+            }
+            
+            let imageFolders = quizNode.imageFolders;
+            if (!imageFolders && this.imageFolders && this.imageFolders.length > 0) {
+              imageFolders = {};
+              this.imageFolders.forEach(f => {
+                imageFolders[f.id] = { name: f.name };
+              });
+            }
+
+            let videoFolders = quizNode.videoFolders;
+            if (!videoFolders && this.videoFolders && this.videoFolders.length > 0) {
+              videoFolders = {};
+              this.videoFolders.forEach(f => {
+                videoFolders[f.id] = { name: f.name };
+              });
+            }
+
+            let teacherShareFolders = quizNode.teacherShareFolders;
+            if (!teacherShareFolders && this.shareFolders && this.shareFolders.length > 0) {
+              teacherShareFolders = {};
+              this.shareFolders.forEach(f => {
+                teacherShareFolders[f.id] = { name: f.name };
+              });
+            }
+            
+            promises.push(db.ref('quiz/current').set(quizNode.current || null));
+            promises.push(db.ref('quiz/answers').set(quizNode.answers || null));
+            promises.push(db.ref('quiz/timer').set(quizNode.timer || null));
+            promises.push(db.ref('quiz/questionFolders').set(questionFolders || null));
+            promises.push(db.ref('quiz/imageFolders').set(imageFolders || null));
+            promises.push(db.ref('quiz/videoFolders').set(videoFolders || null));
+            promises.push(db.ref('quiz/teacherShareFolders').set(teacherShareFolders || null));
+
+            // 抽人轉盤設定（如果 JSON 內有就寫入）
+            if (quizNode.luckyWheel) {
+              const lw = quizNode.luckyWheel;
+              if (lw.names !== undefined) promises.push(db.ref('quiz/luckyWheel/names').set(lw.names));
+              if (lw.colorTheme !== undefined) promises.push(db.ref('quiz/luckyWheel/colorTheme').set(lw.colorTheme));
+              if (lw.soundStyle !== undefined) promises.push(db.ref('quiz/luckyWheel/soundStyle').set(lw.soundStyle));
+              if (lw.removeWinner !== undefined) promises.push(db.ref('quiz/luckyWheel/removeWinner').set(lw.removeWinner));
+            }
+            
+            Promise.all(promises).then(() => {
+              this.showNotification('成功', '匯入記錄檔完成！');
+              // Clear file input value
+              event.target.value = '';
+              
+              // Force reload to refresh UI
+              setTimeout(() => {
+                location.reload();
+              }, 1000);
+            }).catch(err => {
+              console.error("Import set failed:", err);
+              this.showNotification('錯誤', '寫入資料庫失敗: ' + err.message);
+            });
+          }
+        );
+      } catch (err) {
+        console.error("Parse failed:", err);
+        this.showNotification('錯誤', '解析 JSON 檔案失敗！');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ==========================================
+  // 🧠 專注力遊戲活動機制 (Schulte Grid)
+  // ==========================================
+
+  startFocusGame() {
+    if (!this.isAdmin) return;
+    this.focusLocalGameKey = null;
+    
+    // 自動停止搶答與選擇題測驗
+    db.ref('quiz/buzzGame').set(null);
+    db.ref('quiz/current').update({ active: false }).catch(() => {});
+    
+    const gameType = document.getElementById('focusGameType').value || 'numberGrid';
+    const numberGridSize = parseInt(document.getElementById('selectedFocusGridSize').value) || 36;
+    const memoryGridSize = parseInt(document.getElementById('focusMemoryGridSize')?.value) || 16;
+    const selectedSize = gameType === 'memoryPosition' ? memoryGridSize : numberGridSize;
+    const countdownSecs = parseInt(document.getElementById('focusGameCountdown').value) || 10;
+    
+    // 記憶翻牌配對遊戲 (Memory Match)
+    const pairCount = parseInt(document.getElementById('selectedMemoryMatchPairCount')?.value) || 8;
+    const memoryMatchTheme = document.getElementById('memoryMatchTheme')?.value || 'fruit';
+    const memoryMatchDeck = gameType === 'memoryMatch'
+      ? this.generateMemoryMatchDeck(pairCount, memoryMatchTheme)
+      : null;
+
+    // OpenCode 修改：位置序列記憶第一版，由老師端產生共用序列並寫入 Firebase
+    const memoryLengthInput = document.getElementById('focusMemoryLength');
+    const memoryReverseInput = document.getElementById('focusMemoryReverse');
+    const memoryLength = Math.max(3, Math.min(12, parseInt(memoryLengthInput && memoryLengthInput.value) || 5));
+    const memoryReverse = !!(memoryReverseInput && memoryReverseInput.checked);
+    const memorySequence = gameType === 'memoryPosition'
+      ? this.generateFocusMemorySequence(selectedSize, memoryLength)
+      : null;
+      
+    // 一字千金：字力測驗題目隨機抽選
+    let selectedQuestions = null;
+    if (gameType === 'characterTest') {
+      const pool = [...CHARACTER_TEST_POOL];
+      selectedQuestions = [];
+      for (let i = 0; i < 3; i++) {
+        if (pool.length === 0) break;
+        const randIdx = Math.floor(Math.random() * pool.length);
+        selectedQuestions.push(pool.splice(randIdx, 1)[0]);
+      }
+    } else if (gameType === 'characterCrossword') {
+      const pool = [...CHARACTER_CROSSWORD_POOL];
+      selectedQuestions = [];
+      if (pool.length > 0) {
+        const randIdx = Math.floor(Math.random() * pool.length);
+        selectedQuestions.push(pool[randIdx]);
+      }
+    } else if (gameType === 'characterUnitedWords') {
+      const pool = [...CHARACTER_UNITED_WORDS_POOL];
+      selectedQuestions = [];
+      if (pool.length > 0) {
+        const randIdx = Math.floor(Math.random() * pool.length);
+        selectedQuestions.push(pool[randIdx]);
+      }
+    }
+    
+    db.ref('quiz/focusGame').set({
+      status: 'countdown',
+      gameType: gameType,
+      gridSize: selectedSize,
+      pairCount: gameType === 'memoryMatch' ? pairCount : null,
+      theme: gameType === 'memoryMatch' ? memoryMatchTheme : null,
+      deck: memoryMatchDeck,
+      sequenceLength: gameType === 'memoryPosition' ? memoryLength : null,
+      reverseMode: gameType === 'memoryPosition' ? memoryReverse : false,
+      sequence: memorySequence,
+      questions: selectedQuestions,
+      countdownSeconds: countdownSecs,
+      countdownStartTime: Date.now(),
+      results: null
+    }).then(() => {
+      this.showNotification('成功', '專注力/破冰遊戲已發起！');
+    }).catch(err => {
+      this.showNotification('錯誤', '發起失敗: ' + err.message);
+    });
+  }
+
+  generateMemoryMatchDeck(pairCount, theme) {
+    const themePools = {
+      fruit: ['🍎', '🍌', '🍕', '🍔', '🍓', '🍇', '🥑', '🍩', '🍦', '🍣', '🌮', '🍒', '🍍', '🍉', '🍿', '🍰'],
+      animal: ['🐱', '🐶', '🦄', '🦁', '🐼', '🦊', '🐰', '🐯', '🐨', '🐵', '🐸', '🐙', '🐧', '🦉', '🐬', '🐝'],
+      space: ['🚀', '🛸', '🪐', '🌟', '🤖', '💻', '👾', '🛰️', '⚡', '🔭', '🌌', '🔮', '📡', '🔋', '🎮', '🛸'],
+      sports: ['⚽', '🏀', '🎾', '🏐', '⛳', '🚴', '🎿', '🎯', '🎨', '🎸', '🧩', '🚗', '✈️', '⛵', '🏆', '🎪'],
+      emoji: ['🍎', '🐱', '🚀', '⚽', '🦄', '🍕', '🤖', '🎾', '🍓', '🦁', '🪐', '🎸', '🍦', '🐼', '🎮', '🏆']
+    };
+
+    let selectedPool = themePools[theme] || themePools.fruit;
+    let items = [];
+
+    if (theme === 'images' && this.images && this.images.length > 0) {
+      const availableImages = [...this.images];
+      for (let i = 0; i < pairCount; i++) {
+        if (availableImages.length > 0) {
+          const randIdx = Math.floor(Math.random() * availableImages.length);
+          const img = availableImages.splice(randIdx, 1)[0];
+          items.push({ type: 'image', value: img.url });
+        } else {
+          const randEmoji = selectedPool[i % selectedPool.length];
+          items.push({ type: 'emoji', value: randEmoji });
+        }
+      }
+    } else {
+      const shuffled = [...selectedPool].sort(() => 0.5 - Math.random());
+      for (let i = 0; i < pairCount; i++) {
+        items.push({ type: 'emoji', value: shuffled[i % shuffled.length] });
+      }
+    }
+
+    const deck = [];
+    items.forEach((item, index) => {
+      const matchKey = 'pair_' + index;
+      deck.push({ id: `card_${index}_A`, matchKey, type: item.type, value: item.value });
+      deck.push({ id: `card_${index}_B`, matchKey, type: item.type, value: item.value });
+    });
+
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+
+    return deck;
+  }
+
+  // OpenCode 修改：管理後台依遊戲類型顯示對應設定，避免不同遊戲選項混在一起
+  updateFocusGameAdminOptions() {
+    const gameType = document.getElementById('focusGameType')?.value || 'numberGrid';
+    const numberGridSettings = document.getElementById('focusNumberGridSettings');
+    const memorySettings = document.getElementById('focusMemorySettings');
+    const memoryMatchSettings = document.getElementById('focusMemoryMatchSettings');
+    if (numberGridSettings) numberGridSettings.style.display = gameType === 'numberGrid' ? 'block' : 'none';
+    if (memorySettings) memorySettings.style.display = gameType === 'memoryPosition' ? 'block' : 'none';
+    if (memoryMatchSettings) memoryMatchSettings.style.display = gameType === 'memoryMatch' ? 'block' : 'none';
+  }
+
+  // OpenCode 修改：倒數畫面依專注力遊戲類型顯示不同說明文字
+  updateFocusCountdownCopy(game) {
+    const titleEl = document.getElementById('focusCountdownTitle');
+    const descriptionEl = document.getElementById('focusCountdownDescription');
+    const hintEl = document.getElementById('focusCountdownHint');
+    const gridSize = game.gridSize || 36;
+    const sequenceLength = game.sequenceLength || 5;
+
+    if (game.gameType === 'memoryMatch') {
+      const pairCount = game.pairCount || 6;
+      if (titleEl) titleEl.textContent = '🃏 互動式記憶翻牌配對 (破冰遊戲)！';
+      if (descriptionEl) descriptionEl.textContent = `請展現敏捷反應與超強記憶，翻開兩張相同的卡片進行配對！共 ${pairCount} 對 (${pairCount * 2} 張卡片)`;
+      if (hintEl) hintEl.textContent = '破冰遊戲即將開始，請準備好專注眼力...';
+      return;
+    }
+
+    if (game.gameType === 'memoryPosition') {
+      if (titleEl) titleEl.textContent = game.reverseMode ? '位置序列記憶・反向挑戰！' : '位置序列記憶挑戰！';
+      if (descriptionEl) {
+        descriptionEl.textContent = game.reverseMode
+          ? `請記住 ${gridSize} 格盤面中依序閃爍的 ${sequenceLength} 個位置，播放完後要反向點回。`
+          : `請記住 ${gridSize} 格盤面中依序閃爍的 ${sequenceLength} 個位置，播放完後照順序點回。`;
+      }
+      if (hintEl) hintEl.textContent = '記憶挑戰即將開始，請專心看格子閃爍...';
+      return;
+    }
+    
+    if (game.gameType === 'characterTest') {
+      if (titleEl) titleEl.textContent = '一字千金：字力測驗！';
+      if (descriptionEl) descriptionEl.textContent = '請注意看畫面上的注音與提示詞，並寫出正確的國字。共有 3 題喔！';
+      if (hintEl) hintEl.textContent = '測驗即將開始，請準備好輸入...';
+      return;
+    }
+    
+    if (game.gameType === 'characterCrossword') {
+      if (titleEl) titleEl.textContent = '一字千金：字字珠璣！';
+      if (descriptionEl) descriptionEl.textContent = '請根據周邊四個國字與右側注音，找出能同時組合成四個詞彙的「關鍵國字」。只有 1 題喔！';
+      if (hintEl) hintEl.textContent = '測驗即將開始，請準備好輸入...';
+      return;
+    }
+
+    if (game.gameType === 'characterUnitedWords') {
+      if (titleEl) titleEl.textContent = '一字千金：團結一詞！';
+      if (descriptionEl) descriptionEl.textContent = '請根據畫面上的部件組合與提示，將部件組合拼出正確的二字詞。只有 1 題喔！';
+      if (hintEl) hintEl.textContent = '挑戰即將開始，請準備好輸入...';
+      return;
+    }
+
+    if (titleEl) titleEl.textContent = '提升專注力挑戰！';
+    if (descriptionEl) descriptionEl.innerHTML = `請準備好眼睛和滑鼠，依序尋找並點擊數字 1 到 <span id="lblTargetCount">${gridSize}</span> 喔！`;
+    if (hintEl) hintEl.textContent = '挑戰即將開始...';
+  }
+
+  endFocusGame() {
+    if (!this.isAdmin) return;
+    
+    this.showConfirmModal(
+      '🧠',
+      '確定要結束專注力遊戲嗎？',
+      '這會關閉所有學生的遊戲 Overlay。',
+      () => {
+        db.ref('quiz/focusGame/status').set('idle').then(() => {
+          this.showNotification('成功', '遊戲已結束！');
+        });
+      }
+    );
+  }
+
+  handleFocusGameSync(game) {
+    const prevStatus = this.focusPrevStatus;
+    this.focusPrevStatus = game ? game.status : null;
+
+    if (prevStatus === 'countdown' && game && game.status === 'playing') {
+      if (!this.focusStartSoundPlayed) {
+        this.focusStartSoundPlayed = true;
+        this.playFocusSound('start');
+      }
+    }
+
+    this.focusGame = game;
+    
+    // 如果使用者正嘗試進入或在管理後台（且尚未登入管理員），一律不顯示覆蓋層
+    const isAccessingAdmin = !this.isAdmin && (
+      (this.activeTabId === 'panel-admin') || 
+      (document.getElementById('adminPasswordModal') && 
+       document.getElementById('adminPasswordModal').classList.contains('active'))
+    );
+    if (isAccessingAdmin) {
+      const gameOverlay = document.getElementById('focusGameOverlay');
+      if (gameOverlay) {
+        gameOverlay.style.display = 'none';
+        gameOverlay.classList.remove('active');
+      }
+      this.stopFocusTimers();
+      return;
+    }
+    
+    const studentLobby = document.getElementById('studentGameLobby');
+    const gameOverlay = document.getElementById('focusGameOverlay');
+    const teacherCloseBtn = document.getElementById('focusGameTeacherCloseBtn');
+
+    // 學生端大廳永遠只顯示 studentLobby，不需要隱藏
+    if (studentLobby) studentLobby.style.display = 'block';
+
+    // 只有管理員在 Overlay 顯示結束遊戲按鈕
+    if (teacherCloseBtn) {
+      teacherCloseBtn.style.display = this.isAdmin ? 'block' : 'none';
+    }
+
+    // 渲染管理後台的即時排行榜 (如果目前已登入管理員，一律在管理面板下方顯示)
+    const adminRankSection = document.getElementById('adminFocusGameRankSection');
+    if (adminRankSection) {
+      if (this.isAdmin) {
+        adminRankSection.style.display = 'block';
+        this.renderFocusGameLeaderboard('adminFocusGameRankList', game ? game.results : null);
+      } else {
+        adminRankSection.style.display = 'none';
+      }
+    }
+
+    if (!game || game.status === 'idle') {
+      if (gameOverlay) {
+        gameOverlay.style.display = 'none';
+        gameOverlay.classList.remove('active');
+      }
+      this.stopFocusTimers();
+      this.focusLocalGameKey = null;
+      
+      const rankSection = document.getElementById('focusGameRankSection');
+      if (game && game.results && rankSection) {
+        rankSection.style.display = 'block';
+        this.renderFocusGameLeaderboard('focusGameLobbyRankList', game.results);
+      } else if (rankSection) {
+        rankSection.style.display = 'none';
+      }
+      return;
+    }
+
+    // 已進入管理介面者，畫面不用顯示專注力遊戲，只要留在管理頁面就好
+    if (this.isAdmin) {
+      if (gameOverlay) {
+        gameOverlay.style.display = 'none';
+        gameOverlay.classList.remove('active');
+      }
+      // 確保管理後台隨時擁有最新的即時排行榜數據
+      this.renderFocusGameLeaderboard('adminFocusGameRankList', game ? game.results : null);
+
+      // 倒數階段仍需由管理員的背景計時觸發 status -> playing，因此倒數階段管理員不 return，其餘 status 一律 return
+      if (game.status !== 'countdown') {
+        this.stopFocusTimers();
+        return;
+      }
+    } else {
+      if (gameOverlay) {
+        gameOverlay.style.display = 'flex';
+        gameOverlay.classList.add('active');
+      }
+    }
+    
+    // 更新底部遊戲說明提示文字
+    const instEl = document.getElementById('focusGameInstruction');
+    if (instEl && game) {
+      if (game.gameType === 'characterTest') {
+        instEl.textContent = '💡 請寫出正確的國字，填寫完後點選「送出答案」讓老師評分。';
+      } else if (game.gameType === 'characterCrossword') {
+        instEl.textContent = '💡 請寫出中心挖空的關鍵字，填寫完後點選「送出答案」讓老師評分。';
+      } else if (game.gameType === 'characterUnitedWords') {
+        instEl.textContent = '💡 請運用畫面上的部件組合出正確的二字詞，填寫完後點選「送出答案」。';
+      } else if (game.gameType === 'memoryPosition') {
+        instEl.textContent = '💡 請依序或反向點選剛才閃爍位置的格子，加油！';
+      } else {
+        instEl.textContent = '💡 點擊正確數字它將會消失，看誰能用最快的速度完成！';
+      }
+    }
+    
+    if (game.status === 'countdown') {
+      document.getElementById('focusCountdownArea').style.display = 'block';
+      document.getElementById('focusPlayArea').style.display = 'none';
+      document.getElementById('focusFinishArea').style.display = 'none';
+      this.updateFocusCountdownCopy(game);
+      this.startLocalCountdown(game);
+    }
+    else if (game.status === 'playing') {
+      document.getElementById('focusCountdownArea').style.display = 'none';
+      
+      const userId = localStorage.getItem('user_id') || 'guest';
+      const result = game.results && game.results[userId];
+      const hasCompleted = !!result;
+
+      if (hasCompleted) {
+        if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
+          if (result.status === 'correct') {
+            document.getElementById('focusPlayArea').style.display = 'none';
+            document.getElementById('focusFinishArea').style.display = 'block';
+            
+            document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+            document.getElementById('lblFinishRankAnimation').style.display = 'inline-block';
+            
+            const correctRank = this.calculateFocusUserCorrectRank(game.results, userId);
+            document.getElementById('lblFinishRank').textContent = correctRank;
+            const suffixEl = document.getElementById('lblFinishRankSuffix');
+            if (suffixEl) suffixEl.textContent = '全部答對';
+            
+            this.renderFocusGameLeaderboard('focusGameRankList', game.results);
+            
+            this.initFireworkCanvas();
+            this.triggerFireworkEffect();
+
+            // 播放結束音效（限播一次）
+            if (!this.focusGameCompletedLocal) {
+              this.focusGameCompletedLocal = true;
+              this.playFocusSound('end');
+            }
+          } else {
+            // 待審核或是被判定答錯，在 Play 區域以唯讀/重試模式顯示
+            document.getElementById('focusPlayArea').style.display = 'flex';
+            document.getElementById('focusFinishArea').style.display = 'none';
+            this.renderCharacterTestPlayCompleted(game, result);
+          }
+        } else {
+          document.getElementById('focusPlayArea').style.display = 'none';
+          document.getElementById('focusFinishArea').style.display = 'block';
+          
+          document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+          
+          const rank = this.calculateFocusUserRank(game.results, userId);
+          document.getElementById('lblFinishRank').textContent = rank;
+          const suffixEl = document.getElementById('lblFinishRankSuffix');
+          if (suffixEl) suffixEl.textContent = '完成';
+          
+          this.renderFocusGameLeaderboard('focusGameRankList', game.results);
+          
+          this.initFireworkCanvas();
+          this.triggerFireworkEffect();
+
+          // 播放結束音效（限播一次）
+          if (!this.focusGameCompletedLocal) {
+            this.focusGameCompletedLocal = true;
+            this.playFocusSound('end');
+          }
+        }
+      } else {
+        document.getElementById('focusPlayArea').style.display = 'flex';
+        document.getElementById('focusFinishArea').style.display = 'none';
+        
+        this.startLocalPlay(game);
+      }
+    }
+    else if (game.status === 'ended') {
+      document.getElementById('focusCountdownArea').style.display = 'none';
+      document.getElementById('focusPlayArea').style.display = 'none';
+      document.getElementById('focusFinishArea').style.display = 'block';
+      
+      const userId = localStorage.getItem('user_id') || 'guest';
+      const result = game.results && game.results[userId];
+      if (result) {
+        document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+        if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
+          const correctRank = this.calculateFocusUserCorrectRank(game.results, userId);
+          document.getElementById('lblFinishRank').textContent = correctRank;
+          const suffixEl = document.getElementById('lblFinishRankSuffix');
+          if (suffixEl) suffixEl.textContent = '全部答對';
+        } else {
+          const rank = this.calculateFocusUserRank(game.results, userId);
+          document.getElementById('lblFinishRank').textContent = rank;
+          const suffixEl = document.getElementById('lblFinishRankSuffix');
+          if (suffixEl) suffixEl.textContent = '完成';
+        }
+        document.getElementById('lblFinishRankAnimation').style.display = 'inline-block';
+        document.getElementById('lblFinishTime').parentElement.style.display = 'block';
+
+        // 播放結束音效（限播一次）
+        if (!this.focusGameCompletedLocal) {
+          this.focusGameCompletedLocal = true;
+          this.playFocusSound('end');
+        }
+      } else {
+        document.getElementById('lblFinishRankAnimation').style.display = 'none';
+        document.getElementById('lblFinishTime').parentElement.style.display = 'none';
+      }
+      
+      this.renderFocusGameLeaderboard('focusGameRankList', game.results);
+    }
+  }
+
+  stopFocusTimers() {
+    if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
+    if (this.focusCountdownInterval) clearInterval(this.focusCountdownInterval);
+    if (this.focusBuzzInterval) clearInterval(this.focusBuzzInterval);
+    this.focusTimerInterval = null;
+    this.focusCountdownInterval = null;
+    this.focusBuzzInterval = null;
+    this.focusCountdownLocalStart = null;
+    if (this.fireworkAnimationId) cancelAnimationFrame(this.fireworkAnimationId);
+    this.fireworkAnimationId = null;
+    this.stopTaikoBackgroundMusic();
+    
+    const canvas = document.getElementById('focusFireworkCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  calculateFocusUserRank(results, targetUserId) {
+    if (!results) return '-';
+    const items = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    }));
+
+    const sorted = items.sort((a, b) => {
+      const timeA = typeof a.timeSpent === 'number' ? a.timeSpent : 999999;
+      const timeB = typeof b.timeSpent === 'number' ? b.timeSpent : 999999;
+      if (timeA !== timeB) return timeA - timeB;
+      return (a.completedAt || 0) - (b.completedAt || 0);
+    });
+
+    const index = sorted.findIndex(item => item.uid === targetUserId);
+    return index !== -1 ? index + 1 : '-';
+  }
+
+  calculateFocusUserCorrectRank(results, targetUserId) {
+    if (!results) return '-';
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).filter(item => item.status === 'correct')
+    .sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
+    const index = sorted.findIndex(item => item.uid === targetUserId);
+    return index !== -1 ? index + 1 : '-';
+  }
+
+  startLocalCountdown(game) {
+    // 若倒數計時已在進行中，避免被重複觸發並覆蓋中斷
+    if (this.focusCountdownInterval) {
+      return;
+    }
+
+    this.focusGameCompletedLocal = false; // 重置完成音效狀態
+    this.focusStartSoundPlayed = false;   // 重置開始音效狀態
+    this.focusLastTickSecond = -1;        // 重置倒數秒數狀態
+    
+    // 解析倒數秒數
+    const totalSeconds = (game && Number.isFinite(Number(game.countdownSeconds)) && Number(game.countdownSeconds) > 0)
+      ? Number(game.countdownSeconds)
+      : 10;
+
+    // 解析開頭時間
+    let startTime = (game && Number.isFinite(Number(game.countdownStartTime)) && Number(game.countdownStartTime) > 0)
+      ? Number(game.countdownStartTime)
+      : Date.now();
+
+    // 如果 startTime 大於目前時間或差距過遠，校正為當前本地時間
+    if (startTime > Date.now() || Math.abs(Date.now() - startTime) > (totalSeconds * 1000 + 5000)) {
+      startTime = Date.now();
+    }
+
+    this.focusCountdownLocalStart = startTime;
+      
+    const countdownEl = document.getElementById('focusCountdownNumber');
+    const updateCountdown = () => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - this.focusCountdownLocalStart) / 1000);
+      const remaining = Math.max(0, totalSeconds - elapsed);
+      
+      if (countdownEl) {
+        countdownEl.textContent = remaining;
+        if (remaining <= 3 && remaining > 0) {
+          countdownEl.style.color = '#FF3B30';
+          countdownEl.style.transform = 'scale(1.3)';
+          setTimeout(() => {
+            if (countdownEl) countdownEl.style.transform = 'scale(1)';
+          }, 100);
+        } else {
+          countdownEl.style.color = 'var(--accent-color)';
+        }
+      }
+
+      // 每秒倒數時播放 Tick 音效
+      if (remaining > 0 && remaining !== this.focusLastTickSecond) {
+        this.focusLastTickSecond = remaining;
+        this.playFocusSound('countdownTick');
+      }
+
+      if (remaining <= 0) {
+        if (this.focusCountdownInterval) {
+          clearInterval(this.focusCountdownInterval);
+          this.focusCountdownInterval = null;
+        }
+        this.focusCountdownLocalStart = null;
+        
+        // 倒數結束，播放開始音效
+        if (!this.focusStartSoundPlayed) {
+          this.focusStartSoundPlayed = true;
+          this.playFocusSound('start');
+        }
+        
+        if (this.isAdmin) {
+          db.ref('quiz/focusGame').update({
+            status: 'playing',
+            startTime: firebase.database.ServerValue.TIMESTAMP
+          }).catch(err => console.error('Admin update focusGame status failed:', err));
+        } else {
+          // 學生端樂觀切換進入遊戲作答狀態
+          const localPlayingGame = {
+            ...this.focusGame,
+            status: 'playing',
+            startTime: Date.now()
+          };
+          this.handleFocusGameSync(localPlayingGame);
+        }
+      }
+    };
+
+    updateCountdown();
+    this.focusCountdownInterval = setInterval(updateCountdown, 250);
+  }
+
+  startLocalPlay(game) {
+    // 每局開始時重置求救提示與懲罰秒數
+    this.focusHelpPenaltySeconds = 0;
+    this.focusHelpCount = 0;
+    this.focusGameCompletedLocal = false; // 重置完成音效狀態
+
+    // 避免 Firebase results 更新時重置正在作答的本地遊戲畫面，必須包含 status 及強健的時間戳記
+    const localGameKey = [
+      game.startTime || game.countdownStartTime || 'start',
+      game.status || 'playing',
+      game.gameType || 'numberGrid',
+      game.gridSize || 36,
+      game.sequenceLength || '',
+      game.reverseMode ? 'reverse' : 'normal'
+    ].join('_');
+
+    const existingGrid = document.getElementById('focusGameGrid');
+    const existingCharContainer = document.getElementById('characterTestContainer');
+    const existingMemBoard = document.getElementById('focusMemoryMatchBoard');
+    const hasRenderedContent = (existingGrid && existingGrid.children.length > 0) ||
+                               (existingCharContainer && existingCharContainer.children.length > 0) ||
+                               (existingMemBoard && existingMemBoard.children.length > 0);
+
+    if (this.focusLocalGameKey === localGameKey && hasRenderedContent) {
+      return;
+    }
+    this.stopFocusTimers();
+    this.focusLocalGameKey = localGameKey;
+
+    // 太鼓達人 (Taiko Master)
+    // 記憶翻牌配對遊戲 (Memory Match)
+    if (game.gameType === 'memoryMatch') {
+      this.startMemoryMatchGame(game);
+      return;
+    }
+
+    const numContainer = document.getElementById('focusNumberGridContainer');
+    const memBoard = document.getElementById('focusMemoryMatchBoard');
+    if (numContainer) numContainer.style.display = 'flex';
+    if (memBoard) memBoard.style.display = 'none';
+
+    // OpenCode 修改：位置序列記憶第一版與舒爾特方格共用專注力遊戲 Overlay
+    if (game.gameType === 'memoryPosition') {
+      this.startMemoryPositionGame(game);
+      return;
+    }
+    
+    if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
+      this.startCharacterTestGame(game);
+      return;
+    }
+
+    this.focusCurrentExpected = 1;
+    this.focusGridSize = game.gridSize || 36;
+    const helpBtn = document.getElementById('focusHelpBtn');
+    if (helpBtn) helpBtn.style.display = 'inline-block';
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) helpInfo.textContent = '';
+    
+    const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (targetLabel) targetLabel.style.display = '';
+
+    const grid = document.getElementById('focusGameGrid');
+    if (grid) {
+      grid.style.display = 'grid';
+      grid.style.aspectRatio = '1';
+      grid.style.flexDirection = '';
+      grid.style.gap = '8px';
+      grid.style.maxWidth = '450px';
+
+      const cols = Math.sqrt(this.focusGridSize);
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      
+      const numbers = this.generateSchulteGrid(this.focusGridSize);
+      grid.innerHTML = numbers.map(num => `
+        <button class="schulte-btn" data-number="${num}" onclick="window.app.clickSchulteGrid(${num}, this)" style="width: 100%; height: 100%; border-radius: 12px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.15); color: var(--accent-color); font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.05); user-select: none;">${num}</button>
+      `).join('');
+    }
+
+    document.getElementById('focusCurrentTarget').textContent = this.focusCurrentExpected;
+
+    this.focusStartTimeLocal = game.startTime || Date.now();
+    const timerEl = document.getElementById('focusTimer');
+    
+    const updateTimer = () => {
+      const now = Date.now();
+      const start = game.startTime || this.focusStartTimeLocal;
+      // OpenCode 修改：畫面計時包含求救提示的懲罰秒數
+      const spent = (now - start) / 1000 + this.focusHelpPenaltySeconds;
+      if (timerEl) {
+        timerEl.textContent = spent.toFixed(2);
+      }
+    };
+
+    updateTimer();
+    this.focusTimerInterval = setInterval(updateTimer, 30);
+  }
+
+  generateSchulteGrid(size) {
+    const numbers = [];
+    for (let i = 1; i <= size; i++) {
+      numbers.push(i);
+    }
+    
+    for (let i = numbers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = numbers[i];
+      numbers[i] = numbers[j];
+      numbers[j] = temp;
+    }
+    return numbers;
+  }
+
+  // OpenCode 修改：產生位置序列記憶遊戲的共用題目序列
+  generateFocusMemorySequence(size, length) {
+    const cells = [];
+    for (let i = 1; i <= size; i++) cells.push(i);
+    for (let i = cells.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = cells[i];
+      cells[i] = cells[j];
+      cells[j] = temp;
+    }
+    return cells.slice(0, Math.min(length, size));
+  }
+
+  handleBuzzGameSync(game) {
+    const prevStatus = this.buzzPrevStatus;
+    this.buzzPrevStatus = game ? game.status : null;
+
+    if (prevStatus === 'countdown' && game && game.status === 'playing') {
+      if (!this.buzzStartSoundPlayed) {
+        this.buzzStartSoundPlayed = true;
+        this.playFocusSound('start');
+      }
+    }
+
+    this.buzzGame = game;
+    
+    // 如果使用者正嘗試進入或在管理後台（且尚未登入管理員），一律不顯示覆蓋層
+    const isAccessingAdmin = !this.isAdmin && (
+      (this.activeTabId === 'panel-admin') || 
+      (document.getElementById('adminPasswordModal') && 
+       document.getElementById('adminPasswordModal').classList.contains('active'))
+    );
+    if (isAccessingAdmin) {
+      const overlay = document.getElementById('buzzGameOverlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+        overlay.classList.remove('active');
+      }
+      this.stopBuzzTimers();
+      return;
+    }
+    
+    const overlay = document.getElementById('buzzGameOverlay');
+    const teacherCloseBtn = document.getElementById('buzzGameTeacherCloseBtn');
+
+    if (teacherCloseBtn) {
+      teacherCloseBtn.style.display = this.isAdmin ? 'block' : 'none';
+    }
+
+    const adminRankSection = document.getElementById('adminBuzzGameRankSection');
+    if (adminRankSection) {
+      if (this.isAdmin) {
+        adminRankSection.style.display = 'block';
+        this.renderBuzzGameLeaderboard('adminBuzzGameRankList', game ? game.results : null);
+      } else {
+        adminRankSection.style.display = 'none';
+      }
+    }
+
+    if (!game || game.status === 'idle') {
+      if (overlay) {
+        overlay.style.display = 'none';
+        overlay.classList.remove('active');
+      }
+      this.stopBuzzTimers();
+      return;
+    }
+
+    if (this.isAdmin) {
+      if (overlay) {
+        overlay.style.display = 'none';
+        overlay.classList.remove('active');
+      }
+      if (game.status !== 'countdown') {
+        this.stopBuzzTimers();
+        return;
+      }
+    } else {
+      if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.classList.add('active');
+      }
+    }
+
+    if (game.status === 'countdown') {
+      document.getElementById('buzzCountdownArea').style.display = 'block';
+      document.getElementById('buzzPlayArea').style.display = 'none';
+      document.getElementById('buzzFinishArea').style.display = 'none';
+      this.startBuzzLocalCountdown(game);
+    }
+    else if (game.status === 'playing') {
+      document.getElementById('buzzCountdownArea').style.display = 'none';
+      
+      const userId = localStorage.getItem('user_id') || 'guest';
+      const hasCompleted = game.results && game.results[userId];
+
+      if (hasCompleted) {
+        document.getElementById('buzzPlayArea').style.display = 'none';
+        document.getElementById('buzzFinishArea').style.display = 'block';
+        
+        const result = game.results[userId];
+        document.getElementById('lblBuzzTime').textContent = result.timeSpent.toFixed(2);
+        
+        const rank = this.calculateBuzzUserRank(game.results, userId);
+        document.getElementById('lblBuzzRank').textContent = rank;
+        
+        this.renderBuzzGameLeaderboard('buzzGameRankList', game.results);
+
+        // 播放結束音效（限播一次）
+        if (!this.buzzGameCompletedLocal) {
+          this.buzzGameCompletedLocal = true;
+          this.playFocusSound('end');
+        }
+      } else {
+        document.getElementById('buzzPlayArea').style.display = 'flex';
+        document.getElementById('buzzFinishArea').style.display = 'none';
+        this.startBuzzLocalPlay(game);
+      }
+    }
+    else if (game.status === 'ended') {
+      document.getElementById('buzzCountdownArea').style.display = 'none';
+      document.getElementById('buzzPlayArea').style.display = 'none';
+      document.getElementById('buzzFinishArea').style.display = 'block';
+      
+      const userId = localStorage.getItem('user_id') || 'guest';
+      const result = game.results && game.results[userId];
+      if (result) {
+        document.getElementById('lblBuzzTime').textContent = result.timeSpent.toFixed(2);
+        const rank = this.calculateBuzzUserRank(game.results, userId);
+        document.getElementById('lblBuzzRank').textContent = rank;
+        document.getElementById('buzzFinishRankBlock').style.display = 'inline-block';
+        document.getElementById('buzzFinishTimeBlock').style.display = 'block';
+
+        // 播放結束音效（限播一次）
+        if (!this.buzzGameCompletedLocal) {
+          this.buzzGameCompletedLocal = true;
+          this.playFocusSound('end');
+        }
+      } else {
+        document.getElementById('buzzFinishRankBlock').style.display = 'none';
+        document.getElementById('buzzFinishTimeBlock').style.display = 'none';
+      }
+      
+      this.renderBuzzGameLeaderboard('buzzGameRankList', game.results);
+    }
+  }
+
+  startBuzzGameAdmin() {
+    if (!this.isAdmin) return;
+    
+    // 自動停止專注力測驗與選擇題測驗
+    db.ref('quiz/focusGame/status').set('idle');
+    db.ref('quiz/current').update({ active: false }).catch(() => {});
+    
+    const countdownSecs = parseInt(document.getElementById('buzzGameCountdown').value) || 5;
+    
+    db.ref('quiz/buzzGame').set({
+      status: 'countdown',
+      countdownSeconds: countdownSecs,
+      countdownStartTime: firebase.database.ServerValue.TIMESTAMP,
+      results: null
+    }).then(() => {
+      this.showNotification('成功', '搶答挑戰已發起！');
+    }).catch(err => {
+      this.showNotification('錯誤', '發起失敗: ' + err.message);
+    });
+  }
+
+  endBuzzGameAdmin() {
+    if (!this.isAdmin) return;
+    this.showConfirmModal(
+      '⚡',
+      '確定要停止搶答嗎？',
+      '這會收回所有學生的搶答畫面並使其回到白板。',
+      () => {
+        db.ref('quiz/buzzGame').set(null).then(() => {
+          this.showNotification('成功', '搶答已停止並重置！');
+        });
+      }
+    );
+  }
+
+  startBuzzLocalCountdown(game) {
+    this.stopBuzzTimers();
+    this.buzzGameCompletedLocal = false; // 重置完成音效狀態
+    this.buzzStartSoundPlayed = false;   // 重置開始音效狀態
+    this.buzzLastTickSecond = -1;        // 重置倒數秒數狀態
+    
+    const countdownEl = document.getElementById('buzzCountdownNumber');
+    const updateCountdown = () => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - game.countdownStartTime) / 1000);
+      const remaining = Math.max(0, game.countdownSeconds - elapsed);
+      
+      if (countdownEl) {
+        countdownEl.textContent = remaining;
+        if (remaining <= 3 && remaining > 0) {
+          countdownEl.style.color = '#FF3B30';
+          countdownEl.style.transform = 'scale(1.3)';
+          setTimeout(() => { if(countdownEl) countdownEl.style.transform = 'scale(1)' }, 100);
+        } else {
+          countdownEl.style.color = 'var(--accent-color)';
+        }
+      }
+
+      // 每秒倒數時播放時鐘滴答聲 (Tick-Tock)
+      if (remaining > 0 && remaining !== this.buzzLastTickSecond) {
+        this.buzzLastTickSecond = remaining;
+        this.playFocusSound('countdownTick', remaining);
+      }
+
+      if (remaining <= 0) {
+        clearInterval(this.buzzCountdownInterval);
+        this.buzzCountdownInterval = null;
+        
+        // 倒數結束，播放大鑼開戰音效
+        if (!this.buzzStartSoundPlayed) {
+          this.buzzStartSoundPlayed = true;
+          this.playFocusSound('start');
+        }
+
+        if (this.isAdmin) {
+          db.ref('quiz/buzzGame').update({
+            status: 'playing',
+            startTime: firebase.database.ServerValue.TIMESTAMP
+          }).catch(err => console.error('Admin update buzzGame status failed:', err));
+        } else {
+          // OpenCode 修改：學生端搶答本地防禦性啟動。如果倒數結束但 Firebase status 仍為 countdown（如老師背景休眠），學生端直接在本地樂觀切換進入搶答
+          setTimeout(() => {
+            if (this.buzzGame && this.buzzGame.status === 'countdown') {
+              console.log('[DEBUG] Student optimistically switches buzz game to playing due to timeout.');
+              const localPlayingGame = {
+                ...this.buzzGame,
+                status: 'playing',
+                startTime: this.buzzGame.countdownStartTime + ((this.buzzGame.countdownSeconds || 5) * 1000)
+              };
+              this.handleBuzzGameSync(localPlayingGame);
+            }
+          }, 600);
+        }
+      }
+    };
+
+    updateCountdown();
+    this.buzzCountdownInterval = setInterval(updateCountdown, 250);
+  }
+
+  startBuzzLocalPlay(game) {
+    this.stopBuzzTimers();
+    this.buzzGameCompletedLocal = false; // 重置完成音效狀態
+
+    const buzzArea = document.getElementById('buzzMoveArea');
+    const buzzCircle = document.getElementById('buzzCircleButton');
+    if (buzzCircle) {
+      buzzCircle.disabled = false;
+      buzzCircle.textContent = '快點我';
+      buzzCircle.style.left = 'calc(50% - 70px)';
+      buzzCircle.style.top = 'calc(50% - 70px)';
+    }
+
+    this.buzzStartTimeLocal = game.startTime || Date.now();
+    const timerEl = document.getElementById('lblBuzzTime');
+    
+    const updateTimer = () => {
+      const now = Date.now();
+      const start = game.startTime || this.buzzStartTimeLocal;
+      const spent = (now - start) / 1000;
+      if (timerEl && document.getElementById('buzzPlayArea').style.display !== 'none') {
+        // Only update on screen if they are playing
+        // (finished screen has its own static timer display)
+      }
+    };
+
+    updateTimer();
+    this.buzzTimerInterval = setInterval(updateTimer, 30);
+
+    let currentX = Math.floor((buzzArea?.clientWidth || 300) / 2 - (buzzCircle?.clientWidth || 140) / 2);
+    let currentY = Math.floor((buzzArea?.clientHeight || 350) / 2 - (buzzCircle?.clientHeight || 140) / 2);
+    if (isNaN(currentX) || currentX < 0) currentX = 0;
+    if (isNaN(currentY) || currentY < 0) currentY = 0;
+    let stepCount = 0;
+
+    const randomizePosition = () => {
+      if (!buzzArea || !buzzCircle) return;
+      
+      const maxX = Math.max(1, buzzArea.clientWidth - buzzCircle.clientWidth);
+      const maxY = Math.max(1, buzzArea.clientHeight - buzzCircle.clientHeight);
+      const maxPossibleDist = Math.sqrt(maxX * maxX + maxY * maxY);
+      
+      stepCount++;
+      // 每次距離加大，初始 40px，每步加 15px，但不超過最大可能距離的 85%
+      const targetMinDist = Math.min(maxPossibleDist * 0.85, 40 + stepCount * 15);
+      
+      let randomX = currentX;
+      let randomY = currentY;
+      let attempts = 0;
+      
+      while (attempts < 50) {
+        const testX = Math.floor(Math.random() * maxX);
+        const testY = Math.floor(Math.random() * maxY);
+        const dist = Math.sqrt(Math.pow(testX - currentX, 2) + Math.pow(testY - currentY, 2));
+        
+        if (dist >= targetMinDist || attempts === 49) {
+          randomX = testX;
+          randomY = testY;
+          break;
+        }
+        attempts++;
+      }
+      
+      currentX = randomX;
+      currentY = randomY;
+      buzzCircle.style.left = randomX + 'px';
+      buzzCircle.style.top = randomY + 'px';
+    };
+
+    randomizePosition();
+    this.buzzCircleInterval = setInterval(randomizePosition, 600);
+  }
+
+  buzzIn() {
+    if (!this.buzzGame || this.buzzGame.status !== 'playing') return;
+    
+    const buzzCircle = document.getElementById('buzzCircleButton');
+    if (buzzCircle) {
+      buzzCircle.disabled = true;
+      buzzCircle.textContent = '已搶答';
+    }
+
+    if (this.buzzCircleInterval) {
+      clearInterval(this.buzzCircleInterval);
+      this.buzzCircleInterval = null;
+    }
+
+    const userId = localStorage.getItem('user_id') || 'guest';
+    const userName = localStorage.getItem('user_name') || '匿名';
+    const now = Date.now();
+    const start = this.buzzGame.startTime || this.buzzStartTimeLocal;
+    const reactionTime = (now - start) / 1000;
+
+    db.ref(`quiz/buzzGame/results/${userId}`).set({
+      name: userName,
+      timeSpent: reactionTime,
+      completedAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      console.log('Buzzed in successfully:', reactionTime);
+      if (!this.buzzGameCompletedLocal) {
+        this.buzzGameCompletedLocal = true;
+        this.playFocusSound('end');
+      }
+    }).catch(err => {
+      console.error('Failed to submit buzz-in:', err);
+    });
+  }
+
+  calculateBuzzUserRank(results, targetUserId) {
+    if (!results) return '-';
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => {
+      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+      return a.completedAt - b.completedAt;
+    });
+    const index = sorted.findIndex(item => item.uid === targetUserId);
+    return index !== -1 ? index + 1 : '-';
+  }
+
+  renderBuzzGameLeaderboard(listContainerId, results) {
+    const list = document.getElementById(listContainerId);
+    if (!list) return;
+
+    if (!results) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px 0;">目前尚無人搶答</div>';
+      return;
+    }
+
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => {
+      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
+      return a.completedAt - b.completedAt;
+    });
+
+    list.innerHTML = sorted.map((res, index) => {
+      const isTop3 = index < 3;
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+      const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
+      const fontWeight = isTop3 ? 'bold' : 'normal';
+      
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name || res.user || '匿名')}</span>
+          </div>
+          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  stopBuzzTimers() {
+    if (this.buzzTimerInterval) clearInterval(this.buzzTimerInterval);
+    if (this.buzzCountdownInterval) clearInterval(this.buzzCountdownInterval);
+    if (this.buzzCircleInterval) clearInterval(this.buzzCircleInterval);
+    this.buzzTimerInterval = null;
+    this.buzzCountdownInterval = null;
+    this.buzzCircleInterval = null;
+  }
+
+  startMemoryPositionGame(game) {
+    this.focusGridSize = game.gridSize || 36;
+    // OpenCode 修改：修正位置序列模式未宣告 grid 導致無作用，並相容 Firebase array/object 序列格式
+    const grid = document.getElementById('focusGameGrid');
+    const sequence = Array.isArray(game.sequence)
+      ? game.sequence
+      : (game.sequence ? Object.values(game.sequence).map(v => parseInt(v)).filter(v => Number.isFinite(v)) : []);
+    this.focusMemorySequence = sequence.length > 0 ? sequence : this.generateFocusMemorySequence(this.focusGridSize, game.sequenceLength || 5);
+    this.focusMemoryAnswerOrder = game.reverseMode ? [...this.focusMemorySequence].reverse() : [...this.focusMemorySequence];
+    this.focusMemoryInputIndex = 0;
+    this.focusMemoryAcceptInput = false;
+    this.focusMemoryMistakes = 0;
+    this.focusHelpPenaltySeconds = 0;
+    this.focusHelpCount = 0;
+
+    const targetEl = document.getElementById('focusCurrentTarget');
+    const helpBtn = document.getElementById('focusHelpBtn');
+    const helpInfo = document.getElementById('focusHelpInfo');
+    const timerEl = document.getElementById('focusTimer');
+    
+
+    if (helpBtn) {
+      helpBtn.style.display = 'none';
+      helpBtn.disabled = false;
+      helpBtn.textContent = '🆘 重播提示（+5 秒）';
+    }
+    if (helpInfo) helpInfo.textContent = game.reverseMode ? '請記住閃爍位置，等播放完後反向點回。' : '請記住閃爍位置，等播放完後照順序點回。';
+    if (targetEl) targetEl.textContent = '記憶中...';
+    if (timerEl) timerEl.textContent = '0.00';
+
+    const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (targetLabel) targetLabel.style.display = '';
+
+    if (grid) {
+      grid.style.display = 'grid';
+      grid.style.aspectRatio = '1';
+      grid.style.flexDirection = '';
+      grid.style.gap = '8px';
+      grid.style.maxWidth = '450px';
+
+      const cols = Math.sqrt(this.focusGridSize);
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      grid.innerHTML = Array.from({ length: this.focusGridSize }, (_, i) => {
+        const cell = i + 1;
+        return `<button class="schulte-btn memory-cell" data-cell="${cell}" onclick="window.app.clickMemoryPosition(${cell}, this)" style="width: 100%; height: 100%; border-radius: 12px; background: rgba(0,122,255,0.06); border: 2px solid rgba(0,122,255,0.13); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.04); user-select: none;"></button>`;
+      }).join('');
+    }
+
+    this.playMemorySequence(game, false);
+  }
+
+  // OpenCode 修改：依序播放位置序列閃爍提示
+  playMemorySequence(game, isReplay = false) {
+    let index = 0;
+    this.focusMemoryAcceptInput = false;
+    const flashNext = () => {
+      document.querySelectorAll('#focusGameGrid .memory-cell').forEach(cell => cell.classList.remove('memory-sequence-highlight'));
+      if (index >= this.focusMemorySequence.length) {
+        this.focusMemoryAcceptInput = true;
+        const targetEl = document.getElementById('focusCurrentTarget');
+        const helpInfo = document.getElementById('focusHelpInfo');
+        const helpBtn = document.getElementById('focusHelpBtn');
+        if (targetEl) targetEl.textContent = game.reverseMode ? '反向作答' : '依序作答';
+        if (helpInfo) {
+          const directionText = game.reverseMode ? '請從最後一個閃爍位置開始點回來。' : '請從第一個閃爍位置開始點回來。';
+          helpInfo.textContent = isReplay
+            ? `提示已重播，累計加時 ${this.focusHelpPenaltySeconds} 秒。${directionText}`
+            : directionText;
+        }
+        if (helpBtn) {
+          helpBtn.style.display = 'inline-block';
+          helpBtn.disabled = false;
+          helpBtn.textContent = '🆘 重播提示（+5 秒）';
+        }
+        if (!isReplay) {
+          this.focusStartTimeLocal = Date.now();
+          this.startMemoryTimer();
+        }
+        return;
+      }
+
+      const cellNum = this.focusMemorySequence[index];
+      const cell = document.querySelector(`#focusGameGrid .memory-cell[data-cell="${cellNum}"]`);
+      if (cell) cell.classList.add('memory-sequence-highlight');
+      index++;
+      setTimeout(() => {
+        if (cell) cell.classList.remove('memory-sequence-highlight');
+        setTimeout(flashNext, 180);
+      }, 620);
+    };
+    if (isReplay) {
+      const targetEl = document.getElementById('focusCurrentTarget');
+      const helpBtn = document.getElementById('focusHelpBtn');
+      const helpInfo = document.getElementById('focusHelpInfo');
+      if (targetEl) targetEl.textContent = '重播提示中...';
+      if (helpBtn) helpBtn.disabled = true;
+      if (helpInfo) helpInfo.textContent = `正在重播位置提示，已加時 ${this.focusHelpPenaltySeconds} 秒。`;
+    }
+    flashNext();
+  }
+
+  // OpenCode 修改：位置序列記憶作答階段計時
+  startMemoryTimer() {
+    const timerEl = document.getElementById('focusTimer');
+    const updateTimer = () => {
+      const spent = (Date.now() - this.focusStartTimeLocal) / 1000 + this.focusHelpPenaltySeconds;
+      if (timerEl) timerEl.textContent = spent.toFixed(2);
+    };
+    updateTimer();
+    this.focusTimerInterval = setInterval(updateTimer, 30);
+  }
+
+  // OpenCode 修改：位置序列記憶點擊判定，支援反向模式
+  clickMemoryPosition(cellNum, btn) {
+    if (!this.focusMemoryAcceptInput) return;
+    const expected = this.focusMemoryAnswerOrder[this.focusMemoryInputIndex];
+    if (cellNum === expected) {
+      btn.classList.remove('memory-wrong');
+      btn.classList.add('memory-correct');
+      btn.style.pointerEvents = 'none';
+      this.focusMemoryInputIndex++;
+      if (this.focusMemoryInputIndex >= this.focusMemoryAnswerOrder.length) {
+        this.finishSchulteGrid();
+      }
+      return;
+    }
+
+    this.focusMemoryMistakes++;
+    this.focusHelpPenaltySeconds += 3;
+    btn.classList.add('memory-wrong');
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) helpInfo.textContent = `點錯 ${this.focusMemoryMistakes} 次，已加時 ${this.focusMemoryMistakes * 3} 秒。`;
+    setTimeout(() => btn.classList.remove('memory-wrong'), 350);
+  }
+
+  // ===== 🃏 互動式記憶翻牌配對遊戲 (Memory Match) =====
+  startMemoryMatchGame(game) {
+    const memoryMatchBoard = document.getElementById('focusMemoryMatchBoard');
+    const numberGridContainer = document.getElementById('focusNumberGridContainer');
+    const helpInfo = document.getElementById('focusHelpInfo');
+    const instEl = document.getElementById('focusGameInstruction');
+
+    if (memoryMatchBoard) memoryMatchBoard.style.display = 'flex';
+    if (numberGridContainer) numberGridContainer.style.display = 'none';
+    if (helpInfo) helpInfo.textContent = '';
+    if (instEl) instEl.textContent = '💡 翻開兩張相同的卡片進行配對，看誰能用最少的翻牌次數與最快的速度完成配對！';
+
+    this.memoryMatchDeck = game.deck || [];
+    this.memoryMatchTotalPairs = game.pairCount || 6;
+    this.memoryMatchMatchedPairs = 0;
+    this.memoryMatchFlips = 0;
+    this.memoryMatchFirstCard = null;
+    this.memoryMatchSecondCard = null;
+    this.memoryMatchIsLock = false;
+
+    const matchedEl = document.getElementById('focusMemoryMatchedCount');
+    const totalPairsEl = document.getElementById('focusMemoryTotalPairs');
+    const flipsEl = document.getElementById('focusMemoryFlips');
+    const timerEl = document.getElementById('focusMemoryTimer');
+
+    if (matchedEl) matchedEl.textContent = '0';
+    if (totalPairsEl) totalPairsEl.textContent = this.memoryMatchTotalPairs;
+    if (flipsEl) flipsEl.textContent = '0';
+    if (timerEl) timerEl.textContent = '0.00';
+
+    const grid = document.getElementById('focusMemoryGrid');
+    if (grid) {
+      const cardCount = this.memoryMatchDeck.length;
+      let cols = 4;
+      if (cardCount >= 24) cols = 6;
+      if (window.innerWidth < 450 && cardCount >= 24) cols = 4;
+
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      grid.innerHTML = this.memoryMatchDeck.map(card => {
+        let backContent = '';
+        if (card.type === 'image') {
+          backContent = `<img src="${card.value}" alt="card image" />`;
+        } else {
+          backContent = `<span>${card.value}</span>`;
+        }
+
+        return `
+          <div class="memory-card" data-card-id="${card.id}" data-match-key="${card.matchKey}" onclick="window.app.clickMemoryMatchCard('${card.id}', this)">
+            <div class="memory-card-inner">
+              <div class="memory-card-front">❓</div>
+              <div class="memory-card-back">${backContent}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    this.focusStartTimeLocal = Date.now();
+    this.focusTimerInterval = setInterval(() => {
+      if (timerEl) {
+        const elapsed = (Date.now() - this.focusStartTimeLocal) / 1000;
+        timerEl.textContent = elapsed.toFixed(2);
+      }
+    }, 50);
+  }
+
+  clickMemoryMatchCard(cardId, element) {
+    if (this.memoryMatchIsLock) return;
+    if (element.classList.contains('flipped') || element.classList.contains('matched')) return;
+
+    this.playFocusSound('flip');
+    element.classList.add('flipped');
+
+    if (!this.memoryMatchFirstCard) {
+      this.memoryMatchFirstCard = {
+        id: cardId,
+        matchKey: element.dataset.matchKey,
+        element: element
+      };
+      return;
+    }
+
+    this.memoryMatchSecondCard = {
+      id: cardId,
+      matchKey: element.dataset.matchKey,
+      element: element
+    };
+
+    this.memoryMatchFlips++;
+    const flipsEl = document.getElementById('focusMemoryFlips');
+    if (flipsEl) flipsEl.textContent = this.memoryMatchFlips;
+
+    this.memoryMatchIsLock = true;
+
+    const isMatch = this.memoryMatchFirstCard.matchKey === this.memoryMatchSecondCard.matchKey;
+
+    if (isMatch) {
+      this.playFocusSound('match');
+      this.memoryMatchFirstCard.element.classList.add('matched');
+      this.memoryMatchSecondCard.element.classList.add('matched');
+
+      this.memoryMatchMatchedPairs++;
+      const matchedEl = document.getElementById('focusMemoryMatchedCount');
+      if (matchedEl) matchedEl.textContent = this.memoryMatchMatchedPairs;
+
+      this.memoryMatchFirstCard = null;
+      this.memoryMatchSecondCard = null;
+      this.memoryMatchIsLock = false;
+
+      if (this.memoryMatchMatchedPairs >= this.memoryMatchTotalPairs) {
+        this.finishMemoryMatchGame();
+      }
+    } else {
+      this.playFocusSound('mismatch');
+      this.memoryMatchFirstCard.element.classList.add('shake');
+      this.memoryMatchSecondCard.element.classList.add('shake');
+
+      setTimeout(() => {
+        if (this.memoryMatchFirstCard && this.memoryMatchFirstCard.element) {
+          this.memoryMatchFirstCard.element.classList.remove('flipped', 'shake');
+        }
+        if (this.memoryMatchSecondCard && this.memoryMatchSecondCard.element) {
+          this.memoryMatchSecondCard.element.classList.remove('flipped', 'shake');
+        }
+        this.memoryMatchFirstCard = null;
+        this.memoryMatchSecondCard = null;
+        this.memoryMatchIsLock = false;
+      }, 700);
+    }
+  }
+
+  finishMemoryMatchGame() {
+    this.stopFocusTimers();
+    const timeSpent = (Date.now() - this.focusStartTimeLocal) / 1000;
+    const userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 5));
+    const userName = localStorage.getItem('user_name') || '匿名學生';
+
+    db.ref(`quiz/focusGame/results/${userId}`).set({
+      userId,
+      userName,
+      timeSpent,
+      flips: this.memoryMatchFlips,
+      completedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    document.getElementById('focusPlayArea').style.display = 'none';
+    document.getElementById('focusFinishArea').style.display = 'block';
+    document.getElementById('lblFinishTime').textContent = `${timeSpent.toFixed(2)} 秒 (共翻牌 ${this.memoryMatchFlips} 次)`;
+
+    const suffixEl = document.getElementById('lblFinishRankSuffix');
+    if (suffixEl) suffixEl.textContent = '完成記憶配對';
+
+    this.initFireworkCanvas();
+    this.triggerFireworkEffect();
+
+    if (!this.focusGameCompletedLocal) {
+      this.focusGameCompletedLocal = true;
+      this.playFocusSound('end');
+    }
+  }
+
+
+
+  clickSchulteGrid(num, btn) {
+    if (num === this.focusCurrentExpected) {
+      btn.classList.remove('focus-help-highlight');
+      btn.style.opacity = '0';
+      btn.style.pointerEvents = 'none';
+      btn.style.transform = 'scale(0.5)';
+      
+      this.focusCurrentExpected++;
+      
+      if (this.focusCurrentExpected > this.focusGridSize) {
+        this.finishSchulteGrid();
+      } else {
+        document.getElementById('focusCurrentTarget').textContent = this.focusCurrentExpected;
+      }
+    } else {
+      btn.style.borderColor = '#FF3B30';
+      btn.style.background = 'rgba(255,59,48,0.1)';
+      btn.style.transform = 'translateX(-5px)';
+      setTimeout(() => btn.style.transform = 'translateX(5px)', 50);
+      setTimeout(() => btn.style.transform = 'translateX(-3px)', 100);
+      setTimeout(() => {
+        btn.style.transform = '';
+        btn.style.borderColor = 'rgba(0,122,255,0.15)';
+        btn.style.background = 'rgba(0,122,255,0.08)';
+      }, 300);
+    }
+  }
+
+  // OpenCode 修改：專注力遊戲求救提示；高亮下一個目標數字並加 5 秒懲罰時間
+  requestFocusHelp() {
+    if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    if (this.focusGame.gameType === 'memoryPosition') {
+      this.requestMemoryPositionHelp();
+      return;
+    }
+    if (this.focusCurrentExpected > this.focusGridSize) return;
+
+    this.focusHelpCount++;
+    this.focusHelpPenaltySeconds += 5;
+
+    const target = document.querySelector(`#focusGameGrid .schulte-btn[data-number="${this.focusCurrentExpected}"]`);
+    if (target) {
+      target.classList.remove('focus-help-highlight');
+      void target.offsetWidth;
+      target.classList.add('focus-help-highlight');
+      setTimeout(() => target.classList.remove('focus-help-highlight'), 1300);
+    }
+
+    const timerEl = document.getElementById('focusTimer');
+    if (timerEl) {
+      const current = parseFloat(timerEl.textContent) || 0;
+      timerEl.textContent = (current + 5).toFixed(2);
+    }
+
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) {
+      helpInfo.textContent = `已提示 ${this.focusHelpCount} 次，累計加時 ${this.focusHelpPenaltySeconds} 秒`;
+    }
+  }
+
+  // OpenCode 修改：位置序列記憶求救提示，重播同一組閃爍序列並加 5 秒
+  requestMemoryPositionHelp() {
+    if (!this.focusMemoryAcceptInput) return;
+
+    this.focusHelpCount++;
+    this.focusHelpPenaltySeconds += 5;
+    this.playMemorySequence(this.focusGame, true);
+  }
+
+  finishSchulteGrid() {
+    this.stopFocusTimers();
+    
+    const now = Date.now();
+    const start = (this.focusGame && this.focusGame.startTime) || this.focusStartTimeLocal;
+    // OpenCode 修改：排行榜成績採計求救提示懲罰秒數
+    const timeSpent = (now - start) / 1000 + this.focusHelpPenaltySeconds;
+    
+    const userId = localStorage.getItem('user_id') || 'guest';
+    const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名';
+
+    db.ref(`quiz/focusGame/results/${userId}`).set({
+      name: userName,
+      timeSpent: timeSpent,
+      gameType: this.focusGame && this.focusGame.gameType ? this.focusGame.gameType : 'numberGrid',
+      reverseMode: !!(this.focusGame && this.focusGame.reverseMode),
+      mistakes: this.focusMemoryMistakes || 0,
+      helpCount: this.focusHelpCount,
+      penaltySeconds: this.focusHelpPenaltySeconds,
+      completedAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      this.showNotification('成功', `您花了 ${timeSpent.toFixed(2)} 秒完成挑戰！`);
+      
+      // 學生端也立刻啟動本地煙火動畫
+      this.initFireworkCanvas();
+      this.triggerFireworkEffect();
+    }).catch(err => {
+      console.error("Submit result failed:", err);
+    });
+  }
+
+  renderFocusGameLeaderboard(listContainerId, results) {
+    const list = document.getElementById(listContainerId);
+    if (!list) return;
+
+    if (this.focusGame && (this.focusGame.gameType === 'characterTest' || this.focusGame.gameType === 'characterCrossword')) {
+      if (listContainerId === 'adminFocusGameRankList') {
+        this.renderAdminCharacterTestSubmissions(list, results);
+      } else {
+        this.renderStudentCharacterTestLeaderboard(list, results);
+      }
+      return;
+    }
+
+    if (!results || Object.keys(results).length === 0) {
+      list.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 12px 0;">目前尚無人完成</div>';
+      return;
+    }
+
+    const items = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    }));
+
+    const sorted = items.sort((a, b) => {
+      const timeA = typeof a.timeSpent === 'number' ? a.timeSpent : 999999;
+      const timeB = typeof b.timeSpent === 'number' ? b.timeSpent : 999999;
+      if (timeA !== timeB) return timeA - timeB; // 耗時越少越靠前
+      return (a.completedAt || 0) - (b.completedAt || 0);
+    });
+
+    list.innerHTML = sorted.map((res, index) => {
+      const isTop3 = index < 3;
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+      const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
+      const fontWeight = isTop3 ? 'bold' : 'normal';
+      const displayName = this.escapeHtml(res.userName || res.name || '匿名學生');
+
+      let detailHtml = '';
+      if (isTaiko) {
+        detailHtml = `<span style="color: var(--danger-color); font-weight: 900; font-size: 15px;">🎯 ${(res.score || 0).toLocaleString()} 分</span> <span style="font-size: 12px; color: var(--text-secondary); margin-left: 6px;">(🔥 ${res.maxCombo || 0} Combo | 🌟${res.perfect || 0}/👍${res.good || 0}/❌${res.miss || 0})</span>`;
+      } else {
+        const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
+        const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
+        const timeStr = typeof res.timeSpent === 'number' ? res.timeSpent.toFixed(2) : '-';
+        detailHtml = `<span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${timeStr} 秒 ${helpNote}${memoryNote}</span>`;
+      }
+
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${displayName}</span>
+          </div>
+          <div>${detailHtml}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  startCharacterTestGame(game) {
+    const grid = document.getElementById('focusGameGrid');
+    if (!grid) return;
+    
+    // 隱藏求救按鈕與提示
+    const helpBtn = document.getElementById('focusHelpBtn');
+    if (helpBtn) helpBtn.style.display = 'none';
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) helpInfo.textContent = '';
+    
+    // 隱藏目標標籤
+    const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (targetLabel) targetLabel.style.display = 'none';
+    
+    // 重設格線外觀為一字千金樣式
+    grid.style.aspectRatio = 'auto';
+    grid.style.display = 'flex';
+    grid.style.flexDirection = 'column';
+    grid.style.gap = '16px';
+    grid.style.width = '100%';
+    grid.style.maxWidth = '500px';
+    
+    const questions = game.questions || [];
+    const isCrossword = game.gameType === 'characterCrossword';
+    const isUnitedWords = game.gameType === 'characterUnitedWords';
+    
+    let html = '';
+    if (isUnitedWords) {
+      html += `
+        <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; text-align: center; width: 100%;">
+          ✍️ 一字千金：團結一詞 (部件組詞)
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+      `;
+      questions.forEach((q, idx) => {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 14px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.04); width: 100%; box-sizing: border-box;">
+            <!-- 上方：部件標牌區 -->
+            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); text-align: center;">🧩 題目部件：</div>
+            <div style="display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap;">
+              ${(q.components || []).map(comp => `
+                <div onclick="window.app.appendUnitedComponent('${comp}', ${idx})" style="padding: 6px 14px; background: rgba(0, 122, 255, 0.08); border: 1.5px solid rgba(0, 122, 255, 0.3); border-radius: 8px; font-size: 20px; font-weight: bold; color: var(--accent-color); cursor: pointer; user-select: none;">
+                  ${comp}
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- 中間：雙字九宮格輸入區 -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 6px;">
+              <div class="chinese-writing-grid">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}-0" maxlength="1" placeholder="字1" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); document.getElementById('char-test-input-${idx}-1')?.focus(); }">
+              </div>
+              <div class="chinese-writing-grid">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}-1" maxlength="1" placeholder="字2" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); }">
+              </div>
+            </div>
+
+            <!-- 下方：提示說明 -->
+            <div style="text-align: center; font-size: 15px; color: var(--text-secondary); margin-top: 4px; font-weight: bold;">
+              💡 提示：${q.clue}
+            </div>
+          </div>
+        `;
+      });
+    } else if (isCrossword) {
+      html += `
+        <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; text-align: center; width: 100%;">
+          ✍️ 一字千金：字字珠璣 (十字選字)
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+      `;
+      questions.forEach((q, idx) => {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); width: 100%; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
+              <!-- 左側：3x3 十字選字盤 -->
+              <div class="character-crossword-container">
+                <div class="character-crossword-cell surrounding">${q.surrounding[0].char}</div>
+                <div class="character-crossword-cell empty"></div>
+                <div class="character-crossword-cell surrounding">${q.surrounding[1].char}</div>
+                
+                <div class="character-crossword-cell empty"></div>
+                <div class="chinese-writing-grid" style="width: 80px; height: 80px;">
+                  <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); }">
+                </div>
+                <div class="character-crossword-cell empty"></div>
+                
+                <div class="character-crossword-cell surrounding">${q.surrounding[2].char}</div>
+                <div class="character-crossword-cell empty"></div>
+                <div class="character-crossword-cell surrounding">${q.surrounding[3].char}</div>
+              </div>
+            </div>
+            <div style="text-align: center; font-size: 24px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
+              請找出可以和這四個字組合成詞的關鍵字
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      html += `
+        <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px; text-align: center; width: 100%;">
+          ✍️ 一字千金：請輸入正確的國字
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+      `;
+      questions.forEach((q, idx) => {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); width: 100%; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+              <!-- 左側：寫字九宮格輸入 -->
+              <div class="chinese-writing-grid">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); }">
+              </div>
+              <!-- 右側：注音九宮格 -->
+              <div class="chinese-writing-grid">
+                <div class="zhuyin-text">${q.zhuyin}</div>
+              </div>
+            </div>
+            <div style="text-align: center; font-size: 28px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
+              提示詞：${q.clue}
+            </div>
+          </div>
+        `;
+      });
+    }
+    
+    const penaltyAmount = isCrossword ? 10 : 5;
+    html += `
+      </div>
+      <button id="focusCharTestHintBtn" onclick="window.app.showGeneralCharacterHint()" style="margin-top: 12px; width: 100%; padding: 12px; background: #ff9500; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(255,149,0,0.25);">
+        💡 顯示提示字 (2秒/+${penaltyAmount}秒)
+      </button>
+      <button onclick="window.app.submitCharTestAnswers()" style="margin-top: 12px; width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,122,255,0.25);">
+        ✔️ 送出答案
+      </button>
+    `;
+    
+    grid.innerHTML = html;
+    
+    // 設定計時器
+    this.focusStartTimeLocal = game.startTime || Date.now();
+    const timerEl = document.getElementById('focusTimer');
+    
+    if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
+    this.focusTimerInterval = setInterval(() => {
+      const now = Date.now();
+      const start = game.startTime || this.focusStartTimeLocal;
+      const elapsed = (now - start) / 1000;
+      if (timerEl) timerEl.textContent = elapsed.toFixed(2);
+    }, 10);
+  }
+
+  appendUnitedComponent(comp, qIdx) {
+    const input0 = document.getElementById(`char-test-input-${qIdx}-0`);
+    const input1 = document.getElementById(`char-test-input-${qIdx}-1`);
+    if (input0 && !input0.value.trim()) {
+      input0.value = comp;
+      const g0 = input0.closest('.chinese-writing-grid');
+      if (g0) g0.classList.remove('unfilled-fluorescent-highlight');
+      if (input1) input1.focus();
+    } else if (input1 && !input1.value.trim()) {
+      input1.value = comp;
+      const g1 = input1.closest('.chinese-writing-grid');
+      if (g1) g1.classList.remove('unfilled-fluorescent-highlight');
+    }
+  }
+
+  submitCharTestAnswers() {
+    if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    
+    const userId = localStorage.getItem('user_id') || 'guest';
+    const isCrossword = this.focusGame.gameType === 'characterCrossword';
+    const isUnitedWords = this.focusGame.gameType === 'characterUnitedWords';
+    const questions = this.focusGame.questions || [];
+    
+    // 先清除畫面上所有的未填寫螢光框標示
+    document.querySelectorAll('.chinese-writing-grid').forEach(gridEl => {
+      gridEl.classList.remove('unfilled-fluorescent-highlight');
+    });
+
+    let hasUnfilled = false;
+    let firstUnfilledInput = null;
+    const answers = [];
+    
+    if (isUnitedWords) {
+      questions.forEach((q, i) => {
+        const in0 = document.getElementById(`char-test-input-${i}-0`);
+        const in1 = document.getElementById(`char-test-input-${i}-1`);
+        const v0 = in0 ? in0.value.trim() : '';
+        const v1 = in1 ? in1.value.trim() : '';
+        if (!v0 || !v1) {
+          hasUnfilled = true;
+          if (in0 && !v0) {
+            in0.closest('.chinese-writing-grid')?.classList.add('unfilled-fluorescent-highlight');
+            if (!firstUnfilledInput) firstUnfilledInput = in0;
+          }
+          if (in1 && !v1) {
+            in1.closest('.chinese-writing-grid')?.classList.add('unfilled-fluorescent-highlight');
+            if (!firstUnfilledInput) firstUnfilledInput = in1;
+          }
+        } else {
+          answers.push(v0 + v1);
+        }
+      });
+    } else {
+      const totalAnsCount = isCrossword ? 1 : 3;
+      for (let i = 0; i < totalAnsCount; i++) {
+        const input = document.getElementById(`char-test-input-${i}`);
+        const val = input ? input.value.trim() : '';
+        const gridBox = input ? input.closest('.chinese-writing-grid') : null;
+        
+        if (!val) {
+          hasUnfilled = true;
+          if (gridBox) {
+            gridBox.classList.add('unfilled-fluorescent-highlight');
+          }
+          if (!firstUnfilledInput && input) {
+            firstUnfilledInput = input;
+          }
+        } else {
+          answers.push(val);
+        }
+      }
+    }
+
+    if (hasUnfilled) {
+      this.showNotification('提示', isUnitedWords ? '請完整填寫二字詞答案！' : (isCrossword ? '請填寫關鍵字的國字！' : '請在未填寫螢光框處輸入正確國字！'));
+      if (firstUnfilledInput) {
+        firstUnfilledInput.focus();
+      }
+      return;
+    }
+    
+    if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
+    this.focusTimerInterval = null;
+    
+    const timeSpent = (Date.now() - (this.focusGame.startTime || this.focusStartTimeLocal)) / 1000;
+    const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名';
+    const currentGameType = this.focusGame.gameType || 'characterTest';
+    
+    // 團結一詞自動校對是否正確
+    let autoStatus = 'pending';
+    if (isUnitedWords && questions.length > 0) {
+      const isCorrect = questions.every((q, idx) => {
+        const userAns = answers[idx];
+        return userAns === q.targetWord || userAns === (q.chars ? q.chars.join('') : '');
+      });
+      if (isCorrect) {
+        autoStatus = 'correct';
+      } else {
+        autoStatus = 'incorrect';
+      }
+    }
+
+    db.ref(`quiz/focusGame/results/${userId}`).set({
+      name: userName,
+      answers: answers,
+      timeSpent: timeSpent + (this.focusHelpPenaltySeconds || 0),
+      completedAt: firebase.database.ServerValue.TIMESTAMP,
+      status: autoStatus,
+      gameType: currentGameType,
+      helpCount: this.focusHelpCount || 0,
+      penaltySeconds: this.focusHelpPenaltySeconds || 0
+    }).then(() => {
+      if (autoStatus === 'correct') {
+        this.showNotification('太棒了！', '恭喜答對！完成團結一詞！');
+      } else {
+        this.showNotification('成功', '答案已送出！');
+      }
+      this.renderCharacterTestPlayCompleted(this.focusGame, {
+        answers: answers,
+        status: autoStatus
+      });
+    }).catch(err => {
+      this.showNotification('錯誤', '送出失敗: ' + err.message);
+    });
+  }
+
+  retryCharacterTest() {
+    const userId = localStorage.getItem('user_id') || 'guest';
+    db.ref(`quiz/focusGame/results/${userId}`).remove()
+      .then(() => {
+        this.showNotification('提示', '已重設，可以重新作答！');
+      });
+  }
+
+  showGeneralCharacterHint() {
+    if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    const questions = this.focusGame.questions || [];
+    if (questions.length === 0) return;
+
+    const isCrossword = this.focusGame.gameType === 'characterCrossword';
+    const penaltyAmount = isCrossword ? 10 : 5;
+
+    // 先尋找第一個未填寫的格子索引 (value 為空)
+    let targetIdx = -1;
+    const maxIdx = isCrossword ? 1 : 3;
+    for (let i = 0; i < maxIdx; i++) {
+      const input = document.getElementById(`char-test-input-${i}`);
+      const val = input ? input.value.trim() : '';
+      if (!val) {
+        targetIdx = i;
+        break;
+      }
+    }
+    // 如果全部都填寫了，預設提示第一個
+    if (targetIdx === -1) {
+      targetIdx = 0;
+    }
+
+    const q = questions[targetIdx];
+    const input = document.getElementById(`char-test-input-${targetIdx}`);
+    if (input) {
+      // 懲罰時間與提示次數計費
+      this.focusHelpCount = (this.focusHelpCount || 0) + 1;
+      this.focusHelpPenaltySeconds = (this.focusHelpPenaltySeconds || 0) + penaltyAmount;
+
+      const originalVal = input.value;
+      input.value = q.char; // 顯現正確答案
+      input.style.color = '#ff9500'; // 提示時以橘色字體顯著標示
+      input.disabled = true;
+
+      // 暫時鎖定下方的提示按鈕，避免連續點擊造成異常
+      const hintBtn = document.getElementById('focusCharTestHintBtn');
+      if (hintBtn) {
+        hintBtn.disabled = true;
+        hintBtn.style.opacity = '0.6';
+      }
+
+      // 立即在前端畫面上累加秒數
+      const timerEl = document.getElementById('focusTimer');
+      if (timerEl) {
+        const current = parseFloat(timerEl.textContent) || 0;
+        timerEl.textContent = (current + penaltyAmount).toFixed(2);
+      }
+
+      // 2 秒後還原原始輸入內容，並解鎖輸入框和提示按鈕
+      setTimeout(() => {
+        input.value = originalVal;
+        input.style.color = 'var(--accent-color)';
+        input.disabled = false;
+        if (hintBtn) {
+          hintBtn.disabled = false;
+          hintBtn.style.opacity = '1';
+        }
+        input.focus();
+      }, 2000);
+    }
+  }
+
+  renderCharacterTestPlayCompleted(game, result) {
+    const grid = document.getElementById('focusGameGrid');
+    if (!grid) return;
+    
+    const helpBtn = document.getElementById('focusHelpBtn');
+    if (helpBtn) helpBtn.style.display = 'none';
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) helpInfo.textContent = '';
+    
+    const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (targetLabel) targetLabel.style.display = 'none';
+    
+    grid.style.aspectRatio = 'auto';
+    grid.style.display = 'flex';
+    grid.style.flexDirection = 'column';
+    grid.style.gap = '16px';
+    grid.style.width = '100%';
+    grid.style.maxWidth = '500px';
+    
+    const answers = result.answers || ['', '', ''];
+    const status = result.status || 'pending';
+    const isCrossword = game.gameType === 'characterCrossword';
+    const isUnitedWords = game.gameType === 'characterUnitedWords';
+    
+    let statusText = '⏳ 等待老師評分中...';
+    let statusColor = 'var(--text-secondary)';
+    if (status === 'correct') {
+      statusText = '🎉 全部答對！能力超群！';
+      statusColor = '#28a745';
+    } else if (status === 'incorrect') {
+      statusText = '❌ 答錯了，再加把勁！';
+      statusColor = '#dc3545';
+    }
+    
+    let html = `
+      <div style="font-size: 16px; font-weight: bold; color: ${statusColor}; margin-bottom: 8px; text-align: center; width: 100%;">
+        ${statusText}
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+    `;
+    
+    const questions = game.questions || [];
+    questions.forEach((q, idx) => {
+      const userWord = answers[idx] || '';
+      const displayWord = status === 'incorrect' ? q.targetWord : userWord;
+      const displayColor = status === 'incorrect' ? '#dc3545' : 'var(--accent-color)';
+      
+      if (isUnitedWords) {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.9;">
+            <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); text-align: center;">🧩 題目部件：${(q.components || []).join(' ')}</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+              <div class="chinese-writing-grid">
+                <span style="font-size: 38px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord.charAt(0) || '')}</span>
+              </div>
+              <div class="chinese-writing-grid">
+                <span style="font-size: 38px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord.charAt(1) || '')}</span>
+              </div>
+            </div>
+            <div style="text-align: center; font-size: 15px; color: var(--text-secondary); margin-top: 4px; font-weight: bold;">
+              解答詞語：${q.targetWord} (${q.clue})
+            </div>
+          </div>
+        `;
+      } else if (isCrossword) {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
+              <!-- 左側：3x3 十字選字盤 -->
+              <div class="character-crossword-container">
+                <div class="character-crossword-cell surrounding">${q.surrounding[0].char}</div>
+                <div class="character-crossword-cell empty"></div>
+                <div class="character-crossword-cell surrounding">${q.surrounding[1].char}</div>
+                
+                <div class="character-crossword-cell empty"></div>
+                <div class="chinese-writing-grid" style="width: 80px; height: 80px;">
+                  <span style="font-size: 40px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord)}</span>
+                </div>
+                <div class="character-crossword-cell empty"></div>
+                
+                <div class="character-crossword-cell surrounding">${q.surrounding[2].char}</div>
+                <div class="character-crossword-cell empty"></div>
+                <div class="character-crossword-cell surrounding">${q.surrounding[3].char}</div>
+              </div>
+            </div>
+            <div style="text-align: center; font-size: 24px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
+              關鍵解答：${q.char}
+            </div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+              <div class="chinese-writing-grid">
+                <span style="font-size: 44px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord)}</span>
+              </div>
+              <div class="chinese-writing-grid">
+                <div class="zhuyin-text">${q.zhuyin}</div>
+              </div>
+            </div>
+            <div style="text-align: center; font-size: 28px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
+              提示詞：${q.clue}
+            </div>
+          </div>
+        `;
+      }
+    });
+    
+    grid.innerHTML = html;
+  }
+
+  renderAdminCharacterTestSubmissions(container, results) {
+    if (!results) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px 0;">目前尚無同學繳交</div>';
+      return;
+    }
+    
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
+    
+    const questions = (this.focusGame && this.focusGame.questions) || [];
+    const isCrossword = this.focusGame && this.focusGame.gameType === 'characterCrossword';
+    
+    let headerHtml = '';
+    if (isCrossword) {
+      const correctAnswersText = questions.map(q => q.char).join(' ');
+      headerHtml = `
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; line-height: 1.8;">
+          標準答案：${this.escapeHtml(correctAnswersText)}
+        </div>
+      `;
+    } else {
+      const correctAnswersLinks = questions.map(q => {
+        // 使用題庫定義的搜尋字詞，若無則 fallback 進行自動擷取
+        let searchWord = q.searchWord || q.char;
+        if (!q.searchWord && q.clue) {
+          let filled = q.clue;
+          const blanks = [/（\s*）/g, /（\u3000*）/g, /（）/g, /\(\s*\)/g, /\(\)/g];
+          blanks.forEach(regex => {
+            filled = filled.replace(regex, q.char);
+          });
+          const parts = filled.split(/[、，,；;]/);
+          if (parts.length > 0 && parts[0].trim()) {
+            searchWord = parts[0].trim();
+          }
+        }
+        return `<a href="https://www.google.com/search?q=${encodeURIComponent(searchWord)}" target="_blank" style="color: var(--accent-color, #007aff); text-decoration: underline; font-weight: bold; font-size: 20px; margin: 0 4px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;" title="點擊在 Google 搜尋：${this.escapeHtml(searchWord)}">${this.escapeHtml(q.char)}</a>`;
+      }).join(' ');
+      
+      headerHtml = `
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; line-height: 1.8;">
+          💡 標準答案 (點選字可進行 Google 詞彙搜尋)：${correctAnswersLinks}<br>
+          🎨 標色說明：🟢 綠色代表與標準答案相同；🔴 紅色代表與標準答案不同，方便您快速核對。
+        </div>
+      `;
+    }
+    
+    container.innerHTML = headerHtml + sorted.map((res, index) => {
+      const answers = res.answers || ['', '', ''];
+      const status = res.status || 'pending';
+      
+      let statusBadge = '';
+      if (status === 'correct') {
+        statusBadge = '<span style="color: #28a745; font-weight: bold; font-size: 12px;">✔️ 答對</span>';
+      } else if (status === 'incorrect') {
+        statusBadge = '<span style="color: #dc3545; font-weight: bold; font-size: 12px;">❌ 答錯</span>';
+      } else {
+        statusBadge = '<span style="color: #ff9500; font-weight: bold; font-size: 12px;">⏳ 待審查</span>';
+      }
+      
+      const answerDisplay = answers.map((ans, idx) => {
+        const correct = questions[idx] && questions[idx].char;
+        const color = ans === correct ? '#28a745' : '#dc3545';
+        return `<span style="color: ${color}; font-weight: bold; font-size: 15px; margin: 0 4px; padding: 2px 6px; border: 1px solid ${color}; border-radius: 4px; background: #fff8f8; font-family: 'DFKai-SB', serif;">${this.escapeHtml(ans)}</span>`;
+      }).join('');
+      
+      const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次）` : '';
+      return `
+        <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 8px; box-sizing: border-box;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">${this.escapeHtml(res.name)}</span>
+              ${statusBadge}
+            </div>
+            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">⏱️ ${res.timeSpent.toFixed(2)} 秒${helpNote}</span>
+          </div>
+          
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+            <div style="display: flex; align-items: center;">
+              <span style="font-size: 13px; color: var(--text-secondary); margin-right: 6px;">回答：</span>
+              ${answerDisplay}
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button onclick="window.app.judgeCharacterTest('${res.uid}', 'correct')" style="background: #28a745; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">✔️ 答對</button>
+              <button onclick="window.app.judgeCharacterTest('${res.uid}', 'incorrect')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">❌ 答錯</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderStudentCharacterTestLeaderboard(container, results) {
+    if (!results) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px 0;">目前尚無同學繳交</div>';
+      return;
+    }
+    
+    const sorted = Object.keys(results).map(uid => ({
+      uid,
+      ...results[uid]
+    })).sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
+    
+    container.innerHTML = sorted.map((res, index) => {
+      const status = res.status || 'pending';
+      let statusIcon = '⏳ 待評分';
+      let color = 'var(--text-secondary)';
+      if (status === 'correct') {
+        statusIcon = '🥇 全部答對';
+        color = '#28a745';
+      } else if (status === 'incorrect') {
+        statusIcon = '❌ 答錯了';
+        color = '#dc3545';
+      }
+      
+      const helpNote = res.helpCount ? `，提示 ${res.helpCount} 次` : '';
+      
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">#${index + 1}</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
+          </div>
+          <span style="color: ${color}; font-weight: bold; font-size: 14px;">${statusIcon} (${res.timeSpent.toFixed(2)} 秒${helpNote})</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  judgeCharacterTest(uid, status) {
+    db.ref(`quiz/focusGame/results/${uid}/status`).set(status)
+      .then(() => {
+        this.showNotification('成功', '評分已更新！');
+      });
+  }
+
+  initFireworkCanvas() {
+    const canvas = document.getElementById('focusFireworkCanvas');
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  triggerFireworkEffect() {
+    const canvas = document.getElementById('focusFireworkCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    this.fireworkParticles = [];
+    
+    if (this.fireworkAnimationId) {
+      cancelAnimationFrame(this.fireworkAnimationId);
+    }
+
+    const colors = ['#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55'];
+
+    // 粒子類別
+    const self = this;
+    class Particle {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 3;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.015 + 0.015;
+        this.gravity = 0.15;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity;
+        this.alpha -= this.decay;
+      }
+      draw(c) {
+        c.save();
+        c.globalAlpha = this.alpha;
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, 4, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    const spawnFirework = () => {
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * (canvas.height * 0.4) + canvas.height * 0.2;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for (let i = 0; i < 60; i++) {
+        self.fireworkParticles.push(new Particle(x, y, color));
+      }
+    };
+
+    for (let i = 0; i < 5; i++) {
+      setTimeout(spawnFirework, i * 400);
+    }
+
+    const loop = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      for (let i = self.fireworkParticles.length - 1; i >= 0; i--) {
+        const p = self.fireworkParticles[i];
+        p.update();
+        if (p.alpha <= 0) {
+          self.fireworkParticles.splice(i, 1);
+        } else {
+          p.draw(ctx);
+        }
+      }
+
+      if (self.focusGame && (self.focusGame.status === 'playing' || self.focusGame.status === 'ended')) {
+        if (Math.random() < 0.02 && self.fireworkParticles.length < 200) {
+          spawnFirework();
+        }
+      }
+
+      if (self.fireworkParticles.length > 0 || (self.focusGame && (self.focusGame.status === 'playing' || self.focusGame.status === 'ended'))) {
+        self.fireworkAnimationId = requestAnimationFrame(loop);
+      }
+    };
+
+    loop();
+  }
+
+  // ===== 抽人轉盤功能 =====
+  initLuckyWheel() {
+    this.wheelNames = [];
+    this.wheelAngle = 0;
+    this.wheelSpinning = false;
+    this.wheelRemoveWinner = false;
+    this.wheelSoundStyle = 0; // 預設音效樣式 index
+    this.soundEffects = new WheelSoundEffects();
+    
+    // 監聽轉盤名單 (教師每次輸入後才同步)
+    db.ref('quiz/luckyWheel/names').on('value', (snapshot) => {
+      const val = snapshot.val();
+      // 預設空白，等老師自行匯入
+      const namesStr = (val !== null && val !== '') ? val : '';
+      
+      this.wheelNames = namesStr.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+      
+      const txt = document.getElementById('wheelNamesInput');
+      if (txt && this.isAdmin) {
+        // 只在非聚焦狀態下同步（避免覆蓋正在輸入的內容）
+        if (document.activeElement !== txt) {
+          txt.value = namesStr;
+        }
+      }
+      
+      const lblCount = document.getElementById('lblWheelCount');
+      if (lblCount) {
+        lblCount.textContent = `${this.wheelNames.length} 人`;
+      }
+      
+      if (!this.wheelSpinning) {
+        this.wheelAngle = 0;
+        this.drawWheelLocal();
+      }
+    });
+    
+    // 監聽是否移除已抽中項目
+    db.ref('quiz/luckyWheel/removeWinner').on('value', (snapshot) => {
+      this.wheelRemoveWinner = snapshot.val() === true;
+      const chk = document.getElementById('chkRemoveWinner');
+      if (chk) chk.checked = this.wheelRemoveWinner;
+    });
+    
+    // 監聽色系樣式
+    db.ref('quiz/luckyWheel/colorTheme').on('value', (snapshot) => {
+      const v = snapshot.val();
+      this.wheelColorTheme = (v !== null) ? v : 0;
+      const sel = document.getElementById('selWheelColor');
+      if (sel) sel.value = this.wheelColorTheme;
+      if (!this.wheelSpinning) this.drawWheelLocal();
+    });
+
+    // 監聽音效樣式
+    db.ref('quiz/luckyWheel/soundStyle').on('value', (snapshot) => {
+      const v = snapshot.val();
+      this.wheelSoundStyle = (v !== null) ? v : 0;
+      const sel = document.getElementById('selWheelSound');
+      if (sel) sel.value = this.wheelSoundStyle;
+    });
+    
+    // 監聽旋轉事件
+    db.ref('quiz/luckyWheel/spinEvent').on('value', (snapshot) => {
+      const event = snapshot.val();
+      if (!event) return;
+      if (event.timestamp && Date.now() - event.timestamp < 10000) {
+        this.startWheelAnimation(event);
+      }
+    });
+    
+    // 綁定 Canvas 點選旋轉
+    const canvas = document.getElementById('wheelCanvas');
+    if (canvas) {
+      canvas.addEventListener('click', () => {
+        this.triggerWheelSpin();
+      });
+    }
+    
+    // 綁定名單輸入框：防抖動 0.8 秒後存回 Firebase
+    const txt = document.getElementById('wheelNamesInput');
+    if (txt) {
+      let debounceTimer = null;
+      txt.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          const newNames = txt.value.trim();
+          db.ref('quiz/luckyWheel/names').set(newNames);
+        }, 800);
+      });
+    }
+  }
+
+  updateWheelControlPanelVisibility() {
+    const ctrlPanel = document.getElementById('wheelControlPanel');
+    if (ctrlPanel) {
+      ctrlPanel.style.display = this.isAdmin ? 'block' : 'none';
+    }
+    
+    const txt = document.getElementById('wheelNamesInput');
+    if (txt && this.isAdmin && this.wheelNames) {
+      txt.value = this.wheelNames.join('\n');
+    }
+  }
+
+  shuffleWheelNames() {
+    if (!this.isAdmin) return;
+    const names = [...this.wheelNames];
+    for (let i = names.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [names[i], names[j]] = [names[j], names[i]];
+    }
+    db.ref('quiz/luckyWheel/names').set(names.join('\n'));
+    this.showNotification('成功', '名單已隨機打亂！');
+  }
+  
+  sortWheelNames() {
+    if (!this.isAdmin) return;
+    const names = [...this.wheelNames].sort((a, b) => a.localeCompare(b, 'zh-TW'));
+    db.ref('quiz/luckyWheel/names').set(names.join('\n'));
+    this.showNotification('成功', '名單已完成排序！');
+  }
+
+  toggleRemoveWinner(checked) {
+    if (this.isAdmin) {
+      db.ref('quiz/luckyWheel/removeWinner').set(checked);
+    }
+  }
+
+  changeWheelSound(styleIndex) {
+    if (!this.isAdmin) return;
+    this.wheelSoundStyle = styleIndex;
+    if (this.soundEffects) this.soundEffects.style = styleIndex;
+    db.ref('quiz/luckyWheel/soundStyle').set(styleIndex);
+    // 預覽：播放一個 Tick 聲讓老師聽聽看
+    if (this.soundEffects) {
+      this.soundEffects.init();
+      if (this.soundEffects.ctx && this.soundEffects.ctx.state === 'suspended') {
+        this.soundEffects.ctx.resume();
+      }
+      this.soundEffects.playTick();
+    }
+  }
+
+  changeWheelColor(themeIndex) {
+    if (!this.isAdmin) return;
+    this.wheelColorTheme = themeIndex;
+    db.ref('quiz/luckyWheel/colorTheme').set(themeIndex);
+    if (!this.wheelSpinning) this.drawWheelLocal();
+  }
+
+  triggerWheelSpin() {
+    if (!this.isAdmin) return;
+    if (this.wheelSpinning) return;
+    if (this.wheelNames.length === 0) {
+      this.showNotification('提示', '名單列表是空的！');
+      return;
+    }
+    
+    // 啟動或恢復 AudioContext，避開瀏覽器自動播放限制
+    if (this.soundEffects) {
+      this.soundEffects.init();
+      if (this.soundEffects.ctx && this.soundEffects.ctx.state === 'suspended') {
+        this.soundEffects.ctx.resume();
+      }
+    }
+    
+    const targetIndex = Math.floor(Math.random() * this.wheelNames.length);
+    const arcSize = (2 * Math.PI) / this.wheelNames.length;
+    
+    // 旋轉 8 圈以上，並將 winning index 指向角度 0 (對應右邊 pointer)
+    const targetEndAngle = 8 * 2 * Math.PI + (2 * Math.PI - (targetIndex + 0.5) * arcSize);
+    
+    db.ref('quiz/luckyWheel/spinEvent').set({
+      targetIndex: targetIndex,
+      startAngle: this.wheelAngle % (2 * Math.PI),
+      endAngle: targetEndAngle,
+      duration: 5000,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+  }
+
+  startWheelAnimation(event) {
+    if (this.wheelSpinning) return;
+    this.wheelSpinning = true;
+    
+    // 隱藏之前的得獎 Banner
+    const banner = document.getElementById('wheelWinnerDisplay');
+    if (banner) banner.style.display = 'none';
+    
+    const startTime = Date.now();
+    const duration = event.duration || 5000;
+    const startAngle = event.startAngle || 0;
+    const endAngle = event.endAngle || (10 * Math.PI);
+    
+    const canvas = document.getElementById('wheelCanvas');
+    if (!canvas) return;
+    
+    // 播放背景歡樂音樂與初始化
+    if (this.soundEffects) {
+      this.soundEffects.init();
+      if (this.soundEffects.ctx && this.soundEffects.ctx.state === 'suspended') {
+        this.soundEffects.ctx.resume();
+      }
+      this.soundEffects.style = this.wheelSoundStyle || 0;
+      this.soundEffects.startCheerfulMusic();
+    }
+    
+    let lastSectorIndex = -1;
+    const arcSize = (2 * Math.PI) / this.wheelNames.length;
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      
+      // 三次方減速 (Ease Out Cubic)
+      const ease = 1 - Math.pow(1 - progress, 3);
+      this.wheelAngle = startAngle + (endAngle - startAngle) * ease;
+      
+      this.drawWheelLocal();
+      
+      // 計算指針經過的扇區以播放 Tick 聲 (指標在右側 0 角度)
+      const currentSectorIndex = Math.floor(((2 * Math.PI - (this.wheelAngle % (2 * Math.PI))) % (2 * Math.PI)) / arcSize);
+      if (currentSectorIndex !== lastSectorIndex) {
+        if (this.soundEffects) {
+          this.soundEffects.playTick();
+        }
+        lastSectorIndex = currentSectorIndex;
+      }
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        this.wheelSpinning = false;
+        
+        // 停止音樂並播放獲勝號角
+        if (this.soundEffects) {
+          this.soundEffects.playWinFanfare();
+        }
+        
+        const winnerName = this.wheelNames[event.targetIndex];
+        
+        // 顯示中獎 Banner
+        if (banner) {
+          banner.style.display = 'block';
+          const lblWinner = document.getElementById('lblWheelWinner');
+          if (lblWinner) lblWinner.textContent = winnerName;
+        }
+        
+        // 寫入歷史紀錄
+        this.addWheelHistory(winnerName);
+        
+        // 如果開啟了「抽中自動移除名單」且當前是管理員，由管理員將資料回寫 Firebase
+        if (this.isAdmin && this.wheelRemoveWinner) {
+          const idx = this.wheelNames.indexOf(winnerName);
+          if (idx !== -1) {
+            this.wheelNames.splice(idx, 1);
+            db.ref('quiz/luckyWheel/names').set(this.wheelNames.join('\n'));
+          }
+        }
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  }
+
+  addWheelHistory(winnerName) {
+    const list = document.getElementById('wheelHistoryList');
+    if (!list) return;
+    
+    if (list.children.length === 1 && list.children[0].textContent.includes('尚無紀錄')) {
+      list.innerHTML = '';
+    }
+    
+    const li = document.createElement('li');
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    li.innerHTML = `
+      <span style="font-weight: bold; color: var(--text-primary);">${this.escapeHtml(winnerName)}</span>
+      <span style="color: var(--text-muted); font-size: 12px;">${time}</span>
+    `;
+    list.insertBefore(li, list.firstChild);
+  }
+
+  drawWheelLocal() {
+    const canvas = document.getElementById('wheelCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const size = canvas.width;
+    const center = size / 2;
+    const radius = center - 20;
+    
+    ctx.clearRect(0, 0, size, size);
+    
+    if (this.wheelNames.length === 0) {
+      ctx.beginPath();
+      ctx.arc(center, center, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = '#e5e5ea';
+      ctx.fill();
+      ctx.fillStyle = '#8e8e93';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('請輸入名單後開始使用', center, center);
+      return;
+    }
+    
+    const arcSize = (2 * Math.PI) / this.wheelNames.length;
+    const theme = this.wheelColorTheme || 0;
+    
+    // 7 種色系主題（依圖片色盤）
+    const colorThemes = [
+      // 0 馬卡龍 (Macaron)
+      ['#a7f3d0','#fde68a','#fef3c7','#c4b5fd','#bbf7d0','#fca5a5','#a5f3fc','#f9a8d4','#d9f99d','#ddd6fe','#fed7aa','#bfdbfe','#fecdd3','#e9d5ff','#99f6e4','#fef08a'],
+      // 1 遊樂場 (Playground)
+      ['#2563eb','#f97316','#f59e0b','#ef4444','#7c3aed','#0891b2','#16a34a','#db2777','#1d4ed8','#ea580c','#d97706','#dc2626','#6d28d9','#0e7490','#15803d','#be185d'],
+      // 2 冰巖 (Ice & Slate)
+      ['#0284c7','#0ea5e9','#38bdf8','#7dd3fc','#94a3b8','#64748b','#0369a1','#0c4a6e','#475569','#334155','#1e40af','#1d4ed8','#0e7490','#155e75','#1e3a5f','#0f3460'],
+      // 3 月光 (Moon)
+      ['#18181b','#3f3f46','#52525b','#71717a','#a1a1aa','#d4d4d8','#27272a','#404040','#525252','#737373','#a3a3a3','#d4d4d4','#1c1917','#292524','#44403c','#78716c'],
+      // 4 現代沉穩 (Modern Muted)
+      ['#0d9488','#14b8a6','#2dd4bf','#f0fdfa','#fce7f3','#f9a8d4','#0f766e','#0891b2','#a7f3d0','#fda4af','#fb7185','#e0f2fe','#99f6e4','#fecdd3','#67e8f9','#f472b6'],
+      // 5 棉花糖 (Cotton Candy)
+      ['#f9a8d4','#f0abfc','#c4b5fd','#93c5fd','#6ee7b7','#fca5a5','#f472b6','#e879f9','#a78bfa','#60a5fa','#34d399','#fb7185','#e91e8c','#d946ef','#8b5cf6','#3b82f6'],
+      // 6 薄荷檸檬 (Mint Lemonade)
+      ['#166534','#15803d','#16a34a','#4ade80','#86efac','#d9f99d','#a3e635','#facc15','#eab308','#ca8a04','#4ade80','#86efac','#bef264','#fef08a','#22c55e','#fde047'],
+    ];
+    const colors = colorThemes[theme] || colorThemes[0];
+    
+    // 依主題決定文字顏色
+    const useDarkText = [0, 4, 5].includes(theme);
+    const textColor = useDarkText ? '#111111' : '#ffffff';
+    const textShadowColor = useDarkText ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
+
+    // ── 繪製扇形 ──
+    for (let i = 0; i < this.wheelNames.length; i++) {
+      const angle = this.wheelAngle + i * arcSize;
+      
+      ctx.beginPath();
+      ctx.moveTo(center, center);
+      ctx.arc(center, center, radius, angle, angle + arcSize);
+      ctx.closePath();
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.stroke();
+    }
+
+    // ── 繪製文字（靠外緣對齊，字體填滿至外側）──
+    const innerR = 56; // 中心按鈕半徑（文字不超過此處）
+    const outerR = radius - 8; // 文字最外側（靠近外緣，留 8px 邊距）
+    const radialLen = outerR - innerR; // 可用的徑向長度
+
+    for (let i = 0; i < this.wheelNames.length; i++) {
+      const angle = this.wheelAngle + i * arcSize;
+      const midAngle = angle + arcSize / 2;
+
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(midAngle);
+
+      const name = this.wheelNames[i];
+      const displayName = name.length > 14 ? name.substring(0, 13) + '…' : name;
+
+      // 弧寬：用外緣附近（outerR * 0.9 處）計算可用弦長
+      const arcChordOuter = 2 * (outerR * 0.85) * Math.sin(arcSize / 2) * 0.92;
+
+      // 字體：由弧寬/字數 和 徑向長/字數 取小值，最大 44px，最小 11px
+      let fontSize = Math.floor(Math.min(
+        arcChordOuter / displayName.length * 3.0, // 弧寬填滿
+        radialLen / displayName.length * 1.15,    // 徑向填滿
+        44
+      ));
+      fontSize = Math.max(fontSize, 11);
+
+      ctx.fillStyle = textColor;
+      ctx.shadowColor = textShadowColor;
+      ctx.shadowBlur = 5;
+      ctx.font = `bold ${fontSize}px sans-serif`;
+
+      // 靠外緣右對齊：文字從外緣往內生長，最後一個字緊貼外側
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(displayName, outerR, 0);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+    
+    // ── 中心圓底白圈 ──
+    ctx.beginPath();
+    ctx.arc(center, center, 56, 0, 2 * Math.PI);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.stroke();
+    
+    // ── 中心紅色按鈕 ──
+    ctx.beginPath();
+    ctx.arc(center, center, 46, 0, 2 * Math.PI);
+    const grad = ctx.createRadialGradient(center - 10, center - 10, 4, center, center, 46);
+    grad.addColorStop(0, '#ff6b6b');
+    grad.addColorStop(1, '#c0392b');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 17px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('轉動', center, center);
+
+    // ── 指針箭頭（Canvas 繪製，重疊在轉盤右側，尖端朝左指向轉盤）──
+    const pLen  = 26;  // 指針長度（縮小 1/2）
+    const pHalf = 14;  // 指針半寬（縮小 1/2）
+
+    // 底部在右側邊緣，尖端插入轉盤
+    const pBaseX = size;               // 底部 X（右側）
+    const pTipX  = size - pLen;        // 尖端 X（朝左，插入轉盤 pLen px）
+    const pTipY  = center;             // 垂直中心
+
+    // 依主題決定指針顏色（使用高對比、醒目的顏色）
+    const pointerFills   = ['#e11d48','#f59e0b','#e11d48','#9ca3af','#e11d48','#e11d48','#16a34a'];
+    const pointerStrokes = ['#ffffff','#1e3a8a','#ffffff','#111827','#ffffff','#ffffff','#ffffff'];
+    const pFill   = pointerFills[theme]   || '#e11d48';
+    const pStroke = pointerStrokes[theme] || '#ffffff';
+
+    // 繪製三角形（◄）
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = -2;
+    ctx.shadowOffsetY = 0;
+    ctx.beginPath();
+    ctx.moveTo(pBaseX, pTipY - pHalf); // 右上
+    ctx.lineTo(pTipX,  pTipY);          // 尖端（左）
+    ctx.lineTo(pBaseX, pTipY + pHalf); // 右下
+    ctx.closePath();
+    ctx.fillStyle = pFill;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = pStroke;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  initFocusAudio() {
+    try {
+      if (!this.focusAudioCtx) {
+        this.focusAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (this.focusAudioCtx && this.focusAudioCtx.state === 'suspended') {
+        this.focusAudioCtx.resume();
+      }
+    } catch (e) {}
+  }
+
+  playFocusSound(type, val) {
+    try {
+      this.initFocusAudio();
+      const ctx = this.focusAudioCtx;
+      if (!ctx) return;
+      
+      const t = ctx.currentTime;
+      
+      if (type === 'countdownTick') {
+        if (val !== undefined && val <= 3 && val > 0) {
+          // 賽車預備倒數最後 3, 2, 1 秒短逼聲 (440Hz 街機預備嗶聲)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(440, t);
+          gain.gain.setValueAtTime(0.15, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.12);
+        } else {
+          // 時鐘滴答聲 (Clock Tick-Tock): 奇數剩餘秒數為高音 Tick (1200Hz)，偶數剩餘秒數為低音 Tock (850Hz)
+          const isTick = (val !== undefined && val % 2 !== 0);
+          const startFreq = isTick ? 1200 : 850;
+          const endFreq   = isTick ? 400 : 250;
+          
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(startFreq, t);
+          osc.frequency.exponentialRampToValueAtTime(endFreq, t + 0.015);
+          
+          gain.gain.setValueAtTime(0.18, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.035);
+        }
+      } else if (type === 'start') {
+        // 賽車預備開跑音效 (Arcade Race Countdown GO! 響亮長嗶音 BEEEEEP! 880Hz -> 1046.5Hz)
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc1.type = 'square';
+        osc1.frequency.setValueAtTime(880, t);
+        osc1.frequency.setValueAtTime(1046.50, t + 0.08);
+
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(1760, t);
+        osc2.frequency.setValueAtTime(2093, t + 0.08);
+
+        gain.gain.setValueAtTime(0.22, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(t);
+        osc2.start(t);
+        osc1.stop(t + 0.6);
+        osc2.stop(t + 0.6);
+      } else if (type === 'end') {
+        // 遊戲結束挑戰完成音效 (歡慶勝利三和弦 C5->E5->G5->C6 響亮和弦與長餘音)
+        const chord = [
+          { f: 523.25, delay: 0.00, dur: 0.6, gain: 0.22 }, // C5
+          { f: 659.25, delay: 0.10, dur: 0.6, gain: 0.22 }, // E5
+          { f: 783.99, delay: 0.20, dur: 0.7, gain: 0.25 }, // G5
+          { f: 1046.50, delay: 0.30, dur: 1.0, gain: 0.30 }  // C6 (高音長響)
+        ];
+
+        chord.forEach(item => {
+          const noteTime = t + item.delay;
+          const osc = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const g = ctx.createGain();
+          
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(item.f, noteTime);
+          
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(item.f * 2, noteTime);
+          
+          g.gain.setValueAtTime(item.gain, noteTime);
+          g.gain.exponentialRampToValueAtTime(0.001, noteTime + item.dur);
+          
+          osc.connect(g);
+          osc2.connect(g);
+          g.connect(ctx.destination);
+          
+          osc.start(noteTime);
+          osc2.start(noteTime);
+          osc.stop(noteTime + item.dur);
+          osc2.stop(noteTime + item.dur);
+        });
+      } else if (type === 'flip') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(350, t);
+        osc.frequency.exponentialRampToValueAtTime(700, t + 0.06);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.06);
+      } else if (type === 'match') {
+        const notes = [523.25, 659.25, 783.99];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const noteT = t + idx * 0.08;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, noteT);
+          gain.gain.setValueAtTime(0.25, noteT);
+          gain.gain.exponentialRampToValueAtTime(0.001, noteT + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(noteT);
+          osc.stop(noteT + 0.2);
+        });
+      } else if (type === 'mismatch') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, t);
+        osc.frequency.linearRampToValueAtTime(180, t + 0.15);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.stop(t + 0.15);
+      }
+    } catch (e) {
+      console.warn("Focus sound play failed:", e);
+    }
+  }
+
+}
+
+// ===== 轉盤音效合成器 (Web Audio API) =====
+// soundStyle: 0=歡樂鋼琴, 1=復古電玩, 2=爵士鼓點, 3=民族打擊, 4=太空電音
+class WheelSoundEffects {
+  constructor() {
+    this.ctx = null;
+    this.musicInterval = null;
+    this.style = 0;
+  }
+  
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+
+  setStyle(s) { this.style = s; }
+  
+  // ── Tick 聲：依樣式調整音色 ──
+  playTick() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      
+      const configs = [
+        { type: 'triangle', f0: 600, f1: 80, dur: 0.05 },   // 歡樂鋼琴
+        { type: 'square',   f0: 400, f1: 200, dur: 0.04 },   // 復古電玩
+        { type: 'sine',     f0: 300, f1: 150, dur: 0.06 },   // 爵士鼓點
+        { type: 'triangle', f0: 220, f1: 110, dur: 0.08 },   // 民族打擊
+        { type: 'sawtooth', f0: 800, f1: 400, dur: 0.03 },   // 太空電音
+      ];
+      const c = configs[this.style] || configs[0];
+      osc.type = c.type;
+      osc.frequency.setValueAtTime(c.f0, t);
+      osc.frequency.exponentialRampToValueAtTime(c.f1, t + c.dur);
+      gain.gain.setValueAtTime(0.06, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + c.dur);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(); osc.stop(t + c.dur);
+    } catch(e) {}
+  }
+
+  // ── 旋轉背景音樂 ──
+  startCheerfulMusic() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      this.stopMusic();
+
+      // 5 種旋律
+      const melodies = [
+        // 0 歡樂鋼琴 - C大調歡快
+        { notes: [523.25, 659.25, 783.99, 1046.5, 783.99, 659.25, 523.25, 392.00], type: 'sine', interval: 140 },
+        // 1 復古電玩 - 8bit 上行音階
+        { notes: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25], type: 'square', interval: 100 },
+        // 2 爵士鼓點 - 切分音型
+        { notes: [440.00, 493.88, 440.00, 392.00, 440.00, 523.25, 440.00, 392.00], type: 'sine', interval: 160 },
+        // 3 民族打擊 - 五聲音階
+        { notes: [261.63, 293.66, 349.23, 392.00, 523.25, 392.00, 349.23, 293.66], type: 'triangle', interval: 180 },
+        // 4 太空電音 - 高頻漸進
+        { notes: [880.00, 1046.5, 1174.66, 1318.5, 1046.5, 880.00, 783.99, 880.00], type: 'sawtooth', interval: 120 },
+      ];
+
+      const m = melodies[this.style] || melodies[0];
+      let idx = 0;
+
+      const playNote = () => {
+        try {
+          if (!this.ctx || this.ctx.state === 'suspended') return;
+          const t = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const dur = m.interval / 1000 * 0.85;
+          osc.type = m.type;
+          osc.frequency.setValueAtTime(m.notes[idx % m.notes.length], t);
+          gain.gain.setValueAtTime(0.07, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(); osc.stop(t + dur);
+          idx++;
+        } catch(e) {}
+      };
+      playNote();
+      this.musicInterval = setInterval(playNote, m.interval);
+    } catch(e) {}
+  }
+  
+  stopMusic() {
+    if (this.musicInterval) {
+      clearInterval(this.musicInterval);
+      this.musicInterval = null;
+    }
+  }
+  
+  // ── 得獎號角 ──
+  playWinFanfare() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      this.stopMusic();
+      const now = this.ctx.currentTime;
+
+      // 5 種慶祝音效
+      const fanfares = [
+        // 0 歡樂鋼琴 - 大三和弦上行
+        () => {
+          [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+            o.type = 'sine'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.10, now + i*0.10);
+            g.gain.exponentialRampToValueAtTime(0.001, now + i*0.10 + 1.2);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(now + i*0.10); o.stop(now + i*0.10 + 1.2);
+          });
+        },
+        // 1 復古電玩 - 8bit 勝利音效
+        () => {
+          [[392,0],[523,0.1],[659,0.2],[784,0.3],[1047,0.4],[784,0.6]].forEach(([f,t]) => {
+            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+            o.type = 'square'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.07, now+t); g.gain.exponentialRampToValueAtTime(0.001, now+t+0.18);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(now+t); o.stop(now+t+0.18);
+          });
+        },
+        // 2 爵士鼓點 - 鼓組擊打
+        () => {
+          [0, 0.15, 0.3, 0.45, 0.6].forEach((t) => {
+            const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.1, this.ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.3));
+            const src = this.ctx.createBufferSource(), g = this.ctx.createGain();
+            src.buffer = buf; g.gain.value = 0.4;
+            src.connect(g); g.connect(this.ctx.destination);
+            src.start(now + t);
+          });
+        },
+        // 3 民族打擊 - 五聲音階琶音
+        () => {
+          [261.63,329.63,392.00,523.25,659.25,523.25,392.00,659.25].forEach((f,i) => {
+            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+            o.type = 'triangle'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.09, now+i*0.08); g.gain.exponentialRampToValueAtTime(0.001, now+i*0.08+0.25);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(now+i*0.08); o.stop(now+i*0.08+0.25);
+          });
+        },
+        // 4 太空電音 - 合成器掃頻
+        () => {
+          const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+          o.type = 'sawtooth';
+          o.frequency.setValueAtTime(200, now);
+          o.frequency.exponentialRampToValueAtTime(1600, now + 0.8);
+          o.frequency.exponentialRampToValueAtTime(800, now + 1.2);
+          g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+          const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1800;
+          o.connect(f); f.connect(g); g.connect(this.ctx.destination);
+          o.start(now); o.stop(now + 1.4);
+        }
+      ];
+      (fanfares[this.style] || fanfares[0])();
+    } catch(e) {}
+  }
+}
+
+// 開始測驗
+function startQuiz() {
+  const question = document.getElementById('quizQuestion').value.trim();
+  const optionFields = document.querySelectorAll('.option-field');
+  const options = Array.from(optionFields).map(input => input.value.trim()).filter(v => v);
+  const quizType = document.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
+  
+  if (!question) { window.app.showNotification('提示', '請填寫題目'); return; }
+  if (options.length < 2) { window.app.showNotification('提示', '請填寫至少兩個選項'); return; }
+  
+  if (window.quiz) {
+    window.quiz.startQuiz(question, options, quizType);
+    document.getElementById('quizQuestion').value = '';
+    optionFields.forEach(input => input.value = '');
+  }
+}
+
+// 載入預設選項
+function loadPreset(type) {
+  const container = document.getElementById('optionsContainer');
+  const presets = {
+    yesno: ['是', '否'],
+    truefalse: ['正確', '錯誤'],
+    abcd: ['A', 'B', 'C', 'D'],
+    '1234': ['1', '2', '3', '4'],
+    star: ['⭐ 1 星', '⭐⭐ 2 星', '⭐⭐⭐ 3 星', '⭐⭐⭐⭐ 4 星', '⭐⭐⭐⭐⭐ 5 星'],
+    emoji: ['😍 非常滿意', '👍 滿意', '😐 普通', '👎 不滿意', '😡 非常不滿意']
+  };
+  
+  const options = presets[type];
+  if (options) {
+    container.innerHTML = options.map(opt => `
+      <div class="option-input">
+        <input type="text" class="option-field" value="${opt}" placeholder="選項">
+        <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+      </div>
+    `).join('');
+  }
+}
+
+// 題目格式 Modal 控制
+function openQuizFormatModal() {
+  const modal = document.getElementById('quizFormatModal');
+  if (modal) modal.classList.add('active');
+}
+
+function closeQuizFormatModal() {
+  const modal = document.getElementById('quizFormatModal');
+  if (modal) modal.classList.remove('active');
+}
+
+// 新增選項
+function addOption() {
+  const container = document.getElementById('optionsContainer');
+  const count = container.querySelectorAll('.option-input').length + 1;
+  
+  const div = document.createElement('div');
+  div.className = 'option-input';
+  div.innerHTML = `
+    <input type="text" class="option-field" placeholder="選項 ${count}">
+    <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+// 移除選項
+function removeOption(btn) {
+  const container = document.getElementById('optionsContainer');
+  if (container.querySelectorAll('.option-input').length > 2) {
+    btn.parentElement.remove();
+  } else {
+    window.app.showNotification('提示', '至少需要兩個選項');
+  }
+}
+
+// 結束測驗
+function endQuiz() {
+  if (window.quiz) window.quiz.endQuiz();
+}
+
+// 重設功能
+function confirmReset() {
+  window.app.showConfirmModal(
+    '🔄',
+    '確定要重設嗎？',
+    '這將清除所有提問、測驗、圖片及互動白板內容。',
+    () => {
+      resetAll();
+    }
+  );
+}
+
+function closeCustomConfirmModal() {
+  window.app.closeConfirmModal();
+}
+
+function closeNotifyModal() {
+  document.getElementById('notifyModal').classList.remove('active');
+}
+
+function resetAll() {
+  // 清除 tldraw 白板畫稿與本機快取
+  if (window.app && typeof window.app.clearTldrawWhiteboard === 'function') {
+    window.app.clearTldrawWhiteboard();
+  }
+
+  const promises = [
+    db.ref('questions').remove(),
+    db.ref('quiz/questionFolders').remove(),
+    db.ref('quiz/current').remove(),
+    db.ref('quiz/answers').remove(),
+    db.ref('images').remove(),
+    db.ref('quiz/imageFolders').remove(),
+    db.ref('videos').remove(),
+    db.ref('quiz/videoFolders').remove(),
+    db.ref('quiz/broadcastVideo').remove(),
+    db.ref('teacherShares').remove(),
+    db.ref('quiz/teacherShareFolders').remove(),
+    db.ref('quiz/luckyWheel').remove(),
+    db.ref('whiteboard').remove(),
+    db.ref('whiteboard_room').remove()
+  ];
+
+  Promise.all(promises).then(() => {
+    if (window.app) window.app.showNotification('成功', '所有資料已成功重設！');
+    setTimeout(() => {
+      location.reload();
+    }, 500);
+  }).catch(err => {
+    console.error("Reset failed:", err);
+    if (window.app) window.app.showNotification('錯誤', '重設失敗: ' + err.message);
+    else alert('重設失敗: ' + err.message);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    window.app = new App();
+    window.app.adminEditShare = adminEditShare;
+    window.app.adminCancelEditShare = adminCancelEditShare;
+    window.app.adminSaveShare = adminSaveShare;
+    window.app.updateFocusGameAdminOptions();
+  } catch (err) {
+    console.error("CRITICAL RUNTIME ERROR:", err);
+    alert("載入錯誤: " + err.message + "\n" + err.stack);
+  }
+});
+
+// 管理員密碼驗證
+function closeAdminPasswordModal() {
+  window.app.closeAdminPasswordModal();
+}
+
+function submitAdminPassword() {
+  const inputEl = document.getElementById('adminPasswordInput');
+  const pwd = inputEl ? inputEl.value : '';
+  if (pwd === '1234') {
+    window.app.isAdmin = true;
+    window.app.closeAdminPasswordModal(); // 關閉彈窗
+    window.app.switchToTab('panel-admin'); // 自動進入「管理後台」分頁
+    window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
+    window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
+    window.app.updateFocusGameAdminOptions();
+    window.app.showNotification('成功', '已進入管理員模式！');
+    if (window.app.timerState) {
+      window.app.updateAdminTimerUI(window.app.timerState);
+    }
+    window.app.checkSecurityRuleExpiry();
+  } else {
+    window.app.showNotification('錯誤', '密碼不正確！');
+  }
+}
+
+function logoutAdmin() {
+  window.app.isAdmin = false;
+  window.app.closeAdminPasswordModal();
+  window.app.switchToTab('panel-questions'); // 登出後切換回到「提問區分頁」
+  window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
+  window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
+  window.app.showNotification('提示', '已登出管理員模式');
+  
+  const volBtn = document.getElementById('timerVolumeBtn');
+  if (volBtn) volBtn.style.display = 'none';
+  window.app.playAudio('none');
+}
+
+// ===== 管理員編輯提問 =====
+function adminEditQuestion(id) {
+  const textDiv  = document.getElementById('q-text-' + id);
+  const editDiv  = document.getElementById('q-edit-' + id);
+  if (!textDiv || !editDiv) return;
+  textDiv.style.display = 'none';
+  editDiv.style.display  = 'block';
+  const ta = document.getElementById('q-textarea-' + id);
+  if (ta) ta.focus();
+}
+window.app && (window.app.adminEditQuestion = adminEditQuestion);
+
+function adminCancelEditQuestion(id) {
+  const textDiv = document.getElementById('q-text-' + id);
+  const editDiv = document.getElementById('q-edit-' + id);
+  if (textDiv) textDiv.style.display = '';
+  if (editDiv) editDiv.style.display = 'none';
+}
+window.app && (window.app.adminCancelEditQuestion = adminCancelEditQuestion);
+
+function adminSaveQuestion(id) {
+  const ta = document.getElementById('q-textarea-' + id);
+  if (!ta) return;
+  const newText = ta.value.trim();
+  if (!newText) { window.app.showNotification('提示', '問題文字不能為空'); return; }
+  db.ref('questions').child(id).update({ text: newText })
+    .then(() => {
+      window.app.showNotification('成功', '提問已更新！');
+      adminCancelEditQuestion(id);
+    })
+    .catch(err => window.app.showNotification('錯誤', '更新失敗: ' + err.message));
+}
+window.app && (window.app.adminSaveQuestion = adminSaveQuestion);
+
+// ===== 管理員編輯影片網址 =====
+function adminEditVideo(id) {
+  const editDiv = document.getElementById('v-edit-' + id);
+  if (!editDiv) return;
+  editDiv.style.display = editDiv.style.display === 'none' ? 'block' : 'none';
+}
+window.app && (window.app.adminEditVideo = adminEditVideo);
+
+function adminCancelEditVideo(id) {
+  const editDiv = document.getElementById('v-edit-' + id);
+  if (editDiv) editDiv.style.display = 'none';
+}
+window.app && (window.app.adminCancelEditVideo = adminCancelEditVideo);
+
+function adminSaveVideo(id) {
+  const urlInput  = document.getElementById('v-url-'  + id);
+  const nameInput = document.getElementById('v-name-' + id);
+  if (!urlInput || !nameInput) return;
+  const newUrl  = urlInput.value.trim();
+  const newName = nameInput.value.trim();
+  if (!newUrl)  { window.app.showNotification('提示', '影片網址不能為空'); return; }
+  if (!newName) { window.app.showNotification('提示', '顯示標題不能為空'); return; }
+  // 重新判斷是否為 YouTube 以更新 youtubeId
+  const ytMatch = newUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  const ytId = ytMatch ? ytMatch[1] : null;
+  const updates = { url: newUrl, filename: newName, youtubeId: ytId || null };
+  if (ytId) updates.type = 'youtube';
+  db.ref('videos').child(id).update(updates)
+    .then(() => {
+      window.app.showNotification('成功', '影片資訊已更新！');
+      adminCancelEditVideo(id);
+    })
+    .catch(err => window.app.showNotification('錯誤', '更新失敗: ' + err.message));
+}
+window.app && (window.app.adminSaveVideo = adminSaveVideo);
+
+// 管理員資料刪除操作
+function deleteQuestion(id) {
+  window.app.showConfirmModal(
+    '🗑️',
+    '確定要刪除此問題嗎？',
+    '此動作將永久刪除該提問，且無法復原。',
+    () => {
+      db.ref('questions').child(id).remove()
+        .then(() => window.app.showNotification('成功', '已刪除問題！'))
+        .catch(err => window.app.showNotification('錯誤', '刪除失敗: ' + err.message));
+    }
+  );
+}
+
+// 管理員刪除圖片操作
+function deleteImage(id) {
+  window.app.showConfirmModal(
+    '🖼️',
+    '確定要刪除此圖片嗎？',
+    '此動作將永久刪除該圖片，且無法復原。',
+    () => {
+      db.ref('images').child(id).remove()
+        .then(() => window.app.showNotification('成功', '已刪除圖片！'))
+        .catch(err => window.app.showNotification('錯誤', '刪除失敗: ' + err.message));
+    }
+  );
+}
+
+// 管理員刪除影片操作
+function deleteVideo(id) {
+  window.app.showConfirmModal(
+    '🎥',
+    '確定要刪除此影片嗎？',
+    '此動作將永久刪除該影片，且無法復原。',
+    () => {
+      db.ref('videos').child(id).remove()
+        .then(() => window.app.showNotification('成功', '已刪除影片！'))
+        .catch(err => window.app.showNotification('錯誤', '刪除失敗: ' + err.message));
+    }
+  );
+}
+
+
+
+function copyText(elementId) {
+  const copyText = document.getElementById(elementId);
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); // 適用行動端
+
+  try {
+    navigator.clipboard.writeText(copyText.value);
+    window.app.showNotification('成功', '連結已成功複製！');
+  } catch (err) {
+    // 備用方案
+    document.execCommand('copy');
+    window.app.showNotification('成功', '連結已複製！');
+  }
+}
+
+// 倒數計時全域呼叫介面
+function adminStartTimer() {
+  if (window.app) window.app.adminStartTimer();
+}
+
+function adminPauseTimer() {
+  if (window.app) window.app.adminPauseTimer();
+}
+
+function adminResumeTimer() {
+  if (window.app) window.app.adminResumeTimer();
+}
+
+function adminResetTimer() {
+  if (window.app) window.app.adminResetTimer();
+}
+
+function playClassBell() {
+  if (window.app) window.app.toggleClassBell();
+}
+
+// 課堂記錄備份全域呼叫介面
+function adminExportRecord() {
+  if (window.app) window.app.adminExportRecord();
+}
+
+function triggerImportInput() {
+  const input = document.getElementById('importRecordInput');
+  if (input) input.click();
+}
+
+function adminImportRecord(event) {
+  if (window.app) window.app.adminImportRecord(event);
+}
+
+// 全域群組與心情回饋呼叫介面
+function reactToQuestion(id, type) {
+  if (window.app) window.app.reactToQuestion(id, type);
+}
+
+function reactToImage(id, type) {
+  if (window.app) window.app.reactToImage(id, type);
+}
+
+function assignQuestionFolder(questionId, folderId) {
+  if (window.app) window.app.assignQuestionFolder(questionId, folderId);
+}
+
+function assignImageFolder(imageId, folderId) {
+  if (window.app) window.app.assignImageFolder(imageId, folderId);
+}
+
+function reactToVideo(id, type) {
+  if (window.app) window.app.reactToVideo(id, type);
+}
+
+function assignVideoFolder(videoId, folderId) {
+  if (window.app) window.app.assignVideoFolder(videoId, folderId);
+}
+
+// 全域資料夾位置調整呼叫介面
+function moveFolder(type, folderId, direction) {
+  if (!window.app) return;
+  let folders = [];
+  let dbPath = '';
+  
+  if (type === 'questions') {
+    folders = [...window.app.questionFolders];
+    dbPath = 'quiz/questionFolders';
+  } else if (type === 'images') {
+    folders = [...window.app.imageFolders];
+    dbPath = 'quiz/imageFolders';
+  } else if (type === 'videos') {
+    folders = [...window.app.videoFolders];
+    dbPath = 'quiz/videoFolders';
+  } else if (type === 'shares') {
+    folders = [...window.app.shareFolders];
+    dbPath = 'quiz/teacherShareFolders';
+  }
+  
+  if (folders.length <= 1) return;
+  const idx = folders.findIndex(f => f.id === folderId);
+  if (idx === -1) return;
+  
+  let targetIdx = idx;
+  if (direction === 'up' && idx > 0) {
+    targetIdx = idx - 1;
+  } else if (direction === 'down' && idx < folders.length - 1) {
+    targetIdx = idx + 1;
+  }
+  
+  if (targetIdx === idx) return; // 無需移動
+  
+  // 交換位置
+  const temp = folders[idx];
+  folders[idx] = folders[targetIdx];
+  folders[targetIdx] = temp;
+  
+  // 重新計算 sortOrder 並寫入 Firebase
+  const updates = {};
+  folders.forEach((f, i) => {
+    updates[`${f.id}/sortOrder`] = i;
+  });
+  
+  db.ref(dbPath).update(updates)
+    .then(() => {
+      window.app.showNotification('成功', '排序已調整！');
+    })
+    .catch(err => {
+      window.app.showNotification('錯誤', '調整排序失敗: ' + err.message);
+    });
+}
+
+// 管理員編輯教師分享
+function adminEditShare(id) {
+  const editDiv = document.getElementById('share-edit-' + id);
+  if (editDiv) {
+    if (window.app) {
+      const item = window.app.shares.find(s => s.id === id);
+      if (item) {
+        const titleInput = document.getElementById('share-edit-title-' + id);
+        const contentInput = document.getElementById('share-edit-content-' + id);
+        if (contentInput) contentInput.value = item.content;
+        if (titleInput && item.type === 'link') titleInput.value = item.title || '';
+      }
+    }
+    editDiv.style.display = editDiv.style.display === 'none' ? 'block' : 'none';
+  }
+}
+window.app && (window.app.adminEditShare = adminEditShare);
+
+function adminCancelEditShare(id) {
+  const editDiv = document.getElementById('share-edit-' + id);
+  if (editDiv) editDiv.style.display = 'none';
+}
+window.app && (window.app.adminCancelEditShare = adminCancelEditShare);
+
+function adminSaveShare(id) {
+  try {
+    if (!window.app) {
+      alert("系統錯誤: window.app 尚未初始化");
+      return;
+    }
+    const item = window.app.shares.find(s => s.id === id);
+    if (!item) {
+      alert("錯誤: 找不到該分享項目 ID: " + id);
+      return;
+    }
+    
+    const contentInput = document.getElementById('share-edit-content-' + id);
+    const titleInput = document.getElementById('share-edit-title-' + id);
+    
+    if (!contentInput) {
+      alert("錯誤: 找不到內容輸入欄位，ID: " + id);
+      return;
+    }
+    
+    const newContent = contentInput.value.trim();
+    if (!newContent) {
+      window.app.showNotification('提示', '內容不能為空');
+      return;
+    }
+    
+    const updates = { content: newContent };
+    if (item.type === 'link') {
+      if (!titleInput) {
+        alert("錯誤: 找不到標題輸入欄位，ID: " + id);
+        return;
+      }
+      updates.title = titleInput.value.trim() || newContent;
+    }
+    
+    db.ref('teacherShares').child(id).update(updates)
+      .then(() => {
+        window.app.showNotification('成功', '教師分享已更新！');
+        adminCancelEditShare(id);
+      })
+      .catch(err => {
+        window.app.showNotification('錯誤', '更新失敗: ' + err.message);
+        alert("Firebase 更新失敗: " + err.message);
+      });
+  } catch (err) {
+    alert("執行錯誤: " + err.message + "\n" + err.stack);
+    console.error(err);
+  }
+}
+window.app && (window.app.adminSaveShare = adminSaveShare);
+
+// 專注力遊戲全域呼叫介面
+function startFocusGame() {
+  if (window.app) window.app.startFocusGame();
+}
+
+function endFocusGame() {
+  if (window.app) window.app.endFocusGame();
+}
+
+function clickSchulteGrid(num, btn) {
+  if (window.app) window.app.clickSchulteGrid(num, btn);
+}
+
+function selectMemoryMatchPairCount(count, el) {
+  const hiddenInput = document.getElementById('selectedMemoryMatchPairCount');
+  if (hiddenInput) hiddenInput.value = count;
+  document.querySelectorAll('.memory-match-card').forEach(card => {
+    card.classList.remove('active');
+    card.style.border = '1px solid var(--border-color)';
+  });
+  if (el) {
+    el.classList.add('active');
+    el.style.border = '2px solid var(--accent-color)';
+  }
+}
+
+function clickMemoryMatchCard(cardId, element) {
+  if (window.app) window.app.clickMemoryMatchCard(cardId, element);
+}
+
+function hitTaiko(type, side) {
+  if (window.app) window.app.hitTaiko(type, side);
+}
+
+const SECURITY_RULES_JSON = `{
+  "rules": {
+    ".read": "now < 1893456000000",
+    ".write": "now < 1893456000000"
+  }
+}`;
+
+function copySecurityRules() {
+  navigator.clipboard.writeText(SECURITY_RULES_JSON).then(() => {
+    if (window.app) window.app.showNotification('成功', '安全防護規則已複製！請至 Firebase Console 的「規則 (Rules)」貼上並點擊「發布」。');
+    else alert('安全防護規則已複製！');
+  }).catch(err => {
+    alert('複製失敗，請手動複製');
+  });
+}
+
+function generateLinks() {
+  let dbUrl = document.getElementById('dbUrlInput').value.trim();
+  if (!dbUrl) {
+    if (window.app) window.app.showNotification('錯誤', '請先輸入或貼上您的 Firebase Database URL！');
+    else alert('請先輸入或貼上您的 Firebase Database URL！');
+    return;
+  }
+
+  if (!dbUrl.startsWith('https://')) {
+    if (window.app) window.app.showNotification('格式錯誤', '網址應該以 https:// 開頭');
+    else alert('格式不正確！網址應該以 https:// 開頭。');
+    return;
+  }
+
+  dbUrl = dbUrl.replace(/\/+$/, '');
+
+  const currentUrl = window.location.href;
+  const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+  const whiteboardUrl = `${baseUrl}/index.html`;
+
+  const finalShareUrl = `${whiteboardUrl}?dbUrl=${encodeURIComponent(dbUrl)}`;
+
+  const shareInput = document.getElementById('shareUrl');
+  if (shareInput) shareInput.value = finalShareUrl;
+  
+  const resArea = document.getElementById('resultArea');
+  if (resArea) resArea.style.display = 'block';
+
+  const qrDiv = document.getElementById('qrcode');
+  const qrShortDiv = document.getElementById('qrcode-short');
+  
+  if (qrDiv) {
+    qrDiv.innerHTML = '';
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(qrDiv, {
+        text: finalShareUrl,
+        width: 180,
+        height: 180,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      });
+    }
+  }
+
+  // 重置短網址 QR Code 空間為載入狀態
+  if (qrShortDiv) {
+    qrShortDiv.innerHTML = '等待短網址生成後自動產生...';
+    qrShortDiv.style.border = '1px dashed #ccc';
+    qrShortDiv.style.background = '#fafafa';
+  }
+
+  // 自動產生短網址
+  const shortInput = document.getElementById('shortUrl');
+  const btnCopyShort = document.getElementById('btnCopyShort');
+  if (shortInput) {
+    shortInput.value = "正在產生短網址...";
+    if (btnCopyShort) btnCopyShort.disabled = true;
+
+    const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(finalShareUrl)}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
+
+    const renderShortQr = (shortUrl) => {
+      shortInput.value = shortUrl;
+      if (btnCopyShort) btnCopyShort.disabled = false;
+      if (qrShortDiv) {
+        qrShortDiv.innerHTML = '';
+        qrShortDiv.style.border = 'none';
+        qrShortDiv.style.background = 'transparent';
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(qrShortDiv, {
+            text: shortUrl,
+            width: 180,
+            height: 180,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+          });
+        }
+      }
+    };
+
+    fetch(proxyUrl)
+      .then(res => {
+        if (!res.ok) throw new Error("HTTP error");
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.contents) {
+          const shortUrl = data.contents.trim();
+          renderShortQr(shortUrl);
+        } else {
+          throw new Error("Invalid format");
+        }
+      })
+      .catch(err => {
+        console.warn("Failed to generate short URL via proxy, trying fallback direct fetch:", err);
+        fetch(tinyUrlApi)
+          .then(res => {
+            if (!res.ok) throw new Error("HTTP error");
+            return res.text();
+          })
+          .then(text => {
+            const shortUrl = text.trim();
+            renderShortQr(shortUrl);
+          })
+          .catch(err2 => {
+            console.error("All short URL service fallbacks failed:", err2);
+            shortInput.value = "短網址產生失敗，請複製上方長網址";
+            if (qrShortDiv) {
+              qrShortDiv.innerHTML = '產生失敗';
+            }
+          });
+      });
+  }
+
+  if (window.app) window.app.showNotification('成功', '已順利產生班級專屬連線網址與 QR Code！');
+}
+
+function copyText(elementId) {
+  const copyText = document.getElementById(elementId);
+  if (!copyText) return;
+  copyText.select();
+  copyText.setSelectionRange(0, 99999);
+
+  try {
+    navigator.clipboard.writeText(copyText.value);
+    if (window.app) window.app.showNotification('成功', '連結已成功複製！可直接貼上分享給學生。');
+    else alert('連結已成功複製！');
+  } catch (err) {
+    document.execCommand('copy');
+    alert('連結已複製！');
+  }
+}
+
+window.addEventListener('beforeunload', () => {
+  if (window.app && typeof window.app.stopTaikoBackgroundMusic === 'function') {
+    window.app.stopTaikoBackgroundMusic();
+  }
+});
+window.addEventListener('pagehide', () => {
+  if (window.app && typeof window.app.stopTaikoBackgroundMusic === 'function') {
+    window.app.stopTaikoBackgroundMusic();
+  }
+});
+
+
+
+

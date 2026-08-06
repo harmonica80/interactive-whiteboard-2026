@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>📚 教師專屬建置與連線指南 - 即時互動白板</title>
+  <link rel="stylesheet" href="css/style.css?v=183">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 24px 16px;
+      line-height: 1.8;
+    }
+    .guide-container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .guide-header {
+      text-align: center;
+      margin-bottom: 36px;
+      background: var(--bg-card);
+      padding: 32px 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      border: 1px solid var(--border-color);
+    }
+    .guide-header h1 {
+      margin: 0 0 12px 0;
+      color: var(--accent-color);
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .guide-header p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+    .step-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 36px;
+      border: 1px solid var(--border-color);
+      border-left: 6px solid var(--accent-color);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    }
+    .step-title {
+      font-size: 19px;
+      font-weight: bold;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .step-num {
+      background: var(--accent-color);
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .step-content {
+      font-size: 15px;
+      color: var(--text-primary);
+    }
+    .step-content ol {
+      margin: 0;
+      padding-left: 22px;
+    }
+    .step-content li {
+      margin-bottom: 28px;
+      line-height: 1.8;
+    }
+    /* 垂直單欄原尺寸截圖 (Vertical Single Column Images: max-width 100%, width/height auto) */
+    .step-img-box {
+      margin: 16px 0 24px 0;
+      text-align: center;
+    }
+    .step-img {
+      max-width: 100% !important;
+      width: auto !important;
+      height: auto !important;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      display: inline-block;
+      margin: 0 auto;
+    }
+    .code-box-wrapper {
+      position: relative;
+      background: #282c34;
+      color: #abb2bf;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+      overflow-x: auto;
+      max-height: 240px;
+    }
+    .tool-box {
+      background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(52, 199, 89, 0.05) 100%);
+      border: 2px dashed var(--accent-color);
+      border-radius: 16px;
+      padding: 28px;
+      margin: 36px 0;
+    }
+    .tool-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--accent-color);
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .generator-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .generator-input {
+      flex: 1;
+      min-width: 260px;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+    .generator-btn {
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .result-group {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="guide-container">
+    <div class="guide-header">
+      <h1>📚 教師專屬建置與連線指南</h1>
+      <p>只需要 3 分鐘簡單 4 步驟，立刻為您的班級建立免費專屬的即時互動白板！</p>
+    </div>
+
+    <!-- 步驟 1 -->
+    <div class="step-card">
+      <div class="step-title">
+        <span class="step-num">1</span>
+        <span>建立免費的 Firebase 即時資料庫專案</span>
+      </div>
+      <div class="step-content">
+        <ol>
+          <li>前往 <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--accent-color); font-weight: bold;">Firebase 主控台 🔗</a>，登入您的 Google 帳號。</li>
+          <li>點選「<strong>+ 新增專案</strong>」，輸入班級名稱（例如：<code>my-class-whiteboard</code>），一路點選「繼續」完成建立：
+            <div class="step-img-box"><img src="images/guide/step01.png" alt="步驟1-1" class="step-img"></div>
+            <div class="step-img-box"><img src="images/guide/step02.png" alt="步驟1-2" class="step-img"></div>
+            <div class="step-img-box"><img src="images/guide/step03.png" alt="步驟1-3" class="step-img"></div>
+            <div class="step-img-box"><img src="images/guide/step04.png" alt="步驟1-4" class="step-img"></div>
+          </li>
+          <li>建立完成後，在左側選單點選「<strong>資料庫和儲存空間</strong>」 ➔ 「<strong>Realtime Database</strong>」：
+            <!-- 圖片05 -->
+            <div class="step-img-box"><img src="images/guide/step05.png" alt="步驟1-5 選單導覽" class="step-img"></div>
+          </li>
+          <li>點選頁面中的「<strong>建立資料庫</strong>」按鈕：
+            <!-- 圖片06 -->
+            <div class="step-img-box"><img src="images/guide/step06.png" alt="步驟1-6 建立資料庫" class="step-img"></div>
+          </li>
+          <li>資料庫位置建議選擇 <span style="color:#ff3b30; font-weight:bold;">新加坡 (asia-southeast1)</span>，點選「下一步」：
+            <!-- 圖片07 -->
+            <div class="step-img-box"><img src="images/guide/step07.png" alt="步驟1-7 選擇位置" class="step-img"></div>
+          </li>
+          <li>安全規則選擇「<strong>以測試模式啟動</strong>」，最後點選「<strong>啟用</strong>」：
+            <!-- 圖片08 -->
+            <div class="step-img-box"><img src="images/guide/step08.png" alt="步驟1-8 以測試模式啟動" class="step-img"></div>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- 步驟 2 -->
+    <div class="step-card" style="border-left-color: #ff9500;">
+      <div class="step-title">
+        <span class="step-num" style="background: #ff9500;">2</span>
+        <span>貼上防護安全規則 (徹底避免系統警告信)</span>
+      </div>
+      <div class="step-content">
+        <ol>
+          <li>在 Realtime Database 頁面上方，點選 <span style="color:#ff9500; font-weight:bold;">規則 (Rules)</span> 頁籤。</li>
+          <li>點擊下方按鈕一鍵複製防護規則：
+            <div style="margin: 16px 0;">
+              <button onclick="copySecurityRules()" class="generator-btn" style="background: #ff9500;">📋 一鍵複製防護安全規則</button>
+            </div>
+            <div class="step-img-box"><img src="images/guide/step10.png" alt="步驟2-2 貼上位置" class="step-img"></div>
+          </li>
+          <li>清空頁面原本內容，將複製的規則貼上，最後點選右上角的「<strong>發布 (Publish)</strong>」即完成設定！
+            <div class="step-img-box"><img src="images/guide/step10-01.png" alt="步驟2-3 按下發布" class="step-img"></div>
+          </li>
+        </ol>
+
+        <!-- 規則預覽 Codebox -->
+        <div class="code-box-wrapper">
+          <pre id="rulesCodeText" style="margin:0; font-size:12px; font-family: monospace;"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 步驟 3 -->
+    <div class="step-card" style="border-left-color: #34c759;">
+      <div class="step-title">
+        <span class="step-num" style="background: #34c759;">3</span>
+        <span>複製您的資料庫 URL 網址</span>
+      </div>
+      <div class="step-content">
+        <ol>
+          <li>切換回 <span style="color:#34c759; font-weight:bold;">資料 (Data)</span> 頁籤。</li>
+          <li>在頁面頂部會看到一串以 <code>https://</code> 開頭的資料庫網址，點選該網址右側的「<strong>複製</strong>」按鈕：
+            <!-- 圖片11 -->
+            <div class="step-img-box"><img src="images/guide/step11.png" alt="步驟3-2 複製資料庫網址" class="step-img"></div>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- 步驟 4：產生連結工具 -->
+    <div class="tool-box">
+      <div class="tool-title">⚡ 步驟 4：產生班級專屬連線網址與 QR Code</div>
+      <p style="text-align: center; font-size: 15px; color: var(--text-secondary); margin-top: 0; margin-bottom: 20px;">
+        將您剛才複製的 Firebase Database URL 貼在下方即可生成專屬連結！
+      </p>
+      
+      <div class="generator-group">
+        <input type="text" id="dbUrlInput" class="generator-input" placeholder="在此貼上您複製的 Firebase Database URL (例如：https://xxx.firebasedatabase.app)">
+        <button onclick="generateLinks()" class="generator-btn">🚀 產生專屬連線網址</button>
+      </div>
+
+      <div id="resultArea" class="result-group">
+        <div class="result-item" style="margin-bottom: 18px;">
+          <span style="font-weight: bold; margin-bottom: 10px; display: block; font-size: 15px;">🔗 班級專屬連線網址（老師與學生共用此連結）：</span>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="shareUrl" class="generator-input" readonly>
+            <button onclick="copyText('shareUrl')" class="generator-btn" style="background: #34c759;">📋 複製連結</button>
+          </div>
+        </div>
+
+        <!-- 專屬短網址 -->
+        <div class="result-item" style="margin-bottom: 18px;">
+          <span style="font-weight: bold; margin-bottom: 10px; display: block; font-size: 15px;">🔗 班級專屬短網址（更方便輸入與分享）：</span>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="shortUrl" class="generator-input" placeholder="正在自動產生短網址..." readonly>
+            <button id="btnCopyShort" onclick="copyText('shortUrl')" class="generator-btn" style="background: #34c759;" disabled>📋 複製短網址</button>
+          </div>
+        </div>
+
+        <!-- 班級專屬 QR Code 雙軌並陳 -->
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 20px; width: 100%;">
+          <!-- 長網址 QR Code -->
+          <div class="qr-container" style="margin: 0; width: 210px; box-sizing: border-box;">
+            <div style="color: #333; font-weight: bold; margin-bottom: 12px; font-size: 14px; text-align: center;">📱 原始長連結 QR Code</div>
+            <div id="qrcode"></div>
+          </div>
+          <!-- 短網址 QR Code -->
+          <div class="qr-container" style="margin: 0; width: 210px; box-sizing: border-box;">
+            <div style="color: #333; font-weight: bold; margin-bottom: 12px; font-size: 14px; text-align: center;">📱 專屬短網址 QR Code</div>
+            <div id="qrcode-short" style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px; border: 1px dashed #ccc; border-radius: 6px; background: #fafafa; box-sizing: border-box; text-align: center; padding: 10px;">
+              等待短網址生成後自動產生...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SECURITY_RULES_JSON = `{
+  "rules": {
+    ".read": "now < 1893456000000",
+    ".write": "now < 1893456000000"
+  }
+}`;
+
+    document.getElementById('rulesCodeText').textContent = SECURITY_RULES_JSON;
+
+    function copySecurityRules() {
+      navigator.clipboard.writeText(SECURITY_RULES_JSON).then(() => {
+        alert('✅ 安全防護規則已成功複製！請至 Firebase Console 的「規則 (Rules)」頁籤貼上並點擊「發布」。');
+      }).catch(err => {
+        alert('請手動選取程式碼框中的內容進行複製');
+      });
+    }
+
+    function generateLinks() {
+      let dbUrl = document.getElementById('dbUrlInput').value.trim();
+      if (!dbUrl) {
+        alert('請先輸入或貼上您的 Firebase Database URL！');
+        return;
+      }
+
+      if (!dbUrl.startsWith('https://')) {
+        alert('格式不正確！網址應該以 https:// 開頭。');
+        return;
+      }
+
+      dbUrl = dbUrl.replace(/\/+$/, '');
+
+      const currentUrl = window.location.href;
+      const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+      const whiteboardUrl = `${baseUrl}/index.html`;
+
+      const finalShareUrl = `${whiteboardUrl}?dbUrl=${encodeURIComponent(dbUrl)}`;
+
+      document.getElementById('shareUrl').value = finalShareUrl;
+      document.getElementById('resultArea').style.display = 'block';
+
+      const qrDiv = document.getElementById('qrcode');
+      const qrShortDiv = document.getElementById('qrcode-short');
+      
+      qrDiv.innerHTML = '';
+      new QRCode(qrDiv, {
+        text: finalShareUrl,
+        width: 180,
+        height: 180,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      });
+
+      // 重置短網址 QR Code 空間為載入狀態
+      if (qrShortDiv) {
+        qrShortDiv.innerHTML = '等待短網址生成後自動產生...';
+        qrShortDiv.style.border = '1px dashed #ccc';
+        qrShortDiv.style.background = '#fafafa';
+      }
+
+      // 自動產生短網址
+      const shortInput = document.getElementById('shortUrl');
+      const btnCopyShort = document.getElementById('btnCopyShort');
+      if (shortInput) {
+        shortInput.value = "正在產生短網址...";
+        if (btnCopyShort) btnCopyShort.disabled = true;
+
+        const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(finalShareUrl)}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
+
+        const renderShortQr = (shortUrl) => {
+          shortInput.value = shortUrl;
+          if (btnCopyShort) btnCopyShort.disabled = false;
+          if (qrShortDiv) {
+            qrShortDiv.innerHTML = '';
+            qrShortDiv.style.border = 'none';
+            qrShortDiv.style.background = 'transparent';
+            new QRCode(qrShortDiv, {
+              text: shortUrl,
+              width: 180,
+              height: 180,
+              colorDark : "#000000",
+              colorLight : "#ffffff",
+              correctLevel : QRCode.CorrectLevel.H
+            });
+          }
+        };
+
+        fetch(proxyUrl)
+          .then(res => {
+            if (!res.ok) throw new Error("HTTP error");
+            return res.json();
+          })
+          .then(data => {
+            if (data && data.contents) {
+              const shortUrl = data.contents.trim();
+              renderShortQr(shortUrl);
+            } else {
+              throw new Error("Invalid format");
+            }
+          })
+          .catch(err => {
+            console.warn("Failed to generate short URL via proxy, trying fallback direct fetch:", err);
+            fetch(tinyUrlApi)
+              .then(res => {
+                if (!res.ok) throw new Error("HTTP error");
+                return res.text();
+              })
+              .then(text => {
+                const shortUrl = text.trim();
+                renderShortQr(shortUrl);
+              })
+              .catch(err2 => {
+                console.error("All short URL service fallbacks failed:", err2);
+                shortInput.value = "短網址產生失敗，請複製上方長網址";
+                if (qrShortDiv) {
+                  qrShortDiv.innerHTML = '產生失敗';
+                }
+              });
+          });
+      }
+    }
+
+    function copyText(elementId) {
+      const copyText = document.getElementById(elementId);
+      copyText.select();
+      copyText.setSelectionRange(0, 99999);
+
+      try {
+        navigator.clipboard.writeText(copyText.value);
+        alert('✅ 連結已成功複製！可直接貼上分享給學生。');
+      } catch (err) {
+        document.execCommand('copy');
+        alert('連結已複製！');
+      }
+    }
+  </script>
+</body>
+</html>

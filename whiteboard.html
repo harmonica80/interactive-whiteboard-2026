@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>tldraw 互動白板</title>
+  
+  <!-- tldraw CSS -->
+  <link rel="stylesheet" href="https://esm.sh/tldraw@2.4.5/tldraw.css">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+      background-color: #f8f9fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    /* 電腦端 (Desktop > 768px)：完全保留 tldraw 100% 原生原始樣式與大小 */
+
+    /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
+    @media (max-width: 768px) {
+      /* 1. 工具列外框：強制以絕對定位懸浮於底部中央，防止被裁切，右側留出 40px 塞入 custom-style-toggle-btn */
+      .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
+        position: absolute !important;
+        bottom: 12px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        margin: 0 !important;
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
+        padding-left: 6px !important;
+        padding-right: 40px !important;
+        box-sizing: border-box !important;
+        height: 38px !important;
+        min-height: unset !important;
+        width: max-content !important;
+        z-index: 999 !important;
+      }
+
+      /* 2. 按鈕輕量固定尺寸 (32px)，縮小間距，確保 6 個基本按鈕緊湊並排於白框內 */
+      .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
+        height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
+        width: 32px !important;
+        min-width: 32px !important;
+        max-width: 32px !important;
+        margin: 0 1px !important;
+        padding: 2px !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
+      }
+
+      /* 3. 原生浮動圓圈選單按鈕：使用絕對定位物理偏置強行嵌入置中工具列的右側內部 */
+      .tlui-style-panel__toggle, [class*="style-panel__toggle"], [class*="style-panel"] button {
+        position: absolute !important;
+        bottom: 15px !important;
+        left: calc(50% + 98px) !important;
+        transform: translateX(-50%) !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 2px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 1001 !important;
+        cursor: pointer !important;
+      }
+
+      /* 4. 按鈕 svg 圖示大小適中 */
+      .tlui-toolbar svg, [class*="tlui-toolbar"] svg, 
+      .tlui-style-panel__toggle svg, [class*="style-panel__toggle"] svg, [class*="style-panel"] button svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+    }
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      font-size: 16px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 122, 255, 0.1);
+      border-left-color: #007aff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <!-- Import Maps for ES Modules -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.3.1",
+      "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+      "react-dom": "https://esm.sh/react-dom@18.3.1",
+      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+      "tldraw": "https://esm.sh/tldraw@2.4.5?deps=react@18.3.1,react-dom@18.3.1"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root">
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <div>正在載入 tldraw 互動白板...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { Tldraw, getSnapshot, loadSnapshot } from 'tldraw';
+
+    let editorInstance = null;
+    let isApplyingRemote = false;
+
+    function App() {
+      const [canUndo, setCanUndo] = React.useState(false);
+      const [canRedo, setCanRedo] = React.useState(false);
+
+      const handleMount = (editor) => {
+        editorInstance = editor;
+        console.log('tldraw initialized successfully!');
+        
+        // 初始狀態
+        setCanUndo(editor.getCanUndo());
+        setCanRedo(editor.getCanRedo());
+
+        // 監聽使用者在白板上的畫筆/文字/圖片/物件變動 (scope: 'document')
+        let debounceTimer = null;
+        editor.store.listen((entry) => {
+          // 動態同步 Undo/Redo 狀態
+          setCanUndo(editor.getCanUndo());
+          setCanRedo(editor.getCanRedo());
+
+          if (!isApplyingRemote) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+              try {
+                const snapshot = getSnapshot(editor.store);
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({
+                    type: 'TLDRAW_LOCAL_CHANGE',
+                    snapshot: snapshot
+                  }, '*');
+                }
+              } catch (err) {
+                console.error('Failed to capture local tldraw change:', err);
+              }
+            }, 300);
+          }
+        }, { scope: 'document' });
+
+        // 通知父視窗已準備就緒
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'TLDRAW_READY' }, '*');
+        }
+      };
+
+      // 使用穩定且不因時序誤判的 userAgent 偵測，徹底將行動端與電腦端隔離，還原電腦端右側樣式面板
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      // 行動端透過 components 隱藏官方面板，釋放繪圖空間，避免重疊衝突
+      const tldrawComponents = isMobile ? {
+        MainMenu: null,
+        PageMenu: null,
+        NavigationPanel: null,
+        HelpMenu: null,
+        QuickActions: null // 隱藏底部原廠 Undo/Redo，防止遮擋重疊
+      } : {};
+
+      // 手機版在頂部右上角渲染一個精緻、小巧、半透明的復原/重做按鈕組
+      const customControls = isMobile ? React.createElement('div', {
+        style: {
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          zIndex: 1000,
+          display: 'flex',
+          gap: '6px',
+          alignItems: 'center',
+          pointerEvents: 'auto'
+        }
+      }, [
+        React.createElement('button', {
+          key: 'undo',
+          onClick: () => { if (editorInstance) editorInstance.undo(); },
+          disabled: !canUndo,
+          style: {
+            padding: '6px 10px',
+            fontSize: '13px',
+            background: 'rgba(255, 255, 255, 0.9)',
+            border: '1px solid rgba(0,0,0,0.15)',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            cursor: 'pointer',
+            opacity: canUndo ? 1 : 0.4,
+            pointerEvents: canUndo ? 'auto' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 'bold',
+            color: '#333'
+          }
+        }, '↩️ 復原'),
+        React.createElement('button', {
+          key: 'redo',
+          onClick: () => { if (editorInstance) editorInstance.redo(); },
+          disabled: !canRedo,
+          style: {
+            padding: '6px 10px',
+            fontSize: '13px',
+            background: 'rgba(255, 255, 255, 0.9)',
+            border: '1px solid rgba(0,0,0,0.15)',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            cursor: 'pointer',
+            opacity: canRedo ? 1 : 0.4,
+            pointerEvents: canRedo ? 'auto' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 'bold',
+            color: '#333'
+          }
+        }, '↪️ 重做'),
+        React.createElement('span', {
+          key: 'ver',
+          style: {
+            fontSize: '9px',
+            color: '#999',
+            background: 'rgba(255,255,255,0.7)',
+            padding: '2px 4px',
+            borderRadius: '4px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            fontWeight: 'bold',
+            userSelect: 'none'
+          }
+        }, 'v1.4.6')
+      ]) : null;
+
+      return React.createElement(React.Fragment, null, [
+        React.createElement(Tldraw, {
+          key: 'tldraw',
+          onMount: handleMount,
+          components: tldrawComponents,
+          forceMobile: isMobile // 強制在行動端使用原生折疊式的 Mobile UI，以提供帶有 ^ 箭頭的樣式與面板按鈕
+        }),
+        customControls
+      ]);
+    }
+
+    // 監聽來自父視窗的 postMessage 通訊
+    window.addEventListener('message', async (event) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+
+      switch (data.type) {
+        case 'GET_TLDRAW_SNAPSHOT':
+          if (editorInstance) {
+            try {
+              const snapshot = getSnapshot(editorInstance.store);
+              window.parent.postMessage({
+                type: 'TLDRAW_SNAPSHOT_RESPONSE',
+                requestId: data.requestId,
+                snapshot: snapshot
+              }, '*');
+            } catch (err) {
+              console.error('Failed to get tldraw snapshot:', err);
+              window.parent.postMessage({
+                type: 'TLDRAW_SNAPSHOT_RESPONSE',
+                requestId: data.requestId,
+                error: err.message
+              }, '*');
+            }
+          }
+          break;
+
+        case 'LOAD_TLDRAW_SNAPSHOT':
+          if (editorInstance && data.snapshot) {
+            try {
+              isApplyingRemote = true;
+              loadSnapshot(editorInstance.store, data.snapshot);
+              console.log('tldraw remote snapshot loaded successfully');
+            } catch (err) {
+              console.error('Failed to load tldraw snapshot:', err);
+            } finally {
+              setTimeout(() => { isApplyingRemote = false; }, 300);
+            }
+          }
+          break;
+
+        case 'CLEAR_TLDRAW':
+          if (editorInstance) {
+            try {
+              editorInstance.selectAll();
+              const selectedIds = editorInstance.getSelectedShapeIds();
+              if (selectedIds && selectedIds.length > 0) {
+                editorInstance.deleteShapes(selectedIds);
+              }
+            } catch (err) {
+              console.error('Failed to clear tldraw:', err);
+            }
+          }
+          break;
+      }
+    });
+
+    // 渲染頁面
+    const rootElement = document.getElementById('root');
+    const root = createRoot(rootElement);
+    root.render(React.createElement(App));
+
+  </script>
+</body>
+</html>
