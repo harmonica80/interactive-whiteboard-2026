@@ -8773,7 +8773,7 @@ function submitAdminPassword() {
 function logoutAdmin() {
   window.app.isAdmin = false;
   window.app.closeAdminPasswordModal();
-  window.app.switchToTab('panel-whiteboard'); // 登出後切換回到「互動白板」首頁
+  window.app.switchToTab('panel-questions'); // 登出後切換回到「提問區分頁」
   window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
   window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
   window.app.showNotification('提示', '已登出管理員模式');

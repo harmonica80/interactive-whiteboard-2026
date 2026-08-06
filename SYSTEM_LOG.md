@@ -779,7 +779,7 @@
 - 修改項目：修復管理員輸入密碼後對話框未自動關閉，以及登出後未自動返回白板首頁之問題。
 - 行為：
   1. **密碼對話框自動關閉與自動導向**：在 `submitAdminPassword()` 驗證密碼成功後，即時呼叫 `closeAdminPasswordModal()` 硬性隱藏對話框（`display: none` 並移除 `active`），並順暢自動導向至 `panel-admin` 管理後台分頁。
-  2. **登出自動跳轉白板首頁**：修復 `logoutAdmin()`，將登出後的目標頁籤修正為 `panel-whiteboard`（互動白板），確保登出後瞬間平滑切換回白板首頁。
+  2. **登出自動跳轉提問區分頁**：修復 `logoutAdmin()`，依指示將登出後的目標頁籤設為 `panel-questions`（💬 提問區分頁），確保登出後瞬間平滑切換至提問區。
 
 ---
 
