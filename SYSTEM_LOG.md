@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-06 - ver 2.1.6 修復專注力遊戲倒數計時凍結於 10 之問題
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：解決專注力遊戲發起倒數時數字停在 `10` 無法遞減之 Bug。
+- 行為：
+  1. **CountdownTimestamp 強健化**：在 `startFocusGame()` 中將發起時間由 Firebase `ServerValue.TIMESTAMP` 調整為可即時運算的數字時間戳記 `Date.now()`。
+  2. **倒數計算防禦機制**：在 `startLocalCountdown()` 中加入型態判定與本地起點備用時間，確保 `remaining` 運算不發生 `NaN` 錯誤，讓 10、9、8...1 倒數及 Tick 音效流暢倒數並自動切入遊戲。
+
+---
+
 ## 2026-08-06 - ver 2.1.5 管理員登入密碼彈窗與登出切換頁面修正
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：修復管理員輸入密碼後對話框未自動關閉，以及登出後未自動返回白板首頁之問題。

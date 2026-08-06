@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.1.5';
+    this.APP_VERSION = '2.1.6';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5701,7 +5701,7 @@ class App {
       sequence: memorySequence,
       questions: selectedQuestions,
       countdownSeconds: countdownSecs,
-      countdownStartTime: firebase.database.ServerValue.TIMESTAMP,
+      countdownStartTime: Date.now(),
       results: null
     }).then(() => {
       this.showNotification('成功', '專注力/破冰遊戲已發起！');
@@ -6105,18 +6105,35 @@ class App {
     this.focusStartSoundPlayed = false;   // 重置開始音效狀態
     this.focusLastTickSecond = -1;        // 重置倒數秒數狀態
     
+    // 防禦性處理：若 countdownStartTime 無效或非數字，優先使用本地紀錄或當前時間
+    let startTime = (game && typeof game.countdownStartTime === 'number' && game.countdownStartTime > 0)
+      ? game.countdownStartTime 
+      : Date.now();
+
+    if (!this.focusCountdownLocalStart || Math.abs(this.focusCountdownLocalStart - startTime) > 15000) {
+      this.focusCountdownLocalStart = startTime;
+    } else {
+      startTime = this.focusCountdownLocalStart;
+    }
+
+    const totalSeconds = (game && typeof game.countdownSeconds === 'number' && game.countdownSeconds > 0)
+      ? game.countdownSeconds
+      : 10;
+      
     const countdownEl = document.getElementById('focusCountdownNumber');
     const updateCountdown = () => {
       const now = Date.now();
-      const elapsed = Math.floor((now - game.countdownStartTime) / 1000);
-      const remaining = Math.max(0, game.countdownSeconds - elapsed);
+      const elapsed = Math.floor((now - startTime) / 1000);
+      const remaining = Math.max(0, totalSeconds - elapsed);
       
       if (countdownEl) {
         countdownEl.textContent = remaining;
         if (remaining <= 3 && remaining > 0) {
           countdownEl.style.color = '#FF3B30';
           countdownEl.style.transform = 'scale(1.3)';
-          setTimeout(() => countdownEl.style.transform = 'scale(1)', 100);
+          setTimeout(() => {
+            if (countdownEl) countdownEl.style.transform = 'scale(1)';
+          }, 100);
         } else {
           countdownEl.style.color = 'var(--accent-color)';
         }
@@ -6129,8 +6146,10 @@ class App {
       }
 
       if (remaining <= 0) {
-        clearInterval(this.focusCountdownInterval);
-        this.focusCountdownInterval = null;
+        if (this.focusCountdownInterval) {
+          clearInterval(this.focusCountdownInterval);
+          this.focusCountdownInterval = null;
+        }
         
         // 倒數結束，播放開始音效
         if (!this.focusStartSoundPlayed) {
@@ -6151,11 +6170,11 @@ class App {
               const localPlayingGame = {
                 ...this.focusGame,
                 status: 'playing',
-                startTime: this.focusGame.countdownStartTime + ((this.focusGame.countdownSeconds || 10) * 1000)
+                startTime: startTime + (totalSeconds * 1000)
               };
               this.handleFocusGameSync(localPlayingGame);
             }
-          }, 600);
+          }, 400);
         }
       }
     };
