@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.1.7';
+    this.APP_VERSION = '2.1.8';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5636,6 +5636,7 @@ class App {
 
   startFocusGame() {
     if (!this.isAdmin) return;
+    this.focusLocalGameKey = null;
     
     // 自動停止搶答與選擇題測驗
     db.ref('quiz/buzzGame').set(null);
@@ -6192,16 +6193,24 @@ class App {
     this.focusHelpCount = 0;
     this.focusGameCompletedLocal = false; // 重置完成音效狀態
 
-    // OpenCode 修改：避免 Firebase results 更新時重置正在作答的本地遊戲畫面
+    // 避免 Firebase results 更新時重置正在作答的本地遊戲畫面，必須包含 status 及強健的時間戳記
     const localGameKey = [
-      game.countdownStartTime,
+      game.startTime || game.countdownStartTime || 'start',
+      game.status || 'playing',
       game.gameType || 'numberGrid',
       game.gridSize || 36,
       game.sequenceLength || '',
       game.reverseMode ? 'reverse' : 'normal'
     ].join('_');
+
     const existingGrid = document.getElementById('focusGameGrid');
-    if (this.focusLocalGameKey === localGameKey && existingGrid && existingGrid.children.length > 0) {
+    const existingCharContainer = document.getElementById('characterTestContainer');
+    const existingMemBoard = document.getElementById('focusMemoryMatchBoard');
+    const hasRenderedContent = (existingGrid && existingGrid.children.length > 0) ||
+                               (existingCharContainer && existingCharContainer.children.length > 0) ||
+                               (existingMemBoard && existingMemBoard.children.length > 0);
+
+    if (this.focusLocalGameKey === localGameKey && hasRenderedContent) {
       return;
     }
     this.stopFocusTimers();

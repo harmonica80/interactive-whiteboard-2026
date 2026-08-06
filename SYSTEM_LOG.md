@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-06 - ver 2.1.8 修復專注力遊戲進入作答狀態畫面空白問題
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：修復專注力遊戲從 `countdown` 切換至 `playing` 時，因防快取 key 遺漏 `status` 導致遊戲盤面渲染被跳過而留白之重大 Bug。
+- 行為：
+  1. **Key 機制包含 status 狀態**：在 `startLocalPlay()` 中將 `localGameKey` 加入 `game.status` 及遊戲時間戳記，確保倒數結束切換到 `playing` 時必定重新觸發網格/部件卡片盤面繪製。
+  2. **強健化畫面渲染判定**：檢測包含數字方格 (`focusGameGrid`)、文字題型 (`characterTestContainer`) 與記憶配對 (`focusMemoryMatchBoard`) 之渲染狀態，保證所有專注力模式皆能 100% 完整呈現遊戲題目內容。
+
+---
+
 ## 2026-08-06 - ver 2.1.7 徹底修復專注力遊戲倒數計時凍結問題
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：解決專注力遊戲發起倒數時因 Firebase 廣播重複重置計時器，導致倒數永遠停在 `10` 之 Bug。
