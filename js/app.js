@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.2.0';
+    this.APP_VERSION = '2.2.1';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6063,7 +6063,9 @@ class App {
     this.focusCountdownLocalStart = null;
     if (this.fireworkAnimationId) cancelAnimationFrame(this.fireworkAnimationId);
     this.fireworkAnimationId = null;
-    this.stopTaikoBackgroundMusic();
+    if (typeof this.stopTaikoBackgroundMusic === 'function') {
+      this.stopTaikoBackgroundMusic();
+    }
     
     const canvas = document.getElementById('focusFireworkCanvas');
     if (canvas) {
