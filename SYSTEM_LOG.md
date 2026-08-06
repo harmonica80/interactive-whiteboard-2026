@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-07 - ver 2.1.9 修復 Flexbox 寬度坍塌導致之遊戲盤面空白問題
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：解決專注力遊戲中數字網格 (`focusGameGrid`) 因 Flexbox `align-items: center` 導致容器寬度坍塌為 0px 使得按鈕全隱形之 Bug。
+- 行為：
+  1. **防止容器尺寸坍塌**：在 `startLocalPlay()` 中將 `focusGameGrid` 強制加入 `width: 100%` 及 `min-height: 44px` 限制，消除 Flex 交叉軸對齊導致的 0px 高寬坍塌。
+  2. **強健化不同遊戲模式樣式重置**：確保數字網格、文字部件及記憶卡片切換時均能獲得完美的容器尺寸與排列。
+
+---
+
 ## 2026-08-06 - ver 2.1.8 修復專注力遊戲進入作答狀態畫面空白問題
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：修復專注力遊戲從 `countdown` 切換至 `playing` 時，因防快取 key 遺漏 `status` 導致遊戲盤面渲染被跳過而留白之重大 Bug。
