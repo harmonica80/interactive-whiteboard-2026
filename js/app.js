@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.2.6';
+    this.APP_VERSION = '2.2.7';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -301,22 +301,37 @@ class App {
   }
 
   showConfirmModal(icon, title, subtitle, onConfirm) {
-    document.getElementById('confirmModalIcon').textContent = icon;
-    document.getElementById('confirmModalText').textContent = title;
-    document.getElementById('confirmModalSubtext').textContent = subtitle;
+    const modal = document.getElementById('customConfirmModal');
+    if (!modal) return;
+    
+    document.getElementById('confirmModalIcon').textContent = icon || '⚠️';
+    document.getElementById('confirmModalText').textContent = title || '確認執行此動作？';
+    document.getElementById('confirmModalSubtext').textContent = subtitle || '';
     
     const confirmBtn = document.getElementById('confirmModalBtn');
+    if (confirmBtn) {
+      const newConfirmBtn = confirmBtn.cloneNode(true);
+      confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+      
+      newConfirmBtn.addEventListener('click', () => {
+        try {
+          if (typeof onConfirm === 'function') onConfirm();
+        } finally {
+          this.closeConfirmModal();
+        }
+      });
+    }
     
-    // 複製按鈕以清除之前的事件監聽器，避免重疊執行
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-    
-    newConfirmBtn.addEventListener('click', () => {
-      onConfirm();
-      this.closeConfirmModal();
-    });
-    
-    document.getElementById('customConfirmModal').classList.add('active');
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+  }
+
+  closeConfirmModal() {
+    const modal = document.getElementById('customConfirmModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
   }
 
   sortFoldersTopPriority(a, b) {
@@ -934,16 +949,21 @@ class App {
   }
 
   adminDeleteQuestionFolder(folderId) {
-    if (confirm('確定要刪除此提問群組嗎？\n（其中的提問不會被刪除，會移回無群組狀態）')) {
-      db.ref(`quiz/questionFolders/${folderId}`).remove().then(() => {
-        this.questions.forEach(q => {
-          if (q.folderId === folderId) {
-            db.ref(`questions/${q.id}/folderId`).remove();
-          }
+    this.showConfirmModal(
+      '📁',
+      '確定要刪除此提問群組嗎？',
+      '其中的提問不會被刪除，會移回無群組狀態。',
+      () => {
+        db.ref(`quiz/questionFolders/${folderId}`).remove().then(() => {
+          this.questions.forEach(q => {
+            if (q.folderId === folderId) {
+              db.ref(`questions/${q.id}/folderId`).remove();
+            }
+          });
+          this.showNotification('成功', '提問群組已刪除');
         });
-        this.showNotification('成功', '提問群組已刪除');
-      });
-    }
+      }
+    );
   }
 
   adminCreateImageFolder() {
@@ -966,16 +986,21 @@ class App {
   }
 
   adminDeleteImageFolder(folderId) {
-    if (confirm('確定要刪除此圖片群組嗎？\n（其中的圖片不會被刪除，會移回無群組狀態）')) {
-      db.ref(`quiz/imageFolders/${folderId}`).remove().then(() => {
-        this.images.forEach(img => {
-          if (img.folderId === folderId) {
-            db.ref(`images/${img.id}/folderId`).remove();
-          }
+    this.showConfirmModal(
+      '🖼️',
+      '確定要刪除此圖片群組嗎？',
+      '其中的圖片不會被刪除，會移回無群組狀態。',
+      () => {
+        db.ref(`quiz/imageFolders/${folderId}`).remove().then(() => {
+          this.images.forEach(img => {
+            if (img.folderId === folderId) {
+              db.ref(`images/${img.id}/folderId`).remove();
+            }
+          });
+          this.showNotification('成功', '圖片群組已刪除');
         });
-        this.showNotification('成功', '圖片群組已刪除');
-      });
-    }
+      }
+    );
   }
 
   assignQuestionFolder(questionId, folderId) {
@@ -1268,16 +1293,21 @@ class App {
   }
 
   adminDeleteVideoFolder(folderId) {
-    if (confirm('確定要刪除此影片群組嗎？\n（其中的影片不會被刪除，會移回無群組狀態）')) {
-      db.ref(`quiz/videoFolders/${folderId}`).remove().then(() => {
-        this.videos.forEach(vid => {
-          if (vid.folderId === folderId) {
-            db.ref(`videos/${vid.id}/folderId`).remove();
-          }
+    this.showConfirmModal(
+      '🎥',
+      '確定要刪除此影片群組嗎？',
+      '其中的影片不會被刪除，會移回無群組狀態。',
+      () => {
+        db.ref(`quiz/videoFolders/${folderId}`).remove().then(() => {
+          this.videos.forEach(vid => {
+            if (vid.folderId === folderId) {
+              db.ref(`videos/${vid.id}/folderId`).remove();
+            }
+          });
+          this.showNotification('成功', '影片群組已刪除');
         });
-        this.showNotification('成功', '影片群組已刪除');
-      });
-    }
+      }
+    );
   }
 
   renderVideoFoldersList() {
@@ -3692,26 +3722,31 @@ class App {
   }
 
   adminDeleteShareFolder(folderId) {
-    if (!confirm('確定要刪除此資料夾嗎？（資料夾內的分享內容將會保留為「未分類」）')) return;
-    
-    this.shareFoldersRef.child(folderId).remove()
-      .then(() => {
-        this.sharesRef.once('value').then(snapshot => {
-          const updates = {};
-          snapshot.forEach(child => {
-            if (child.val().folderId === folderId) {
-              updates[`${child.key}/folderId`] = '';
-            }
+    this.showConfirmModal(
+      '📢',
+      '確定要刪除此資料夾嗎？',
+      '資料夾內的分享內容將會保留為「未分類」。',
+      () => {
+        this.shareFoldersRef.child(folderId).remove()
+          .then(() => {
+            this.sharesRef.once('value').then(snapshot => {
+              const updates = {};
+              snapshot.forEach(child => {
+                if (child.val().folderId === folderId) {
+                  updates[`${child.key}/folderId`] = '';
+                }
+              });
+              if (Object.keys(updates).length > 0) {
+                this.sharesRef.update(updates);
+              }
+            });
+            this.showNotification('成功', '資料夾已刪除');
+          })
+          .catch(err => {
+            this.showNotification('錯誤', '刪除失敗: ' + err.message);
           });
-          if (Object.keys(updates).length > 0) {
-            this.sharesRef.update(updates);
-          }
-        });
-        this.showNotification('成功', '資料夾已刪除');
-      })
-      .catch(err => {
-        this.showNotification('錯誤', '刪除失敗: ' + err.message);
-      });
+      }
+    );
   }
 
   renderShareFoldersList() {
@@ -3851,14 +3886,20 @@ class App {
   }
 
   deleteShareItem(id) {
-    if (!confirm('確定要刪除此分享項目嗎？')) return;
-    this.sharesRef.child(id).remove()
-      .then(() => {
-        this.showNotification('成功', '已刪除分享項目');
-      })
-      .catch(err => {
-        this.showNotification('錯誤', '刪除失敗: ' + err.message);
-      });
+    this.showConfirmModal(
+      '📢',
+      '確定要刪除此分享項目嗎？',
+      '此動作無法復原。',
+      () => {
+        this.sharesRef.child(id).remove()
+          .then(() => {
+            this.showNotification('成功', '已刪除分享項目');
+          })
+          .catch(err => {
+            this.showNotification('錯誤', '刪除失敗: ' + err.message);
+          });
+      }
+    );
   }
 
   deleteSelectedShares() {
@@ -3867,24 +3908,30 @@ class App {
       this.showNotification('提示', '請先勾選要刪除的項目！');
       return;
     }
-    if (!confirm(`確定要刪除這 ${checkboxes.length} 個分享項目嗎？`)) return;
+    
+    this.showConfirmModal(
+      '📢',
+      `確定要刪除這 ${checkboxes.length} 個分享項目嗎？`,
+      '所選項目將被永久刪除且無法復原。',
+      () => {
+        this.showNotification('提示', '正在刪除項目...');
+        const promises = Array.from(checkboxes).map(cb => {
+          const id = cb.getAttribute('data-id');
+          return this.sharesRef.child(id).remove();
+        });
 
-    this.showNotification('提示', '正在刪除項目...');
-    const promises = Array.from(checkboxes).map(cb => {
-      const id = cb.getAttribute('data-id');
-      return this.sharesRef.child(id).remove();
-    });
-
-    Promise.all(promises)
-      .then(() => {
-        this.showNotification('成功', '選取的項目已刪除！');
-        const selectAll = document.getElementById('selectAllShares');
-        if (selectAll) selectAll.checked = false;
-        this.updateBatchShareSelectCount();
-      })
-      .catch(err => {
-        this.showNotification('錯誤', '刪除失敗: ' + err.message);
-      });
+        Promise.all(promises)
+          .then(() => {
+            this.showNotification('成功', '選取的項目已刪除！');
+            const selectAll = document.getElementById('selectAllShares');
+            if (selectAll) selectAll.checked = false;
+            this.updateBatchShareSelectCount();
+          })
+          .catch(err => {
+            this.showNotification('錯誤', '刪除失敗: ' + err.message);
+          });
+      }
+    );
   }
 
   renderImages() {
