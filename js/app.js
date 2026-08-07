@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.2.3';
+    this.APP_VERSION = '2.2.4';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -7118,7 +7118,7 @@ class App {
     const list = document.getElementById(listContainerId);
     if (!list) return;
 
-    if (this.focusGame && (this.focusGame.gameType === 'characterTest' || this.focusGame.gameType === 'characterCrossword')) {
+    if (this.focusGame && (this.focusGame.gameType === 'characterTest' || this.focusGame.gameType === 'characterCrossword' || this.focusGame.gameType === 'characterUnitedWords')) {
       if (listContainerId === 'adminFocusGameRankList') {
         this.renderAdminCharacterTestSubmissions(list, results);
       } else {
@@ -7151,15 +7151,10 @@ class App {
       const fontWeight = isTop3 ? 'bold' : 'normal';
       const displayName = this.escapeHtml(res.userName || res.name || '匿名學生');
 
-      let detailHtml = '';
-      if (isTaiko) {
-        detailHtml = `<span style="color: var(--danger-color); font-weight: 900; font-size: 15px;">🎯 ${(res.score || 0).toLocaleString()} 分</span> <span style="font-size: 12px; color: var(--text-secondary); margin-left: 6px;">(🔥 ${res.maxCombo || 0} Combo | 🌟${res.perfect || 0}/👍${res.good || 0}/❌${res.miss || 0})</span>`;
-      } else {
-        const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
-        const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
-        const timeStr = typeof res.timeSpent === 'number' ? res.timeSpent.toFixed(2) : '-';
-        detailHtml = `<span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${timeStr} 秒 ${helpNote}${memoryNote}</span>`;
-      }
+      const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
+      const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
+      const timeStr = typeof res.timeSpent === 'number' ? res.timeSpent.toFixed(2) : '-';
+      const detailHtml = `<span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${timeStr} 秒 ${helpNote}${memoryNote}</span>`;
 
       return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
@@ -7718,18 +7713,19 @@ class App {
     
     const questions = (this.focusGame && this.focusGame.questions) || [];
     const isCrossword = this.focusGame && this.focusGame.gameType === 'characterCrossword';
+    const isUnited = this.focusGame && this.focusGame.gameType === 'characterUnitedWords';
     
     let headerHtml = '';
-    if (isCrossword) {
-      const correctAnswersText = questions.map(q => q.char).join(' ');
+    if (isCrossword || isUnited) {
+      const correctAnswersText = questions.map(q => q.targetWord || q.char || '').join(' ');
       headerHtml = `
         <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; line-height: 1.8;">
-          標準答案：${this.escapeHtml(correctAnswersText)}
+          💡 標準答案：<span style="font-size: 18px; color: var(--accent-color); font-weight: 900;">${this.escapeHtml(correctAnswersText)}</span><br>
+          🎨 標色說明：🟢 綠色代表與標準答案相同；🔴 紅色代表與標準答案不同，方便您快速核對審查。
         </div>
       `;
     } else {
       const correctAnswersLinks = questions.map(q => {
-        // 使用題庫定義的搜尋字詞，若無則 fallback 進行自動擷取
         let searchWord = q.searchWord || q.char;
         if (!q.searchWord && q.clue) {
           let filled = q.clue;
@@ -7767,8 +7763,12 @@ class App {
       }
       
       const answerDisplay = answers.map((ans, idx) => {
-        const correct = questions[idx] && questions[idx].char;
-        const color = ans === correct ? '#28a745' : '#dc3545';
+        const q = questions[idx] || questions[0];
+        let correct = (q && (q.char || q.targetWord)) || '';
+        if (isUnited && typeof correct === 'string' && correct.length > idx) {
+          correct = correct[idx];
+        }
+        const color = (ans && correct && ans === correct) ? '#28a745' : '#dc3545';
         return `<span style="color: ${color}; font-weight: bold; font-size: 15px; margin: 0 4px; padding: 2px 6px; border: 1px solid ${color}; border-radius: 4px; background: #fff8f8; font-family: 'DFKai-SB', serif;">${this.escapeHtml(ans)}</span>`;
       }).join('');
       
