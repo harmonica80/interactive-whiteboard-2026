@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.2.2';
+    this.APP_VERSION = '2.2.3';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -7515,36 +7515,56 @@ class App {
     const questions = this.focusGame.questions || [];
     if (questions.length === 0) return;
 
-    const isCrossword = this.focusGame.gameType === 'characterCrossword';
+    const gameType = this.focusGame.gameType;
+    const isCrossword = gameType === 'characterCrossword';
+    const isUnited = gameType === 'characterUnitedWords';
     const penaltyAmount = isCrossword ? 10 : 5;
 
-    // 先尋找第一個未填寫的格子索引 (value 為空)
-    let targetIdx = -1;
-    const maxIdx = isCrossword ? 1 : 3;
-    for (let i = 0; i < maxIdx; i++) {
-      const input = document.getElementById(`char-test-input-${i}`);
-      const val = input ? input.value.trim() : '';
-      if (!val) {
-        targetIdx = i;
-        break;
+    let targetInput = null;
+    let hintChar = '';
+
+    if (isUnited) {
+      const q = questions[0];
+      const ansStr = (q && (q.targetWord || q.answer)) || '';
+      const in0 = document.getElementById('char-test-input-0-0');
+      const in1 = document.getElementById('char-test-input-0-1');
+      const v0 = (in0 && in0.value) ? String(in0.value).trim() : '';
+      const v1 = (in1 && in1.value) ? String(in1.value).trim() : '';
+      if (in0 && !v0) {
+        targetInput = in0;
+        hintChar = ansStr[0] || '';
+      } else if (in1 && !v1) {
+        targetInput = in1;
+        hintChar = ansStr[1] || ansStr[0] || '';
+      } else {
+        targetInput = in0 || in1;
+        hintChar = ansStr[0] || '';
       }
-    }
-    // 如果全部都填寫了，預設提示第一個
-    if (targetIdx === -1) {
-      targetIdx = 0;
+    } else {
+      let targetIdx = 0;
+      for (let i = 0; i < questions.length; i++) {
+        const inp = document.getElementById(`char-test-input-${i}`);
+        const v = (inp && inp.value) ? String(inp.value).trim() : '';
+        if (inp && !v) {
+          targetIdx = i;
+          break;
+        }
+      }
+      const q = questions[targetIdx] || questions[0];
+      targetInput = document.getElementById(`char-test-input-${targetIdx}`);
+      hintChar = (q && (q.char || q.targetWord || q.answer)) || '';
     }
 
-    const q = questions[targetIdx];
-    const input = document.getElementById(`char-test-input-${targetIdx}`);
-    if (input) {
-      // 懲罰時間與提示次數計費
-      this.focusHelpCount = (this.focusHelpCount || 0) + 1;
-      this.focusHelpPenaltySeconds = (this.focusHelpPenaltySeconds || 0) + penaltyAmount;
+    if (!targetInput || !hintChar) return;
 
-      const originalVal = input.value;
-      input.value = q.char; // 顯現正確答案
-      input.style.color = '#ff9500'; // 提示時以橘色字體顯著標示
-      input.disabled = true;
+    // 懲罰時間與提示次數計費
+    this.focusHelpCount = (this.focusHelpCount || 0) + 1;
+    this.focusHelpPenaltySeconds = (this.focusHelpPenaltySeconds || 0) + penaltyAmount;
+
+    const originalVal = targetInput.value;
+    targetInput.value = hintChar; // 顯現正確答案
+    targetInput.style.color = '#ff9500'; // 提示時以橘色字體顯著標示
+    targetInput.style.fontWeight = '900';
 
       // 暫時鎖定下方的提示按鈕，避免連續點擊造成異常
       const hintBtn = document.getElementById('focusCharTestHintBtn');
@@ -7562,16 +7582,15 @@ class App {
 
       // 2 秒後還原原始輸入內容，並解鎖輸入框和提示按鈕
       setTimeout(() => {
-        input.value = originalVal;
-        input.style.color = 'var(--accent-color)';
-        input.disabled = false;
+        if (targetInput) {
+          targetInput.value = originalVal;
+          targetInput.style.color = 'var(--accent-color)';
+        }
         if (hintBtn) {
           hintBtn.disabled = false;
           hintBtn.style.opacity = '1';
         }
-        input.focus();
       }, 2000);
-    }
   }
 
   renderCharacterTestPlayCompleted(game, result) {
