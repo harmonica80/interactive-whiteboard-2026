@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.2.1';
+    this.APP_VERSION = '2.2.2';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -7223,10 +7223,10 @@ class App {
             <!-- 中間：雙字九宮格輸入區 -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 6px;">
               <div class="chinese-writing-grid">
-                <input type="text" class="char-test-input-box" id="char-test-input-${idx}-0" maxlength="1" placeholder="字1" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); document.getElementById('char-test-input-${idx}-1')?.focus(); }">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}-0" maxlength="10" placeholder="字1" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;">
               </div>
               <div class="chinese-writing-grid">
-                <input type="text" class="char-test-input-box" id="char-test-input-${idx}-1" maxlength="1" placeholder="字2" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); }">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}-1" maxlength="10" placeholder="字2" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;">
               </div>
             </div>
 
@@ -7256,7 +7256,7 @@ class App {
                 
                 <div class="character-crossword-cell empty"></div>
                 <div class="chinese-writing-grid" style="width: 80px; height: 80px;">
-                  <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); }">
+                  <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="10" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 40px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;">
                 </div>
                 <div class="character-crossword-cell empty"></div>
                 
@@ -7284,7 +7284,7 @@ class App {
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
               <!-- 左側：寫字九宮格輸入 -->
               <div class="chinese-writing-grid">
-                <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="1" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;" oninput="this.value = this.value.replace(/[^\\u4e00-\\u9fa5]/g, ''); if(this.value.trim()){ const g = this.closest('.chinese-writing-grid'); if(g) g.classList.remove('unfilled-fluorescent-highlight'); }">
+                <input type="text" class="char-test-input-box" id="char-test-input-${idx}" maxlength="10" placeholder="寫" style="width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 44px; font-weight: bold; color: var(--accent-color); outline: none; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; padding: 0; box-sizing: border-box;">
               </div>
               <!-- 右側：注音九宮格 -->
               <div class="chinese-writing-grid">
@@ -7311,6 +7311,7 @@ class App {
     `;
     
     grid.innerHTML = html;
+    this.bindCharInputImeEvents(grid);
     
     // 設定計時器
     this.focusStartTimeLocal = game.startTime || Date.now();
@@ -7338,6 +7339,56 @@ class App {
       const g1 = input1.closest('.chinese-writing-grid');
       if (g1) g1.classList.remove('unfilled-fluorescent-highlight');
     }
+  }
+
+  bindCharInputImeEvents(container) {
+    if (!container) return;
+    const inputs = container.querySelectorAll('.char-test-input-box');
+    inputs.forEach((input) => {
+      let isComposing = false;
+
+      const parentGrid = input.closest('.chinese-writing-grid');
+      if (parentGrid) {
+        parentGrid.style.cursor = 'pointer';
+        parentGrid.onclick = (e) => {
+          if (e.target !== input) {
+            input.focus();
+          }
+        };
+      }
+
+      input.addEventListener('compositionstart', () => {
+        isComposing = true;
+      });
+
+      input.addEventListener('compositionend', () => {
+        isComposing = false;
+        processChineseValue(input);
+      });
+
+      input.addEventListener('input', () => {
+        if (!isComposing) {
+          processChineseValue(input);
+        }
+      });
+
+      function processChineseValue(el) {
+        const matches = el.value.match(/[\u4e00-\u9fa5\u3400-\u4dbf\uf900-\ufaff]/g);
+        if (matches && matches.length > 0) {
+          el.value = matches[matches.length - 1];
+          const g = el.closest('.chinese-writing-grid');
+          if (g) g.classList.remove('unfilled-fluorescent-highlight');
+          
+          if (el.id && el.id.endsWith('-0')) {
+            const nextId = el.id.replace('-0', '-1');
+            const nextEl = document.getElementById(nextId);
+            if (nextEl) nextEl.focus();
+          }
+        } else if (!isComposing) {
+          el.value = '';
+        }
+      }
+    });
   }
 
   submitCharTestAnswers() {
