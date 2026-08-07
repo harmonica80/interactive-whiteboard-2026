@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.2.5';
+    this.APP_VERSION = '2.2.6';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -319,10 +319,25 @@ class App {
     document.getElementById('customConfirmModal').classList.add('active');
   }
 
-  closeConfirmModal() {
-    document.getElementById('customConfirmModal').classList.remove('active');
+  sortFoldersTopPriority(a, b) {
+    const hasOrderA = typeof a.sortOrder === 'number';
+    const hasOrderB = typeof b.sortOrder === 'number';
+
+    if (hasOrderA && hasOrderB) {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    } else if (hasOrderA && !hasOrderB) {
+      return -1;
+    } else if (!hasOrderA && hasOrderB) {
+      return 1;
+    }
+
+    const timeA = a.createdAt || 0;
+    const timeB = b.createdAt || 0;
+    if (timeA !== timeB) return timeB - timeA;
+
+    return (b.id || '').localeCompare(a.id || '');
   }
-  
+
   setupRealtimeSync() {
     // 即時監聽全域留言資料庫以計算與更新卡片右上角留言數量通知徽章
     this.allCommentCounts = { questions: {}, images: {}, videos: {}, shares: {} };
@@ -394,15 +409,7 @@ class App {
       snapshot.forEach(child => {
         folders.push({ id: child.key, ...child.val() });
       });
-      folders.sort((a, b) => {
-        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
-        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
-        if (orderA !== orderB) return orderA - orderB;
-        const timeA = a.createdAt || 0;
-        const timeB = b.createdAt || 0;
-        if (timeA !== timeB) return timeB - timeA;
-        return a.name.localeCompare(b.name, 'zh-hant');
-      });
+      folders.sort((a, b) => this.sortFoldersTopPriority(a, b));
       this.questionFolders = folders;
       this.renderQuestionFoldersList();
       this.renderBatchQuestionFolderOptions();
@@ -415,15 +422,7 @@ class App {
       snapshot.forEach(child => {
         folders.push({ id: child.key, ...child.val() });
       });
-      folders.sort((a, b) => {
-        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
-        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
-        if (orderA !== orderB) return orderA - orderB;
-        const timeA = a.createdAt || 0;
-        const timeB = b.createdAt || 0;
-        if (timeA !== timeB) return timeB - timeA;
-        return a.name.localeCompare(b.name, 'zh-hant');
-      });
+      folders.sort((a, b) => this.sortFoldersTopPriority(a, b));
       this.imageFolders = folders;
       this.renderImageFoldersList();
       this.renderBatchImageFolderOptions();
@@ -450,15 +449,7 @@ class App {
       snapshot.forEach(child => {
         folders.push({ id: child.key, ...child.val() });
       });
-      folders.sort((a, b) => {
-        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
-        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
-        if (orderA !== orderB) return orderA - orderB;
-        const timeA = a.createdAt || 0;
-        const timeB = b.createdAt || 0;
-        if (timeA !== timeB) return timeB - timeA;
-        return a.name.localeCompare(b.name, 'zh-hant');
-      });
+      folders.sort((a, b) => this.sortFoldersTopPriority(a, b));
       this.videoFolders = folders;
       this.renderVideoFoldersList();
       this.renderBatchVideoFolderOptions();
@@ -490,15 +481,7 @@ class App {
       snapshot.forEach(child => {
         folders.push({ id: child.key, ...child.val() });
       });
-      folders.sort((a, b) => {
-        const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
-        const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
-        if (orderA !== orderB) return orderA - orderB;
-        const timeA = a.createdAt || 0;
-        const timeB = b.createdAt || 0;
-        if (timeA !== timeB) return timeB - timeA;
-        return a.name.localeCompare(b.name, 'zh-hant');
-      });
+      folders.sort((a, b) => this.sortFoldersTopPriority(a, b));
       this.shareFolders = folders;
       this.renderShareFoldersList();
       this.updateShareFolderDropdowns();
