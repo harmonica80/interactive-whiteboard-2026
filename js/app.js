@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.2.4';
+    this.APP_VERSION = '2.2.5';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -398,6 +398,9 @@ class App {
         const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
         const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
         if (orderA !== orderB) return orderA - orderB;
+        const timeA = a.createdAt || 0;
+        const timeB = b.createdAt || 0;
+        if (timeA !== timeB) return timeB - timeA;
         return a.name.localeCompare(b.name, 'zh-hant');
       });
       this.questionFolders = folders;
@@ -416,6 +419,9 @@ class App {
         const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
         const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
         if (orderA !== orderB) return orderA - orderB;
+        const timeA = a.createdAt || 0;
+        const timeB = b.createdAt || 0;
+        if (timeA !== timeB) return timeB - timeA;
         return a.name.localeCompare(b.name, 'zh-hant');
       });
       this.imageFolders = folders;
@@ -448,6 +454,9 @@ class App {
         const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
         const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
         if (orderA !== orderB) return orderA - orderB;
+        const timeA = a.createdAt || 0;
+        const timeB = b.createdAt || 0;
+        if (timeA !== timeB) return timeB - timeA;
         return a.name.localeCompare(b.name, 'zh-hant');
       });
       this.videoFolders = folders;
@@ -485,6 +494,9 @@ class App {
         const orderA = a.sortOrder !== undefined ? a.sortOrder : 999999;
         const orderB = b.sortOrder !== undefined ? b.sortOrder : 999999;
         if (orderA !== orderB) return orderA - orderB;
+        const timeA = a.createdAt || 0;
+        const timeB = b.createdAt || 0;
+        if (timeA !== timeB) return timeB - timeA;
         return a.name.localeCompare(b.name, 'zh-hant');
       });
       this.shareFolders = folders;
@@ -927,7 +939,12 @@ class App {
       this.showNotification('提示', '請輸入提問群組名稱');
       return;
     }
-    db.ref('quiz/questionFolders').push({ name: name }).then(() => {
+    const minOrder = (this.questionFolders || []).reduce((min, f) => (f.sortOrder !== undefined && f.sortOrder < min ? f.sortOrder : min), 0);
+    db.ref('quiz/questionFolders').push({
+      name: name,
+      createdAt: Date.now(),
+      sortOrder: minOrder - 1
+    }).then(() => {
       input.value = '';
       this.showNotification('成功', '提問群組已建立');
     });
@@ -954,7 +971,12 @@ class App {
       this.showNotification('提示', '請輸入圖片群組名稱');
       return;
     }
-    db.ref('quiz/imageFolders').push({ name: name }).then(() => {
+    const minOrder = (this.imageFolders || []).reduce((min, f) => (f.sortOrder !== undefined && f.sortOrder < min ? f.sortOrder : min), 0);
+    db.ref('quiz/imageFolders').push({
+      name: name,
+      createdAt: Date.now(),
+      sortOrder: minOrder - 1
+    }).then(() => {
       input.value = '';
       this.showNotification('成功', '圖片群組已建立');
     });
@@ -1251,7 +1273,12 @@ class App {
       this.showNotification('提示', '請輸入影片群組名稱');
       return;
     }
-    db.ref('quiz/videoFolders').push({ name: name }).then(() => {
+    const minOrder = (this.videoFolders || []).reduce((min, f) => (f.sortOrder !== undefined && f.sortOrder < min ? f.sortOrder : min), 0);
+    db.ref('quiz/videoFolders').push({
+      name: name,
+      createdAt: Date.now(),
+      sortOrder: minOrder - 1
+    }).then(() => {
       input.value = '';
       this.showNotification('成功', '影片群組已建立');
     });
@@ -3668,8 +3695,11 @@ class App {
       return;
     }
     
+    const minOrder = (this.shareFolders || []).reduce((min, f) => (f.sortOrder !== undefined && f.sortOrder < min ? f.sortOrder : min), 0);
     this.shareFoldersRef.push({
-      name: name
+      name: name,
+      createdAt: Date.now(),
+      sortOrder: minOrder - 1
     }).then(() => {
       input.value = '';
       this.showNotification('成功', '資料夾已建立');
