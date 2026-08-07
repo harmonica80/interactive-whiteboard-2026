@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.2.6</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.2.7</span>
         </p>
       </div>
       <div class="top-actions">
@@ -1109,14 +1109,14 @@ Python</pre>
   </div>
   
   <!-- 整合通用確認彈出視窗 -->
-  <div id="customConfirmModal" class="modal-overlay confirm-modal">
+  <div id="customConfirmModal" class="modal-overlay confirm-modal" onclick="if(event.target === this && window.app) window.app.closeConfirmModal()">
     <div class="modal-content">
       <div class="modal-body">
         <div id="confirmModalIcon" style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
         <div id="confirmModalText" style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: var(--text-primary);">確定要重設嗎？</div>
         <div id="confirmModalSubtext" style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">這將清除所有提問、測驗及圖片資料</div>
         <div class="confirm-actions">
-          <button class="confirm-btn cancel" onclick="closeCustomConfirmModal()">取消</button>
+          <button class="confirm-btn cancel" onclick="if(window.app) window.app.closeConfirmModal(); else closeCustomConfirmModal();">取消</button>
           <button id="confirmModalBtn" class="confirm-btn confirm">確定</button>
         </div>
       </div>
