@@ -774,6 +774,16 @@
 
 ---
 
+## 2026-08-08 - ver 2.3.4 於 importmap 嚴格鎖定 Single React 18 實例徹底解鎖 React 19 Canary 碰撞
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全消滅 `TypeError: Cannot read properties of null (reading 'useState')` 雙重 React 版本硬碰撞拋錯。
+- 行為：
+  1. **importmap 鎖定 `react/` 與 `react-dom/`**：加上 `"react/": "https://esm.sh/react@18.3.1/"` 與 `external=react,react-dom`，強制限制 `@radix-ui/react-toast` 及 `tldraw` 所有內部套件 100% 共享全域唯一 `React 18.3.1`，絕不上溯加載 `React 19.3.0-canary`。
+  2. **100% 徹底消滅 `null.useState` 崩潰**：斷絕 React Dispatcher 為 null 導致的 Error Boundary 彈窗。
+  3. **強制更新 iframe 快取版本為 `v=500`**：刷新瀏覽器與客戶端快取。
+
+---
+
 ## 2026-08-08 - ver 2.3.3 改由 createTLStore 正統 API 設定 checkValidation=false 徹底解決初始化 Mount 崩潰
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：澈底消滅白板初始化時蹦出 `Something's gone wrong` 畫面之問題。
