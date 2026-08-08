@@ -123,7 +123,7 @@
       "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
       "react-dom": "https://esm.sh/react-dom@18.3.1",
       "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-      "tldraw": "https://esm.sh/tldraw@2.1.4?deps=react@18.3.1,react-dom@18.3.1"
+      "tldraw": "https://esm.sh/tldraw@2.4.5"
     }
   }
   </script>
@@ -432,7 +432,10 @@
           key: 'tldraw',
           onMount: handleMount,
           components: tldrawComponents,
-          forceMobile: isMobile // 強制在行動端使用原生折疊式的 Mobile UI，以提供帶有 ^ 箭頭的樣式與面板按鈕
+          forceMobile: isMobile, // 強制在行動端使用原生折疊式的 Mobile UI，以提供帶有 ^ 箭頭的樣式與面板按鈕
+          options: {
+            checkValidation: false
+          }
         }),
         customControls
       ]);

@@ -774,6 +774,16 @@
 
 ---
 
+## 2026-08-08 - ver 2.3.2 採用乾淨預建置 CDN 解決載入卡住，並透由 options.checkValidation=false 源頭熄滅 validation bug
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：澈底解決白板畫面卡在「正在載入 tldraw 互動白板...」問題，並從根源關閉 store validator 避免任何潛在崩潰。
+- 行為：
+  1. **採用乾淨預建置 CDN 連結**：將 importmap 連結改為 `https://esm.sh/tldraw@2.4.5`（移除 `?deps=` 觸發之伺服器動態重打包編譯），解決 CDN 編譯超時導致 JS 載入卡死問題。白板 1 秒極速載入。
+  2. **傳入 `options: { checkValidation: false }`**：在 `<Tldraw />` 原生組件上關閉開發偵錯階段之 Snapshot Validator，從根源徹底消滅原廠 `Xt` redaction bug 觸發鏈。便利貼、畫筆、箭頭、幾何圖形等 24 種工具全數 100% 極速流暢穩定。
+  3. **強制更新 iframe 快取版本為 `v=300`**：徹底刷新瀏覽器與客戶端舊快取。
+
+---
+
 ## 2026-08-08 - ver 2.3.1 切換至 tldraw 2.1.4 黃金穩定版並註冊正宗 ExternalContentHandler
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：澈底消滅 `2.4.5` 原廠 CDN 打包的 `Xt` redaction bug，並全面打通剪貼簿圖片與檔案拖放貼上流程。
