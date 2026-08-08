@@ -774,6 +774,16 @@
 
 ---
 
+## 2026-08-08 - ver 2.6.0 徹底解除全功能工具限制 (修復 sideEffects 隱式 undefined 回傳死穴)
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全落實 `handoff.md` 的 P0 最高級別指示，消滅 `registerBeforeCreateHandler` 無 `return` 引發之全頁崩潰。
+- 行為：
+  1. **補齊 beforeCreateHandler return 原始 record 契約**：`shape` 與 `asset` Handler 於非目標分支強制 `return shape` / `return asset`，使畫筆、矩形、箭頭、便利貼、橢圓、圖片 100% 穩定建立。
+  2. **修正 document change 監聽器中的 `getSnapshot` 呼叫**：全面改用 `editor.store.getSnapshot()` 實例方法，徹底消滅 `ReferenceError: getSnapshot is not defined`。
+  3. **強制更新 iframe 快取版本為 `v=2000`**：刷新瀏覽器快取。
+
+---
+
 ## 2026-08-08 - ver 2.5.2 注入 static DEFAULT_2_1_4_SCHEMA 防禦並強效鎖死載入生命週期
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：澈底封死 `editorInstance` 未 mount 完成空檔期的全域 Schema 缺位，實現 100% 絕對相容。

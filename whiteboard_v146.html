@@ -411,7 +411,6 @@
                   try { editor.setStyleForNextShapes(prop, 'sans'); } catch(e){}
                 }
               });
-              // 遍歷所有包含 font 的 StyleProp
               Object.keys(window.tldraw).forEach(key => {
                 if (key.toLowerCase().includes('font') && window.tldraw[key]) {
                   try { editor.setStyleForNextShapes(window.tldraw[key], 'sans'); } catch(e){}
@@ -425,11 +424,11 @@
 
         applySansFontDefault();
 
-        // 核心防線：攔截所有新建 shape & asset 補充必要欄位
+        // 核心防線：攔截所有新建 shape & asset 補充必要欄位 (必填：未修改之 record 必須原樣 return 回傳，防止 tldraw 接收 undefined 爆發 validation 崩潰)
         try {
           if (editor.sideEffects && typeof editor.sideEffects.registerBeforeCreateHandler === 'function') {
             editor.sideEffects.registerBeforeCreateHandler('shape', (shape) => {
-              if (shape.type === 'text' && shape.props && shape.props.font === 'draw') {
+              if (shape && shape.type === 'text' && shape.props && shape.props.font === 'draw') {
                 return {
                   ...shape,
                   props: {
@@ -438,6 +437,7 @@
                   }
                 };
               }
+              return shape;
             });
             editor.sideEffects.registerBeforeCreateHandler('asset', (asset) => {
               if (asset && !asset.typeName) {
@@ -446,6 +446,7 @@
                   typeName: 'asset'
                 };
               }
+              return asset;
             });
           }
         } catch (e) {
@@ -472,8 +473,19 @@
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
               try {
-                const snapshot = getSnapshot(editor.store);
-                if (window.parent && window.parent !== window) {
+                const snapshot = editor.store ? editor.store.getSnapshot() : null;
+                if (snapshot && window.parent && window.parent !== window) {
+                  window.parent.postMessage({
+                    type: 'TLDRAW_LOCAL_CHANGE',
+                    snapshot: snapshot
+                  }, '*');
+                }
+              } catch (err) {
+                console.error('Failed to capture local tldraw change:', err);
+              }
+            }, 250);
+          }
+        }, { scope: 'document' });
                   window.parent.postMessage({
                     type: 'TLDRAW_LOCAL_CHANGE',
                     snapshot: snapshot
