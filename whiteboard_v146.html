@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
@@ -25,6 +25,15 @@
       width: 100%;
       height: 100%;
       touch-action: none;
+    }
+    /* 桌面白板平移時，覆寫 tldraw 元件的游標，提供明確的抓取手操作回饋。 */
+    #root.whiteboard-pan-ready,
+    #root.whiteboard-pan-ready * {
+      cursor: grab !important;
+    }
+    #root.whiteboard-panning,
+    #root.whiteboard-panning * {
+      cursor: grabbing !important;
     }
     /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
     @media (max-width: 768px) {
@@ -424,6 +433,106 @@
 
         applySansFontDefault();
 
+        // 桌面導覽輸入保護：直接處理 Ctrl+滾輪、空白鍵拖曳與中鍵拖曳，並同步提供游標回饋。
+        const navigationInput = {
+          spaceHeld: false,
+          pan: null
+        };
+        window.whiteboardNavigationDiagnostics = { ctrlWheel: 0, spacePan: 0, middlePan: 0 };
+        const whiteboardRoot = document.getElementById('root');
+        const updateNavigationCursor = () => {
+          if (!whiteboardRoot) return;
+          whiteboardRoot.classList.toggle('whiteboard-panning', Boolean(navigationInput.pan));
+          whiteboardRoot.classList.toggle('whiteboard-pan-ready', navigationInput.spaceHeld && !navigationInput.pan);
+        };
+
+        const isTextEntryTarget = (target) => {
+          if (!(target instanceof Element)) return false;
+          return Boolean(target.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]'));
+        };
+
+        const isCanvasTarget = (target) => {
+          if (!(target instanceof Element)) return false;
+          return Boolean(target.closest('.tl-canvas, .tl-container'));
+        };
+
+        const stopCanvasEvent = (event) => {
+          if (event.cancelable) event.preventDefault();
+          event.stopImmediatePropagation();
+        };
+
+        window.addEventListener('wheel', (event) => {
+          if (!event.ctrlKey || !isCanvasTarget(event.target)) return;
+          stopCanvasEvent(event);
+          window.whiteboardNavigationDiagnostics.ctrlWheel += 1;
+          const screenPoint = { x: event.clientX, y: event.clientY };
+          const noAnimation = { animation: { duration: 0 } };
+          if (event.deltaY < 0) {
+            editor.zoomIn(screenPoint, noAnimation);
+          } else if (event.deltaY > 0) {
+            editor.zoomOut(screenPoint, noAnimation);
+          }
+        }, { capture: true, passive: false });
+
+        window.addEventListener('keydown', (event) => {
+          if (event.code !== 'Space' || isTextEntryTarget(event.target)) return;
+          navigationInput.spaceHeld = true;
+          updateNavigationCursor();
+        }, true);
+
+        window.addEventListener('keyup', (event) => {
+          if (event.code === 'Space') {
+            navigationInput.spaceHeld = false;
+            updateNavigationCursor();
+          }
+        }, true);
+
+        window.addEventListener('pointerdown', (event) => {
+          const isSpacePan = navigationInput.spaceHeld && event.button === 0;
+          const isMiddlePan = event.button === 1;
+          if (!isCanvasTarget(event.target) || (!isSpacePan && !isMiddlePan)) return;
+          stopCanvasEvent(event);
+          navigationInput.pan = {
+            pointerId: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            mode: isMiddlePan ? 'middle' : 'space'
+          };
+          updateNavigationCursor();
+        }, true);
+
+        window.addEventListener('pointermove', (event) => {
+          const pan = navigationInput.pan;
+          if (!pan || event.pointerId !== pan.pointerId) return;
+          stopCanvasEvent(event);
+          const dx = event.clientX - pan.x;
+          const dy = event.clientY - pan.y;
+          if (dx === 0 && dy === 0) return;
+          const camera = editor.getCamera();
+          editor.setCamera({
+            x: camera.x - dx / camera.z,
+            y: camera.y - dy / camera.z,
+            z: camera.z
+          }, { animation: { duration: 0 } });
+          window.whiteboardNavigationDiagnostics[pan.mode === 'middle' ? 'middlePan' : 'spacePan'] += 1;
+          pan.x = event.clientX;
+          pan.y = event.clientY;
+        }, true);
+
+        const endNavigationPan = (event) => {
+          if (navigationInput.pan && event.pointerId === navigationInput.pan.pointerId) {
+            navigationInput.pan = null;
+            updateNavigationCursor();
+          }
+        };
+        window.addEventListener('pointerup', endNavigationPan, true);
+        window.addEventListener('pointercancel', endNavigationPan, true);
+        window.addEventListener('blur', () => {
+          navigationInput.spaceHeld = false;
+          navigationInput.pan = null;
+          updateNavigationCursor();
+        });
+
         // 核心防線：攔截所有新建 shape & asset 補充必要欄位 (必填：未修改之 record 必須原樣 return 回傳，防止 tldraw 接收 undefined 爆發 validation 崩潰)
         try {
           if (editor.sideEffects && typeof editor.sideEffects.registerBeforeCreateHandler === 'function') {
@@ -576,13 +685,23 @@
             userSelect: 'none',
             boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
           }
-        }, 'v1.6.1')
+        }, 'v1.6.4')
       ].filter(Boolean));
 
       const tldrawProps = {
         key: 'tldraw',
         onMount: handleMount,
         components: tldrawComponents,
+        options: {
+          // 明確固定桌面白板的導覽行為，避免日後套件預設值變更導致快捷鍵失效。
+          spacebarPanning: true,
+          camera: {
+            isLocked: false,
+            wheelBehavior: 'zoom',
+            panSpeed: 1,
+            zoomSpeed: 1
+          }
+        },
         forceMobile: isMobile // 行動端回歸 100% 原生 Mobile UI Layout，確保 Hitbox 點擊 100% 準確觸發
       };
 

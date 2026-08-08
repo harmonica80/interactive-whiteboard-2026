@@ -1,4 +1,4 @@
-
+﻿
 // 主程式
 class App {
   constructor() {
@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.6.1';
+    this.APP_VERSION = '2.6.4';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -9468,7 +9468,3 @@ window.addEventListener('pagehide', () => {
     window.app.stopTaikoBackgroundMusic();
   }
 });
-
-
-
-

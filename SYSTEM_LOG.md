@@ -1,4 +1,4 @@
-# System Log
+﻿# System Log
 ## 2026-08-08 - ver 2.6.1 白板初始化與自動化驗證修復
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `js/app.js`, `README.md`, `.gitignore`, `package.json`, `package-lock.json`, `playwright.config.mjs`, `scripts/check-whiteboard-syntax.mjs`, `tests/whiteboard.spec.mjs`, `.github/workflows/whiteboard-check.yml`, `SYSTEM_LOG.md`。
 - 修改項目：移除 tldraw document listener 後誤留的重複程式碼，修正 `Unexpected token 'catch'`，恢復白板初始化。
@@ -1104,3 +1104,21 @@
 
 
 
+
+## 2026-08-08 - ver 2.6.2 白板導覽快捷鍵明確化與驗證
+- 影響檔案：`whiteboard_v146.html`、`index.html`、`js/app.js`、`package.json`、`package-lock.json`、`tests/whiteboard.spec.mjs`、`SYSTEM_LOG.md`、`handoff.md`。
+- 修改項目：明確啟用 tldraw 的 `spacebarPanning`，並將相機設定固定為可移動、滾輪縮放、標準平移與縮放速度；更新 iframe 快取參數。
+- 驗證：Playwright 於白板直接頁面及主頁 iframe 皆驗證 Ctrl+滾輪縮放、空白鍵拖曳與中鍵拖曳平移；7 項測試全數通過。
+- 版本：主頁與 `APP_VERSION` 升級至 `2.6.2`；iframe cache version 更新至 `v=2002`，內嵌白板標示更新至 `v1.6.2`。
+
+## 2026-08-08 - ver 2.6.3 白板快捷鍵直接事件接管
+- 影響檔案：`whiteboard_v146.html`、`index.html`、`js/app.js`、`package.json`、`package-lock.json`、`tests/whiteboard.spec.mjs`、`SYSTEM_LOG.md`、`handoff.md`。
+- 修改項目：新增 capture-phase 輸入處理，直接接管 Ctrl+滾輪縮放、空白鍵左鍵拖曳與中鍵拖曳平移，不再依賴 tldraw 的預設快捷鍵處理。
+- 驗證：測試除了檢查 camera 變化，也檢查事件接管診斷計數，證明三種輸入均由新程式處理；7 項測試全數通過。
+- 版本：主頁與 `APP_VERSION` 升級至 `2.6.3`；iframe cache version 更新至 `v=2003`，內嵌白板標示更新至 `v1.6.3`。
+
+## 2026-08-09 - ver 2.6.4 白板平移手型游標回饋
+- 影響檔案：`whiteboard_v146.html`、`index.html`、`js/app.js`、`package.json`、`package-lock.json`、`tests/whiteboard.spec.mjs`、`SYSTEM_LOG.md`、`handoff.md`。
+- 修改項目：空白鍵按住時顯示 `grab` 抓取手，空白鍵或中鍵拖曳時顯示 `grabbing` 抓住手；在 pointerup、pointercancel、視窗失焦與空白鍵放開時正確清除狀態。
+- 驗證：Playwright 驗證根節點 class 與畫布計算後的 cursor 值，並維持縮放、平移與既有工具互動測試；7 項測試全數通過。
+- 版本：主頁與 `APP_VERSION` 升級至 `2.6.4`；iframe cache version 更新至 `v=2004`，內嵌白板標示更新至 `v1.6.4`。
