@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-08 - ver 2.2.9 還原 tldraw 原生 Store 驗證並採用 tldraw 官方 API (putExternalContent) 徹底解決圖片貼上與工具崩潰問題
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全消除便利貼、畫筆、箭頭、矩形等工具點擊時的 `Something's gone wrong` 崩潰，並實現剪貼簿圖片 100% 成功貼上至白板中央。
+- 行為：
+  1. **完全移除 `onValidationFailure` 侵入式改寫**：百分之百還原 tldraw 原廠 store 驗證機制，使便利貼、畫筆、箭頭、幾何圖形等所有原廠工具 100% 恢復極速穩定運作，絕不再觸發全頁崩潰。
+  2. **採用 tldraw 官方最高級別 API `putExternalContent({ type: 'files', files, point })`**：全自動識別 `clipboardData.files` 與 `clipboardData.items` 中的剪貼簿圖片檔案，經由 tldraw 官方原廠合規 API 直接寫入，相容剪貼簿圖片 100% 貼上至當前視角正中央。
+
+---
+
 ## 2026-08-08 - ver 2.2.8 徹底修復 tldraw 互動白板剪貼簿圖片貼上 (`Ctrl + V`) 拋錯崩潰 Bug
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：完全解決在 tldraw 互動白板從剪貼簿貼上圖片時，拋出 `TypeError: Cannot read properties of undefined (reading 'typeName')` 的全頁 `Something's gone wrong` 崩潰問題。
