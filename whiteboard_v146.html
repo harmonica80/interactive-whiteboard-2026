@@ -150,6 +150,118 @@
         setCanUndo(editor.getCanUndo());
         setCanRedo(editor.getCanRedo());
 
+        // 核心安全防禦 1：包裹 onValidationFailure，防止剪貼簿圖片驗證失敗時因 undefined.typeName 導至 UI 崩潰
+        try {
+          if (editor.store && editor.store.schema) {
+            const originalOnValidationFailure = editor.store.schema.onValidationFailure;
+            editor.store.schema.onValidationFailure = (options) => {
+              try {
+                if (originalOnValidationFailure && typeof originalOnValidationFailure === 'function') {
+                  if (options && options.record) {
+                    return originalOnValidationFailure(options);
+                  }
+                }
+              } catch (err) {
+                console.warn('[tldraw validation warning intercepted]:', err);
+              }
+              return (options && options.record) ? options.record : null;
+            };
+          }
+        } catch (e) {
+          console.warn('Failed to wrap store.schema.onValidationFailure:', e);
+        }
+
+        // 核心安全防衛 2：原生接管剪貼簿圖片貼上 (Clipboard Image Paste Guard)
+        const handleImagePaste = (clipboardEvent) => {
+          try {
+            const items = clipboardEvent.clipboardData && clipboardEvent.clipboardData.items;
+            if (!items) return;
+
+            for (let i = 0; i < items.length; i++) {
+              const item = items[i];
+              if (item.type && item.type.startsWith('image/')) {
+                clipboardEvent.preventDefault();
+                clipboardEvent.stopPropagation();
+
+                const file = item.getAsFile();
+                if (!file) continue;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const dataUrl = event.target.result;
+                  if (!dataUrl || !editorInstance) return;
+
+                  const img = new Image();
+                  img.onload = () => {
+                    try {
+                      const width = img.width || 400;
+                      const height = img.height || 300;
+                      const assetId = `asset:${Math.random().toString(36).substring(2, 11)}`;
+                      const shapeId = `shape:${Math.random().toString(36).substring(2, 11)}`;
+
+                      const viewportBounds = typeof editorInstance.getViewportPageBounds === 'function' ? editorInstance.getViewportPageBounds() : null;
+                      const centerPoint = viewportBounds ? viewportBounds.center : { x: 200, y: 200 };
+
+                      const assetRecord = {
+                        id: assetId,
+                        typeName: 'asset',
+                        type: 'image',
+                        props: {
+                          name: file.name || 'clipboard-image.png',
+                          src: dataUrl,
+                          w: width,
+                          h: height,
+                          mimeType: file.type || 'image/png',
+                          isAnimated: false
+                        },
+                        meta: {}
+                      };
+
+                      const shapeRecord = {
+                        id: shapeId,
+                        typeName: 'shape',
+                        type: 'image',
+                        x: centerPoint.x - width / 2,
+                        y: centerPoint.y - height / 2,
+                        rotation: 0,
+                        index: 'a1',
+                        opacity: 1,
+                        isLocked: false,
+                        parentId: editorInstance.getCurrentPageId(),
+                        props: {
+                          w: width,
+                          h: height,
+                          assetId: assetId,
+                          playing: true,
+                          url: ''
+                        },
+                        meta: {}
+                      };
+
+                      isApplyingRemote = true;
+                      editorInstance.store.put([assetRecord, shapeRecord]);
+                      if (typeof editorInstance.setSelectedShapes === 'function') {
+                        editorInstance.setSelectedShapes([shapeId]);
+                      }
+                    } catch (err) {
+                      console.error('Failed to create pasted image shape:', err);
+                    } finally {
+                      setTimeout(() => { isApplyingRemote = false; }, 300);
+                    }
+                  };
+                  img.src = dataUrl;
+                };
+                reader.readAsDataURL(file);
+                break;
+              }
+            }
+          } catch (err) {
+            console.warn('Paste event handler warning:', err);
+          }
+        };
+
+        window.addEventListener('paste', handleImagePaste, true);
+
         // 預設將文字工具與未來的圖形字型設定為 'sans' (無襯線體，即選單中的第二個 Aa)
         const applySansFontDefault = () => {
           try {
@@ -178,7 +290,7 @@
 
         applySansFontDefault();
 
-        // 核心防線：攔截所有新建文字 shape，強制將其 font 屬性初始設為 sans (第二個 Aa)
+        // 核心防線：攔截所有新建 shape & asset 補充必要欄位
         try {
           if (editor.sideEffects && typeof editor.sideEffects.registerBeforeCreateHandler === 'function') {
             editor.sideEffects.registerBeforeCreateHandler('shape', (shape) => {
@@ -189,6 +301,14 @@
                     ...shape.props,
                     font: 'sans'
                   }
+                };
+              }
+            });
+            editor.sideEffects.registerBeforeCreateHandler('asset', (asset) => {
+              if (asset && !asset.typeName) {
+                return {
+                  ...asset,
+                  typeName: 'asset'
                 };
               }
             });

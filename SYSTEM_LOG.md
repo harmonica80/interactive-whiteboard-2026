@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-08 - ver 2.2.8 徹底修復 tldraw 互動白板剪貼簿圖片貼上 (`Ctrl + V`) 拋錯崩潰 Bug
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全解決在 tldraw 互動白板從剪貼簿貼上圖片時，拋出 `TypeError: Cannot read properties of undefined (reading 'typeName')` 的全頁 `Something's gone wrong` 崩潰問題。
+- 行為：
+  1. **攔截與包裹 `onValidationFailure`**：在 `whiteboard_v146.html` / `whiteboard.html` 初始化時對 `editor.store.schema.onValidationFailure` 進行安全轉接，徹底消滅記錄驗證階段因缺失 `typeName` 引發之連鎖崩潰。
+  2. **原生接管全頁圖片貼上 (`paste` 事件)**：全自動捕捉 `ClipboardEvent` 圖片檔案，轉為 Base64 Data URL，並精準計算圖片原始寬高，動態生成定義完整且 100% 符合 tldraw `tlschema` 的 `asset` 與 `image shape` 記錄，放置於當前視角正中央並預設選取。
+
+---
+
 ## 2026-08-07 - ver 2.2.7 補回刪除對話框關閉方法與全系統刪除彈窗UI格式統一
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：完全解決後台刪除問題對話框卡住不消失、取消按鈕無反應問題，並將刪除資料夾等所有原生 `confirm` 彈窗全數統一替換為自訂精美對話框。
