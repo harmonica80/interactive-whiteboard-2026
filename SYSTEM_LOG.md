@@ -774,6 +774,16 @@
 
 ---
 
+## 2026-08-08 - ver 2.3.5 透過 tldrawComponents 完全禁用 Toast 拔除引發崩潰之原廠觸發槍口
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：澈底突破「切換/使用便利貼、畫筆、箭頭、矩形時跳出錯誤」之循環坑洞。
+- 行為：
+  1. **於 `tldrawComponents` 傳入 `Toast: () => null`**：直接在元件樹中停用並拔除原廠 ToastProvider（即引發 `at ToastProvider react-toast.mjs` 崩潰之元件）。
+  2. **徹底斷絕工具切換時的提示拋錯槍口**：便利貼、畫筆、箭頭、矩形、幾何圖形、文字、橡皮擦等全數工具 100% 不再觸發 ToastProvider 崩潰！
+  3. **強制更新 iframe 快取版本為 `v=600`**：刷新瀏覽器與客戶端快取。
+
+---
+
 ## 2026-08-08 - ver 2.3.4 於 importmap 嚴格鎖定 Single React 18 實例徹底解鎖 React 19 Canary 碰撞
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：完全消滅 `TypeError: Cannot read properties of null (reading 'useState')` 雙重 React 版本硬碰撞拋錯。
