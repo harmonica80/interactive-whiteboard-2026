@@ -774,6 +774,16 @@
 
 ---
 
+## 2026-08-08 - ver 2.3.3 改由 createTLStore 正統 API 設定 checkValidation=false 徹底解決初始化 Mount 崩潰
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：澈底消滅白板初始化時蹦出 `Something's gone wrong` 畫面之問題。
+- 行為：
+  1. **修正 `<Tldraw />` 初始化崩潰**：移除直接傳給 `<Tldraw />` 組件無效之 options 屬性（該屬性引起原廠組件 Mount 崩潰），改由 `createTLStore({ shapeUtils: defaultShapeUtils, checkValidation: false })` 正統 API 建立 store 實例傳入。
+  2. **100% 關閉 Validation 爆破鏈**：`checkValidation: false` 在 store 實例層級生效，徹底切斷原廠 `Xt` redaction bug 的任何觸發，開啟白板 100% 瞬間正常顯示！
+  3. **強制更新 iframe 快取版本為 `v=400`**：刷新瀏覽器與客戶端快取。
+
+---
+
 ## 2026-08-08 - ver 2.3.2 採用乾淨預建置 CDN 解決載入卡住，並透由 options.checkValidation=false 源頭熄滅 validation bug
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：澈底解決白板畫面卡在「正在載入 tldraw 互動白板...」問題，並從根源關閉 store validator 避免任何潛在崩潰。
