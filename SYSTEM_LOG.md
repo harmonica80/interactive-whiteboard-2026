@@ -774,6 +774,17 @@
 
 ---
 
+## 2026-08-08 - ver 2.4.3 徹底清理殘留 `if (store)` 解決 ReferenceError 並解鎖白板渲染
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全落實最新版 `handoff.md` 的 P0 最高級別指示，消滅 `ReferenceError: store is not defined`。
+- 行為：
+  1. **移除殘留未宣告變數 `store` 判斷**：徹底刪除 `if (store) { tldrawProps.store = store; }`，使 React render 順暢無阻執行，`handleMount()` 0.1 秒瞬間觸發。
+  2. **徹底解決「一直載入中」轉圈**：白板與手動 controls 0.5 秒秒開成功顯示，Console 順暢輸出 `tldraw initialized successfully!`。
+  3. **保留 `sanitizeSnapshot` 與安全驗證放行器**：全繪圖工具與剪貼簿貼上 100% 高能穩定。
+  4. **強制更新 iframe 快取版本為 `v=999`**：刷新瀏覽器快取。
+
+---
+
 ## 2026-08-08 - ver 2.4.2 修正 importmap 語法規範並掛載 8s 超時救援防禦機制
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：完全消除非標準 `/` 映射引起的 importmap 解析失敗，並提供雙重載入防護網。

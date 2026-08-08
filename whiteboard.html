@@ -498,10 +498,6 @@
         forceMobile: isMobile // 強制在行動端使用原生折疊式的 Mobile UI，以提供帶有 ^ 箭頭的樣式與面板按鈕
       };
 
-      if (store) {
-        tldrawProps.store = store;
-      }
-
       return React.createElement(React.Fragment, null, [
         React.createElement(Tldraw, tldrawProps),
         customControls
