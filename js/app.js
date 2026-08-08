@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.5.0';
+    this.APP_VERSION = '2.5.1';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5419,7 +5419,7 @@ class App {
 
       try {
         const parsedSnapshot = JSON.parse(val.data);
-        if (parsedSnapshot && parsedSnapshot.document && parsedSnapshot.document.store) {
+        if (parsedSnapshot && (parsedSnapshot.store || (parsedSnapshot.document && parsedSnapshot.document.store))) {
           const iframe = document.getElementById('whiteboardFrame');
           if (iframe && iframe.contentWindow) {
             iframe.contentWindow.postMessage({
@@ -5468,7 +5468,7 @@ class App {
           if (val && val.data) {
             try {
               const parsedSnapshot = JSON.parse(val.data);
-              if (parsedSnapshot && parsedSnapshot.document && parsedSnapshot.document.store) {
+              if (parsedSnapshot && (parsedSnapshot.store || (parsedSnapshot.document && parsedSnapshot.document.store))) {
                 const iframe = document.getElementById('whiteboardFrame');
                 if (iframe && iframe.contentWindow) {
                   iframe.contentWindow.postMessage({
