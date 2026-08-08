@@ -150,40 +150,55 @@
   <script type="module">
     import React from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Tldraw, getSnapshot, loadSnapshot } from 'tldraw';
+    import { Tldraw } from 'tldraw';
 
     let editorInstance = null;
     let isApplyingRemote = false;
 
-    // 快照全自動防禦與淨化過濾器 (Sanitizer)
+    // 快照全自動防禦與淨化過濾器 (Sanitizer) - 完美相容 2.1.4 store.getSnapshot 結構
     function sanitizeSnapshot(snapshot) {
       if (!snapshot || typeof snapshot !== 'object') return null;
-      if (!snapshot.document || !snapshot.document.store || typeof snapshot.document.store !== 'object') {
-        return null;
-      }
 
-      const cleanStore = {};
-      const rawStore = snapshot.document.store;
+      // 情況 A：2.1.4 原生 store 結構 { store: {...}, schema: {...} }
+      if (snapshot.store && typeof snapshot.store === 'object') {
+        const cleanStore = {};
+        const rawStore = snapshot.store;
 
-      for (const key in rawStore) {
-        if (!Object.prototype.hasOwnProperty.call(rawStore, key)) continue;
-        const record = rawStore[key];
-        
-        // 嚴格過濾 null/undefined 以及缺乏 id / typeName 的畸形 record
-        if (record && typeof record === 'object' && typeof record.id === 'string' && typeof record.typeName === 'string') {
-          cleanStore[key] = record;
-        } else {
-          console.warn('[Snapshot Sanitizer] Skipped invalid record:', key, record);
+        for (const key in rawStore) {
+          if (!Object.prototype.hasOwnProperty.call(rawStore, key)) continue;
+          const record = rawStore[key];
+          if (record && typeof record === 'object' && typeof record.id === 'string' && typeof record.typeName === 'string') {
+            cleanStore[key] = record;
+          }
         }
-      }
-
-      return {
-        ...snapshot,
-        document: {
-          ...snapshot.document,
+        return {
+          ...snapshot,
           store: cleanStore
+        };
+      }
+
+      // 情況 B：包含 document.store 的雙層包裝結構
+      if (snapshot.document && snapshot.document.store && typeof snapshot.document.store === 'object') {
+        const cleanStore = {};
+        const rawStore = snapshot.document.store;
+
+        for (const key in rawStore) {
+          if (!Object.prototype.hasOwnProperty.call(rawStore, key)) continue;
+          const record = rawStore[key];
+          if (record && typeof record === 'object' && typeof record.id === 'string' && typeof record.typeName === 'string') {
+            cleanStore[key] = record;
+          }
         }
-      };
+        return {
+          ...snapshot,
+          document: {
+            ...snapshot.document,
+            store: cleanStore
+          }
+        };
+      }
+
+      return snapshot;
     }
 
     function App() {
@@ -511,9 +526,11 @@
 
       switch (data.type) {
         case 'GET_TLDRAW_SNAPSHOT':
-          if (editorInstance) {
+          if (editorInstance && editorInstance.store) {
             try {
-              const snapshot = getSnapshot(editorInstance.store);
+              const snapshot = typeof editorInstance.store.getSnapshot === 'function' 
+                ? editorInstance.store.getSnapshot() 
+                : (editorInstance.getSnapshot ? editorInstance.getSnapshot() : null);
               window.parent.postMessage({
                 type: 'TLDRAW_SNAPSHOT_RESPONSE',
                 requestId: data.requestId,
@@ -531,12 +548,16 @@
           break;
 
         case 'LOAD_TLDRAW_SNAPSHOT':
-          if (editorInstance && data.snapshot) {
+          if (editorInstance && editorInstance.store && data.snapshot) {
             try {
               isApplyingRemote = true;
               const cleanSnapshot = sanitizeSnapshot(data.snapshot);
               if (cleanSnapshot) {
-                loadSnapshot(editorInstance.store, cleanSnapshot);
+                if (typeof editorInstance.store.loadSnapshot === 'function') {
+                  editorInstance.store.loadSnapshot(cleanSnapshot);
+                } else if (typeof editorInstance.loadSnapshot === 'function') {
+                  editorInstance.loadSnapshot(cleanSnapshot);
+                }
                 console.log('tldraw remote snapshot sanitized and loaded successfully');
               } else {
                 console.warn('Received invalid snapshot format, skipped loading to prevent crash');
