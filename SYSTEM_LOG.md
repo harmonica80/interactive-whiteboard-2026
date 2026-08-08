@@ -774,6 +774,17 @@
 
 ---
 
+## 2026-08-08 - ver 2.4.0 全面落實 handoff.md 權威交接指引（版本回退至 2.1.4、快照防禦過濾器、Safe Validation 放行）
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全遵照 `handoff.md` 的 P0/P1 全套修正指引，徹底解決 `Xt` Bug 遮蔽與畸形快照引發之全頁崩潰。
+- 行為：
+  1. **固定至 tldraw 2.1.4 LTS 黃金穩定版**：避開 `2.4.5` 的 `Xt` redaction bug 且完全還原 `createTLStore` 的核心驗證相容性，徹底解除全頁 Error Boundary。
+  2. **加入 `sanitizeSnapshot` 快照防禦過濾器**：在 `js/app.js` 與 `whiteboard_v146.html` / `whiteboard.html` 的 4 個快照入口全自動過濾 `null`/`undefined` 及無 `id`/`typeName` 之畸形 record，防範不合法快照污染白板。
+  3. **掛載 Safe `onValidationFailure` 放行器**：安全記錄驗證警告並放行，避免無害警告觸發全頁崩潰。
+  4. **強制更新 iframe 快取版本為 `v=700`**：刷新瀏覽器快取。
+
+---
+
 ## 2026-08-08 - ver 2.3.5 透過 tldrawComponents 完全禁用 Toast 拔除引發崩潰之原廠觸發槍口
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：澈底突破「切換/使用便利貼、畫筆、箭頭、矩形時跳出錯誤」之循環坑洞。

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>tldraw 互動白板</title>
   
-  <!-- tldraw CSS -->
-  <link rel="stylesheet" href="https://esm.sh/tldraw@2.4.5/tldraw.css">
+  <!-- tldraw CSS (tldraw 2.1.4 LTS 黃金穩定版) -->
+  <link rel="stylesheet" href="https://esm.sh/tldraw@2.1.4/tldraw.css">
 
   <style>
     html, body {
@@ -109,7 +109,7 @@
     }
   </style>
 
-  <!-- Import Maps for ES Modules (強制鎖定 Single React 18 實例，切斷 esm.sh 自動引進 React 19 Canary 引發之 useState of null 崩潰) -->
+  <!-- Import Maps for ES Modules (強制鎖定 Single React 18 實例與 tldraw 2.1.4 黃金穩定版) -->
   <script type="importmap">
   {
     "imports": {
@@ -119,7 +119,7 @@
       "react-dom": "https://esm.sh/react-dom@18.3.1",
       "react-dom/": "https://esm.sh/react-dom@18.3.1/",
       "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-      "tldraw": "https://esm.sh/tldraw@2.4.5?external=react,react-dom&deps=react@18.3.1,react-dom@18.3.1"
+      "tldraw": "https://esm.sh/tldraw@2.1.4?external=react,react-dom&deps=react@18.3.1,react-dom@18.3.1"
     }
   }
   </script>
@@ -135,28 +135,45 @@
   <script type="module">
     import React from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Tldraw, createTLStore, defaultShapeUtils, getSnapshot, loadSnapshot } from 'tldraw';
+    import { Tldraw, getSnapshot, loadSnapshot } from 'tldraw';
 
     let editorInstance = null;
     let isApplyingRemote = false;
 
+    // 快照全自動防禦與淨化過濾器 (Sanitizer)
+    function sanitizeSnapshot(snapshot) {
+      if (!snapshot || typeof snapshot !== 'object') return null;
+      if (!snapshot.document || !snapshot.document.store || typeof snapshot.document.store !== 'object') {
+        return null;
+      }
+
+      const cleanStore = {};
+      const rawStore = snapshot.document.store;
+
+      for (const key in rawStore) {
+        if (!Object.prototype.hasOwnProperty.call(rawStore, key)) continue;
+        const record = rawStore[key];
+        
+        // 嚴格過濾 null/undefined 以及缺乏 id / typeName 的畸形 record
+        if (record && typeof record === 'object' && typeof record.id === 'string' && typeof record.typeName === 'string') {
+          cleanStore[key] = record;
+        } else {
+          console.warn('[Snapshot Sanitizer] Skipped invalid record:', key, record);
+        }
+      }
+
+      return {
+        ...snapshot,
+        document: {
+          ...snapshot.document,
+          store: cleanStore
+        }
+      };
+    }
+
     function App() {
       const [canUndo, setCanUndo] = React.useState(false);
       const [canRedo, setCanRedo] = React.useState(false);
-
-      const store = React.useMemo(() => {
-        try {
-          if (typeof createTLStore === 'function') {
-            return createTLStore({
-              shapeUtils: defaultShapeUtils || [],
-              checkValidation: false
-            });
-          }
-        } catch (e) {
-          console.warn('createTLStore fallback:', e);
-        }
-        return undefined;
-      }, []);
 
       const handleMount = (editor) => {
         editorInstance = editor;
@@ -165,6 +182,24 @@
         // 初始狀態
         setCanUndo(editor.getCanUndo());
         setCanRedo(editor.getCanRedo());
+
+        // 核心 Safe Validation Failure 放行器（避免 redaction 爆破）
+        try {
+          if (editor.store && editor.store.schema) {
+            editor.store.schema.onValidationFailure = ({ error, phase, record, recordBefore }) => {
+              console.warn('[tldraw Validation Safeguarded]:', {
+                error: error ? (error.message || error) : 'unknown',
+                phase,
+                recordId: record ? record.id : undefined,
+                recordTypeName: record ? record.typeName : undefined,
+                recordBeforeTypeName: recordBefore ? recordBefore.typeName : undefined
+              });
+              return record;
+            };
+          }
+        } catch (e) {
+          console.warn('Failed to attach safe onValidationFailure:', e);
+        }
 
         // 註冊 tldraw 內建正宗 ExternalContentHandler (貼上與拖放檔案)
         try {
@@ -550,10 +585,15 @@
           if (editorInstance && data.snapshot) {
             try {
               isApplyingRemote = true;
-              loadSnapshot(editorInstance.store, data.snapshot);
-              console.log('tldraw remote snapshot loaded successfully');
+              const cleanSnapshot = sanitizeSnapshot(data.snapshot);
+              if (cleanSnapshot) {
+                loadSnapshot(editorInstance.store, cleanSnapshot);
+                console.log('tldraw remote snapshot sanitized and loaded successfully');
+              } else {
+                console.warn('Received invalid snapshot format, skipped loading to prevent crash');
+              }
             } catch (err) {
-              console.error('Failed to load tldraw snapshot:', err);
+              console.error('Failed to load tldraw snapshot safely:', err);
             } finally {
               setTimeout(() => { isApplyingRemote = false; }, 300);
             }
