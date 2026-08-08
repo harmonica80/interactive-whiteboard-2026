@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.3.5';
+    this.APP_VERSION = '2.4.0';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5419,12 +5419,16 @@ class App {
 
       try {
         const parsedSnapshot = JSON.parse(val.data);
-        const iframe = document.getElementById('whiteboardFrame');
-        if (iframe && iframe.contentWindow) {
-          iframe.contentWindow.postMessage({
-            type: 'LOAD_TLDRAW_SNAPSHOT',
-            snapshot: parsedSnapshot
-          }, '*');
+        if (parsedSnapshot && parsedSnapshot.document && parsedSnapshot.document.store) {
+          const iframe = document.getElementById('whiteboardFrame');
+          if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+              type: 'LOAD_TLDRAW_SNAPSHOT',
+              snapshot: parsedSnapshot
+            }, '*');
+          }
+        } else {
+          console.warn('[Firebase Sync] Ignored malformed snapshot from Firebase');
         }
       } catch (err) {
         console.error('Failed to parse remote tldraw snapshot:', err);
@@ -5464,12 +5468,16 @@ class App {
           if (val && val.data) {
             try {
               const parsedSnapshot = JSON.parse(val.data);
-              const iframe = document.getElementById('whiteboardFrame');
-              if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({
-                  type: 'LOAD_TLDRAW_SNAPSHOT',
-                  snapshot: parsedSnapshot
-                }, '*');
+              if (parsedSnapshot && parsedSnapshot.document && parsedSnapshot.document.store) {
+                const iframe = document.getElementById('whiteboardFrame');
+                if (iframe && iframe.contentWindow) {
+                  iframe.contentWindow.postMessage({
+                    type: 'LOAD_TLDRAW_SNAPSHOT',
+                    snapshot: parsedSnapshot
+                  }, '*');
+                }
+              } else {
+                console.warn('[Firebase Ready Sync] Ignored malformed initial snapshot');
               }
             } catch (e) {
               console.error('Failed to parse initial tldraw snapshot:', e);
