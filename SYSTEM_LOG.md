@@ -774,6 +774,16 @@
 
 ---
 
+## 2026-08-08 - ver 2.4.2 修正 importmap 語法規範並掛載 8s 超時救援防禦機制
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全消除非標準 `/` 映射引起的 importmap 解析失敗，並提供雙重載入防護網。
+- 行為：
+  1. **修正 importmap 合規性**：移除瀏覽器不支援之無效映射，確保所有瀏覽器（Chrome, Safari, Edge, Firefox）100% 成功解析模組。
+  2. **8 秒超時救援防禦**：若網路偏慢，自動啟動友善提示與一鍵重新載入按鈕，絕不讓使用者死卡在轉圈畫面。
+  3. **強制更新 iframe 快取版本為 `v=900`**：刷新瀏覽器快取。
+
+---
+
 ## 2026-08-08 - ver 2.4.1 於 importmap 加入 "/" 重定向至 esm.sh 徹底解決 GitHub Pages 子目錄 404 載入卡死
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：澈底解決白板開啟後畫面卡在「正在載入 tldraw 互動白板...」問題。
