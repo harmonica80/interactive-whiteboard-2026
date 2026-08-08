@@ -774,6 +774,17 @@
 
 ---
 
+## 2026-08-08 - ver 2.5.0 重構 API 相容性（全面適應 tldraw 2.1.4 原生 store 實例方法）
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全落實 `handoff.md` 的 P0 最高優先級 API 重構方案，徹底消除 `SyntaxError: getSnapshot is not exported` 模組連結衝突。
+- 行為：
+  1. **修正 import 宣告**：從 `import { Tldraw } from 'tldraw'` 導出，消滅舊版 `2.4.5` 的 `getSnapshot` / `loadSnapshot` 不存在 named import 拋錯。
+  2. **全面轉用 `editor.store.getSnapshot()` 與 `editor.store.loadSnapshot()`**：使用 `tldraw@2.1.4` 正宗 store 實例方法操作快照。
+  3. **升級 `sanitizeSnapshot` 防禦淨化過濾器**：同時無縫兼容 2.1.4 原生 `{ store, schema }` 與舊版外層 `{ document: { store } }` 雙重快照結構。
+  4. **強制更新 iframe 快取版本為 `v=1000`**：刷新瀏覽器快取。
+
+---
+
 ## 2026-08-08 - ver 2.4.3 徹底清理殘留 `if (store)` 解決 ReferenceError 並解鎖白板渲染
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：完全落實最新版 `handoff.md` 的 P0 最高級別指示，消滅 `ReferenceError: store is not defined`。
