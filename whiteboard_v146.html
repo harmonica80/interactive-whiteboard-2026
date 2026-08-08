@@ -555,10 +555,6 @@
         forceMobile: isMobile // 行動端回歸 100% 原生 Mobile UI Layout，確保 Hitbox 點擊 100% 準確觸發
       };
 
-      if (store) {
-        tldrawProps.store = store;
-      }
-
       return React.createElement(React.Fragment, null, [
         React.createElement(Tldraw, tldrawProps),
         customControls
