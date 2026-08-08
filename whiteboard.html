@@ -115,15 +115,14 @@
     }
   </style>
 
-  <!-- Import Maps for ES Modules (加入 "/" 轉接映射徹底解決 GitHub Pages 子目錄下 esm.sh 相對根路徑 404 卡住問題) -->
+  <!-- Import Maps for ES Modules (tldraw 2.1.4 LTS 黃金穩定版 + React 18 鎖定) -->
   <script type="importmap">
   {
     "imports": {
-      "/": "https://esm.sh/",
       "react": "https://esm.sh/react@18.3.1",
       "react-dom": "https://esm.sh/react-dom@18.3.1",
       "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-      "tldraw": "https://esm.sh/tldraw@2.1.4"
+      "tldraw": "https://esm.sh/tldraw@2.1.4?deps=react@18.3.1,react-dom@18.3.1"
     }
   }
   </script>
@@ -135,6 +134,18 @@
       <div>正在載入 tldraw 互動白板...</div>
     </div>
   </div>
+
+  <script>
+    // 載入超時防禦救援機制
+    setTimeout(function() {
+      if (!window.editorInstanceRef) {
+        var root = document.getElementById('root');
+        if (root && root.querySelector('.loading-container')) {
+          root.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#666;font-size:15px;padding:20px;text-align:center;"><div style="font-size:32px;margin-bottom:12px;">💡</div><div style="font-weight:bold;margin-bottom:8px;">白板正在完成初始化...</div><div style="font-size:13px;color:#888;margin-bottom:16px;">如持續轉圈，請點擊下方按鈕刷新</div><button onclick="window.location.reload()" style="padding:8px 18px;background:#007aff;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,122,255,0.3);">重新載入白板</button></div>';
+        }
+      }
+    }, 8000);
+  </script>
 
   <script type="module">
     import React from 'react';
@@ -181,6 +192,7 @@
 
       const handleMount = (editor) => {
         editorInstance = editor;
+        window.editorInstanceRef = editor;
         console.log('tldraw initialized successfully!');
         
         // 初始狀態
