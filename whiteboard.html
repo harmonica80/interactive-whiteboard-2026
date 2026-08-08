@@ -416,8 +416,8 @@
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
               try {
-                const snapshot = getSnapshot(editor.store);
-                if (window.parent && window.parent !== window) {
+                const snapshot = editor.store ? editor.store.getSnapshot() : null;
+                if (snapshot && window.parent && window.parent !== window) {
                   window.parent.postMessage({
                     type: 'TLDRAW_LOCAL_CHANGE',
                     snapshot: snapshot
