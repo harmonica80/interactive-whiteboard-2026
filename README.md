@@ -51,6 +51,24 @@ python -m http.server 8000
 npx serve
 ```
 
+## 開發與驗證
+
+本專案以 Node.js 24 與 npm 管理開發依賴。首次在一般本機磁碟的工作副本執行：
+
+```bash
+npm ci
+npm run dev
+```
+
+提交或部署前必須執行：
+
+```bash
+npm test
+```
+
+`npm test` 會先檢查實際白板入口 `whiteboard_v146.html` 的 ES module 語法，再以 Playwright 驗證 tldraw 初始化以及畫筆、圖形、箭頭、便條與文字工具。
+
+> 若專案位於雲端同步磁碟，Windows 的檔案鎖可能影響 `node_modules` 安裝。請改在本機磁碟建立開發副本，再以 Git 同步變更。
 ### 3. 使用步驟
 
 1. **設定暱稱**：在頁面頂部輸入您的暱稱
