@@ -109,17 +109,15 @@
     }
   </style>
 
-  <!-- Import Maps for ES Modules (強制鎖定 Single React 18 實例與 tldraw 2.1.4 黃金穩定版) -->
+  <!-- Import Maps for ES Modules (加入 "/" 轉接映射徹底解決 GitHub Pages 子目錄下 esm.sh 相對根路徑 404 卡住問題) -->
   <script type="importmap">
   {
     "imports": {
+      "/": "https://esm.sh/",
       "react": "https://esm.sh/react@18.3.1",
-      "react/": "https://esm.sh/react@18.3.1/",
-      "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
       "react-dom": "https://esm.sh/react-dom@18.3.1",
-      "react-dom/": "https://esm.sh/react-dom@18.3.1/",
       "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-      "tldraw": "https://esm.sh/tldraw@2.1.4?external=react,react-dom&deps=react@18.3.1,react-dom@18.3.1"
+      "tldraw": "https://esm.sh/tldraw@2.1.4"
     }
   }
   </script>
