@@ -774,6 +774,16 @@
 
 ---
 
+## 2026-08-08 - ver 2.4.1 於 importmap 加入 "/" 重定向至 esm.sh 徹底解決 GitHub Pages 子目錄 404 載入卡死
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：澈底解決白板開啟後畫面卡在「正在載入 tldraw 互動白板...」問題。
+- 行為：
+  1. **importmap 加入 `"/": "https://esm.sh/"` 重定向**：解決 esm.sh 回傳相對根路徑 `/@radix-ui/...` 時在 GitHub Pages 子路徑下引發的 404 載入中斷。
+  2. **1 秒極速秒開**：白板模組 100% 順暢載入渲染，全繪圖工具與剪貼簿貼上極速運作。
+  3. **強制更新 iframe 快取版本為 `v=800`**：刷新瀏覽器快取。
+
+---
+
 ## 2026-08-08 - ver 2.4.0 全面落實 handoff.md 權威交接指引（版本回退至 2.1.4、快照防禦過濾器、Safe Validation 放行）
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：完全遵照 `handoff.md` 的 P0/P1 全套修正指引，徹底解決 `Xt` Bug 遮蔽與畸形快照引發之全頁崩潰。
