@@ -1,4 +1,9 @@
 # System Log
+## 2026-08-08 - ver 2.6.1 白板初始化與自動化驗證修復
+- 影響檔案：`whiteboard_v146.html`, `index.html`, `js/app.js`, `README.md`, `.gitignore`, `package.json`, `package-lock.json`, `playwright.config.mjs`, `scripts/check-whiteboard-syntax.mjs`, `tests/whiteboard.spec.mjs`, `.github/workflows/whiteboard-check.yml`, `SYSTEM_LOG.md`。
+- 修改項目：移除 tldraw document listener 後誤留的重複程式碼，修正 `Unexpected token 'catch'`，恢復白板初始化。
+- 驗證環境：新增 Node/npm 開發腳本、inline module 語法檢查、Playwright 工具 smoke test 與 GitHub Actions CI，防止未來再次部署無法解析的白板程式。
+- 版本：主頁與 `APP_VERSION` 升級至 `2.6.1`；iframe cache version 更新至 `v=2001`，內嵌白板標示更新至 `v1.6.1`。
 
 ## 2026-07-09 - OpenCode
 - 修改項目：專注力遊戲新增「求救提示」按鈕。

@@ -486,17 +486,6 @@
             }, 250);
           }
         }, { scope: 'document' });
-                  window.parent.postMessage({
-                    type: 'TLDRAW_LOCAL_CHANGE',
-                    snapshot: snapshot
-                  }, '*');
-                }
-              } catch (err) {
-                console.error('Failed to capture local tldraw change:', err);
-              }
-            }, 300);
-          }
-        }, { scope: 'document' });
 
         // 通知父視窗已準備就緒
         if (window.parent && window.parent !== window) {
@@ -587,7 +576,7 @@
             userSelect: 'none',
             boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
           }
-        }, 'v1.6.0')
+        }, 'v1.6.1')
       ].filter(Boolean));
 
       const tldrawProps = {
