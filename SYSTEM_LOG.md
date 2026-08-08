@@ -774,6 +774,17 @@
 
 ---
 
+## 2026-08-08 - ver 2.5.1 全面實施 Store-level 快照歸一化 (Format Normalizer)
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全解決從 Firebase 載入舊版雙層快照時 `Cannot read properties of undefined (reading 'schemaVersion')` 拋錯。
+- 行為：
+  1. **快照格式 100% 正規化為 2.1.4 Store-level**：`sanitizeSnapshot` 自動將舊版雙層外層拆解並提取 `store` 與 `schema`。
+  2. **動態 fallbackSchema 注入**：若舊快照欠缺 `schema`，自動注入 `editorInstance.store.schema.serialize()` 護航。
+  3. **徹底解鎖載入與工具切換**：`loadSnapshot()` 順暢通過 `migrateStoreSnapshot` 檢驗，舊畫稿 100% 順暢安全展現。
+  4. **強制更新 iframe 快取版本為 `v=1100`**：刷新瀏覽器快取。
+
+---
+
 ## 2026-08-08 - ver 2.5.0 重構 API 相容性（全面適應 tldraw 2.1.4 原生 store 實例方法）
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：完全落實 `handoff.md` 的 P0 最高優先級 API 重構方案，徹底消除 `SyntaxError: getSnapshot is not exported` 模組連結衝突。
