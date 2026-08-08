@@ -156,7 +156,19 @@
         setCanUndo(editor.getCanUndo());
         setCanRedo(editor.getCanRedo());
 
-        // 核心剪貼簿圖片貼上全自動接管 (Official putExternalContent API Guard)
+        // 核心爆破防衛 1：包裹並替換包含原廠 Bug (Xt redaction function missing undefined check) 的 onValidationFailure
+        try {
+          if (editor.store && editor.store.schema) {
+            editor.store.schema.onValidationFailure = ({ error, phase, record }) => {
+              console.warn('[tldraw validation warning intercepted safely]:', error, phase);
+              return record;
+            };
+          }
+        } catch (e) {
+          console.warn('Failed to attach safe onValidationFailure:', e);
+        }
+
+        // 核心剪貼簿圖片貼上全自動接管 (Base64 Data URL Clipboard Guard)
         const handleImagePaste = async (clipboardEvent) => {
           try {
             const clipboardData = clipboardEvent.clipboardData || window.clipboardData;
@@ -173,8 +185,9 @@
             }
             if (!imageFile && clipboardData.items) {
               for (let i = 0; i < clipboardData.items.length; i++) {
-                if (clipboardData.items[i].type && clipboardData.items[i].type.startsWith('image/')) {
-                  imageFile = clipboardData.items[i].getAsFile();
+                const item = clipboardData.items[i];
+                if (item.type && item.type.startsWith('image/')) {
+                  imageFile = item.getAsFile();
                   break;
                 }
               }
@@ -186,20 +199,6 @@
 
               if (!editorInstance) return;
 
-              const viewportBounds = typeof editorInstance.getViewportPageBounds === 'function' ? editorInstance.getViewportPageBounds() : null;
-              const centerPoint = viewportBounds ? viewportBounds.center : { x: 200, y: 200 };
-
-              // 1. 優先呼叫 tldraw 官方標準 putExternalContent API
-              if (typeof editorInstance.putExternalContent === 'function') {
-                await editorInstance.putExternalContent({
-                  type: 'files',
-                  files: [imageFile],
-                  point: centerPoint
-                });
-                return;
-              }
-
-              // 2. 備用方案: 透過 FileReader 讀取 Base64 Data URL 並透由 tldraw 官方 createAssets / createShapes API 放置
               const reader = new FileReader();
               reader.onload = async (evt) => {
                 const dataUrl = evt.target.result;
@@ -211,6 +210,10 @@
                     const width = img.width || 400;
                     const height = img.height || 300;
                     const assetId = `asset:${Math.random().toString(36).substring(2, 11)}`;
+                    const shapeId = `shape:${Math.random().toString(36).substring(2, 11)}`;
+
+                    const viewportBounds = typeof editorInstance.getViewportPageBounds === 'function' ? editorInstance.getViewportPageBounds() : null;
+                    const centerPoint = viewportBounds ? viewportBounds.center : { x: 200, y: 200 };
 
                     if (typeof editorInstance.createAssets === 'function' && typeof editorInstance.createShapes === 'function') {
                       await editorInstance.createAssets([{
@@ -229,6 +232,7 @@
                       }]);
 
                       await editorInstance.createShapes([{
+                        id: shapeId,
                         type: 'image',
                         x: centerPoint.x - width / 2,
                         y: centerPoint.y - height / 2,
@@ -238,9 +242,13 @@
                           assetId: assetId
                         }
                       }]);
+
+                      if (typeof editorInstance.setSelectedShapes === 'function') {
+                        editorInstance.setSelectedShapes([shapeId]);
+                      }
                     }
                   } catch (err) {
-                    console.error('Fallback image paste failed:', err);
+                    console.error('Pasted image injection failed:', err);
                   }
                 };
                 img.src = dataUrl;

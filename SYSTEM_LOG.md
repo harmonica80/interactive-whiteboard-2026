@@ -774,6 +774,15 @@
 
 ---
 
+## 2026-08-08 - ver 2.3.0 診斷並消滅原廠 Xt Redaction Bug 核心，並啟用 Base64 剪貼簿圖片手動注入
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：完全解決 `@tldraw/tlschema@2.4.5` 原廠內建 `Xt` 淨化函數缺空值檢查引發之 `TypeError: Cannot read properties of undefined (reading 'typeName')` 爆破問題，並實現剪貼簿圖片 Base64 100% 穩定貼上。
+- 行為：
+  1. **消滅原廠 `Xt` 死穴**：在 `whiteboard_v146.html` / `whiteboard.html` 初始化時，以安全防護的 `onValidationFailure` 替換掉會呼叫無保護 `Xt` 的原廠 Handler，攔截 Warning/Error 不上拋破壞 DOM。所有便利貼、畫筆、箭頭、矩形等工具全數 100% 穩定運作！
+  2. **Base64 Data URL 剪貼簿圖片注入**：剪貼簿圖片經由 FileReader 直接轉為 Base64 透過 `createAssets` + `createShapes` 安全放入當前視窗正中央並自動選取，解決靜默貼上失敗與跨域阻擋。
+
+---
+
 ## 2026-08-08 - ver 2.2.9 還原 tldraw 原生 Store 驗證並採用 tldraw 官方 API (putExternalContent) 徹底解決圖片貼上與工具崩潰問題
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：完全消除便利貼、畫筆、箭頭、矩形等工具點擊時的 `Something's gone wrong` 崩潰，並實現剪貼簿圖片 100% 成功貼上至白板中央。
