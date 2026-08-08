@@ -420,14 +420,17 @@
       // 使用穩定且不因時序誤判的 userAgent 偵測，徹底將行動端與電腦端隔離，還原電腦端右側樣式面板
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-      // 行動端透過 components 隱藏官方面板，釋放繪圖空間，避免重疊衝突
-      const tldrawComponents = isMobile ? {
-        MainMenu: null,
-        PageMenu: null,
-        NavigationPanel: null,
-        HelpMenu: null,
-        QuickActions: null // 隱藏底部原廠 Undo/Redo，防止遮擋重疊
-      } : {};
+      // 核心 UI 組件配置：傳入 Toast: () => null 徹底拔除並禁用引發 react-toast.mjs 崩潰之原廠 ToastProvider
+      const tldrawComponents = {
+        Toast: () => null,
+        ...(isMobile ? {
+          MainMenu: null,
+          PageMenu: null,
+          NavigationPanel: null,
+          HelpMenu: null,
+          QuickActions: null // 隱藏底部原廠 Undo/Redo，防止遮擋重疊
+        } : {})
+      };
 
       // 右上角全平台獨立懸浮控制器與版本號標記
       const customControls = React.createElement('div', {
