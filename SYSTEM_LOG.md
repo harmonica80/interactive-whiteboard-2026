@@ -774,6 +774,16 @@
 
 ---
 
+## 2026-08-08 - ver 2.5.2 注入 static DEFAULT_2_1_4_SCHEMA 防禦並強效鎖死載入生命週期
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：澈底封死 `editorInstance` 未 mount 完成空檔期的全域 Schema 缺位，實現 100% 絕對相容。
+- 行為：
+  1. **靜態合規 Schema 備援 (DEFAULT_2_1_4_SCHEMA)**：無論在頁面哪一個生命週期接收遠端快照，100% 提供帶有 `schemaVersion: 1` 的預設 Schema 結構。
+  2. **徹底根除 `reading schemaVersion` 拋錯**：`loadSnapshot()` 無障礙讀取 `schemaVersion`，消滅所有隱藏的非同步載入破綻。
+  3. **強制更新 iframe 快取版本為 `v=1200`**：刷新瀏覽器快取。
+
+---
+
 ## 2026-08-08 - ver 2.5.1 全面實施 Store-level 快照歸一化 (Format Normalizer)
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：完全解決從 Firebase 載入舊版雙層快照時 `Cannot read properties of undefined (reading 'schemaVersion')` 拋錯。
