@@ -183,8 +183,26 @@
         }
       }
 
-      // 取得當前 editor 預設的 schema 作為安全 fallback，防止 migrateStoreSnapshot 讀取 schemaVersion 失敗
-      const fallbackSchema = editorInstance && editorInstance.store ? editorInstance.store.schema.serialize() : undefined;
+      // 2.1.4 預設合規 Schema 備援，確保 migrateStoreSnapshot 100% 讀得到 schemaVersion
+      const DEFAULT_2_1_4_SCHEMA = {
+        schemaVersion: 1,
+        storeVersion: 4,
+        recordVersions: {
+          asset: { version: 1, subTypeVersion: 1 },
+          camera: { version: 1 },
+          document: { version: 2 },
+          instance: { version: 22 },
+          instance_page_state: { version: 5 },
+          page: { version: 1 },
+          shape: { version: 3, subTypeVersion: 1 },
+          instance_presence: { version: 5 },
+          pointer: { version: 1 }
+        }
+      };
+
+      const fallbackSchema = (editorInstance && editorInstance.store) 
+        ? editorInstance.store.schema.serialize() 
+        : DEFAULT_2_1_4_SCHEMA;
 
       return {
         store: cleanStore,
