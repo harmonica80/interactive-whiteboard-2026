@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.3.2';
+    this.APP_VERSION = '2.3.3';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];

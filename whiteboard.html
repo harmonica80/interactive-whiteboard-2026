@@ -139,7 +139,7 @@
   <script type="module">
     import React from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Tldraw, getSnapshot, loadSnapshot } from 'tldraw';
+    import { Tldraw, createTLStore, defaultShapeUtils, getSnapshot, loadSnapshot } from 'tldraw';
 
     let editorInstance = null;
     let isApplyingRemote = false;
@@ -147,6 +147,20 @@
     function App() {
       const [canUndo, setCanUndo] = React.useState(false);
       const [canRedo, setCanRedo] = React.useState(false);
+
+      const store = React.useMemo(() => {
+        try {
+          if (typeof createTLStore === 'function') {
+            return createTLStore({
+              shapeUtils: defaultShapeUtils || [],
+              checkValidation: false
+            });
+          }
+        } catch (e) {
+          console.warn('createTLStore fallback:', e);
+        }
+        return undefined;
+      }, []);
 
       const handleMount = (editor) => {
         editorInstance = editor;
@@ -427,16 +441,19 @@
         }, 'v1.4.6')
       ]) : null;
 
+      const tldrawProps = {
+        key: 'tldraw',
+        onMount: handleMount,
+        components: tldrawComponents,
+        forceMobile: isMobile // 強制在行動端使用原生折疊式的 Mobile UI，以提供帶有 ^ 箭頭的樣式與面板按鈕
+      };
+
+      if (store) {
+        tldrawProps.store = store;
+      }
+
       return React.createElement(React.Fragment, null, [
-        React.createElement(Tldraw, {
-          key: 'tldraw',
-          onMount: handleMount,
-          components: tldrawComponents,
-          forceMobile: isMobile, // 強制在行動端使用原生折疊式的 Mobile UI，以提供帶有 ^ 箭頭的樣式與面板按鈕
-          options: {
-            checkValidation: false
-          }
-        }),
+        React.createElement(Tldraw, tldrawProps),
         customControls
       ]);
     }
