@@ -6,7 +6,7 @@
   <title>tldraw 互動白板</title>
   
   <!-- tldraw CSS -->
-  <link rel="stylesheet" href="https://esm.sh/tldraw@2.4.5/tldraw.css">
+  <link rel="stylesheet" href="https://esm.sh/tldraw@2.1.4/tldraw.css">
 
   <style>
     html, body {
@@ -117,7 +117,7 @@
       "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
       "react-dom": "https://esm.sh/react-dom@18.3.1",
       "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-      "tldraw": "https://esm.sh/tldraw@2.4.5?deps=react@18.3.1,react-dom@18.3.1"
+      "tldraw": "https://esm.sh/tldraw@2.1.4?deps=react@18.3.1,react-dom@18.3.1"
     }
   }
   </script>
@@ -150,16 +150,66 @@
         setCanUndo(editor.getCanUndo());
         setCanRedo(editor.getCanRedo());
 
-        // 核心爆破防衛 1：包裹並替換包含原廠 Bug (Xt redaction function missing undefined check) 的 onValidationFailure
+        // 註冊 tldraw 內建正宗 ExternalContentHandler (貼上與拖放檔案)
         try {
-          if (editor.store && editor.store.schema) {
-            editor.store.schema.onValidationFailure = ({ error, phase, record }) => {
-              console.warn('[tldraw validation warning intercepted safely]:', error, phase);
-              return record;
-            };
+          if (typeof editor.registerExternalContentHandler === 'function') {
+            editor.registerExternalContentHandler('files', async ({ files, point }) => {
+              for (const file of files) {
+                if (file.type && file.type.startsWith('image/')) {
+                  const reader = new FileReader();
+                  reader.onload = async (e) => {
+                    const dataUrl = e.target.result;
+                    if (!dataUrl) return;
+                    const img = new Image();
+                    img.onload = async () => {
+                      const w = img.width || 400;
+                      const h = img.height || 300;
+                      const assetId = `asset:${Math.random().toString(36).substring(2, 11)}`;
+                      const shapeId = `shape:${Math.random().toString(36).substring(2, 11)}`;
+                      const p = point || (editor.getViewportPageBounds ? editor.getViewportPageBounds().center : { x: 200, y: 200 });
+
+                      if (typeof editor.createAssets === 'function' && typeof editor.createShapes === 'function') {
+                        await editor.createAssets([{
+                          id: assetId,
+                          typeName: 'asset',
+                          type: 'image',
+                          props: {
+                            name: file.name || 'clipboard-image.png',
+                            src: dataUrl,
+                            w: w,
+                            h: h,
+                            mimeType: file.type || 'image/png',
+                            isAnimated: false
+                          },
+                          meta: {}
+                        }]);
+
+                        await editor.createShapes([{
+                          id: shapeId,
+                          type: 'image',
+                          x: p.x - w / 2,
+                          y: p.y - h / 2,
+                          props: {
+                            w: w,
+                            h: h,
+                            assetId: assetId
+                          }
+                        }]);
+
+                        if (typeof editor.setSelectedShapes === 'function') {
+                          editor.setSelectedShapes([shapeId]);
+                        }
+                      }
+                    };
+                    img.src = dataUrl;
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }
+            });
           }
-        } catch (e) {
-          console.warn('Failed to attach safe onValidationFailure:', e);
+        } catch (err) {
+          console.warn('registerExternalContentHandler registration warning:', err);
         }
 
         // 核心剪貼簿圖片貼上全自動接管 (Base64 Data URL Clipboard Guard)

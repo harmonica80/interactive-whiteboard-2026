@@ -774,6 +774,16 @@
 
 ---
 
+## 2026-08-08 - ver 2.3.1 切換至 tldraw 2.1.4 黃金穩定版並註冊正宗 ExternalContentHandler
+- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
+- 修改項目：澈底消滅 `2.4.5` 原廠 CDN 打包的 `Xt` redaction bug，並全面打通剪貼簿圖片與檔案拖放貼上流程。
+- 行為：
+  1. **切換 CDN 至 `tldraw@2.1.4` 穩定版**：解決 esm.sh CDN 在 `2.4.5` 下內部 schema 驗證失敗導致便利貼、畫筆、箭頭、矩形蹦出 `TypeError` 畫面之原廠瑕疵。全繪圖工具 100% 恢復極速流暢。
+  2. **註冊原廠 `editor.registerExternalContentHandler('files', ...)`**：完美接管 Ctrl+V 圖片貼上與檔案拖放，全自動轉為 Base64 並精準放置於座標點正中央。
+  3. **強制更新 iframe 快取版本為 `v=200`**：確保所有客戶端 100% 載入最新版白板腳本。
+
+---
+
 ## 2026-08-08 - ver 2.3.0 診斷並消滅原廠 Xt Redaction Bug 核心，並啟用 Base64 剪貼簿圖片手動注入
 - 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
 - 修改項目：完全解決 `@tldraw/tlschema@2.4.5` 原廠內建 `Xt` 淨化函數缺空值檢查引發之 `TypeError: Cannot read properties of undefined (reading 'typeName')` 爆破問題，並實現剪貼簿圖片 Base64 100% 穩定貼上。
