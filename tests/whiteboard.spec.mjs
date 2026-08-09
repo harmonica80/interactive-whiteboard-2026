@@ -1,4 +1,4 @@
-﻿import { expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 async function openWhiteboard(page) {
   const pageErrors = []
@@ -124,6 +124,7 @@ test('supports camera shortcuts when used through the main-page iframe', async (
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
   await page.goto('/index.html')
+  await page.addStyleTag({ content: '#focusGameOverlay { display: none !important; }' })
   await page.locator('[data-target="panel-whiteboard"]').click()
 
   const frame = page.frameLocator('#whiteboardFrame')

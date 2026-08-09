@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.6.4';
+    this.APP_VERSION = '2.7.2';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5715,6 +5715,7 @@ class App {
     const memoryGridSize = parseInt(document.getElementById('focusMemoryGridSize')?.value) || 16;
     const selectedSize = gameType === 'memoryPosition' ? memoryGridSize : numberGridSize;
     const countdownSecs = parseInt(document.getElementById('focusGameCountdown').value) || 10;
+    const classicsQuestionCount = parseInt(document.getElementById('focusClassicsQuizCount')?.value) || 5;
     
     // 記憶翻牌配對遊戲 (Memory Match)
     const pairCount = parseInt(document.getElementById('selectedMemoryMatchPairCount')?.value) || 8;
@@ -5756,6 +5757,14 @@ class App {
         const randIdx = Math.floor(Math.random() * pool.length);
         selectedQuestions.push(pool[randIdx]);
       }
+    } else if (gameType === 'classicsQuiz') {
+      selectedQuestions = typeof window.createClassicsQuizQuestions === 'function'
+        ? window.createClassicsQuizQuestions(classicsQuestionCount)
+        : [];
+      if (selectedQuestions.length !== classicsQuestionCount) {
+        this.showNotification('錯誤', '唐詩宋詞成語題庫未完成載入，請重新整理後再試。');
+        return;
+      }
     }
     
     db.ref('quiz/focusGame').set({
@@ -5769,6 +5778,7 @@ class App {
       reverseMode: gameType === 'memoryPosition' ? memoryReverse : false,
       sequence: memorySequence,
       questions: selectedQuestions,
+      classicsQuestionCount: gameType === 'classicsQuiz' ? classicsQuestionCount : null,
       countdownSeconds: countdownSecs,
       countdownStartTime: Date.now(),
       results: null
@@ -5831,9 +5841,11 @@ class App {
     const numberGridSettings = document.getElementById('focusNumberGridSettings');
     const memorySettings = document.getElementById('focusMemorySettings');
     const memoryMatchSettings = document.getElementById('focusMemoryMatchSettings');
+    const classicsQuizSettings = document.getElementById('focusClassicsQuizSettings');
     if (numberGridSettings) numberGridSettings.style.display = gameType === 'numberGrid' ? 'block' : 'none';
     if (memorySettings) memorySettings.style.display = gameType === 'memoryPosition' ? 'block' : 'none';
     if (memoryMatchSettings) memoryMatchSettings.style.display = gameType === 'memoryMatch' ? 'block' : 'none';
+    if (classicsQuizSettings) classicsQuizSettings.style.display = gameType === 'classicsQuiz' ? 'block' : 'none';
   }
 
   // OpenCode 修改：倒數畫面依專注力遊戲類型顯示不同說明文字
@@ -5863,6 +5875,13 @@ class App {
       return;
     }
     
+    if (game.gameType === 'classicsQuiz') {
+      const questionCount = Array.isArray(game.questions) ? game.questions.length : (game.classicsQuestionCount || 5);
+      if (titleEl) titleEl.textContent = '📜 唐詩宋詞・成語典故專注力測驗！';
+      if (descriptionEl) descriptionEl.textContent = `共有 ${questionCount} 題選擇題；善用「刪去法提示」排除一個錯誤選項，增加答對機會！`;
+      if (hintEl) hintEl.textContent = '每題作答後可查看正解、原典全文與導讀連結。';
+      return;
+    }
     if (game.gameType === 'characterTest') {
       if (titleEl) titleEl.textContent = '一字千金：字力測驗！';
       if (descriptionEl) descriptionEl.textContent = '請注意看畫面上的注音與提示詞，並寫出正確的國字。共有 3 題喔！';
@@ -5998,7 +6017,9 @@ class App {
     // 更新底部遊戲說明提示文字
     const instEl = document.getElementById('focusGameInstruction');
     if (instEl && game) {
-      if (game.gameType === 'characterTest') {
+      if (game.gameType === 'classicsQuiz') {
+        instEl.textContent = '💡 選擇一個答案；可用「刪去法提示」排除一個錯誤選項。每題作答後可查看正解、原典與導讀連結。';
+      } else if (game.gameType === 'characterTest') {
         instEl.textContent = '💡 請寫出正確的國字，填寫完後點選「送出答案」讓老師評分。';
       } else if (game.gameType === 'characterCrossword') {
         instEl.textContent = '💡 請寫出中心挖空的關鍵字，填寫完後點選「送出答案」讓老師評分。';
@@ -6025,7 +6046,11 @@ class App {
       const result = game.results && game.results[userId];
       const hasCompleted = !!result;
 
-      if (hasCompleted) {
+      if (hasCompleted && game.gameType === 'classicsQuiz') {
+        document.getElementById('focusPlayArea').style.display = 'flex';
+        document.getElementById('focusFinishArea').style.display = 'none';
+        this.renderClassicsQuizCompleted(game, result);
+      } else       if (hasCompleted) {
         if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
           if (result.status === 'correct') {
             document.getElementById('focusPlayArea').style.display = 'none';
@@ -6091,6 +6116,12 @@ class App {
       
       const userId = localStorage.getItem('user_id') || 'guest';
       const result = game.results && game.results[userId];
+      if (game.gameType === 'classicsQuiz' && result) {
+        document.getElementById('focusPlayArea').style.display = 'flex';
+        document.getElementById('focusFinishArea').style.display = 'none';
+        this.renderClassicsQuizCompleted(game, result);
+        return;
+      }
       if (result) {
         document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
         if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
@@ -6150,6 +6181,8 @@ class App {
     }));
 
     const sorted = items.sort((a, b) => {
+      const isClassicsQuiz = a.gameType === 'classicsQuiz' || b.gameType === 'classicsQuiz';
+      if (isClassicsQuiz && (b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
       const timeA = typeof a.timeSpent === 'number' ? a.timeSpent : 999999;
       const timeB = typeof b.timeSpent === 'number' ? b.timeSpent : 999999;
       if (timeA !== timeB) return timeA - timeB;
@@ -6304,6 +6337,10 @@ class App {
       return;
     }
     
+    if (game.gameType === 'classicsQuiz') {
+      this.startClassicsQuizGame(game);
+      return;
+    }
     if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
       this.startCharacterTestGame(game);
       return;
@@ -7222,7 +7259,8 @@ class App {
       const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
       const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
       const timeStr = typeof res.timeSpent === 'number' ? res.timeSpent.toFixed(2) : '-';
-      const detailHtml = `<span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${timeStr} 秒 ${helpNote}${memoryNote}</span>`;
+      const classicsNote = res.gameType === 'classicsQuiz' ? `（答對 ${res.score || 0}/${res.totalQuestions || 0} 題）` : '';
+      const detailHtml = `<span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${timeStr} 秒 ${helpNote}${memoryNote}${classicsNote}</span>`;
 
       return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
@@ -9071,12 +9109,12 @@ function deleteVideo(id) {
 
 
 function copyText(elementId) {
-  const copyText = document.getElementById(elementId);
-  copyText.select();
-  copyText.setSelectionRange(0, 99999); // 適用行動端
+  const inputToCopy = document.getElementById(elementId);
+  inputToCopy.select();
+  inputToCopy.setSelectionRange(0, 99999); // 適用行動端
 
   try {
-    navigator.clipboard.writeText(copyText.value);
+    navigator.clipboard.writeText(inputToCopy.value);
     window.app.showNotification('成功', '連結已成功複製！');
   } catch (err) {
     // 備用方案
@@ -9443,13 +9481,13 @@ function generateLinks() {
 }
 
 function copyText(elementId) {
-  const copyText = document.getElementById(elementId);
-  if (!copyText) return;
-  copyText.select();
-  copyText.setSelectionRange(0, 99999);
+  const inputToCopy = document.getElementById(elementId);
+  if (!inputToCopy) return;
+  inputToCopy.select();
+  inputToCopy.setSelectionRange(0, 99999);
 
   try {
-    navigator.clipboard.writeText(copyText.value);
+    navigator.clipboard.writeText(inputToCopy.value);
     if (window.app) window.app.showNotification('成功', '連結已成功複製！可直接貼上分享給學生。');
     else alert('連結已成功複製！');
   } catch (err) {
