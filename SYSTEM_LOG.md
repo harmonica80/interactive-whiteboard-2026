@@ -1,4 +1,4 @@
-﻿# System Log
+# System Log
 ## 2026-08-08 - ver 2.6.1 白板初始化與自動化驗證修復
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `js/app.js`, `README.md`, `.gitignore`, `package.json`, `package-lock.json`, `playwright.config.mjs`, `scripts/check-whiteboard-syntax.mjs`, `tests/whiteboard.spec.mjs`, `.github/workflows/whiteboard-check.yml`, `SYSTEM_LOG.md`。
 - 修改項目：移除 tldraw document listener 後誤留的重複程式碼，修正 `Unexpected token 'catch'`，恢復白板初始化。
@@ -1122,3 +1122,23 @@
 - 修改項目：空白鍵按住時顯示 `grab` 抓取手，空白鍵或中鍵拖曳時顯示 `grabbing` 抓住手；在 pointerup、pointercancel、視窗失焦與空白鍵放開時正確清除狀態。
 - 驗證：Playwright 驗證根節點 class 與畫布計算後的 cursor 值，並維持縮放、平移與既有工具互動測試；7 項測試全數通過。
 - 版本：主頁與 `APP_VERSION` 升級至 `2.6.4`；iframe cache version 更新至 `v=2004`，內嵌白板標示更新至 `v1.6.4`。
+
+## 2026-08-09 - ver 2.7.0 唐詩宋詞・成語典故專注力測驗
+- 影響檔案：index.html、js/app.js、js/classics_quiz_pool.js、js/classics_quiz.js、tests/classics-quiz.spec.mjs、package.json、package-lock.json、SYSTEM_LOG.md、handoff.md。
+- 修改項目：新增 200 題四選一題庫（唐詩宋詞 102 題、成語典故 98 題），每題可使用一次刪去法提示排除錯誤選項，並為作答回饋與完成複習頁提供中讀網優先導讀、完整原典／詩詞全文、延伸介紹三種連結。
+- 排名：本測驗依答對題數優先、耗時次之排序；提示每次加計 5 秒。
+- 驗證：Playwright 全套 8 項測試通過，包含題庫數量、四選一、提示、作答後正解與三個來源連結，以及既有白板互動回歸。
+- 版本：主頁與 APP_VERSION 升級為 2.7.0；新增題庫與測驗模組 cache version v=201。
+## 2026-08-09 - ver 2.7.1 題庫題幹答案洩漏修正
+- 修改項目：移除「作品名已出現在題幹、選項再列作者＋同一作品名」的詩詞配對題；改為由作品資訊選出正確詩句。成語人物題選項改為純人物姓名，不再附帶題幹中的成語。
+- 特例處理：東施效顰、毛遂自薦、伯樂相馬因成語本身含人物姓名，改為不含人名的故事敘述題幹。
+- 防護：新增自動檢查，驗證所有題目皆為四選一、正解位於選項內，且題幹不包含正解文字。
+- 驗證：200 題全數通過題庫檢查；Playwright 全套 8 項測試通過。
+- 版本：主頁與 APP_VERSION 升級為 2.7.1；題庫與主程式 cache version 更新為 v=202。
+## 2026-08-09 - ver 2.7.2 詩詞題型與中讀網搜尋修正
+- 修改項目：唐詩宋詞題型統一改為名句／詞句出題；第二題型由「作品資訊選詩句」改為「名句選作者」，不再使用反向選句題型。
+- 中讀網連結：詩詞搜尋關鍵字固定採用作品主名稱；詞牌含副題者只使用詞牌名稱，例如水調歌頭，而不附作者或副題。
+- 介面：中讀網連結顯示實際搜尋關鍵字，便於確認跳轉內容。
+- 防護：自動測試新增所有詩詞題必以引號名句開頭，以及中讀網詩詞關鍵字不得含詞牌副題的規則。
+- 驗證：200 題題庫檢查通過；Playwright 全套 8 項測試通過。
+- 版本：主頁與 APP_VERSION 升級為 2.7.2；題庫、互動模組與主程式 cache version 更新為 v=203。
