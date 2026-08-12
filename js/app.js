@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.7.3';
+    this.APP_VERSION = '2.7.4';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -4388,16 +4388,48 @@ class App {
       }
     });
 
-    // Listen for changes in the presence list and count active users
+    // Listen for changes in the presence list and count active users with stale node cleanup
     presenceRef.on('value', (snapshot) => {
       let count = 0;
+      const now = Date.now();
       if (snapshot.exists()) {
-        count = snapshot.numChildren();
+        const data = snapshot.val();
+        Object.keys(data).forEach(key => {
+          const session = data[key];
+          // Filter out stale sessions older than 5 minutes if timestamp exists
+          if (session && session.timestamp && (now - session.timestamp > 300000)) {
+            presenceRef.child(key).remove();
+          } else {
+            count++;
+          }
+        });
       }
       if (onlineEl) {
         onlineEl.textContent = `線上人數 ${count} 人`;
+        onlineEl.title = "點擊可歸零清除殘留人數並重新連線計算";
+        onlineEl.style.cursor = "pointer";
+        if (!onlineEl.dataset.hasResetListener) {
+          onlineEl.dataset.hasResetListener = "true";
+          onlineEl.addEventListener('click', () => {
+            this.resetOnlinePresence();
+          });
+        }
       }
     });
+  }
+
+  resetOnlinePresence() {
+    if (confirm('是否要清除線上人數快取並重新計算真正在線人數？')) {
+      db.ref('quiz/presence').remove().then(() => {
+        if (typeof this.showNotification === 'function') {
+          this.showNotification('成功', '已清空殘留人數！在線視窗將在數秒內自動重新加入計算。');
+        } else {
+          alert('已清空殘留人數！在線視窗將在數秒內自動重新加入計算。');
+        }
+      }).catch(err => {
+        console.error('Reset presence error:', err);
+      });
+    }
   }
 
   setupTimerSync() {
