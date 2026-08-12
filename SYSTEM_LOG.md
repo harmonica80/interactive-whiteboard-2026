@@ -1,4 +1,14 @@
 # System Log
+## 2026-08-12 - ver 2.7.3 建立白板教學頁面升級：圖2深色代碼卡片與100年有效期防護規則
+- 影響檔案：`index.html`, `teacher-guide.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`。
+- 修改項目：完全依據使用者指定圖2設計，升級建置教學中「步驟2 Security Rules 防護安全規則」展示與複製功能。
+- 行為：
+  1. **完全復刻圖 2 視覺 UI 設計**：全新 `#1e293b` 深色語法高亮 Code Container、`通用專案規則` Badge 標籤，以及右上角藍色 `複製通用代碼` 動態按鈕。
+  2. **全面升級 100 年安全規則有效期**：將規則條件升級至 **2125 年 1 月 1 日** (`request.time < timestamp.date(2125, 1, 1)` / Realtime `now < 4891468800000`)，可供「剛好學、剛好白板、剛好簡報」免去每年維護困擾。
+  3. **一鍵雙軌複製支援**：支援一鍵複製 Firestore 與 Realtime Database 兩種 100 年有效期 Security Rules 代碼。
+
+---
+
 ## 2026-08-08 - ver 2.6.1 白板初始化與自動化驗證修復
 - 影響檔案：`whiteboard_v146.html`, `index.html`, `js/app.js`, `README.md`, `.gitignore`, `package.json`, `package-lock.json`, `playwright.config.mjs`, `scripts/check-whiteboard-syntax.mjs`, `tests/whiteboard.spec.mjs`, `.github/workflows/whiteboard-check.yml`, `SYSTEM_LOG.md`。
 - 修改項目：移除 tldraw document listener 後誤留的重複程式碼，修正 `Unexpected token 'catch'`，恢復白板初始化。
@@ -779,11 +789,14 @@
 
 ---
 
-## 2026-08-08 - ver 2.6.0 徹底解除全功能工具限制 (修復 sideEffects 隱式 undefined 回傳死穴)
-- 影響檔案：`index.html`, `js/app.js`, `whiteboard_v146.html`, `whiteboard.html`, `SYSTEM_LOG.md`。
-- 修改項目：完全落實 `handoff.md` 的 P0 最高級別指示，消滅 `registerBeforeCreateHandler` 無 `return` 引發之全頁崩潰。
+## 2026-08-12 - ver 2.7.3 建立白板教學頁面升級：圖2深色代碼卡片與100年有效期防護規則
+- 影響檔案：`index.html`, `teacher-guide.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`。
+- 修改項目：完全依據使用者指定圖2設計，升級建置教學中「步驟2 Security Rules 防護安全規則」展示與複製功能。
 - 行為：
-  1. **補齊 beforeCreateHandler return 原始 record 契約**：`shape` 與 `asset` Handler 於非目標分支強制 `return shape` / `return asset`，使畫筆、矩形、箭頭、便利貼、橢圓、圖片 100% 穩定建立。
+  1. **完全復刻圖 2 視覺 UI 設計**：全新 `#1e293b` 深色語法高亮 Code Container、`通用專案規則` Badge 標籤，以及右上角藍色 `複製通用代碼` 動態按鈕。
+  2. **全面升級 100 年安全規則有效期**：將規則條件升級至 **2125 年 1 月 1 日** (`request.time < timestamp.date(2125, 1, 1)` / Realtime `now < 4891468800000`)，可供「剛好學、剛好白板、剛好簡報」免去每年維護困擾。
+  3. **一鍵雙軌複製支援**：支援一鍵複製 Firestore 與 Realtime Database 兩種 100 年有效期 Security Rules 代碼。
+
   2. **修正 document change 監聽器中的 `getSnapshot` 呼叫**：全面改用 `editor.store.getSnapshot()` 實例方法，徹底消滅 `ReferenceError: getSnapshot is not defined`。
   3. **強制更新 iframe 快取版本為 `v=2000`**：刷新瀏覽器快取。
 

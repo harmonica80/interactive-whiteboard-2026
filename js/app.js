@@ -1,4 +1,4 @@
-﻿
+
 // 主程式
 class App {
   constructor() {
@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.7.2';
+    this.APP_VERSION = '2.7.3';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -9345,19 +9345,43 @@ function hitTaiko(type, side) {
   if (window.app) window.app.hitTaiko(type, side);
 }
 
-const SECURITY_RULES_JSON = `{
-  "rules": {
-    ".read": "now < 1893456000000",
-    ".write": "now < 1893456000000"
+const SECURITY_RULES_FIRESTORE = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 匹配資料庫中的任何文件路徑
+    match /{document=**} {
+      // 允許讀取和寫入，條件是：當前時間小於 2125 年 1 月 1 日
+      allow read, write: if request.time < timestamp.date(2125, 1, 1);
+    }
   }
 }`;
 
-function copySecurityRules() {
-  navigator.clipboard.writeText(SECURITY_RULES_JSON).then(() => {
-    if (window.app) window.app.showNotification('成功', '安全防護規則已複製！請至 Firebase Console 的「規則 (Rules)」貼上並點擊「發布」。');
-    else alert('安全防護規則已複製！');
+const SECURITY_RULES_JSON = `{
+  "rules": {
+    ".read": "now < 4891468800000",
+    ".write": "now < 4891468800000"
+  }
+}`;
+
+function copySecurityRules(type = 'firestore', btnEl = null) {
+  const codeToCopy = type === 'rtdb' ? SECURITY_RULES_JSON : SECURITY_RULES_FIRESTORE;
+  navigator.clipboard.writeText(codeToCopy).then(() => {
+    if (btnEl) {
+      const origText = btnEl.innerHTML;
+      btnEl.innerHTML = '✓ 已複製代碼！';
+      btnEl.style.background = '#10B981';
+      setTimeout(() => {
+        btnEl.innerHTML = origText;
+        btnEl.style.background = '#3B82F6';
+      }, 2500);
+    }
+    if (window.app && typeof window.app.showNotification === 'function') {
+      window.app.showNotification('成功', '100年有效期防護安全規則已成功複製！請至 Firebase Console 的「規則 (Rules)」貼上並發布。');
+    } else {
+      alert('✅ 100年有效期防護安全規則已成功複製！請至 Firebase Console 的「規則 (Rules)」貼上並發布。');
+    }
   }).catch(err => {
-    alert('複製失敗，請手動複製');
+    alert('複製失敗，請手動選取程式碼框中的內容進行複製');
   });
 }
 
