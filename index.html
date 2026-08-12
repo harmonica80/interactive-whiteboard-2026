@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.7.3</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.7.4</span>
         </p>
       </div>
       <div class="top-actions">
@@ -276,40 +276,39 @@
             </ol>
           </div>
 
-          <!-- 步驟 2 -->
-          <div class="step-card" style="border-left: 6px solid #4f46e5; padding: 24px; margin-bottom: 28px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
-            <div class="step-title" style="font-size: 18px; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span class="step-num" style="background: #4f46e5; color: white; border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(79,70,229,0.3);">2</span>
-                <span style="color: var(--text-primary); font-size: 18px; font-weight: 800;">設定 100 年有效期的安全性規則 (通用工具)</span>
-              </div>
-              <span style="background: #4f46e5; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; letter-spacing: 0.5px; box-shadow: 0 2px 6px rgba(79,70,229,0.25);">通用專案規則</span>
+                    <!-- 步驟 2 -->
+          <div class="step-card" style="border-left: 6px solid #ff9500; padding: 24px; margin-bottom: 28px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+            <div class="step-title" style="font-size: 18px; font-weight: bold; margin-bottom: 14px; display: flex; align-items: center; gap: 12px;">
+              <span class="step-num" style="background: #ff9500; color: white; border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(255,149,0,0.3);">2</span>
+              <span style="color: var(--text-primary); font-size: 18px; font-weight: 800;">貼上防護安全規則 (徹底避免系統警告信)</span>
             </div>
             
             <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.6; padding-left: 42px;">
-              這是給 <strong>剛好學、剛好白板、剛好簡報</strong> 專用的規則，可讓資料在 <strong>2125 年前都能讀寫</strong>，無需每年更改。
+              讓資料在 <strong>2125 年前都能讀寫</strong>，無需每年更改。
             </p>
 
-            <!-- 100年安全性規則 程式碼展示框 (圖2樣式) -->
+            <ol style="font-size: 14px; margin: 0 0 18px 0; padding-left: 64px; color: var(--text-primary); line-height: 1.8;">
+              <li>在 Realtime Database 頁面上方，點選 <span style="color:#ff9500; font-weight:bold;">規則 (Rules)</span> 頁籤。</li>
+              <li>點擊下方按鈕「<strong>複製 Realtime Database 100年規則</strong>」：</li>
+            </ol>
+
+            <!-- 100年 Realtime Database 安全性規則展示框 -->
             <div style="margin-left: 42px; position: relative; background: #1e293b; border-radius: 12px; padding: 22px 24px; font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; font-size: 13.5px; line-height: 1.6; color: #e2e8f0; border: 1px solid #334155; box-shadow: 0 6px 20px rgba(0,0,0,0.2); overflow: hidden;">
-              <button id="btnCopyFirestore" onclick="copySecurityRules('firestore', this)" style="position: absolute; top: 16px; right: 16px; background: #3b82f6; color: white; border: none; padding: 7px 16px; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(59,130,246,0.4); transition: all 0.2s;">
-                複製通用代碼
+              <button id="btnCopyRtdb" onclick="copySecurityRules('rtdb', this)" style="position: absolute; top: 16px; right: 16px; background: #ff9500; color: white; border: none; padding: 7px 16px; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(255,149,0,0.4); transition: all 0.2s;">
+                📋 複製 Realtime Database 100年規則
               </button>
-              <pre style="margin: 0; white-space: pre-wrap; word-break: break-all; font-family: inherit; font-size: 13.5px;"><span style="color: #60a5fa; font-weight: bold;">rules_version</span> = <span style="color: #38bdf8;">'2'</span>;
-<span style="color: #f472b6; font-weight: bold;">service</span> <span style="color: #e2e8f0;">cloud.firestore</span> {
-  <span style="color: #f472b6; font-weight: bold;">match</span> <span style="color: #38bdf8;">/databases/{database}/documents</span> {
-    <span style="color: #94a3b8; font-style: italic;">// 匹配資料庫中的任何文件路徑</span>
-    <span style="color: #f472b6; font-weight: bold;">match</span> <span style="color: #38bdf8;">/{document=**}</span> {
-      <span style="color: #94a3b8; font-style: italic;">// 允許讀取和寫入，條件是：當前時間小於 2125 年 1 月 1 日</span>
-      <span style="color: #f472b6; font-weight: bold;">allow</span> <span style="color: #e2e8f0;">read, write:</span> <span style="color: #f472b6; font-weight: bold;">if</span> <span style="color: #e2e8f0;">request.time &lt; timestamp.date(</span><span style="color: #fde047; font-weight: bold;">2125, 1, 1</span><span style="color: #e2e8f0;">);</span>
-    }
-  }
-}</pre>
+              <pre style="margin: 0; white-space: pre-wrap; word-break: break-all; font-family: inherit; font-size: 13.5px;"><span style="color: #e2e8f0;">{</span>
+  <span style="color: #60a5fa; font-weight: bold;">"rules"</span><span style="color: #e2e8f0;">: {</span>
+    <span style="color: #38bdf8; font-weight: bold;">".read"</span><span style="color: #e2e8f0;">:</span> <span style="color: #fde047;">"now &lt; 4891468800000"</span><span style="color: #e2e8f0;">,</span>
+    <span style="color: #38bdf8; font-weight: bold;">".write"</span><span style="color: #e2e8f0;">:</span> <span style="color: #fde047;">"now &lt; 4891468800000"</span>
+  <span style="color: #e2e8f0;">}</span>
+<span style="color: #e2e8f0;">}</span></pre>
             </div>
-            
-            <div style="margin-left: 42px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: rgba(79,70,229,0.06); padding: 12px 16px; border-radius: 8px; border: 1px dashed rgba(79,70,229,0.3);">
-              <span style="font-size: 13px; color: var(--text-primary);">💡 若您使用的是 <strong>Realtime Database</strong> 專案，也可一鍵複製 100 年 Realtime 規則：</span>
-              <button onclick="copySecurityRules('rtdb', this)" style="background: #4f46e5; color: white; border: none; padding: 6px 14px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer;">📋 複製 Realtime Database 100年規則</button>
+
+            <!-- 最下方加入圖 1 貼上位置示意圖 -->
+            <div style="margin-left: 42px; margin-top: 20px;" class="step-img-box">
+              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 8px;">📷 貼上位置示意圖：</div>
+              <img src="images/guide/step10.png" alt="步驟2-2 貼上位置示意圖" class="step-img" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--border-color);">
             </div>
           </div>
 

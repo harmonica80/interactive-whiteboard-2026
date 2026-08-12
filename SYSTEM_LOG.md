@@ -1,4 +1,17 @@
 # System Log
+## 2026-08-12 - ver 2.7.4 精準依照圖2紅字校正步驟2與線上人數一鍵歸零清除
+- 影響檔案：`index.html`, `teacher-guide.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **完全遵照使用者圖 2 紅字批註修正步驟 2**：
+     - 標題修正為：`貼上防護安全規則 (徹底避免系統警告信)`（移除 Firestore 標題與標籤）。
+     - 說明文案更換為：`讓資料在 2125 年前都能讀寫，無需每年更改。`
+     - 清單與程式碼展示框全面改為 Realtime Database 100 年規則與按鈕 `📋 複製 Realtime Database 100年規則`。
+     - 畫面最下方精確加入圖 1 貼上位置示意圖片 (`images/guide/step10.png`)。
+  2. **線上人數殘留清除與一鍵重算**：
+     - 新增超時殭屍連線自動過濾機制。
+     - 新增 `resetOnlinePresence()` 方法：點擊頂部「線上人數 X 人」即可一鍵清空 Firebase `quiz/presence` 快取，並讓所有連線視窗秒級重新計算真實人數。
+
+---
 ## 2026-08-12 - ver 2.7.3 建立白板教學頁面升級：圖2深色代碼卡片與100年有效期防護規則
 - 影響檔案：`index.html`, `teacher-guide.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`。
 - 修改項目：完全依據使用者指定圖2設計，升級建置教學中「步驟2 Security Rules 防護安全規則」展示與複製功能。
