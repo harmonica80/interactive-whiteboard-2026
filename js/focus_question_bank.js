@@ -103,55 +103,148 @@
       return names[type] || type;
     }
 
+    // 標準化題型物件屬性（兼容原廠內建題庫與匯入自訂格式）
+    normalizeItem(type, item) {
+      if (!item) return {};
+
+      if (type === 'classicsQuiz') {
+        const prompt = item.prompt || `「${item.quote || item.title}」是出自？`;
+        const isAuthorQuestion = item.id?.includes('author') || item.id?.includes('person') || prompt.includes('作者') || prompt.includes('主角');
+        const answer = item.correctOption || item.answer || '';
+        const title = item.work || item.title || '';
+        const quote = item.quote || item.title || prompt;
+        const author = item.author || (item.explanation ? item.explanation.replace(/.*?出自.*?代(.*?)〈.*/, '$1') : '');
+        const category = item.category || (item.author ? '唐詩宋詞' : '成語典故');
+        const typeBadge = isAuthorQuestion ? '✍️ 問作者/主角' : '📜 問出處/作品';
+
+        return {
+          id: item.id || `q_${Date.now()}`,
+          category,
+          typeBadge,
+          prompt,
+          quote,
+          title,
+          work: title,
+          author,
+          dynasty: item.dynasty || '',
+          options: item.options || [answer],
+          answer,
+          correctOption: answer,
+          explanation: item.explanation || item.fullPoem || '',
+          fullPoem: item.fullPoem || item.explanation || quote,
+          links: item.links || item.reference || {}
+        };
+      }
+
+      if (type === 'characterTest') {
+        return {
+          char: item.char || '',
+          zhuyin: item.zhuyin || '',
+          clue: item.clue || '',
+          searchWord: item.searchWord || ''
+        };
+      }
+
+      if (type === 'characterCrossword') {
+        const centerChar = item.char || item.centerChar || '';
+        let surroundingChars = [];
+        let combinedWords = [];
+
+        if (Array.isArray(item.surrounding) && item.surrounding.length >= 4) {
+          surroundingChars = item.surrounding.map(s => typeof s === 'string' ? s : (s.char || ''));
+          combinedWords = item.surrounding.map(s => {
+            const c = typeof s === 'string' ? s : s.char;
+            const pos = typeof s === 'object' ? s.pos : 'after';
+            return pos === 'before' ? `${c}${centerChar}` : `${centerChar}${c}`;
+          });
+        } else {
+          const top = item.topWord || '';
+          const bottom = item.bottomWord || '';
+          const left = item.leftWord || '';
+          const right = item.rightWord || '';
+          surroundingChars = [top, bottom, left, right].filter(Boolean);
+          combinedWords = [
+            top ? `${top}${centerChar}` : '',
+            bottom ? `${bottom}${centerChar}` : '',
+            left ? `${centerChar}${left}` : '',
+            right ? `${centerChar}${right}` : ''
+          ].filter(Boolean);
+        }
+
+        return {
+          char: centerChar,
+          centerChar: centerChar,
+          zhuyin: item.zhuyin || '',
+          surroundingChars,
+          combinedWords,
+          topWord: surroundingChars[0] || '',
+          bottomWord: surroundingChars[1] || '',
+          leftWord: surroundingChars[2] || '',
+          rightWord: surroundingChars[3] || '',
+          searchWord: item.searchWord || combinedWords.join('、')
+        };
+      }
+
+      if (type === 'characterUnitedWords') {
+        const word = item.targetWord || item.word || (item.chars ? item.chars.join('') : '');
+        const parts = Array.isArray(item.components)
+          ? item.components
+          : (Array.isArray(item.parts) ? item.parts : (item.p1 && item.p2 ? (item.p1 + item.p2).split('') : []));
+
+        return {
+          word,
+          targetWord: word,
+          parts,
+          components: parts,
+          clue: item.clue || '',
+          searchWord: item.searchWord || word
+        };
+      }
+
+      return item;
+    }
+
     // 關鍵字搜尋過濾
     searchPool(type, query = '') {
       const pool = this.getPool(type);
       const q = (query || '').trim().toLowerCase();
-      if (!q) return pool.map((item, idx) => ({ ...item, _originalIndex: idx }));
+      if (!q) return pool.map((item, idx) => ({ ...this.normalizeItem(type, item), _originalIndex: idx }));
 
       return pool
-        .map((item, idx) => ({ ...item, _originalIndex: idx }))
-        .filter((item) => {
+        .map((item, idx) => ({ ...this.normalizeItem(type, item), _originalIndex: idx }))
+        .filter((norm) => {
           if (type === 'classicsQuiz') {
-            const title = (item.title || item.work || '').toLowerCase();
-            const author = (item.author || item.explanation || '').toLowerCase();
-            const quote = (item.quote || item.prompt || '').toLowerCase();
-            const answer = (item.correctOption || item.answer || '').toLowerCase();
-            const optionsStr = (item.options || []).join(' ').toLowerCase();
             return (
-              title.includes(q) ||
-              author.includes(q) ||
-              quote.includes(q) ||
-              answer.includes(q) ||
-              optionsStr.includes(q)
+              (norm.title && norm.title.toLowerCase().includes(q)) ||
+              (norm.author && norm.author.toLowerCase().includes(q)) ||
+              (norm.quote && norm.quote.toLowerCase().includes(q)) ||
+              (norm.prompt && norm.prompt.toLowerCase().includes(q)) ||
+              (norm.answer && norm.answer.toLowerCase().includes(q)) ||
+              (norm.explanation && norm.explanation.toLowerCase().includes(q)) ||
+              (norm.options && norm.options.join(' ').toLowerCase().includes(q))
             );
           }
           if (type === 'characterTest') {
             return (
-              (item.char && item.char.toLowerCase().includes(q)) ||
-              (item.zhuyin && item.zhuyin.toLowerCase().includes(q)) ||
-              (item.clue && item.clue.toLowerCase().includes(q)) ||
-              (item.searchWord && item.searchWord.toLowerCase().includes(q))
+              (norm.char && norm.char.toLowerCase().includes(q)) ||
+              (norm.zhuyin && norm.zhuyin.toLowerCase().includes(q)) ||
+              (norm.clue && norm.clue.toLowerCase().includes(q)) ||
+              (norm.searchWord && norm.searchWord.toLowerCase().includes(q))
             );
           }
           if (type === 'characterCrossword') {
             return (
-              (item.centerChar && item.centerChar.toLowerCase().includes(q)) ||
-              (item.topWord && item.topWord.toLowerCase().includes(q)) ||
-              (item.bottomWord && item.bottomWord.toLowerCase().includes(q)) ||
-              (item.leftWord && item.leftWord.toLowerCase().includes(q)) ||
-              (item.rightWord && item.rightWord.toLowerCase().includes(q)) ||
-              (item.searchWord && item.searchWord.toLowerCase().includes(q))
+              (norm.centerChar && norm.centerChar.toLowerCase().includes(q)) ||
+              (norm.surroundingChars && norm.surroundingChars.join('').toLowerCase().includes(q)) ||
+              (norm.combinedWords && norm.combinedWords.join(' ').toLowerCase().includes(q)) ||
+              (norm.searchWord && norm.searchWord.toLowerCase().includes(q))
             );
           }
           if (type === 'characterUnitedWords') {
             return (
-              (item.word && item.word.toLowerCase().includes(q)) ||
-              (item.p1 && item.p1.toLowerCase().includes(q)) ||
-              (item.p2 && item.p2.toLowerCase().includes(q)) ||
-              (item.clue && item.clue.toLowerCase().includes(q)) ||
-              (item.searchWord && item.searchWord.toLowerCase().includes(q)) ||
-              (Array.isArray(item.parts) && item.parts.join('').includes(q))
+              (norm.word && norm.word.toLowerCase().includes(q)) ||
+              (norm.parts && norm.parts.join('').toLowerCase().includes(q)) ||
+              (norm.clue && norm.clue.toLowerCase().includes(q))
             );
           }
           return false;
@@ -233,40 +326,40 @@
       if (type === 'characterCrossword') {
         return [
           {
-            "centerChar": "天",
-            "topWord": "藍",
-            "bottomWord": "地",
-            "leftWord": "今",
-            "rightWord": "下",
-            "searchWord": "藍天、天地、今天、天下"
+            "char": "天",
+            "zhuyin": "ㄊㄧㄢ",
+            "searchWord": "天空",
+            "surrounding": [
+              { "char": "今", "pos": "before" },
+              { "char": "明", "pos": "before" },
+              { "char": "氣", "pos": "after" },
+              { "char": "空", "pos": "after" }
+            ]
           },
           {
-            "centerChar": "風",
-            "topWord": "春",
-            "bottomWord": "雨",
-            "leftWord": "微",
-            "rightWord": "光",
-            "searchWord": "春風、風雨、微風、風光"
+            "char": "風",
+            "zhuyin": "ㄈㄥ",
+            "searchWord": "風景",
+            "surrounding": [
+              { "char": "颱", "pos": "before" },
+              { "char": "微", "pos": "before" },
+              { "char": "雨", "pos": "after" },
+              { "char": "景", "pos": "after" }
+            ]
           }
         ];
       }
       if (type === 'characterUnitedWords') {
         return [
           {
-            "word": "森林",
-            "p1": "木木木",
-            "p2": "木木",
-            "parts": ["木", "木", "木", "木", "木"],
-            "clue": "大片生長樹木的廣大土地",
-            "searchWord": "森林"
+            "targetWord": "明月",
+            "components": ["日", "月", "月"],
+            "clue": "形容夜空中明亮的月亮"
           },
           {
-            "word": "品嚐",
-            "p1": "口口口",
-            "p2": "龸口日小",
-            "parts": ["口", "口", "口", "龸", "口", "日", "小"],
-            "clue": "仔細辨別食物的滋味",
-            "searchWord": "品嚐"
+            "targetWord": "森林",
+            "components": ["木", "木", "木", "木", "木"],
+            "clue": "大片生長樹木的廣大土地"
           }
         ];
       }
@@ -302,7 +395,6 @@
         throw new Error('匯入資料必須為非空的 JSON 陣列（[ ... ]）！');
       }
 
-      // 依單元進行欄位驗證與補齊防呆
       const validatedList = [];
       for (let i = 0; i < data.length; i++) {
         const item = data[i];
@@ -313,8 +405,9 @@
         if (type === 'classicsQuiz') {
           const answer = String(item.answer || item.correctOption || '').trim();
           const title = String(item.title || item.work || '').trim();
-          if (!title || !answer) {
-            throw new Error(`第 ${i + 1} 筆唐詩宋詞題目缺少必要欄位（作品名 title 或解答 answer）！`);
+          const quote = String(item.quote || item.prompt || title).trim();
+          if (!quote || !answer) {
+            throw new Error(`第 ${i + 1} 筆唐詩宋詞題目缺少必要欄位（作品名或名句、解答 answer）！`);
           }
           let options = Array.isArray(item.options) && item.options.length === 4
             ? item.options
@@ -324,12 +417,11 @@
             options[0] = answer;
           }
 
-          const quote = String(item.quote || item.prompt || title).trim();
           validatedList.push({
             id: item.id || `custom_q_${Date.now()}_${i}`,
             type: item.type || (item.author ? 'poetry' : 'idiom'),
-            title: title,
-            work: item.work || title,
+            title: title || quote,
+            work: item.work || title || quote,
             author: String(item.author || '').trim(),
             dynasty: String(item.dynasty || '').trim(),
             quote: quote,
@@ -338,11 +430,8 @@
             answer: answer,
             correctOption: answer,
             fullPoem: String(item.fullPoem || item.explanation || quote).trim(),
-            links: item.links || {
-              sinoreading: `https://www.google.com/search?q=${encodeURIComponent(title + ' 中讀網')}`,
-              wikisource: `https://zh.wikisource.org/wiki/${encodeURIComponent(title)}`,
-              wikipedia: `https://zh.wikipedia.org/wiki/${encodeURIComponent(title)}`
-            }
+            explanation: String(item.explanation || item.fullPoem || `正解為：${answer}`).trim(),
+            links: item.links || item.reference || {}
           });
         } else if (type === 'characterTest') {
           if (!item.char || !item.clue) {
@@ -355,29 +444,48 @@
             searchWord: String(item.searchWord || item.clue.replace(/[（(].*?[）)]/g, item.char)).trim()
           });
         } else if (type === 'characterCrossword') {
-          if (!item.centerChar) {
-            throw new Error(`第 ${i + 1} 筆字字珠璣題目缺少 centerChar 中心字！`);
+          const centerChar = String(item.char || item.centerChar || '').trim();
+          if (!centerChar) {
+            throw new Error(`第 ${i + 1} 筆字字珠璣題目缺少中心字（char 或 centerChar）！`);
           }
+
+          let surrounding = item.surrounding;
+          if (!Array.isArray(surrounding) || surrounding.length < 4) {
+            const top = String(item.topWord || '').trim();
+            const bottom = String(item.bottomWord || '').trim();
+            const left = String(item.leftWord || '').trim();
+            const right = String(item.rightWord || '').trim();
+            surrounding = [
+              { char: top || '前', pos: 'before' },
+              { char: bottom || '後', pos: 'before' },
+              { char: left || '左', pos: 'after' },
+              { char: right || '右', pos: 'after' }
+            ];
+          }
+
           validatedList.push({
-            centerChar: String(item.centerChar).trim(),
-            topWord: String(item.topWord || '').trim(),
-            bottomWord: String(item.bottomWord || '').trim(),
-            leftWord: String(item.leftWord || '').trim(),
-            rightWord: String(item.rightWord || '').trim(),
+            char: centerChar,
+            centerChar: centerChar,
+            zhuyin: String(item.zhuyin || '').trim(),
+            surrounding: surrounding,
             searchWord: String(item.searchWord || '').trim()
           });
         } else if (type === 'characterUnitedWords') {
-          if (!item.word) {
-            throw new Error(`第 ${i + 1} 筆團結一詞題目缺少 word 詞語！`);
+          const word = String(item.targetWord || item.word || '').trim();
+          if (!word) {
+            throw new Error(`第 ${i + 1} 筆團結一詞題目缺少目標詞語（targetWord 或 word）！`);
           }
-          const parts = Array.isArray(item.parts) ? item.parts : String(item.p1 || '' + item.p2 || '').split('');
+          const parts = Array.isArray(item.components)
+            ? item.components
+            : (Array.isArray(item.parts) ? item.parts : String(item.p1 || '' + item.p2 || '').split(''));
+          
           validatedList.push({
-            word: String(item.word).trim(),
-            p1: String(item.p1 || '').trim(),
-            p2: String(item.p2 || '').trim(),
+            targetWord: word,
+            word: word,
+            components: parts.map(String),
             parts: parts.map(String),
             clue: String(item.clue || '').trim(),
-            searchWord: String(item.searchWord || item.word).trim()
+            searchWord: String(item.searchWord || word).trim()
           });
         }
       }
@@ -422,7 +530,7 @@
         const isCustom = this.isCustomPool(type);
         badge.innerHTML = isCustom
           ? `<span style="background: #10b981; color: white; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 1px 4px rgba(16,185,129,0.25);">✨ 自訂題庫：共 ${pool.length} 題</span>`
-          : `<span style="background: var(--accent-color); color: white; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: bold;">📚 預設題庫：共 ${pool.length} 題</span>`;
+          : `<span style="background: var(--accent-color); color: white; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: bold;">📚 官方預設題庫：共 ${pool.length} 題</span>`;
       }
     }
 
@@ -456,7 +564,6 @@
       this.editingIndex = -1;
       this.closeQuestionEditForm();
 
-      // 更新頁籤按鈕樣式
       const tabs = document.querySelectorAll('.focus-qb-tab-btn');
       tabs.forEach((tab) => {
         if (tab.dataset.type === type) {
@@ -472,7 +579,6 @@
         }
       });
 
-      // 渲染題庫統計與清單
       const searchInput = document.getElementById('focusQbSearchInput');
       if (searchInput) {
         searchInput.value = this.searchKeywords[type] || '';
@@ -515,36 +621,36 @@
         let contentHtml = '';
 
         if (type === 'classicsQuiz') {
-          const answer = item.correctOption || item.answer || '無';
-          const quote = item.quote || item.prompt || item.title || '';
-          const title = item.work || item.title || '';
-          const author = item.author || (item.explanation ? item.explanation.replace(/.*?出自.*?代(.*?)〈.*/, '$1') : '');
-          const dynasty = item.dynasty ? ` (${item.dynasty})` : '';
+          const badgeBg = item.typeBadge.includes('作者') ? 'rgba(0,122,255,0.1)' : 'rgba(16,185,129,0.1)';
+          const badgeColor = item.typeBadge.includes('作者') ? 'var(--accent-color)' : '#10b981';
 
           contentHtml = `
-            <div style="font-weight: bold; font-size: 15px; color: var(--text-primary); margin-bottom: 6px;">
-              ${displayIdx + 1}. 「${this.highlightText(quote, query)}」
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+              <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;">${item.typeBadge}</span>
+              <span style="font-weight: bold; font-size: 15px; color: var(--text-primary);">
+                ${displayIdx + 1}. ${this.highlightText(item.prompt, query)}
+              </span>
             </div>
             <div style="font-size: 13px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 6px;">
-              ${title ? `<span><strong>作品：</strong>${this.highlightText(title, query)}</span>` : ''}
-              ${author ? `<span><strong>作者/主角：</strong>${this.highlightText(author, query)}${dynasty}</span>` : ''}
-              <span style="color: #10b981;"><strong>正解：</strong>${this.highlightText(answer, query)}</span>
+              ${item.title ? `<span><strong>出處作品：</strong>${this.highlightText(item.title, query)}</span>` : ''}
+              ${item.author ? `<span><strong>作者/主角：</strong>${this.highlightText(item.author, query)}${item.dynasty ? ` (${item.dynasty})` : ''}</span>` : ''}
+              <span style="color: #10b981;"><strong>正解：</strong>${this.highlightText(item.answer, query)}</span>
             </div>
             <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; background: var(--bg-input); padding: 8px; border-radius: 6px;">
-              <strong>選項：</strong>${(item.options || []).map(opt => opt === answer ? `<span style="color: #10b981; font-weight:bold;">${opt} (正解)</span>` : opt).join('、 ')}
+              <strong>四選一選項：</strong>${(item.options || []).map(opt => opt === item.answer ? `<span style="color: #10b981; font-weight:bold;">${opt} (正解)</span>` : opt).join('、 ')}
             </div>
           `;
         } else if (type === 'characterTest') {
           contentHtml = `
             <div style="display: flex; align-items: center; gap: 14px;">
-              <div style="font-size: 28px; font-weight: bold; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(0,122,255,0.1); border-radius: 8px; color: var(--accent-color);">
+              <div style="font-size: 28px; font-weight: bold; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(0,122,255,0.1); border-radius: 8px; color: var(--accent-color); flex-shrink: 0;">
                 ${this.highlightText(item.char, query)}
               </div>
-              <div style="flex: 1;">
+              <div style="flex: 1; min-width: 0;">
                 <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">
                   ${displayIdx + 1}. 提示：${this.highlightText(item.clue, query)}
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 12px;">
+                <div style="font-size: 12px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 12px;">
                   <span><strong>注音：</strong>${item.zhuyin || '無'}</span>
                   <span><strong>關聯詞：</strong>${this.highlightText(item.searchWord || '無', query)}</span>
                 </div>
@@ -554,19 +660,18 @@
         } else if (type === 'characterCrossword') {
           contentHtml = `
             <div style="display: flex; align-items: center; gap: 14px;">
-              <div style="font-size: 24px; font-weight: bold; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(16,185,129,0.1); border-radius: 8px; color: #10b981;">
+              <div style="font-size: 26px; font-weight: bold; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(16,185,129,0.1); border-radius: 8px; color: #10b981; flex-shrink: 0;">
                 ${this.highlightText(item.centerChar, query)}
               </div>
-              <div style="flex: 1;">
+              <div style="flex: 1; min-width: 0;">
                 <div style="font-size: 14px; font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">
-                  ${displayIdx + 1}. 中心字【${this.highlightText(item.centerChar, query)}】
+                  ${displayIdx + 1}. 中心正字【${this.highlightText(item.centerChar, query)}】${item.zhuyin ? `（注音：${item.zhuyin}）` : ''}
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 10px;">
-                  <span>上：${item.topWord}</span>
-                  <span>下：${item.bottomWord}</span>
-                  <span>左：${item.leftWord}</span>
-                  <span>右：${item.rightWord}</span>
-                  <span>詞語：${this.highlightText(item.searchWord || '', query)}</span>
+                <div style="font-size: 12px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 3px;">
+                  <span><strong>四方字：</strong>${(item.surroundingChars || []).map(c => this.highlightText(c, query)).join('、 ')}</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); background: var(--bg-input); padding: 4px 8px; border-radius: 4px; display: inline-block;">
+                  <strong>組成詞語：</strong>${(item.combinedWords && item.combinedWords.length > 0) ? item.combinedWords.map(w => this.highlightText(w, query)).join('、 ') : this.highlightText(item.searchWord || '', query)}
                 </div>
               </div>
             </div>
@@ -574,14 +679,17 @@
         } else if (type === 'characterUnitedWords') {
           contentHtml = `
             <div style="display: flex; align-items: center; gap: 14px;">
-              <div style="font-size: 22px; font-weight: bold; padding: 6px 12px; display: flex; align-items: center; justify-content: center; background: rgba(245,158,11,0.1); border-radius: 8px; color: #f59e0b;">
+              <div style="font-size: 20px; font-weight: bold; padding: 8px 14px; display: flex; align-items: center; justify-content: center; background: rgba(245,158,11,0.1); border-radius: 8px; color: #f59e0b; flex-shrink: 0;">
                 ${this.highlightText(item.word, query)}
               </div>
-              <div style="flex: 1;">
+              <div style="flex: 1; min-width: 0;">
                 <div style="font-size: 14px; font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">
-                  ${displayIdx + 1}. 部件拆解：${(item.parts || []).join(' + ')}
+                  ${displayIdx + 1}. 解答詞語【${this.highlightText(item.word, query)}】
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary);">
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 3px;">
+                  <span><strong>散裝部件：</strong>${(item.parts || []).map(p => this.highlightText(p, query)).join(' + ')}</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted);">
                   <span><strong>解釋提示：</strong>${this.highlightText(item.clue || '無', query)}</span>
                 </div>
               </div>
@@ -610,7 +718,7 @@
     // 搜尋高亮關鍵字
     highlightText(text, query) {
       if (!text) return '';
-      if (!query) return text;
+      if (!query) return String(text);
       const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
       return String(text).replace(regex, '<span style="background: #fef08a; color: #854d0e; padding: 0 2px; border-radius: 2px; font-weight:bold;">$1</span>');
     }
@@ -625,7 +733,7 @@
     handleDeleteQuestion(originalIndex) {
       const type = this.currentActiveType;
       const pool = this.getPool(type);
-      const item = pool[originalIndex];
+      const item = this.normalizeItem(type, pool[originalIndex]);
       const name = item.title || item.char || item.centerChar || item.word || `第 ${originalIndex + 1} 題`;
       if (confirm(`確定要刪除題目「${name}」嗎？`)) {
         this.deleteQuestion(type, originalIndex);
@@ -648,7 +756,8 @@
 
       const isEdit = originalIndex >= 0;
       const pool = this.getPool(type);
-      const item = isEdit ? pool[originalIndex] : {};
+      const rawItem = isEdit ? pool[originalIndex] : {};
+      const item = this.normalizeItem(type, rawItem);
 
       if (formTitle) {
         formTitle.textContent = isEdit ? `✏️ 編輯題目 (${this.getTypeName(type)})` : `➕ 新增題目 (${this.getTypeName(type)})`;
@@ -656,11 +765,12 @@
 
       let fieldsHtml = '';
       if (type === 'classicsQuiz') {
-        const title = item.work || item.title || '';
-        const author = item.author || (item.explanation ? item.explanation.replace(/.*?出自.*?代(.*?)〈.*/, '$1') : '');
+        const title = item.title || item.work || '';
+        const author = item.author || '';
         const dynasty = item.dynasty || '';
         const quote = item.quote || item.prompt || '';
-        const answer = item.correctOption || item.answer || '';
+        const prompt = item.prompt || (quote ? `「${quote}」出自？` : '');
+        const answer = item.answer || item.correctOption || '';
         const fullPoem = item.fullPoem || item.explanation || '';
         const opts = item.options || ['', '', '', ''];
 
@@ -671,7 +781,7 @@
               <input type="text" id="qb_input_title" value="${title}" placeholder="例如：水調歌頭 或 畫蛇添足" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
             <div>
-              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">作者 / 出處</label>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">作者 / 主角</label>
               <input type="text" id="qb_input_author" value="${author}" placeholder="例如：蘇軾" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
             <div>
@@ -680,8 +790,12 @@
             </div>
           </div>
           <div style="margin-bottom: 12px;">
-            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">名句 / 詩詞名句引言 *</label>
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">名句引言 *</label>
             <input type="text" id="qb_input_quote" value="${quote}" placeholder="例如：但願人長久，千里共嬋娟。" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">題目問句 *</label>
+            <input type="text" id="qb_input_prompt" value="${prompt}" placeholder="例如：「但願人長久，千里共嬋娟。」出自哪一部作品？" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
           </div>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
             <div>
@@ -732,57 +846,54 @@
           </div>
         `;
       } else if (type === 'characterCrossword') {
+        const surr = item.surroundingChars || [];
         fieldsHtml = `
-          <div style="margin-bottom: 12px;">
-            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">中心字 (解答) *</label>
-            <input type="text" id="qb_input_centerChar" maxlength="1" value="${item.centerChar || ''}" placeholder="例如：天" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-size:18px; font-weight:bold;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">中心正字 (解答) *</label>
+              <input type="text" id="qb_input_centerChar" maxlength="1" value="${item.centerChar || ''}" placeholder="例如：天" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-size:18px; font-weight:bold;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">注音</label>
+              <input type="text" id="qb_input_crosswordZhuyin" value="${item.zhuyin || ''}" placeholder="例如：ㄊㄧㄢ" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
           </div>
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;">
             <div>
-              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">上字 (Top)</label>
-              <input type="text" id="qb_input_topWord" maxlength="1" value="${item.topWord || ''}" placeholder="藍" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">周圍字 1 (上/前)</label>
+              <input type="text" id="qb_input_topWord" maxlength="1" value="${surr[0] || ''}" placeholder="今" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
             <div>
-              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">下字 (Bottom)</label>
-              <input type="text" id="qb_input_bottomWord" maxlength="1" value="${item.bottomWord || ''}" placeholder="地" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">周圍字 2 (下/前)</label>
+              <input type="text" id="qb_input_bottomWord" maxlength="1" value="${surr[1] || ''}" placeholder="明" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
             <div>
-              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">左字 (Left)</label>
-              <input type="text" id="qb_input_leftWord" maxlength="1" value="${item.leftWord || ''}" placeholder="今" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">周圍字 3 (左/後)</label>
+              <input type="text" id="qb_input_leftWord" maxlength="1" value="${surr[2] || ''}" placeholder="氣" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
             <div>
-              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">右字 (Right)</label>
-              <input type="text" id="qb_input_rightWord" maxlength="1" value="${item.rightWord || ''}" placeholder="下" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">周圍字 4 (右/後)</label>
+              <input type="text" id="qb_input_rightWord" maxlength="1" value="${surr[3] || ''}" placeholder="空" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
           </div>
           <div style="margin-bottom: 12px;">
             <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">組成的四個詞語說明</label>
-            <input type="text" id="qb_input_searchWord" value="${item.searchWord || ''}" placeholder="例如：藍天、天地、今天、天下" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            <input type="text" id="qb_input_searchWord" value="${item.searchWord || ''}" placeholder="例如：今天、明天、天氣、天空" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
           </div>
         `;
       } else if (type === 'characterUnitedWords') {
         fieldsHtml = `
           <div style="margin-bottom: 12px;">
-            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">二字詞語 (解答) *</label>
-            <input type="text" id="qb_input_word" value="${item.word || ''}" placeholder="例如：森林" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-size:16px; font-weight:bold;">
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-            <div>
-              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">第一字部件</label>
-              <input type="text" id="qb_input_p1" value="${item.p1 || ''}" placeholder="例如：木木木" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
-            </div>
-            <div>
-              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">第二字部件</label>
-              <input type="text" id="qb_input_p2" value="${item.p2 || ''}" placeholder="例如：木木" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
-            </div>
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">解答詞語 *</label>
+            <input type="text" id="qb_input_word" value="${item.word || ''}" placeholder="例如：明月" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-size:16px; font-weight:bold;">
           </div>
           <div style="margin-bottom: 12px;">
-            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">所有散裝部件 (以逗號或空格隔開) *</label>
-            <input type="text" id="qb_input_parts" value="${(item.parts || []).join(' ')}" placeholder="例如：木 木 木 木 木" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">散裝部件 (以空格或逗號隔開) *</label>
+            <input type="text" id="qb_input_parts" value="${(item.parts || []).join(' ')}" placeholder="例如：日 月 月" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
           </div>
           <div style="margin-bottom: 12px;">
             <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">詞語解釋 / 提示語 *</label>
-            <input type="text" id="qb_input_clue" value="${item.clue || ''}" placeholder="例如：大片生長樹木的廣大土地" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            <input type="text" id="qb_input_clue" value="${item.clue || ''}" placeholder="例如：形容夜空中明亮的月亮" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
           </div>
         `;
       }
@@ -808,6 +919,7 @@
         if (type === 'classicsQuiz') {
           const title = document.getElementById('qb_input_title')?.value.trim();
           const quote = document.getElementById('qb_input_quote')?.value.trim();
+          const prompt = document.getElementById('qb_input_prompt')?.value.trim() || `「${quote}」出自？`;
           const author = document.getElementById('qb_input_author')?.value.trim() || '';
           const dynasty = document.getElementById('qb_input_dynasty')?.value.trim() || '';
           const answer = document.getElementById('qb_input_answer')?.value.trim();
@@ -817,8 +929,7 @@
           const opt2 = document.getElementById('qb_input_opt2')?.value.trim();
           const opt3 = document.getElementById('qb_input_opt3')?.value.trim();
 
-          if (!title) throw new Error('請輸入作品名稱！');
-          if (!quote) throw new Error('請輸入詩詞名句！');
+          if (!title && !quote) throw new Error('請輸入作品名稱或名句！');
           if (!answer) throw new Error('請輸入標準解答！');
           
           const options = [opt0, opt1, opt2, opt3].filter(Boolean);
@@ -827,22 +938,23 @@
 
           questionData = {
             id: `custom_q_${Date.now()}`,
+            category: author ? '唐詩宋詞' : '成語典故',
             type: author ? 'poetry' : 'idiom',
-            title,
-            work: title,
+            title: title || quote,
+            work: title || quote,
             author,
             dynasty,
             quote,
-            prompt: `「${quote}」出自？`,
+            prompt,
             options,
             answer,
             correctOption: answer,
             fullPoem: fullPoem || quote,
             explanation: fullPoem || `正解為：${answer}`,
             links: {
-              sinoreading: `https://www.google.com/search?q=${encodeURIComponent(title + ' 中讀網')}`,
-              wikisource: `https://zh.wikisource.org/wiki/${encodeURIComponent(title)}`,
-              wikipedia: `https://zh.wikipedia.org/wiki/${encodeURIComponent(title)}`
+              sinoreading: `https://www.google.com/search?q=${encodeURIComponent((title || quote) + ' 中讀網')}`,
+              wikisource: `https://zh.wikisource.org/wiki/${encodeURIComponent(title || quote)}`,
+              wikipedia: `https://zh.wikipedia.org/wiki/${encodeURIComponent(title || quote)}`
             }
           };
         } else if (type === 'characterTest') {
@@ -862,39 +974,45 @@
           };
         } else if (type === 'characterCrossword') {
           const centerChar = document.getElementById('qb_input_centerChar')?.value.trim();
+          const zhuyin = document.getElementById('qb_input_crosswordZhuyin')?.value.trim() || '';
           const topWord = document.getElementById('qb_input_topWord')?.value.trim() || '';
           const bottomWord = document.getElementById('qb_input_bottomWord')?.value.trim() || '';
           const leftWord = document.getElementById('qb_input_leftWord')?.value.trim() || '';
           const rightWord = document.getElementById('qb_input_rightWord')?.value.trim() || '';
           const searchWord = document.getElementById('qb_input_searchWord')?.value.trim() || '';
 
-          if (!centerChar) throw new Error('請輸入十字中心字！');
+          if (!centerChar) throw new Error('請輸入中心正字！');
+          if (!topWord || !bottomWord || !leftWord || !rightWord) throw new Error('請填寫全部 4 個周圍字！');
+
+          const surrounding = [
+            { char: topWord, pos: 'before' },
+            { char: bottomWord, pos: 'before' },
+            { char: leftWord, pos: 'after' },
+            { char: rightWord, pos: 'after' }
+          ];
 
           questionData = {
-            centerChar,
-            topWord,
-            bottomWord,
-            leftWord,
-            rightWord,
-            searchWord
+            char: centerChar,
+            centerChar: centerChar,
+            zhuyin,
+            surrounding,
+            searchWord: searchWord || `${topWord}${centerChar}、${bottomWord}${centerChar}、${centerChar}${leftWord}、${centerChar}${rightWord}`
           };
         } else if (type === 'characterUnitedWords') {
           const word = document.getElementById('qb_input_word')?.value.trim();
-          const p1 = document.getElementById('qb_input_p1')?.value.trim() || '';
-          const p2 = document.getElementById('qb_input_p2')?.value.trim() || '';
           const partsInput = document.getElementById('qb_input_parts')?.value.trim() || '';
           const clue = document.getElementById('qb_input_clue')?.value.trim();
 
-          if (!word) throw new Error('請輸入二字詞語！');
+          if (!word) throw new Error('請輸入解答詞語！');
           if (!partsInput) throw new Error('請輸入散裝部件！');
           if (!clue) throw new Error('請輸入詞語提示！');
 
-          const parts = partsInput.split(/[\s,，、]+/).filter(Boolean);
+          const parts = partsInput.split(/[\s,，、+]+/).filter(Boolean);
           questionData = {
-            word,
-            p1,
-            p2,
-            parts,
+            targetWord: word,
+            word: word,
+            components: parts,
+            parts: parts,
             clue,
             searchWord: word
           };
