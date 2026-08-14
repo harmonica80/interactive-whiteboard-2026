@@ -1,4 +1,16 @@
 # System Log
+## 2026-08-14 - ver 2.8.1 唐詩宋詞題型標記區分與字字珠璣/團結一詞欄位標準化修正
+- 影響檔案：`js/focus_question_bank.js`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **唐詩宋詞題型清晰標記 (`classicsQuiz`)**：
+     - 唐詩宋詞與成語典故每篇名篇均包含兩種不同評量維度的題目（如「📜 問出處/作品」與「✍️ 問作者/主角」）。
+     - 在題庫清單中明確標註題型徽章與完整問句（例如：`3. 📜【問出處】「舉頭望明月，低頭思故鄉。」是出自？` 與 `4. ✍️【問作者】「舉頭望明月，低頭思故鄉。」的作者是？`），徹底消除「重複」的誤解。
+  2. **字字珠璣與團結一詞欄位標準化 (`characterCrossword`, `characterUnitedWords`)**：
+     - 完整適配原廠內建題庫結構（`char`、`surrounding` 陣列、`targetWord`、`components`）。
+     - 解決先前字字珠璣呈現 `undefined` 與缺少中心字的問題，完整呈現中心正字、四方字及組成詞語。
+     - 團結一詞完整呈現解答詞語、散裝部件與解釋提示。
+
+---
 ## 2026-08-14 - ver 2.8.0 專注力測驗題庫管理系統（匯入 / 匯出 / 編輯 / 搜尋 / 範本檔下載）
 - 影響檔案：`index.html`, `js/focus_question_bank.js`, `js/classics_quiz_pool.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：

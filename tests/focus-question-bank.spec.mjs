@@ -130,5 +130,30 @@ test.describe('Focus Question Bank Manager Tests', () => {
     await page.click('#modal-focus-question-bank button:has-text("完成關閉")')
     await expect(modal).not.toHaveClass(/active/)
   })
+
+  test('Focus Question Bank renders characterCrossword without undefined values', async ({ page }) => {
+    // Switch to characterCrossword tab
+    await page.evaluate(() => {
+      window.focusQB.openModal('characterCrossword')
+    })
+
+    const listHtml = await page.locator('#focusQbListContainer').innerHTML()
+    expect(listHtml).not.toContain('undefined')
+    expect(listHtml).toContain('中心正字')
+    expect(listHtml).toContain('四方字')
+  })
+
+  test('Focus Question Bank renders characterUnitedWords without undefined values', async ({ page }) => {
+    // Switch to characterUnitedWords tab
+    await page.evaluate(() => {
+      window.focusQB.openModal('characterUnitedWords')
+    })
+
+    const listHtml = await page.locator('#focusQbListContainer').innerHTML()
+    expect(listHtml).not.toContain('undefined')
+    expect(listHtml).toContain('解答詞語')
+    expect(listHtml).toContain('散裝部件')
+  })
 })
+
 
