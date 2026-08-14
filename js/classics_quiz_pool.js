@@ -205,13 +205,41 @@
 
   const quizPool = pool.slice(0, 200)
   global.CLASSICS_QUIZ_POOL = Object.freeze(quizPool)
-  global.createClassicsQuizQuestions = function createClassicsQuizQuestions(count) {
-    const amount = Math.max(1, Math.min(quizPool.length, Number(count) || 5))
-    const shuffled = [...quizPool]
+  global.createClassicsQuizQuestions = function createClassicsQuizQuestions(count, customPool = null) {
+    const activePool = (customPool && Array.isArray(customPool) && customPool.length > 0)
+      ? customPool
+      : ((global.focusQB && typeof global.focusQB.getPool === 'function') ? global.focusQB.getPool('classicsQuiz') : quizPool);
+    
+    // Normalize custom items so they have correctOption and reference
+    const normalized = activePool.map((item, idx) => {
+      const workSearchTitle = (item.title || item.work || '').split('·')[0];
+      const correctOption = item.correctOption || item.answer;
+      const options = item.options || [correctOption, '李白', '杜甫', '蘇軾'];
+      const reference = item.reference || {
+        readcKeyword: workSearchTitle,
+        readcUrl: item.links?.sinoreading || `https://www.google.com/search?q=${encodeURIComponent(workSearchTitle + ' 中讀網')}`,
+        fullTextUrl: item.links?.wikisource || `https://zh.wikisource.org/wiki/${encodeURIComponent(workSearchTitle)}`,
+        introUrl: item.links?.wikipedia || `https://zh.wikipedia.org/wiki/${encodeURIComponent(workSearchTitle)}`
+      };
+      return {
+        id: item.id || `custom-classics-${idx + 1}`,
+        category: item.category || '唐詩宋詞・成語典故',
+        prompt: item.prompt || `「${item.quote || item.title}」的作者／出處是？`,
+        options,
+        correctOption,
+        explanation: item.explanation || item.fullPoem || `正解為：${correctOption}`,
+        work: item.work || item.title || '',
+        quote: item.quote || item.title || '',
+        reference
+      };
+    });
+
+    const amount = Math.max(1, Math.min(normalized.length, Number(count) || 5));
+    const shuffled = [...normalized];
     for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    return shuffled.slice(0, amount)
+    return shuffled.slice(0, amount);
   }
 })(window)

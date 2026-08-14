@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.7.4</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.8.0</span>
         </p>
       </div>
       <div class="top-actions">
@@ -672,17 +672,74 @@
                   <option value="images">🖼️ 課堂圖片庫 (自動使用已上傳教材圖片)</option>
                 </select>
               </div>
-              <div id="focusClassicsQuizSettings" style="display: none; margin-bottom: 20px; padding: 12px; border: 1px dashed var(--accent-color); border-radius: 10px; background: rgba(0, 122, 255, 0.06);">
-                <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">2. 唐詩宋詞・成語典故選擇題：</label>
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                  <label style="font-size: 13px; color: var(--text-secondary); font-weight: bold;">每局題數</label>
+              <div id="focusClassicsQuizSettings" style="display: none; margin-bottom: 20px; padding: 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-input);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                  <label style="font-weight: bold; font-size: 14px; margin: 0; color: var(--text-primary);">📜 唐詩宋詞・成語典故：</label>
+                  <div id="focusQbBadge_classicsQuiz"></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+                  <label style="font-size: 13px; color: var(--text-secondary); font-weight: bold;">每局題數：</label>
                   <select id="focusClassicsQuizCount" class="question-input" style="width: 130px; margin: 0; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px; border-radius: 8px;">
                     <option value="3">3 題（暖身）</option>
                     <option value="5" selected>5 題（標準）</option>
                     <option value="10">10 題（挑戰）</option>
                   </select>
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; line-height: 1.6;">題庫共 200 題；每題 4 個選項。可使用「刪去法提示」排除一個錯誤選項（+5 秒），答題後立即顯示正解、原典全文與導讀連結。</div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" onclick="window.focusQB.openModal('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">🔍 管理與搜尋題庫</button>
+                  <button type="button" onclick="window.focusQB.openImportDialog('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (JSON)</button>
+                  <button type="button" onclick="window.focusQB.exportPool('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (JSON)</button>
+                  <button type="button" onclick="window.focusQB.downloadTemplate('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+                  <button type="button" onclick="window.focusQB.handleResetDefault('classicsQuiz')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
+                </div>
+              </div>
+
+              <!-- 一字千金：字力測驗設定與題庫管理 -->
+              <div id="focusCharacterTestSettings" style="display: none; margin-bottom: 20px; padding: 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-input);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                  <label style="font-weight: bold; font-size: 14px; margin: 0; color: var(--text-primary);">✍️ 一字千金：字力測驗：</label>
+                  <div id="focusQbBadge_characterTest"></div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">系統每次隨機抽取 3 題進行易錯正字手寫或輸入測驗。</div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" onclick="window.focusQB.openModal('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">🔍 管理與搜尋題庫</button>
+                  <button type="button" onclick="window.focusQB.openImportDialog('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (JSON)</button>
+                  <button type="button" onclick="window.focusQB.exportPool('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (JSON)</button>
+                  <button type="button" onclick="window.focusQB.downloadTemplate('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+                  <button type="button" onclick="window.focusQB.handleResetDefault('characterTest')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
+                </div>
+              </div>
+
+              <!-- 一字千金：字字珠璣設定與題庫管理 -->
+              <div id="focusCharacterCrosswordSettings" style="display: none; margin-bottom: 20px; padding: 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-input);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                  <label style="font-weight: bold; font-size: 14px; margin: 0; color: var(--text-primary);">✍️ 一字千金：字字珠璣 (十字選字)：</label>
+                  <div id="focusQbBadge_characterCrossword"></div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">系統隨機抽選一題十字選字盤面，考驗學生找出能與上下左右組詞的中間正字。</div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" onclick="window.focusQB.openModal('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">🔍 管理與搜尋題庫</button>
+                  <button type="button" onclick="window.focusQB.openImportDialog('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (JSON)</button>
+                  <button type="button" onclick="window.focusQB.exportPool('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (JSON)</button>
+                  <button type="button" onclick="window.focusQB.downloadTemplate('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+                  <button type="button" onclick="window.focusQB.handleResetDefault('characterCrossword')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
+                </div>
+              </div>
+
+              <!-- 一字千金：團結一詞設定與題庫管理 -->
+              <div id="focusCharacterUnitedWordsSettings" style="display: none; margin-bottom: 20px; padding: 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-input);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                  <label style="font-weight: bold; font-size: 14px; margin: 0; color: var(--text-primary);">✍️ 一字千金：團結一詞 (部件組詞)：</label>
+                  <div id="focusQbBadge_characterUnitedWords"></div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">系統隨機抽選一題部件拆解題目，學生需將散裝部件組合成正確的二字詞語。</div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" onclick="window.focusQB.openModal('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">🔍 管理與搜尋題庫</button>
+                  <button type="button" onclick="window.focusQB.openImportDialog('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (JSON)</button>
+                  <button type="button" onclick="window.focusQB.exportPool('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (JSON)</button>
+                  <button type="button" onclick="window.focusQB.downloadTemplate('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+                  <button type="button" onclick="window.focusQB.handleResetDefault('characterUnitedWords')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
+                </div>
               </div>
 
               <div style="margin-bottom: 20px;">
@@ -1004,10 +1061,11 @@ Python</pre>
   
   <script src="js/firebase-config.js?v=151"></script>
   <script src="js/character_pool.js?v=151"></script>
-  <script src="js/classics_quiz_pool.js?v=203"></script>
+  <script src="js/classics_quiz_pool.js?v=280"></script>
+  <script src="js/focus_question_bank.js?v=280"></script>
   <script src="js/quiz.js?v=200"></script>
-  <script src="js/app.js?v=203"></script>
-  <script src="js/classics_quiz.js?v=203"></script>
+  <script src="js/app.js?v=280"></script>
+  <script src="js/classics_quiz.js?v=280"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -1491,5 +1549,85 @@ Python</pre>
       }
     });
   </script>
+
+  <!-- 📚 專注力測驗題庫管理中心彈窗 -->
+  <div id="modal-focus-question-bank" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+    <div class="modal-content" style="background: var(--bg-card); width: 100%; max-width: 860px; max-height: 90vh; border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--border-color); background: var(--bg-input);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">📚</span>
+          <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">專注力測驗題庫管理中心</h3>
+        </div>
+        <button onclick="window.focusQB.closeModal()" style="background: transparent; border: none; font-size: 20px; color: var(--text-secondary); cursor: pointer; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding: 20px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column;">
+        
+        <!-- Unit Switcher Tabs -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px;">
+          <button type="button" class="focus-qb-tab-btn" data-type="classicsQuiz" onclick="window.focusQB.switchTab('classicsQuiz')" style="padding: 10px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; text-align: center; transition: all 0.2s;">
+            📜 唐詩宋詞
+          </button>
+          <button type="button" class="focus-qb-tab-btn" data-type="characterTest" onclick="window.focusQB.switchTab('characterTest')" style="padding: 10px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; text-align: center; transition: all 0.2s;">
+            ✍️ 字力測驗
+          </button>
+          <button type="button" class="focus-qb-tab-btn" data-type="characterCrossword" onclick="window.focusQB.switchTab('characterCrossword')" style="padding: 10px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; text-align: center; transition: all 0.2s;">
+            ✍️ 字字珠璣
+          </button>
+          <button type="button" class="focus-qb-tab-btn" data-type="characterUnitedWords" onclick="window.focusQB.switchTab('characterUnitedWords')" style="padding: 10px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; text-align: center; transition: all 0.2s;">
+            ✍️ 團結一詞
+          </button>
+        </div>
+
+        <!-- Action & Search Toolbar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: var(--bg-input); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px;">
+            <input type="text" id="focusQbSearchInput" oninput="window.focusQB.handleSearchInput(this.value)" placeholder="🔍 搜尋題目、作者、名句、字詞、提示..." class="question-input" style="width: 100%; box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 13px;">
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" onclick="window.focusQB.openQuestionEditForm()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">➕ 新增題目</button>
+            <button type="button" onclick="window.focusQB.openImportDialog()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫</button>
+            <button type="button" onclick="window.focusQB.exportPool(window.focusQB.currentActiveType)" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫</button>
+            <button type="button" onclick="window.focusQB.downloadTemplate(window.focusQB.currentActiveType)" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+            <button type="button" onclick="window.focusQB.handleResetDefault()" class="preset-btn" style="padding: 7px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為官方預設題庫">🔄 恢復預設</button>
+          </div>
+        </div>
+
+        <!-- Hidden file input for import -->
+        <input type="file" id="focusQbFileInput" accept=".json" style="display: none;" onchange="window.focusQB.handleFileUpload(event)">
+
+        <!-- Add / Edit Question Subform -->
+        <div id="focusQbEditFormContainer" style="display: none; background: var(--bg-card); border: 2px solid var(--accent-color); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(0,122,255,0.1);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h4 id="focusQbEditFormTitle" style="margin: 0; font-size: 15px; color: var(--accent-color);">➕ 新增題目</h4>
+            <button onclick="window.focusQB.closeQuestionEditForm()" style="background: transparent; border: none; font-size: 16px; color: var(--text-secondary); cursor: pointer;">✕</button>
+          </div>
+          <div id="focusQbFormFields"></div>
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+            <button onclick="window.focusQB.closeQuestionEditForm()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer;">取消</button>
+            <button onclick="window.focusQB.handleSaveForm()" style="padding: 8px 20px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">💾 儲存題目</button>
+          </div>
+        </div>
+
+        <!-- Question Count Summary Badge -->
+        <div id="focusQbCountBadge" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; font-weight: 500;"></div>
+
+        <!-- Question List Container -->
+        <div id="focusQbListContainer" style="flex: 1; overflow-y: auto; max-height: 480px; padding-right: 4px;"></div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; border-top: 1px solid var(--border-color); background: var(--bg-input);">
+        <div style="font-size: 12px; color: var(--text-muted);">
+          💡 提示：自訂題庫會儲存在您的瀏覽器中，開局時會優先自動隨機抽取自訂題庫！
+        </div>
+        <button onclick="window.focusQB.closeModal()" style="padding: 8px 20px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">完成關閉</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
