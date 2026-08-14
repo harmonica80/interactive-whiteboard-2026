@@ -1,4 +1,20 @@
 # System Log
+## 2026-08-14 - ver 2.8.0 專注力測驗題庫管理系統（匯入 / 匯出 / 編輯 / 搜尋 / 範本檔下載）
+- 影響檔案：`index.html`, `js/focus_question_bank.js`, `js/classics_quiz_pool.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **全單元題庫管理模組 (`js/focus_question_bank.js`)**：
+     - 全面支援「📜 唐詩宋詞・成語典故」、「✍️ 一字千金：字力測驗」、「✍️ 一字千金：字字珠璣」、「✍️ 一字千金：團結一詞」等 4 大專注力題庫單元。
+     - **📥 題庫匯入**：支援上傳標準 JSON 檔案，內建欄位與資料完整性驗證及防呆機制。
+     - **📤 題庫匯出**：一鍵將目前啟用之題庫匯出為標準 `.json` 檔案。
+     - **📄 範本檔下載**：提供各單元規範欄位與範例說明的標準範本檔（`xxx_template_範本.json`）。
+     - **🔍 即時搜尋過濾**：支援關鍵字即時搜尋、高亮標記與符合題目計數。
+     - **✏️ 題目編輯與新增**：支援題目自訂新增、修改、刪除與 🔄 一鍵恢復原廠官方預設題庫。
+  2. **遊戲動態載入整合**：
+     - `startFocusGame()` 動態讀取自訂題庫與原廠題庫，並於後台即時動態呈現題庫狀態徽章。
+  3. **自動化測試**：
+     - 新增 `tests/focus-question-bank.spec.mjs` 覆蓋題庫載入、搜尋過濾、範本規範與增修重置流程。
+
+---
 ## 2026-08-12 - ver 2.7.4 精準依照圖2紅字校正步驟2與線上人數一鍵歸零清除
 - 影響檔案：`index.html`, `teacher-guide.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`。
 - 修改項目：

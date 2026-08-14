@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.7.4';
+    this.APP_VERSION = '2.8.0';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5765,10 +5765,10 @@ class App {
       ? this.generateFocusMemorySequence(selectedSize, memoryLength)
       : null;
       
-    // 一字千金：字力測驗題目隨機抽選
+    // 一字千金與唐詩宋詞題目隨機抽選（優先讀取自訂題庫）
     let selectedQuestions = null;
     if (gameType === 'characterTest') {
-      const pool = [...CHARACTER_TEST_POOL];
+      const pool = [...(window.focusQB ? window.focusQB.getPool('characterTest') : CHARACTER_TEST_POOL)];
       selectedQuestions = [];
       for (let i = 0; i < 3; i++) {
         if (pool.length === 0) break;
@@ -5776,14 +5776,14 @@ class App {
         selectedQuestions.push(pool.splice(randIdx, 1)[0]);
       }
     } else if (gameType === 'characterCrossword') {
-      const pool = [...CHARACTER_CROSSWORD_POOL];
+      const pool = [...(window.focusQB ? window.focusQB.getPool('characterCrossword') : CHARACTER_CROSSWORD_POOL)];
       selectedQuestions = [];
       if (pool.length > 0) {
         const randIdx = Math.floor(Math.random() * pool.length);
         selectedQuestions.push(pool[randIdx]);
       }
     } else if (gameType === 'characterUnitedWords') {
-      const pool = [...CHARACTER_UNITED_WORDS_POOL];
+      const pool = [...(window.focusQB ? window.focusQB.getPool('characterUnitedWords') : CHARACTER_UNITED_WORDS_POOL)];
       selectedQuestions = [];
       if (pool.length > 0) {
         const randIdx = Math.floor(Math.random() * pool.length);
@@ -5867,17 +5867,28 @@ class App {
     return deck;
   }
 
-  // OpenCode 修改：管理後台依遊戲類型顯示對應設定，避免不同遊戲選項混在一起
+  // 管理後台依遊戲類型顯示對應設定，並更新題庫狀態徽章
   updateFocusGameAdminOptions() {
     const gameType = document.getElementById('focusGameType')?.value || 'numberGrid';
     const numberGridSettings = document.getElementById('focusNumberGridSettings');
     const memorySettings = document.getElementById('focusMemorySettings');
     const memoryMatchSettings = document.getElementById('focusMemoryMatchSettings');
     const classicsQuizSettings = document.getElementById('focusClassicsQuizSettings');
+    const charTestSettings = document.getElementById('focusCharacterTestSettings');
+    const charCrosswordSettings = document.getElementById('focusCharacterCrosswordSettings');
+    const charUnitedWordsSettings = document.getElementById('focusCharacterUnitedWordsSettings');
+
     if (numberGridSettings) numberGridSettings.style.display = gameType === 'numberGrid' ? 'block' : 'none';
     if (memorySettings) memorySettings.style.display = gameType === 'memoryPosition' ? 'block' : 'none';
     if (memoryMatchSettings) memoryMatchSettings.style.display = gameType === 'memoryMatch' ? 'block' : 'none';
     if (classicsQuizSettings) classicsQuizSettings.style.display = gameType === 'classicsQuiz' ? 'block' : 'none';
+    if (charTestSettings) charTestSettings.style.display = gameType === 'characterTest' ? 'block' : 'none';
+    if (charCrosswordSettings) charCrosswordSettings.style.display = gameType === 'characterCrossword' ? 'block' : 'none';
+    if (charUnitedWordsSettings) charUnitedWordsSettings.style.display = gameType === 'characterUnitedWords' ? 'block' : 'none';
+
+    if (window.focusQB && typeof window.focusQB.updateAdminBadge === 'function') {
+      window.focusQB.updateAdminBadge(gameType);
+    }
   }
 
   // OpenCode 修改：倒數畫面依專注力遊戲類型顯示不同說明文字
