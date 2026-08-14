@@ -100,4 +100,35 @@ test.describe('Focus Question Bank Manager Tests', () => {
     expect(cycleResult.afterResetCount).toBe(cycleResult.initialCount)
     expect(cycleResult.isCustomAfterReset).toBe(false)
   })
+
+  test('Focus Question Bank Modal opens and renders questions properly on button click', async ({ page }) => {
+    // Select classics quiz in admin dropdown
+    await page.selectOption('#focusGameType', 'classicsQuiz')
+    
+    // Check that settings block is visible
+    const isVisible = await page.isVisible('#focusClassicsQuizSettings')
+    expect(isVisible).toBe(true)
+
+    // Click on "管理與搜尋題庫" button
+    await page.click('#focusClassicsQuizSettings button:has-text("管理與搜尋題庫")')
+
+    // Modal should have active class and be visible
+    const modal = page.locator('#modal-focus-question-bank')
+    await expect(modal).toHaveClass(/active/)
+    await expect(modal).toBeVisible()
+
+    // Question items should be rendered
+    const itemsCount = await page.locator('#focusQbListContainer .focus-qb-item-card').count()
+    expect(itemsCount).toBeGreaterThan(0)
+
+    // Type in search box
+    await page.fill('#focusQbSearchInput', '李白')
+    const filteredCount = await page.locator('#focusQbListContainer .focus-qb-item-card').count()
+    expect(filteredCount).toBeGreaterThan(0)
+
+    // Close modal
+    await page.click('#modal-focus-question-bank button:has-text("完成關閉")')
+    await expect(modal).not.toHaveClass(/active/)
+  })
 })
+

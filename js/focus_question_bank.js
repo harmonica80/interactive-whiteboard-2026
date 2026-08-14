@@ -25,9 +25,10 @@
     // 取得指定單元的原廠預設題庫
     getDefaultPool(type) {
       if (type === 'classicsQuiz') {
-        return (global.CLASSICS_QUIZ_POOL && Array.isArray(global.CLASSICS_QUIZ_POOL))
-          ? JSON.parse(JSON.stringify(global.CLASSICS_QUIZ_POOL))
+        const pool = (global.CLASSICS_QUIZ_POOL && Array.isArray(global.CLASSICS_QUIZ_POOL))
+          ? global.CLASSICS_QUIZ_POOL
           : [];
+        return JSON.parse(JSON.stringify(pool));
       }
       if (type === 'characterTest') {
         return (typeof CHARACTER_TEST_POOL !== 'undefined' && Array.isArray(CHARACTER_TEST_POOL))
@@ -112,14 +113,17 @@
         .map((item, idx) => ({ ...item, _originalIndex: idx }))
         .filter((item) => {
           if (type === 'classicsQuiz') {
+            const title = (item.title || item.work || '').toLowerCase();
+            const author = (item.author || item.explanation || '').toLowerCase();
+            const quote = (item.quote || item.prompt || '').toLowerCase();
+            const answer = (item.correctOption || item.answer || '').toLowerCase();
+            const optionsStr = (item.options || []).join(' ').toLowerCase();
             return (
-              (item.title && item.title.toLowerCase().includes(q)) ||
-              (item.author && item.author.toLowerCase().includes(q)) ||
-              (item.dynasty && item.dynasty.toLowerCase().includes(q)) ||
-              (item.quote && item.quote.toLowerCase().includes(q)) ||
-              (item.prompt && item.prompt.toLowerCase().includes(q)) ||
-              (item.answer && item.answer.toLowerCase().includes(q)) ||
-              (item.fullPoem && item.fullPoem.toLowerCase().includes(q))
+              title.includes(q) ||
+              author.includes(q) ||
+              quote.includes(q) ||
+              answer.includes(q) ||
+              optionsStr.includes(q)
             );
           }
           if (type === 'characterTest') {
@@ -181,7 +185,7 @@
             "author": "李白",
             "dynasty": "唐",
             "quote": "天生我材必有用，千金散盡還復來。",
-            "prompt": "「天生我材必有用，千金散盡還復來。」是哪一位詩人的名句？",
+            "prompt": "「天生我材必有用，千金散盡還復來。」是出自哪一位詩人的名篇？",
             "options": ["李白", "杜甫", "王維", "白居易"],
             "answer": "李白",
             "fullPoem": "君不見黃河之水天上來，奔流到海不復回。君不見高堂明鏡悲白髮，朝如青絲暮成雪。人生得意須盡歡，莫使金樽空對月。天生我材必有用，千金散盡還復來。",
@@ -307,32 +311,37 @@
         }
 
         if (type === 'classicsQuiz') {
-          if (!item.title || !item.answer) {
-            throw new Error(`第 ${i + 1} 筆唐詩宋詞題目缺少必要欄位（title、answer）！`);
+          const answer = String(item.answer || item.correctOption || '').trim();
+          const title = String(item.title || item.work || '').trim();
+          if (!title || !answer) {
+            throw new Error(`第 ${i + 1} 筆唐詩宋詞題目缺少必要欄位（作品名 title 或解答 answer）！`);
           }
-          const options = Array.isArray(item.options) && item.options.length === 4
+          let options = Array.isArray(item.options) && item.options.length === 4
             ? item.options
-            : [item.answer, '李白', '杜甫', '蘇軾'].filter((v, idx, arr) => arr.indexOf(v) === idx).slice(0, 4);
+            : [answer, '李白', '杜甫', '蘇軾'].filter((v, idx, arr) => arr.indexOf(v) === idx).slice(0, 4);
           
-          if (!options.includes(item.answer)) {
-            options[0] = item.answer;
+          if (!options.includes(answer)) {
+            options[0] = answer;
           }
 
+          const quote = String(item.quote || item.prompt || title).trim();
           validatedList.push({
             id: item.id || `custom_q_${Date.now()}_${i}`,
             type: item.type || (item.author ? 'poetry' : 'idiom'),
-            title: String(item.title).trim(),
+            title: title,
+            work: item.work || title,
             author: String(item.author || '').trim(),
             dynasty: String(item.dynasty || '').trim(),
-            quote: String(item.quote || item.title).trim(),
-            prompt: String(item.prompt || `「${item.quote || item.title}」是哪一位詩人的名句？`).trim(),
+            quote: quote,
+            prompt: String(item.prompt || `「${quote}」出自？`).trim(),
             options: options.map(String),
-            answer: String(item.answer).trim(),
-            fullPoem: String(item.fullPoem || item.quote || '').trim(),
+            answer: answer,
+            correctOption: answer,
+            fullPoem: String(item.fullPoem || item.explanation || quote).trim(),
             links: item.links || {
-              sinoreading: `https://www.google.com/search?q=${encodeURIComponent(item.title + ' 中讀網')}`,
-              wikisource: `https://zh.wikisource.org/wiki/${encodeURIComponent(item.title)}`,
-              wikipedia: `https://zh.wikipedia.org/wiki/${encodeURIComponent(item.title)}`
+              sinoreading: `https://www.google.com/search?q=${encodeURIComponent(title + ' 中讀網')}`,
+              wikisource: `https://zh.wikisource.org/wiki/${encodeURIComponent(title)}`,
+              wikipedia: `https://zh.wikipedia.org/wiki/${encodeURIComponent(title)}`
             }
           });
         } else if (type === 'characterTest') {
@@ -412,8 +421,8 @@
         const pool = this.getPool(type);
         const isCustom = this.isCustomPool(type);
         badge.innerHTML = isCustom
-          ? `<span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">自訂題庫：共 ${pool.length} 題</span>`
-          : `<span style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">預設題庫：共 ${pool.length} 題</span>`;
+          ? `<span style="background: #10b981; color: white; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 1px 4px rgba(16,185,129,0.25);">✨ 自訂題庫：共 ${pool.length} 題</span>`
+          : `<span style="background: var(--accent-color); color: white; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: bold;">📚 預設題庫：共 ${pool.length} 題</span>`;
       }
     }
 
@@ -422,6 +431,7 @@
       this.currentActiveType = type;
       const modal = document.getElementById('modal-focus-question-bank');
       if (!modal) return;
+      modal.classList.add('active');
       modal.style.display = 'flex';
       this.switchTab(type);
     }
@@ -429,7 +439,14 @@
     // 關閉題庫管理中心彈窗
     closeModal() {
       const modal = document.getElementById('modal-focus-question-bank');
-      if (modal) modal.style.display = 'none';
+      if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => {
+          if (!modal.classList.contains('active')) {
+            modal.style.display = 'none';
+          }
+        }, 150);
+      }
       this.closeQuestionEditForm();
     }
 
@@ -477,8 +494,8 @@
 
       if (countEl) {
         countEl.innerHTML = query
-          ? `🔍 搜尋符合：<strong>${filtered.length}</strong> / 全部 ${totalPool.length} 題 ${isCustom ? '(自訂題庫)' : '(預設題庫)'}`
-          : `📚 題庫總計：<strong>${totalPool.length}</strong> 題 ${isCustom ? '(自訂題庫)' : '(預設題庫)'}`;
+          ? `🔍 搜尋符合：<strong>${filtered.length}</strong> / 全部 ${totalPool.length} 題 ${isCustom ? '(✨ 自訂題庫)' : '(📚 官方預設題庫)'}`
+          : `📚 題庫總計：<strong>${totalPool.length}</strong> 題 ${isCustom ? '(✨ 自訂題庫)' : '(📚 官方預設題庫)'}`;
       }
 
       if (filtered.length === 0) {
@@ -498,17 +515,23 @@
         let contentHtml = '';
 
         if (type === 'classicsQuiz') {
+          const answer = item.correctOption || item.answer || '無';
+          const quote = item.quote || item.prompt || item.title || '';
+          const title = item.work || item.title || '';
+          const author = item.author || (item.explanation ? item.explanation.replace(/.*?出自.*?代(.*?)〈.*/, '$1') : '');
+          const dynasty = item.dynasty ? ` (${item.dynasty})` : '';
+
           contentHtml = `
             <div style="font-weight: bold; font-size: 15px; color: var(--text-primary); margin-bottom: 6px;">
-              ${displayIdx + 1}. 「${this.highlightText(item.quote || item.title, query)}」
+              ${displayIdx + 1}. 「${this.highlightText(quote, query)}」
             </div>
             <div style="font-size: 13px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 6px;">
-              <span><strong>作者：</strong>${this.highlightText(item.author || '無', query)} (${item.dynasty || '朝代'})</span>
-              <span><strong>作品：</strong>${this.highlightText(item.title, query)}</span>
-              <span style="color: #10b981;"><strong>正解：</strong>${item.answer}</span>
+              ${title ? `<span><strong>作品：</strong>${this.highlightText(title, query)}</span>` : ''}
+              ${author ? `<span><strong>作者/主角：</strong>${this.highlightText(author, query)}${dynasty}</span>` : ''}
+              <span style="color: #10b981;"><strong>正解：</strong>${this.highlightText(answer, query)}</span>
             </div>
             <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; background: var(--bg-input); padding: 8px; border-radius: 6px;">
-              <strong>選項：</strong>${(item.options || []).map(opt => opt === item.answer ? `<span style="color: #10b981; font-weight:bold;">${opt} (正解)</span>` : opt).join('、 ')}
+              <strong>選項：</strong>${(item.options || []).map(opt => opt === answer ? `<span style="color: #10b981; font-weight:bold;">${opt} (正解)</span>` : opt).join('、 ')}
             </div>
           `;
         } else if (type === 'characterTest') {
@@ -570,10 +593,10 @@
           <div class="focus-qb-item-card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
             <div style="flex: 1; min-width: 0;">${contentHtml}</div>
             <div style="display: flex; gap: 8px; flex-shrink: 0;">
-              <button onclick="window.focusQB.openQuestionEditForm(${origIdx})" title="編輯題目" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">
+              <button type="button" onclick="window.focusQB.openQuestionEditForm(${origIdx})" title="編輯題目" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">
                 ✏️ 編輯
               </button>
-              <button onclick="window.focusQB.handleDeleteQuestion(${origIdx})" title="刪除題目" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">
+              <button type="button" onclick="window.focusQB.handleDeleteQuestion(${origIdx})" title="刪除題目" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;">
                 🗑️ 刪除
               </button>
             </div>
@@ -633,25 +656,32 @@
 
       let fieldsHtml = '';
       if (type === 'classicsQuiz') {
+        const title = item.work || item.title || '';
+        const author = item.author || (item.explanation ? item.explanation.replace(/.*?出自.*?代(.*?)〈.*/, '$1') : '');
+        const dynasty = item.dynasty || '';
+        const quote = item.quote || item.prompt || '';
+        const answer = item.correctOption || item.answer || '';
+        const fullPoem = item.fullPoem || item.explanation || '';
         const opts = item.options || ['', '', '', ''];
+
         fieldsHtml = `
           <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
             <div>
               <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">作品名 / 典故名 *</label>
-              <input type="text" id="qb_input_title" value="${item.title || ''}" placeholder="例如：水調歌頭 或 畫蛇添足" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+              <input type="text" id="qb_input_title" value="${title}" placeholder="例如：水調歌頭 或 畫蛇添足" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
             <div>
               <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">作者 / 出處</label>
-              <input type="text" id="qb_input_author" value="${item.author || ''}" placeholder="例如：蘇軾" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+              <input type="text" id="qb_input_author" value="${author}" placeholder="例如：蘇軾" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
             <div>
               <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">朝代</label>
-              <input type="text" id="qb_input_dynasty" value="${item.dynasty || ''}" placeholder="例如：宋" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+              <input type="text" id="qb_input_dynasty" value="${dynasty}" placeholder="例如：宋" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
           </div>
           <div style="margin-bottom: 12px;">
             <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">名句 / 詩詞名句引言 *</label>
-            <input type="text" id="qb_input_quote" value="${item.quote || ''}" placeholder="例如：但願人長久，千里共嬋娟。" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            <input type="text" id="qb_input_quote" value="${quote}" placeholder="例如：但願人長久，千里共嬋娟。" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
           </div>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
             <div>
@@ -673,11 +703,11 @@
           </div>
           <div style="margin-bottom: 12px;">
             <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px; color:#10b981;">標準解答 (必須與上方其中一個選項完全一致) *</label>
-            <input type="text" id="qb_input_answer" value="${item.answer || ''}" placeholder="例如：蘇軾 或 水調歌頭" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid #10b981; background:var(--bg-input); color:var(--text-primary);">
+            <input type="text" id="qb_input_answer" value="${answer}" placeholder="例如：蘇軾 或 水調歌頭" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid #10b981; background:var(--bg-input); color:var(--text-primary);">
           </div>
           <div style="margin-bottom: 12px;">
             <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">原典 / 完整詩詞全文 (作答後解析與複習呈現)</label>
-            <textarea id="qb_input_fullPoem" rows="3" placeholder="請輸入完整詩詞原文..." class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-family:inherit;">${item.fullPoem || ''}</textarea>
+            <textarea id="qb_input_fullPoem" rows="3" placeholder="請輸入完整詩詞原文..." class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-family:inherit;">${fullPoem}</textarea>
           </div>
         `;
       } else if (type === 'characterTest') {
@@ -799,13 +829,16 @@
             id: `custom_q_${Date.now()}`,
             type: author ? 'poetry' : 'idiom',
             title,
+            work: title,
             author,
             dynasty,
             quote,
-            prompt: `「${quote}」是哪一位詩人的名句？`,
+            prompt: `「${quote}」出自？`,
             options,
             answer,
+            correctOption: answer,
             fullPoem: fullPoem || quote,
+            explanation: fullPoem || `正解為：${answer}`,
             links: {
               sinoreading: `https://www.google.com/search?q=${encodeURIComponent(title + ' 中讀網')}`,
               wikisource: `https://zh.wikisource.org/wiki/${encodeURIComponent(title)}`,
@@ -929,5 +962,17 @@
   // 掛載至 global
   global.FocusQuestionBankManager = FocusQuestionBankManager;
   global.focusQB = new FocusQuestionBankManager();
+
+  // 綁定視窗外點擊關閉
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('modal-focus-question-bank');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          global.focusQB.closeModal();
+        }
+      });
+    }
+  });
 
 })(typeof window !== 'undefined' ? window : this);
