@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.8.3';
+    this.APP_VERSION = '2.8.4';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -8505,9 +8505,9 @@ class App {
       ctx.stroke();
     }
 
-    // ── 繪製文字（靠外緣對齊，字體填滿至外側）──
-    const innerR = 56; // 中心按鈕半徑（文字不超過此處）
-    const outerR = radius - 8; // 文字最外側（靠近外緣，留 8px 邊距）
+    // ── 繪製文字（靠外緣對齊，適度留白防擁擠）──
+    const innerR = 58; // 中心按鈕半徑（文字不超過此處）
+    const outerR = radius - 10; // 文字最外側（靠近外緣，留 10px 邊距）
     const radialLen = outerR - innerR; // 可用的徑向長度
 
     for (let i = 0; i < this.wheelNames.length; i++) {
@@ -8521,23 +8521,22 @@ class App {
       const name = this.wheelNames[i];
       const displayName = name.length > 14 ? name.substring(0, 13) + '…' : name;
 
-      // 弧寬：用外緣附近（outerR * 0.9 處）計算可用弦長
-      const arcChordOuter = 2 * (outerR * 0.85) * Math.sin(arcSize / 2) * 0.92;
+      // 弧寬：以文字徑向中段 (outerR * 0.75 處) 計算可用弦長並預留上下間距 (0.80)
+      const arcWidthMid = 2 * (outerR * 0.75) * Math.sin(arcSize / 2) * 0.80;
 
-      // 字體：由弧寬/字數 和 徑向長/字數 取小值，最大 44px，最小 11px
-      let fontSize = Math.floor(Math.min(
-        arcChordOuter / displayName.length * 3.0, // 弧寬填滿
-        radialLen / displayName.length * 1.15,    // 徑向填滿
-        44
-      ));
-      fontSize = Math.max(fontSize, 11);
+      // 徑向長度可容納字體
+      const radialFit = (radialLen / Math.max(displayName.length, 3)) * 0.90;
+
+      // 字體大小：縮小一級避免過度擁擠，最大 34px，最小 9px
+      let fontSize = Math.floor(Math.min(arcWidthMid, radialFit, 34) * 0.90);
+      fontSize = Math.max(fontSize, 9);
 
       ctx.fillStyle = textColor;
       ctx.shadowColor = textShadowColor;
-      ctx.shadowBlur = 5;
+      ctx.shadowBlur = 4;
       ctx.font = `bold ${fontSize}px sans-serif`;
 
-      // 靠外緣右對齊：文字從外緣往內生長，最後一個字緊貼外側
+      // 靠外緣右對齊：文字從外緣往內生長
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(displayName, outerR, 0);
