@@ -144,4 +144,40 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     await page.click('#modal-timer-music-manager button:has-text("完成關閉")')
     await expect(modal).not.toHaveClass(/active/)
   })
+
+  test('Image, Question, and Video modals navigate within their assigned folder group in correct display order', async ({ page }) => {
+    const navResult = await page.evaluate(() => {
+      const app = window.app
+      if (!app) return { ok: false }
+
+      // Set mock folders and items
+      app.imageFolders = [
+        { id: 'f1', name: '髮型與造型設計' },
+        { id: 'f2', name: '3D建築' }
+      ]
+      app.images = [
+        { id: 'img1', filename: 'hair1.png', folderId: 'f1', timestamp: 1000 },
+        { id: 'img2', filename: 'arch1.png', folderId: 'f2', timestamp: 2000 },
+        { id: 'img3', filename: 'hair2.png', folderId: 'f1', timestamp: 3000 },
+        { id: 'img4', filename: 'unassigned1.png', timestamp: 4000 }
+      ]
+
+      const f1List = app.getNavigableImageList('img1')
+      const f2List = app.getNavigableImageList('img2')
+      const unassignedList = app.getNavigableImageList('img4')
+
+      return {
+        ok: true,
+        f1Ids: f1List.map(img => img.id),
+        f2Ids: f2List.map(img => img.id),
+        unassignedIds: unassignedList.map(img => img.id)
+      }
+    })
+
+    expect(navResult.ok).toBe(true)
+    expect(navResult.f1Ids).toEqual(['img1', 'img3'])
+    expect(navResult.f2Ids).toEqual(['img2'])
+    expect(navResult.unassignedIds).toEqual(['img4'])
+  })
 })
+

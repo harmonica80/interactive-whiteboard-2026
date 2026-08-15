@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.8.2';
+    this.APP_VERSION = '2.8.3';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -556,21 +556,25 @@ class App {
     const questionModalNext = document.getElementById('questionModalNext');
     if (questionModalPrev) {
       questionModalPrev.addEventListener('click', () => {
-        if (!this.activeQuestionId || this.questions.length <= 1) return;
-        const index = this.questions.findIndex(q => q.id === this.activeQuestionId);
+        if (!this.activeQuestionId) return;
+        const currentList = this.getNavigableQuestionList(this.activeQuestionId);
+        if (currentList.length <= 1) return;
+        const index = currentList.findIndex(q => q.id === this.activeQuestionId);
         if (index > -1) {
-          const prevIndex = (index - 1 + this.questions.length) % this.questions.length;
-          this.showQuestionModal(this.questions[prevIndex].id);
+          const prevIndex = (index - 1 + currentList.length) % currentList.length;
+          this.showQuestionModal(currentList[prevIndex].id);
         }
       });
     }
     if (questionModalNext) {
       questionModalNext.addEventListener('click', () => {
-        if (!this.activeQuestionId || this.questions.length <= 1) return;
-        const index = this.questions.findIndex(q => q.id === this.activeQuestionId);
+        if (!this.activeQuestionId) return;
+        const currentList = this.getNavigableQuestionList(this.activeQuestionId);
+        if (currentList.length <= 1) return;
+        const index = currentList.findIndex(q => q.id === this.activeQuestionId);
         if (index > -1) {
-          const nextIndex = (index + 1) % this.questions.length;
-          this.showQuestionModal(this.questions[nextIndex].id);
+          const nextIndex = (index + 1) % currentList.length;
+          this.showQuestionModal(currentList[nextIndex].id);
         }
       });
     }
@@ -579,21 +583,25 @@ class App {
     const imageModalNext = document.getElementById('imageModalNext');
     if (imageModalPrev) {
       imageModalPrev.addEventListener('click', () => {
-        if (!this.activeImageId || this.images.length <= 1) return;
-        const index = this.images.findIndex(img => img.id === this.activeImageId);
+        if (!this.activeImageId) return;
+        const currentList = this.getNavigableImageList(this.activeImageId);
+        if (currentList.length <= 1) return;
+        const index = currentList.findIndex(img => img.id === this.activeImageId);
         if (index > -1) {
-          const prevIndex = (index - 1 + this.images.length) % this.images.length;
-          this.showImageModal(this.images[prevIndex].id);
+          const prevIndex = (index - 1 + currentList.length) % currentList.length;
+          this.showImageModal(currentList[prevIndex].id);
         }
       });
     }
     if (imageModalNext) {
       imageModalNext.addEventListener('click', () => {
-        if (!this.activeImageId || this.images.length <= 1) return;
-        const index = this.images.findIndex(img => img.id === this.activeImageId);
+        if (!this.activeImageId) return;
+        const currentList = this.getNavigableImageList(this.activeImageId);
+        if (currentList.length <= 1) return;
+        const index = currentList.findIndex(img => img.id === this.activeImageId);
         if (index > -1) {
-          const nextIndex = (index + 1) % this.images.length;
-          this.showImageModal(this.images[nextIndex].id);
+          const nextIndex = (index + 1) % currentList.length;
+          this.showImageModal(currentList[nextIndex].id);
         }
       });
     }
@@ -612,21 +620,25 @@ class App {
     const videoModalNext = document.getElementById('videoModalNext');
     if (videoModalPrev) {
       videoModalPrev.addEventListener('click', () => {
-        if (!this.activeVideoId || this.videos.length <= 1) return;
-        const index = this.videos.findIndex(v => v.id === this.activeVideoId);
+        if (!this.activeVideoId) return;
+        const currentList = this.getNavigableVideoList(this.activeVideoId);
+        if (currentList.length <= 1) return;
+        const index = currentList.findIndex(v => v.id === this.activeVideoId);
         if (index > -1) {
-          const prevIndex = (index - 1 + this.videos.length) % this.videos.length;
-          this.showVideoModal(this.videos[prevIndex].id);
+          const prevIndex = (index - 1 + currentList.length) % currentList.length;
+          this.showVideoModal(currentList[prevIndex].id);
         }
       });
     }
     if (videoModalNext) {
       videoModalNext.addEventListener('click', () => {
-        if (!this.activeVideoId || this.videos.length <= 1) return;
-        const index = this.videos.findIndex(v => v.id === this.activeVideoId);
+        if (!this.activeVideoId) return;
+        const currentList = this.getNavigableVideoList(this.activeVideoId);
+        if (currentList.length <= 1) return;
+        const index = currentList.findIndex(v => v.id === this.activeVideoId);
         if (index > -1) {
-          const nextIndex = (index + 1) % this.videos.length;
-          this.showVideoModal(this.videos[nextIndex].id);
+          const nextIndex = (index + 1) % currentList.length;
+          this.showVideoModal(currentList[nextIndex].id);
         }
       });
     }
@@ -666,6 +678,28 @@ class App {
         this.activeImageId = null;
         this.activeVideoId = null;
         this.cleanupCommentsSync();
+      } else if (e.key === 'ArrowLeft') {
+        const isInputFocused = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
+        if (!isInputFocused) {
+          if (imageModal && imageModal.classList.contains('active') && imageModalPrev) {
+            imageModalPrev.click();
+          } else if (questionModal && questionModal.classList.contains('active') && questionModalPrev) {
+            questionModalPrev.click();
+          } else if (videoModal && videoModal.classList.contains('active') && videoModalPrev) {
+            videoModalPrev.click();
+          }
+        }
+      } else if (e.key === 'ArrowRight') {
+        const isInputFocused = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
+        if (!isInputFocused) {
+          if (imageModal && imageModal.classList.contains('active') && imageModalNext) {
+            imageModalNext.click();
+          } else if (questionModal && questionModal.classList.contains('active') && questionModalNext) {
+            questionModalNext.click();
+          } else if (videoModal && videoModal.classList.contains('active') && videoModalNext) {
+            videoModalNext.click();
+          }
+        }
       }
     });
   }
@@ -1827,6 +1861,42 @@ class App {
     this.initFolderDragAndDrop('adminImageFolderList', 'images', 'quiz/imageFolders');
   }
 
+  getNavigableQuestionList(activeId) {
+    const currentQ = this.questions.find(q => q.id === activeId);
+    if (!currentQ) return this.questions;
+    
+    // 若屬於某個提問群組，導覽清單為該群組內部提問
+    if (currentQ.folderId && this.questionFolders.some(f => f.id === currentQ.folderId)) {
+      return this.questions.filter(q => q.folderId === currentQ.folderId);
+    }
+    // 若為未分類提問，導覽清單為所有未分類提問
+    return this.questions.filter(q => !q.folderId || !this.questionFolders.some(f => f.id === q.folderId));
+  }
+
+  getNavigableImageList(activeId) {
+    const currentImg = this.images.find(img => img.id === activeId);
+    if (!currentImg) return this.images;
+    
+    // 若屬於某個圖片群組，導覽清單為該群組內部圖片（與畫面上顯示順序完全一致）
+    if (currentImg.folderId && this.imageFolders.some(f => f.id === currentImg.folderId)) {
+      return this.images.filter(img => img.folderId === currentImg.folderId);
+    }
+    // 若為未分類圖片，導覽清單為所有未分類圖片
+    return this.images.filter(img => !img.folderId || !this.imageFolders.some(f => f.id === img.folderId));
+  }
+
+  getNavigableVideoList(activeId) {
+    const currentVid = this.videos.find(v => v.id === activeId);
+    if (!currentVid) return this.videos;
+    
+    // 若屬於某個影片群組，導覽清單為該群組內部影片
+    if (currentVid.folderId && this.videoFolders.some(f => f.id === currentVid.folderId)) {
+      return this.videos.filter(v => v.folderId === currentVid.folderId);
+    }
+    // 若為未分類影片，導覽清單為所有未分類影片
+    return this.videos.filter(v => !v.folderId || !this.videoFolders.some(f => f.id === v.folderId));
+  }
+
   showQuestionModal(id) {
     this.activeQuestionId = id;
     const questionModal = document.getElementById('questionModal');
@@ -1847,7 +1917,8 @@ class App {
     
     const prevBtn = document.getElementById('questionModalPrev');
     const nextBtn = document.getElementById('questionModalNext');
-    if (this.questions.length <= 1) {
+    const currentList = this.getNavigableQuestionList(id);
+    if (currentList.length <= 1) {
       if (prevBtn) prevBtn.style.display = 'none';
       if (nextBtn) nextBtn.style.display = 'none';
     } else {
@@ -1931,7 +2002,8 @@ class App {
     
     const prevBtn = document.getElementById('imageModalPrev');
     const nextBtn = document.getElementById('imageModalNext');
-    if (this.images.length <= 1) {
+    const currentList = this.getNavigableImageList(id);
+    if (currentList.length <= 1) {
       if (prevBtn) prevBtn.style.display = 'none';
       if (nextBtn) nextBtn.style.display = 'none';
     } else {
@@ -2016,7 +2088,8 @@ class App {
 
     const prevBtn = document.getElementById('videoModalPrev');
     const nextBtn = document.getElementById('videoModalNext');
-    if (this.videos.length <= 1) {
+    const currentList = this.getNavigableVideoList(id);
+    if (currentList.length <= 1) {
       if (prevBtn) prevBtn.style.display = 'none';
       if (nextBtn) nextBtn.style.display = 'none';
     } else {
