@@ -1,4 +1,26 @@
 # System Log
+## 2026-08-15 - ver 2.8.2 題庫 CSV 格式全面升級與倒數計時背景音樂管理中心上線
+- 影響檔案：`index.html`, `js/focus_question_bank.js`, `js/timer_music_manager.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **題庫全面改為 CSV 格式（含 UTF-8 BOM 防 Excel 亂碼）**：
+     - **CSV 範本與匯出**：4 大單元一律升級為支援 Microsoft Excel、Google Sheets、LibreOffice 直接開啟編輯的標準 CSV 格式，內建 UTF-8 BOM (`\uFEFF`)，保證中文 100% 不亂碼。
+     - **強健 CSV 解析器**：支援多行詩詞、雙引號跳脫與逗號隔開等標準 CSV 語法，匯入同時向下相容 `.csv`, `.txt`, `.json` 檔案。
+     - 4 大單元欄位表頭清晰定義：
+       - `classicsQuiz`: `題型,題目問句,名句引言,作品名,作者或主角,朝代,選項A,選項B,選項C,選項D,標準答案,原典全文`
+       - `characterTest`: `解答正字,注音,題幹提示,字典關聯詞`
+       - `characterCrossword`: `中心正字,注音,周圍字1(上或前),周圍字2(下或前),周圍字3(左或後),周圍字4(右或後),組成詞語說明`
+       - `characterUnitedWords`: `解答詞語,散裝部件(以空格分開),詞語解釋提示`
+  2. **倒數計時背景音樂管理中心 (`TimerMusicManager`)**：
+     - 於後台倒數計時器設定區新增「🎵 管理曲目清單」按鈕，開啟專屬管理中心彈窗。
+     - **曲目線上即時編輯**：支援新增、編輯、刪除曲目（支援 YouTube 網址與 MP3 直連檔）。
+     - **即時搜尋過濾**：依曲名、分類或網址即時過濾曲目。
+     - **CSV 匯出 / 匯入 / 範本下載**：一鍵匯出及匯入曲目清單 CSV 檔（表頭：`曲目分類,曲目名稱,音樂網址`）。
+     - **動態選單同步**：曲目清單儲存於 `localStorage`，即時同步至倒數計時器的「背景音樂」下拉選單。
+     - **一鍵恢復預設**：提供重置還原為官方預設音樂清單。
+  3. **自動化測試**：
+     - 更新 `tests/focus-question-bank.spec.mjs`，完整覆蓋題庫 CSV 匯出 / 匯入 / 範本驗證與背景音樂清單管理功能。
+
+---
 ## 2026-08-14 - ver 2.8.1 唐詩宋詞題型標記區分與字字珠璣/團結一詞欄位標準化修正
 - 影響檔案：`js/focus_question_bank.js`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：

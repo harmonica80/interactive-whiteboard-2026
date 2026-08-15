@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.8.0</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.8.2</span>
         </p>
       </div>
       <div class="top-actions">
@@ -438,7 +438,7 @@
                   <option value="ring">⭕ 簡約圓環</option>
                 </select>
               </div>
-              <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                 <label for="timerMusicSelect" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">背景音樂：</label>
                 <select id="timerMusicSelect" class="question-input" onchange="window.app.onTimerMusicSelectChange(this.value)" style="width: 200px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
                   <optgroup label="── 巴洛克 ──">
@@ -460,6 +460,9 @@
                   </optgroup>
                   <option value="custom">✍️ 自訂 YouTube 網址...</option>
                 </select>
+                <button type="button" onclick="window.timerMusicManager && window.timerMusicManager.openModal()" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="線上編輯曲目、匯入匯出 CSV 音樂清單">
+                  🎵 管理曲目清單
+                </button>
               </div>
               <div id="customMusicInputWrapper" style="display: none; align-items: center; gap: 6px;">
                 <label for="timerMusicCustomUrl" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">網址：</label>
@@ -672,6 +675,8 @@
                   <option value="images">🖼️ 課堂圖片庫 (自動使用已上傳教材圖片)</option>
                 </select>
               </div>
+
+              <!-- 唐詩宋詞題庫設定與題庫管理 -->
               <div id="focusClassicsQuizSettings" style="display: none; margin-bottom: 20px; padding: 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-input);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                   <label style="font-weight: bold; font-size: 14px; margin: 0; color: var(--text-primary);">📜 唐詩宋詞・成語典故：</label>
@@ -687,9 +692,9 @@
                 </div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <button type="button" onclick="window.focusQB.openModal('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">🔍 管理與搜尋題庫</button>
-                  <button type="button" onclick="window.focusQB.openImportDialog('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (JSON)</button>
-                  <button type="button" onclick="window.focusQB.exportPool('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (JSON)</button>
-                  <button type="button" onclick="window.focusQB.downloadTemplate('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+                  <button type="button" onclick="window.focusQB.openImportDialog('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.exportPool('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.downloadTemplate('classicsQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載 CSV 範本檔</button>
                   <button type="button" onclick="window.focusQB.handleResetDefault('classicsQuiz')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
                 </div>
               </div>
@@ -703,9 +708,9 @@
                 <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">系統每次隨機抽取 3 題進行易錯正字手寫或輸入測驗。</div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <button type="button" onclick="window.focusQB.openModal('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">🔍 管理與搜尋題庫</button>
-                  <button type="button" onclick="window.focusQB.openImportDialog('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (JSON)</button>
-                  <button type="button" onclick="window.focusQB.exportPool('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (JSON)</button>
-                  <button type="button" onclick="window.focusQB.downloadTemplate('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+                  <button type="button" onclick="window.focusQB.openImportDialog('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.exportPool('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.downloadTemplate('characterTest')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載 CSV 範本檔</button>
                   <button type="button" onclick="window.focusQB.handleResetDefault('characterTest')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
                 </div>
               </div>
@@ -719,9 +724,9 @@
                 <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">系統隨機抽選一題十字選字盤面，考驗學生找出能與上下左右組詞的中間正字。</div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <button type="button" onclick="window.focusQB.openModal('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">🔍 管理與搜尋題庫</button>
-                  <button type="button" onclick="window.focusQB.openImportDialog('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (JSON)</button>
-                  <button type="button" onclick="window.focusQB.exportPool('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (JSON)</button>
-                  <button type="button" onclick="window.focusQB.downloadTemplate('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+                  <button type="button" onclick="window.focusQB.openImportDialog('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.exportPool('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.downloadTemplate('characterCrossword')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載 CSV 範本檔</button>
                   <button type="button" onclick="window.focusQB.handleResetDefault('characterCrossword')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
                 </div>
               </div>
@@ -735,9 +740,9 @@
                 <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">系統隨機抽選一題部件拆解題目，學生需將散裝部件組合成正確的二字詞語。</div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <button type="button" onclick="window.focusQB.openModal('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">🔍 管理與搜尋題庫</button>
-                  <button type="button" onclick="window.focusQB.openImportDialog('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (JSON)</button>
-                  <button type="button" onclick="window.focusQB.exportPool('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (JSON)</button>
-                  <button type="button" onclick="window.focusQB.downloadTemplate('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+                  <button type="button" onclick="window.focusQB.openImportDialog('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.exportPool('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.downloadTemplate('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載 CSV 範本檔</button>
                   <button type="button" onclick="window.focusQB.handleResetDefault('characterUnitedWords')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
                 </div>
               </div>
@@ -1059,13 +1064,14 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=151"></script>
-  <script src="js/character_pool.js?v=151"></script>
-  <script src="js/classics_quiz_pool.js?v=280"></script>
-  <script src="js/focus_question_bank.js?v=280"></script>
-  <script src="js/quiz.js?v=200"></script>
-  <script src="js/app.js?v=280"></script>
-  <script src="js/classics_quiz.js?v=280"></script>
+  <script src="js/firebase-config.js?v=282"></script>
+  <script src="js/character_pool.js?v=282"></script>
+  <script src="js/classics_quiz_pool.js?v=282"></script>
+  <script src="js/focus_question_bank.js?v=282"></script>
+  <script src="js/timer_music_manager.js?v=282"></script>
+  <script src="js/quiz.js?v=282"></script>
+  <script src="js/app.js?v=282"></script>
+  <script src="js/classics_quiz.js?v=282"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -1589,15 +1595,15 @@ Python</pre>
           </div>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button type="button" onclick="window.focusQB.openQuestionEditForm()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">➕ 新增題目</button>
-            <button type="button" onclick="window.focusQB.openImportDialog()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫</button>
-            <button type="button" onclick="window.focusQB.exportPool(window.focusQB.currentActiveType)" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫</button>
-            <button type="button" onclick="window.focusQB.downloadTemplate(window.focusQB.currentActiveType)" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載範本檔</button>
+            <button type="button" onclick="window.focusQB.openImportDialog()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (CSV)</button>
+            <button type="button" onclick="window.focusQB.exportPool(window.focusQB.currentActiveType)" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (CSV)</button>
+            <button type="button" onclick="window.focusQB.downloadTemplate(window.focusQB.currentActiveType)" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載 CSV 範本檔</button>
             <button type="button" onclick="window.focusQB.handleResetDefault()" class="preset-btn" style="padding: 7px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為官方預設題庫">🔄 恢復預設</button>
           </div>
         </div>
 
         <!-- Hidden file input for import -->
-        <input type="file" id="focusQbFileInput" accept=".json" style="display: none;" onchange="window.focusQB.handleFileUpload(event)">
+        <input type="file" id="focusQbFileInput" accept=".csv,.txt,.json" style="display: none;" onchange="window.focusQB.handleFileUpload(event)">
 
         <!-- Add / Edit Question Subform -->
         <div id="focusQbEditFormContainer" style="display: none; background: var(--bg-card); border: 2px solid var(--accent-color); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(0,122,255,0.1);">
@@ -1625,6 +1631,82 @@ Python</pre>
           💡 提示：自訂題庫會儲存在您的瀏覽器中，開局時會優先自動隨機抽取自訂題庫！
         </div>
         <button onclick="window.focusQB.closeModal()" style="padding: 8px 20px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">完成關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎵 倒數計時背景音樂管理中心彈窗 -->
+  <div id="modal-timer-music-manager" class="modal-overlay" style="z-index: 9999;">
+    <div class="modal-content" style="background: var(--bg-card); width: 92%; max-width: 780px !important; max-height: 90vh; border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--border-color); background: var(--bg-input);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">🎵</span>
+          <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">倒數計時背景音樂管理中心</h3>
+        </div>
+        <button onclick="window.timerMusicManager && window.timerMusicManager.closeModal()" style="background: transparent; border: none; font-size: 20px; color: var(--text-secondary); cursor: pointer; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding: 20px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column;">
+        
+        <!-- Action & Search Toolbar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: var(--bg-input); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px;">
+            <input type="text" id="timerMusicSearchInput" oninput="window.timerMusicManager && window.timerMusicManager.handleSearchInput(this.value)" placeholder="🔍 搜尋曲名、分類或網址..." class="question-input" style="width: 100%; box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 13px;">
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" onclick="window.timerMusicManager && window.timerMusicManager.openEditForm()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">➕ 新增曲目</button>
+            <button type="button" onclick="window.timerMusicManager && window.timerMusicManager.openImportDialog()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入清單 (CSV)</button>
+            <button type="button" onclick="window.timerMusicManager && window.timerMusicManager.exportCSV()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出清單 (CSV)</button>
+            <button type="button" onclick="window.timerMusicManager && window.timerMusicManager.downloadTemplate()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載 CSV 範本</button>
+            <button type="button" onclick="window.timerMusicManager && window.timerMusicManager.handleResetDefault()" class="preset-btn" style="padding: 7px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為官方預設音樂清單">🔄 恢復預設</button>
+          </div>
+        </div>
+
+        <!-- Hidden file input for import -->
+        <input type="file" id="timerMusicFileInput" accept=".csv,.txt,.json" style="display: none;" onchange="window.timerMusicManager && window.timerMusicManager.handleFileUpload(event)">
+
+        <!-- Add / Edit Track Subform -->
+        <div id="timerMusicEditFormContainer" style="display: none; background: var(--bg-card); border: 2px solid var(--accent-color); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(0,122,255,0.1);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h4 id="timerMusicEditFormTitle" style="margin: 0; font-size: 15px; color: var(--accent-color);">➕ 新增背景音樂曲目</h4>
+            <button onclick="window.timerMusicManager && window.timerMusicManager.closeEditForm()" style="background: transparent; border: none; font-size: 16px; color: var(--text-secondary); cursor: pointer;">✕</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">曲目分類 (例如：巴洛克、古典、輕音樂)</label>
+              <input type="text" id="music_input_category" placeholder="例如：巴洛克" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">曲目名稱 *</label>
+              <input type="text" id="music_input_title" placeholder="例如：莫札特 - G大調弦樂小夜曲" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">音樂網址 (支援 YouTube 影片/播放清單網址 或 MP3 直連檔) *</label>
+            <input type="text" id="music_input_url" placeholder="例如：https://www.youtube.com/watch?v=... 或 https://example.com/song.mp3" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+            <button onclick="window.timerMusicManager && window.timerMusicManager.closeEditForm()" style="padding: 8px 16px; font-size: 13px; font-weight: bold; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer;">取消</button>
+            <button onclick="window.timerMusicManager && window.timerMusicManager.handleSaveForm()" style="padding: 8px 20px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">💾 儲存曲目</button>
+          </div>
+        </div>
+
+        <!-- Music Count Summary Badge -->
+        <div id="timerMusicCountBadge" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; font-weight: 500;"></div>
+
+        <!-- Music List Container -->
+        <div id="timerMusicListContainer" style="flex: 1; overflow-y: auto; max-height: 480px; padding-right: 4px;"></div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; border-top: 1px solid var(--border-color); background: var(--bg-input);">
+        <div style="font-size: 12px; color: var(--text-muted);">
+          💡 提示：自訂曲目清單會儲存於您的瀏覽器中，並即時同步至倒數計時器的背景音樂選單！
+        </div>
+        <button onclick="window.timerMusicManager && window.timerMusicManager.closeModal()" style="padding: 8px 20px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">完成關閉</button>
       </div>
     </div>
   </div>

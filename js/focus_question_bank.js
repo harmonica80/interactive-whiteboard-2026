@@ -5,9 +5,97 @@
  * 2. characterTest: ✍️ 一字千金：字力測驗 (手寫/輸入)
  * 3. characterCrossword: ✍️ 一字千金：字字珠璣 (十字選字)
  * 4. characterUnitedWords: ✍️ 一字千金：團結一詞 (部件組詞)
+ * 
+ * 支援 CSV (含 UTF-8 BOM 防亂碼) 與 JSON 雙格式匯入 / 匯出 / 範本下載
  */
 (function (global) {
   'use strict';
+
+  // 輔助函式：CSV 欄位轉義
+  function escapeCSVCell(val) {
+    if (val === null || val === undefined) return '""';
+    let str = String(val);
+    if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+      str = str.replace(/"/g, '""');
+    }
+    return `"${str}"`;
+  }
+
+  // 輔助函式：強健的 CSV 解析器（支援雙引號、跨行換行、跳脫雙引號與 UTF-8 BOM）
+  function parseCSVText(csvText) {
+    if (!csvText) return [];
+    // 移除 UTF-8 BOM
+    if (csvText.charCodeAt(0) === 0xFEFF) {
+      csvText = csvText.slice(1);
+    }
+
+    const rows = [];
+    let currentRow = [];
+    let currentCell = '';
+    let inQuotes = false;
+    let i = 0;
+    const len = csvText.length;
+
+    while (i < len) {
+      const char = csvText[i];
+      const nextChar = i + 1 < len ? csvText[i + 1] : '';
+
+      if (inQuotes) {
+        if (char === '"') {
+          if (nextChar === '"') {
+            currentCell += '"';
+            i += 2;
+            continue;
+          } else {
+            inQuotes = false;
+            i++;
+            continue;
+          }
+        } else {
+          currentCell += char;
+          i++;
+          continue;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+          i++;
+          continue;
+        } else if (char === ',') {
+          currentRow.push(currentCell.trim());
+          currentCell = '';
+          i++;
+          continue;
+        } else if (char === '\r' || char === '\n') {
+          currentRow.push(currentCell.trim());
+          if (currentRow.some(cell => cell.length > 0)) {
+            rows.push(currentRow);
+          }
+          currentRow = [];
+          currentCell = '';
+          if (char === '\r' && nextChar === '\n') {
+            i += 2;
+          } else {
+            i++;
+          }
+          continue;
+        } else {
+          currentCell += char;
+          i++;
+          continue;
+        }
+      }
+    }
+
+    if (currentCell.length > 0 || currentRow.length > 0) {
+      currentRow.push(currentCell.trim());
+      if (currentRow.some(cell => cell.length > 0)) {
+        rows.push(currentRow);
+      }
+    }
+
+    return rows;
+  }
 
   class FocusQuestionBankManager {
     constructor() {
@@ -251,129 +339,77 @@
         });
     }
 
-    // 匯出題庫為 JSON 檔案
+    // 匯出題庫為 CSV 檔案（內嵌 UTF-8 BOM 防 Excel 亂碼）
     exportPool(type) {
       const pool = this.getPool(type);
-      const dataStr = JSON.stringify(pool, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      const filename = `${type}_question_bank_${new Date().toISOString().slice(0, 10)}.json`;
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
+      let csvContent = '\uFEFF'; // UTF-8 BOM
 
-    // 取得範本資料物件
-    getTemplateData(type) {
       if (type === 'classicsQuiz') {
-        return [
-          {
-            "id": "poetry_sample_1",
-            "type": "poetry",
-            "title": "將進酒",
-            "author": "李白",
-            "dynasty": "唐",
-            "quote": "天生我材必有用，千金散盡還復來。",
-            "prompt": "「天生我材必有用，千金散盡還復來。」是出自哪一位詩人的名篇？",
-            "options": ["李白", "杜甫", "王維", "白居易"],
-            "answer": "李白",
-            "fullPoem": "君不見黃河之水天上來，奔流到海不復回。君不見高堂明鏡悲白髮，朝如青絲暮成雪。人生得意須盡歡，莫使金樽空對月。天生我材必有用，千金散盡還復來。",
-            "links": {
-              "sinoreading": "https://www.google.com/search?q=將進酒+中讀網",
-              "wikisource": "https://zh.wikisource.org/wiki/將進酒_(李白)",
-              "wikipedia": "https://zh.wikipedia.org/wiki/將進酒"
-            }
-          },
-          {
-            "id": "idiom_sample_2",
-            "type": "idiom",
-            "title": "畫蛇添足",
-            "author": "劉向",
-            "dynasty": "西漢",
-            "quote": "蛇固無足，子安能為之足？",
-            "prompt": "「蛇固無足，子安能為之足？」出自哪一個著名成語典故？",
-            "options": ["畫蛇添足", "掩耳盜鈴", "亡羊補牢", "自相矛盾"],
-            "answer": "畫蛇添足",
-            "fullPoem": "楚有祠者，賜其舍人卮酒。舍人相謂曰：「數人飲之不足，一人飲之有餘。請畫地為蛇，先成者飲酒。」一人蛇先成，引酒且飲之，乃左手持卮，右手畫蛇，曰：「吾能為之足。」未成，一人之蛇成，奪其卮曰：「蛇固無足，子安能為之足？」遂飲其酒。為蛇足者，終亡其酒。",
-            "links": {
-              "sinoreading": "https://www.google.com/search?q=畫蛇添足+中讀網",
-              "wikisource": "https://zh.wikisource.org/wiki/戰國策/卷09#楚一",
-              "wikipedia": "https://zh.wikipedia.org/wiki/畫蛇添足"
-            }
-          }
-        ];
+        csvContent += '題型,題目問句,名句引言,作品名,作者或主角,朝代,選項A,選項B,選項C,選項D,標準答案,原典全文\r\n';
+        pool.forEach(rawItem => {
+          const item = this.normalizeItem(type, rawItem);
+          const opts = item.options || ['', '', '', ''];
+          const row = [
+            item.category || '唐詩宋詞',
+            item.prompt || '',
+            item.quote || '',
+            item.title || '',
+            item.author || '',
+            item.dynasty || '',
+            opts[0] || '',
+            opts[1] || '',
+            opts[2] || '',
+            opts[3] || '',
+            item.answer || '',
+            item.fullPoem || ''
+          ].map(escapeCSVCell).join(',');
+          csvContent += row + '\r\n';
+        });
+      } else if (type === 'characterTest') {
+        csvContent += '解答正字,注音,題幹提示,字典關聯詞\r\n';
+        pool.forEach(rawItem => {
+          const item = this.normalizeItem(type, rawItem);
+          const row = [
+            item.char || '',
+            item.zhuyin || '',
+            item.clue || '',
+            item.searchWord || ''
+          ].map(escapeCSVCell).join(',');
+          csvContent += row + '\r\n';
+        });
+      } else if (type === 'characterCrossword') {
+        csvContent += '中心正字,注音,周圍字1(上或前),周圍字2(下或前),周圍字3(左或後),周圍字4(右或後),組成詞語說明\r\n';
+        pool.forEach(rawItem => {
+          const item = this.normalizeItem(type, rawItem);
+          const surr = item.surroundingChars || [];
+          const row = [
+            item.centerChar || '',
+            item.zhuyin || '',
+            surr[0] || '',
+            surr[1] || '',
+            surr[2] || '',
+            surr[3] || '',
+            (item.combinedWords && item.combinedWords.length > 0) ? item.combinedWords.join('、') : (item.searchWord || '')
+          ].map(escapeCSVCell).join(',');
+          csvContent += row + '\r\n';
+        });
+      } else if (type === 'characterUnitedWords') {
+        csvContent += '解答詞語,散裝部件(以空格分開),詞語解釋提示\r\n';
+        pool.forEach(rawItem => {
+          const item = this.normalizeItem(type, rawItem);
+          const row = [
+            item.word || '',
+            (item.parts || []).join(' '),
+            item.clue || ''
+          ].map(escapeCSVCell).join(',');
+          csvContent += row + '\r\n';
+        });
       }
-      if (type === 'characterTest') {
-        return [
-          {
-            "char": "足",
-            "zhuyin": "ㄗㄨˊ",
-            "clue": "畫蛇添（　）",
-            "searchWord": "畫蛇添足"
-          },
-          {
-            "char": "兔",
-            "zhuyin": "ㄊㄨˋ",
-            "clue": "守株待（　）",
-            "searchWord": "守株待兔"
-          }
-        ];
-      }
-      if (type === 'characterCrossword') {
-        return [
-          {
-            "char": "天",
-            "zhuyin": "ㄊㄧㄢ",
-            "searchWord": "天空",
-            "surrounding": [
-              { "char": "今", "pos": "before" },
-              { "char": "明", "pos": "before" },
-              { "char": "氣", "pos": "after" },
-              { "char": "空", "pos": "after" }
-            ]
-          },
-          {
-            "char": "風",
-            "zhuyin": "ㄈㄥ",
-            "searchWord": "風景",
-            "surrounding": [
-              { "char": "颱", "pos": "before" },
-              { "char": "微", "pos": "before" },
-              { "char": "雨", "pos": "after" },
-              { "char": "景", "pos": "after" }
-            ]
-          }
-        ];
-      }
-      if (type === 'characterUnitedWords') {
-        return [
-          {
-            "targetWord": "明月",
-            "components": ["日", "月", "月"],
-            "clue": "形容夜空中明亮的月亮"
-          },
-          {
-            "targetWord": "森林",
-            "components": ["木", "木", "木", "木", "木"],
-            "clue": "大片生長樹木的廣大土地"
-          }
-        ];
-      }
-      return [];
-    }
 
-    // 下載標準範本檔案
-    downloadTemplate(type) {
-      const templateData = this.getTemplateData(type);
-      const dataStr = JSON.stringify(templateData, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8;' });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      const filename = `${type}_template_範本.json`;
+      const filename = `${type}_題庫清單_${new Date().toISOString().slice(0, 10)}.csv`;
       link.setAttribute('href', url);
       link.setAttribute('download', filename);
       document.body.appendChild(link);
@@ -382,112 +418,180 @@
       URL.revokeObjectURL(url);
     }
 
-    // 驗證並匯入題庫
-    importPool(type, jsonStr, mode = 'replace') {
-      let data;
-      try {
-        data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
-      } catch (e) {
-        throw new Error('JSON 格式錯誤，請確認檔案內容符合標準 JSON 語法！');
+    // 取得 CSV 範本文字（內嵌 UTF-8 BOM）
+    getCSVTemplateContent(type) {
+      let content = '\uFEFF';
+      if (type === 'classicsQuiz') {
+        content += '題型,題目問句,名句引言,作品名,作者或主角,朝代,選項A,選項B,選項C,選項D,標準答案,原典全文\r\n';
+        content += '"唐詩宋詞","「天生我材必有用，千金散盡還復來。」是出自哪位詩人的名篇？","天生我材必有用，千金散盡還復來。","將進酒","李白","唐","李白","杜甫","王維","白居易","李白","君不見黃河之水天上來，奔流到海不復回。君不見高堂明鏡悲白髮，朝如青絲暮成雪。人生得意須盡歡，莫使金樽空對月。天生我材必有用，千金散盡還復來。"\r\n';
+        content += '"成語典故","「蛇固無足，子安能為之足？」出自哪一個著名成語典故？","蛇固無足，子安能為之足？","畫蛇添足","劉向","西漢","畫蛇添足","掩耳盜鈴","亡羊補牢","自相矛盾","畫蛇添足","楚有祠者，賜其舍人卮酒。舍人相謂曰：「數人飲之不足，一人飲之有餘。請畫地為蛇，先成者飲酒。」一人蛇先成，引酒且飲之，乃左手持卮，右手畫蛇，曰：「吾能為之足。」未成，一人之蛇成，奪其卮曰：「蛇固無足，子安能為之足？」遂飲其酒。為蛇足者，終亡其酒。"\r\n';
+      } else if (type === 'characterTest') {
+        content += '解答正字,注音,題幹提示,字典關聯詞\r\n';
+        content += '"足","ㄗㄨˊ","畫蛇添（　）","畫蛇添足"\r\n';
+        content += '"兔","ㄊㄨˋ","守株待（　）","守株待兔"\r\n';
+        content += '"牢","ㄌㄠˊ","亡羊補（　）","亡羊補牢"\r\n';
+      } else if (type === 'characterCrossword') {
+        content += '中心正字,注音,周圍字1(上或前),周圍字2(下或前),周圍字3(左或後),周圍字4(右或後),組成詞語說明\r\n';
+        content += '"天","ㄊㄧㄢ","今","明","氣","空","今天、明天、天氣、天空"\r\n';
+        content += '"風","ㄈㄥ","颱","微","雨","景","颱風、微風、風雨、風景"\r\n';
+      } else if (type === 'characterUnitedWords') {
+        content += '解答詞語,散裝部件(以空格分開),詞語解釋提示\r\n';
+        content += '"明月","日 月 月","形容夜空中明亮的月亮"\r\n';
+        content += '"森林","木 木 木 木 木","大片生長樹木的廣大土地"\r\n';
+      }
+      return content;
+    }
+
+    // 下載標準 CSV 範本檔案
+    downloadTemplate(type) {
+      const csvContent = this.getCSVTemplateContent(type);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const filename = `${type}_範本.csv`;
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    // 從 CSV 解析並匯入題庫
+    importPoolFromCSV(type, csvText, mode = 'replace') {
+      const rows = parseCSVText(csvText);
+      if (rows.length < 2) {
+        throw new Error('CSV 檔案內容為空或缺少資料行（至少需包含表頭與一筆題目）！');
       }
 
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error('匯入資料必須為非空的 JSON 陣列（[ ... ]）！');
-      }
-
+      // 跳過第一行表頭
+      const dataRows = rows.slice(1);
       const validatedList = [];
-      for (let i = 0; i < data.length; i++) {
-        const item = data[i];
-        if (!item || typeof item !== 'object') {
-          throw new Error(`第 ${i + 1} 筆題目格式無效！`);
-        }
+
+      for (let i = 0; i < dataRows.length; i++) {
+        const cols = dataRows[i];
+        if (!cols || cols.length === 0 || cols.every(c => !c)) continue; // 略過空白行
 
         if (type === 'classicsQuiz') {
-          const answer = String(item.answer || item.correctOption || '').trim();
-          const title = String(item.title || item.work || '').trim();
-          const quote = String(item.quote || item.prompt || title).trim();
-          if (!quote || !answer) {
-            throw new Error(`第 ${i + 1} 筆唐詩宋詞題目缺少必要欄位（作品名或名句、解答 answer）！`);
+          // 欄位：題型, 題目問句, 名句引言, 作品名, 作者或主角, 朝代, 選項A, 選項B, 選項C, 選項D, 標準答案, 原典全文
+          const category = cols[0] || '唐詩宋詞';
+          const prompt = cols[1] || '';
+          const quote = cols[2] || cols[3] || prompt;
+          const title = cols[3] || quote;
+          const author = cols[4] || '';
+          const dynasty = cols[5] || '';
+          const optA = cols[6] || '';
+          const optB = cols[7] || '';
+          const optC = cols[8] || '';
+          const optD = cols[9] || '';
+          const answer = cols[10] || '';
+          const fullPoem = cols[11] || quote;
+
+          if (!answer) {
+            throw new Error(`第 ${i + 2} 行題目缺少「標準答案」欄位！`);
           }
-          let options = Array.isArray(item.options) && item.options.length === 4
-            ? item.options
-            : [answer, '李白', '杜甫', '蘇軾'].filter((v, idx, arr) => arr.indexOf(v) === idx).slice(0, 4);
-          
+          if (!prompt && !quote && !title) {
+            throw new Error(`第 ${i + 2} 行題目缺少「題目問句」或「作品/名句」！`);
+          }
+
+          let options = [optA, optB, optC, optD].filter(Boolean);
+          if (options.length < 4) {
+            options = [answer, '李白', '杜甫', '蘇軾'].filter((v, idx, arr) => arr.indexOf(v) === idx).slice(0, 4);
+          }
           if (!options.includes(answer)) {
             options[0] = answer;
           }
 
           validatedList.push({
-            id: item.id || `custom_q_${Date.now()}_${i}`,
-            type: item.type || (item.author ? 'poetry' : 'idiom'),
-            title: title || quote,
-            work: item.work || title || quote,
-            author: String(item.author || '').trim(),
-            dynasty: String(item.dynasty || '').trim(),
-            quote: quote,
-            prompt: String(item.prompt || `「${quote}」出自？`).trim(),
-            options: options.map(String),
-            answer: answer,
+            id: `custom_csv_${Date.now()}_${i}`,
+            category,
+            type: author ? 'poetry' : 'idiom',
+            title,
+            work: title,
+            author,
+            dynasty,
+            quote,
+            prompt: prompt || `「${quote}」出自？`,
+            options,
+            answer,
             correctOption: answer,
-            fullPoem: String(item.fullPoem || item.explanation || quote).trim(),
-            explanation: String(item.explanation || item.fullPoem || `正解為：${answer}`).trim(),
-            links: item.links || item.reference || {}
+            fullPoem,
+            explanation: fullPoem || `正解為：${answer}`,
+            links: {
+              sinoreading: `https://www.google.com/search?q=${encodeURIComponent(title + ' 中讀網')}`,
+              wikisource: `https://zh.wikisource.org/wiki/${encodeURIComponent(title)}`,
+              wikipedia: `https://zh.wikipedia.org/wiki/${encodeURIComponent(title)}`
+            }
           });
         } else if (type === 'characterTest') {
-          if (!item.char || !item.clue) {
-            throw new Error(`第 ${i + 1} 筆字力測驗題目缺少必要欄位（char、clue）！`);
+          // 欄位：解答正字, 注音, 題幹提示, 字典關聯詞
+          const char = cols[0] || '';
+          const zhuyin = cols[1] || '';
+          const clue = cols[2] || '';
+          const searchWord = cols[3] || '';
+
+          if (!char || !clue) {
+            throw new Error(`第 ${i + 2} 行缺少「解答正字」或「題幹提示」！`);
           }
+
           validatedList.push({
-            char: String(item.char).trim(),
-            zhuyin: String(item.zhuyin || '').trim(),
-            clue: String(item.clue).trim(),
-            searchWord: String(item.searchWord || item.clue.replace(/[（(].*?[）)]/g, item.char)).trim()
+            char: char.trim(),
+            zhuyin: zhuyin.trim(),
+            clue: clue.trim(),
+            searchWord: (searchWord || clue.replace(/[（(].*?[）)]/g, char)).trim()
           });
         } else if (type === 'characterCrossword') {
-          const centerChar = String(item.char || item.centerChar || '').trim();
+          // 欄位：中心正字, 注音, 周圍字1, 周圍字2, 周圍字3, 周圍字4, 組成詞語說明
+          const centerChar = cols[0] || '';
+          const zhuyin = cols[1] || '';
+          const w1 = cols[2] || '前';
+          const w2 = cols[3] || '後';
+          const w3 = cols[4] || '左';
+          const w4 = cols[5] || '右';
+          const searchWord = cols[6] || '';
+
           if (!centerChar) {
-            throw new Error(`第 ${i + 1} 筆字字珠璣題目缺少中心字（char 或 centerChar）！`);
+            throw new Error(`第 ${i + 2} 行缺少「中心正字」！`);
           }
 
-          let surrounding = item.surrounding;
-          if (!Array.isArray(surrounding) || surrounding.length < 4) {
-            const top = String(item.topWord || '').trim();
-            const bottom = String(item.bottomWord || '').trim();
-            const left = String(item.leftWord || '').trim();
-            const right = String(item.rightWord || '').trim();
-            surrounding = [
-              { char: top || '前', pos: 'before' },
-              { char: bottom || '後', pos: 'before' },
-              { char: left || '左', pos: 'after' },
-              { char: right || '右', pos: 'after' }
-            ];
-          }
+          const surrounding = [
+            { char: w1.trim(), pos: 'before' },
+            { char: w2.trim(), pos: 'before' },
+            { char: w3.trim(), pos: 'after' },
+            { char: w4.trim(), pos: 'after' }
+          ];
 
           validatedList.push({
-            char: centerChar,
-            centerChar: centerChar,
-            zhuyin: String(item.zhuyin || '').trim(),
-            surrounding: surrounding,
-            searchWord: String(item.searchWord || '').trim()
+            char: centerChar.trim(),
+            centerChar: centerChar.trim(),
+            zhuyin: zhuyin.trim(),
+            surrounding,
+            searchWord: searchWord.trim()
           });
         } else if (type === 'characterUnitedWords') {
-          const word = String(item.targetWord || item.word || '').trim();
+          // 欄位：解答詞語, 散裝部件(以空格分開), 詞語解釋提示
+          const word = cols[0] || '';
+          const partsStr = cols[1] || '';
+          const clue = cols[2] || '';
+
           if (!word) {
-            throw new Error(`第 ${i + 1} 筆團結一詞題目缺少目標詞語（targetWord 或 word）！`);
+            throw new Error(`第 ${i + 2} 行缺少「解答詞語」！`);
           }
-          const parts = Array.isArray(item.components)
-            ? item.components
-            : (Array.isArray(item.parts) ? item.parts : String(item.p1 || '' + item.p2 || '').split(''));
-          
+
+          const parts = partsStr.split(/[\s,，、+]+/).filter(Boolean);
           validatedList.push({
-            targetWord: word,
-            word: word,
-            components: parts.map(String),
-            parts: parts.map(String),
-            clue: String(item.clue || '').trim(),
-            searchWord: String(item.searchWord || word).trim()
+            targetWord: word.trim(),
+            word: word.trim(),
+            components: parts.length > 0 ? parts : word.trim().split(''),
+            parts: parts.length > 0 ? parts : word.trim().split(''),
+            clue: clue.trim(),
+            searchWord: word.trim()
           });
         }
+      }
+
+      if (validatedList.length === 0) {
+        throw new Error('CSV 檔案中未解析出任何有效題目！');
       }
 
       let finalPool = validatedList;
@@ -498,6 +602,38 @@
 
       this.savePool(type, finalPool);
       return finalPool.length;
+    }
+
+    // 支援自動判斷 CSV 或 JSON 格式並匯入
+    importPool(type, textContent, mode = 'replace') {
+      const trimmed = (textContent || '').trim();
+      if (!trimmed) {
+        throw new Error('匯入內容為空！');
+      }
+
+      // 若以 [ 或 { 開頭則以 JSON 解析
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        let data;
+        try {
+          data = JSON.parse(trimmed);
+        } catch (e) {
+          throw new Error('JSON 語法錯誤！');
+        }
+        if (!Array.isArray(data) || data.length === 0) {
+          throw new Error('JSON 資料必須為非空的陣列！');
+        }
+        const validatedList = data.map(item => this.normalizeItem(type, item));
+        let finalPool = validatedList;
+        if (mode === 'append') {
+          const current = this.getPool(type);
+          finalPool = current.concat(validatedList);
+        }
+        this.savePool(type, finalPool);
+        return finalPool.length;
+      }
+
+      // 否則以標準 CSV 解析
+      return this.importPoolFromCSV(type, trimmed, mode);
     }
 
     // 刪除指定索引之題目
@@ -888,7 +1024,7 @@
             <input type="text" id="qb_input_word" value="${item.word || ''}" placeholder="例如：明月" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-size:16px; font-weight:bold;">
           </div>
           <div style="margin-bottom: 12px;">
-            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">散裝部件 (以空格或逗號隔開) *</label>
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">散裝部件 (以空格分開) *</label>
             <input type="text" id="qb_input_parts" value="${(item.parts || []).join(' ')}" placeholder="例如：日 月 月" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
           </div>
           <div style="margin-bottom: 12px;">
@@ -1040,7 +1176,7 @@
       }
     }
 
-    // 處理檔案上傳匯入
+    // 處理檔案上傳匯入（支援 CSV, TXT, JSON）
     handleFileUpload(event) {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
