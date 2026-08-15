@@ -1,4 +1,18 @@
 # System Log
+## 2026-08-15 - ver 2.8.3 修復圖片/問題/影片群組詳細模式左右箭頭導覽順序與群組分類一致
+- 影響檔案：`js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **圖片群組導覽邏輯優化 (`getNavigableImageList`)**：
+     - 原先在圖片彈窗詳細模式中點按左右箭頭（◀ / ▶）時，直接依據全局未分組的 `this.images` 時間戳排序導覽，導致點擊某分類群組（例如「髮型與造型設計」）內的圖片時，下一張會跳躍到其他群組或未分類圖片。
+     - 新增 `getNavigableImageList(activeId)` 方法：若目前圖片屬於某群組，自動鎖定該群組內的圖片清單進行上一張/下一張循環導覽，順序與前台群組展開時的顯示順序 100% 保持一致；未分類圖片則在未分類清單內導覽。
+  2. **提問與影片群組同步優化 (`getNavigableQuestionList`, `getNavigableVideoList`)**：
+     - 提問彈窗與影片彈窗同步實作群組導覽隔離與一致性排序。
+  3. **鍵盤左右方向鍵導覽支援**：
+     - 在圖片、提問或影片詳細彈窗開啟時，支援直接按鍵盤 `ArrowLeft` / `ArrowRight` 快速切換上一張 / 下一張。
+  4. **自動化測試**：
+     - 於 `tests/focus-question-bank.spec.mjs` 加入群組導覽隔離與排序一致性測試。
+
+---
 ## 2026-08-15 - ver 2.8.2 題庫 CSV 格式全面升級與倒數計時背景音樂管理中心上線
 - 影響檔案：`index.html`, `js/focus_question_bank.js`, `js/timer_music_manager.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：
