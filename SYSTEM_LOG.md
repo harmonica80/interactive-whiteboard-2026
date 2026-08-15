@@ -1,4 +1,15 @@
 # System Log
+## 2026-08-15 - ver 2.8.7 群組展開時自動折疊其他群組（手風琴模式）與版本號規則確立
+- 影響檔案：`js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **版本號更新規則確立**：
+     - 今後程式版本號更新一律採一次增加 0.01（例如 2.8.6 ➔ 2.8.7）。
+  2. **群組開啟自動折疊其他群組 (`toggleFolderCollapse`)**：
+     - 在後台（與前台）各分類群組清單中，點按任一群組展開時，自動收合折疊其他已展開的群組（手風琴效果），避免大量群組展開時頁面過長，讓群組管理與圖片/提問/影片檢視更加俐落。
+  3. **自動化測試**：
+     - 於 `tests/focus-question-bank.spec.mjs` 加入群組手風琴折疊展開互斥測試。
+
+---
 ## 2026-08-15 - ver 2.8.6 圖片彈窗比例百分比標籤右移避免遮擋留言區
 - 影響檔案：`css/style.css`, `index.html`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：

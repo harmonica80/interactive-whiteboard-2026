@@ -214,5 +214,36 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(zoomInfoRight.position).toBe('absolute')
     expect(zoomInfoRight.right).toBe('15px')
   })
+
+  test('Folder group collapse automatically closes other folders when opening a new folder', async ({ page }) => {
+    const accordionResult = await page.evaluate(() => {
+      const app = window.app
+      if (!app) return { ok: false }
+
+      // Open folder 1
+      app.toggleFolderCollapse('folder-1')
+      const afterFirstOpen = Array.from(app.expandedFolders)
+
+      // Open folder 2
+      app.toggleFolderCollapse('folder-2')
+      const afterSecondOpen = Array.from(app.expandedFolders)
+
+      // Close folder 2
+      app.toggleFolderCollapse('folder-2')
+      const afterClose = Array.from(app.expandedFolders)
+
+      return {
+        ok: true,
+        afterFirstOpen,
+        afterSecondOpen,
+        afterClose
+      }
+    })
+
+    expect(accordionResult.ok).toBe(true)
+    expect(accordionResult.afterFirstOpen).toEqual(['folder-1'])
+    expect(accordionResult.afterSecondOpen).toEqual(['folder-2'])
+    expect(accordionResult.afterClose).toEqual([])
+  })
 })
 
