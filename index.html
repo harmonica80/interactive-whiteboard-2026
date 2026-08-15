@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.8.4</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.8.5</span>
         </p>
       </div>
       <div class="top-actions">
@@ -61,7 +61,7 @@
       <div class="panel-card active" id="panel-questions">
         <div class="panel-body">
           <div class="question-input-group">
-            <input type="text" id="questionInput" class="question-input" placeholder="輸入您的問題...">
+            <textarea id="questionInput" class="question-input question-textarea" placeholder="請在此輸入您的問題...（支援自由換行，或按 Ctrl+Enter 快速提問）" rows="3"></textarea>
             <button id="askBtn" class="ask-btn">提問</button>
           </div>
           <ul id="questionList" class="question-list" style="margin-bottom: 16px;"></ul>
@@ -1064,14 +1064,14 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=284"></script>
-  <script src="js/character_pool.js?v=284"></script>
-  <script src="js/classics_quiz_pool.js?v=284"></script>
-  <script src="js/focus_question_bank.js?v=284"></script>
-  <script src="js/timer_music_manager.js?v=284"></script>
-  <script src="js/quiz.js?v=284"></script>
-  <script src="js/app.js?v=284"></script>
-  <script src="js/classics_quiz.js?v=284"></script>
+  <script src="js/firebase-config.js?v=285"></script>
+  <script src="js/character_pool.js?v=285"></script>
+  <script src="js/classics_quiz_pool.js?v=285"></script>
+  <script src="js/focus_question_bank.js?v=285"></script>
+  <script src="js/timer_music_manager.js?v=285"></script>
+  <script src="js/quiz.js?v=285"></script>
+  <script src="js/app.js?v=285"></script>
+  <script src="js/classics_quiz.js?v=285"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -1083,8 +1083,8 @@ Python</pre>
       <button id="questionModalNext" class="modal-nav-btn" style="right: 15px;" title="下一個">▶</button>
       
       <div class="modal-body" style="padding: 40px 30px 30px 30px;">
-        <div id="questionModalUser" class="question-user" style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-secondary); text-align: center;"></div>
-        <div id="questionModalText" class="question-text" style="font-size: 18px; color: var(--text-primary); line-height: 1.6; word-break: break-all; margin-bottom: 24px; text-align: center; white-space: pre-wrap;"></div>
+        <div id="questionModalUser" class="question-user" style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-secondary); text-align: left;"></div>
+        <div id="questionModalText" class="question-text" style="font-size: 16px; color: var(--text-primary); line-height: 1.6; word-break: break-word; margin-bottom: 24px; text-align: left; white-space: pre-wrap; background: var(--bg-input); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);"></div>
         
         <!-- 複製內容與表情符號回饋 -->
         <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px; flex-wrap: wrap;">

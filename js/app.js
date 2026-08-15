@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.8.4';
+    this.APP_VERSION = '2.8.5';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -2288,8 +2288,12 @@ class App {
     };
     
     this.askBtn.addEventListener('click', submitQuestion);
-    this.questionInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') submitQuestion();
+    this.questionInput.addEventListener('keydown', (e) => {
+      // 支援按 Ctrl+Enter 或 Cmd+Enter 快速送出提問；直接按 Enter 則允許正常換行
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        submitQuestion();
+      }
     });
   }
   

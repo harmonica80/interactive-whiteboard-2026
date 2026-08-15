@@ -179,5 +179,27 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(navResult.f2Ids).toEqual(['img2'])
     expect(navResult.unassignedIds).toEqual(['img4'])
   })
+
+  test('Question Input is a multi-line textarea supporting newlines and left-aligned text', async ({ page }) => {
+    // Check question input is textarea
+    const tagName = await page.locator('#questionInput').evaluate(el => el.tagName.toLowerCase())
+    expect(tagName).toBe('textarea')
+
+    // Test filling multi-line question
+    await page.fill('#questionInput', '第一行問題\n第二行問題\n第三行問題')
+    const val = await page.inputValue('#questionInput')
+    expect(val).toContain('\n')
+
+    // Verify CSS styles
+    const styles = await page.locator('#questionInput').evaluate(el => {
+      const computed = window.getComputedStyle(el)
+      return {
+        textAlign: computed.textAlign,
+        whiteSpace: computed.whiteSpace
+      }
+    })
+    expect(styles.textAlign).toBe('left')
+    expect(styles.whiteSpace).toContain('pre-wrap')
+  })
 })
 

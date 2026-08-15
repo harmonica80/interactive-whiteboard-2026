@@ -1,4 +1,17 @@
 # System Log
+## 2026-08-15 - ver 2.8.5 提問輸入框加大支援多行換行、留言換行保留與靠左對齊優化
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **提問輸入框加大與多行支援 (`textarea`)**：
+     - 將提問區單行輸入框升級為加大版多行文字框（`question-textarea`），使用者可自由按 `Enter` 換行編排長篇提問或分點說明。
+     - 支援 `Ctrl + Enter` / `Cmd + Enter` 快捷鍵或點擊加大「提問」按鈕快速送出。
+  2. **提問卡片、彈窗與留言內容換行保留與靠左對齊**：
+     - 所有提問卡片內容、提問詳細檢視彈窗（`#questionModalText`）及所有留言回饋（`.comment-text`）統一套用 `white-space: pre-wrap; word-break: break-word; text-align: left;`，100% 完整保留原始文字換行格式與段落結構。
+     - 詳細檢視彈窗與留言全面調整為更符合閱讀習慣的「靠左對齊」。
+  3. **自動化測試**：
+     - 於 `tests/focus-question-bank.spec.mjs` 增加多行提問與樣式驗證測試。
+
+---
 ## 2026-08-15 - ver 2.8.4 抽人轉盤姓名文字大小調降一級與邊距間隔舒適化
 - 影響檔案：`js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`。
 - 修改項目：
