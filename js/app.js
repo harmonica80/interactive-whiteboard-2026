@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.8.6';
+    this.APP_VERSION = '2.8.7';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -1084,8 +1084,11 @@ class App {
 
   toggleFolderCollapse(folderId) {
     if (this.expandedFolders.has(folderId)) {
+      // 點擊已展開群組時收合
       this.expandedFolders.delete(folderId);
     } else {
+      // 開啟群組清單時，自動折疊其他群組（手風琴效果）
+      this.expandedFolders.clear();
       this.expandedFolders.add(folderId);
     }
     this.renderQuestions();
