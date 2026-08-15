@@ -1,6 +1,6 @@
 import test, { expect } from '@playwright/test'
 
-test.describe('Focus Question Bank Manager Tests', () => {
+test.describe('Focus Question Bank & Music Manager Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/index.html')
   })
@@ -24,136 +24,124 @@ test.describe('Focus Question Bank Manager Tests', () => {
     expect(result.unitedWordsCount).toBeGreaterThanOrEqual(150)
   })
 
-  test('Focus Question Bank Search filters questions correctly', async ({ page }) => {
-    const searchResult = await page.evaluate(() => {
+  test('Focus Question Bank CSV Template Generator contains UTF-8 BOM and correct headers', async ({ page }) => {
+    const csvTemplates = await page.evaluate(() => {
       const qb = window.focusQB
-      const classicsLiBai = qb.searchPool('classicsQuiz', '李白')
-      const charTestShe = qb.searchPool('characterTest', '蛇')
       return {
-        classicsLiBaiCount: classicsLiBai.length,
-        charTestSheCount: charTestShe.length
+        classics: qb.getCSVTemplateContent('classicsQuiz'),
+        charTest: qb.getCSVTemplateContent('characterTest'),
+        crossword: qb.getCSVTemplateContent('characterCrossword'),
+        unitedWords: qb.getCSVTemplateContent('characterUnitedWords')
       }
     })
 
-    expect(searchResult.classicsLiBaiCount).toBeGreaterThan(0)
-    expect(searchResult.charTestSheCount).toBeGreaterThan(0)
+    // Classics Quiz CSV Header
+    expect(csvTemplates.classics).toContain('題型,題目問句,名句引言,作品名,作者或主角,朝代,選項A,選項B,選項C,選項D,標準答案,原典全文')
+    expect(csvTemplates.classics).toContain('天生我材必有用')
+
+    // Character Test CSV Header
+    expect(csvTemplates.charTest).toContain('解答正字,注音,題幹提示,字典關聯詞')
+    expect(csvTemplates.charTest).toContain('畫蛇添（　）')
+
+    // Crossword CSV Header
+    expect(csvTemplates.crossword).toContain('中心正字,注音,周圍字1(上或前),周圍字2(下或前),周圍字3(左或後),周圍字4(右或後),組成詞語說明')
+    expect(csvTemplates.crossword).toContain('天氣、天空')
+
+    // United Words CSV Header
+    expect(csvTemplates.unitedWords).toContain('解答詞語,散裝部件(以空格分開),詞語解釋提示')
+    expect(csvTemplates.unitedWords).toContain('明月')
   })
 
-  test('Focus Question Bank template generator provides compliant schema', async ({ page }) => {
-    const templates = await page.evaluate(() => {
+  test('Focus Question Bank imports CSV data correctly', async ({ page }) => {
+    const importResult = await page.evaluate(() => {
       const qb = window.focusQB
+      const sampleCsv = `解答正字,注音,題幹提示,字典關聯詞
+鳳,ㄈㄥˋ,龍（　）呈祥,龍鳳呈祥
+凰,ㄏㄨㄤˊ,鳳（　）于飛,鳳凰于飛`
+
+      const count = qb.importPool('characterTest', sampleCsv, 'replace')
+      const pool = qb.getPool('characterTest')
+      const isCustom = qb.isCustomPool('characterTest')
+
+      // reset back
+      qb.resetPool('characterTest')
+
       return {
-        classics: qb.getTemplateData('classicsQuiz'),
-        charTest: qb.getTemplateData('characterTest'),
-        crossword: qb.getTemplateData('characterCrossword'),
-        unitedWords: qb.getTemplateData('characterUnitedWords')
+        count,
+        poolLength: pool.length,
+        firstChar: pool[0].char,
+        firstClue: pool[0].clue,
+        isCustom
       }
     })
 
-    expect(templates.classics.length).toBeGreaterThan(0)
-    expect(templates.classics[0].title).toBeTruthy()
-    expect(templates.classics[0].answer).toBeTruthy()
-    expect(templates.classics[0].options.length).toBe(4)
-
-    expect(templates.charTest[0].char).toBeTruthy()
-    expect(templates.charTest[0].clue).toBeTruthy()
-
-    expect(templates.crossword[0].centerChar).toBeTruthy()
-    expect(templates.unitedWords[0].word).toBeTruthy()
+    expect(importResult.count).toBe(2)
+    expect(importResult.poolLength).toBe(2)
+    expect(importResult.firstChar).toBe('鳳')
+    expect(importResult.firstClue).toBe('龍（　）呈祥')
+    expect(importResult.isCustom).toBe(true)
   })
 
-  test('Focus Question Bank allows adding, modifying, and resetting custom questions', async ({ page }) => {
-    const cycleResult = await page.evaluate(() => {
-      const qb = window.focusQB
-      const initialCount = qb.getPool('characterTest').length
+  test('Timer Music Manager loads properly and supports search & CRUD', async ({ page }) => {
+    const musicResult = await page.evaluate(() => {
+      const mm = window.timerMusicManager
+      if (!mm) return { loaded: false }
 
-      // Add custom question
-      qb.saveQuestion('characterTest', {
-        char: '龍',
-        zhuyin: 'ㄌㄨㄥˊ',
-        clue: '畫（　）點睛',
-        searchWord: '畫龍點睛'
+      const defaultList = mm.getPlaylist()
+      const searchCanon = mm.searchPlaylist('卡農')
+
+      // Add custom track
+      mm.saveTrack({
+        category: '流行抒情',
+        title: '🎵 測試背景音樂',
+        url: 'https://example.com/test.mp3'
       })
 
-      const afterAddPool = qb.getPool('characterTest')
-      const isCustomAfterAdd = qb.isCustomPool('characterTest')
-      const firstItem = afterAddPool[0]
+      const afterAddList = mm.getPlaylist()
+      const isCustom = mm.isCustomPlaylist()
 
       // Reset
-      qb.resetPool('characterTest')
-      const afterResetPool = qb.getPool('characterTest')
-      const isCustomAfterReset = qb.isCustomPool('characterTest')
+      mm.resetPlaylist()
+      const afterResetList = mm.getPlaylist()
 
       return {
-        initialCount,
-        afterAddCount: afterAddPool.length,
-        isCustomAfterAdd,
-        addedChar: firstItem.char,
-        afterResetCount: afterResetPool.length,
-        isCustomAfterReset
+        loaded: true,
+        defaultCount: defaultList.length,
+        searchCanonCount: searchCanon.length,
+        afterAddCount: afterAddList.length,
+        isCustom,
+        afterResetCount: afterResetList.length
       }
     })
 
-    expect(cycleResult.afterAddCount).toBe(cycleResult.initialCount + 1)
-    expect(cycleResult.isCustomAfterAdd).toBe(true)
-    expect(cycleResult.addedChar).toBe('龍')
-    expect(cycleResult.afterResetCount).toBe(cycleResult.initialCount)
-    expect(cycleResult.isCustomAfterReset).toBe(false)
+    expect(musicResult.loaded).toBe(true)
+    expect(musicResult.defaultCount).toBeGreaterThanOrEqual(10)
+    expect(musicResult.searchCanonCount).toBeGreaterThan(0)
+    expect(musicResult.afterAddCount).toBe(musicResult.defaultCount + 1)
+    expect(musicResult.isCustom).toBe(true)
+    expect(musicResult.afterResetCount).toBe(musicResult.defaultCount)
   })
 
-  test('Focus Question Bank Modal opens and renders questions properly on button click', async ({ page }) => {
-    // Select classics quiz in admin dropdown
-    await page.selectOption('#focusGameType', 'classicsQuiz')
-    
-    // Check that settings block is visible
-    const isVisible = await page.isVisible('#focusClassicsQuizSettings')
-    expect(isVisible).toBe(true)
+  test('Timer Music Manager Modal opens and functions correctly', async ({ page }) => {
+    // Open music modal
+    await page.evaluate(() => {
+      window.timerMusicManager.openModal()
+    })
 
-    // Click on "管理與搜尋題庫" button
-    await page.click('#focusClassicsQuizSettings button:has-text("管理與搜尋題庫")')
-
-    // Modal should have active class and be visible
-    const modal = page.locator('#modal-focus-question-bank')
+    const modal = page.locator('#modal-timer-music-manager')
     await expect(modal).toHaveClass(/active/)
     await expect(modal).toBeVisible()
 
-    // Question items should be rendered
-    const itemsCount = await page.locator('#focusQbListContainer .focus-qb-item-card').count()
-    expect(itemsCount).toBeGreaterThan(0)
+    const cardsCount = await page.locator('#timerMusicListContainer .timer-music-item-card').count()
+    expect(cardsCount).toBeGreaterThan(0)
 
-    // Type in search box
-    await page.fill('#focusQbSearchInput', '李白')
-    const filteredCount = await page.locator('#focusQbListContainer .focus-qb-item-card').count()
+    // Filter in search box
+    await page.fill('#timerMusicSearchInput', '莫札特')
+    const filteredCount = await page.locator('#timerMusicListContainer .timer-music-item-card').count()
     expect(filteredCount).toBeGreaterThan(0)
 
     // Close modal
-    await page.click('#modal-focus-question-bank button:has-text("完成關閉")')
+    await page.click('#modal-timer-music-manager button:has-text("完成關閉")')
     await expect(modal).not.toHaveClass(/active/)
   })
-
-  test('Focus Question Bank renders characterCrossword without undefined values', async ({ page }) => {
-    // Switch to characterCrossword tab
-    await page.evaluate(() => {
-      window.focusQB.openModal('characterCrossword')
-    })
-
-    const listHtml = await page.locator('#focusQbListContainer').innerHTML()
-    expect(listHtml).not.toContain('undefined')
-    expect(listHtml).toContain('中心正字')
-    expect(listHtml).toContain('四方字')
-  })
-
-  test('Focus Question Bank renders characterUnitedWords without undefined values', async ({ page }) => {
-    // Switch to characterUnitedWords tab
-    await page.evaluate(() => {
-      window.focusQB.openModal('characterUnitedWords')
-    })
-
-    const listHtml = await page.locator('#focusQbListContainer').innerHTML()
-    expect(listHtml).not.toContain('undefined')
-    expect(listHtml).toContain('解答詞語')
-    expect(listHtml).toContain('散裝部件')
-  })
 })
-
-

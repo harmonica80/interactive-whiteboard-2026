@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.8.0';
+    this.APP_VERSION = '2.8.2';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -135,6 +135,9 @@ class App {
     this.initLuckyWheel();
     this.bindTldrawRealtimeSync();
     this.checkSecurityRuleExpiry();
+    if (window.timerMusicManager) {
+      window.timerMusicManager.updateDropdown();
+    }
     
     // Global user interaction listener to resume audio if blocked by autoplay
     const resumeAudioOnGesture = () => {
