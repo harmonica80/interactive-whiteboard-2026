@@ -1,4 +1,14 @@
 # System Log
+## 2026-08-15 - ver 2.8.6 圖片彈窗比例百分比標籤右移避免遮擋留言區
+- 影響檔案：`css/style.css`, `index.html`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **圖片縮放比例百分比標籤右移 (`.image-modal .zoom-info`)**：
+     - 將圖片詳細檢視視窗中的縮放比例百分比標籤由原先左下角 (`left: 15px; bottom: 80px;`) 移至右側 (`right: 15px; bottom: 120px;`)，配置毛玻璃半透明襯底與 `pointer-events: none;`。
+     - 徹底解決比例數字遮擋左側留言回饋內容與暱稱的問題。
+  2. **自動化測試**：
+     - 於 `tests/focus-question-bank.spec.mjs` 加入縮放比例標籤位置驗證測試。
+
+---
 ## 2026-08-15 - ver 2.8.5 提問輸入框加大支援多行換行、留言換行保留與靠左對齊優化
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：

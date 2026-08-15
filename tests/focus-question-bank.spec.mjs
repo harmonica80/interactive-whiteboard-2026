@@ -201,5 +201,18 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(styles.textAlign).toBe('left')
     expect(styles.whiteSpace).toContain('pre-wrap')
   })
+
+  test('Image modal zoomInfo badge is positioned on the right side', async ({ page }) => {
+    const zoomInfoRight = await page.locator('#zoomInfo').evaluate(el => {
+      const computed = window.getComputedStyle(el)
+      return {
+        position: computed.position,
+        right: computed.right,
+        left: computed.left
+      }
+    })
+    expect(zoomInfoRight.position).toBe('absolute')
+    expect(zoomInfoRight.right).toBe('15px')
+  })
 })
 

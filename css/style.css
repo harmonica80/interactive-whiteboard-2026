@@ -935,14 +935,19 @@ body {
 
 .image-modal .zoom-info {
   position: absolute;
-  bottom: 80px;
-  left: 15px;
-  background: rgba(0,0,0,0.6);
+  bottom: 120px;
+  right: 15px;
+  background: rgba(0,0,0,0.65);
   color: white;
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
+  font-weight: 500;
   z-index: 10;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .image-modal .image-info {
