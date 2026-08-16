@@ -245,5 +245,34 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(accordionResult.afterSecondOpen).toEqual(['folder-2'])
     expect(accordionResult.afterClose).toEqual([])
   })
+
+  test('Question card text has 5-line clamping with ellipsis applied', async ({ page }) => {
+    // Set a question with 10 lines
+    await page.evaluate(() => {
+      const app = window.app
+      if (app) {
+        app.questions = [{
+          id: 'q-long-1',
+          text: '第1行\n第2行\n第3行\n第4行\n第5行\n第6行\n第7行\n第8行\n第9行\n第10行',
+          user: '測試者',
+          timestamp: Date.now()
+        }]
+        app.renderQuestions()
+      }
+    })
+
+    const textEl = page.locator('#questionList .question-item .text').first()
+    const clampStyles = await textEl.evaluate(el => {
+      const computed = window.getComputedStyle(el)
+      return {
+        webkitLineClamp: computed.webkitLineClamp || computed.lineClamp,
+        overflow: computed.overflow,
+        textOverflow: computed.textOverflow
+      }
+    })
+
+    expect(clampStyles.webkitLineClamp).toBe('5')
+    expect(clampStyles.overflow).toBe('hidden')
+  })
 })
 
