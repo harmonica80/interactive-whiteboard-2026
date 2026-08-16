@@ -104,13 +104,23 @@
     { category: '巴洛克', title: '🎵 莫札特 - G大調第13號小夜曲 K.525', url: 'https://www.youtube.com/watch?v=vG_FBIbGuvg' },
     { category: '古典鋼琴', title: '🎵 理查克萊德門 - 夢中的婚禮', url: 'https://www.youtube.com/watch?v=HJDLHuixqG8' },
     { category: '古典鋼琴', title: '🎵 理查克萊德門 - 給愛麗絲', url: 'https://www.youtube.com/watch?v=vDlqmTIw8y0' },
+    { category: '台語經典', title: '🎵 經典台語 - 黃昏的故鄉', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA' },
+    { category: '台語經典', title: '🎵 經典台語 - 望春風', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=224s' },
+    { category: '台語經典', title: '🎵 經典台語 - 河邊春夢', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=379s' },
+    { category: '台語經典', title: '🎵 經典台語 - 雨夜花', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=646s' },
+    { category: '台語經典', title: '🎵 經典台語 - 一支小雨傘', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=783s' },
+    { category: '台語經典', title: '🎵 經典台語 - 風醉雨也醉', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=980s' },
+    { category: '台語經典', title: '🎵 經典台語 - 雪中紅', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1466s' },
+    { category: '台語經典', title: '🎵 經典台語 - 舊情也綿綿', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1687s' },
+    { category: '台語經典', title: '🎵 經典台語 - 無字的情批', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1994s' },
+    { category: '台語經典', title: '🎵 經典台語 - 繁華攏是夢', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=2479s' },
     { category: '輕音樂', title: '🎵 專注 Lofi', url: 'https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-study-112191.mp3' },
     { category: '輕音樂', title: '🎵 爵士鋼琴', url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=soft-relaxing-piano-jazz-11428.mp3' }
   ];
 
   class TimerMusicManager {
     constructor() {
-      this.STORAGE_KEY = 'timer_music_playlist_v1';
+      this.STORAGE_KEY = 'timer_music_playlist_v2';
       this.searchKeyword = '';
       this.editingIndex = -1;
     }

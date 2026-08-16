@@ -274,5 +274,27 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(clampStyles.webkitLineClamp).toBe('5')
     expect(clampStyles.overflow).toBe('hidden')
   })
+
+  test('Timer music manager includes 10 Taiwanese classical piano songs in default playlist', async ({ page }) => {
+    const musicCheck = await page.evaluate(() => {
+      const mm = window.timerMusicManager
+      if (!mm) return { ok: false }
+      const list = mm.getDefaultPlaylist()
+      const twSongs = list.filter(item => item.category === '台語經典')
+      return {
+        ok: true,
+        totalCount: list.length,
+        twCount: twSongs.length,
+        firstSongTitle: twSongs[0] ? twSongs[0].title : '',
+        lastSongTitle: twSongs[twSongs.length - 1] ? twSongs[twSongs.length - 1].title : ''
+      }
+    })
+
+    expect(musicCheck.ok).toBe(true)
+    expect(musicCheck.totalCount).toBe(21)
+    expect(musicCheck.twCount).toBe(10)
+    expect(musicCheck.firstSongTitle).toContain('黃昏的故鄉')
+    expect(musicCheck.lastSongTitle).toContain('繁華攏是夢')
+  })
 })
 
