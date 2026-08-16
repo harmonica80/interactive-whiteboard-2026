@@ -1,4 +1,25 @@
 # System Log
+## 2026-08-16 - ver 2.8.9 倒數計時背景音樂新增10首台語經典鋼琴曲目
+- 影響檔案：`js/timer_music_manager.js`, `index.html`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **預設音樂選單新增「台語經典」分類與 10 首經典曲目**：
+     - 黃昏的故鄉：`https://www.youtube.com/watch?v=lGbrMl8PAYA`
+     - 望春風（224s）：`https://www.youtube.com/watch?v=lGbrMl8PAYA&t=224s`
+     - 河邊春夢（379s）：`https://www.youtube.com/watch?v=lGbrMl8PAYA&t=379s`
+     - 雨夜花（646s）：`https://www.youtube.com/watch?v=lGbrMl8PAYA&t=646s`
+     - 一支小雨傘（783s）：`https://www.youtube.com/watch?v=lGbrMl8PAYA&t=783s`
+     - 風醉雨也醉（980s）：`https://www.youtube.com/watch?v=lGbrMl8PAYA&t=980s`
+     - 雪中紅（1466s）：`https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1466s`
+     - 舊情也綿綿（1687s）：`https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1687s`
+     - 無字的情批（1994s）：`https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1994s`
+     - 繁華攏是夢（2479s）：`https://www.youtube.com/watch?v=lGbrMl8PAYA&t=2479s`
+  2. **倒數計時器選單與音樂管理中心即時同步**：
+     - 在後台「背景音樂」下拉選單與管理中心清單中新增獨立 `<optgroup label="── 台語經典 ──">`。
+     - 播放器精準支援 YouTube 秒數跳轉起播（`startSeconds`）。
+  3. **自動化測試**：
+     - 於 `tests/focus-question-bank.spec.mjs` 增加台語經典鋼琴曲目清單與正確性驗證測試。
+
+---
 ## 2026-08-16 - ver 2.8.8 提問區卡片文字超過5行以省略號截斷、進入詳細模式完整呈現
 - 影響檔案：`css/style.css`, `index.html`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：
