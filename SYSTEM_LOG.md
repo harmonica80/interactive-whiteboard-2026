@@ -1,4 +1,16 @@
 # System Log
+## 2026-08-16 - ver 2.8.8 提問區卡片文字超過5行以省略號截斷、進入詳細模式完整呈現
+- 影響檔案：`css/style.css`, `index.html`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **提問卡片 5 行文字截斷限制 (`-webkit-line-clamp: 5`)**：
+     - 在提問區首頁與分類群組的提問卡片（`.question-item .text`, `.question-item.card-style .text`）中，套用 CSS 5 行文字截斷（`-webkit-line-clamp: 5; line-clamp: 5; overflow: hidden; text-overflow: ellipsis;`）。
+     - 超過 5 行的長篇問題或多行換行留言，卡片上僅預覽前 5 行並於末端呈現「…」省略號，維持頁面卡片排版整齊俐落。
+  2. **點選進入彈窗詳細模式完整呈現**：
+     - 使用者點擊卡片進入詳細檢視彈窗（`showQuestionModal`）時，不受行數限制，100% 完整呈現全部問題內容、換行排版與留言回饋。
+  3. **自動化測試**：
+     - 於 `tests/focus-question-bank.spec.mjs` 增加提問卡片 5 行截斷與省略號驗證測試。
+
+---
 ## 2026-08-15 - ver 2.8.7 群組展開時自動折疊其他群組（手風琴模式）與版本號規則確立
 - 影響檔案：`js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：
