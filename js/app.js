@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.9.1';
+    this.APP_VERSION = '2.9.2';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -8168,6 +8168,7 @@ class App {
   // ===== 抽人轉盤功能 =====
   initLuckyWheel() {
     this.wheelNames = [];
+    this.wheelOriginalNames = [];
     this.wheelAngle = 0;
     this.wheelSpinning = false;
     this.wheelRemoveWinner = false;
@@ -8175,6 +8176,14 @@ class App {
     this.wheelSoundStyle = 0; // 預設音效樣式 index
     this.soundEffects = new WheelSoundEffects();
     
+    // 監聽原始完整名單
+    db.ref('quiz/luckyWheel/originalNames').on('value', (snapshot) => {
+      const val = snapshot.val();
+      if (val !== null && val !== '') {
+        this.wheelOriginalNames = val.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+      }
+    });
+
     // 監聽轉盤名單 (教師每次輸入後才同步)
     db.ref('quiz/luckyWheel/names').on('value', (snapshot) => {
       const val = snapshot.val();
@@ -8183,6 +8192,10 @@ class App {
       
       this.wheelNames = namesStr.split('\n').map(n => n.trim()).filter(n => n.length > 0);
       
+      if (!this.wheelOriginalNames || this.wheelOriginalNames.length === 0) {
+        this.wheelOriginalNames = [...this.wheelNames];
+      }
+
       const txt = document.getElementById('wheelNamesInput');
       if (txt && this.isAdmin) {
         // 只在非聚焦狀態下同步（避免覆蓋正在輸入的內容）
@@ -8254,6 +8267,8 @@ class App {
         debounceTimer = setTimeout(() => {
           this.pendingRemoveWinner = null;
           const newNames = txt.value.trim();
+          this.wheelOriginalNames = newNames.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+          db.ref('quiz/luckyWheel/originalNames').set(newNames);
           db.ref('quiz/luckyWheel/names').set(newNames);
         }, 800);
       });
@@ -8284,6 +8299,8 @@ class App {
       const j = Math.floor(Math.random() * (i + 1));
       [names[i], names[j]] = [names[j], names[i]];
     }
+    this.wheelOriginalNames = [...names];
+    db.ref('quiz/luckyWheel/originalNames').set(names.join('\n'));
     db.ref('quiz/luckyWheel/names').set(names.join('\n'));
     this.showNotification('成功', '名單已隨機打亂！');
   }
@@ -8296,6 +8313,8 @@ class App {
       this.pendingRemoveWinner = null;
     }
     const names = [...this.wheelNames].sort((a, b) => a.localeCompare(b, 'zh-TW'));
+    this.wheelOriginalNames = [...names];
+    db.ref('quiz/luckyWheel/originalNames').set(names.join('\n'));
     db.ref('quiz/luckyWheel/names').set(names.join('\n'));
     this.showNotification('成功', '名單已完成排序！');
   }
@@ -8495,6 +8514,35 @@ class App {
   }
 
   clearWheelHistory() {
+    if (this.isAdmin) {
+      let restoredNames = [];
+      if (this.wheelOriginalNames && this.wheelOriginalNames.length > 0) {
+        restoredNames = [...this.wheelOriginalNames];
+      } else {
+        const historyItems = [];
+        const list = document.getElementById('wheelHistoryList');
+        if (list) {
+          Array.from(list.querySelectorAll('li span:first-child')).forEach(el => {
+            const name = el.textContent.trim();
+            if (name && name !== '尚無紀錄') historyItems.push(name);
+          });
+        }
+        const set = new Set([...this.wheelNames, ...historyItems]);
+        if (this.pendingRemoveWinner) set.add(this.pendingRemoveWinner);
+        restoredNames = Array.from(set);
+      }
+
+      if (restoredNames.length > 0) {
+        this.wheelNames = [...restoredNames];
+        this.wheelOriginalNames = [...restoredNames];
+        const namesStr = restoredNames.join('\n');
+        db.ref('quiz/luckyWheel/names').set(namesStr);
+        db.ref('quiz/luckyWheel/originalNames').set(namesStr);
+        const txt = document.getElementById('wheelNamesInput');
+        if (txt) txt.value = namesStr;
+      }
+    }
+
     const list = document.getElementById('wheelHistoryList');
     if (list) {
       list.innerHTML = '<li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</li>';
@@ -8504,7 +8552,8 @@ class App {
       banner.style.display = 'none';
     }
     this.pendingRemoveWinner = null;
-    this.showNotification('成功', '已清除抽人記錄！');
+    this.drawWheelLocal();
+    this.showNotification('成功', '已清除抽人記錄並復原轉盤名單！');
   }
 
   drawWheelLocal() {

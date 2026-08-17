@@ -366,5 +366,25 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(clearCheck.beforeClear).toBe(1)
     expect(clearCheck.afterClear).toContain('尚無紀錄')
   })
+
+  test('Clearing wheel history restores original names and adds picked students back', async ({ page }) => {
+    const restoreCheck = await page.evaluate(() => {
+      const app = window.app
+      if (!app) return { ok: false }
+      app.isAdmin = true
+      app.wheelOriginalNames = ['甲生', '乙生', '丙生', '丁生']
+      app.wheelNames = ['乙生', '丙生'] // 假設甲生、丁生已被抽中
+      app.clearWheelHistory()
+      return {
+        ok: true,
+        restoredCount: app.wheelNames.length,
+        restoredNames: [...app.wheelNames]
+      }
+    })
+
+    expect(restoreCheck.ok).toBe(true)
+    expect(restoreCheck.restoredCount).toBe(4)
+    expect(restoreCheck.restoredNames).toEqual(['甲生', '乙生', '丙生', '丁生'])
+  })
 })
 

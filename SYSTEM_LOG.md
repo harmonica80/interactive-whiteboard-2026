@@ -1,4 +1,14 @@
 # System Log
+## 2026-08-17 - ver 2.9.2 清除記錄後自動復原轉盤名單並加回已抽中人員
+- 影響檔案：`js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **清除記錄一鍵復原完整名單 (`clearWheelHistory`)**：
+     - 在「不重複抽人」模式下，每輪抽中人員排除後，系統會於背景維護完整名單快照（`wheelOriginalNames`）。
+     - 當老師點擊「🗑️ 清除記錄」時，系統會自動將所有已抽中的學生姓名重新加回轉盤名單中，並同步刷新輸入框、人數標籤與 Canvas 轉盤扇區，前後台即時復原為完整全班名單。
+  2. **自動化測試**：
+     - 於 `tests/focus-question-bank.spec.mjs` 加入清除記錄時轉盤名單復原加回驗證測試。
+
+---
 ## 2026-08-17 - ver 2.9.1 轉盤支援「不重複抽人」與「清除記錄」按鈕
 - 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：
