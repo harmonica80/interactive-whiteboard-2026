@@ -1,4 +1,19 @@
 # System Log
+## 2026-08-17 - ver 2.9.0 教師分享靠左換行排版、轉盤抽人延後刪除與音效同步優化、唐詩宋詞題庫重構
+- 影響檔案：`css/style.css`, `js/app.js`, `js/classics_quiz_pool.js`, `js/focus_question_bank.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **教師分享文字靠左對齊並保留換行**：
+     - 將教師分享卡片中的文字內容區塊樣式（`.share-item-content-text`）改為靠左對齊（`text-align: left;`），並保留使用者輸入時的斷行與空行（`white-space: pre-wrap; word-break: break-word;`）。
+  2. **隨機抽人轉盤三大體驗升級**：
+     - **延後自名單移除機制 (`pendingRemoveWinner`)**：抽中得獎者後先暫留轉盤與名單上讓全班清楚看見，待老師點擊進行「下一次抽人」時才自動從名單及轉盤中刪除。
+     - **前後台 100% 絕對同步**：旋轉事件傳遞中獎者姓名與名單快照（`namesSnapshot`、`winnerName`），修復因角度計算或名單延遲導致的前後台結果不一致問題。
+     - **音樂與音效優化**：轉盤旋轉停止後立即關閉旋轉音樂；轉盤所有音效（Tick、背景旋律、勝利號角）僅在教師電腦播放，學生端全面靜音避免干擾。
+  3. **唐詩宋詞全新預設題庫重構**：
+     - 將預設題庫全面替換為指定之 41 首經典詩詞（岳飛《滿江紅》、蘇軾《定風波》《水調歌頭》《江城子》《念奴嬌》《題西林壁》、柳永《蝶戀花》、辛棄疾《青玉案》、李白、杜甫、王維、李商隱、李煜等），並完整建置出處篇名、作者朝代與名句解析等題型。
+  4. **自動化測試**：
+     - 於 `tests/focus-question-bank.spec.mjs` 加入教師分享靠左換行樣式、唐詩宋詞新題庫等自動化測試。
+
+---
 ## 2026-08-16 - ver 2.8.9 倒數計時背景音樂新增10首台語經典鋼琴曲目
 - 影響檔案：`js/timer_music_manager.js`, `index.html`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：

@@ -296,5 +296,52 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(musicCheck.firstSongTitle).toContain('黃昏的故鄉')
     expect(musicCheck.lastSongTitle).toContain('繁華攏是夢')
   })
+
+  test('Teacher shares text is left aligned and preserves line breaks', async ({ page }) => {
+    await page.evaluate(() => {
+      const app = window.app
+      if (app) {
+        app.shares = [{
+          id: 'share-test-1',
+          type: 'text',
+          content: '第一行教學叮嚀\n第二行作業提示\n第三行補充說明',
+          timestamp: Date.now()
+        }]
+        app.renderTeacherShares()
+      }
+    })
+
+    const shareText = page.locator('#teacherSharesContainer .share-item-content-text').first()
+    const styles = await shareText.evaluate(el => {
+      const computed = window.getComputedStyle(el)
+      return {
+        textAlign: computed.textAlign,
+        whiteSpace: computed.whiteSpace
+      }
+    })
+
+    expect(styles.textAlign).toBe('left')
+    expect(styles.whiteSpace).toContain('pre-wrap')
+  })
+
+  test('Classics quiz question pool includes Yue Fei and Su Shi new default poems', async ({ page }) => {
+    const classicsCheck = await page.evaluate(() => {
+      const pool = window.CLASSICS_QUIZ_POOL || []
+      const yueFei = pool.find(item => item.work && item.work.includes('滿江紅'))
+      const suShi = pool.find(item => item.work && item.work.includes('定風波'))
+      const liuYong = pool.find(item => item.work && item.work.includes('蝶戀花'))
+      return {
+        hasPool: pool.length > 0,
+        hasYueFei: !!yueFei,
+        hasSuShi: !!suShi,
+        hasLiuYong: !!liuYong
+      }
+    })
+
+    expect(classicsCheck.hasPool).toBe(true)
+    expect(classicsCheck.hasYueFei).toBe(true)
+    expect(classicsCheck.hasSuShi).toBe(true)
+    expect(classicsCheck.hasLiuYong).toBe(true)
+  })
 })
 

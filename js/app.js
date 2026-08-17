@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.8.9';
+    this.APP_VERSION = '2.9.0';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -3508,7 +3508,7 @@ class App {
     if (item.type === 'text') {
       contentHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-          <div class="share-item-content-text" style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 80px;">${this.escapeHtml(item.content)}</div>
+          <div class="share-item-content-text" style="flex: 1; text-align: left; min-height: 80px; white-space: pre-wrap; word-break: break-word; line-height: 1.5; padding: 4px 0;">${this.linkify ? this.linkify(item.content) : this.escapeHtml(item.content)}</div>
           <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
             <button class="share-copy-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)">📋 複製文字</button>
           </div>
@@ -8171,6 +8171,7 @@ class App {
     this.wheelAngle = 0;
     this.wheelSpinning = false;
     this.wheelRemoveWinner = false;
+    this.pendingRemoveWinner = null;
     this.wheelSoundStyle = 0; // 預設音效樣式 index
     this.soundEffects = new WheelSoundEffects();
     
@@ -8196,7 +8197,9 @@ class App {
       }
       
       if (!this.wheelSpinning) {
-        this.wheelAngle = 0;
+        if (this.wheelNames.length === 0) {
+          this.wheelAngle = 0;
+        }
         this.drawWheelLocal();
       }
     });
@@ -8249,6 +8252,7 @@ class App {
       txt.addEventListener('input', () => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
+          this.pendingRemoveWinner = null;
           const newNames = txt.value.trim();
           db.ref('quiz/luckyWheel/names').set(newNames);
         }, 800);
@@ -8270,6 +8274,11 @@ class App {
 
   shuffleWheelNames() {
     if (!this.isAdmin) return;
+    if (this.wheelRemoveWinner && this.pendingRemoveWinner) {
+      const pIdx = this.wheelNames.indexOf(this.pendingRemoveWinner);
+      if (pIdx !== -1) this.wheelNames.splice(pIdx, 1);
+      this.pendingRemoveWinner = null;
+    }
     const names = [...this.wheelNames];
     for (let i = names.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -8281,6 +8290,11 @@ class App {
   
   sortWheelNames() {
     if (!this.isAdmin) return;
+    if (this.wheelRemoveWinner && this.pendingRemoveWinner) {
+      const pIdx = this.wheelNames.indexOf(this.pendingRemoveWinner);
+      if (pIdx !== -1) this.wheelNames.splice(pIdx, 1);
+      this.pendingRemoveWinner = null;
+    }
     const names = [...this.wheelNames].sort((a, b) => a.localeCompare(b, 'zh-TW'));
     db.ref('quiz/luckyWheel/names').set(names.join('\n'));
     this.showNotification('成功', '名單已完成排序！');
@@ -8288,6 +8302,7 @@ class App {
 
   toggleRemoveWinner(checked) {
     if (this.isAdmin) {
+      this.wheelRemoveWinner = checked;
       db.ref('quiz/luckyWheel/removeWinner').set(checked);
     }
   }
@@ -8317,6 +8332,17 @@ class App {
   triggerWheelSpin() {
     if (!this.isAdmin) return;
     if (this.wheelSpinning) return;
+    
+    // 若上一輪有待移除的中獎者，在下一次抽人時才正式自名單中移除
+    if (this.wheelRemoveWinner && this.pendingRemoveWinner) {
+      const pIdx = this.wheelNames.indexOf(this.pendingRemoveWinner);
+      if (pIdx !== -1) {
+        this.wheelNames.splice(pIdx, 1);
+        db.ref('quiz/luckyWheel/names').set(this.wheelNames.join('\n'));
+      }
+      this.pendingRemoveWinner = null;
+    }
+
     if (this.wheelNames.length === 0) {
       this.showNotification('提示', '名單列表是空的！');
       return;
@@ -8331,15 +8357,27 @@ class App {
     }
     
     const targetIndex = Math.floor(Math.random() * this.wheelNames.length);
+    const winnerName = this.wheelNames[targetIndex];
     const arcSize = (2 * Math.PI) / this.wheelNames.length;
     
     // 旋轉 8 圈以上，並將 winning index 指向角度 0 (對應右邊 pointer)
-    const targetEndAngle = 8 * 2 * Math.PI + (2 * Math.PI - (targetIndex + 0.5) * arcSize);
+    const currentBaseAngle = this.wheelAngle;
+    const normalizedCurrent = ((currentBaseAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    const desiredFinalNormalized = ((2 * Math.PI - (targetIndex + 0.5) * arcSize) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    let delta = desiredFinalNormalized - normalizedCurrent;
+    if (delta <= 0) {
+      delta += 2 * Math.PI;
+    }
+    const totalRotation = 8 * 2 * Math.PI + delta;
+    const startAngle = currentBaseAngle;
+    const endAngle = currentBaseAngle + totalRotation;
     
     db.ref('quiz/luckyWheel/spinEvent').set({
       targetIndex: targetIndex,
-      startAngle: this.wheelAngle % (2 * Math.PI),
-      endAngle: targetEndAngle,
+      winnerName: winnerName,
+      namesSnapshot: this.wheelNames,
+      startAngle: startAngle,
+      endAngle: endAngle,
       duration: 5000,
       timestamp: firebase.database.ServerValue.TIMESTAMP
     });
@@ -8349,20 +8387,27 @@ class App {
     if (this.wheelSpinning) return;
     this.wheelSpinning = true;
     
+    // 同步快照名單確保前後台 100% 一致
+    if (event.namesSnapshot && Array.isArray(event.namesSnapshot) && event.namesSnapshot.length > 0) {
+      this.wheelNames = [...event.namesSnapshot];
+      const lblCount = document.getElementById('lblWheelCount');
+      if (lblCount) lblCount.textContent = `${this.wheelNames.length} 人`;
+    }
+    
     // 隱藏之前的得獎 Banner
     const banner = document.getElementById('wheelWinnerDisplay');
     if (banner) banner.style.display = 'none';
     
     const startTime = Date.now();
     const duration = event.duration || 5000;
-    const startAngle = event.startAngle || 0;
-    const endAngle = event.endAngle || (10 * Math.PI);
+    const startAngle = (typeof event.startAngle === 'number') ? event.startAngle : (this.wheelAngle || 0);
+    const endAngle = (typeof event.endAngle === 'number') ? event.endAngle : (startAngle + 10 * Math.PI);
     
     const canvas = document.getElementById('wheelCanvas');
     if (!canvas) return;
     
-    // 播放背景歡樂音樂與初始化
-    if (this.soundEffects) {
+    // 音樂與音效：僅在教師/管理員電腦播放（學生端靜音避免干擾）
+    if (this.isAdmin && this.soundEffects) {
       this.soundEffects.init();
       if (this.soundEffects.ctx && this.soundEffects.ctx.state === 'suspended') {
         this.soundEffects.ctx.resume();
@@ -8372,7 +8417,7 @@ class App {
     }
     
     let lastSectorIndex = -1;
-    const arcSize = (2 * Math.PI) / this.wheelNames.length;
+    const arcSize = (2 * Math.PI) / Math.max(1, this.wheelNames.length);
     
     const animate = () => {
       const elapsed = Date.now() - startTime;
@@ -8384,26 +8429,31 @@ class App {
       
       this.drawWheelLocal();
       
-      // 計算指針經過的扇區以播放 Tick 聲 (指標在右側 0 角度)
-      const currentSectorIndex = Math.floor(((2 * Math.PI - (this.wheelAngle % (2 * Math.PI))) % (2 * Math.PI)) / arcSize);
-      if (currentSectorIndex !== lastSectorIndex) {
-        if (this.soundEffects) {
+      // 計算指針經過的扇區以播放 Tick 聲 (僅教師端)
+      if (this.isAdmin && this.soundEffects) {
+        const currentSectorIndex = Math.floor(((2 * Math.PI - (this.wheelAngle % (2 * Math.PI))) % (2 * Math.PI)) / arcSize);
+        if (currentSectorIndex !== lastSectorIndex) {
           this.soundEffects.playTick();
+          lastSectorIndex = currentSectorIndex;
         }
-        lastSectorIndex = currentSectorIndex;
       }
       
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
         this.wheelSpinning = false;
+        this.wheelAngle = endAngle;
+        this.drawWheelLocal();
         
-        // 停止音樂並播放獲勝號角
+        // 轉盤停止後立即停止音樂
         if (this.soundEffects) {
+          this.soundEffects.stopMusic();
+        }
+        if (this.isAdmin && this.soundEffects) {
           this.soundEffects.playWinFanfare();
         }
         
-        const winnerName = this.wheelNames[event.targetIndex];
+        const winnerName = event.winnerName || (this.wheelNames[event.targetIndex] || '');
         
         // 顯示中獎 Banner
         if (banner) {
@@ -8413,15 +8463,13 @@ class App {
         }
         
         // 寫入歷史紀錄
-        this.addWheelHistory(winnerName);
+        if (winnerName) {
+          this.addWheelHistory(winnerName);
+        }
         
-        // 如果開啟了「抽中自動移除名單」且當前是管理員，由管理員將資料回寫 Firebase
-        if (this.isAdmin && this.wheelRemoveWinner) {
-          const idx = this.wheelNames.indexOf(winnerName);
-          if (idx !== -1) {
-            this.wheelNames.splice(idx, 1);
-            db.ref('quiz/luckyWheel/names').set(this.wheelNames.join('\n'));
-          }
+        // 若開啟自動移除：抽中後先留在轉盤上，暫存為待刪除，等下一次抽人時再移除
+        if (this.isAdmin && this.wheelRemoveWinner && winnerName) {
+          this.pendingRemoveWinner = winnerName;
         }
       }
     };
