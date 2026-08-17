@@ -371,20 +371,26 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     const restoreCheck = await page.evaluate(() => {
       const app = window.app
       if (!app) return { ok: false }
+      const origRef = window.db ? window.db.ref : null
+      if (window.db) {
+        window.db.ref = () => ({ set: () => Promise.resolve(), on: () => {} })
+      }
       app.isAdmin = true
-      app.wheelOriginalNames = ['甲生', '乙生', '丙生', '丁生']
-      app.wheelNames = ['乙生', '丙生'] // 假設甲生、丁生已被抽中
+      app.wheelOriginalNames = ['測試生A', '測試生B', '測試生C', '測試生D']
+      app.wheelNames = ['測試生B', '測試生C']
       app.clearWheelHistory()
-      return {
+      const res = {
         ok: true,
         restoredCount: app.wheelNames.length,
         restoredNames: [...app.wheelNames]
       }
+      if (window.db && origRef) window.db.ref = origRef
+      return res
     })
 
     expect(restoreCheck.ok).toBe(true)
     expect(restoreCheck.restoredCount).toBe(4)
-    expect(restoreCheck.restoredNames).toEqual(['甲生', '乙生', '丙生', '丁生'])
+    expect(restoreCheck.restoredNames).toEqual(['測試生A', '測試生B', '測試生C', '測試生D'])
   })
 })
 

@@ -1,4 +1,16 @@
 # System Log
+## 2026-08-17 - ver 2.9.3 轉盤名單輸入即時響應繪製與人數統計同步修正
+- 影響檔案：`js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **名單輸入與貼上即時響應**：
+     - 修復名單輸入框（`wheelNamesInput`）在貼上或修改名單時，若尚未過防抖延遲或未失焦導致轉盤與人數統計未立即更新的問題。
+     - 現在輸入/貼上當下即刻同步更新本地名單陣列、人數徽章（`lblWheelCount`）並即時重繪 Canvas 轉盤扇區，接著同步存入 Firebase。
+  2. **旋轉前優先檢驗現有名單內容**：
+     - 在點擊「開始旋轉」時，若輸入框有最新名單，優先以輸入框內容為基準，確保轉盤名單、人數與實際學生名單 100% 準確無誤。
+  3. **測試隔離**：
+     - 調整自動化測試中對 Firebase 的隔離 Mock，防止測試數據寫入線上資料庫。
+
+---
 ## 2026-08-17 - ver 2.9.2 清除記錄後自動復原轉盤名單並加回已抽中人員
 - 影響檔案：`js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：
