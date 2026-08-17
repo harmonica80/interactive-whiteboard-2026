@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.9.0</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.9.1</span>
         </p>
       </div>
       <div class="top-actions">
@@ -158,7 +158,7 @@
               <div class="control-options" style="margin: 14px 0;">
                 <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; font-size: 13px; color: var(--text-secondary);">
                   <input type="checkbox" id="chkRemoveWinner" onchange="window.app.toggleRemoveWinner(this.checked)" style="width: 16px; height: 16px;">
-                  <span>抽中後，自動從名單移除</span>
+                  <span>不重複抽人</span>
                 </label>
               </div>
 
@@ -189,7 +189,10 @@
               <button class="btn btn-primary" id="btnSpinWheel" onclick="window.app.triggerWheelSpin()" style="width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; font-weight: bold; border-radius: 8px;">🔥 開始旋轉 (或按 Ctrl+Enter)</button>
               
               <div class="results-history" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 12px;">
-                <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary);">🏆 本次抽中記錄：</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <h4 style="margin: 0; font-size: 14px; color: var(--text-primary);">🏆 本次抽中記錄：</h4>
+                  <button type="button" class="btn btn-secondary" onclick="window.app.clearWheelHistory()" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;" title="清除抽中記錄並重設">🗑️ 清除記錄</button>
+                </div>
                 <ul id="wheelHistoryList" style="list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto;">
                   <li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</li>
                 </ul>
@@ -1076,14 +1079,14 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=290"></script>
-  <script src="js/character_pool.js?v=290"></script>
-  <script src="js/classics_quiz_pool.js?v=290"></script>
-  <script src="js/focus_question_bank.js?v=290"></script>
-  <script src="js/timer_music_manager.js?v=290"></script>
-  <script src="js/quiz.js?v=290"></script>
-  <script src="js/app.js?v=290"></script>
-  <script src="js/classics_quiz.js?v=290"></script>
+  <script src="js/firebase-config.js?v=291"></script>
+  <script src="js/character_pool.js?v=291"></script>
+  <script src="js/classics_quiz_pool.js?v=291"></script>
+  <script src="js/focus_question_bank.js?v=291"></script>
+  <script src="js/timer_music_manager.js?v=291"></script>
+  <script src="js/quiz.js?v=291"></script>
+  <script src="js/app.js?v=291"></script>
+  <script src="js/classics_quiz.js?v=291"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
