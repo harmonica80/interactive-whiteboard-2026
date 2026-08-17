@@ -343,5 +343,28 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(classicsCheck.hasSuShi).toBe(true)
     expect(classicsCheck.hasLiuYong).toBe(true)
   })
+
+  test('Lucky wheel has non-duplicate picking checkbox and clear history button', async ({ page }) => {
+    const labelText = await page.locator('label:has(#chkRemoveWinner)').textContent()
+    expect(labelText).toContain('不重複抽人')
+
+    const clearCheck = await page.evaluate(() => {
+      const app = window.app
+      if (!app) return { ok: false }
+      app.addWheelHistory('王小明')
+      const beforeClear = document.getElementById('wheelHistoryList').children.length
+      app.clearWheelHistory()
+      const afterClear = document.getElementById('wheelHistoryList').textContent
+      return {
+        ok: true,
+        beforeClear,
+        afterClear
+      }
+    })
+
+    expect(clearCheck.ok).toBe(true)
+    expect(clearCheck.beforeClear).toBe(1)
+    expect(clearCheck.afterClear).toContain('尚無紀錄')
+  })
 })
 

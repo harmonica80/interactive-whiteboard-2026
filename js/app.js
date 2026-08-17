@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.9.0';
+    this.APP_VERSION = '2.9.1';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -8492,6 +8492,19 @@ class App {
       <span style="color: var(--text-muted); font-size: 12px;">${time}</span>
     `;
     list.insertBefore(li, list.firstChild);
+  }
+
+  clearWheelHistory() {
+    const list = document.getElementById('wheelHistoryList');
+    if (list) {
+      list.innerHTML = '<li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</li>';
+    }
+    const banner = document.getElementById('wheelWinnerDisplay');
+    if (banner) {
+      banner.style.display = 'none';
+    }
+    this.pendingRemoveWinner = null;
+    this.showNotification('成功', '已清除抽人記錄！');
   }
 
   drawWheelLocal() {

@@ -1,4 +1,16 @@
 # System Log
+## 2026-08-17 - ver 2.9.1 轉盤支援「不重複抽人」與「清除記錄」按鈕
+- 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **轉盤選項文字調整**：
+     - 將設定面板中的選項文字由「抽中後，自動從名單移除」修改為更直觀的「不重複抽人」。
+  2. **新增「清除記錄」按鈕 (`clearWheelHistory`)**：
+     - 在「🏆 本次抽中記錄」標題右側新增「🗑️ 清除記錄」按鈕。
+     - 點擊後一鍵清空抽人歷史列表、重設暫存狀態與隱藏獲獎橫幅，方便老師隨時開啟新一輪抽人活動。
+  3. **自動化測試**：
+     - 於 `tests/focus-question-bank.spec.mjs` 加入「不重複抽人」標籤與「清除記錄」按鈕功能驗證測試。
+
+---
 ## 2026-08-17 - ver 2.9.0 教師分享靠左換行排版、轉盤抽人延後刪除與音效同步優化、唐詩宋詞題庫重構
 - 影響檔案：`css/style.css`, `js/app.js`, `js/classics_quiz_pool.js`, `js/focus_question_bank.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：
