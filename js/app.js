@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.9.2';
+    this.APP_VERSION = '2.9.3';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -8258,19 +8258,34 @@ class App {
       });
     }
     
-    // 綁定名單輸入框：防抖動 0.8 秒後存回 Firebase
+    // 綁定名單輸入框：即時同步本地並防抖動存回 Firebase
     const txt = document.getElementById('wheelNamesInput');
     if (txt) {
       let debounceTimer = null;
       txt.addEventListener('input', () => {
+        this.pendingRemoveWinner = null;
+        const newNames = txt.value.trim();
+        const parsed = newNames.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+        this.wheelNames = [...parsed];
+        this.wheelOriginalNames = [...parsed];
+        
+        const lblCount = document.getElementById('lblWheelCount');
+        if (lblCount) {
+          lblCount.textContent = `${this.wheelNames.length} 人`;
+        }
+        
+        if (!this.wheelSpinning) {
+          if (this.wheelNames.length === 0) {
+            this.wheelAngle = 0;
+          }
+          this.drawWheelLocal();
+        }
+        
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-          this.pendingRemoveWinner = null;
-          const newNames = txt.value.trim();
-          this.wheelOriginalNames = newNames.split('\n').map(n => n.trim()).filter(n => n.length > 0);
           db.ref('quiz/luckyWheel/originalNames').set(newNames);
           db.ref('quiz/luckyWheel/names').set(newNames);
-        }, 800);
+        }, 600);
       });
     }
   }
@@ -8352,6 +8367,18 @@ class App {
     if (!this.isAdmin) return;
     if (this.wheelSpinning) return;
     
+    // 若輸入框有名單但尚未同步完成，先以輸入框內容為準
+    const txt = document.getElementById('wheelNamesInput');
+    if (txt && txt.value.trim().length > 0) {
+      const currentInputNames = txt.value.trim().split('\n').map(n => n.trim()).filter(n => n.length > 0);
+      if (currentInputNames.length > 0 && JSON.stringify(currentInputNames) !== JSON.stringify(this.wheelNames)) {
+        this.wheelNames = [...currentInputNames];
+        if (!this.wheelOriginalNames || this.wheelOriginalNames.length === 0) {
+          this.wheelOriginalNames = [...currentInputNames];
+        }
+      }
+    }
+
     // 若上一輪有待移除的中獎者，在下一次抽人時才正式自名單中移除
     if (this.wheelRemoveWinner && this.pendingRemoveWinner) {
       const pIdx = this.wheelNames.indexOf(this.pendingRemoveWinner);
@@ -8365,6 +8392,11 @@ class App {
     if (this.wheelNames.length === 0) {
       this.showNotification('提示', '名單列表是空的！');
       return;
+    }
+    
+    const lblCount = document.getElementById('lblWheelCount');
+    if (lblCount) {
+      lblCount.textContent = `${this.wheelNames.length} 人`;
     }
     
     // 啟動或恢復 AudioContext，避開瀏覽器自動播放限制

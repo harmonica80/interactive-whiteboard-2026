@@ -1,7 +1,7 @@
 {
   "name": "interactive-whiteboard",
   "private": true,
-  "version": "2.9.2",
+  "version": "2.9.3",
   "type": "module",
   "packageManager": "npm@11.17.0",
   "scripts": {
