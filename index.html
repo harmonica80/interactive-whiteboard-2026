@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.9.3</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.9.4</span>
         </p>
       </div>
       <div class="top-actions">
@@ -639,7 +639,7 @@
                   <option value="characterTest">✍️ 一字千金：字力測驗 (手寫/輸入)</option>
                   <option value="characterCrossword">✍️ 一字千金：字字珠璣 (十字選字)</option>
                   <option value="characterUnitedWords">✍️ 一字千金：團結一詞 (部件組詞)</option>
-                  <option value="classicsQuiz">📜 唐詩宋詞・成語典故 (選擇題)</option>
+                  <option value="classicsQuiz">📜 成語與佳句名言典故 (選擇題)</option>
                 </select>
               </div>
               <div id="focusNumberGridSettings" style="margin-bottom: 16px;">
@@ -694,7 +694,7 @@
               <!-- 唐詩宋詞題庫設定與題庫管理 -->
               <div id="focusClassicsQuizSettings" style="display: none; margin-bottom: 20px; padding: 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-input);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-                  <label style="font-weight: bold; font-size: 14px; margin: 0; color: var(--text-primary);">📜 唐詩宋詞・成語典故：</label>
+                  <label style="font-weight: bold; font-size: 14px; margin: 0; color: var(--text-primary);">📜 成語與佳句名言典故：</label>
                   <div id="focusQbBadge_classicsQuiz"></div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
@@ -1079,14 +1079,14 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=293"></script>
-  <script src="js/character_pool.js?v=293"></script>
-  <script src="js/classics_quiz_pool.js?v=293"></script>
-  <script src="js/focus_question_bank.js?v=293"></script>
-  <script src="js/timer_music_manager.js?v=293"></script>
-  <script src="js/quiz.js?v=293"></script>
-  <script src="js/app.js?v=293"></script>
-  <script src="js/classics_quiz.js?v=293"></script>
+  <script src="js/firebase-config.js?v=294"></script>
+  <script src="js/character_pool.js?v=294"></script>
+  <script src="js/classics_quiz_pool.js?v=294"></script>
+  <script src="js/focus_question_bank.js?v=294"></script>
+  <script src="js/timer_music_manager.js?v=294"></script>
+  <script src="js/quiz.js?v=294"></script>
+  <script src="js/app.js?v=294"></script>
+  <script src="js/classics_quiz.js?v=294"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -1590,7 +1590,7 @@ Python</pre>
         <!-- Unit Switcher Tabs -->
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px;">
           <button type="button" class="focus-qb-tab-btn" data-type="classicsQuiz" onclick="window.focusQB.switchTab('classicsQuiz')" style="padding: 10px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; text-align: center; transition: all 0.2s;">
-            📜 唐詩宋詞
+            📜 成語與佳句名言
           </button>
           <button type="button" class="focus-qb-tab-btn" data-type="characterTest" onclick="window.focusQB.switchTab('characterTest')" style="padding: 10px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; text-align: center; transition: all 0.2s;">
             ✍️ 字力測驗

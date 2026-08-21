@@ -392,5 +392,26 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(restoreCheck.restoredCount).toBe(4)
     expect(restoreCheck.restoredNames).toEqual(['測試生A', '測試生B', '測試生C', '測試生D'])
   })
+
+  test('Classics quiz unit is renamed to 成語與佳句名言典故 and contains new preset questions', async ({ page }) => {
+    const check = await page.evaluate(() => {
+      const typeName = window.focusQB ? window.focusQB.getTypeName('classicsQuiz') : ''
+      const pool = window.CLASSICS_QUIZ_POOL || []
+      const q1 = pool.find(item => item.quote && item.quote.includes('好學近乎知'))
+      const q2 = pool.find(item => item.quote && item.quote.includes('凡事豫則立'))
+      const q3 = pool.find(item => item.quote && item.quote.includes('擇善固執'))
+      return {
+        typeName,
+        hasQ1: !!q1,
+        hasQ2: !!q2,
+        hasQ3: !!q3
+      }
+    })
+
+    expect(check.typeName).toBe('成語與佳句名言典故')
+    expect(check.hasQ1).toBe(true)
+    expect(check.hasQ2).toBe(true)
+    expect(check.hasQ3).toBe(true)
+  })
 })
 
