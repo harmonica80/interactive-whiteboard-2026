@@ -99,7 +99,7 @@
 
   class FocusQuestionBankManager {
     constructor() {
-      this.STORAGE_PREFIX = 'focus_qb_v2_';
+      this.STORAGE_PREFIX = 'focus_qb_v3_';
       this.currentActiveType = 'classicsQuiz';
       this.searchKeywords = {
         classicsQuiz: '',
@@ -183,7 +183,7 @@
     // 取得單元中文名稱
     getTypeName(type) {
       const names = {
-        classicsQuiz: '唐詩宋詞・成語典故',
+        classicsQuiz: '成語與佳句名言典故',
         characterTest: '一字千金：字力測驗',
         characterCrossword: '一字千金：字字珠璣',
         characterUnitedWords: '一字千金：團結一詞'
@@ -202,7 +202,7 @@
         const title = item.work || item.title || '';
         const quote = item.quote || item.title || prompt;
         const author = item.author || (item.explanation ? item.explanation.replace(/.*?出自.*?代(.*?)〈.*/, '$1') : '');
-        const category = item.category || (item.author ? '唐詩宋詞' : '成語典故');
+        const category = item.category || (item.author ? '名句典故' : '成語典故');
         const typeBadge = isAuthorQuestion ? '✍️ 問作者/主角' : '📜 問出處/作品';
 
         return {
@@ -350,7 +350,7 @@
           const item = this.normalizeItem(type, rawItem);
           const opts = item.options || ['', '', '', ''];
           const row = [
-            item.category || '唐詩宋詞',
+            item.category || '名句典故',
             item.prompt || '',
             item.quote || '',
             item.title || '',
@@ -423,7 +423,7 @@
       let content = '\uFEFF';
       if (type === 'classicsQuiz') {
         content += '題型,題目問句,名句引言,作品名,作者或主角,朝代,選項A,選項B,選項C,選項D,標準答案,原典全文\r\n';
-        content += '"唐詩宋詞","「天生我材必有用，千金散盡還復來。」是出自哪位詩人的名篇？","天生我材必有用，千金散盡還復來。","將進酒","李白","唐","李白","杜甫","王維","白居易","李白","君不見黃河之水天上來，奔流到海不復回。君不見高堂明鏡悲白髮，朝如青絲暮成雪。人生得意須盡歡，莫使金樽空對月。天生我材必有用，千金散盡還復來。"\r\n';
+        content += '"名句典故","「好學近乎知，力行近乎仁，知恥近乎勇。」是出自？","好學近乎知，力行近乎仁，知恥近乎勇。","中庸","子思","先秦","子思－〈中庸〉","孔子－〈論語〉","孟子－〈孟子〉","荀子－〈荀子〉","子思－〈中庸〉","好學近乎知，力行近乎仁，知恥近乎勇。知斯三者，則知所以修身；知所以修身，則知所以治人；知所以治人，則知所以治天下國家矣。"\r\n';
         content += '"成語典故","「蛇固無足，子安能為之足？」出自哪一個著名成語典故？","蛇固無足，子安能為之足？","畫蛇添足","劉向","西漢","畫蛇添足","掩耳盜鈴","亡羊補牢","自相矛盾","畫蛇添足","楚有祠者，賜其舍人卮酒。舍人相謂曰：「數人飲之不足，一人飲之有餘。請畫地為蛇，先成者飲酒。」一人蛇先成，引酒且飲之，乃左手持卮，右手畫蛇，曰：「吾能為之足。」未成，一人之蛇成，奪其卮曰：「蛇固無足，子安能為之足？」遂飲其酒。為蛇足者，終亡其酒。"\r\n';
       } else if (type === 'characterTest') {
         content += '解答正字,注音,題幹提示,字典關聯詞\r\n';
@@ -474,7 +474,7 @@
 
         if (type === 'classicsQuiz') {
           // 欄位：題型, 題目問句, 名句引言, 作品名, 作者或主角, 朝代, 選項A, 選項B, 選項C, 選項D, 標準答案, 原典全文
-          const category = cols[0] || '唐詩宋詞';
+          const category = cols[0] || '名句典故';
           const prompt = cols[1] || '';
           const quote = cols[2] || cols[3] || prompt;
           const title = cols[3] || quote;

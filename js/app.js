@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.9.3';
+    this.APP_VERSION = '2.9.4';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5877,7 +5877,7 @@ class App {
         ? window.createClassicsQuizQuestions(classicsQuestionCount)
         : [];
       if (selectedQuestions.length !== classicsQuestionCount) {
-        this.showNotification('錯誤', '唐詩宋詞成語題庫未完成載入，請重新整理後再試。');
+        this.showNotification('錯誤', '成語與佳句名言典故題庫未完成載入，請重新整理後再試。');
         return;
       }
     }
@@ -6003,7 +6003,7 @@ class App {
     
     if (game.gameType === 'classicsQuiz') {
       const questionCount = Array.isArray(game.questions) ? game.questions.length : (game.classicsQuestionCount || 5);
-      if (titleEl) titleEl.textContent = '📜 唐詩宋詞・成語典故專注力測驗！';
+      if (titleEl) titleEl.textContent = '📜 成語與佳句名言典故專注力測驗！';
       if (descriptionEl) descriptionEl.textContent = `共有 ${questionCount} 題選擇題；善用「刪去法提示」排除一個錯誤選項，增加答對機會！`;
       if (hintEl) hintEl.textContent = '每題作答後可查看正解、原典全文與導讀連結。';
       return;

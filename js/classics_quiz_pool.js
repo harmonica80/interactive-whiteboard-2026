@@ -1,4 +1,4 @@
-// 唐詩宋詞與成語典故專注力選擇題題庫（200 題）
+// 成語與佳句名言典故專注力選擇題題庫
 // 每筆題目均提供：中讀網優先導讀連結、原典全文連結與延伸介紹連結。
 (function (global) {
   const poetryRows = `
@@ -42,7 +42,10 @@
 憫農二首·其二|李紳|唐|誰知盤中飱，粒粒皆辛苦。
 黃鶴樓|崔顥|唐|晴川歷歷漢陽樹，芳草萋萋鸚鵡洲。
 水調歌頭·明月幾時有|蘇軾|宋|但願人長久，千里共嬋娟。
-相見歡·無言獨上西樓|李煜|南唐|剪不斷，理還亂，是離愁。`.trim().split('\n').map((line) => {
+相見歡·無言獨上西樓|李煜|南唐|剪不斷，理還亂，是離愁。
+中庸|子思|先秦|好學近乎知，力行近乎仁，知恥近乎勇。
+中庸|子思|先秦|凡事豫則立，不豫則廢。
+中庸|子思|先秦|擇善固執。`.trim().split('\n').map((line) => {
     const [title, author, dynasty, quote] = line.split('|')
     return { title, author, dynasty, quote, label: `${author}－〈${title}〉` }
   })
@@ -145,7 +148,7 @@
     const sourceOptions = stableOptions(item.label, poetryLabels, `poetry-source-${index}`)
     pool.push({
       id: `poetry-source-${index + 1}`,
-      category: '唐詩宋詞',
+      category: '名句典故',
       prompt: `「${item.quote}」是出自？`,
       options: sourceOptions,
       correctOption: item.label,
@@ -156,7 +159,7 @@
     })
     pool.push({
       id: `poetry-author-${index + 1}`,
-      category: '唐詩宋詞',
+      category: '名句典故',
       prompt: `「${item.quote}」的作者是？`,
       options: stableOptions(item.author, poetryAuthors, `poetry-author-${index}`),
       correctOption: item.author,
@@ -213,7 +216,7 @@
       };
       return {
         id: item.id || `custom-classics-${idx + 1}`,
-        category: item.category || '唐詩宋詞・成語典故',
+        category: item.category || '成語與佳句名言典故',
         prompt: item.prompt || `「${item.quote || item.title}」的作者／出處是？`,
         options,
         correctOption,

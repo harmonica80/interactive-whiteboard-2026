@@ -1,4 +1,20 @@
 # System Log
+## 2026-08-21 - ver 2.9.4 單元更名為「成語與佳句名言典故」並新增《中庸》等經典名句題庫
+- 影響檔案：`index.html`, `js/classics_quiz_pool.js`, `js/focus_question_bank.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/classics-quiz.spec.mjs`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **單元名稱全面更名為「成語與佳句名言典故」**：
+     - 遊戲類型下拉選單、後台題庫設定、題庫管理中心分頁標籤、作答倒數與提示文字，全面由「唐詩宋詞・成語典故」更新為更涵蓋古今文粹的「成語與佳句名言典故」。
+  2. **新增經典名句預設題目**：
+     - 加入《禮記·中庸》三首經典名句題目與解析：
+       1. 「好學近乎知，力行近乎仁，知恥近乎勇」（先秦 子思《中庸》）
+       2. 「凡事豫則立，不豫則廢」（先秦 子思《中庸》）
+       3. 「擇善固執」（先秦 子思《中庸》）
+     - 包含問出處篇名、問作者朝代與名句解析題型，並自動連結原典與延伸導讀。
+  3. **題庫快取升級與自動化測試**：
+     - 題庫 Storage Prefix 升級至 `focus_qb_v3_`，確保所有客戶端瀏覽器自動獲取全新名句題庫。
+     - 更新 `tests/classics-quiz.spec.mjs` 與 `tests/focus-question-bank.spec.mjs` 相關單元名稱與題庫測試。
+
+---
 ## 2026-08-17 - ver 2.9.3 轉盤名單輸入即時響應繪製與人數統計同步修正
 - 影響檔案：`js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：

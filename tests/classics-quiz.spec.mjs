@@ -15,8 +15,8 @@ test('provides a 200-question classics focus quiz with elimination hints', async
       hasGameMethods: ['startClassicsQuizGame', 'answerClassicsQuiz', 'useClassicsEliminationHint', 'renderClassicsQuizCompleted']
         .every((name) => typeof window.app?.[name] === 'function'),
       leakedAnswers: pool.filter((question) => question.prompt.includes(question.correctOption)).map((question) => question.id),
-      nonQuotePoetryPrompts: pool.filter((question) => question.category === '唐詩宋詞' && !question.prompt.startsWith('「')).map((question) => question.id),
-      nonMainTitleKeywords: pool.filter((question) => question.category === '唐詩宋詞' && (!question.reference.readcKeyword || question.reference.readcKeyword.includes('·'))).map((question) => question.id),
+      nonQuotePoetryPrompts: pool.filter((question) => question.category === '名句典故' && !question.prompt.startsWith('「')).map((question) => question.id),
+      nonMainTitleKeywords: pool.filter((question) => question.category === '名句典故' && (!question.reference.readcKeyword || question.reference.readcKeyword.includes('·'))).map((question) => question.id),
     }
   })
 
