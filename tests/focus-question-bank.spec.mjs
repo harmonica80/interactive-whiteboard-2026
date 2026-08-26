@@ -413,5 +413,39 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(check.hasQ2).toBe(true)
     expect(check.hasQ3).toBe(true)
   })
+
+  test('Classics quiz pool contains 亢龍有悔, 潛龍勿用, 飛龍在天', async ({ page }) => {
+    const check = await page.evaluate(() => {
+      const pool = window.CLASSICS_QUIZ_POOL || []
+      const qKangLong = pool.find(item => (item.quote && item.quote.includes('亢龍有悔')) || (item.work && item.work.includes('亢龍有悔')))
+      const qQianLong = pool.find(item => (item.quote && item.quote.includes('潛龍勿用')) || (item.work && item.work.includes('潛龍勿用')))
+      const qFeiLong = pool.find(item => (item.quote && item.quote.includes('飛龍在天')) || (item.work && item.work.includes('飛龍在天')))
+      return {
+        hasKangLong: !!qKangLong,
+        hasQianLong: !!qQianLong,
+        hasFeiLong: !!qFeiLong
+      }
+    })
+
+    expect(check.hasKangLong).toBe(true)
+    expect(check.hasQianLong).toBe(true)
+    expect(check.hasFeiLong).toBe(true)
+  })
+
+  test('Image modal displays large image from top edge aligned with thumbnail', async ({ page }) => {
+    const styles = await page.evaluate(() => {
+      const container = document.getElementById('imageZoomContainer')
+      const img = document.getElementById('modalImage')
+      const cStyle = container ? window.getComputedStyle(container) : null
+      const iStyle = img ? window.getComputedStyle(img) : null
+      return {
+        alignItems: cStyle ? cStyle.alignItems : '',
+        objectPosition: iStyle ? iStyle.objectPosition : ''
+      }
+    })
+
+    expect(styles.alignItems).toBe('flex-start')
+    expect(styles.objectPosition).toContain('top')
+  })
 })
 

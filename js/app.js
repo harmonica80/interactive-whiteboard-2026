@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.9.4';
+    this.APP_VERSION = '2.9.5';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -1985,6 +1985,16 @@ class App {
     const wrapper = document.getElementById('imageCanvasWrapper');
     if (wrapper) {
       wrapper.style.transform = 'translate(0px, 0px) scale(1)';
+    }
+    
+    const zoomContainer = document.getElementById('imageZoomContainer');
+    if (zoomContainer) {
+      zoomContainer.scrollTop = 0;
+      zoomContainer.scrollLeft = 0;
+    }
+    const modalBody = imageModal.querySelector('.modal-body');
+    if (modalBody) {
+      modalBody.scrollTop = 0;
     }
     
     document.getElementById('zoomInfo').textContent = '100%';

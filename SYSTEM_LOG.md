@@ -1,4 +1,21 @@
 # System Log
+## 2026-08-26 - ver 2.9.5 圖片分享大圖頂部對齊顯示與《易經》乾卦三成語預設題庫新增
+- 影響檔案：`css/style.css`, `js/app.js`, `js/classics_quiz_pool.js`, `js/focus_question_bank.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **圖片分享點選後大圖頂部對齊顯示**：
+     - 修改圖片檢視彈窗容器（`.image-modal .image-zoom-container`）樣式為頂部對齊（`align-items: flex-start;`），並設定圖片（`.modal-image`）的 `object-position: top center;` 與畫布包裝容器（`#imageCanvasWrapper`）的 `transform-origin: top center;`。
+     - 開啟大圖時自動重設捲動位置至頂部（`scrollTop = 0`），確保長圖與各式比例圖片點開時與縮圖一致從最上方開始呈現，不再發生垂直置中截斷頂部內容的問題。
+  2. **新增《易經·乾卦》經典成語典故題庫**：
+     - 加入三首經典成語典故與爻辭名句：
+       1. 「亢龍有悔」（先秦 周文王《易經·乾卦》）
+       2. 「潛龍勿用」（先秦 周文王《易經·乾卦》）
+       3. 「飛龍在天」（先秦 周文王《易經·乾卦》）
+     - 完整提供典故主角、最常見出處、原典全文與白話解析題型。
+  3. **題庫快取升級與自動化測試**：
+     - 題庫 Storage Prefix 升級至 `focus_qb_v4_`，確保客戶端自動加載最新題庫。
+     - 於 `tests/focus-question-bank.spec.mjs` 加入大圖頂部對齊樣式與新成語題目驗證測試。
+
+---
 ## 2026-08-21 - ver 2.9.4 單元更名為「成語與佳句名言典故」並新增《中庸》等經典名句題庫
 - 影響檔案：`index.html`, `js/classics_quiz_pool.js`, `js/focus_question_bank.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/classics-quiz.spec.mjs`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：
