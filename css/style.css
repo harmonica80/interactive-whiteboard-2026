@@ -712,6 +712,7 @@ body {
   width: 140px;
   height: 140px;
   object-fit: cover;
+  object-position: top center;
   border-radius: 10px;
   border: 2px solid var(--border-color);
 }
@@ -2175,6 +2176,7 @@ body {
   cursor: zoom-in;
   transition: transform 0.2s;
   object-fit: cover;
+  object-position: top center;
 }
 .share-item-content-image:hover {
   transform: scale(1.02);

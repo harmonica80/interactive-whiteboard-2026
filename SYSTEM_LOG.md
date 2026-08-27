@@ -1,4 +1,15 @@
 # System Log
+## 2026-08-27 - ver 2.9.6 圖片分享縮圖（小圖）頂部對齊顯示優化
+- 影響檔案：`css/style.css`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **圖片分享縮圖（小圖）頂部對齊顯示**：
+     - 修改圖片卡片縮圖（`.preview-item img`）樣式，加入 `object-position: top center;`，使縮圖卡片（小圖）與大圖一致，遇到直式長圖或不同比例圖片時一律從最上方（標題/首段重點）開始裁切顯示，不再由中間截斷。
+     - 同步更新教師分享圖片縮圖（`.share-item-content-image`）之 `object-position: top center;`。
+  2. **版本號與靜態資源升級**：
+     - 版本號依規範升級為 **`ver 2.9.6`**。
+     - 更新 `css/style.css?v=167` 與腳本快取標記 `v=296`。
+
+---
 ## 2026-08-26 - ver 2.9.5 圖片分享大圖頂部對齊顯示與《易經》乾卦三成語預設題庫新增
 - 影響檔案：`css/style.css`, `js/app.js`, `js/classics_quiz_pool.js`, `js/focus_question_bank.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：

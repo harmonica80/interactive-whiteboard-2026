@@ -447,5 +447,25 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(styles.alignItems).toBe('flex-start')
     expect(styles.objectPosition).toContain('top')
   })
+
+  test('Image thumbnail (.preview-item img) displays from top edge (object-position: top center)', async ({ page }) => {
+    const objPos = await page.evaluate(() => {
+      const el = document.querySelector('.preview-item img') || document.querySelector('.share-item-content-image')
+      if (el) {
+        return window.getComputedStyle(el).objectPosition
+      }
+      // Create temporary element to check CSS rule applied
+      const temp = document.createElement('div')
+      temp.className = 'preview-item'
+      const img = document.createElement('img')
+      temp.appendChild(img)
+      document.body.appendChild(temp)
+      const res = window.getComputedStyle(img).objectPosition
+      document.body.removeChild(temp)
+      return res
+    })
+
+    expect(objPos).toContain('top')
+  })
 })
 
