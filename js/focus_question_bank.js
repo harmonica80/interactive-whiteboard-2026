@@ -99,7 +99,7 @@
 
   class FocusQuestionBankManager {
     constructor() {
-      this.STORAGE_PREFIX = 'focus_qb_v4_';
+      this.STORAGE_PREFIX = 'focus_qb_v5_';
       this.currentActiveType = 'classicsQuiz';
       this.searchKeywords = {
         classicsQuiz: '',

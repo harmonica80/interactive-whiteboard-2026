@@ -1,6 +1,18 @@
 // 一字千金易錯字庫 - 預先準備的 500 題超豐富題庫
 const CHARACTER_TEST_POOL = [
   {
+    "char": "痙",
+    "zhuyin": "ㄐㄧㄥˋ",
+    "clue": "（　）攣",
+    "searchWord": "痙攣"
+  },
+  {
+    "char": "攣",
+    "zhuyin": "ㄌㄨㄢˊ",
+    "clue": "痙（　）",
+    "searchWord": "痙攣"
+  },
+  {
     "char": "足",
     "zhuyin": "ㄗㄨˊ",
     "clue": "畫蛇添（　）",

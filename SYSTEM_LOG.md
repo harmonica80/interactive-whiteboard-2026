@@ -1,4 +1,19 @@
 # System Log
+## 2026-09-02 - ver 2.9.7 預設「字力測驗」題庫新增「痙攣」詞彙
+- 影響檔案：`js/character_pool.js`, `js/focus_question_bank.js`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
+- 修改項目：
+  1. **預設字力測驗題庫加入「痙攣」**：
+     - 在 `CHARACTER_TEST_POOL` 中加入「痙攣」的正字評量題目：
+       - `char: "痙"`, `zhuyin: "ㄐㄧㄥˋ"`, `clue: "（　）攣"`, `searchWord: "痙攣"`
+       - `char: "攣"`, `zhuyin: "ㄌㄨㄢˊ"`, `clue: "痙（　）"`, `searchWord: "痙攣"`
+     - 包含注音、題幹克漏字提示與辭典詞語關聯，支援學生手寫輸入或鍵盤輸入作答。
+  2. **題庫快取鍵升級**：
+     - 升級題庫快取前綴至 `focus_qb_v5_`，確保所有客戶端瀏覽器自動刷新並載入最新預設題庫。
+  3. **版本號與測試更新**：
+     - 依規範增加 `+0.01`，由 `ver 2.9.6` 升級為 **`ver 2.9.7`**。
+     - 更新自動化測試驗證「痙攣」雙字正字與注音規格。
+
+---
 ## 2026-08-27 - ver 2.9.6 圖片分享縮圖（小圖）頂部對齊顯示優化
 - 影響檔案：`css/style.css`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：

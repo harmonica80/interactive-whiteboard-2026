@@ -467,5 +467,24 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
 
     expect(objPos).toContain('top')
   })
+
+  test('Character test pool contains 痙攣 with both 痙 and 攣 entries', async ({ page }) => {
+    const check = await page.evaluate(() => {
+      const pool = window.CHARACTER_TEST_POOL || []
+      const jingItem = pool.find(item => item.char === '痙' && item.searchWord === '痙攣')
+      const luanItem = pool.find(item => item.char === '攣' && item.searchWord === '痙攣')
+      return {
+        hasJing: !!jingItem,
+        jingZhuyin: jingItem?.zhuyin,
+        hasLuan: !!luanItem,
+        luanZhuyin: luanItem?.zhuyin
+      }
+    })
+
+    expect(check.hasJing).toBe(true)
+    expect(check.jingZhuyin).toBe('ㄐㄧㄥˋ')
+    expect(check.hasLuan).toBe(true)
+    expect(check.luanZhuyin).toBe('ㄌㄨㄢˊ')
+  })
 })
 
