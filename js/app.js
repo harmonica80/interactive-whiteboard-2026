@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.9.7';
+    this.APP_VERSION = '2.9.8';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -247,6 +247,16 @@ class App {
     
     // 記錄目前選按的功能選單，供貼上事件判斷用
     this.activeTabId = targetId;
+
+    if (targetId !== 'panel-video-quiz') {
+      if (window.videoQuiz && typeof window.videoQuiz.pauseVideo === 'function') {
+        window.videoQuiz.pauseVideo();
+      }
+    } else {
+      if (window.videoQuiz && typeof window.videoQuiz.init === 'function') {
+        window.videoQuiz.init();
+      }
+    }
 
     if (targetId === 'panel-focus-game') {
       this.handleFocusGameSync(this.focusGame);
@@ -9227,6 +9237,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.app.adminCancelEditShare = adminCancelEditShare;
     window.app.adminSaveShare = adminSaveShare;
     window.app.updateFocusGameAdminOptions();
+    if (window.videoQuiz && typeof window.videoQuiz.init === 'function') {
+      window.videoQuiz.init();
+    }
   } catch (err) {
     console.error("CRITICAL RUNTIME ERROR:", err);
     alert("載入錯誤: " + err.message + "\n" + err.stack);
