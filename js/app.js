@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '2.9.9';
+    this.APP_VERSION = '3.0.0';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -256,6 +256,9 @@ class App {
       if (window.videoQuiz && typeof window.videoQuiz.init === 'function') {
         window.videoQuiz.init();
       }
+      if (window.videoQuiz && typeof window.videoQuiz.onTabEnter === 'function') {
+        window.videoQuiz.onTabEnter();
+      }
     }
 
     if (targetId === 'panel-focus-game') {
@@ -278,6 +281,14 @@ class App {
         buzzOverlay.style.display = 'none';
         buzzOverlay.classList.remove('active');
       }
+      const vqOverlay = document.getElementById('vqQuestionOverlay');
+      if (vqOverlay) {
+        vqOverlay.style.display = 'none';
+      }
+      if (window.videoQuiz) {
+        window.videoQuiz.setAdminState(true);
+        window.videoQuiz.updateAdminBroadcastUI(window.videoQuiz.lastSession);
+      }
     } else {
       if (this.focusGame) this.handleFocusGameSync(this.focusGame);
       if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
@@ -296,9 +307,11 @@ class App {
       setTimeout(() => input.focus(), 300);
     }
     
-    // 立即隱藏遊戲覆蓋層，讓使用者能正常輸入密碼
+    // 立即隱藏遊戲與影片題目覆蓋層，讓使用者能正常輸入密碼
     if (this.focusGame) this.handleFocusGameSync(this.focusGame);
     if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
+    const vqOverlay = document.getElementById('vqQuestionOverlay');
+    if (vqOverlay) vqOverlay.style.display = 'none';
   }
   
   closeAdminPasswordModal() {
@@ -9214,6 +9227,8 @@ function resetAll() {
     db.ref('teacherShares').remove(),
     db.ref('quiz/teacherShareFolders').remove(),
     db.ref('quiz/luckyWheel').remove(),
+    db.ref('quiz/videoQuizSession').remove(),
+    db.ref('quiz/videoQuizAnswers').remove(),
     db.ref('whiteboard').remove(),
     db.ref('whiteboard_room').remove()
   ];
@@ -9256,6 +9271,7 @@ function submitAdminPassword() {
   const pwd = inputEl ? inputEl.value : '';
   if (pwd === '1234') {
     window.app.isAdmin = true;
+    if (window.videoQuiz) window.videoQuiz.setAdminState(true);
     window.app.closeAdminPasswordModal(); // 關閉彈窗
     window.app.switchToTab('panel-admin'); // 自動進入「管理後台」分頁
     window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
@@ -9273,6 +9289,7 @@ function submitAdminPassword() {
 
 function logoutAdmin() {
   window.app.isAdmin = false;
+  if (window.videoQuiz) window.videoQuiz.setAdminState(false);
   window.app.closeAdminPasswordModal();
   window.app.switchToTab('panel-questions'); // 登出後切換回到「提問區分頁」
   window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
@@ -9397,21 +9414,6 @@ function deleteVideo(id) {
 }
 
 
-
-function copyText(elementId) {
-  const inputToCopy = document.getElementById(elementId);
-  inputToCopy.select();
-  inputToCopy.setSelectionRange(0, 99999); // 適用行動端
-
-  try {
-    navigator.clipboard.writeText(inputToCopy.value);
-    window.app.showNotification('成功', '連結已成功複製！');
-  } catch (err) {
-    // 備用方案
-    document.execCommand('copy');
-    window.app.showNotification('成功', '連結已複製！');
-  }
-}
 
 // 倒數計時全域呼叫介面
 function adminStartTimer() {

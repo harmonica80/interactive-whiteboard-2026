@@ -98,6 +98,8 @@ body {
   margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 16px;
+  position: relative;
+  z-index: 2600;
 }
 
 .header {
@@ -732,7 +734,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 3500;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s, visibility 0.3s;
@@ -2818,7 +2820,7 @@ body {
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 2500;
+  z-index: 1500;
   backdrop-filter: blur(4px);
   padding: 16px;
   box-sizing: border-box;

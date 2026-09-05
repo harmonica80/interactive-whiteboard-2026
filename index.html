@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=169">
+  <link rel="stylesheet" href="css/style.css?v=170">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.9.9</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.0.0</span>
         </p>
       </div>
       <div class="top-actions">
@@ -118,35 +118,48 @@
       <!-- 影片出題測驗 -->
       <div class="panel-card" id="panel-video-quiz">
         <div class="panel-body" style="padding: 16px;">
-          <!-- 頂部模式切換列 -->
+          <!-- 頂部模式切換列 (學生端：全班同步 / 個人自主學習) -->
           <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button class="video-quiz-mode-tab active" data-mode="sync">🧑‍🏫 全班同步測驗</button>
               <button class="video-quiz-mode-tab" data-mode="self">🎧 個人自主學習</button>
-              <button class="video-quiz-mode-tab" data-mode="editor">🛠️ 影片出題與題庫管理</button>
             </div>
-            <button class="action-btn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
-              📊 查看全班統計報表
-            </button>
+            <div id="vqStudentTopInfo" style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+              <!-- 狀態提示 -->
+            </div>
           </div>
 
-          <!-- 模式 1: 全班同步測驗 (Teacher-led Sync) -->
+          <!-- 模式 1: 全班同步測驗 (學生端視角) -->
           <div id="vqSyncSection">
-            <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
-              <label for="vqSyncQuizSelect" style="font-weight: bold; font-size: 14px;">選擇測驗單元：</label>
-              <select id="vqSyncQuizSelect" onchange="window.videoQuiz.selectQuiz(this.value)" style="flex: 1; min-width: 220px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;"></select>
-              <button class="action-btn" onclick="window.videoQuiz.startSyncQuizAsTeacher(document.getElementById('vqSyncQuizSelect').value)" style="background: var(--accent-color); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer;">
-                🚀 老師發起同步測驗
-              </button>
-            </div>
-            <div id="vqSyncQuizDesc" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;"></div>
-            
-            <div class="video-quiz-player-container">
-              <div id="vqSyncPlayerContainer" style="width: 100%; height: 100%;"></div>
+            <div id="vqSyncStudentIdleNotice" style="display: none; text-align: center; padding: 40px 20px; background: var(--bg-input); border-radius: 12px; border: 1px dashed var(--border-color); margin-bottom: 16px;">
+              <div style="font-size: 40px; margin-bottom: 10px;">📺</div>
+              <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">目前尚無進行中的全班同步測驗</div>
+              <div style="font-size: 13px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 16px auto; line-height: 1.5;">
+                當老師在管理後台發起測驗時，影片與題目將自動在此同步播放！您也可以點選上方「🎧 個人自主學習」自由練習題庫。
+              </div>
+              <div id="vqAdminQuickLinkWrapper" style="display: none;">
+                <button class="preset-btn" onclick="window.app.switchToTab('panel-admin')" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+                  ⚙️ 前往管理後台發起或管理測驗
+                </button>
+              </div>
             </div>
 
-            <!-- 教師專屬同步控制列 -->
-            <div id="vqSyncTeacherControls" style="display: none;"></div>
+            <div id="vqSyncActivePlayerWrapper">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                  <h3 id="vqSyncQuizTitle" style="margin: 0; font-size: 16px; color: var(--text-primary);">🎬 全班同步測驗</h3>
+                  <div id="vqSyncQuizDesc" style="font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;"></div>
+                </div>
+                <div id="vqSyncLiveBadge" class="badge" style="background: var(--success-color); color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">🟢 廣播連線中</div>
+              </div>
+              
+              <div class="video-quiz-player-container">
+                <div id="vqSyncPlayerContainer" style="width: 100%; height: 100%;"></div>
+              </div>
+
+              <!-- 教師專屬同步控制列 (若為管理員則顯示) -->
+              <div id="vqSyncTeacherControls" style="display: none;"></div>
+            </div>
           </div>
 
           <!-- 模式 2: 個人自主學習測驗 (Self-paced) -->
@@ -163,37 +176,6 @@
             <div class="video-quiz-player-container">
               <div id="vqSelfPlayerContainer" style="width: 100%; height: 100%;"></div>
             </div>
-          </div>
-
-          <!-- 模式 3: 影片出題與題庫管理 (Editor) -->
-          <div id="vqEditorSection" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-              <h3 style="margin: 0; font-size: 16px;">🎬 影片測驗題庫清單</h3>
-              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <button class="action-btn" onclick="window.videoQuiz.openFormatGuideModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看 JSON 與 CSV 題庫格式規範">
-                  📋 範例格式說明
-                </button>
-                <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
-                  ⬇️ 範例檔 (JSON)
-                </button>
-                <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
-                  ⬇️ 範例檔 (CSV)
-                </button>
-                <button class="action-btn" onclick="window.videoQuiz.exportQuizzesJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有影片測驗匯出為 JSON 備份檔">
-                  📤 匯出 JSON
-                </button>
-                <button class="action-btn" onclick="window.videoQuiz.exportQuizzesCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有影片測驗匯出為 CSV 試算表檔">
-                  📤 匯出 CSV
-                </button>
-                <button class="action-btn" onclick="window.videoQuiz.openImportModal()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON 或 CSV 題庫檔案">
-                  📥 匯入題庫
-                </button>
-                <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal()" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">
-                  ➕ 建立新測驗
-                </button>
-              </div>
-            </div>
-            <div id="vqEditorQuizList"></div>
           </div>
         </div>
       </div>
@@ -668,6 +650,89 @@
                 <div id="quizHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
                   <!-- 動態渲染歷史題目項目 -->
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🎬 影片出題測驗管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed" id="adminVideoQuizSection">
+            <div class="admin-section-header">
+              <h3>🎬 影片出題測驗管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <!-- 1. 全班同步廣播控制台 -->
+              <div style="margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                  <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span>🧑‍🏫 全班同步測驗廣播控制</span>
+                    <span id="vqAdminBroadcastStatusBadge" class="badge" style="background: var(--text-muted); color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px;">⚪ 未發起測驗</span>
+                  </h4>
+                  <button class="action-btn" id="vqAdminForceStopBtn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: none;">
+                    ⏹️ 停止測驗廣播
+                  </button>
+                </div>
+
+                <!-- 廣播進行中即時控制台 -->
+                <div id="vqAdminActiveControls" style="display: none; background: rgba(0, 122, 255, 0.08); border: 1.5px solid var(--accent-color); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                      <div style="font-weight: bold; font-size: 15px; color: var(--text-primary);" id="vqAdminCurrentQuizTitle">當前測驗：-</div>
+                      <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;" id="vqAdminCurrentQuizProgress">狀態：-</div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button class="action-btn" onclick="window.videoQuiz.resumeSyncPlayback()" style="background: var(--success-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                        ▶ 繼續播放影片
+                      </button>
+                      <button class="action-btn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                        📊 查看答題統計
+                      </button>
+                      <button class="action-btn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                        ⏹️ 結束全班測驗
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 發起測驗列 -->
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <label for="vqAdminQuizSelect" style="font-weight: bold; font-size: 14px; color: var(--text-secondary); white-space: nowrap;">選擇同步測驗單元：</label>
+                  <select id="vqAdminQuizSelect" onchange="window.videoQuiz.selectQuiz(this.value)" style="flex: 1; min-width: 220px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;"></select>
+                  <button class="action-btn" onclick="window.videoQuiz.startSyncQuizAsTeacher(document.getElementById('vqAdminQuizSelect').value)" style="background: var(--accent-color); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">
+                    🚀 發起全班同步測驗
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2. 影片測驗題庫管理區 -->
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                  <h4 style="margin: 0; font-size: 15px; color: var(--text-primary);">📁 題庫管理與出題工具</h4>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="action-btn" onclick="window.videoQuiz.openFormatGuideModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看 JSON 與 CSV 題庫格式規範">
+                      📋 範例格式說明
+                    </button>
+                    <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
+                      ⬇️ 範例檔 (JSON)
+                    </button>
+                    <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
+                      ⬇️ 範例檔 (CSV)
+                    </button>
+                    <button class="action-btn" onclick="window.videoQuiz.exportQuizzesJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有影片測驗匯出為 JSON 備份檔">
+                      📤 匯出 JSON
+                    </button>
+                    <button class="action-btn" onclick="window.videoQuiz.exportQuizzesCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有影片測驗匯出為 CSV 試算表檔">
+                      📤 匯出 CSV
+                    </button>
+                    <button class="action-btn" onclick="window.videoQuiz.openImportModal()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON 或 CSV 題庫檔案">
+                      📥 匯入題庫
+                    </button>
+                    <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal()" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">
+                      ➕ 建立新測驗
+                    </button>
+                  </div>
+                </div>
+                <div id="vqAdminEditorQuizList"></div>
               </div>
             </div>
           </div>
@@ -1163,15 +1228,15 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=299"></script>
-  <script src="js/character_pool.js?v=299"></script>
-  <script src="js/classics_quiz_pool.js?v=299"></script>
-  <script src="js/focus_question_bank.js?v=299"></script>
-  <script src="js/timer_music_manager.js?v=299"></script>
-  <script src="js/quiz.js?v=299"></script>
-  <script src="js/app.js?v=299"></script>
-  <script src="js/classics_quiz.js?v=299"></script>
-  <script src="js/video_quiz.js?v=299"></script>
+  <script src="js/firebase-config.js?v=300"></script>
+  <script src="js/character_pool.js?v=300"></script>
+  <script src="js/classics_quiz_pool.js?v=300"></script>
+  <script src="js/focus_question_bank.js?v=300"></script>
+  <script src="js/timer_music_manager.js?v=300"></script>
+  <script src="js/quiz.js?v=300"></script>
+  <script src="js/app.js?v=300"></script>
+  <script src="js/classics_quiz.js?v=300"></script>
+  <script src="js/video_quiz.js?v=300"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

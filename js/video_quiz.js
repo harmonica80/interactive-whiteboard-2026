@@ -118,6 +118,8 @@
       this.currentActiveQuestion = null;
       this.userAnswers = {}; // { qId: { answer, isCorrect, score } }
       this.isTeacher = false;
+      this.lastSession = null;
+      this.pendingQuestion = null;
       
       // 編輯器暫存
       this.editingQuiz = null;
@@ -205,6 +207,47 @@
       if (this.quizzes.length > 0) {
         this.selectQuiz(this.quizzes[0].id);
       }
+
+      if (window.app && window.app.isAdmin) {
+        this.setAdminState(true);
+      }
+    }
+
+    // 管理員登入 / 登出狀態連動
+    setAdminState(isAdmin) {
+      this.isTeacher = !!isAdmin;
+      const link = document.getElementById('vqAdminQuickLinkWrapper');
+      if (link) link.style.display = this.isTeacher ? 'block' : 'none';
+      this.renderQuizSelector();
+      this.renderEditorQuizList();
+      this.updateAdminBroadcastUI(this.lastSession);
+      const ctrls = document.getElementById('vqSyncTeacherControls');
+      if (ctrls) {
+        ctrls.style.display = (this.isTeacher && this.lastSession && this.lastSession.status !== 'idle') ? 'block' : 'none';
+      }
+    }
+
+    // 當切換進入「影片出題測驗」分頁時的觸發邏輯
+    onTabEnter() {
+      if (this.lastSession && this.lastSession.status !== 'idle') {
+        const studentNotice = document.getElementById('vqSyncStudentIdleNotice');
+        const activeWrapper = document.getElementById('vqSyncActivePlayerWrapper');
+        if (studentNotice) studentNotice.style.display = 'none';
+        if (activeWrapper) activeWrapper.style.display = 'block';
+
+        if (!this.playerType || !this.isPlayerReady) {
+          if (this.lastSession.quizData) {
+            this.activeQuiz = this.lastSession.quizData;
+            this.setupPlayer('vqSyncPlayerContainer', this.lastSession.quizData.videoUrl, () => {
+              if (this.lastSession.status === 'playing') this.playVideo();
+            });
+          }
+        }
+
+        if (this.lastSession.status === 'question' && this.lastSession.currentQuestion && !this.isTeacher) {
+          this.showQuestionOverlay(this.lastSession.currentQuestion, false);
+        }
+      }
     }
 
     // 綁定 UI 事件
@@ -259,12 +302,15 @@
         this.renderEditorQuizList();
       } else if (mode === 'self' && this.activeQuiz) {
         this.startSelfPacedQuiz(this.activeQuiz.id);
+      } else if (mode === 'sync') {
+        this.handleRemoteSessionUpdate(this.lastSession);
       }
     }
 
-    // 渲染主畫面測驗選擇選單
+    // 渲染主畫面與後台測驗選擇選單
     renderQuizSelector() {
       const selects = [
+        document.getElementById('vqAdminQuizSelect'),
         document.getElementById('vqSyncQuizSelect'),
         document.getElementById('vqSelfQuizSelect')
       ];
@@ -279,6 +325,61 @@
           sel.value = curVal;
         }
       });
+    }
+
+    // 更新管理後台廣播狀態 UI
+    updateAdminBroadcastUI(session) {
+      const badge = document.getElementById('vqAdminBroadcastStatusBadge');
+      const forceStopBtn = document.getElementById('vqAdminForceStopBtn');
+      const activeControls = document.getElementById('vqAdminActiveControls');
+      const currentTitle = document.getElementById('vqAdminCurrentQuizTitle');
+      const currentProgress = document.getElementById('vqAdminCurrentQuizProgress');
+
+      if (!session || session.status === 'idle') {
+        if (badge) {
+          badge.textContent = '⚪ 未發起測驗';
+          badge.style.background = 'var(--text-muted)';
+        }
+        if (forceStopBtn) forceStopBtn.style.display = 'none';
+        if (activeControls) activeControls.style.display = 'none';
+        return;
+      }
+
+      if (forceStopBtn) forceStopBtn.style.display = 'inline-block';
+      if (activeControls) activeControls.style.display = 'block';
+      if (currentTitle) {
+        currentTitle.textContent = `當前測驗：${session.quizData?.title || '全班同步測驗'}`;
+      }
+
+      if (badge) {
+        if (session.status === 'playing') {
+          badge.textContent = '🟢 正在播放中';
+          badge.style.background = 'var(--success-color)';
+        } else if (session.status === 'question') {
+          const qIdx = (session.currentQuestionIndex ?? -1) + 1;
+          badge.textContent = `🟡 測驗作答中 (第 ${qIdx} 題)`;
+          badge.style.background = '#ff9500';
+        } else if (session.status === 'completed') {
+          badge.textContent = '🔵 測驗已結束';
+          badge.style.background = '#007aff';
+        } else {
+          badge.textContent = '🟣 準備中';
+          badge.style.background = '#5856d6';
+        }
+      }
+
+      if (currentProgress) {
+        if (session.status === 'playing') {
+          currentProgress.textContent = `狀態：影片同步播放中...`;
+        } else if (session.status === 'question') {
+          const q = session.currentQuestion;
+          currentProgress.textContent = `狀態：作答中 -「${q?.prompt || ''}」`;
+        } else if (session.status === 'completed') {
+          currentProgress.textContent = `狀態：全體測驗完成，已統計成績`;
+        } else {
+          currentProgress.textContent = `狀態：等待開始播放...`;
+        }
+      }
     }
 
     // 選取指定測驗
@@ -500,6 +601,11 @@
         });
       }
 
+      // 自動切換至「影片出題測驗」前台畫面以供投影與播放
+      if (window.app && typeof window.app.switchToTab === 'function') {
+        window.app.switchToTab('panel-video-quiz');
+      }
+
       // 教師端載入播放器並監聽時間點
       this.setupPlayer('vqSyncPlayerContainer', quiz.videoUrl, () => {
         this.renderSyncTeacherControls();
@@ -514,9 +620,21 @@
         this.sessionRef.set({ status: 'idle', updatedAt: Date.now() });
       }
       this.destroyPlayer();
-      this.isTeacher = false;
+      this.hideQuestionOverlay();
+      this.lastSession = { status: 'idle' };
+      this.updateAdminBroadcastUI(this.lastSession);
+
       const ctrls = document.getElementById('vqSyncTeacherControls');
       if (ctrls) ctrls.style.display = 'none';
+
+      const studentNotice = document.getElementById('vqSyncStudentIdleNotice');
+      const activeWrapper = document.getElementById('vqSyncActivePlayerWrapper');
+      if (studentNotice) studentNotice.style.display = 'block';
+      if (activeWrapper) activeWrapper.style.display = 'none';
+
+      const link = document.getElementById('vqAdminQuickLinkWrapper');
+      if (link) link.style.display = (this.isTeacher || window.app?.isAdmin) ? 'block' : 'none';
+
       if (window.app) window.app.showNotification('提示', '全班同步測驗已結束。');
     }
 
@@ -566,32 +684,81 @@
 
     // 處理遠端廣播更新 (學生端與老師端同步)
     handleRemoteSessionUpdate(session) {
+      this.lastSession = session;
+      this.updateAdminBroadcastUI(session);
+
+      const studentNotice = document.getElementById('vqSyncStudentIdleNotice');
+      const activeWrapper = document.getElementById('vqSyncActivePlayerWrapper');
+      const studentTopInfo = document.getElementById('vqStudentTopInfo');
+      const quickLink = document.getElementById('vqAdminQuickLinkWrapper');
+
+      if (quickLink) {
+        quickLink.style.display = (this.isTeacher || window.app?.isAdmin) ? 'block' : 'none';
+      }
+
       if (!session || session.status === 'idle') {
-        const overlay = document.getElementById('vqQuestionOverlay');
-        if (overlay) overlay.style.display = 'none';
+        this.hideQuestionOverlay();
+        if (studentNotice) studentNotice.style.display = 'block';
+        if (activeWrapper) activeWrapper.style.display = 'none';
+        if (studentTopInfo) studentTopInfo.innerHTML = '';
+        const ctrls = document.getElementById('vqSyncTeacherControls');
+        if (ctrls) ctrls.style.display = 'none';
         return;
       }
 
+      // 有測驗正在廣播中
+      if (studentNotice) studentNotice.style.display = 'none';
+      if (activeWrapper) activeWrapper.style.display = 'block';
+      if (studentTopInfo) {
+        studentTopInfo.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">🟢 廣播進行中</span>`;
+      }
+
+      const quizTitleEl = document.getElementById('vqSyncQuizTitle');
+      const quizDescEl = document.getElementById('vqSyncQuizDesc');
+      if (quizTitleEl && session.quizData?.title) {
+        quizTitleEl.textContent = `🎬 ${session.quizData.title}`;
+      }
+      if (quizDescEl && session.quizData?.description) {
+        quizDescEl.textContent = session.quizData.description;
+      }
+
+      // 若當前使用者為管理員或老師，顯示控制列
+      if (this.isTeacher || window.app?.isAdmin) {
+        this.renderSyncTeacherControls();
+      }
+
+      // 檢查是否處於「影片出題測驗」分頁
+      const isVideoQuizActive = document.getElementById('panel-video-quiz')?.classList.contains('active');
+
       // 若為學生端（非老師），接收廣播
-      if (!this.isTeacher && this.currentMode === 'sync') {
+      if (!this.isTeacher) {
         if (session.status === 'waiting' || session.status === 'playing' || session.status === 'question') {
           if (!this.activeQuiz || this.activeQuiz.id !== session.quizId) {
             this.activeQuiz = session.quizData;
-            this.setupPlayer('vqSyncPlayerContainer', session.quizData.videoUrl, () => {
-              if (session.status === 'playing') this.playVideo();
-            });
+            if (isVideoQuizActive) {
+              this.setupPlayer('vqSyncPlayerContainer', session.quizData.videoUrl, () => {
+                if (session.status === 'playing') this.playVideo();
+              });
+            }
           }
         }
 
         if (session.status === 'question' && session.currentQuestion) {
           this.pauseVideo();
-          this.showQuestionOverlay(session.currentQuestion, false);
+          // 關鍵防卡死：僅在使用者處於「影片出題測驗」分頁時才彈出題目覆蓋視窗，絕不遮蔽提問區或登入按鈕
+          if (isVideoQuizActive) {
+            this.showQuestionOverlay(session.currentQuestion, false);
+          }
         } else if (session.status === 'playing') {
           this.hideQuestionOverlay();
-          this.playVideo();
+          if (isVideoQuizActive) {
+            this.playVideo();
+          }
         } else if (session.status === 'completed') {
           this.hideQuestionOverlay();
-          this.showClassAnalytics(this.activeQuiz, this.cachedRemoteAnswers || {});
+          if (isVideoQuizActive) {
+            this.showClassAnalytics(this.activeQuiz, this.cachedRemoteAnswers || {});
+          }
         }
       }
     }
@@ -600,6 +767,10 @@
     renderSyncTeacherControls() {
       const container = document.getElementById('vqSyncTeacherControls');
       if (!container) return;
+      if (!this.isTeacher && !window.app?.isAdmin) {
+        container.style.display = 'none';
+        return;
+      }
       container.style.display = 'block';
       container.innerHTML = `
         <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--bg-card); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 12px;">
@@ -700,10 +871,23 @@
         `;
       }
 
+      const isTeacherOrAdmin = (this.isTeacher || window.app?.isAdmin);
+
       content.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-          <span style="font-weight: bold; color: var(--accent-color); font-size: 14px;">${typeBadge}（${points} 分）</span>
-          <span style="font-size: 12px; color: var(--text-secondary);">時間節點：${question.timeFormatted || '00:00'}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: bold; color: var(--accent-color); font-size: 14px;">${typeBadge}（${points} 分）</span>
+            <span style="font-size: 12px; color: var(--text-secondary);">時間點：${question.timeFormatted || '00:00'}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            ${isTeacherOrAdmin ? `
+              <button type="button" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="立即停止全班測驗廣播">⏹️ 結束測驗</button>
+              <button type="button" onclick="window.app.switchToTab('panel-admin'); window.videoQuiz.hideQuestionOverlay();" style="background: var(--accent-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="前往管理員後台">⚙️ 返回後台</button>
+            ` : `
+              <button type="button" onclick="window.app.switchToTab('panel-admin')" style="background: transparent; border: 1.5px solid var(--accent-color); color: var(--accent-color); padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="若您是老師，點此登入管理後台">⚙️ 後台登入</button>
+            `}
+            <button type="button" onclick="window.videoQuiz.hideQuestionOverlay()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="暫時收合題目視窗">✕</button>
+          </div>
         </div>
         <h3 style="font-size: 18px; line-height: 1.5; margin: 0 0 12px 0; color: var(--text-primary);">${this.escapeHtml(question.prompt)}</h3>
         ${formHtml}
@@ -1119,10 +1303,17 @@
     // ==========================================
 
     renderEditorQuizList() {
-      const container = document.getElementById('vqEditorQuizList');
-      if (!container) return;
+      const containers = [
+        document.getElementById('vqAdminEditorQuizList'),
+        document.getElementById('vqEditorQuizList')
+      ].filter(Boolean);
+      if (containers.length === 0) return;
 
-      container.innerHTML = this.quizzes.map((q, idx) => `
+      const html = this.quizzes.length === 0 ? `
+        <div style="text-align: center; padding: 24px; color: var(--text-secondary); font-size: 14px;">
+          目前尚無影片測驗，請點擊上方按鈕建立新測驗或匯入題庫！
+        </div>
+      ` : this.quizzes.map((q, idx) => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 8px;">
           <div>
             <div style="font-weight: bold; font-size: 15px; color: var(--text-primary);">${this.escapeHtml(q.title)}</div>
@@ -1136,6 +1327,8 @@
           </div>
         </div>
       `).join('');
+
+      containers.forEach(c => { c.innerHTML = html; });
     }
 
     openEditQuizModal(quizId = null) {
