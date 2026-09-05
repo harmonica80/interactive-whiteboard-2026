@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=168">
+  <link rel="stylesheet" href="css/style.css?v=169">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.9.8</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 2.9.9</span>
         </p>
       </div>
       <div class="top-actions">
@@ -167,11 +167,31 @@
 
           <!-- 模式 3: 影片出題與題庫管理 (Editor) -->
           <div id="vqEditorSection" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
               <h3 style="margin: 0; font-size: 16px;">🎬 影片測驗題庫清單</h3>
-              <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">
-                ➕ 建立新影片測驗
-              </button>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button class="action-btn" onclick="window.videoQuiz.openFormatGuideModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看 JSON 與 CSV 題庫格式規範">
+                  📋 範例格式說明
+                </button>
+                <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
+                  ⬇️ 範例檔 (JSON)
+                </button>
+                <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
+                  ⬇️ 範例檔 (CSV)
+                </button>
+                <button class="action-btn" onclick="window.videoQuiz.exportQuizzesJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有影片測驗匯出為 JSON 備份檔">
+                  📤 匯出 JSON
+                </button>
+                <button class="action-btn" onclick="window.videoQuiz.exportQuizzesCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有影片測驗匯出為 CSV 試算表檔">
+                  📤 匯出 CSV
+                </button>
+                <button class="action-btn" onclick="window.videoQuiz.openImportModal()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON 或 CSV 題庫檔案">
+                  📥 匯入題庫
+                </button>
+                <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal()" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">
+                  ➕ 建立新測驗
+                </button>
+              </div>
             </div>
             <div id="vqEditorQuizList"></div>
           </div>
@@ -1143,15 +1163,15 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=298"></script>
-  <script src="js/character_pool.js?v=298"></script>
-  <script src="js/classics_quiz_pool.js?v=298"></script>
-  <script src="js/focus_question_bank.js?v=298"></script>
-  <script src="js/timer_music_manager.js?v=298"></script>
-  <script src="js/quiz.js?v=298"></script>
-  <script src="js/app.js?v=298"></script>
-  <script src="js/classics_quiz.js?v=298"></script>
-  <script src="js/video_quiz.js?v=298"></script>
+  <script src="js/firebase-config.js?v=299"></script>
+  <script src="js/character_pool.js?v=299"></script>
+  <script src="js/classics_quiz_pool.js?v=299"></script>
+  <script src="js/focus_question_bank.js?v=299"></script>
+  <script src="js/timer_music_manager.js?v=299"></script>
+  <script src="js/quiz.js?v=299"></script>
+  <script src="js/app.js?v=299"></script>
+  <script src="js/classics_quiz.js?v=299"></script>
+  <script src="js/video_quiz.js?v=299"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -1914,6 +1934,139 @@ Python</pre>
       <div style="display: flex; justify-content: flex-end; gap: 8px;">
         <button onclick="window.videoQuiz.closeQuestionEditModal()" style="padding: 6px 14px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">取消</button>
         <button onclick="window.videoQuiz.saveQuestionItem()" style="padding: 6px 18px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">確定儲存題目</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 影片測驗：題庫匯入彈窗 -->
+  <div id="vqImportModal" class="video-quiz-overlay" style="z-index: 2600;">
+    <div class="video-quiz-card" style="max-width: 650px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">📥 匯入影片測驗題庫</h3>
+        <button onclick="window.videoQuiz.closeImportModal()" style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px;">方式一：選擇題庫檔案 (支援 .json 或 .csv 格式)</label>
+        <input type="file" id="vqImportFileInput" accept=".json,.csv,text/csv,application/json" onchange="window.videoQuiz.handleImportFileChange(event)" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px dashed var(--accent-color); background: var(--bg-input); font-size: 13px;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px;">方式二：直接貼上題庫代碼 (JSON 或 CSV 文字內容)</label>
+        <textarea id="vqImportTextInput" rows="8" placeholder="在此貼上 JSON 結構資料或 CSV 逗號分隔文字..." style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: monospace; font-size: 12px; resize: vertical;"></textarea>
+      </div>
+
+      <div style="margin-bottom: 16px; background: rgba(0, 122, 255, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(0, 122, 255, 0.2);">
+        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--accent-color);">匯入處理方式：</label>
+        <div style="display: flex; gap: 18px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+            <input type="radio" name="vqImportMode" value="merge" checked style="cursor: pointer;">
+            <span><strong>合併至現有題庫</strong>（推薦，保留既有題目）</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+            <input type="radio" name="vqImportMode" value="replace" style="cursor: pointer;">
+            <span><strong style="color: var(--danger-color);">完全覆蓋現有題庫</strong>（清除原有測驗）</span>
+          </label>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <button onclick="window.videoQuiz.openFormatGuideModal()" style="background: transparent; border: none; color: var(--accent-color); font-size: 13px; cursor: pointer; text-decoration: underline;">
+          ❓ 不清楚格式？查看格式範例說明
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="window.videoQuiz.closeImportModal()" style="padding: 8px 16px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">取消</button>
+          <button onclick="window.videoQuiz.executeImport()" style="padding: 8px 22px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">🚀 開始匯入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 影片測驗：範例格式說明彈窗 -->
+  <div id="vqFormatGuideModal" class="video-quiz-overlay" style="z-index: 2700;">
+    <div class="video-quiz-card" style="max-width: 800px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px;">
+        <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">📋 影片測驗題庫格式規範與範例說明</h3>
+        <button onclick="window.videoQuiz.closeFormatGuideModal()" style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <!-- 標籤頁切換 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+        <button id="vqFormatTabJson" class="video-quiz-mode-tab active" onclick="window.videoQuiz.switchFormatGuideTab('json')">📦 JSON 格式規範（推薦）</button>
+        <button id="vqFormatTabCsv" class="video-quiz-mode-tab" onclick="window.videoQuiz.switchFormatGuideTab('csv')">📊 CSV 試算表格式規範</button>
+      </div>
+
+      <!-- JSON 格式說明內容 -->
+      <div id="vqFormatContentJson">
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.6;">
+          JSON 格式適合包含多題型、選項、標準答案與多個時間點的完整題目包。根層為陣列，每部測驗包含 <code>title</code>、<code>videoUrl</code> 與 <code>questions</code> 題目清單。
+        </div>
+        <div style="position: relative;">
+          <pre id="vqSampleJsonCode" style="background: var(--bg-input); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 12px; font-family: monospace; max-height: 280px; overflow-y: auto; color: var(--text-primary); margin: 0;">[
+  {
+    "title": "自然科學：太陽系與行星探索",
+    "description": "探索太陽系天體特徵與八大行星奧秘",
+    "videoUrl": "https://www.youtube.com/watch?v=libKVRa01L8",
+    "questions": [
+      {
+        "time": 25,
+        "timeFormatted": "00:25",
+        "type": "single",
+        "prompt": "太陽系中體積最大、質量最重的行星是哪一顆？",
+        "options": ["水星", "金星", "木星", "土星"],
+        "correctAnswer": "木星",
+        "explanation": "木星是太陽系中最大的氣態巨行星。",
+        "points": 10
+      },
+      {
+        "time": 60,
+        "timeFormatted": "01:00",
+        "type": "multiple",
+        "prompt": "下列哪些行星屬於「類地行星」？（多選題）",
+        "options": ["水星", "金星", "地球", "木星"],
+        "correctAnswer": ["水星", "金星", "地球"],
+        "explanation": "類地行星包含水星、金星、地球與火星。",
+        "points": 10
+      },
+      {
+        "time": 95,
+        "timeFormatted": "01:35",
+        "type": "text",
+        "prompt": "【問答題】請簡述為什麼地球能孕育多樣的生命？",
+        "options": [],
+        "correctAnswer": "適居帶、液態水、適宜大氣與地磁保護",
+        "explanation": "地球位處適居帶，具備液態水與大氣保護。",
+        "points": 10
+      }
+    ]
+  }
+]</pre>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+          <button onclick="window.videoQuiz.copyFormatCode('vqSampleJsonCode')" style="padding: 6px 14px; font-size: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📋 複製 JSON 範例</button>
+          <button onclick="window.videoQuiz.downloadSampleTemplateJSON()" style="padding: 6px 14px; font-size: 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">⬇️ 下載 JSON 範本檔</button>
+        </div>
+      </div>
+
+      <!-- CSV 格式說明內容 -->
+      <div id="vqFormatContentCsv" style="display: none;">
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.6;">
+          CSV 格式可用 Excel 或 Google 試算表編輯儲存。第一行為欄位表頭，每一列代表影片中的一道題目。同測驗的題目請保持「測驗標題」與「影片網址」一致。選項與複選答案請用分號 <code>;</code> 區隔。
+        </div>
+        <div style="position: relative;">
+          <pre id="vqSampleCsvCode" style="background: var(--bg-input); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 12px; font-family: monospace; max-height: 280px; overflow-y: auto; color: var(--text-primary); margin: 0;">測驗標題,測驗簡介,影片網址,時間點(分:秒或秒數),題型(單選/複選/問答),題目問句,選項(以分號;區隔),標準答案(複選以分號;區隔),題目解析,配分
+"自然科學：太陽系行星探索","探索太陽系特徵","https://www.youtube.com/watch?v=libKVRa01L8","00:25","單選","太陽系中體積最大的行星是哪一顆？","水星;金星;木星;土星","木星","木星是太陽系中最大的氣態巨行星。","10"
+"自然科學：太陽系行星探索","探索太陽系特徵","https://www.youtube.com/watch?v=libKVRa01L8","01:00","複選","下列哪些行星屬於「類地行星」？","水星;金星;地球;木星","水星;金星;地球","類地行星包含水星、金星、地球與火星。","10"
+"自然科學：太陽系行星探索","探索太陽系特徵","https://www.youtube.com/watch?v=libKVRa01L8","01:35","問答","請簡述為什麼地球能夠孕育生命？","","適居帶、液態水、適宜大氣與地磁保護","地球位處適居帶並擁有液態水。","10"</pre>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+          <button onclick="window.videoQuiz.copyFormatCode('vqSampleCsvCode')" style="padding: 6px 14px; font-size: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📋 複製 CSV 範例</button>
+          <button onclick="window.videoQuiz.downloadSampleTemplateCSV()" style="padding: 6px 14px; font-size: 12px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">⬇️ 下載 CSV 範本檔</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 12px; text-align: right;">
+        <button onclick="window.videoQuiz.closeFormatGuideModal()" style="padding: 8px 20px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">了解並關閉</button>
       </div>
     </div>
   </div>

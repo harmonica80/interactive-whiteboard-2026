@@ -1,4 +1,22 @@
 # System Log
+## 2026-09-05 - ver 2.9.9 影片測驗題庫匯入與匯出、範例格式檔下載與規格說明彈窗
+- 影響檔案：`js/video_quiz.js`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **影片測驗題庫匯出功能**：
+     - 提供「📤 匯出 JSON」按鈕：將目前所有影片測驗完整架構（包含多題目、時間節點、選項、正解與解析）匯出為 `.json` 備份檔。
+     - 提供「📤 匯出 CSV」按鈕：以標準 UTF-8 BOM 格式將題庫匯出為 `.csv` 試算表檔，可直接以 Excel 開啟編輯不亂碼。
+  2. **影片測驗題庫匯入功能**：
+     - 提供「📥 匯入題庫」互動彈窗，支援上傳 `.json` 或 `.csv` 檔案，亦支援直接貼上文字內容匯入。
+     - 支援「合併至現有題庫」（保留既有題目）與「完全覆蓋現有題庫」兩種彈性處理模式。
+     - 具備自動防呆驗證與題目解析，自動識別 YouTube 網址或影片直連，並儲存同步至 Firebase 與 LocalStorage。
+  3. **範例格式檔下載與詳細規格說明彈窗**：
+     - 提供「⬇️ 範例檔 (JSON)」與「⬇️ 範例檔 (CSV)」一鍵下載標準範本。
+     - 新增「📋 範例格式說明」互動式彈窗，提供 JSON 與 CSV 雙標籤頁說明、詳細欄位表格定義、代碼預覽與「一鍵複製代碼」功能。
+  4. **版本號與靜態資源標記**：
+     - 依規範增加 `+0.01`，由 `ver 2.9.8` 升級為 **`ver 2.9.9`**。
+     - 更新 `css/style.css?v=169` 與腳本快取標記 `v=299`。
+
+---
 ## 2026-09-05 - ver 2.9.8 互動式影片出題測驗系統（支援同步/自主學習、單選/複選/問答、時間軸觸發與全班答題統計）
 - 影響檔案：`js/video_quiz.js`, `css/style.css`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/video-quiz.spec.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：

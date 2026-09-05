@@ -1369,6 +1369,453 @@
       if (window.app) window.app.showNotification('成功', '已刪除影片測驗。');
     }
 
+    // ==========================================
+    // 題庫匯入 / 匯出 / 範例格式檔管理
+    // ==========================================
+
+    // 取得 JSON 格式範例物件
+    getSampleTemplateJSON() {
+      return [
+        {
+          "title": "自然科學：太陽系與行星探索 (範例)",
+          "description": "探索太陽系天體特徵與八大行星奧秘",
+          "videoUrl": "https://www.youtube.com/watch?v=libKVRa01L8",
+          "questions": [
+            {
+              "time": 25,
+              "timeFormatted": "00:25",
+              "type": "single",
+              "prompt": "太陽系中體積最大、質量最重的行星是哪一顆？",
+              "options": ["水星", "金星", "木星", "土星"],
+              "correctAnswer": "木星",
+              "explanation": "木星是太陽系中最大的氣態巨行星。",
+              "points": 10
+            },
+            {
+              "time": 60,
+              "timeFormatted": "01:00",
+              "type": "multiple",
+              "prompt": "下列哪些行星屬於主要由岩石和金屬組成的「類地行星」？（多選題）",
+              "options": ["水星", "金星", "地球", "木星"],
+              "correctAnswer": ["水星", "金星", "地球"],
+              "explanation": "類地行星包含水星、金星、地球與火星。",
+              "points": 10
+            },
+            {
+              "time": 95,
+              "timeFormatted": "01:35",
+              "type": "text",
+              "prompt": "【問答題】請簡述為什麼地球能夠孕育豐富多樣的生命？",
+              "options": [],
+              "correctAnswer": "位於適居帶、具備液態水、大氣層與地磁場保護",
+              "explanation": "地球具備適當日地距離、充足液態水與防護大氣。",
+              "points": 10
+            }
+          ]
+        }
+      ];
+    }
+
+    // 下載 JSON 格式範例檔案
+    downloadSampleTemplateJSON() {
+      const templateData = this.getSampleTemplateJSON();
+      const blob = new Blob([JSON.stringify(templateData, null, 2)], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'video_quiz_template.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.app) window.app.showNotification('成功', '已下載影片測驗 JSON 範例格式檔！');
+    }
+
+    // 取得 CSV 格式範例字串
+    getSampleTemplateCSV() {
+      let csv = '\uFEFF測驗標題,測驗簡介,影片網址,時間點(分:秒或秒數),題型(單選/複選/問答),題目問句,選項(以分號;區隔),標準答案(複選以分號;區隔),題目解析,配分\r\n';
+      csv += '"自然科學：太陽系行星探索","探索太陽系各大行星特徵與運行奧秘","https://www.youtube.com/watch?v=libKVRa01L8","00:25","單選","太陽系中體積最大、質量最重的行星是哪一顆？","水星;金星;木星;土星","木星","木星是太陽系中最大的行星，屬於氣態巨行星。","10"\r\n';
+      csv += '"自然科學：太陽系行星探索","探索太陽系各大行星特徵與運行奧秘","https://www.youtube.com/watch?v=libKVRa01L8","01:00","複選","下列哪些行星屬於主要由岩石和金屬組成的「類地行星」？","水星;金星;地球;木星","水星;金星;地球","類地行星包含水星、金星、地球與火星。","10"\r\n';
+      csv += '"自然科學：太陽系行星探索","探索太陽系各大行星特徵與運行奧秘","https://www.youtube.com/watch?v=libKVRa01L8","01:35","問答","請簡述為什麼地球能夠孕育豐富多樣的生命？","","適居帶、液態水、適宜大氣與地磁保護","地球位處適居帶，擁有液態水與完整大氣保護。","10"\r\n';
+      return csv;
+    }
+
+    // 下載 CSV 格式範例檔案
+    downloadSampleTemplateCSV() {
+      const csv = this.getSampleTemplateCSV();
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'video_quiz_template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.app) window.app.showNotification('成功', '已下載影片測驗 CSV 範例格式檔！');
+    }
+
+    // 匯出全部題庫備份 (JSON)
+    exportQuizzesJSON() {
+      if (!this.quizzes || this.quizzes.length === 0) {
+        if (window.app) window.app.showNotification('提示', '目前沒有任何影片測驗可供匯出！');
+        return;
+      }
+      const dataStr = JSON.stringify(this.quizzes, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `video_quizzes_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.app) window.app.showNotification('成功', `已順利匯出 ${this.quizzes.length} 部影片測驗題庫備份！`);
+    }
+
+    // 匯出全部題庫備份 (CSV)
+    exportQuizzesCSV() {
+      if (!this.quizzes || this.quizzes.length === 0) {
+        if (window.app) window.app.showNotification('提示', '目前沒有任何影片測驗可供匯出！');
+        return;
+      }
+      let csv = '\uFEFF測驗標題,測驗簡介,影片網址,時間點(分:秒或秒數),題型(單選/複選/問答),題目問句,選項(以分號;區隔),標準答案(複選以分號;區隔),題目解析,配分\r\n';
+      this.quizzes.forEach(quiz => {
+        const title = (quiz.title || '').replace(/"/g, '""');
+        const desc = (quiz.description || '').replace(/"/g, '""');
+        const url = (quiz.videoUrl || '').replace(/"/g, '""');
+        (quiz.questions || []).forEach(q => {
+          const timeStr = q.timeFormatted || this.formatSeconds(q.time);
+          const typeStr = q.type === 'single' ? '單選' : (q.type === 'multiple' ? '複選' : '問答');
+          const prompt = (q.prompt || '').replace(/"/g, '""');
+          const opts = ((q.options || []).join(';')).replace(/"/g, '""');
+          const ans = (Array.isArray(q.correctAnswer) ? q.correctAnswer.join(';') : (q.correctAnswer || '')).replace(/"/g, '""');
+          const exp = (q.explanation || '').replace(/"/g, '""');
+          const pts = q.points || 10;
+          csv += `"${title}","${desc}","${url}","${timeStr}","${typeStr}","${prompt}","${opts}","${ans}","${exp}","${pts}"\r\n`;
+        });
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `video_quizzes_backup_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.app) window.app.showNotification('成功', '已順利匯出 CSV 格式影片題庫！');
+    }
+
+    // 開啟匯入彈窗
+    openImportModal() {
+      const modal = document.getElementById('vqImportModal');
+      const input = document.getElementById('vqImportTextInput');
+      const fileInput = document.getElementById('vqImportFileInput');
+      if (input) input.value = '';
+      if (fileInput) fileInput.value = '';
+      if (modal) modal.style.display = 'flex';
+    }
+
+    // 關閉匯入彈窗
+    closeImportModal() {
+      const modal = document.getElementById('vqImportModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    // 處理檔案拖曳或選取
+    handleImportFileChange(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const textInput = document.getElementById('vqImportTextInput');
+        if (textInput) textInput.value = text;
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    // 執行匯入
+    executeImport() {
+      const textInput = document.getElementById('vqImportTextInput');
+      const text = textInput ? textInput.value.trim() : '';
+      if (!text) {
+        if (window.app) window.app.showNotification('提示', '請先選擇檔案或在文字框中貼上 JSON / CSV 內容！');
+        return;
+      }
+
+      const modeRadio = document.querySelector('input[name="vqImportMode"]:checked');
+      const mode = modeRadio ? modeRadio.value : 'merge'; // 'merge' or 'replace'
+
+      try {
+        let importedList = [];
+        if (text.startsWith('[') || text.startsWith('{')) {
+          importedList = this.parseQuizzesFromJSON(text);
+        } else {
+          importedList = this.parseQuizzesFromCSV(text);
+        }
+
+        if (!importedList || importedList.length === 0) {
+          throw new Error('未在檔案中解析出任何有效的測驗資料，請檢查格式是否正確！');
+        }
+
+        if (mode === 'replace') {
+          this.quizzes = importedList;
+        } else {
+          // 合併模式：同 ID 或同標題進行覆蓋，否則新增
+          importedList.forEach(newQ => {
+            const existingIdx = this.quizzes.findIndex(q => q.id === newQ.id || q.title === newQ.title);
+            if (existingIdx >= 0) {
+              this.quizzes[existingIdx] = newQ;
+            } else {
+              this.quizzes.push(newQ);
+            }
+          });
+        }
+
+        this.saveQuizzes();
+        this.renderQuizSelector();
+        this.renderEditorQuizList();
+        this.closeImportModal();
+
+        const qCount = importedList.reduce((acc, cur) => acc + (cur.questions?.length || 0), 0);
+        if (window.app) {
+          window.app.showNotification('成功', `已順利匯入 ${importedList.length} 部影片測驗（共 ${qCount} 道題目）！`);
+        }
+      } catch (err) {
+        console.error('Import failed', err);
+        alert('匯入失敗：' + err.message);
+      }
+    }
+
+    // 解析 JSON
+    parseQuizzesFromJSON(jsonText) {
+      const parsed = JSON.parse(jsonText);
+      const rawList = Array.isArray(parsed) ? parsed : [parsed];
+      const validQuizzes = [];
+
+      rawList.forEach((item, idx) => {
+        if (!item.title || !item.videoUrl) return;
+        const qId = item.id || 'vq_' + Date.now() + '_' + idx;
+        const ytId = this.extractYoutubeId(item.videoUrl);
+        const videoType = ytId ? 'youtube' : 'html5';
+
+        const questions = (item.questions || []).map((q, qIdx) => {
+          const time = typeof q.time === 'number' ? q.time : this.parseTime(q.time || q.timeFormatted);
+          const type = (q.type === 'multiple' || q.type === '複選') ? 'multiple' : ((q.type === 'text' || q.type === '問答') ? 'text' : 'single');
+          let options = Array.isArray(q.options) ? q.options : (typeof q.options === 'string' ? q.options.split(';').map(s => s.trim()).filter(Boolean) : []);
+          let correctAnswer = q.correctAnswer;
+          if (type === 'multiple' && typeof correctAnswer === 'string') {
+            correctAnswer = correctAnswer.split(';').map(s => s.trim()).filter(Boolean);
+          }
+          return {
+            id: q.id || 'q_' + qIdx + '_' + Date.now(),
+            time,
+            timeFormatted: q.timeFormatted || this.formatSeconds(time),
+            type,
+            prompt: q.prompt || q.question || '',
+            options,
+            correctAnswer,
+            explanation: q.explanation || '',
+            points: parseInt(q.points, 10) || 10
+          };
+        }).filter(q => q.prompt);
+
+        validQuizzes.push({
+          id: qId,
+          title: item.title,
+          description: item.description || '',
+          videoUrl: item.videoUrl,
+          videoType,
+          youtubeId: ytId,
+          createdAt: item.createdAt || Date.now(),
+          questions
+        });
+      });
+
+      return validQuizzes;
+    }
+
+    // 解析 CSV
+    parseQuizzesFromCSV(csvText) {
+      const rows = this.parseCSVText(csvText);
+      if (rows.length < 2) {
+        throw new Error('CSV 格式錯誤：請至少提供表頭與一行題目資料！');
+      }
+
+      // 跳過表頭，對資料列依「測驗標題」進行分組
+      const dataRows = rows.slice(1);
+      const groups = {};
+
+      dataRows.forEach(cols => {
+        if (!cols || cols.length < 4) return;
+        const title = (cols[0] || '').trim();
+        const desc = (cols[1] || '').trim();
+        const url = (cols[2] || '').trim();
+        const timeStr = (cols[3] || '').trim();
+        const typeStr = (cols[4] || '單選').trim();
+        const prompt = (cols[5] || '').trim();
+        const optionsStr = (cols[6] || '').trim();
+        const ansStr = (cols[7] || '').trim();
+        const explanation = (cols[8] || '').trim();
+        const points = parseInt(cols[9], 10) || 10;
+
+        if (!title || !url || !prompt) return;
+
+        const groupKey = title + '||' + url;
+        if (!groups[groupKey]) {
+          groups[groupKey] = {
+            title,
+            description: desc,
+            videoUrl: url,
+            questions: []
+          };
+        }
+
+        const time = this.parseTime(timeStr);
+        const type = (typeStr.includes('複選') || typeStr === 'multiple') ? 'multiple' : ((typeStr.includes('問答') || typeStr === 'text') ? 'text' : 'single');
+        const options = type !== 'text' ? optionsStr.split(/[\;\；\n]/).map(s => s.trim()).filter(Boolean) : [];
+        let correctAnswer = ansStr;
+        if (type === 'multiple') {
+          correctAnswer = ansStr.split(/[\;\；\n]/).map(s => s.trim()).filter(Boolean);
+        }
+
+        groups[groupKey].questions.push({
+          id: 'q_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          time,
+          timeFormatted: this.formatSeconds(time),
+          type,
+          prompt,
+          options,
+          correctAnswer,
+          explanation,
+          points
+        });
+      });
+
+      const list = Object.values(groups).map((g, idx) => {
+        const ytId = this.extractYoutubeId(g.videoUrl);
+        return {
+          id: 'vq_' + Date.now() + '_' + idx,
+          title: g.title,
+          description: g.description,
+          videoUrl: g.videoUrl,
+          videoType: ytId ? 'youtube' : 'html5',
+          youtubeId: ytId,
+          createdAt: Date.now(),
+          questions: g.questions.sort((a, b) => a.time - b.time)
+        };
+      });
+
+      return list;
+    }
+
+    // CSV 解析工具，相容雙引號與逗號包含
+    parseCSVText(text) {
+      const clean = text.replace(/^\uFEFF/, '');
+      const lines = [];
+      let row = [];
+      let inQuotes = false;
+      let cur = '';
+
+      for (let i = 0; i < clean.length; i++) {
+        const c = clean[i];
+        const next = clean[i + 1];
+
+        if (c === '"') {
+          if (inQuotes && next === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (c === ',' && !inQuotes) {
+          row.push(cur);
+          cur = '';
+        } else if ((c === '\r' || c === '\n') && !inQuotes) {
+          if (c === '\r' && next === '\n') i++;
+          row.push(cur);
+          if (row.some(field => field.trim().length > 0)) {
+            lines.push(row);
+          }
+          row = [];
+          cur = '';
+        } else {
+          cur += c;
+        }
+      }
+      if (cur.length > 0 || row.length > 0) {
+        row.push(cur);
+        if (row.some(field => field.trim().length > 0)) {
+          lines.push(row);
+        }
+      }
+      return lines;
+    }
+
+    // 時間字串轉秒數 (支援 "01:25" 或 "85")
+    parseTime(str) {
+      if (typeof str === 'number') return Math.max(0, Math.round(str));
+      if (!str) return 0;
+      str = String(str).trim();
+      if (/^\d+$/.test(str)) return parseInt(str, 10);
+      const parts = str.split(':').map(p => parseInt(p, 10) || 0);
+      if (parts.length === 2) {
+        return parts[0] * 60 + parts[1];
+      } else if (parts.length === 3) {
+        return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      }
+      return 0;
+    }
+
+    // 秒數轉時間格式字串 (如 "01:25")
+    formatSeconds(seconds) {
+      const s = Math.max(0, Math.round(seconds || 0));
+      const mins = Math.floor(s / 60);
+      const secs = s % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    // 開啟範例格式說明彈窗
+    openFormatGuideModal() {
+      const modal = document.getElementById('vqFormatGuideModal');
+      if (modal) {
+        this.switchFormatGuideTab('json');
+        modal.style.display = 'flex';
+      }
+    }
+
+    closeFormatGuideModal() {
+      const modal = document.getElementById('vqFormatGuideModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    switchFormatGuideTab(tabType) {
+      const jsonTab = document.getElementById('vqFormatTabJson');
+      const csvTab = document.getElementById('vqFormatTabCsv');
+      const jsonContent = document.getElementById('vqFormatContentJson');
+      const csvContent = document.getElementById('vqFormatContentCsv');
+
+      if (jsonTab) jsonTab.classList.toggle('active', tabType === 'json');
+      if (csvTab) csvTab.classList.toggle('active', tabType === 'csv');
+      if (jsonContent) jsonContent.style.display = (tabType === 'json' ? 'block' : 'none');
+      if (csvContent) csvContent.style.display = (tabType === 'csv' ? 'block' : 'none');
+    }
+
+    copyFormatCode(elemId) {
+      const el = document.getElementById(elemId);
+      if (!el) return;
+      const text = el.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        if (window.app) window.app.showNotification('成功', '範例格式代碼已複製至剪貼簿！');
+      }).catch(() => {
+        if (window.app) window.app.showNotification('提示', '請手動選取代碼進行複製。');
+      });
+    }
+
     escapeHtml(str) {
       if (!str) return '';
       return String(str)
