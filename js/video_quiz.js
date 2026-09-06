@@ -106,12 +106,11 @@
       this.currentMode = 'sync'; // 'sync' (全班同步) | 'self' (自主學習) | 'editor' (出題管理)
       this.globalMode = 'sync'; // 由授課老師於管理後台統一設定 ('sync' | 'self')
       
-      // 題庫後台搜尋、分頁與題目核選自訂組合狀態
+      // 題庫後台搜尋、分頁與影片核選自訂組合狀態
       this.adminSearchQuery = '';
       this.adminCurrentPage = 1;
       this.adminPageSize = 3;
-      this.selectedQuestionIds = new Set();
-      this.selectedQuizIdForSet = null;
+      this.selectedQuizIds = new Set();
 
       // 播放器狀態
       this.playerType = null; // 'youtube' | 'html5'
@@ -455,23 +454,33 @@
 
       selects.forEach(sel => {
         if (!sel) return;
+        const isAdminSel = (sel.id === 'vqAdminQuizSelect');
         const curVal = sel.value;
         let html = '';
+
         if (this.customSets && this.customSets.length > 0) {
-          html += `<optgroup label="🌟 常用自訂測驗組合">` +
+          html += `<optgroup label="🌟 常用自訂影片組合">` +
             this.customSets.map(s => `
-              <option value="custom:${s.id}">🌟 ${this.escapeHtml(s.name)} (${s.questionIds?.length || 0} 題)</option>
+              <option value="custom:${s.id}">🌟 ${this.escapeHtml(s.name)} (共 ${s.quizIds?.length || s.quizCount || 0} 部影片 · ${s.totalQuestions || 0} 題)</option>
             `).join('') +
             `</optgroup>`;
         }
-        html += `<optgroup label="🎬 完整題庫測驗">` +
-          this.quizzes.map(q => {
-            const enabledCount = (q.questions || []).filter(item => item.enabled !== false).length;
-            const totalCount = q.questions?.length || 0;
-            const countText = enabledCount === totalCount ? `${totalCount} 題` : `出題 ${enabledCount} / ${totalCount} 題`;
-            return `<option value="${q.id}">🎬 ${this.escapeHtml(q.title)} (${countText})</option>`;
-          }).join('') +
-          `</optgroup>`;
+
+        const candidateQuizzes = isAdminSel 
+          ? this.quizzes 
+          : this.quizzes.filter(q => q.enabled !== false);
+
+        if (candidateQuizzes.length > 0) {
+          html += `<optgroup label="${isAdminSel ? '🎬 所有影片測驗庫' : '🎬 開放測驗影片'}">` +
+            candidateQuizzes.map(q => {
+              const qCount = q.questions?.length || 0;
+              const statusText = isAdminSel ? (q.enabled !== false ? ' [🟢 開放]' : ' [⚪ 隱藏]') : '';
+              return `<option value="${q.id}">🎬 ${this.escapeHtml(q.title)}${statusText} (${qCount} 題)</option>`;
+            }).join('') +
+            `</optgroup>`;
+        } else if (!isAdminSel) {
+          html += `<option value="">⚠️ 目前尚無開放測驗的影片</option>`;
+        }
 
         sel.innerHTML = html;
         if (curVal && (this.quizzes.some(q => q.id === curVal) || (this.customSets && this.customSets.some(s => `custom:${s.id}` === curVal)))) {
@@ -541,13 +550,13 @@
         const setId = quizId.replace('custom:', '');
         const set = (this.customSets || []).find(s => s.id === setId);
         if (set) {
-          const parent = this.quizzes.find(q => q.id === set.quizId);
+          const firstQuizId = (set.quizIds && set.quizIds[0]) || set.quizId;
+          const parent = this.quizzes.find(q => q.id === firstQuizId);
           if (parent) {
             const cloned = JSON.parse(JSON.stringify(parent));
             cloned.id = `custom_${set.id}`;
             cloned.title = `🌟 ${set.name}`;
-            cloned.description = `【常用自訂組合】原影片：${parent.title}（共 ${set.questionIds.length} 題）`;
-            cloned.questions = (cloned.questions || []).filter(q => set.questionIds.includes(q.id));
+            cloned.description = `【常用自訂影片組合】內含 ${set.quizIds?.length || set.quizCount || 1} 部影片，共 ${set.totalQuestions || parent.questions?.length || 0} 題測驗`;
             this.activeQuiz = cloned;
           }
         }
@@ -744,13 +753,13 @@
           const setId = quizId.replace('custom:', '');
           const set = (this.customSets || []).find(s => s.id === setId);
           if (set) {
-            const parent = this.quizzes.find(q => q.id === set.quizId);
+            const firstQuizId = (set.quizIds && set.quizIds[0]) || set.quizId;
+            const parent = this.quizzes.find(q => q.id === firstQuizId);
             if (parent) {
               quiz = JSON.parse(JSON.stringify(parent));
               quiz.id = `custom_${set.id}`;
               quiz.title = `🌟 ${set.name}`;
-              quiz.description = `【常用自訂組合】原測驗：${parent.title}`;
-              quiz.questions = (quiz.questions || []).filter(q => set.questionIds.includes(q.id));
+              quiz.description = `【常用自訂影片組合】內含 ${set.quizIds?.length || set.quizCount || 1} 部影片，共 ${set.totalQuestions || parent.questions?.length || 0} 題測驗`;
             }
           }
         } else {
@@ -986,13 +995,13 @@
           const setId = quizId.replace('custom:', '');
           const set = (this.customSets || []).find(s => s.id === setId);
           if (set) {
-            const parent = this.quizzes.find(q => q.id === set.quizId);
+            const firstQuizId = (set.quizIds && set.quizIds[0]) || set.quizId;
+            const parent = this.quizzes.find(q => q.id === firstQuizId);
             if (parent) {
               quiz = JSON.parse(JSON.stringify(parent));
               quiz.id = `custom_${set.id}`;
               quiz.title = `🌟 ${set.name}`;
-              quiz.description = `【常用自訂組合】原影片：${parent.title}`;
-              quiz.questions = (quiz.questions || []).filter(q => set.questionIds.includes(q.id));
+              quiz.description = `【常用自訂影片組合】內含 ${set.quizIds?.length || set.quizCount || 1} 部影片，共 ${set.totalQuestions || parent.questions?.length || 0} 題測驗`;
             }
           }
         } else {
@@ -1521,92 +1530,102 @@
       if (!this.customSets || this.customSets.length === 0) {
         container.innerHTML = `
           <div style="text-align: center; padding: 18px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color); color: var(--text-secondary); font-size: 13px;">
-            💡 尚未建立任何常用測驗組合。<br>
-            您可以在下方題庫各影片中勾選單一或多題題目，點選「🌟 儲存為常用測驗組合」，即可建立專屬快速測驗組！
+            💡 尚未建立任何常用影片測驗組合。<br>
+            您可以在下方題庫中勾選單部或多部影片，點選「🌟 儲存為常用影片測驗組合」，即可建立專屬快速測驗組！
           </div>
         `;
         return;
       }
 
       container.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
-          ${this.customSets.map(set => `
-            <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 6px;">
-                  <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); word-break: break-word;">🌟 ${this.escapeHtml(set.name)}</span>
-                  <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 7px; border-radius: 6px; font-size: 11px; white-space: nowrap;">${set.questionIds?.length || 0} 題</span>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+          ${this.customSets.map(set => {
+            const count = set.quizIds ? set.quizIds.length : (set.quizCount || 1);
+            const totalQ = set.totalQuestions || 0;
+            const titles = (set.quizTitles && set.quizTitles.length > 0)
+              ? set.quizTitles.map(t => `<span style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; margin-top: 3px;">🎬 ${this.escapeHtml(t)}</span>`).join('')
+              : '';
+            return `
+              <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 6px;">
+                    <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); word-break: break-word;">🌟 ${this.escapeHtml(set.name)}</span>
+                    <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                      <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; white-space: nowrap;">${count} 部影片</span>
+                      <span class="badge" style="background: #34c759; color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; white-space: nowrap;">${totalQ} 題</span>
+                    </div>
+                  </div>
+                  <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4;">
+                    <div>建立日期：${new Date(set.createdAt || Date.now()).toLocaleDateString()}</div>
+                    <div style="margin-top: 4px;">${titles}</div>
+                  </div>
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4;">
-                  原影片：${this.escapeHtml(set.quizTitle || '影片測驗')}<br>
-                  建立日期：${new Date(set.createdAt || Date.now()).toLocaleDateString()}
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                  <button class="action-btn" onclick="window.videoQuiz.startSyncQuizFromCustomSet('${set.id}')" style="flex: 1; background: var(--accent-color); color: white; border: none; padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="以此組合直接發起全班同步測驗">
+                    ▶ 全班開測
+                  </button>
+                  <button class="action-btn" onclick="window.videoQuiz.assignCustomSetToSelfPaced('${set.id}')" style="flex: 1; background: #34c759; color: white; border: none; padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="切換為學生自主學習此組合">
+                    🎧 自主學習
+                  </button>
+                  <button class="action-btn" onclick="window.videoQuiz.deleteCustomSet('${set.id}')" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--danger-color); padding: 6px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;" title="刪除此組合">
+                    🗑️
+                  </button>
                 </div>
               </div>
-              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px;">
-                <button class="action-btn" onclick="window.videoQuiz.startSyncQuizFromCustomSet('${set.id}')" style="flex: 1; background: var(--accent-color); color: white; border: none; padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="以此組合直接發起全班同步測驗">
-                  ▶ 全班開測
-                </button>
-                <button class="action-btn" onclick="window.videoQuiz.assignCustomSetToSelfPaced('${set.id}')" style="flex: 1; background: #34c759; color: white; border: none; padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="切換為學生自主學習此組合">
-                  🎧 自主學習
-                </button>
-                <button class="action-btn" onclick="window.videoQuiz.deleteCustomSet('${set.id}')" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--danger-color); padding: 6px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;" title="刪除此組合">
-                  🗑️
-                </button>
-              </div>
-            </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       `;
     }
 
-    // 核選單題或多題加入組合
-    toggleSelectQuestionForCustomSet(quizId, qId) {
-      if (this.selectedQuizIdForSet !== quizId) {
-        this.selectedQuestionIds.clear();
-        this.selectedQuizIdForSet = quizId;
-      }
-      if (this.selectedQuestionIds.has(qId)) {
-        this.selectedQuestionIds.delete(qId);
-        if (this.selectedQuestionIds.size === 0) {
-          this.selectedQuizIdForSet = null;
-        }
+    // 核選單部或多部影片加入組合 (需求 c)
+    toggleSelectQuizForCustomSet(quizId) {
+      if (this.selectedQuizIds.has(quizId)) {
+        this.selectedQuizIds.delete(quizId);
       } else {
-        this.selectedQuestionIds.add(qId);
+        this.selectedQuizIds.add(quizId);
       }
       this.renderEditorQuizList();
     }
 
-    // 清除已勾選的自訂題目
-    clearSelectedQuestions() {
-      this.selectedQuestionIds.clear();
-      this.selectedQuizIdForSet = null;
+    // 清除已勾選的影片
+    clearSelectedQuizzes() {
+      this.selectedQuizIds.clear();
       this.renderEditorQuizList();
     }
 
     // 開啟自訂組合命名彈窗
-    openSaveCustomSetModal(quizId) {
-      const parentQuiz = this.quizzes.find(q => q.id === quizId) || this.quizzes.find(q => q.id === this.selectedQuizIdForSet);
-      if (!parentQuiz || this.selectedQuestionIds.size === 0) {
-        if (window.app) window.app.showNotification('提示', '請先在同一部影片中核選至少一題題目！');
+    openSaveCustomSetModal() {
+      if (this.selectedQuizIds.size === 0) {
+        if (window.app) window.app.showNotification('提示', '請先核選至少一部影片！');
         return;
       }
 
+      const selectedQuizzes = this.quizzes.filter(q => this.selectedQuizIds.has(q.id));
       const input = document.getElementById('vqCustomSetNameInput');
       if (input) {
-        input.value = `${parentQuiz.title.replace(/^[^a-zA-Z0-9\u4e00-\u9fa5]+/, '')} - 精選速測組`;
+        if (selectedQuizzes.length === 1) {
+          input.value = `${selectedQuizzes[0].title.replace(/^[^a-zA-Z0-9\u4e00-\u9fa5]+/, '')} - 精選速測組`;
+        } else {
+          const shortNames = selectedQuizzes.map(q => q.title.replace(/^[^a-zA-Z0-9\u4e00-\u9fa5]+/, '').slice(0, 6)).join('與');
+          input.value = `${shortNames} - 跨領域測驗組`;
+        }
       }
 
       const previewContainer = document.getElementById('vqCustomSetQuestionsPreview');
       if (previewContainer) {
-        const selectedQuestions = (parentQuiz.questions || []).filter(q => this.selectedQuestionIds.has(q.id));
-        previewContainer.innerHTML = selectedQuestions.map((q, idx) => `
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 13px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="badge" style="background: var(--accent-color); color: white; padding: 1px 6px; border-radius: 4px; font-size: 11px;">⏱️ ${q.timeFormatted || '00:00'}</span>
-              <span class="badge" style="background: var(--bg-input); padding: 1px 6px; border-radius: 4px; font-size: 11px; border: 1px solid var(--border-color);">${q.type === 'single' ? '單選' : (q.type === 'multiple' ? '複選' : '問答')}</span>
-              <span>${this.escapeHtml(q.prompt)}</span>
+        previewContainer.innerHTML = selectedQuizzes.map((q, idx) => `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 13px; background: var(--bg-card); margin-bottom: 4px; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+              <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">影片 ${idx + 1}</span>
+              <span style="font-weight: bold; color: var(--text-primary);">${this.escapeHtml(q.title)}</span>
             </div>
-            <span style="font-size: 11px; color: var(--text-secondary);">${q.points || 10} 分</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="badge" style="background: ${q.enabled !== false ? 'rgba(52,199,89,0.15)' : 'rgba(142,142,147,0.15)'}; color: ${q.enabled !== false ? '#28a745' : 'var(--text-muted)'}; padding: 2px 6px; border-radius: 4px; font-size: 11px;">
+                ${q.enabled !== false ? '🟢 前台開放' : '⚪ 前台隱藏'}
+              </span>
+              <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">共 ${q.questions?.length || 0} 題</span>
+            </div>
           </div>
         `).join('');
       }
@@ -1621,7 +1640,7 @@
       if (modal) modal.style.display = 'none';
     }
 
-    // 確認儲存自訂測驗組合
+    // 確認儲存自訂測驗組合 (多影片)
     confirmSaveCustomSet() {
       const input = document.getElementById('vqCustomSetNameInput');
       const name = input ? input.value.trim() : '';
@@ -1630,31 +1649,33 @@
         return;
       }
 
-      const parentQuiz = this.quizzes.find(q => q.id === this.selectedQuizIdForSet);
-      if (!parentQuiz || this.selectedQuestionIds.size === 0) {
-        if (window.app) window.app.showNotification('提示', '未選取有效的題目！');
+      const selected = this.quizzes.filter(q => this.selectedQuizIds.has(q.id));
+      if (selected.length === 0) {
+        if (window.app) window.app.showNotification('提示', '未選取任何影片！');
         return;
       }
+
+      const totalQuestions = selected.reduce((sum, q) => sum + (q.questions?.length || 0), 0);
 
       const newSet = {
         id: 'set_' + Date.now(),
         name: name,
-        quizId: parentQuiz.id,
-        quizTitle: parentQuiz.title,
-        videoUrl: parentQuiz.videoUrl,
-        questionIds: Array.from(this.selectedQuestionIds),
+        quizIds: selected.map(q => q.id),
+        quizTitles: selected.map(q => q.title),
+        quizCount: selected.length,
+        totalQuestions: totalQuestions,
         createdAt: Date.now()
       };
 
       this.customSets.unshift(newSet);
       this.saveCustomSets();
-      this.clearSelectedQuestions();
+      this.clearSelectedQuizzes();
       this.closeCustomSetModal();
       this.renderCustomSetsList();
       this.renderQuizSelector();
 
       if (window.app) {
-        window.app.showNotification('成功', `已成功建立自訂測驗組合「${name}」！未來可直接一鍵開測。`);
+        window.app.showNotification('成功', `已成功建立自訂測驗組合「${name}」（含 ${selected.length} 部影片）！未來可直接一鍵開測。`);
       }
     }
 
@@ -1675,40 +1696,18 @@
     startSyncQuizFromCustomSet(setId) {
       const set = this.customSets.find(s => s.id === setId);
       if (!set) return;
-      const parent = this.quizzes.find(q => q.id === set.quizId);
-      if (!parent) {
-        if (window.app) window.app.showNotification('錯誤', '找不到此組合的原影片題庫！');
-        return;
-      }
-
-      const clonedQuiz = JSON.parse(JSON.stringify(parent));
-      clonedQuiz.id = `custom_${set.id}`;
-      clonedQuiz.title = `🌟 ${set.name}`;
-      clonedQuiz.description = `【常用自訂組合】原影片：${parent.title}（精選 ${set.questionIds.length} 題）`;
-      clonedQuiz.questions = (clonedQuiz.questions || []).filter(q => set.questionIds.includes(q.id));
 
       this.setGlobalMode('sync');
-      this.startSyncQuizAsTeacher(clonedQuiz.id, clonedQuiz);
+      this.startSyncQuizAsTeacher('custom:' + setId);
     }
 
     // 將自訂組合指派給自主學習模式
     assignCustomSetToSelfPaced(setId) {
       const set = this.customSets.find(s => s.id === setId);
       if (!set) return;
-      const parent = this.quizzes.find(q => q.id === set.quizId);
-      if (!parent) {
-        if (window.app) window.app.showNotification('錯誤', '找不到此組合的原影片題庫！');
-        return;
-      }
-
-      const clonedQuiz = JSON.parse(JSON.stringify(parent));
-      clonedQuiz.id = `custom_${set.id}`;
-      clonedQuiz.title = `🌟 ${set.name}`;
-      clonedQuiz.description = `【常用自訂組合】原影片：${parent.title}（精選 ${set.questionIds.length} 題）`;
-      clonedQuiz.questions = (clonedQuiz.questions || []).filter(q => set.questionIds.includes(q.id));
 
       this.setGlobalMode('self');
-      this.startSelfPacedQuiz(clonedQuiz.id, clonedQuiz);
+      this.startSelfPacedQuiz('custom:' + setId);
       if (window.app && typeof window.app.switchToTab === 'function') {
         window.app.switchToTab('panel-video-quiz');
       }
@@ -1717,32 +1716,30 @@
       }
     }
 
-    // 切換單題出題狀態 (啟用 / 略過)
-    toggleQuestionEnabled(quizId, qId) {
+    // 切換影片在前台的開放 / 隱藏狀態 (需求 a)
+    toggleQuizEnabled(quizId) {
       const quiz = this.quizzes.find(q => q.id === quizId);
-      if (!quiz || !quiz.questions) return;
-      const q = quiz.questions.find(item => item.id === qId);
-      if (!q) return;
+      if (!quiz) return;
 
-      q.enabled = (q.enabled === false); // 若為 false 則轉為 true，若為 true 或 undefined 則轉為 false
+      quiz.enabled = (quiz.enabled === false); // 若為 false 轉為 true，若為 true 或 undefined 轉為 false
       this.saveQuizzes();
       this.renderEditorQuizList();
       this.renderQuizSelector();
 
       if (window.app) {
-        const status = q.enabled !== false ? '已啟用（前台將測驗此題）' : '已設為略過（前台測驗跳過此題）';
-        window.app.showNotification('出題設定', `第 ${quiz.questions.indexOf(q) + 1} 題：${status}`);
+        const status = quiz.enabled !== false ? '已開放（學生端可見並能進行測驗）' : '已隱藏（學生端不會顯示此影片）';
+        window.app.showNotification('影片出題設定', `《${quiz.title}》：${status}`);
       }
     }
 
-    // 設定後台題庫搜尋關鍵字
+    // 設定後台題庫搜尋關鍵字 (需求 b)
     setAdminSearchQuery(query) {
       this.adminSearchQuery = (query || '').trim().toLowerCase();
       this.adminCurrentPage = 1;
       this.renderEditorQuizList();
     }
 
-    // 切換後台題庫分頁
+    // 切換後台題庫分頁 (需求 b)
     setAdminPage(page) {
       this.adminCurrentPage = page;
       this.renderEditorQuizList();
@@ -1757,7 +1754,7 @@
       const otherContainer = document.getElementById('vqEditorQuizList');
       const paginationContainer = document.getElementById('vqAdminPaginationContainer');
 
-      // 1. 搜尋過濾
+      // 1. 影片搜尋過濾 (需求 b)
       const qText = this.adminSearchQuery;
       const filtered = this.quizzes.filter(quiz => {
         if (!qText) return true;
@@ -1772,7 +1769,7 @@
         return inTitle || inDesc || inUrl || inQ;
       });
 
-      // 2. 分頁計算
+      // 2. 影片分頁計算 (需求 b)
       const totalItems = filtered.length;
       const totalPages = Math.max(1, Math.ceil(totalItems / this.adminPageSize));
       if (this.adminCurrentPage > totalPages) this.adminCurrentPage = totalPages;
@@ -1783,105 +1780,98 @@
 
       // 3. 渲染題庫卡片清單
       let html = '';
+
+      // 多選影片批量操作列 (需求 c)
+      if (this.selectedQuizIds.size > 0) {
+        html += `
+          <div style="background: rgba(0,122,255,0.08); border: 1.5px dashed var(--accent-color); border-radius: 10px; padding: 10px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <span style="font-size: 13px; font-weight: bold; color: var(--accent-color);">
+              ✨ 目前已核選 ${this.selectedQuizIds.size} 部影片
+            </span>
+            <div style="display: flex; gap: 8px;">
+              <button onclick="window.videoQuiz.openSaveCustomSetModal()" class="action-btn" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                🌟 儲存為常用影片測驗組合
+              </button>
+              <button onclick="window.videoQuiz.clearSelectedQuizzes()" class="action-btn" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                ✕ 取消核選
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
       if (this.quizzes.length === 0) {
-        html = `
+        html += `
           <div style="text-align: center; padding: 28px; color: var(--text-secondary); font-size: 14px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);">
             目前尚無影片測驗，請點擊上方「➕ 建立新影片測驗」或「📥 匯入題庫」開始！
           </div>
         `;
       } else if (pageQuizzes.length === 0) {
-        html = `
+        html += `
           <div style="text-align: center; padding: 24px; color: var(--text-secondary); font-size: 14px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);">
-            🔍 查無符合「${this.escapeHtml(qText)}」的測驗或題目，請嘗試其他關鍵字。
+            🔍 查無符合「${this.escapeHtml(qText)}」的影片或題目，請嘗試其他關鍵字。
           </div>
         `;
       } else {
-        html = pageQuizzes.map(quiz => {
+        html += pageQuizzes.map(quiz => {
           const questions = quiz.questions || [];
-          const enabledCount = questions.filter(q => q.enabled !== false).length;
-          const isCurrentQuizSelected = (this.selectedQuizIdForSet === quiz.id);
-          const selectedCountInThisQuiz = isCurrentQuizSelected ? this.selectedQuestionIds.size : 0;
+          const isEnabled = (quiz.enabled !== false);
+          const isChecked = this.selectedQuizIds.has(quiz.id);
 
-          const questionsHtml = questions.length === 0 ? `
-            <div style="padding: 10px; color: var(--text-muted); font-size: 13px; text-align: center;">尚未設定任何題目</div>
-          ` : questions.map((q, idx) => {
-            const isEnabled = (q.enabled !== false);
-            const isChecked = isCurrentQuizSelected && this.selectedQuestionIds.has(q.id);
-            const typeLabel = q.type === 'single' ? '單選' : (q.type === 'multiple' ? '複選' : '問答');
-
-            return `
-              <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; margin-bottom: 6px; background: ${isEnabled ? 'var(--bg-card)' : 'rgba(0,0,0,0.03)'}; border: 1px solid ${isChecked ? 'var(--accent-color)' : 'var(--border-color)'}; border-radius: 8px; gap: 8px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 240px;">
-                  <!-- 核選以自訂常用組合 -->
-                  <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.videoQuiz.toggleSelectQuestionForCustomSet('${quiz.id}', '${q.id}')" title="核選此題加入自訂組合" style="width: 17px; height: 17px; cursor: pointer;">
-                  
-                  <!-- 時間點與題型標籤 -->
-                  <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 7px; border-radius: 6px; font-size: 11px; white-space: nowrap;">⏱️ ${q.timeFormatted || '00:00'}</span>
-                  <span class="badge" style="background: var(--bg-input); color: var(--text-primary); padding: 2px 7px; border-radius: 6px; font-size: 11px; border: 1px solid var(--border-color); white-space: nowrap;">${typeLabel}</span>
-                  
-                  <!-- 題目問句 -->
-                  <span style="font-size: 13px; color: ${isEnabled ? 'var(--text-primary)' : 'var(--text-muted)'}; text-decoration: ${isEnabled ? 'none' : 'line-through'}; word-break: break-word;">
-                    ${this.escapeHtml(q.prompt)}
-                  </span>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <!-- 題目出題開關 (需求 a) -->
-                  <button class="action-btn" onclick="window.videoQuiz.toggleQuestionEnabled('${quiz.id}', '${q.id}')" style="background: ${isEnabled ? 'rgba(52,199,89,0.12)' : 'rgba(142,142,147,0.15)'}; color: ${isEnabled ? '#28a745' : 'var(--text-muted)'}; border: 1px solid ${isEnabled ? 'rgba(52,199,89,0.3)' : 'var(--border-color)'}; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="${isEnabled ? '點擊設為略過（前台測驗將跳過此題）' : '點擊啟用此題（前台測驗進行作答）'}">
-                    ${isEnabled ? '🟢 前台出題中' : '⚪ 前台已略過'}
-                  </button>
-                </div>
+          const questionsPreview = questions.length === 0 ? `
+            <div style="padding: 6px; color: var(--text-muted); font-size: 12px; text-align: center;">尚未設定任何題目</div>
+          ` : questions.map((q, idx) => `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; margin-bottom: 4px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
+                <span class="badge" style="background: var(--accent-color); color: white; padding: 1px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap;">⏱️ ${q.timeFormatted || '00:00'}</span>
+                <span class="badge" style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 1px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap;">${q.type === 'single' ? '單選' : (q.type === 'multiple' ? '複選' : '問答')}</span>
+                <span style="color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px;">${this.escapeHtml(q.prompt)}</span>
               </div>
-            `;
-          }).join('');
+              <span style="color: var(--text-secondary); font-size: 11px; white-space: nowrap;">${q.points || 10} 分</span>
+            </div>
+          `).join('');
 
           return `
-            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-              <!-- 測驗卡片標題列 -->
+            <div style="background: var(--bg-card); border: 1.5px solid ${isChecked ? 'var(--accent-color)' : 'var(--border-color)'}; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+              <!-- 測驗卡片頂部控制列 (核選、標題、開放開關、操作按鈕) -->
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
-                <div>
-                  <div style="font-weight: bold; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                    <span>🎬 ${this.escapeHtml(quiz.title)}</span>
-                    <span class="badge" style="background: ${enabledCount > 0 ? 'var(--accent-color)' : 'var(--text-muted)'}; color: white; padding: 2px 8px; border-radius: 8px; font-size: 11px;">出題 ${enabledCount} / ${questions.length} 題</span>
+                <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 260px;">
+                  <!-- 核選以自訂常用組合 (需求 c) -->
+                  <div style="padding-top: 3px;">
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.videoQuiz.toggleSelectQuizForCustomSet('${quiz.id}')" title="核選此影片加入常用組合" style="width: 18px; height: 18px; cursor: pointer;">
                   </div>
-                  <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                    影片：<a href="${this.escapeHtml(quiz.videoUrl)}" target="_blank" style="color: var(--accent-color); text-decoration: none;">${this.escapeHtml(quiz.videoUrl)}</a> · 建立時間：${new Date(quiz.createdAt || Date.now()).toLocaleDateString()}
+                  <div>
+                    <div style="font-weight: bold; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <span>🎬 ${this.escapeHtml(quiz.title)}</span>
+                      <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 8px; font-size: 11px;">共 ${questions.length} 題</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; word-break: break-all;">
+                      影片：<a href="${this.escapeHtml(quiz.videoUrl)}" target="_blank" style="color: var(--accent-color); text-decoration: none;">${this.escapeHtml(quiz.videoUrl)}</a> · 建立時間：${new Date(quiz.createdAt || Date.now()).toLocaleDateString()}
+                    </div>
                   </div>
                 </div>
-                <div style="display: flex; gap: 6px;">
-                  <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal('${quiz.id}')" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">✏️ 編輯內容</button>
+
+                <!-- 影片出題開關 (需求 a) 與 編輯/刪除按鈕 -->
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <button class="action-btn" onclick="window.videoQuiz.toggleQuizEnabled('${quiz.id}')" style="background: ${isEnabled ? 'rgba(52,199,89,0.12)' : 'rgba(142,142,147,0.15)'}; color: ${isEnabled ? '#28a745' : 'var(--text-muted)'}; border: 1px solid ${isEnabled ? 'rgba(52,199,89,0.3)' : 'var(--border-color)'}; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="${isEnabled ? '點擊設為隱藏（前台學生選單不顯示此影片）' : '點擊設為開放（前台學生可見並能測驗此影片）'}">
+                    ${isEnabled ? '🟢 前台開放測驗' : '⚪ 前台隱藏 (不顯示)'}
+                  </button>
+                  <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal('${quiz.id}')" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">✏️ 編輯題目</button>
                   <button class="action-btn" onclick="window.videoQuiz.deleteQuiz('${quiz.id}')" style="background: var(--danger-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">🗑️ 刪除</button>
                 </div>
               </div>
 
-              <!-- 題目清單區塊 -->
+              <!-- 題目預覽列表 -->
               <div style="background: var(--bg-input); border-radius: 10px; padding: 10px; border: 1px solid var(--border-color); margin-top: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border-color);">
                   <span style="font-size: 12px; font-weight: bold; color: var(--text-secondary);">
-                    📌 題目出題控制與組合核選（可勾選題目建立常用自訂組合）：
+                    📌 影片題目預覽：
                   </span>
                   <span style="font-size: 11px; color: var(--text-muted);">
-                    點擊「🟢 前台出題中」即可自由啟用或跳過該題
+                    點擊右上角「✏️ 編輯題目」可微調各題時間點與選項
                   </span>
                 </div>
-                ${questionsHtml}
-
-                <!-- 核選動作列 (需求 c) -->
-                ${selectedCountInThisQuiz > 0 ? `
-                  <div style="background: rgba(0,122,255,0.08); border: 1.5px dashed var(--accent-color); border-radius: 8px; padding: 10px 14px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                    <span style="font-size: 13px; font-weight: bold; color: var(--accent-color);">
-                      ✨ 本測驗已勾選 ${selectedCountInThisQuiz} 道題目
-                    </span>
-                    <div style="display: flex; gap: 8px;">
-                      <button onclick="window.videoQuiz.openSaveCustomSetModal('${quiz.id}')" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
-                        🌟 儲存為常用測驗組合
-                      </button>
-                      <button onclick="window.videoQuiz.clearSelectedQuestions()" style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                        ✕ 取消核選
-                      </button>
-                    </div>
-                  </div>
-                ` : ''}
+                ${questionsPreview}
               </div>
             </div>
           `;

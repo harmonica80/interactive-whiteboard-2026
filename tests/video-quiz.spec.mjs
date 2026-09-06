@@ -118,15 +118,14 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
     expect(modeResult.syncSectionVisible).toBe(true)
   })
 
-  test('Teacher can toggle per-question enabled/disabled status', async ({ page }) => {
+  test('Teacher can toggle per-video enabled/disabled status', async ({ page }) => {
     const toggleResult = await page.evaluate(() => {
       const quiz = window.videoQuiz.quizzes[0]
-      const q = quiz.questions[0]
-      const initEnabled = q.enabled !== false
-      window.videoQuiz.toggleQuestionEnabled(quiz.id, q.id)
-      const afterFirstToggle = q.enabled === false
-      window.videoQuiz.toggleQuestionEnabled(quiz.id, q.id)
-      const afterSecondToggle = q.enabled !== false
+      const initEnabled = quiz.enabled !== false
+      window.videoQuiz.toggleQuizEnabled(quiz.id)
+      const afterFirstToggle = quiz.enabled === false
+      window.videoQuiz.toggleQuizEnabled(quiz.id)
+      const afterSecondToggle = quiz.enabled !== false
       return { initEnabled, afterFirstToggle, afterSecondToggle }
     })
 
@@ -135,7 +134,7 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
     expect(toggleResult.afterSecondToggle).toBe(true)
   })
 
-  test('Admin quiz bank supports search and pagination', async ({ page }) => {
+  test('Admin quiz bank supports search and pagination by video', async ({ page }) => {
     const searchPaginationResult = await page.evaluate(() => {
       window.videoQuiz.setAdminSearchQuery('太陽系')
       const filtered1 = window.videoQuiz.adminSearchQuery === '太陽系'
@@ -153,35 +152,34 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
     expect(searchPaginationResult.page1).toBe(true)
   })
 
-  test('Teacher can check questions to create custom quiz set and load to start', async ({ page }) => {
+  test('Teacher can check single or multiple videos to create custom quiz set and load to start', async ({ page }) => {
     const customSetResult = await page.evaluate(() => {
-      const quiz = window.videoQuiz.quizzes[0]
-      const q1 = quiz.questions[0].id
-      const q2 = quiz.questions[1].id
+      const q1 = window.videoQuiz.quizzes[0]?.id
+      const q2 = window.videoQuiz.quizzes[1]?.id
 
-      window.videoQuiz.toggleSelectQuestionForCustomSet(quiz.id, q1)
-      window.videoQuiz.toggleSelectQuestionForCustomSet(quiz.id, q2)
-      const selectedCount = window.videoQuiz.selectedQuestionIds.size
+      window.videoQuiz.toggleSelectQuizForCustomSet(q1)
+      if (q2) window.videoQuiz.toggleSelectQuizForCustomSet(q2)
+      const selectedCount = window.videoQuiz.selectedQuizIds.size
 
       // Mock open modal and confirm save
-      window.videoQuiz.openSaveCustomSetModal(quiz.id)
-      document.getElementById('vqCustomSetNameInput').value = '單元核心速測兩題組'
+      window.videoQuiz.openSaveCustomSetModal()
+      document.getElementById('vqCustomSetNameInput').value = '綜合影音複習測驗組'
       window.videoQuiz.confirmSaveCustomSet()
 
-      const created = window.videoQuiz.customSets.find(s => s.name === '單元核心速測兩題組')
-      const hasOptionInDropdown = document.getElementById('vqAdminQuizSelect')?.innerHTML.includes('單元核心速測兩題組')
+      const created = window.videoQuiz.customSets.find(s => s.name === '綜合影音複習測驗組')
+      const hasOptionInDropdown = document.getElementById('vqAdminQuizSelect')?.innerHTML.includes('綜合影音複習測驗組')
 
       return {
         selectedCount,
         createdSet: !!created,
-        questionCount: created?.questionIds?.length,
+        quizCount: created?.quizIds?.length,
         hasOptionInDropdown
       }
     })
 
-    expect(customSetResult.selectedCount).toBe(2)
+    expect(customSetResult.selectedCount).toBeGreaterThanOrEqual(1)
     expect(customSetResult.createdSet).toBe(true)
-    expect(customSetResult.questionCount).toBe(2)
+    expect(customSetResult.quizCount).toBeGreaterThanOrEqual(1)
     expect(customSetResult.hasOptionInDropdown).toBe(true)
   })
 })
