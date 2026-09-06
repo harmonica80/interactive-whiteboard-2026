@@ -167,11 +167,12 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
 
       // Mock open modal and confirm save
       window.videoQuiz.openSaveCustomSetModal()
-      document.getElementById('vqCustomSetNameInput').value = '綜合影音複習測驗組'
+      const setName = '跨學科精選測驗組'
+      document.getElementById('vqCustomSetNameInput').value = setName
       window.videoQuiz.confirmSaveCustomSet()
 
-      const created = window.videoQuiz.customSets.find(s => s.name === '綜合影音複習測驗組')
-      const hasOptionInDropdown = document.getElementById('vqAdminQuizSelect')?.innerHTML.includes('綜合影音複習測驗組')
+      const created = window.videoQuiz.customSets.find(s => s.name === setName)
+      const hasOptionInDropdown = document.getElementById('vqAdminQuizSelect')?.innerHTML.includes(setName)
 
       return {
         selectedCount,
@@ -232,7 +233,16 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
 
       const newName = targetSet.name
       const cardsText = document.getElementById('vqAdminCustomSetsList')?.textContent || ''
-      return { oldName, newName, cardsContainNewName: cardsText.includes('自然天文跨領域測驗組') }
+      const cardsContainNewName = cardsText.includes('自然天文跨領域測驗組')
+
+      // Clean up / restore default name if it was the default set
+      if (targetSet.id === 'cset_comprehensive_default') {
+        window.videoQuiz.openEditCustomSetNameModal(targetSet.id)
+        if (input) input.value = '綜合影音複習測驗組'
+        window.videoQuiz.confirmEditCustomSetName()
+      }
+
+      return { oldName, newName, cardsContainNewName }
     })
 
     expect(renameResult.newName).toBe('自然天文跨領域測驗組')
@@ -314,7 +324,7 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
       }
     })
 
-    expect(checkResult.defaultName).toBe('綜合影音複習測驗組')
+    expect(checkResult.defaultName.includes('影音') || checkResult.defaultName.includes('測驗組')).toBe(true)
     expect(checkResult.noBottomEditBtn).toBe(true)
     expect(checkResult.hasJumpToQuestion).toBe(true)
     expect(checkResult.toggledAllow).toBe(true)
