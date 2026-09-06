@@ -190,7 +190,10 @@
 
     // 清理與驗證測驗組合清單（官方預設範例僅嚴格保留唯一一組「綜合影音複習測驗組」，其餘舊範例一律清理刪除）
     sanitizeCustomSets(list) {
-      const defaultSet = JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS[0]));
+      const existingDefault = Array.isArray(list) ? list.find(s => s && (s.id === 'cset_comprehensive_default' || s.name === '綜合影音複習測驗組')) : null;
+      const defaultSet = existingDefault
+        ? JSON.parse(JSON.stringify(existingDefault))
+        : JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS[0]));
       if (!Array.isArray(list) || list.length === 0) {
         return [defaultSet];
       }
@@ -210,7 +213,7 @@
       // 篩選出使用者自行新建的非範例組合（排除官方預設範例與各舊版範例）
       const userCreatedSets = list.filter(s => {
         if (!s || !s.name) return false;
-        if (s.name === '綜合影音複習測驗組' || s.id === 'cset_comprehensive_default') return false;
+        if (s.name === '綜合影音複習測驗組' || s.id === 'cset_comprehensive_default' || s.id === defaultSet.id) return false;
         if (legacySampleNames.has(s.name)) return false;
         if (s.id && (s.id.startsWith('cset_default') || s.id.startsWith('cset_sample'))) return false;
         return true;

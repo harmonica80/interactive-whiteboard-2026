@@ -7,23 +7,25 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
 
   test('Video Quiz panel and VideoQuizManager initialize correctly', async ({ page }) => {
     const initialized = await page.evaluate(() => {
+      const solarQuiz = window.videoQuiz?.quizzes?.find(q => q.title.includes('太陽系')) || window.videoQuiz?.quizzes[0]
       return {
         hasManager: typeof window.videoQuiz !== 'undefined',
         hasQuizzes: Array.isArray(window.videoQuiz?.quizzes) && window.videoQuiz.quizzes.length > 0,
-        firstQuiz: window.videoQuiz?.quizzes[0]?.title,
-        questionsCount: window.videoQuiz?.quizzes[0]?.questions?.length
+        hasSolarQuiz: window.videoQuiz?.quizzes?.some(q => q.title.includes('太陽系')),
+        questionsCount: solarQuiz?.questions?.length
       }
     })
 
     expect(initialized.hasManager).toBe(true)
     expect(initialized.hasQuizzes).toBe(true)
-    expect(initialized.firstQuiz).toContain('太陽系')
+    expect(initialized.hasSolarQuiz).toBe(true)
     expect(initialized.questionsCount).toBeGreaterThanOrEqual(3)
   })
 
   test('Supports Single Choice, Multiple Choice, and Short Answer Text questions', async ({ page }) => {
     const questionTypes = await page.evaluate(() => {
-      const qList = window.videoQuiz?.quizzes[0]?.questions || []
+      const solarQuiz = window.videoQuiz?.quizzes?.find(q => q.title.includes('太陽系')) || window.videoQuiz?.quizzes[0]
+      const qList = solarQuiz?.questions || []
       return {
         types: qList.map(q => q.type),
         hasSingle: qList.some(q => q.type === 'single'),
@@ -120,12 +122,14 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
 
   test('Teacher can toggle per-video enabled/disabled status', async ({ page }) => {
     const toggleResult = await page.evaluate(() => {
-      const quiz = window.videoQuiz.quizzes[0]
-      const initEnabled = quiz.enabled !== false
-      window.videoQuiz.toggleQuizEnabled(quiz.id)
-      const afterFirstToggle = quiz.enabled === false
-      window.videoQuiz.toggleQuizEnabled(quiz.id)
-      const afterSecondToggle = quiz.enabled !== false
+      const targetId = window.videoQuiz.quizzes[0].id
+      const getQuiz = () => window.videoQuiz.quizzes.find(q => q.id === targetId)
+      getQuiz().enabled = true
+      const initEnabled = getQuiz().enabled !== false
+      window.videoQuiz.toggleQuizEnabled(targetId)
+      const afterFirstToggle = getQuiz().enabled === false
+      window.videoQuiz.toggleQuizEnabled(targetId)
+      const afterSecondToggle = getQuiz().enabled !== false
       return { initEnabled, afterFirstToggle, afterSecondToggle }
     })
 

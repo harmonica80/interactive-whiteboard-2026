@@ -5471,3 +5471,7 @@ const CHARACTER_UNITED_WORDS_POOL = [
   { id: 149, targetWord: "神殿", chars: ["神", "殿"], components: ["礻", "申", "殿"], clue: "供奉神祇莊嚴的神聖場所" },
   { id: 150, targetWord: "樂園", chars: ["樂", "園"], components: ["白", "木", "幺", "囗", "袁"], clue: "充滿歡聲笑語的遊樂園地" }
 ];
+
+if (typeof window !== 'undefined') {
+  window.CHARACTER_TEST_POOL = CHARACTER_TEST_POOL;
+}
