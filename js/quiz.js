@@ -134,10 +134,11 @@ class Quiz {
       // 顯示答題選項
       if (answerOptions) {
         answerOptions.style.display = 'block';
+        const quizOpts = Array.isArray(this.currentQuiz.options) ? this.currentQuiz.options : [];
         if (isMultiple) {
           answerOptions.innerHTML = `
             <div class="answer-options-container multiple-choice-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
-              ${this.currentQuiz.options.map((opt, i) => `
+              ${quizOpts.map((opt, i) => `
                 <label class="answer-option-multiple" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; user-select: none; transition: all 0.2s ease;">
                   <input type="checkbox" class="quiz-multiple-checkbox" value="${i}" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-color);">
                   <span class="option-text" style="font-size: 15px; font-weight: bold; color: var(--text-primary);">${this.escapeHtml(opt)}</span>
@@ -151,7 +152,7 @@ class Quiz {
         } else {
           answerOptions.innerHTML = `
             <div class="answer-options-container">
-              ${this.currentQuiz.options.map((opt, i) => `
+              ${quizOpts.map((opt, i) => `
                 <button class="answer-option" onclick="window.quiz.submitAnswer(${i})">
                   ${this.escapeHtml(opt)}
                 </button>
@@ -178,8 +179,10 @@ class Quiz {
     const resultsContainer = document.getElementById('quizResults');
     if (!resultsContainer || !this.currentQuiz || !this.currentQuiz.active) return;
     
+    const quizOpts = Array.isArray(this.currentQuiz.options) ? this.currentQuiz.options : [];
     const totalVoters = Object.keys(answers).length;
-    const optionCount = this.currentQuiz.options.length;
+    const optionCount = quizOpts.length;
+    if (optionCount === 0) return;
     const counts = new Array(optionCount).fill(0);
     
     Object.values(answers).forEach(answer => {
@@ -196,7 +199,7 @@ class Quiz {
       <div style="margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">
         已回答: ${totalVoters} 人 ${this.currentQuiz.quizType === 'multiple' ? '(複選計票)' : ''}
       </div>
-      ${this.currentQuiz.options.map((opt, i) => `
+      ${quizOpts.map((opt, i) => `
         <div class="result-bar">
           <span class="result-label">${this.escapeHtml(opt)}</span>
           <div class="result-progress">
@@ -216,7 +219,8 @@ class Quiz {
     this.answersRef.once('value', (snapshot) => {
       const answers = snapshot.val() || {};
       const totalVoters = Object.keys(answers).length;
-      const optionCount = this.currentQuiz ? this.currentQuiz.options.length : 0;
+      const quizOpts = (this.currentQuiz && Array.isArray(this.currentQuiz.options)) ? this.currentQuiz.options : [];
+      const optionCount = quizOpts.length;
       if (optionCount === 0) return;
       const counts = new Array(optionCount).fill(0);
       
@@ -240,7 +244,7 @@ class Quiz {
           <div style="font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">📊 最終結果</div>
           <div style="font-size: 12px; color: var(--text-secondary);">總計 ${totalVoters} 人作答 ${this.currentQuiz.quizType === 'multiple' ? '(複選題)' : ''}</div>
         </div>
-        ${this.currentQuiz.options.map((opt, i) => `
+        ${quizOpts.map((opt, i) => `
           <div class="result-bar">
             <span class="result-label">${this.escapeHtml(opt)}</span>
             <div class="result-progress">

@@ -445,7 +445,7 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     })
 
     expect(styles.alignItems).toBe('flex-start')
-    expect(styles.objectPosition).toContain('top')
+    expect(styles.objectPosition.includes('top') || styles.objectPosition === '50% 0%').toBe(true)
   })
 
   test('Image thumbnail (.preview-item img) displays from top edge (object-position: top center)', async ({ page }) => {
@@ -465,7 +465,7 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
       return res
     })
 
-    expect(objPos).toContain('top')
+    expect(objPos.includes('top') || objPos === '50% 0%').toBe(true)
   })
 
   test('Character test pool contains 痙攣 with both 痙 and 攣 entries', async ({ page }) => {
