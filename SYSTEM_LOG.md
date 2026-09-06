@@ -1,4 +1,26 @@
 # System Log
+## 2026-09-06 - ver 3.0.1 影片測驗學生端模式由老師統一主導、後台題目自由出題開關、分頁搜尋與常用自訂組合
+- 影響檔案：`js/video_quiz.js`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `tests/video-quiz.spec.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **學生端模式由老師端統一設定，不開放同學自行切換**：
+     - 移除學生前台的自主切換按鈕，改為即時顯示老師指定的「學生端模式狀態列」（`#vqStudentModeBanner`、`#vqStudentModeBadge`、`#vqStudentModeNote`）。
+     - 管理後台新增「🎯 學生端測驗模式設定」控制項（🧑‍🏫 全班同步測驗模式 / 🎧 個人自主學習模式），設定後透過 Firebase `quiz/videoQuizSettings` 全班即時連動切換。
+  2. **後台題庫管理 - 題目自由出題設定（自由決定哪幾題進行測驗）**：
+     - 每個題目的出題時間節點提供「🟢 前台出題中 / ⚪ 前台已略過」即時切換開關。
+     - 影片播放時無論在全班同步模式或自主學習模式，皆會智慧跳過標記為已略過的題目，達成自由選定出題題目的彈性。
+  3. **後台題庫管理 - 關鍵字即時搜尋與分頁導覽**：
+     - 提供即時搜尋欄（`#vqAdminSearchInput`），支援按測驗標題、簡介、影片網址及題目內容多維度即時過濾。
+     - 支援分頁控制（`#vqAdminPaginationContainer`），清晰顯示目前頁數、總筆數並提供上/下一頁與頁碼快速跳轉。
+  4. **後台題庫管理 - 核選題目自訂名稱為常用組合與快速開測**：
+     - 在各測驗題目清單中提供題目勾選核取方塊，勾選單題或多題後自動顯示自訂組合工具列。
+     - 新增自訂組合命名彈窗（`#vqCustomSetModal`），可輸入名稱（如「八大行星核心速測組」）並預覽勾選題目後儲存。
+     - 管理後台新增「🌟 常用自訂測驗組合」專區（`#vqAdminCustomSetsList`），卡片直覺呈現並支援「▶ 全班開測」、「🎧 自主學習」與「🗑️ 刪除」。
+     - 測驗下拉選單（`vqAdminQuizSelect`、`vqSyncQuizSelect`、`vqSelfQuizSelect`）同步新增「🌟 常用自訂測驗組合」分組選項。
+  5. **版本號升級**：
+     - 依規範嚴格增加 `+0.01`，由 `ver 3.0.0` 升級為 **`ver 3.0.1`**。
+     - 更新 `css/style.css?v=171` 與全域腳本標記 `?v=301`。
+
+---
 ## 2026-09-05 - ver 3.0.0 影片出題教師端功能移至管理後台與解鎖後台登入按鈕
 - 影響檔案：`js/video_quiz.js`, `css/style.css`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`。
 - 修改項目：

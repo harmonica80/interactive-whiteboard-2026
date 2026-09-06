@@ -97,4 +97,91 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
     expect(calcResult.hasLeaderboard).toBe(true)
     expect(calcResult.hasCSVBtn).toBe(true)
   })
+
+  test('Teacher controls global student mode strictly (sync vs self)', async ({ page }) => {
+    const modeResult = await page.evaluate(() => {
+      window.videoQuiz.setGlobalMode('self')
+      const isSelf = window.videoQuiz.globalMode === 'self'
+      const badgeText = document.getElementById('vqStudentModeBadge')?.textContent || ''
+      const selfSectionVisible = document.getElementById('vqSelfSection')?.style.display === 'block'
+
+      window.videoQuiz.setGlobalMode('sync')
+      const isSync = window.videoQuiz.globalMode === 'sync'
+      const syncSectionVisible = document.getElementById('vqSyncSection')?.style.display === 'block'
+
+      return { isSelf, badgeText, selfSectionVisible, isSync, syncSectionVisible }
+    })
+
+    expect(modeResult.isSelf).toBe(true)
+    expect(modeResult.badgeText).toContain('個人自主學習')
+    expect(modeResult.isSync).toBe(true)
+    expect(modeResult.syncSectionVisible).toBe(true)
+  })
+
+  test('Teacher can toggle per-question enabled/disabled status', async ({ page }) => {
+    const toggleResult = await page.evaluate(() => {
+      const quiz = window.videoQuiz.quizzes[0]
+      const q = quiz.questions[0]
+      const initEnabled = q.enabled !== false
+      window.videoQuiz.toggleQuestionEnabled(quiz.id, q.id)
+      const afterFirstToggle = q.enabled === false
+      window.videoQuiz.toggleQuestionEnabled(quiz.id, q.id)
+      const afterSecondToggle = q.enabled !== false
+      return { initEnabled, afterFirstToggle, afterSecondToggle }
+    })
+
+    expect(toggleResult.initEnabled).toBe(true)
+    expect(toggleResult.afterFirstToggle).toBe(true)
+    expect(toggleResult.afterSecondToggle).toBe(true)
+  })
+
+  test('Admin quiz bank supports search and pagination', async ({ page }) => {
+    const searchPaginationResult = await page.evaluate(() => {
+      window.videoQuiz.setAdminSearchQuery('太陽系')
+      const filtered1 = window.videoQuiz.adminSearchQuery === '太陽系'
+      window.videoQuiz.setAdminSearchQuery('不存在的關鍵字xyz123')
+      const containerText = document.getElementById('vqAdminEditorQuizList')?.textContent || ''
+      const hasEmptyNotice = containerText.includes('查無符合')
+      window.videoQuiz.setAdminSearchQuery('')
+      window.videoQuiz.setAdminPage(1)
+      const page1 = window.videoQuiz.adminCurrentPage === 1
+      return { filtered1, hasEmptyNotice, page1 }
+    })
+
+    expect(searchPaginationResult.filtered1).toBe(true)
+    expect(searchPaginationResult.hasEmptyNotice).toBe(true)
+    expect(searchPaginationResult.page1).toBe(true)
+  })
+
+  test('Teacher can check questions to create custom quiz set and load to start', async ({ page }) => {
+    const customSetResult = await page.evaluate(() => {
+      const quiz = window.videoQuiz.quizzes[0]
+      const q1 = quiz.questions[0].id
+      const q2 = quiz.questions[1].id
+
+      window.videoQuiz.toggleSelectQuestionForCustomSet(quiz.id, q1)
+      window.videoQuiz.toggleSelectQuestionForCustomSet(quiz.id, q2)
+      const selectedCount = window.videoQuiz.selectedQuestionIds.size
+
+      // Mock open modal and confirm save
+      window.videoQuiz.openSaveCustomSetModal(quiz.id)
+      document.getElementById('vqCustomSetNameInput').value = '單元核心速測兩題組'
+      window.videoQuiz.confirmSaveCustomSet()
+
+      const created = window.videoQuiz.customSets.find(s => s.name === '單元核心速測兩題組')
+      const hasOptionInDropdown = document.getElementById('vqAdminQuizSelect')?.innerHTML.includes('單元核心速測兩題組')
+
+      return {
+        selectedCount,
+        createdSet: !!created,
+        questionCount: created?.questionIds?.length,
+        hasOptionInDropdown
+      }
+    })
+
+    expect(customSetResult.selectedCount).toBe(2)
+    expect(customSetResult.createdSet).toBe(true)
+    expect(customSetResult.questionCount).toBe(2)
+    expect(customSetResult.hasOptionInDropdown).toBe(true)
+  })
 })

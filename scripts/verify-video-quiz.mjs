@@ -8,40 +8,39 @@ const css = fs.readFileSync('css/style.css', 'utf8');
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
 const checks = [
-  ['package.json version 2.9.9', pkg.version === '2.9.9'],
-  ['app.js APP_VERSION 2.9.9', appJs.includes("this.APP_VERSION = '2.9.9';")],
-  ['index.html badge ver 2.9.9', html.includes('ver 2.9.9')],
-  ['index.html style.css?v=169', html.includes('css/style.css?v=169')],
+  ['package.json version 3.0.1', pkg.version === '3.0.1'],
+  ['app.js APP_VERSION 3.0.1', appJs.includes("this.APP_VERSION = '3.0.1';")],
+  ['index.html badge ver 3.0.1', html.includes('ver 3.0.1')],
+  ['index.html style.css?v=171', html.includes('css/style.css?v=171')],
+  ['index.html video_quiz.js?v=301', html.includes('js/video_quiz.js?v=301')],
   ['index.html panel-video-quiz', html.includes('id="panel-video-quiz"')],
-  ['index.html vqSyncSection', html.includes('id="vqSyncSection"')],
-  ['index.html vqSelfSection', html.includes('id="vqSelfSection"')],
-  ['index.html vqEditorSection', html.includes('id="vqEditorSection"')],
-  ['index.html vqQuestionOverlay', html.includes('id="vqQuestionOverlay"')],
-  ['index.html vqAnalyticsModal', html.includes('id="vqAnalyticsModal"')],
-  ['index.html vqEditQuizModal', html.includes('id="vqEditQuizModal"')],
-  ['index.html vqQuestionEditModal', html.includes('id="vqQuestionEditModal"')],
-  ['index.html vqImportModal', html.includes('id="vqImportModal"')],
-  ['index.html vqFormatGuideModal', html.includes('id="vqFormatGuideModal"')],
-  ['index.html video_quiz.js?v=299', html.includes('js/video_quiz.js?v=299')],
+  ['index.html vqStudentModeBanner', html.includes('id="vqStudentModeBanner"')],
+  ['index.html vqStudentModeBadge', html.includes('id="vqStudentModeBadge"')],
+  ['index.html adminVideoQuizModeRadio', html.includes('name="adminVideoQuizModeRadio"')],
+  ['index.html vqAdminCustomSetsList', html.includes('id="vqAdminCustomSetsList"')],
+  ['index.html vqAdminSearchInput', html.includes('id="vqAdminSearchInput"')],
+  ['index.html vqAdminPaginationContainer', html.includes('id="vqAdminPaginationContainer"')],
+  ['index.html vqCustomSetModal', html.includes('id="vqCustomSetModal"')],
+  ['index.html vqCustomSetNameInput', html.includes('id="vqCustomSetNameInput"')],
+  ['index.html vqCustomSetQuestionsPreview', html.includes('id="vqCustomSetQuestionsPreview"')],
   ['video_quiz.js VideoQuizManager class', vqJs.includes('class VideoQuizManager')],
-  ['video_quiz.js single choice support', vqJs.includes("type: 'single'")],
-  ['video_quiz.js multiple choice support', vqJs.includes("type: 'multiple'")],
-  ['video_quiz.js text question support', vqJs.includes("type: 'text'")],
-  ['video_quiz.js getSampleTemplateJSON', vqJs.includes('getSampleTemplateJSON')],
-  ['video_quiz.js downloadSampleTemplateJSON', vqJs.includes('downloadSampleTemplateJSON')],
-  ['video_quiz.js getSampleTemplateCSV', vqJs.includes('getSampleTemplateCSV')],
-  ['video_quiz.js downloadSampleTemplateCSV', vqJs.includes('downloadSampleTemplateCSV')],
-  ['video_quiz.js exportQuizzesJSON', vqJs.includes('exportQuizzesJSON')],
-  ['video_quiz.js exportQuizzesCSV', vqJs.includes('exportQuizzesCSV')],
-  ['video_quiz.js executeImport', vqJs.includes('executeImport')],
-  ['video_quiz.js parseQuizzesFromJSON', vqJs.includes('parseQuizzesFromJSON')],
-  ['video_quiz.js parseQuizzesFromCSV', vqJs.includes('parseQuizzesFromCSV')],
-  ['video_quiz.js class analytics calculation', vqJs.includes('renderAnalyticsDashboard')],
+  ['video_quiz.js setGlobalMode', vqJs.includes('setGlobalMode(mode)')],
+  ['video_quiz.js applyGlobalMode', vqJs.includes('applyGlobalMode(mode)')],
+  ['video_quiz.js toggleQuestionEnabled', vqJs.includes('toggleQuestionEnabled(quizId, qId)')],
+  ['video_quiz.js toggleSelectQuestionForCustomSet', vqJs.includes('toggleSelectQuestionForCustomSet(quizId, qId)')],
+  ['video_quiz.js confirmSaveCustomSet', vqJs.includes('confirmSaveCustomSet()')],
+  ['video_quiz.js startSyncQuizFromCustomSet', vqJs.includes('startSyncQuizFromCustomSet(setId)')],
+  ['video_quiz.js assignCustomSetToSelfPaced', vqJs.includes('assignCustomSetToSelfPaced(setId)')],
+  ['video_quiz.js setAdminSearchQuery', vqJs.includes('setAdminSearchQuery(query)')],
+  ['video_quiz.js setAdminPage', vqJs.includes('setAdminPage(page)')],
+  ['video_quiz.js question skip in handleTeacherTimelineTick', vqJs.includes('q.enabled === false') && vqJs.includes('handleTeacherTimelineTick')],
+  ['video_quiz.js question skip in handleSelfTimelineTick', vqJs.includes('q.enabled === false') && vqJs.includes('handleSelfTimelineTick')],
+  ['video_quiz.js custom sets in renderQuizSelector', vqJs.includes('常用自訂測驗組合') && vqJs.includes('renderQuizSelector')],
   ['style.css video-quiz styles', css.includes('.video-quiz-player-container') && css.includes('.video-quiz-overlay')]
 ];
 
 let allPassed = true;
-console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 2.9.9) ---');
+console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.0.1) ---');
 for (const [name, passed] of checks) {
   if (passed) {
     console.log(`✅ ${name}`);

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=170">
+  <link rel="stylesheet" href="css/style.css?v=171">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.0.0</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.0.1</span>
         </p>
       </div>
       <div class="top-actions">
@@ -118,11 +118,11 @@
       <!-- 影片出題測驗 -->
       <div class="panel-card" id="panel-video-quiz">
         <div class="panel-body" style="padding: 16px;">
-          <!-- 頂部模式切換列 (學生端：全班同步 / 個人自主學習) -->
-          <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="video-quiz-mode-tab active" data-mode="sync">🧑‍🏫 全班同步測驗</button>
-              <button class="video-quiz-mode-tab" data-mode="self">🎧 個人自主學習</button>
+          <!-- 學生端模式狀態列（模式由授課老師於管理後台統一設定，不開放同學自行切換） -->
+          <div id="vqStudentModeBanner" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 10px 16px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span id="vqStudentModeBadge" class="badge" style="background: var(--accent-color); color: white; padding: 5px 12px; border-radius: 8px; font-weight: bold; font-size: 13px;">🧑‍🏫 模式：全班同步測驗</span>
+              <span id="vqStudentModeNote" style="font-size: 13px; color: var(--text-secondary);">由授課老師統一設定與引導播放</span>
             </div>
             <div id="vqStudentTopInfo" style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
               <!-- 狀態提示 -->
@@ -135,7 +135,7 @@
               <div style="font-size: 40px; margin-bottom: 10px;">📺</div>
               <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">目前尚無進行中的全班同步測驗</div>
               <div style="font-size: 13px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 16px auto; line-height: 1.5;">
-                當老師在管理後台發起測驗時，影片與題目將自動在此同步播放！您也可以點選上方「🎧 個人自主學習」自由練習題庫。
+                當老師在管理後台發起測驗時，影片與題目將自動在此同步播放。
               </div>
               <div id="vqAdminQuickLinkWrapper" style="display: none;">
                 <button class="preset-btn" onclick="window.app.switchToTab('panel-admin')" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer;">
@@ -661,6 +661,24 @@
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
+              <!-- 0. 學生端模式設定（老師統一設定，全班即時連動） -->
+              <div style="margin-bottom: 20px; padding: 14px 16px; background: var(--bg-card); border: 1.5px solid var(--accent-color); border-radius: 12px;">
+                <div style="font-weight: bold; font-size: 14px; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                  <span>🎯 學生端測驗模式設定（全班即時連動）：</span>
+                  <span style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">同學端無法自行切換，由老師主導</span>
+                </div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                  <label id="lblGlobalModeSync" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border: 2px solid var(--accent-color); border-radius: 10px; cursor: pointer; background: rgba(0,122,255,0.08); font-weight: bold; font-size: 14px; color: var(--text-primary); transition: all 0.2s;">
+                    <input type="radio" name="adminVideoQuizModeRadio" value="sync" checked onchange="window.videoQuiz.setGlobalMode('sync')" style="width: 16px; height: 16px; cursor: pointer;">
+                    <span>🧑‍🏫 全班同步測驗模式（由老師主控播放與題目廣播）</span>
+                  </label>
+                  <label id="lblGlobalModeSelf" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; background: var(--bg-input); font-weight: bold; font-size: 14px; color: var(--text-primary); transition: all 0.2s;">
+                    <input type="radio" name="adminVideoQuizModeRadio" value="self" onchange="window.videoQuiz.setGlobalMode('self')" style="width: 16px; height: 16px; cursor: pointer;">
+                    <span>🎧 個人自主學習模式（同學各自觀看影片作答）</span>
+                  </label>
+                </div>
+              </div>
+
               <!-- 1. 全班同步廣播控制台 -->
               <div style="margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--border-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
@@ -704,7 +722,18 @@
                 </div>
               </div>
 
-              <!-- 2. 影片測驗題庫管理區 -->
+              <!-- 2. 常用自訂測驗組合 (快速載入開始測驗) -->
+              <div style="margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                  <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span>🌟 常用自訂測驗組合</span>
+                    <span style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">（核選單題或多題後自訂命名，未來一鍵直接開測）</span>
+                  </h4>
+                </div>
+                <div id="vqAdminCustomSetsList"></div>
+              </div>
+
+              <!-- 3. 影片測驗題庫管理區 -->
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
                   <h4 style="margin: 0; font-size: 15px; color: var(--text-primary);">📁 題庫管理與出題工具</h4>
@@ -732,7 +761,19 @@
                     </button>
                   </div>
                 </div>
+
+                <!-- 搜尋工具列 -->
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; background: var(--bg-card); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+                  <span style="font-size: 16px;">🔍</span>
+                  <input type="text" id="vqAdminSearchInput" oninput="window.videoQuiz.setAdminSearchQuery(this.value)" placeholder="搜尋測驗標題、簡介、影片網址或題目關鍵字..." style="flex: 1; border: none; background: transparent; color: var(--text-primary); font-size: 14px; outline: none; padding: 4px;">
+                  <button type="button" onclick="document.getElementById('vqAdminSearchInput').value=''; window.videoQuiz.setAdminSearchQuery('');" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 0 4px;" title="清除搜尋">✕</button>
+                </div>
+
+                <!-- 題庫清單列表 (含題目核選出題與自訂組合工具) -->
                 <div id="vqAdminEditorQuizList"></div>
+
+                <!-- 分頁導覽控制列 -->
+                <div id="vqAdminPaginationContainer" style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;"></div>
               </div>
             </div>
           </div>
@@ -1228,15 +1269,15 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=300"></script>
-  <script src="js/character_pool.js?v=300"></script>
-  <script src="js/classics_quiz_pool.js?v=300"></script>
-  <script src="js/focus_question_bank.js?v=300"></script>
-  <script src="js/timer_music_manager.js?v=300"></script>
-  <script src="js/quiz.js?v=300"></script>
-  <script src="js/app.js?v=300"></script>
-  <script src="js/classics_quiz.js?v=300"></script>
-  <script src="js/video_quiz.js?v=300"></script>
+  <script src="js/firebase-config.js?v=301"></script>
+  <script src="js/character_pool.js?v=301"></script>
+  <script src="js/classics_quiz_pool.js?v=301"></script>
+  <script src="js/focus_question_bank.js?v=301"></script>
+  <script src="js/timer_music_manager.js?v=301"></script>
+  <script src="js/quiz.js?v=301"></script>
+  <script src="js/app.js?v=301"></script>
+  <script src="js/classics_quiz.js?v=301"></script>
+  <script src="js/video_quiz.js?v=301"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -2132,6 +2173,33 @@ Python</pre>
 
       <div style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 12px; text-align: right;">
         <button onclick="window.videoQuiz.closeFormatGuideModal()" style="padding: 8px 20px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">了解並關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 影片測驗：自訂測驗組合命名彈窗 -->
+  <div id="vqCustomSetModal" class="video-quiz-overlay" style="z-index: 2650;">
+    <div class="video-quiz-card" style="max-width: 580px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <span>🌟 建立常用測驗組合</span>
+        </h3>
+        <button onclick="window.videoQuiz.closeCustomSetModal()" style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px;">組合自訂名稱 *</label>
+        <input type="text" id="vqCustomSetNameInput" class="question-input" placeholder="例如：太陽系核心速測組（精選3題）" style="width: 100%; box-sizing: border-box; margin: 0; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;">
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px;">已核選的題目清單：</label>
+        <div id="vqCustomSetQuestionsPreview" style="max-height: 200px; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+        <button onclick="window.videoQuiz.closeCustomSetModal()" style="padding: 8px 16px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">取消</button>
+        <button onclick="window.videoQuiz.confirmSaveCustomSet()" style="padding: 8px 22px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">💾 儲存並加入常用組合</button>
       </div>
     </div>
   </div>
