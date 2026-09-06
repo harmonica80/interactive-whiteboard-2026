@@ -37,7 +37,7 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
 
     // Classics Quiz CSV Header
     expect(csvTemplates.classics).toContain('題型,題目問句,名句引言,作品名,作者或主角,朝代,選項A,選項B,選項C,選項D,標準答案,原典全文')
-    expect(csvTemplates.classics).toContain('天生我材必有用')
+    expect(csvTemplates.classics).toContain('好學近乎知')
 
     // Character Test CSV Header
     expect(csvTemplates.charTest).toContain('解答正字,注音,題幹提示,字典關聯詞')
