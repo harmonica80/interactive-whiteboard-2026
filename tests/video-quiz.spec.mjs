@@ -223,16 +223,49 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
 
       window.videoQuiz.openEditCustomSetNameModal(targetSet.id)
       const input = document.getElementById('vqEditCustomSetNameInput')
-      if (input) input.value = '歷史與科學綜合特輯'
+      if (input) input.value = '自然天文跨領域測驗組'
       window.videoQuiz.confirmEditCustomSetName()
 
       const newName = targetSet.name
       const cardsText = document.getElementById('vqAdminCustomSetsList')?.textContent || ''
-      return { oldName, newName, cardsContainNewName: cardsText.includes('歷史與科學綜合特輯') }
+      return { oldName, newName, cardsContainNewName: cardsText.includes('自然天文跨領域測驗組') }
     })
 
-    expect(renameResult.newName).toBe('歷史與科學綜合特輯')
+    expect(renameResult.newName).toBe('自然天文跨領域測驗組')
     expect(renameResult.cardsContainNewName).toBe(true)
+  })
+
+  test('ver 3.0.5 enhancements: returnToQuizVideo and sanitizeCustomSets single default set', async ({ page }) => {
+    const checkResult = await page.evaluate(() => {
+      // 1. Check returnToQuizVideo
+      const hasReturnMethod = typeof window.videoQuiz.returnToQuizVideo === 'function'
+
+      // 2. Check question overlay button
+      const overlayContent = document.getElementById('vqQuestionOverlayContent')?.innerHTML || ''
+      const noBackToAdminBtn = !overlayContent.includes('返回後台')
+
+      // 3. Check sanitizeCustomSets
+      const testList = [
+        { id: 'cset_default_1', name: '太陽系科學核心組', quizIds: ['vq_science_solar'] },
+        { id: 'cset_custom_999', name: '老師私房題組', quizIds: ['vq_science_solar'] },
+        { id: 'cset_comprehensive_default', name: '綜合影音複習測驗組', quizIds: ['vq_science_solar', 'vq_chinese_culture'] }
+      ]
+      const sanitized = window.videoQuiz.sanitizeCustomSets(testList)
+
+      return {
+        hasReturnMethod,
+        noBackToAdminBtn,
+        sanitizedCount: sanitized.length,
+        defaultSetName: sanitized[0]?.name,
+        customSetName: sanitized[1]?.name
+      }
+    })
+
+    expect(checkResult.hasReturnMethod).toBe(true)
+    expect(checkResult.noBackToAdminBtn).toBe(true)
+    expect(checkResult.sanitizedCount).toBe(2)
+    expect(checkResult.defaultSetName).toBe('綜合影音複習測驗組')
+    expect(checkResult.customSetName).toBe('老師私房題組')
   })
 
   test('ver 3.0.4 enhancements: jump question, student repeat toggle, modal backdrop close, admin return', async ({ page }) => {

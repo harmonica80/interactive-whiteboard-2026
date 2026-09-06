@@ -8,11 +8,11 @@ const css = fs.readFileSync('css/style.css', 'utf8');
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
 const checks = [
-  ['package.json version 3.0.4', pkg.version === '3.0.4'],
-  ['app.js APP_VERSION 3.0.4', appJs.includes("this.APP_VERSION = '3.0.4';")],
-  ['index.html badge ver 3.0.4', html.includes('ver 3.0.4')],
-  ['index.html style.css?v=174', html.includes('css/style.css?v=174')],
-  ['index.html video_quiz.js?v=304', html.includes('js/video_quiz.js?v=304')],
+  ['package.json version 3.0.5', pkg.version === '3.0.5'],
+  ['app.js APP_VERSION 3.0.5', appJs.includes("this.APP_VERSION = '3.0.5';")],
+  ['index.html badge ver 3.0.5', html.includes('ver 3.0.5')],
+  ['index.html style.css?v=175', html.includes('css/style.css?v=175')],
+  ['index.html video_quiz.js?v=305', html.includes('js/video_quiz.js?v=305')],
   ['index.html panel-video-quiz', html.includes('id="panel-video-quiz"')],
   ['index.html vqStudentModeBanner', html.includes('id="vqStudentModeBanner"')],
   ['index.html vqStudentModeBadge', html.includes('id="vqStudentModeBadge"')],
@@ -39,12 +39,15 @@ const checks = [
   ['video_quiz.js toggleAllowStudentRepeat (repeat questions toggle)', vqJs.includes('toggleAllowStudentRepeat(checked)')],
   ['video_quiz.js handleVideoEnded (multi-video auto-advance)', vqJs.includes('handleVideoEnded()') && vqJs.includes('switchCustomSetVideo')],
   ['video_quiz.js stopSyncQuiz returns to admin tab', vqJs.includes("switchToTab('panel-admin')")],
-  ['video_quiz.js single default custom set in DEFAULT_CUSTOM_SETS', vqJs.includes('DEFAULT_CUSTOM_SETS') && vqJs.includes('綜合影音複習測驗組') && vqJs.includes('cset_comprehensive_default')],
+  ['video_quiz.js returnToQuizVideo method', vqJs.includes('returnToQuizVideo()')],
+  ['video_quiz.js question overlay has 返回測驗影片 button', vqJs.includes('🎬 返回測驗影片')],
+  ['video_quiz.js question overlay deleted 返回後台 button', !vqJs.includes('⚙️ 返回後台')],
+  ['video_quiz.js sanitizeCustomSets single default custom set', vqJs.includes('sanitizeCustomSets(list)') && vqJs.includes('綜合影音複習測驗組')],
   ['style.css video-quiz styles', css.includes('.video-quiz-player-container') && css.includes('.video-quiz-overlay')]
 ];
 
 let allPassed = true;
-console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.0.4) ---');
+console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.0.5) ---');
 for (const [name, passed] of checks) {
   if (passed) {
     console.log(`✅ ${name}`);

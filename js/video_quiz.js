@@ -188,21 +188,47 @@
       }
     }
 
-    // 載入自訂常用測驗組合清單 (預設只保留一組「綜合影音複習測驗組」，其餘/重複刪除)
+    // 清理與驗證測驗組合清單（官方預設範例僅嚴格保留唯一一組「綜合影音複習測驗組」，其餘舊範例一律清理刪除）
+    sanitizeCustomSets(list) {
+      const defaultSet = JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS[0]));
+      if (!Array.isArray(list) || list.length === 0) {
+        return [defaultSet];
+      }
+
+      // 舊版範例名稱或測試留存黑名單，全部自動清除
+      const legacySampleNames = new Set([
+        '更新後的跨領域精選測驗組',
+        '原測驗組合名稱',
+        '太陽系科學核心組',
+        '八大行星核心速測組',
+        '經典成語與文化精選組',
+        '國文與成語典故組',
+        '歷史與科學綜合特輯',
+        '新測驗組合'
+      ]);
+
+      // 篩選出使用者自行新建的非範例組合（排除官方預設範例與各舊版範例）
+      const userCreatedSets = list.filter(s => {
+        if (!s || !s.name) return false;
+        if (s.name === '綜合影音複習測驗組' || s.id === 'cset_comprehensive_default') return false;
+        if (legacySampleNames.has(s.name)) return false;
+        if (s.id && (s.id.startsWith('cset_default') || s.id.startsWith('cset_sample'))) return false;
+        return true;
+      });
+
+      // 官方預設範例只保留唯一一個（綜合影音複習測驗組），其餘範例全數刪除
+      return [defaultSet, ...userCreatedSets];
+    }
+
+    // 載入自訂常用測驗組合清單 (預設範例只保留一組「綜合影音複習測驗組」，其餘/重複自動刪除)
     loadStoredCustomSets() {
       try {
         const stored = localStorage.getItem(this.CUSTOM_SETS_KEY);
         if (stored) {
-          let parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // 清理先前的測試殘留（如「更新後的跨領域精選測驗組」），確保預設只保留一個
-            parsed = parsed.filter(s => s && s.name !== '更新後的跨領域精選測驗組');
-            const comprehensive = parsed.find(s => s.name === '綜合影音複習測驗組');
-            if (comprehensive && parsed.length > 1) {
-              return [comprehensive];
-            }
-            if (parsed.length > 0) return parsed;
-          }
+          const parsed = JSON.parse(stored);
+          const sanitized = this.sanitizeCustomSets(parsed);
+          localStorage.setItem(this.CUSTOM_SETS_KEY, JSON.stringify(sanitized));
+          return sanitized;
         }
       } catch (e) {
         console.warn('Failed to parse stored video quiz custom sets', e);
@@ -270,24 +296,26 @@
         });
       }
 
-      // 監聽自訂常用測驗組合同步 (確保預設只保留一組，其餘重複自動清理)
+      // 監聽自訂常用測驗組合同步 (確保官方預設範例只保留一組，其餘舊範例自動刪除並回寫清理 Firebase)
       if (this.customSetsRef) {
         this.customSetsRef.on('value', (snapshot) => {
           const val = snapshot.val();
-          if (val && typeof val === 'object') {
-            let list = Object.values(val);
-            const hasLegacy = list.some(s => s.name === '更新後的跨領域精選測驗組');
-            if (hasLegacy) {
-              list = list.filter(s => s.name !== '更新後的跨領域精選測驗組');
-              this.customSets = list.length > 0 ? list : JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS));
-              this.saveCustomSets();
-            } else {
-              this.customSets = list.length > 0 ? list : JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS));
-            }
-          } else {
-            this.customSets = JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS));
-            this.saveCustomSets();
+          let rawList = (val && typeof val === 'object') ? Object.values(val) : [];
+          const sanitized = this.sanitizeCustomSets(rawList);
+
+          const rawIds = rawList.map(s => `${s.id || ''}:${s.name || ''}`).sort().join(',');
+          const sanitizedIds = sanitized.map(s => `${s.id || ''}:${s.name || ''}`).sort().join(',');
+          const needsSyncBack = rawIds !== sanitizedIds;
+
+          this.customSets = sanitized;
+          localStorage.setItem(this.CUSTOM_SETS_KEY, JSON.stringify(sanitized));
+
+          if (needsSyncBack) {
+            const setObj = {};
+            this.customSets.forEach(s => { setObj[s.id] = s; });
+            this.customSetsRef.set(setObj);
           }
+
           this.renderCustomSetsList();
           this.renderQuizSelector();
         });
@@ -1528,7 +1556,7 @@
           <div style="display: flex; align-items: center; gap: 6px;">
             ${isTeacherOrAdmin ? `
               <button type="button" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="立即停止全班測驗廣播">⏹️ 結束測驗</button>
-              <button type="button" onclick="window.app.switchToTab('panel-admin'); window.videoQuiz.hideQuestionOverlay();" style="background: var(--accent-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="前往管理員後台">⚙️ 返回後台</button>
+              <button type="button" onclick="window.videoQuiz.returnToQuizVideo()" style="background: var(--accent-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="關閉題目彈窗，返回測驗影片播放介面">🎬 返回測驗影片</button>
             ` : `
               <button type="button" onclick="window.app.switchToTab('panel-admin')" style="background: transparent; border: 1.5px solid var(--accent-color); color: var(--accent-color); padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="若您是老師，點此登入管理後台">⚙️ 後台登入</button>
             `}
@@ -1549,6 +1577,14 @@
       `;
 
       overlay.style.display = 'flex';
+    }
+
+    // 返回測驗影片播放介面並關閉題目彈窗 (教師端)
+    returnToQuizVideo() {
+      if (window.app) {
+        window.app.switchToTab('panel-video-quiz');
+      }
+      this.hideQuestionOverlay();
     }
 
     hideQuestionOverlay() {
