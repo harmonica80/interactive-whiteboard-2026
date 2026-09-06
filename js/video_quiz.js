@@ -96,6 +96,16 @@
     }
   ];
 
+  const DEFAULT_CUSTOM_SETS = [
+    {
+      id: 'cset_comprehensive_default',
+      name: '綜合影音複習測驗組',
+      quizIds: ['vq_science_solar', 'vq_chinese_culture'],
+      createdAt: 1725550000000,
+      totalQuestions: 6
+    }
+  ];
+
   class VideoQuizManager {
     constructor() {
       this.STORAGE_KEY = 'video_quizzes_v1';
@@ -105,6 +115,10 @@
       this.activeQuiz = null;
       this.currentMode = 'sync'; // 'sync' (全班同步) | 'self' (自主學習) | 'editor' (出題管理)
       this.globalMode = 'sync'; // 由授課老師於管理後台統一設定 ('sync' | 'self')
+      this.allowStudentRepeat = false; // 老師決定重播時學生端是否重複出題作答 (預設關閉)
+      this.currentCustomSet = null; // 當前進行中的測驗組合 (支援多影片)
+      this.currentSetQuizIndex = 0; // 測驗組合中當前播放的影片索引
+      this.lastTeacherTickTime = 0; // 教師端上次時間軸刻度 (用於倒轉/重播偵測)
       
       // 題庫後台搜尋、分頁與影片核選自訂組合狀態
       this.adminSearchQuery = '';
@@ -174,18 +188,26 @@
       }
     }
 
-    // 載入自訂常用測驗組合清單
+    // 載入自訂常用測驗組合清單 (預設只保留一組「綜合影音複習測驗組」，其餘/重複刪除)
     loadStoredCustomSets() {
       try {
         const stored = localStorage.getItem(this.CUSTOM_SETS_KEY);
         if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) return parsed;
+          let parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // 清理先前的測試殘留（如「更新後的跨領域精選測驗組」），確保預設只保留一個
+            parsed = parsed.filter(s => s && s.name !== '更新後的跨領域精選測驗組');
+            const comprehensive = parsed.find(s => s.name === '綜合影音複習測驗組');
+            if (comprehensive && parsed.length > 1) {
+              return [comprehensive];
+            }
+            if (parsed.length > 0) return parsed;
+          }
         }
       } catch (e) {
         console.warn('Failed to parse stored video quiz custom sets', e);
       }
-      return [];
+      return JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS));
     }
 
     // 儲存自訂常用測驗組合清單
@@ -248,14 +270,23 @@
         });
       }
 
-      // 監聽自訂常用測驗組合同步
+      // 監聽自訂常用測驗組合同步 (確保預設只保留一組，其餘重複自動清理)
       if (this.customSetsRef) {
         this.customSetsRef.on('value', (snapshot) => {
           const val = snapshot.val();
           if (val && typeof val === 'object') {
-            this.customSets = Object.values(val);
-          } else if (!val) {
-            this.customSets = [];
+            let list = Object.values(val);
+            const hasLegacy = list.some(s => s.name === '更新後的跨領域精選測驗組');
+            if (hasLegacy) {
+              list = list.filter(s => s.name !== '更新後的跨領域精選測驗組');
+              this.customSets = list.length > 0 ? list : JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS));
+              this.saveCustomSets();
+            } else {
+              this.customSets = list.length > 0 ? list : JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS));
+            }
+          } else {
+            this.customSets = JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS));
+            this.saveCustomSets();
           }
           this.renderCustomSetsList();
           this.renderQuizSelector();
@@ -450,6 +481,24 @@
       if (saveQuizBtn) {
         saveQuizBtn.addEventListener('click', () => this.saveEditingQuiz());
       }
+
+      // 需求 5：點擊遮罩外側背景自動關閉彈窗
+      const overlaysToDismiss = [
+        { id: 'vqAnalyticsModal', close: () => this.closeClassAnalytics() },
+        { id: 'vqCustomSetModal', close: () => this.closeCustomSetModal() },
+        { id: 'vqEditCustomSetNameModal', close: () => this.closeEditCustomSetNameModal() },
+        { id: 'vqEditQuizModal', close: () => this.closeEditQuizModal() },
+        { id: 'vqFormatGuideModal', close: () => this.closeFormatGuideModal() },
+        { id: 'vqImportModal', close: () => this.closeImportModal() }
+      ];
+      overlaysToDismiss.forEach(({ id, close }) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('click', (e) => {
+            if (e.target === el) close();
+          });
+        }
+      });
     }
 
     // 切換模式：'sync' (全班同步) | 'self' (自主學習) | 'editor' (出題管理)
@@ -695,6 +744,9 @@
                 },
                 onStateChange: (event) => {
                   this.isPlaying = (event.data === YT.PlayerState.PLAYING);
+                  if (event.data === YT.PlayerState.ENDED) {
+                    this.handleVideoEnded();
+                  }
                 }
               }
             });
@@ -729,6 +781,7 @@
         };
         videoEl.onplay = () => { this.isPlaying = true; };
         videoEl.onpause = () => { this.isPlaying = false; };
+        videoEl.onended = () => { this.handleVideoEnded(); };
       }
 
       // 啟動時間輪詢
@@ -824,17 +877,34 @@
           const setId = quizId.replace('custom:', '');
           const set = (this.customSets || []).find(s => s.id === setId);
           if (set) {
-            const firstQuizId = (set.quizIds && set.quizIds[0]) || set.quizId;
-            const parent = this.quizzes.find(q => q.id === firstQuizId);
-            if (parent) {
-              quiz = JSON.parse(JSON.stringify(parent));
-              quiz.id = `custom_${set.id}`;
-              quiz.title = `🌟 ${set.name}`;
-              quiz.description = `【測驗組合】內含 ${set.quizIds?.length || set.quizCount || 1} 部影片，共 ${set.totalQuestions || parent.questions?.length || 0} 題測驗`;
-            }
+            const subQuizIds = (set.quizIds && set.quizIds.length > 0) ? set.quizIds : [set.quizId || 'vq_science_solar'];
+            const allSubQuizzes = subQuizIds.map(id => this.quizzes.find(q => q.id === id)).filter(Boolean);
+            this.currentCustomSet = set;
+            this.currentSetQuizIndex = 0;
+            const currentSubQuiz = allSubQuizzes[0] || this.quizzes[0];
+
+            quiz = JSON.parse(JSON.stringify(currentSubQuiz));
+            quiz.id = `custom_${set.id}`;
+            quiz.customSetId = set.id;
+            quiz.customSetName = set.name;
+            quiz.currentSubQuizIndex = 0;
+            quiz.totalSubQuizzes = allSubQuizzes.length;
+            quiz.allSubQuizIds = subQuizIds;
+            quiz.allSubQuizzes = allSubQuizzes;
+            quiz.allQuestions = allSubQuizzes.flatMap((sq, sqIdx) => 
+              (sq.questions || []).map(q => ({
+                ...q,
+                videoTitle: sq.title,
+                videoIndex: sqIdx + 1
+              }))
+            );
+            quiz.title = `🌟 ${set.name}`;
+            quiz.description = `【測驗組合】第 1/${allSubQuizzes.length} 部：《${currentSubQuiz.title}》（共 ${quiz.allQuestions.length} 題測驗）`;
           }
         } else {
           quiz = this.quizzes.find(q => q.id === quizId) || this.activeQuiz;
+          this.currentCustomSet = null;
+          this.currentSetQuizIndex = 0;
         }
       }
       if (!quiz) {
@@ -845,6 +915,7 @@
       this.isTeacher = true;
       this.triggeredQuestions.clear();
       this.currentActiveQuestion = null;
+      this.lastTeacherTickTime = 0;
 
       // 清除前次作答紀錄
       if (this.answersRef) {
@@ -856,9 +927,11 @@
         status: 'waiting',
         quizId: quiz.id,
         quizData: quiz,
+        currentSubQuizIndex: this.currentSetQuizIndex || 0,
         currentTime: 0,
         currentQuestionIndex: -1,
         questionStartTime: 0,
+        allowRepeat: !!this.allowStudentRepeat,
         createdAt: Date.now()
       };
 
@@ -902,12 +975,36 @@
       const link = document.getElementById('vqAdminQuickLinkWrapper');
       if (link) link.style.display = (this.isTeacher || window.app?.isAdmin) ? 'block' : 'none';
 
-      if (window.app) window.app.showNotification('提示', '全班同步測驗已結束。');
+      // 需求 7：在後台（或老師結束測驗）按下結束測驗時，應回到管理後台分頁（panel-admin）
+      if (window.app && typeof window.app.switchToTab === 'function') {
+        if (window.app.isAdmin || this.isTeacher || document.getElementById('panel-admin')?.classList.contains('active')) {
+          window.app.switchToTab('panel-admin');
+          const videoSection = document.getElementById('adminVideoQuizSection');
+          if (videoSection && videoSection.classList.contains('collapsed')) {
+            videoSection.classList.remove('collapsed');
+          }
+        }
+      }
+
+      this.currentCustomSet = null;
+      this.currentSetQuizIndex = 0;
+      if (window.app) window.app.showNotification('提示', '全班同步測驗已結束，已返回管理後台！');
     }
 
     // 教師端播放時間軸偵測出題點
     handleTeacherTimelineTick(currentTime) {
       if (!this.isTeacher || !this.activeQuiz || !this.activeQuiz.questions) return;
+
+      // 需求 4：若倒轉或重播（目前時間小於上次時間 - 1.5 秒），清除目前時間點之後的題目已觸發紀錄，教師端皆可重複出現
+      if (typeof this.lastTeacherTickTime === 'number' && currentTime < this.lastTeacherTickTime - 1.5) {
+        for (let i = 0; i < this.activeQuiz.questions.length; i++) {
+          const q = this.activeQuiz.questions[i];
+          if (q.time > currentTime) {
+            this.triggeredQuestions.delete(q.id);
+          }
+        }
+      }
+      this.lastTeacherTickTime = currentTime;
 
       for (let i = 0; i < this.activeQuiz.questions.length; i++) {
         const q = this.activeQuiz.questions[i];
@@ -917,6 +1014,7 @@
           this.triggeredQuestions.add(q.id);
           this.pauseVideo();
           this.broadcastQuestion(q, i);
+          this.renderSyncTeacherControls();
           break;
         }
       }
@@ -931,10 +1029,154 @@
           currentQuestionIndex: index,
           currentQuestion: question,
           questionStartTime: Date.now(),
-          currentTime: this.currentTime
+          currentTime: this.currentTime,
+          allowRepeat: !!this.allowStudentRepeat
         });
       }
       this.showQuestionOverlay(question, true);
+    }
+
+    // 需求 3：直接跳轉至指定題目並立即出題 (不一定要照順序)
+    jumpToQuestion(index) {
+      if (!this.activeQuiz || !this.activeQuiz.questions || !this.activeQuiz.questions[index]) return;
+      const q = this.activeQuiz.questions[index];
+      this.currentActiveQuestion = q;
+      this.triggeredQuestions.add(q.id);
+
+      const targetTime = Math.max(0, (q.time || 0) - 0.5);
+      if (this.playerType === 'youtube' && this.ytPlayer && typeof this.ytPlayer.seekTo === 'function') {
+        this.ytPlayer.seekTo(targetTime, true);
+        this.pauseVideo();
+      } else if (this.playerType === 'html5' && this.html5Player) {
+        this.html5Player.currentTime = targetTime;
+        this.pauseVideo();
+      }
+
+      this.broadcastQuestion(q, index);
+      this.renderSyncTeacherControls();
+
+      if (window.app) {
+        window.app.showNotification('跳題出題', `已跳轉至第 ${index + 1} 題 (${q.timeFormatted || this.formatSeconds(q.time)}) 並廣播題目！`);
+      }
+    }
+
+    // 需求 4：切換學生端重播重複出題設定
+    toggleAllowStudentRepeat(checked) {
+      this.allowStudentRepeat = !!checked;
+      if (this.sessionRef) {
+        this.sessionRef.update({
+          allowRepeat: this.allowStudentRepeat
+        });
+      }
+      if (window.app) {
+        window.app.showNotification('重複出題設定', `學生端重播時出題：${this.allowStudentRepeat ? '允許重複出題作答' : '已關閉重複出題（已答過的題目略過）'}`);
+      }
+    }
+
+    // 需求 6：載入測驗組合中指定影片
+    loadCustomSetVideo(subIndex) {
+      if (!this.currentCustomSet) return;
+      const subQuizIds = this.currentCustomSet.quizIds || [];
+      if (subIndex < 0 || subIndex >= subQuizIds.length) return;
+
+      this.currentSetQuizIndex = subIndex;
+      const allSubQuizzes = subQuizIds.map(id => this.quizzes.find(q => q.id === id)).filter(Boolean);
+      const subQuiz = allSubQuizzes[subIndex];
+      if (!subQuiz) return;
+
+      this.activeQuiz = JSON.parse(JSON.stringify(subQuiz));
+      this.activeQuiz.id = `custom_${this.currentCustomSet.id}`;
+      this.activeQuiz.customSetId = this.currentCustomSet.id;
+      this.activeQuiz.customSetName = this.currentCustomSet.name;
+      this.activeQuiz.currentSubQuizIndex = subIndex;
+      this.activeQuiz.totalSubQuizzes = allSubQuizzes.length;
+      this.activeQuiz.allSubQuizIds = subQuizIds;
+      this.activeQuiz.allSubQuizzes = allSubQuizzes;
+      this.activeQuiz.allQuestions = allSubQuizzes.flatMap((sq, sqIdx) => 
+        (sq.questions || []).map(q => ({
+          ...q,
+          videoTitle: sq.title,
+          videoIndex: sqIdx + 1
+        }))
+      );
+      this.activeQuiz.title = `🌟 ${this.currentCustomSet.name}`;
+      this.activeQuiz.description = `【測驗組合】第 ${subIndex + 1}/${allSubQuizzes.length} 部：《${subQuiz.title}》（共 ${this.activeQuiz.allQuestions.length} 題測驗）`;
+
+      this.triggeredQuestions.clear();
+      this.currentActiveQuestion = null;
+      this.lastTeacherTickTime = 0;
+
+      if (this.sessionRef) {
+        this.sessionRef.update({
+          status: 'playing',
+          currentSubQuizIndex: subIndex,
+          quizData: this.activeQuiz,
+          currentTime: 0,
+          currentQuestionIndex: -1,
+          currentQuestion: null,
+          allowRepeat: !!this.allowStudentRepeat
+        });
+      }
+
+      this.setupPlayer('vqSyncPlayerContainer', subQuiz.videoUrl, () => {
+        this.renderSyncTeacherControls();
+        this.playVideo();
+      }, (time) => {
+        this.handleTeacherTimelineTick(time);
+      });
+
+      if (window.app) {
+        window.app.showNotification('影片切換', `正在播放第 ${subIndex + 1}/${allSubQuizzes.length} 部影片：《${subQuiz.title}》`);
+      }
+    }
+
+    // 切換上一部或下一部影片 (delta: -1 或 +1)
+    switchCustomSetVideo(delta) {
+      if (!this.currentCustomSet) return;
+      const targetIndex = this.currentSetQuizIndex + delta;
+      this.loadCustomSetVideo(targetIndex);
+    }
+
+    // 需求 6：影片播放結束時自動銜接下一部影片
+    handleVideoEnded() {
+      if (this.currentCustomSet && this.currentCustomSet.quizIds && this.currentCustomSet.quizIds.length > 1) {
+        if (this.currentSetQuizIndex < this.currentCustomSet.quizIds.length - 1) {
+          const nextIndex = this.currentSetQuizIndex + 1;
+          if (this.isTeacher) {
+            if (window.app) {
+              window.app.showNotification('提示', `第 ${this.currentSetQuizIndex + 1} 部影片播放結束，即將自動播放第 ${nextIndex + 1} 部影片！`);
+            }
+            setTimeout(() => {
+              this.loadCustomSetVideo(nextIndex);
+            }, 1200);
+          } else if (this.currentMode === 'self') {
+            if (window.app) {
+              window.app.showNotification('提示', `第 ${this.currentSetQuizIndex + 1} 部影片播放結束，即將自動播放第 ${nextIndex + 1} 部影片！`);
+            }
+            setTimeout(() => {
+              this.loadSelfPacedCustomSetVideo(nextIndex);
+            }, 1200);
+          }
+          return;
+        } else {
+          // 所有影片均已播放完畢
+          if (this.isTeacher) {
+            if (window.app) {
+              window.app.showNotification('測驗完成', '測驗組合中所有影片已播放完畢！您可以點選「查看本題統計」檢視所有影片的總答題數據。');
+            }
+          } else if (this.currentMode === 'self') {
+            if (window.app) {
+              window.app.showNotification('測驗完成', '測驗組合中所有影片測驗已全數完成！');
+            }
+            this.showClassAnalytics(this.activeQuiz, {
+              self: {
+                userName: window.app?.currentUserName || '您',
+                answers: this.userAnswers
+              }
+            });
+          }
+        }
+      }
     }
 
     // 教師點擊繼續播放
@@ -1001,7 +1243,7 @@
       // 若為學生端（非老師），接收廣播
       if (!this.isTeacher) {
         if (session.status === 'waiting' || session.status === 'playing' || session.status === 'question') {
-          if (!this.activeQuiz || this.activeQuiz.id !== session.quizId) {
+          if (!this.activeQuiz || this.activeQuiz.id !== session.quizId || this.activeQuiz.currentSubQuizIndex !== session.currentSubQuizIndex) {
             this.activeQuiz = session.quizData;
             if (isVideoQuizActive) {
               this.setupPlayer('vqSyncPlayerContainer', session.quizData.videoUrl, () => {
@@ -1013,9 +1255,23 @@
 
         if (session.status === 'question' && session.currentQuestion) {
           this.pauseVideo();
+          const qId = session.currentQuestion.id;
+          const hasAnswered = !!this.userAnswers[qId];
+          const allowRepeat = session.allowRepeat !== false;
+
           // 關鍵防卡死：僅在使用者處於「影片出題測驗」分頁時才彈出題目覆蓋視窗，絕不遮蔽提問區或登入按鈕
           if (isVideoQuizActive) {
-            this.showQuestionOverlay(session.currentQuestion, false);
+            if (!hasAnswered || allowRepeat) {
+              if (allowRepeat && hasAnswered) {
+                delete this.userAnswers[qId];
+              }
+              this.showQuestionOverlay(session.currentQuestion, false);
+            } else {
+              this.hideQuestionOverlay();
+              if (window.app) {
+                window.app.showNotification('提示', '老師正在重播此題，您先前已完成作答，請靜候老師繼續播放！');
+              }
+            }
           }
         } else if (session.status === 'playing') {
           this.hideQuestionOverlay();
@@ -1031,7 +1287,7 @@
       }
     }
 
-    // 渲染教師專屬同步控制列
+    // 渲染教師專屬同步控制列 (圖2 顯示出題時間點與題目清單、支援直接跳題、重複出題開關、多影片導覽)
     renderSyncTeacherControls() {
       const container = document.getElementById('vqSyncTeacherControls');
       if (!container) return;
@@ -1040,16 +1296,56 @@
         return;
       }
       container.style.display = 'block';
-      container.innerHTML = `
-        <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--bg-card); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 12px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-weight: bold; color: var(--accent-color);">🧑‍🏫 老師同步控制台</span>
-            <span id="vqSyncSubmittedCountBadge" class="badge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px;">已提交 0 人</span>
+
+      // 檢查是否為多影片測驗組合
+      const isMultiVideoSet = !!(this.currentCustomSet && this.currentCustomSet.quizIds && this.currentCustomSet.quizIds.length > 1);
+      const multiVideoHtml = isMultiVideoSet ? `
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 6px; font-size: 11px;">測驗組合</span>
+            <span style="font-weight: bold; color: var(--text-primary); font-size: 13px;">
+              影片 ${this.currentSetQuizIndex + 1} / ${this.currentCustomSet.quizIds.length}：《${this.escapeHtml(this.activeQuiz?.title || '')}》
+            </span>
           </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="action-btn" onclick="window.videoQuiz.resumeSyncPlayback()" style="background: var(--success-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">▶ 繼續播放影片</button>
-            <button class="action-btn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">📊 查看本題統計</button>
-            <button class="action-btn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">⏹ 結束全班測驗</button>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="action-btn" onclick="window.videoQuiz.switchCustomSetVideo(-1)" ${this.currentSetQuizIndex <= 0 ? 'disabled' : ''} style="padding: 4px 10px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); cursor: ${this.currentSetQuizIndex <= 0 ? 'not-allowed' : 'pointer'}; opacity: ${this.currentSetQuizIndex <= 0 ? '0.5' : '1'};">◀ 上一部影片</button>
+            <button type="button" class="action-btn" onclick="window.videoQuiz.switchCustomSetVideo(1)" ${this.currentSetQuizIndex >= this.currentCustomSet.quizIds.length - 1 ? 'disabled' : ''} style="padding: 4px 10px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); cursor: ${this.currentSetQuizIndex >= this.currentCustomSet.quizIds.length - 1 ? 'not-allowed' : 'pointer'}; opacity: ${this.currentSetQuizIndex >= this.currentCustomSet.quizIds.length - 1 ? '0.5' : '1'};">下一部影片 ▶</button>
+          </div>
+        </div>
+      ` : '';
+
+      // 圖2 紅色方框區域：出題時間與題目清單按鈕、重複出題控制開關
+      const questionsListHtml = `
+        <div id="vqTeacherQuestionsList" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1; margin: 4px 8px;">
+          <span style="font-size: 12px; font-weight: bold; color: var(--text-secondary); white-space: nowrap;">出題時間軸：</span>
+          ${(this.activeQuiz?.questions || []).map((q, idx) => {
+            const isCurrent = this.currentActiveQuestion?.id === q.id;
+            return `
+              <button type="button" class="action-btn vq-qjump-btn" onclick="window.videoQuiz.jumpToQuestion(${idx})" style="padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: bold; background: ${isCurrent ? 'var(--accent-color)' : 'var(--bg-primary)'}; color: ${isCurrent ? '#fff' : 'var(--text-primary)'}; border: 1px solid ${isCurrent ? 'var(--accent-color)' : 'var(--border-color)'}; cursor: pointer; transition: all 0.2s;" title="${this.escapeHtml(q.prompt)}">
+                ⏱️ ${q.timeFormatted || this.formatSeconds(q.time)} 第 ${idx + 1} 題
+              </button>
+            `;
+          }).join('')}
+          <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; color: var(--text-secondary); margin-left: 6px; white-space: nowrap;" title="勾選時，重播影片或跳題時學生端會再次跳出題目作答">
+            <input type="checkbox" id="vqAllowRepeatCheckbox" onchange="window.videoQuiz.toggleAllowStudentRepeat(this.checked)" ${this.allowStudentRepeat ? 'checked' : ''}> 重播時學生重複出題
+          </label>
+        </div>
+      `;
+
+      container.innerHTML = `
+        <div style="display: flex; flex-direction: column; background: var(--bg-card); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+          ${multiVideoHtml}
+          <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: bold; color: var(--accent-color); white-space: nowrap;">🧑‍🏫 老師同步控制台</span>
+              <span id="vqSyncSubmittedCountBadge" class="badge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap;">已提交 0 人</span>
+            </div>
+            ${questionsListHtml}
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button class="action-btn" onclick="window.videoQuiz.resumeSyncPlayback()" style="background: var(--success-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">▶ 繼續播放影片</button>
+              <button class="action-btn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">📊 查看本題統計</button>
+              <button class="action-btn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">⏹ 結束全班測驗</button>
+            </div>
           </div>
         </div>
       `;
@@ -1066,17 +1362,34 @@
           const setId = quizId.replace('custom:', '');
           const set = (this.customSets || []).find(s => s.id === setId);
           if (set) {
-            const firstQuizId = (set.quizIds && set.quizIds[0]) || set.quizId;
-            const parent = this.quizzes.find(q => q.id === firstQuizId);
-            if (parent) {
-              quiz = JSON.parse(JSON.stringify(parent));
-              quiz.id = `custom_${set.id}`;
-              quiz.title = `🌟 ${set.name}`;
-              quiz.description = `【測驗組合】內含 ${set.quizIds?.length || set.quizCount || 1} 部影片，共 ${set.totalQuestions || parent.questions?.length || 0} 題測驗`;
-            }
+            const subQuizIds = (set.quizIds && set.quizIds.length > 0) ? set.quizIds : [set.quizId || 'vq_science_solar'];
+            const allSubQuizzes = subQuizIds.map(id => this.quizzes.find(q => q.id === id)).filter(Boolean);
+            this.currentCustomSet = set;
+            this.currentSetQuizIndex = 0;
+            const currentSubQuiz = allSubQuizzes[0] || this.quizzes[0];
+
+            quiz = JSON.parse(JSON.stringify(currentSubQuiz));
+            quiz.id = `custom_${set.id}`;
+            quiz.customSetId = set.id;
+            quiz.customSetName = set.name;
+            quiz.currentSubQuizIndex = 0;
+            quiz.totalSubQuizzes = allSubQuizzes.length;
+            quiz.allSubQuizIds = subQuizIds;
+            quiz.allSubQuizzes = allSubQuizzes;
+            quiz.allQuestions = allSubQuizzes.flatMap((sq, sqIdx) => 
+              (sq.questions || []).map(q => ({
+                ...q,
+                videoTitle: sq.title,
+                videoIndex: sqIdx + 1
+              }))
+            );
+            quiz.title = `🌟 ${set.name}`;
+            quiz.description = `【測驗組合】第 1/${allSubQuizzes.length} 部：《${currentSubQuiz.title}》（共 ${quiz.allQuestions.length} 題測驗）`;
           }
         } else {
           quiz = this.quizzes.find(q => q.id === quizId) || this.activeQuiz;
+          this.currentCustomSet = null;
+          this.currentSetQuizIndex = 0;
         }
       }
       if (!quiz) return;
@@ -1089,13 +1402,58 @@
       const progressEl = document.getElementById('vqSelfProgressInfo');
       if (progressEl) {
         const activeCount = (quiz.questions || []).filter(q => q.enabled !== false).length;
-        progressEl.textContent = `共有 ${activeCount} 題互動測驗，影片播放到關鍵時間點會自動跳出題目！`;
+        const totalSetCount = quiz.allQuestions ? quiz.allQuestions.length : activeCount;
+        progressEl.textContent = `共有 ${totalSetCount} 題互動測驗，影片播放到關鍵時間點會自動跳出題目！`;
       }
 
       this.setupPlayer('vqSelfPlayerContainer', quiz.videoUrl, () => {
         if (window.app) window.app.showNotification('提示', '自主學習測驗已準備就緒，請點擊播放開始觀看！');
       }, (currentTime) => {
         this.handleSelfTimelineTick(currentTime);
+      });
+    }
+
+    // 載入自主學習組合中下一部影片
+    loadSelfPacedCustomSetVideo(subIndex) {
+      if (!this.currentCustomSet) return;
+      const subQuizIds = this.currentCustomSet.quizIds || [];
+      if (subIndex < 0 || subIndex >= subQuizIds.length) return;
+
+      this.currentSetQuizIndex = subIndex;
+      const allSubQuizzes = subQuizIds.map(id => this.quizzes.find(q => q.id === id)).filter(Boolean);
+      const subQuiz = allSubQuizzes[subIndex];
+      if (!subQuiz) return;
+
+      this.activeQuiz = JSON.parse(JSON.stringify(subQuiz));
+      this.activeQuiz.id = `custom_${this.currentCustomSet.id}`;
+      this.activeQuiz.customSetId = this.currentCustomSet.id;
+      this.activeQuiz.customSetName = this.currentCustomSet.name;
+      this.activeQuiz.currentSubQuizIndex = subIndex;
+      this.activeQuiz.totalSubQuizzes = allSubQuizzes.length;
+      this.activeQuiz.allSubQuizIds = subQuizIds;
+      this.activeQuiz.allSubQuizzes = allSubQuizzes;
+      this.activeQuiz.allQuestions = allSubQuizzes.flatMap((sq, sqIdx) => 
+        (sq.questions || []).map(q => ({
+          ...q,
+          videoTitle: sq.title,
+          videoIndex: sqIdx + 1
+        }))
+      );
+      this.activeQuiz.title = `🌟 ${this.currentCustomSet.name}`;
+      this.activeQuiz.description = `【測驗組合】第 ${subIndex + 1}/${allSubQuizzes.length} 部：《${subQuiz.title}》（共 ${this.activeQuiz.allQuestions.length} 題測驗）`;
+
+      this.triggeredQuestions.clear();
+      this.currentActiveQuestion = null;
+
+      const progressEl = document.getElementById('vqSelfProgressInfo');
+      if (progressEl) {
+        progressEl.textContent = `第 ${subIndex + 1}/${allSubQuizzes.length} 部影片，本片共有 ${subQuiz.questions?.length || 0} 題測驗！`;
+      }
+
+      this.setupPlayer('vqSelfPlayerContainer', subQuiz.videoUrl, () => {
+        this.playVideo();
+      }, (time) => {
+        this.handleSelfTimelineTick(time);
       });
     }
 
@@ -1380,16 +1738,20 @@
       const userList = Object.values(answersMap || {});
       const totalParticipants = userList.length;
 
+      // 需求 6：多影片測驗組合彙整所有影片題目進行統計
+      const targetQuestions = (quiz.allQuestions && quiz.allQuestions.length > 0) ? quiz.allQuestions : (quiz.questions || []);
+      const subQuizzes = (quiz.allSubQuizzes && quiz.allSubQuizzes.length > 0) ? quiz.allSubQuizzes : [quiz];
+
       let totalClassScore = 0;
       let maxPossibleScore = 0;
-      (quiz.questions || []).forEach(q => { maxPossibleScore += (q.points || 10); });
+      targetQuestions.forEach(q => { maxPossibleScore += (q.points || 10); });
 
-      // 計算排行榜
+      // 計算排行榜 (以整組測驗所有題目為基準)
       const leaderboard = userList.map(u => {
         let userScore = 0;
         let correctCount = 0;
         const answers = u.answers || {};
-        (quiz.questions || []).forEach(q => {
+        targetQuestions.forEach(q => {
           const a = answers[q.id];
           if (a && a.isCorrect) {
             userScore += (a.score || 10);
@@ -1408,88 +1770,99 @@
       const avgScore = totalParticipants > 0 ? (totalClassScore / totalParticipants).toFixed(1) : 0;
       const avgRate = maxPossibleScore > 0 ? Math.round((avgScore / maxPossibleScore) * 100) : 0;
 
-      // 渲染單題選項統計
+      // 渲染單題選項統計 (支援多影片分段顯示)
       let questionsHtml = '';
-      (quiz.questions || []).forEach((q, qIdx) => {
-        let qStatsHtml = '';
-        if (q.type === 'single' || q.type === 'multiple') {
-          const counts = {};
-          (q.options || []).forEach(opt => { counts[opt] = 0; });
-          let correctTotal = 0;
-
-          userList.forEach(u => {
-            const ans = u.answers?.[q.id];
-            if (ans) {
-              if (Array.isArray(ans.answer)) {
-                ans.answer.forEach(opt => { counts[opt] = (counts[opt] || 0) + 1; });
-              } else if (ans.answer) {
-                counts[ans.answer] = (counts[ans.answer] || 0) + 1;
-              }
-              if (ans.isCorrect) correctTotal++;
-            }
-          });
-
-          const accuracy = totalParticipants > 0 ? Math.round((correctTotal / totalParticipants) * 100) : 0;
-
-          qStatsHtml = `
-            <div style="margin-top: 10px;">
-              <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
-                全班答對率：<strong style="color: ${accuracy >= 60 ? 'var(--success-color)' : 'var(--danger-color)'};">${accuracy}%</strong> (${correctTotal}/${totalParticipants} 人答對)
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                ${(q.options || []).map((opt, optIdx) => {
-                  const cnt = counts[opt] || 0;
-                  const pct = totalParticipants > 0 ? Math.round((cnt / totalParticipants) * 100) : 0;
-                  const isAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer.includes(opt) : (q.correctAnswer === opt);
-                  return `
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
-                      <span style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isAnswer ? 'bold' : 'normal'}; color: ${isAnswer ? 'var(--success-color)' : 'var(--text-primary)'};">
-                        ${isAnswer ? '✅ ' : ''}${String.fromCharCode(65 + optIdx)}. ${this.escapeHtml(opt)}
-                      </span>
-                      <div style="flex: 1; height: 16px; background: rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; position: relative;">
-                        <div style="width: ${pct}%; height: 100%; background: ${isAnswer ? 'var(--success-color)' : 'var(--accent-color)'}; border-radius: 8px; transition: width 0.3s;"></div>
-                      </div>
-                      <span style="width: 60px; text-align: right; font-size: 12px; color: var(--text-secondary);">${cnt}人 (${pct}%)</span>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-          `;
-        } else if (q.type === 'text') {
-          // 問答題條列答案文字牆
-          const textAnswers = userList.map(u => ({
-            name: u.userName,
-            text: u.answers?.[q.id]?.answer || ''
-          })).filter(item => item.text);
-
-          qStatsHtml = `
-            <div style="margin-top: 10px;">
-              <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
-                已提交回答：<strong>${textAnswers.length}</strong> 則回饋
-              </div>
-              <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-color);">
-                ${textAnswers.length > 0 ? textAnswers.map(item => `
-                  <div style="padding: 8px 12px; background: var(--bg-card); border-radius: 6px; border-left: 3px solid var(--accent-color); font-size: 13px; line-height: 1.4;">
-                    <strong style="color: var(--accent-color);">${this.escapeHtml(item.name)}：</strong>
-                    <span>${this.escapeHtml(item.text)}</span>
-                  </div>
-                `).join('') : '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 12px;">尚無學生提交問答</div>'}
-              </div>
+      subQuizzes.forEach((sq, sqIdx) => {
+        if (subQuizzes.length > 1) {
+          questionsHtml += `
+            <div style="background: rgba(0,122,255,0.08); border-left: 4px solid var(--accent-color); padding: 8px 12px; border-radius: 6px; margin: 16px 0 10px 0; font-weight: bold; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+              <span>🎬 影片 ${sqIdx + 1}：《${this.escapeHtml(sq.title)}》</span>
+              <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${sq.questions?.length || 0} 題</span>
             </div>
           `;
         }
 
-        questionsHtml += `
-          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: bold; color: var(--accent-color); font-size: 14px;">第 ${qIdx + 1} 題（${q.timeFormatted}）</span>
-              <span style="font-size: 12px; color: var(--text-secondary);">${q.type === 'single' ? '單選題' : (q.type === 'multiple' ? '複選題' : '問答題')}</span>
+        (sq.questions || []).forEach((q, qIdx) => {
+          let qStatsHtml = '';
+          if (q.type === 'single' || q.type === 'multiple') {
+            const counts = {};
+            (q.options || []).forEach(opt => { counts[opt] = 0; });
+            let correctTotal = 0;
+
+            userList.forEach(u => {
+              const ans = u.answers?.[q.id];
+              if (ans) {
+                if (Array.isArray(ans.answer)) {
+                  ans.answer.forEach(opt => { counts[opt] = (counts[opt] || 0) + 1; });
+                } else if (ans.answer) {
+                  counts[ans.answer] = (counts[ans.answer] || 0) + 1;
+                }
+                if (ans.isCorrect) correctTotal++;
+              }
+            });
+
+            const accuracy = totalParticipants > 0 ? Math.round((correctTotal / totalParticipants) * 100) : 0;
+
+            qStatsHtml = `
+              <div style="margin-top: 10px;">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+                  全班答對率：<strong style="color: ${accuracy >= 60 ? 'var(--success-color)' : 'var(--danger-color)'};">${accuracy}%</strong> (${correctTotal}/${totalParticipants} 人答對)
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  ${(q.options || []).map((opt, optIdx) => {
+                    const cnt = counts[opt] || 0;
+                    const pct = totalParticipants > 0 ? Math.round((cnt / totalParticipants) * 100) : 0;
+                    const isAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer.includes(opt) : (q.correctAnswer === opt);
+                    return `
+                      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                        <span style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isAnswer ? 'bold' : 'normal'}; color: ${isAnswer ? 'var(--success-color)' : 'var(--text-primary)'};">
+                          ${isAnswer ? '✅ ' : ''}${String.fromCharCode(65 + optIdx)}. ${this.escapeHtml(opt)}
+                        </span>
+                        <div style="flex: 1; height: 16px; background: rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; position: relative;">
+                          <div style="width: ${pct}%; height: 100%; background: ${isAnswer ? 'var(--success-color)' : 'var(--accent-color)'}; border-radius: 8px; transition: width 0.3s;"></div>
+                        </div>
+                        <span style="width: 60px; text-align: right; font-size: 12px; color: var(--text-secondary);">${cnt}人 (${pct}%)</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          } else if (q.type === 'text') {
+            // 問答題條列答案文字牆
+            const textAnswers = userList.map(u => ({
+              name: u.userName,
+              text: u.answers?.[q.id]?.answer || ''
+            })).filter(item => item.text);
+
+            qStatsHtml = `
+              <div style="margin-top: 10px;">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+                  已提交回答：<strong>${textAnswers.length}</strong> 則回饋
+                </div>
+                <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-color);">
+                  ${textAnswers.length > 0 ? textAnswers.map(item => `
+                    <div style="padding: 8px 12px; background: var(--bg-card); border-radius: 6px; border-left: 3px solid var(--accent-color); font-size: 13px; line-height: 1.4;">
+                      <strong style="color: var(--accent-color);">${this.escapeHtml(item.name)}：</strong>
+                      <span>${this.escapeHtml(item.text)}</span>
+                    </div>
+                  `).join('') : '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 12px;">尚無學生提交問答</div>'}
+                </div>
+              </div>
+            `;
+          }
+
+          questionsHtml += `
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: bold; color: var(--accent-color); font-size: 14px;">第 ${qIdx + 1} 題（${q.timeFormatted || this.formatSeconds(q.time)}）</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">${q.type === 'single' ? '單選題' : (q.type === 'multiple' ? '複選題' : '問答題')}</span>
+              </div>
+              <div style="font-size: 15px; font-weight: bold; margin: 6px 0; color: var(--text-primary);">${this.escapeHtml(q.prompt)}</div>
+              ${qStatsHtml}
             </div>
-            <div style="font-size: 15px; font-weight: bold; margin: 6px 0; color: var(--text-primary);">${this.escapeHtml(q.prompt)}</div>
-            ${qStatsHtml}
-          </div>
-        `;
+          `;
+        });
       });
 
       container.innerHTML = `
@@ -1510,7 +1883,7 @@
         </div>
 
         <!-- 各題詳細統計 -->
-        <h4 style="margin: 16px 0 10px 0; font-size: 16px;">📊 各題答題分佈與統計</h4>
+        <h4 style="margin: 16px 0 10px 0; font-size: 16px;">📊 各題答題分佈與統計（共 ${targetQuestions.length} 題）</h4>
         ${questionsHtml}
 
         <!-- 全班排行榜 -->
@@ -1532,7 +1905,7 @@
                     ${idx === 0 ? '🥇 1' : (idx === 1 ? '🥈 2' : (idx === 2 ? '🥉 3' : `${idx + 1}`))}
                   </td>
                   <td style="padding: 8px; font-weight: 500;">${this.escapeHtml(item.userName)}</td>
-                  <td style="padding: 8px; text-align: center;">${item.correctCount} / ${quiz.questions?.length || 0}</td>
+                  <td style="padding: 8px; text-align: center;">${item.correctCount} / ${targetQuestions.length}</td>
                   <td style="padding: 8px; text-align: right; font-weight: bold; color: var(--success-color);">${item.score} 分</td>
                 </tr>
               `).join('') : '<tr><td colspan="4" style="text-align: center; padding: 16px; color: var(--text-muted);">尚無作答數據</td></tr>'}
@@ -1548,13 +1921,15 @@
       `;
     }
 
-    // 匯出全班成績 CSV
+    // 匯出全班成績 CSV (多影片測驗組合彙整全體題目)
     exportAnalyticsCSV() {
       if (!this.activeQuiz) return;
+      const targetQuestions = (this.activeQuiz.allQuestions && this.activeQuiz.allQuestions.length > 0) ? this.activeQuiz.allQuestions : (this.activeQuiz.questions || []);
       const userList = Object.values(this.cachedRemoteAnswers || {});
       let csv = '\uFEFF學生暱稱,總得分,答對題數';
-      (this.activeQuiz.questions || []).forEach((q, idx) => {
-        csv += `,第${idx + 1}題(${q.timeFormatted})`;
+      targetQuestions.forEach((q, idx) => {
+        const vPrefix = q.videoIndex ? `[影片${q.videoIndex}]` : '';
+        csv += `,${vPrefix}第${idx + 1}題(${q.timeFormatted || this.formatSeconds(q.time)})`;
       });
       csv += '\r\n';
 
@@ -1562,7 +1937,7 @@
         let totalScore = 0;
         let correctCount = 0;
         const answers = u.answers || {};
-        const qCols = (this.activeQuiz.questions || []).map(q => {
+        const qCols = targetQuestions.map(q => {
           const a = answers[q.id];
           if (a && a.isCorrect) {
             totalScore += (a.score || 10);
@@ -1640,9 +2015,6 @@
                   </button>
                   <button class="action-btn" onclick="window.videoQuiz.assignCustomSetToSelfPaced('${set.id}')" style="flex: 1; background: #34c759; color: white; border: none; padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="切換為學生自主學習此組合">
                     🎧 自主學習
-                  </button>
-                  <button class="action-btn" onclick="window.videoQuiz.openEditCustomSetNameModal('${set.id}')" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;" title="編輯測驗組合名稱">
-                    ✏️ 編輯名稱
                   </button>
                   <button class="action-btn" onclick="window.videoQuiz.deleteCustomSet('${set.id}')" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--danger-color); padding: 6px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;" title="刪除此組合">
                     🗑️

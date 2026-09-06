@@ -223,15 +223,65 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
 
       window.videoQuiz.openEditCustomSetNameModal(targetSet.id)
       const input = document.getElementById('vqEditCustomSetNameInput')
-      if (input) input.value = '更新後的跨領域精選測驗組'
+      if (input) input.value = '歷史與科學綜合特輯'
       window.videoQuiz.confirmEditCustomSetName()
 
       const newName = targetSet.name
       const cardsText = document.getElementById('vqAdminCustomSetsList')?.textContent || ''
-      return { oldName, newName, cardsContainNewName: cardsText.includes('更新後的跨領域精選測驗組') }
+      return { oldName, newName, cardsContainNewName: cardsText.includes('歷史與科學綜合特輯') }
     })
 
-    expect(renameResult.newName).toBe('更新後的跨領域精選測驗組')
+    expect(renameResult.newName).toBe('歷史與科學綜合特輯')
     expect(renameResult.cardsContainNewName).toBe(true)
+  })
+
+  test('ver 3.0.4 enhancements: jump question, student repeat toggle, modal backdrop close, admin return', async ({ page }) => {
+    const checkResult = await page.evaluate(() => {
+      // 1. Check default custom sets: only 1 default set
+      const defaultSets = window.videoQuiz.customSets
+      const defaultName = defaultSets[0]?.name
+      const noBottomEditBtn = !document.getElementById('vqAdminCustomSetsList')?.innerHTML.includes('>✏️ 編輯名稱</button>')
+
+      // 2. Check jumpToQuestion method existence and callable
+      const hasJumpToQuestion = typeof window.videoQuiz.jumpToQuestion === 'function'
+
+      // 3. Check toggleAllowStudentRepeat
+      const initAllow = window.videoQuiz.allowStudentRepeat
+      window.videoQuiz.toggleAllowStudentRepeat(!initAllow)
+      const toggledAllow = window.videoQuiz.allowStudentRepeat
+      window.videoQuiz.toggleAllowStudentRepeat(initAllow)
+
+      // 4. Check modal backdrop click close
+      const modal = document.getElementById('vqAnalyticsModal')
+      let modalClosed = false
+      if (modal) {
+        modal.classList.add('active')
+        // simulate click on backdrop
+        modal.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+        modalClosed = !modal.classList.contains('active')
+      }
+
+      // 5. Check stopSyncQuiz switches to panel-admin
+      window.videoQuiz.isTeacher = true
+      window.videoQuiz.syncActive = true
+      window.videoQuiz.stopSyncQuiz()
+      const adminTabActive = document.getElementById('panel-admin')?.classList.contains('active')
+
+      return {
+        defaultName,
+        noBottomEditBtn,
+        hasJumpToQuestion,
+        toggledAllow: toggledAllow !== initAllow,
+        modalClosed,
+        adminTabActive
+      }
+    })
+
+    expect(checkResult.defaultName).toBe('綜合影音複習測驗組')
+    expect(checkResult.noBottomEditBtn).toBe(true)
+    expect(checkResult.hasJumpToQuestion).toBe(true)
+    expect(checkResult.toggledAllow).toBe(true)
+    expect(checkResult.modalClosed).toBe(true)
+    expect(checkResult.adminTabActive).toBe(true)
   })
 })

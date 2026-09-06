@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=173">
+  <link rel="stylesheet" href="css/style.css?v=174">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.0.3</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.0.4</span>
         </p>
       </div>
       <div class="top-actions">
@@ -1269,15 +1269,15 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=303"></script>
-  <script src="js/character_pool.js?v=303"></script>
-  <script src="js/classics_quiz_pool.js?v=303"></script>
-  <script src="js/focus_question_bank.js?v=303"></script>
-  <script src="js/timer_music_manager.js?v=303"></script>
-  <script src="js/quiz.js?v=303"></script>
-  <script src="js/app.js?v=303"></script>
-  <script src="js/classics_quiz.js?v=303"></script>
-  <script src="js/video_quiz.js?v=303"></script>
+  <script src="js/firebase-config.js?v=304"></script>
+  <script src="js/character_pool.js?v=304"></script>
+  <script src="js/classics_quiz_pool.js?v=304"></script>
+  <script src="js/focus_question_bank.js?v=304"></script>
+  <script src="js/timer_music_manager.js?v=304"></script>
+  <script src="js/quiz.js?v=304"></script>
+  <script src="js/app.js?v=304"></script>
+  <script src="js/classics_quiz.js?v=304"></script>
+  <script src="js/video_quiz.js?v=304"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -1925,7 +1925,7 @@ Python</pre>
   </div>
 
   <!-- 影片測驗：全班統計報表彈窗 -->
-  <div id="vqAnalyticsModal" class="video-quiz-overlay">
+  <div id="vqAnalyticsModal" class="video-quiz-overlay" onclick="if(event.target===this) window.videoQuiz.closeClassAnalytics()">
     <div class="video-quiz-card" style="max-width: 800px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
         <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
@@ -1938,7 +1938,7 @@ Python</pre>
   </div>
 
   <!-- 影片測驗：測驗出題編輯器彈窗 -->
-  <div id="vqEditQuizModal" class="video-quiz-overlay">
+  <div id="vqEditQuizModal" class="video-quiz-overlay" onclick="if(event.target===this) window.videoQuiz.closeEditQuizModal()">
     <div class="video-quiz-card" style="max-width: 850px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
         <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">🛠️ 編輯影片測驗</h3>
@@ -2089,7 +2089,7 @@ Python</pre>
   </div>
 
   <!-- 影片測驗：範例格式說明彈窗 -->
-  <div id="vqFormatGuideModal" class="video-quiz-overlay" style="z-index: 2700;">
+  <div id="vqFormatGuideModal" class="video-quiz-overlay" style="z-index: 2700;" onclick="if(event.target===this) window.videoQuiz.closeFormatGuideModal()">
     <div class="video-quiz-card" style="max-width: 800px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px;">
         <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">📋 影片測驗題庫格式規範與範例說明</h3>
@@ -2178,7 +2178,7 @@ Python</pre>
   </div>
 
   <!-- 影片測驗：建立測驗組合命名彈窗 -->
-  <div id="vqCustomSetModal" class="video-quiz-overlay" style="z-index: 2650;">
+  <div id="vqCustomSetModal" class="video-quiz-overlay" style="z-index: 2650;" onclick="if(event.target===this) window.videoQuiz.closeCustomSetModal()">
     <div class="video-quiz-card" style="max-width: 580px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
         <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
@@ -2205,7 +2205,7 @@ Python</pre>
   </div>
 
   <!-- 影片測驗：編輯測驗組合名稱彈窗 -->
-  <div id="vqEditCustomSetNameModal" class="video-quiz-overlay" style="z-index: 2650;">
+  <div id="vqEditCustomSetNameModal" class="video-quiz-overlay" style="z-index: 2650;" onclick="if(event.target===this) window.videoQuiz.closeEditCustomSetNameModal()">
     <div class="video-quiz-card" style="max-width: 480px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
         <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
