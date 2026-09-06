@@ -288,10 +288,10 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
       const modal = document.getElementById('vqAnalyticsModal')
       let modalClosed = false
       if (modal) {
-        modal.classList.add('active')
+        modal.style.display = 'flex'
         // simulate click on backdrop
         modal.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
-        modalClosed = !modal.classList.contains('active')
+        modalClosed = (modal.style.display === 'none')
       }
 
       // 5. Check stopSyncQuiz switches to panel-admin
