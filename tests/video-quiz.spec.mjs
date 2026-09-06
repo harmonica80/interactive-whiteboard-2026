@@ -182,4 +182,56 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
     expect(customSetResult.quizCount).toBeGreaterThanOrEqual(1)
     expect(customSetResult.hasOptionInDropdown).toBe(true)
   })
+
+  test('Admin control UI titles and buttons dynamically switch for self-paced mode', async ({ page }) => {
+    const uiResult = await page.evaluate(() => {
+      window.videoQuiz.setGlobalMode('self')
+      const titleSelf = document.getElementById('vqAdminModeSectionTitle')?.textContent || ''
+      const labelSelf = document.getElementById('vqAdminQuizSelectLabel')?.textContent || ''
+      const btnSelf = document.getElementById('vqAdminStartQuizBtn')?.textContent || ''
+
+      window.videoQuiz.setGlobalMode('sync')
+      const titleSync = document.getElementById('vqAdminModeSectionTitle')?.textContent || ''
+      const labelSync = document.getElementById('vqAdminQuizSelectLabel')?.textContent || ''
+      const btnSync = document.getElementById('vqAdminStartQuizBtn')?.textContent || ''
+
+      return { titleSelf, labelSelf, btnSelf, titleSync, labelSync, btnSync }
+    })
+
+    expect(uiResult.titleSelf).toContain('個人自主學習')
+    expect(uiResult.labelSelf).toContain('自主學習')
+    expect(uiResult.btnSelf).toContain('指派自主學習')
+
+    expect(uiResult.titleSync).toContain('全班同步測驗')
+    expect(uiResult.labelSync).toContain('同步測驗')
+    expect(uiResult.btnSync).toContain('發起全班同步測驗')
+  })
+
+  test('Teacher can edit custom test set name (測驗組合編輯名稱)', async ({ page }) => {
+    const renameResult = await page.evaluate(() => {
+      // Create a set first if none
+      if (!window.videoQuiz.customSets || window.videoQuiz.customSets.length === 0) {
+        window.videoQuiz.customSets = [{
+          id: 'test_set_1',
+          name: '原測驗組合名稱',
+          quizIds: [window.videoQuiz.quizzes[0].id],
+          createdAt: Date.now()
+        }]
+      }
+      const targetSet = window.videoQuiz.customSets[0]
+      const oldName = targetSet.name
+
+      window.videoQuiz.openEditCustomSetNameModal(targetSet.id)
+      const input = document.getElementById('vqEditCustomSetNameInput')
+      if (input) input.value = '更新後的跨領域精選測驗組'
+      window.videoQuiz.confirmEditCustomSetName()
+
+      const newName = targetSet.name
+      const cardsText = document.getElementById('vqAdminCustomSetsList')?.textContent || ''
+      return { oldName, newName, cardsContainNewName: cardsText.includes('更新後的跨領域精選測驗組') }
+    })
+
+    expect(renameResult.newName).toBe('更新後的跨領域精選測驗組')
+    expect(renameResult.cardsContainNewName).toBe(true)
+  })
 })
