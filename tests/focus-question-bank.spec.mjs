@@ -11,6 +11,7 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
       return {
         loaded: true,
         classicsCount: window.focusQB.getPool('classicsQuiz').length,
+        hasYangShen: window.focusQB.getPool('classicsQuiz').some(q => q.quote?.includes('滾滾長江東逝水')),
         charTestCount: window.focusQB.getPool('characterTest').length,
         crosswordCount: window.focusQB.getPool('characterCrossword').length,
         unitedWordsCount: window.focusQB.getPool('characterUnitedWords').length
@@ -19,6 +20,7 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
 
     expect(result.loaded).toBe(true)
     expect(result.classicsCount).toBeGreaterThanOrEqual(200)
+    expect(result.hasYangShen).toBe(true)
     expect(result.charTestCount).toBeGreaterThanOrEqual(500)
     expect(result.crosswordCount).toBeGreaterThanOrEqual(100)
     expect(result.unitedWordsCount).toBeGreaterThanOrEqual(150)

@@ -43,6 +43,7 @@
 黃鶴樓|崔顥|唐|晴川歷歷漢陽樹，芳草萋萋鸚鵡洲。
 水調歌頭·明月幾時有|蘇軾|宋|但願人長久，千里共嬋娟。
 相見歡·無言獨上西樓|李煜|南唐|剪不斷，理還亂，是離愁。
+臨江仙·滾滾長江東逝水|楊慎|明|滾滾長江東逝水，浪花淘盡英雄。是非成敗轉頭空。青山依舊在，幾度夕陽紅。
 中庸|子思|先秦|好學近乎知，力行近乎仁，知恥近乎勇。
 中庸|子思|先秦|凡事豫則立，不豫則廢。
 中庸|子思|先秦|擇善固執。
@@ -118,8 +119,9 @@
   }
 
   function stableOptions(correct, candidates, seed) {
+    const uniqueCandidates = [...new Set(candidates)]
     const seen = new Set([correct])
-    const distractors = candidates
+    const distractors = uniqueCandidates
       .filter((item) => item !== correct && !seen.has(item))
       .sort((a, b) => (hash(`${seed}:${a}`) - hash(`${seed}:${b}`)))
       .slice(0, 3)
@@ -137,7 +139,7 @@
     }
   }
 
-  const poetryLabels = poetryRows.map((item) => item.label)
+  const poetryLabels = [...new Set(poetryRows.map((item) => item.label))]
   const poetryAuthors = [...new Set(poetryRows.map((item) => item.author))]
   const idiomPeople = [...new Set(idiomRows.map((item) => item.person))]
   const personPromptOverrides = {
@@ -205,7 +207,7 @@
     })
   })
 
-  const quizPool = pool.slice(0, 200)
+  const quizPool = pool
   global.CLASSICS_QUIZ_POOL = Object.freeze(quizPool)
   global.createClassicsQuizQuestions = function createClassicsQuizQuestions(count, customPool = null) {
     const activePool = (customPool && Array.isArray(customPool) && customPool.length > 0)
