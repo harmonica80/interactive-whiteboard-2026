@@ -5,10 +5,11 @@ test('provides a 200-question classics focus quiz with elimination hints', async
   page.on('pageerror', (error) => pageErrors.push(error.message))
 
   await page.goto('/index.html')
-  await expect.poll(() => page.evaluate(() => window.CLASSICS_QUIZ_POOL?.length), { timeout: 15_000 }).toBe(200)
+  await expect.poll(() => page.evaluate(() => window.CLASSICS_QUIZ_POOL?.length), { timeout: 15_000 }).toBeGreaterThanOrEqual(200)
 
   const details = await page.evaluate(() => {
     const pool = window.CLASSICS_QUIZ_POOL
+    const linjiangxianItems = pool.filter((q) => q.quote?.includes('滾滾長江東逝水') || q.prompt?.includes('滾滾長江東逝水'))
     return {
       first: pool[0],
       hasFactory: typeof window.createClassicsQuizQuestions === 'function',
@@ -17,6 +18,9 @@ test('provides a 200-question classics focus quiz with elimination hints', async
       leakedAnswers: pool.filter((question) => question.prompt.includes(question.correctOption)).map((question) => question.id),
       nonQuotePoetryPrompts: pool.filter((question) => question.category === '名句典故' && !question.prompt.startsWith('「')).map((question) => question.id),
       nonMainTitleKeywords: pool.filter((question) => question.category === '名句典故' && (!question.reference.readcKeyword || question.reference.readcKeyword.includes('·'))).map((question) => question.id),
+      linjiangxianCount: linjiangxianItems.length,
+      hasYangShenAuthor: linjiangxianItems.some((q) => q.correctOption === '楊慎'),
+      hasLinjiangxianSource: linjiangxianItems.some((q) => q.correctOption.includes('臨江仙·滾滾長江東逝水')),
     }
   })
 
@@ -25,6 +29,9 @@ test('provides a 200-question classics focus quiz with elimination hints', async
   expect(details.leakedAnswers).toEqual([])
   expect(details.nonQuotePoetryPrompts).toEqual([])
   expect(details.nonMainTitleKeywords).toEqual([])
+  expect(details.linjiangxianCount).toBe(2)
+  expect(details.hasYangShenAuthor).toBe(true)
+  expect(details.hasLinjiangxianSource).toBe(true)
   expect(details.first.options).toHaveLength(4)
   expect(details.first.options).toContain(details.first.correctOption)
   expect(details.first.reference.readcUrl).toContain('readc.info')
