@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.0.5';
+    this.APP_VERSION = '3.0.6';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -258,6 +258,12 @@ class App {
       }
       if (window.videoQuiz && typeof window.videoQuiz.onTabEnter === 'function') {
         window.videoQuiz.onTabEnter();
+      }
+    }
+
+    if (targetId === 'panel-quiz') {
+      if (window.quiz && typeof window.quiz.updateUI === 'function') {
+        window.quiz.updateUI();
       }
     }
 
@@ -9212,6 +9218,11 @@ function resetAll() {
   // 清除 tldraw 白板畫稿與本機快取
   if (window.app && typeof window.app.clearTldrawWhiteboard === 'function') {
     window.app.clearTldrawWhiteboard();
+  }
+
+  // 清除選擇題測驗畫面與結果
+  if (window.quiz && typeof window.quiz.clearQuizResults === 'function') {
+    window.quiz.clearQuizResults();
   }
 
   const promises = [

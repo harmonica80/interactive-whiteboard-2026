@@ -331,4 +331,57 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
     expect(checkResult.modalClosed).toBe(true)
     expect(checkResult.adminTabActive).toBe(true)
   })
+
+  test('Multiple choice quiz results (選擇題測驗結果) are cleared on reset while backend questions are preserved', async ({ page }) => {
+    const quizTestResult = await page.evaluate(async () => {
+      window.app.switchToTab('panel-quiz')
+      const q = window.quiz
+      
+      // 1. 發起測驗並作答
+      q.startQuiz('請問長方形面積計算公式？', ['長 × 寬', '(長 + 寬) × 2'], 'single')
+      await new Promise(r => setTimeout(r, 200))
+      q.submitAnswer(0)
+      await new Promise(r => setTimeout(r, 200))
+      
+      // 2. 結束測驗
+      q.endQuiz()
+      await new Promise(r => setTimeout(r, 200))
+      
+      const afterEndStatus = document.getElementById('quizStatus')?.textContent || ''
+      const afterEndResults = document.getElementById('quizResults')?.textContent || ''
+      
+      // 3. 模擬後台系統重設
+      if (typeof q.clearQuizResults === 'function') {
+        q.clearQuizResults()
+      }
+      q.quizRef.set(null)
+      q.answersRef.set(null)
+      await new Promise(r => setTimeout(r, 300))
+      
+      const afterResetStatus = document.getElementById('quizStatus')?.textContent || ''
+      const afterResetResultsHtml = document.getElementById('quizResults')?.innerHTML || ''
+      const afterResetOptionsHtml = document.getElementById('answerOptions')?.innerHTML || ''
+      const historyKeys = Object.keys(q.historyBank || {})
+      const hasHistorySaved = historyKeys.some(k => q.historyBank[k].question.includes('長方形面積'))
+      
+      return {
+        afterEndStatus,
+        hasEndedResults: afterEndResults.includes('最終結果'),
+        afterResetStatus,
+        isResultsEmpty: afterResetResultsHtml.trim() === '',
+        isOptionsEmpty: afterResetOptionsHtml.trim() === '',
+        hasHistorySaved,
+        historyCount: historyKeys.length
+      }
+    })
+
+    expect(quizTestResult.afterEndStatus).toContain('測驗已結束')
+    expect(quizTestResult.hasEndedResults).toBe(true)
+    expect(quizTestResult.afterResetStatus).toContain('目前沒有進行中的測驗')
+    expect(quizTestResult.isResultsEmpty).toBe(true)
+    expect(quizTestResult.isOptionsEmpty).toBe(true)
+    expect(quizTestResult.hasHistorySaved).toBe(true)
+    expect(quizTestResult.historyCount).toBeGreaterThanOrEqual(1)
+  })
 })
+
