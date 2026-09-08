@@ -165,19 +165,44 @@ class Quiz {
       if (quizStatus) quizStatus.innerHTML = '<div style="color: var(--text-muted); text-align: center;">測驗已結束</div>';
       if (quizForm) quizForm.style.display = 'block';
       if (endQuizBtn) endQuizBtn.style.display = 'none';
-      if (answerOptions) answerOptions.style.display = 'none';
+      if (answerOptions) {
+        answerOptions.style.display = 'none';
+        answerOptions.innerHTML = '';
+      }
       this.showFinalResults();
     } else {
-      if (quizStatus) quizStatus.innerHTML = '<div style="color: var(--text-muted); text-align: center;">目前沒有進行中的測驗</div>';
-      if (quizForm) quizForm.style.display = 'block';
-      if (endQuizBtn) endQuizBtn.style.display = 'none';
-      if (answerOptions) answerOptions.style.display = 'none';
+      this.clearQuizResults();
+    }
+  }
+
+  // 清除學生端與後台測驗結果及答題介面，回復至「目前沒有進行中的測驗」
+  clearQuizResults() {
+    const quizStatus = document.getElementById('quizStatus');
+    const quizForm = document.getElementById('quizForm');
+    const answerOptions = document.getElementById('answerOptions');
+    const endQuizBtn = document.getElementById('endQuizBtn');
+    const resultsContainer = document.getElementById('quizResults');
+
+    if (quizStatus) quizStatus.innerHTML = '<div style="color: var(--text-muted); text-align: center;">目前沒有進行中的測驗</div>';
+    if (quizForm) quizForm.style.display = 'block';
+    if (endQuizBtn) endQuizBtn.style.display = 'none';
+    if (answerOptions) {
+      answerOptions.style.display = 'none';
+      answerOptions.innerHTML = '';
+    }
+    if (resultsContainer) {
+      resultsContainer.innerHTML = '';
     }
   }
   
   updateResults(answers) {
     const resultsContainer = document.getElementById('quizResults');
-    if (!resultsContainer || !this.currentQuiz || !this.currentQuiz.active) return;
+    if (!resultsContainer) return;
+    if (!this.currentQuiz) {
+      resultsContainer.innerHTML = '';
+      return;
+    }
+    if (!this.currentQuiz.active) return;
     
     const quizOpts = Array.isArray(this.currentQuiz.options) ? this.currentQuiz.options : [];
     const totalVoters = Object.keys(answers).length;
@@ -215,13 +240,24 @@ class Quiz {
   showFinalResults() {
     const resultsContainer = document.getElementById('quizResults');
     if (!resultsContainer) return;
+    if (!this.currentQuiz) {
+      resultsContainer.innerHTML = '';
+      return;
+    }
     
     this.answersRef.once('value', (snapshot) => {
+      if (!this.currentQuiz) {
+        resultsContainer.innerHTML = '';
+        return;
+      }
       const answers = snapshot.val() || {};
       const totalVoters = Object.keys(answers).length;
       const quizOpts = (this.currentQuiz && Array.isArray(this.currentQuiz.options)) ? this.currentQuiz.options : [];
       const optionCount = quizOpts.length;
-      if (optionCount === 0) return;
+      if (optionCount === 0) {
+        resultsContainer.innerHTML = '';
+        return;
+      }
       const counts = new Array(optionCount).fill(0);
       
       Object.values(answers).forEach(answer => {
