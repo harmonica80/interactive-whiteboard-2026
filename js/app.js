@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.1.0';
+    this.APP_VERSION = '3.1.1';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5725,10 +5725,10 @@ class App {
   }
 
   adminImportRecord(event) {
-    const file = event.target.files[0];
+    const file = event.target.files && event.target.files[0];
     if (!file) return;
     
-    // 清空 input 值，確保若取消或重新選同檔時仍會觸發 onchange
+    // 清空 input 值，確保若取消或重新選同檔時仍會觸發 onchange（必須在讀取完成後執行）
     const clearFileInput = () => {
       try {
         event.target.value = '';
@@ -5736,14 +5736,31 @@ class App {
     };
 
     const reader = new FileReader();
+    reader.onerror = (err) => {
+      console.error("FileReader error:", err);
+      this.showNotification('錯誤', '讀取檔案失敗！');
+      clearFileInput();
+    };
+
     reader.onload = (e) => {
+      // 檔案讀取完畢後，安全地重設 input
+      clearFileInput();
+
       try {
-        const importedData = JSON.parse(e.target.result);
+        let rawText = e.target.result;
+        if (typeof rawText === 'string') {
+          rawText = rawText.trim();
+          // 消除 UTF-8 BOM（若存在）
+          if (rawText.charCodeAt(0) === 0xFEFF) {
+            rawText = rawText.slice(1).trim();
+          }
+        }
+        
+        const importedData = JSON.parse(rawText);
         
         // Validate format
-        if (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard && !importedData.tldrawSnapshot) {
+        if (!importedData || (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard && !importedData.tldrawSnapshot)) {
           this.showNotification('錯誤', '無效的記錄檔格式！');
-          clearFileInput();
           return;
         }
 
@@ -5759,12 +5776,12 @@ class App {
         // 標籤描述文字
         const sourceDesc = fileClassCode 
           ? `【${fileClassCode} 班${fileClassName ? ' (' + fileClassName + ')' : ''}】` 
-          : `【一次性課堂（公開空間）】`;
+          : `【歷史課堂記錄（一次性公開空間）】`;
         const currentDesc = currentClassCode 
           ? `【${currentClassCode} 班】` 
           : `【一次性課堂（公開空間）】`;
 
-        // 空間是否一致
+        // 空間是否完全一致
         const isMatched = (currentClassCode || null) === (fileClassCode || null);
 
         // 執行實際資料庫覆蓋匯入作業
@@ -5870,7 +5887,6 @@ class App {
           
           Promise.all(promises).then(() => {
             this.showNotification('成功', `記錄檔已成功匯入至 ${currentDesc}！`);
-            clearFileInput();
             
             // Force reload to refresh UI
             setTimeout(() => {
@@ -5879,12 +5895,31 @@ class App {
           }).catch(err => {
             console.error("Import set failed:", err);
             this.showNotification('錯誤', '寫入資料庫失敗: ' + err.message);
-            clearFileInput();
           });
         };
 
-        if (isMatched) {
-          // 空間一致，正常確認覆蓋
+        // 判斷情境提示
+        if (currentClassCode && !fileClassCode) {
+          // 情境 1：將過去的歷史備份檔匯入到新建立的專屬班級中
+          const subtitleHtml = `
+            <div style="text-align: left; background: var(--bg-input, rgba(0,0,0,0.04)); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px;">
+              <div>📁 備份來源：<strong>歷史課堂記錄檔</strong></div>
+              <div>🕒 匯出時間：${fileExportedAt}</div>
+              <div>🎯 匯入目標：<strong style="color: var(--accent-color);">${currentDesc}</strong></div>
+            </div>
+            <div style="color: var(--text-primary); font-size: 13px; line-height: 1.6; margin-bottom: 8px;">
+              確定要將此份歷史記錄匯入至 <strong>${currentDesc}</strong> 嗎？<br>
+              <span style="color: #ff3b30; font-weight: bold;">⚠️ 提問、測驗、圖片、影片及白板畫稿將完整導入並覆蓋目前班級資料。</span>
+            </div>
+          `;
+          this.showConfirmModal(
+            '📥',
+            `匯入記錄至 ${currentDesc}`,
+            subtitleHtml,
+            doExecuteImport
+          );
+        } else if (isMatched) {
+          // 情境 2：空間一致，正常確認覆蓋
           const subtitleHtml = `
             <div style="text-align: left; background: var(--bg-input, rgba(0,0,0,0.04)); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px;">
               <div>📁 備份來源：<strong>${sourceDesc}</strong></div>
@@ -5902,7 +5937,7 @@ class App {
             doExecuteImport
           );
         } else {
-          // 空間不一致！跨空間警告
+          // 情境 3：不同班級間的跨空間提醒（例如 A 班匯入到 B 班）
           const subtitleHtml = `
             <div style="text-align: left; background: rgba(255, 149, 0, 0.1); border: 1px solid #ff9500; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px;">
               <div>📁 檔案來源：<strong style="color: #ff9500;">${sourceDesc}</strong></div>
@@ -5927,12 +5962,10 @@ class App {
         }
       } catch (err) {
         console.error("Parse failed:", err);
-        this.showNotification('錯誤', '解析 JSON 檔案失敗！');
-        clearFileInput();
+        this.showNotification('錯誤', '解析 JSON 檔案失敗: ' + (err.message || '檔案格式無效'));
       }
     };
     reader.readAsText(file);
-    clearFileInput();
   }
 
   // ==========================================

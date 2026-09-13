@@ -1647,3 +1647,19 @@
   - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
   - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
   - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
+
+## 2026-09-13 - ver 3.1.1 修復 JSON 匯入解析錯誤並優化歷史備份匯入新班級流程
+- 影響檔案：`index.html`、`js/app.js`、`package.json`、`scripts/verify-video-quiz.mjs`、`SYSTEM_LOG.md`。
+- 版本：依規定版本號增加 `+0.01`，由 `ver 3.1.0` 升級為 **`ver 3.1.1`**。
+- 修改項目：
+  1. **修復 FileReader 非同步中斷造成的解析失敗**：
+     - 原先在 `reader.readAsText(file)` 後立即執行了 `clearFileInput()`，導致瀏覽器清空 input value 時意外中斷/廢棄了 File Blob 串流，造成 `JSON.parse` 收到空字串報錯。
+     - 改為在 `reader.onload` 讀取完成後才安全重設 input，並補充 `reader.onerror` 錯誤捕獲。
+  2. **支援去除 UTF-8 BOM**：
+     - 自動檢查並消除 Windows 或部分編輯器可能加入的 `0xFEFF` BOM 標頭字元，確保 `JSON.parse` 100% 穩定相容。
+  3. **針對「歷史備份導入新增班級」提供專屬確認介面**：
+     - 偵測當使用者位於特定班級（例如 301 班）並選取歷史課堂備份時，自動提供專屬且清楚的「📥 匯入記錄至【XXX 班】」確認介面，清楚指示題庫、白板畫稿將完整寫入並啟用至該新班級中。
+- 驗證：
+  - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
+  - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
+  - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
