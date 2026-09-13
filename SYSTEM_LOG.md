@@ -1614,3 +1614,17 @@
   - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
   - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
   - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
+
+## 2026-09-13 - ver 3.0.9 UI 標籤優化與後台開課管理摺疊區塊調整
+- 影響檔案：`index.html`、`js/app.js`、`package.json`、`scripts/verify-video-quiz.mjs`、`SYSTEM_LOG.md`。
+- 版本：依規定版本號增加 `+0.01`，由 `ver 3.0.8` 升級為 **`ver 3.0.9`**。
+- 修改項目：
+  1. **班級對話框標籤文字微調**：
+     - 將「加入或切換專屬班級」對話框中的姓名輸入標籤由「👤 您的姓名或座號」更新為「👤 您的姓名或匿稱」。
+  2. **管理後台開課管理區塊手風琴化與位置調整**：
+     - 將「🏫 班級代碼管理與開課登記（嚴格管制機制）」改造為標準可折疊手風琴區塊（`.admin-section.admin-section-collapsible.collapsed`）。
+     - 將該區塊從原本重設備份下方位置，移至「⏱️ 倒數計時管理」區塊正下方，與測驗管理等功能維持一致的手風琴收合體驗。
+- 驗證：
+  - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
+  - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
+  - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
