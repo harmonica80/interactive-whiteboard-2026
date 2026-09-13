@@ -1628,3 +1628,22 @@
   - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
   - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
   - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
+
+## 2026-09-13 - ver 3.1.0 課堂記錄備份：匯出空間自我識別與匯入防呆比對
+- 影響檔案：`index.html`、`js/app.js`、`package.json`、`scripts/verify-video-quiz.mjs`、`SYSTEM_LOG.md`。
+- 版本：依規定版本號增加 `+0.01`，由 `ver 3.0.9` 升級為 **`ver 3.1.0`**。
+- 修改項目：
+  1. **匯出 JSON 檔名與內部空間 Metadata 自我識別**：
+     - 自動在匯出檔案檔名標註空間類型：
+       - 班級模式：`classroom_record_班級{classCode}_{date}.json`（例如 `classroom_record_班級301_2026-09-13.json`）
+       - 一次性公開模式：`classroom_record_一次性課堂_{date}.json`
+     - 於 JSON 檔案內容頂部寫入 `sourceMode`、`classCode`、`className`、`appVersion`、`exportedAt` 等身分標籤。
+  2. **匯入 JSON 跨空間比對與智慧防呆確認**：
+     - 選取 JSON 檔案時自動解析空間來源，與當前所在課堂空間進行精確比對。
+     - **空間一致時**：清晰顯示備份來源、匯出時間與目標位置，提醒覆蓋警告後安全匯入。
+     - **跨空間不一致時**：跳出醒目橘色警示彈窗，明確告知備份來源與當前位置不相符，防範誤將其他班級或一次性資料寫入錯誤空間。
+     - 檔案輸入框在處理後自動重設值，確保若取消或再次選取相同檔案時皆能正常觸發。
+- 驗證：
+  - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
+  - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
+  - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
