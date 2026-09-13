@@ -51,6 +51,11 @@ window.ClassRoomManager = {
     return !this.getActiveClassCode();
   },
 
+  // 是否處於專屬班級模式
+  isClassMode() {
+    return Boolean(this.getActiveClassCode());
+  },
+
   // 儲存並切換班級代碼 (若傳入空值則切換回一次性課堂)
   setActiveClassCode(code) {
     const sanitized = this.sanitizeClassCode(code);

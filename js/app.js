@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.1.1';
+    this.APP_VERSION = '3.1.2';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -5658,8 +5658,10 @@ class App {
       ]);
       
       const quizData = quizSnap.val() || {};
-      const isClass = window.ClassRoomManager ? window.ClassRoomManager.isClassMode() : false;
-      const currentCode = isClass ? window.ClassRoomManager.getActiveClassCode() : null;
+      const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+        ? window.ClassRoomManager.getActiveClassCode()
+        : (window.currentClassCode || '');
+      const isClass = Boolean(currentCode);
       const classInfo = isClass && this.adminRegisteredClasses ? this.adminRegisteredClasses.find(c => c.code === currentCode) : null;
       const currentClassName = classInfo ? (classInfo.name || '') : '';
 
@@ -5770,8 +5772,10 @@ class App {
         const fileSourceMode = importedData.sourceMode || (fileClassCode ? 'class' : 'one-off');
         const fileExportedAt = importedData.exportedAt ? new Date(importedData.exportedAt).toLocaleString() : '未知時間';
 
-        const currentIsClass = window.ClassRoomManager ? window.ClassRoomManager.isClassMode() : false;
-        const currentClassCode = currentIsClass ? window.ClassRoomManager.getActiveClassCode() : null;
+        const currentClassCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+          ? window.ClassRoomManager.getActiveClassCode()
+          : (window.currentClassCode || '');
+        const currentIsClass = Boolean(currentClassCode);
 
         // 標籤描述文字
         const sourceDesc = fileClassCode 

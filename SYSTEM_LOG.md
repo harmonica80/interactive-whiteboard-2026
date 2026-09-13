@@ -1663,3 +1663,16 @@
   - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
   - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
   - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
+
+## 2026-09-13 - ver 3.1.2 修復 ClassRoomManager.isClassMode 函式未定義錯誤
+- 影響檔案：`index.html`、`js/firebase-config.js`、`js/app.js`、`package.json`、`scripts/verify-video-quiz.mjs`、`SYSTEM_LOG.md`。
+- 版本：依規定版本號增加 `+0.01`，由 `ver 3.1.1` 升級為 **`ver 3.1.2`**。
+- 修改項目：
+  1. **補齊 `ClassRoomManager.isClassMode()` 介面**：
+     - 在 `js/firebase-config.js` 的 `ClassRoomManager` 物件中實作 `isClassMode()`，回傳 `Boolean(this.getActiveClassCode())`。
+  2. **全面加固班級模式防禦性判斷**：
+     - 在 `js/app.js` 的 `adminExportRecord` 與 `adminImportRecord` 中，採用雙重保險判斷：直接自 `getActiveClassCode()` 或 `window.currentClassCode` 取得代碼並轉為布林值，徹底防止 `isClassMode is not a function` 異常。
+- 驗證：
+  - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
+  - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
+  - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
