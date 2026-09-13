@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.1.2';
+    this.APP_VERSION = '3.1.3';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -159,6 +159,329 @@ class App {
     document.addEventListener('click', resumeAudioOnGesture);
     document.addEventListener('keydown', resumeAudioOnGesture);
     document.addEventListener('touchstart', resumeAudioOnGesture);
+  }
+
+  // ===== 使用者身份識別與記名管理 =====
+  getUserId() {
+    let uid = localStorage.getItem('user_id') || localStorage.getItem('app_user_id');
+    if (!uid) {
+      uid = 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('user_id', uid);
+    }
+    return uid;
+  }
+
+  getCurrentUserName() {
+    return (
+      (window.ClassRoomManager && typeof window.ClassRoomManager.getUserName === 'function' && window.ClassRoomManager.getUserName()) ||
+      localStorage.getItem('user_nickname') ||
+      localStorage.getItem('user_name') ||
+      localStorage.getItem('comment_nickname') ||
+      ''
+    ).trim();
+  }
+
+  setUserName(name) {
+    if (!name) return;
+    const trimmed = name.trim();
+    if (window.ClassRoomManager && typeof window.ClassRoomManager.setUserName === 'function') {
+      window.ClassRoomManager.setUserName(trimmed);
+    }
+    localStorage.setItem('user_nickname', trimmed);
+    localStorage.setItem('user_name', trimmed);
+    localStorage.setItem('comment_nickname', trimmed);
+
+    const displayUserName = document.getElementById('displayUserName');
+    const displayUserNameTag = document.getElementById('displayUserNameTag');
+    if (displayUserName) displayUserName.textContent = trimmed;
+    if (displayUserNameTag && this.isClassMode()) {
+      displayUserNameTag.style.display = 'inline-flex';
+    }
+
+    // 重新渲染當前畫面以更新作者標籤與操作按鈕
+    this.renderQuestions();
+    this.renderImages();
+    this.renderVideos();
+  }
+
+  isClassMode() {
+    if (window.ClassRoomManager && typeof window.ClassRoomManager.isClassMode === 'function') {
+      return window.ClassRoomManager.isClassMode();
+    }
+    return Boolean(window.currentClassCode);
+  }
+
+  isItemOwner(item) {
+    if (this.isAdmin) return true; // 授課老師/管理員可管理所有內容
+    if (!item) return false;
+    const myUid = this.getUserId();
+    const myName = this.getCurrentUserName();
+    if (item.userId && item.userId === myUid) return true;
+    if (myName && item.user && item.user === myName && myName !== '匿名' && myName !== '訪客' && myName !== '同學') {
+      return true;
+    }
+    return false;
+  }
+
+  // ===== 學生姓名設定彈窗 =====
+  openStudentNameModal() {
+    const modal = document.getElementById('studentNameModal');
+    const input = document.getElementById('inputStudentModalName');
+    const err = document.getElementById('studentNameModalError');
+    if (!modal || !input) return;
+
+    const currentName = this.getCurrentUserName();
+    input.value = currentName || '';
+    if (err) {
+      err.style.display = 'none';
+      err.textContent = '';
+    }
+
+    modal.classList.add('active');
+    setTimeout(() => {
+      input.focus();
+      input.select();
+    }, 150);
+  }
+
+  closeStudentNameModal() {
+    const modal = document.getElementById('studentNameModal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  saveStudentNameFromModal() {
+    const input = document.getElementById('inputStudentModalName');
+    const err = document.getElementById('studentNameModalError');
+    if (!input) return;
+
+    const name = input.value.trim();
+    if (!name) {
+      if (err) {
+        err.textContent = '請輸入您的姓名或暱稱（不可為空）！';
+        err.style.display = 'block';
+      }
+      input.focus();
+      return;
+    }
+
+    this.setUserName(name);
+    this.closeStudentNameModal();
+    this.showNotification('成功', `您好，${name}！已完成姓名設定。`);
+  }
+
+  // ===== 通用內容修改彈窗 (避免 prompt 被手機阻擋) =====
+  openEditItemModal({ title, initialValue, placeholder, onSave }) {
+    const modal = document.getElementById('itemEditModal');
+    const titleEl = document.getElementById('itemEditModalTitle');
+    const textarea = document.getElementById('itemEditModalTextarea');
+    const saveBtn = document.getElementById('itemEditModalSaveBtn');
+    if (!modal || !textarea || !saveBtn) return;
+
+    if (titleEl && title) titleEl.textContent = title;
+    textarea.value = initialValue || '';
+    if (placeholder) textarea.placeholder = placeholder;
+
+    saveBtn.onclick = () => {
+      const val = textarea.value;
+      if (typeof onSave === 'function') {
+        onSave(val);
+      }
+      this.closeItemEditModal();
+    };
+
+    modal.classList.add('active');
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    }, 150);
+  }
+
+  closeItemEditModal() {
+    const modal = document.getElementById('itemEditModal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  // ===== 學生/管理員修改與刪除提問 =====
+  editQuestionPrompt(id) {
+    const q = this.questions.find(item => item.id === id);
+    if (!q) return;
+    this.openEditItemModal({
+      title: '✏️ 修改提問內容',
+      initialValue: q.text || '',
+      placeholder: '請輸入修改後的提問內容...',
+      onSave: (newText) => {
+        if (!newText.trim()) {
+          this.showNotification('提示', '提問內容不可為空！');
+          return;
+        }
+        db.ref('questions').child(id).update({
+          text: newText.trim(),
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          if (this.activeQuestionId === id) {
+            const el = document.getElementById('questionModalText');
+            if (el) el.innerHTML = this.linkify(newText.trim());
+          }
+          this.showNotification('成功', '提問已更新！');
+        }).catch(err => {
+          this.showNotification('錯誤', '更新失敗: ' + err.message);
+        });
+      }
+    });
+  }
+
+  deleteMyQuestion(id) {
+    this.showConfirmModal(
+      '🗑️',
+      '確定要刪除此提問嗎？',
+      '刪除後該提問及相關留言回饋將永久移除，無法復原。',
+      () => {
+        db.ref('questions').child(id).remove()
+          .then(() => {
+            if (this.activeQuestionId === id) {
+              const modal = document.getElementById('questionModal');
+              if (modal) modal.classList.remove('active');
+              this.activeQuestionId = null;
+              this.cleanupCommentsSync();
+            }
+            this.showNotification('成功', '提問已成功刪除！');
+          })
+          .catch(err => this.showNotification('錯誤', '刪除失敗: ' + err.message));
+      }
+    );
+  }
+
+  // ===== 學生/管理員修改與刪除圖片 =====
+  editImagePrompt(id) {
+    const img = this.images.find(item => item.id === id);
+    if (!img) return;
+    this.openEditItemModal({
+      title: '✏️ 修改圖片名稱/備註',
+      initialValue: img.filename || '',
+      placeholder: '請輸入圖片名稱...',
+      onSave: (newName) => {
+        if (!newName.trim()) {
+          this.showNotification('提示', '圖片名稱不可為空！');
+          return;
+        }
+        db.ref('images').child(id).update({
+          filename: newName.trim(),
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          if (this.activeImageId === id) {
+            const el = document.getElementById('modalImageFilename');
+            if (el) el.textContent = newName.trim();
+          }
+          this.showNotification('成功', '圖片名稱已更新！');
+        }).catch(err => {
+          this.showNotification('錯誤', '更新失敗: ' + err.message);
+        });
+      }
+    });
+  }
+
+  deleteMyImage(id) {
+    this.showConfirmModal(
+      '🖼️',
+      '確定要刪除此圖片嗎？',
+      '刪除後該圖片及留言回饋將永久移除，無法復原。',
+      () => {
+        db.ref('images').child(id).remove()
+          .then(() => {
+            if (this.activeImageId === id) {
+              const modal = document.getElementById('imageModal');
+              if (modal) modal.classList.remove('active');
+              this.activeImageId = null;
+              this.cleanupCommentsSync();
+            }
+            this.showNotification('成功', '圖片已成功刪除！');
+          })
+          .catch(err => this.showNotification('錯誤', '刪除失敗: ' + err.message));
+      }
+    );
+  }
+
+  // ===== 學生/管理員修改與刪除影片 =====
+  editVideoPrompt(id) {
+    const vid = this.videos.find(item => item.id === id);
+    if (!vid) return;
+    this.openEditItemModal({
+      title: '✏️ 修改影片標題/備註',
+      initialValue: vid.filename || '',
+      placeholder: '請輸入影片標題...',
+      onSave: (newTitle) => {
+        if (!newTitle.trim()) {
+          this.showNotification('提示', '影片標題不可為空！');
+          return;
+        }
+        db.ref('videos').child(id).update({
+          filename: newTitle.trim(),
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          if (this.activeVideoId === id) {
+            const el = document.getElementById('modalVideoFilename');
+            if (el) el.textContent = newTitle.trim();
+          }
+          this.showNotification('成功', '影片標題已更新！');
+        }).catch(err => {
+          this.showNotification('錯誤', '更新失敗: ' + err.message);
+        });
+      }
+    });
+  }
+
+  deleteMyVideo(id) {
+    this.showConfirmModal(
+      '🎥',
+      '確定要刪除此影片嗎？',
+      '刪除後該影片及留言回饋將永久移除，無法復原。',
+      () => {
+        db.ref('videos').child(id).remove()
+          .then(() => {
+            if (this.activeVideoId === id) {
+              this.closeVideoModal();
+            }
+            this.showNotification('成功', '影片已成功刪除！');
+          })
+          .catch(err => this.showNotification('錯誤', '刪除失敗: ' + err.message));
+      }
+    );
+  }
+
+  // ===== 學生/管理員修改與刪除留言 =====
+  editCommentPrompt(type, itemId, commentId, currentText) {
+    this.openEditItemModal({
+      title: '✏️ 修改留言內容',
+      initialValue: currentText || '',
+      placeholder: '請輸入修改後的留言內容...',
+      onSave: (newText) => {
+        if (!newText.trim()) {
+          this.showNotification('提示', '留言內容不可為空！');
+          return;
+        }
+        db.ref('comments').child(type).child(itemId).child(commentId).update({
+          text: newText.trim(),
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          this.showNotification('成功', '留言已更新！');
+        }).catch(err => {
+          this.showNotification('錯誤', '更新失敗: ' + err.message);
+        });
+      }
+    });
+  }
+
+  deleteMyComment(type, itemId, commentId) {
+    this.showConfirmModal(
+      '🗑️',
+      '確定要刪除此留言嗎？',
+      '刪除後該留言將無法復原。',
+      () => {
+        db.ref('comments').child(type).child(itemId).child(commentId).remove()
+          .then(() => this.showNotification('成功', '留言已刪除！'))
+          .catch(err => this.showNotification('錯誤', '刪除失敗: ' + err.message));
+      }
+    );
   }
   
   initFunctionMenu() {
@@ -694,6 +1017,31 @@ class App {
     document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') submitAdminPassword();
     });
+
+    // 學生姓名設定彈窗事件
+    const studentNameModal = document.getElementById('studentNameModal');
+    if (studentNameModal) {
+      studentNameModal.addEventListener('click', (e) => {
+        if (e.target === studentNameModal) this.closeStudentNameModal();
+      });
+    }
+    const inputStudentName = document.getElementById('inputStudentModalName');
+    if (inputStudentName) {
+      inputStudentName.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.saveStudentNameFromModal();
+        }
+      });
+    }
+
+    // 通用修改彈窗事件
+    const itemEditModal = document.getElementById('itemEditModal');
+    if (itemEditModal) {
+      itemEditModal.addEventListener('click', (e) => {
+        if (e.target === itemEditModal) this.closeItemEditModal();
+      });
+    }
     
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -704,6 +1052,8 @@ class App {
         customConfirmModal.classList.remove('active');
         notifyModal.classList.remove('active');
         adminPasswordModal.classList.remove('active');
+        if (studentNameModal) studentNameModal.classList.remove('active');
+        if (itemEditModal) itemEditModal.classList.remove('active');
         this.activeQuestionId = null;
         this.activeImageId = null;
         this.activeVideoId = null;
@@ -1669,8 +2019,9 @@ class App {
     const textInput = document.getElementById(inputId);
     if (!listContainer) return;
 
-    // 設定預設暱稱：優先使用之前的留言暱稱，再來是登入暱稱，最後預設「訪客」
-    const savedName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '訪客';
+    // 設定預設暱稱：優先使用登入/班級姓名，再來是之前的留言暱稱，最後預設「同學」
+    const currentUserName = this.getCurrentUserName();
+    const savedName = currentUserName || localStorage.getItem('comment_nickname') || '同學';
     if (nicknameInput) {
       nicknameInput.value = savedName;
     }
@@ -1699,13 +2050,22 @@ class App {
       } else {
         html = comments.map(c => {
           const timeStr = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+          const isOwner = this.isItemOwner(c);
           return `
-            <div class="comment-item">
-              <div class="comment-header">
-                <span class="comment-user">${this.escapeHtml(c.user || '匿名')}</span>
-                <span class="comment-time">${timeStr}</span>
+            <div class="comment-item" style="position: relative; margin-bottom: 8px;">
+              <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span class="comment-user" style="font-weight: bold; color: var(--accent-color);">👤 ${this.escapeHtml(c.user || '同學')}</span>
+                  <span class="comment-time">${timeStr}</span>
+                </div>
+                ${isOwner ? `
+                  <div class="comment-owner-actions" style="display: inline-flex; gap: 4px;">
+                    <button type="button" onclick="event.stopPropagation(); window.app.editCommentPrompt('${type}', '${itemId}', '${c.id}', ${JSON.stringify(c.text || '')})" title="修改留言" style="background: transparent; border: none; cursor: pointer; font-size: 12px; padding: 2px 4px; border-radius: 4px;">✏️</button>
+                    <button type="button" onclick="event.stopPropagation(); window.app.deleteMyComment('${type}', '${itemId}', '${c.id}')" title="刪除留言" style="background: transparent; border: none; cursor: pointer; font-size: 12px; padding: 2px 4px; border-radius: 4px; color: var(--danger-color);">🗑️</button>
+                  </div>
+                ` : ''}
               </div>
-              <div class="comment-text">${this.escapeHtml(c.text || '')}</div>
+              <div class="comment-text" style="word-break: break-word;">${this.escapeHtml(c.text || '')}</div>
             </div>
           `;
         }).join('');
@@ -1724,6 +2084,12 @@ class App {
   }
 
   submitComment(type, itemId, listContainerId, nicknameInputId, inputId) {
+    if (this.isClassMode() && !this.getCurrentUserName()) {
+      this.openStudentNameModal();
+      this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+      return;
+    }
+
     // 若沒有傳入，則根據 type 猜測
     const nickId = nicknameInputId || (type === 'questions' ? 'questionCommentNickname' : type === 'images' ? 'imageCommentNickname' : 'videoCommentNickname');
     const inpId = inputId || (type === 'questions' ? 'questionCommentInput' : type === 'images' ? 'imageCommentInput' : 'videoCommentInput');
@@ -1732,7 +2098,7 @@ class App {
     const textInput = document.getElementById(inpId);
     if (!textInput) return;
 
-    const nickname = (nicknameInput ? nicknameInput.value.trim() : '') || '匿名';
+    let nickname = (nicknameInput ? nicknameInput.value.trim() : '') || this.getCurrentUserName() || '同學';
     const text = textInput.value.trim();
     if (!text) {
       this.showNotification('提示', '請輸入留言內容');
@@ -1740,10 +2106,13 @@ class App {
     }
 
     // 保存暱稱
-    localStorage.setItem('comment_nickname', nickname);
+    this.setUserName(nickname);
+
+    const uid = this.getUserId();
 
     db.ref('comments').child(type).child(itemId).push({
       user: nickname,
+      userId: uid,
       text: text,
       timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
@@ -1940,7 +2309,22 @@ class App {
       return;
     }
     
-    document.getElementById('questionModalUser').textContent = (q.user && q.user !== '匿名') ? q.user : '';
+    const authorName = q.user || '同學';
+    const isOwner = this.isItemOwner(q);
+    const userContainer = document.getElementById('questionModalUser');
+    if (userContainer) {
+      userContainer.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
+          <span style="font-size: 15px; font-weight: bold; color: var(--accent-color);">👤 提問者：${this.escapeHtml(authorName)}</span>
+          ${isOwner ? `
+            <div style="display: inline-flex; gap: 6px;">
+              <button type="button" class="preset-btn" onclick="window.app.editQuestionPrompt('${q.id}')" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; cursor: pointer;">✏️ 修改問題</button>
+              <button type="button" class="preset-btn" onclick="window.app.deleteMyQuestion('${q.id}')" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; cursor: pointer; color: var(--danger-color); border-color: var(--danger-color);">🗑️ 刪除問題</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
     document.getElementById('questionModalText').innerHTML = this.linkify(q.text);
     
     this.updateActiveQuestionModal();
@@ -2004,7 +2388,21 @@ class App {
     const canvas = document.getElementById('imageMarkupCanvas');
     
     modalImage.src = img.url;
-    document.getElementById('modalImageUser').textContent = (img.user && img.user !== '匿名') ? '上傳者: ' + img.user : '';
+    const isOwnerImg = this.isItemOwner(img);
+    const imgUserEl = document.getElementById('modalImageUser');
+    if (imgUserEl) {
+      imgUserEl.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
+          <span style="font-size: 13px; color: #fff;">👤 上傳者：${this.escapeHtml(img.user || '同學')}</span>
+          ${isOwnerImg ? `
+            <div style="display: inline-flex; gap: 6px;">
+              <button type="button" class="preset-btn" onclick="window.app.editImagePrompt('${img.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3);">✏️ 修改檔名</button>
+              <button type="button" class="preset-btn" onclick="window.app.deleteMyImage('${img.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; color: #ff453a; border-color: #ff453a; background: transparent;">🗑️ 刪除圖片</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
     document.getElementById('modalImageFilename').textContent = img.filename;
     document.getElementById('modalDownloadBtn').href = img.url;
     document.getElementById('modalDownloadBtn').download = img.filename;
@@ -2095,7 +2493,21 @@ class App {
       return;
     }
 
-    document.getElementById('modalVideoUser').textContent = (vid.user && vid.user !== '匿名') ? '分享者: ' + vid.user : '';
+    const isOwnerVid = this.isItemOwner(vid);
+    const vidUserEl = document.getElementById('modalVideoUser');
+    if (vidUserEl) {
+      vidUserEl.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
+          <span style="font-size: 13px; color: #fff;">👤 分享者：${this.escapeHtml(vid.user || '同學')}</span>
+          ${isOwnerVid ? `
+            <div style="display: inline-flex; gap: 6px;">
+              <button type="button" class="preset-btn" onclick="window.app.editVideoPrompt('${vid.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3);">✏️ 修改標題</button>
+              <button type="button" class="preset-btn" onclick="window.app.deleteMyVideo('${vid.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; color: #ff453a; border-color: #ff453a; background: transparent;">🗑️ 刪除影片</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
     document.getElementById('modalVideoFilename').textContent = vid.filename;
 
     const downloadBtn = document.getElementById('modalVideoDownloadBtn');
@@ -2296,6 +2708,13 @@ class App {
     const submitQuestion = () => {
       if (this.askBtn.disabled) return;
       
+      // 班級模式下，若未設定姓名則彈窗要求設定
+      if (this.isClassMode() && !this.getCurrentUserName()) {
+        this.openStudentNameModal();
+        this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+        return;
+      }
+
       const now = Date.now();
       if (this.lastQuestionSubmitTime && now - this.lastQuestionSubmitTime < 2000) {
         this.showNotification('提示', '提問頻率太快，請稍候再試...');
@@ -2312,9 +2731,13 @@ class App {
       this.askBtn.disabled = true;
       this.askBtn.textContent = '提交中...';
       
+      const author = this.getCurrentUserName() || '同學';
+      const uid = this.getUserId();
+
       this.questionsRef.push({ 
         text: text, 
-        user: '匿名', 
+        user: author,
+        userId: uid,
         timestamp: Date.now() 
       }).then(() => {
         this.questionInput.value = '';
@@ -2355,17 +2778,27 @@ class App {
     
     const renderQuestionItemHtml = (q, idx) => {
       const commentCount = (this.allCommentCounts && this.allCommentCounts.questions && this.allCommentCounts.questions[q.id]) || (q.comments ? (Array.isArray(q.comments) ? q.comments.length : Object.keys(q.comments).length) : 0);
+      const isOwner = this.isItemOwner(q);
+      const authorName = q.user || '同學';
       return `
-        <li class="question-item card-style" data-id="${q.id}" data-user="${this.escapeHtml(q.user)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px; position: relative;">
+        <li class="question-item card-style" data-id="${q.id}" data-user="${this.escapeHtml(authorName)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px; position: relative;">
           ${commentCount > 0 ? `
             <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showQuestionModal ? window.app.showQuestionModal('${q.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
           ` : ''}
-          <div class="question-card-header">
-            <div class="header-left">
+          <div class="question-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="header-left" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <span class="question-badge">#${total - idx}</span>
-              ${q.user && q.user !== '匿名' ? `<span class="user">${this.escapeHtml(q.user)}</span>` : ''}
+              <span class="question-user-badge" style="font-weight: bold; font-size: 13px; color: var(--accent-color); background: rgba(0, 122, 255, 0.08); padding: 2px 8px; border-radius: 10px;">👤 ${this.escapeHtml(authorName)}</span>
             </div>
-            <span class="time">${this.formatTime(q.timestamp)}</span>
+            <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
+              <span class="time">${this.formatTime(q.timestamp)}</span>
+              ${isOwner ? `
+                <div class="item-owner-actions" onclick="event.stopPropagation();" style="display: inline-flex; gap: 4px;">
+                  <button class="icon-action-btn" onclick="event.stopPropagation(); window.app.editQuestionPrompt('${q.id}');" title="修改提問" style="background: transparent; border: none; cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px;">✏️</button>
+                  <button class="icon-action-btn" onclick="event.stopPropagation(); window.app.deleteMyQuestion('${q.id}');" title="刪除提問" style="background: transparent; border: none; cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px; color: var(--danger-color);">🗑️</button>
+                </div>
+              ` : ''}
+            </div>
           </div>
           <div class="text">${this.linkify(q.text)}</div>
           <div class="reactions-bar" onclick="event.stopPropagation()">
@@ -2540,6 +2973,12 @@ class App {
   }
   
   handleImageUpload(file) {
+    if (this.isClassMode() && !this.getCurrentUserName()) {
+      this.openStudentNameModal();
+      this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+      return;
+    }
+
     const now = Date.now();
     if (this.lastImageUploadTime && now - this.lastImageUploadTime < 2000) {
       this.showNotification('提示', '貼上/上傳頻率太快，請稍候再試...');
@@ -2564,6 +3003,9 @@ class App {
     
     this.isUploadingImage = true;
     this.showNotification('提示', '圖片上傳中...');
+
+    const author = this.getCurrentUserName() || '同學';
+    const uid = this.getUserId();
     
     const compressAndUpload = () => {
       return new Promise((resolve, reject) => {
@@ -2594,7 +3036,8 @@ class App {
       }).then(dataUrl => {
         return this.imageRef.push({
           url: dataUrl,
-          user: '匿名',
+          user: author,
+          userId: uid,
           filename: file.name,
           timestamp: Date.now()
         });
@@ -2612,7 +3055,8 @@ class App {
         }).then((downloadURL) => {
           return this.imageRef.push({ 
             url: downloadURL, 
-            user: '匿名', 
+            user: author,
+            userId: uid,
             filename: file.name, 
             timestamp: Date.now() 
           });
@@ -2904,6 +3348,12 @@ class App {
 
   handleVideoUpload(file) {
     this.videoCompressionCancelled = false;
+    if (this.isClassMode() && !this.getCurrentUserName()) {
+      this.openStudentNameModal();
+      this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+      return;
+    }
+
     const now = Date.now();
     if (this.lastVideoUploadTime && now - this.lastVideoUploadTime < 2000) {
       this.showNotification('提示', '上傳頻率太快，請稍候再試...');
@@ -2937,6 +3387,9 @@ class App {
 
     this.isUploadingVideo = true;
 
+    const author = this.getCurrentUserName() || '同學';
+    const uid = this.getUserId();
+
     const startUpload = async (uploadFile) => {
       this.showNotification('提示', '正在解析影片縮圖...');
       const thumbnail = await this.extractVideoThumbnail(uploadFile);
@@ -2954,7 +3407,8 @@ class App {
         }).then(dataUrl => {
           return this.videoRef.push({
             url: dataUrl,
-            user: '匿名',
+            user: author,
+            userId: uid,
             filename: file.name,
             timestamp: Date.now(),
             type: 'upload',
@@ -2974,7 +3428,8 @@ class App {
           }).then((downloadURL) => {
             return this.videoRef.push({ 
               url: downloadURL, 
-              user: '匿名', 
+              user: author,
+              userId: uid,
               filename: file.name, 
               timestamp: Date.now(),
               type: 'upload',
@@ -3045,6 +3500,12 @@ class App {
   }
 
   submitVideoLink() {
+    if (this.isClassMode() && !this.getCurrentUserName()) {
+      this.openStudentNameModal();
+      this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+      return;
+    }
+
     const input = document.getElementById('videoLinkInput');
     if (!input) return;
     const url = input.value.trim();
@@ -3088,9 +3549,13 @@ class App {
       filename = '外部影片連結';
     }
 
+    const author = this.getCurrentUserName() || '同學';
+    const uid = this.getUserId();
+
     this.videoRef.push({
       url: url,
-      user: '匿名',
+      user: author,
+      userId: uid,
       filename: filename,
       timestamp: Date.now(),
       type: type,
@@ -4070,14 +4535,25 @@ class App {
 
     const renderImageItemHtml = (img) => {
       const commentCount = (this.allCommentCounts && this.allCommentCounts.images && this.allCommentCounts.images[img.id]) || (img.comments ? (Array.isArray(img.comments) ? img.comments.length : Object.keys(img.comments).length) : 0);
+      const isOwner = this.isItemOwner(img);
+      const authorName = img.user || '同學';
       return `
         <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
-          <div class="preview-item" data-id="${img.id}" data-url="${img.url}" data-user="${this.escapeHtml(img.user)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0; position: relative;">
+          <div class="preview-item" data-id="${img.id}" data-url="${img.url}" data-user="${this.escapeHtml(authorName)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0; position: relative;">
             ${commentCount > 0 ? `
               <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showImageModal ? window.app.showImageModal('${img.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
             ` : ''}
             <img src="${img.url}" alt="${img.filename}">
           </div>
+          <div style="font-size: 11px; color: var(--text-secondary); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
+            👤 ${this.escapeHtml(authorName)}
+          </div>
+          ${isOwner ? `
+            <div style="display: flex; gap: 6px;" onclick="event.stopPropagation();">
+              <button class="preset-btn" onclick="event.stopPropagation(); window.app.editImagePrompt('${img.id}');" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer;">✏️ 檔名</button>
+              <button class="preset-btn" onclick="event.stopPropagation(); window.app.deleteMyImage('${img.id}');" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer; color: var(--danger-color); border-color: var(--danger-color);">🗑️ 刪除</button>
+            </div>
+          ` : ''}
           <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px;">
             <button class="reaction-btn" onclick="reactToImage('${img.id}', 'like')" style="min-width: 32px; padding: 2px 6px;" title="讚">
               <span class="reaction-emoji" style="font-size: 11px;">👍</span>
@@ -4172,6 +4648,8 @@ class App {
 
     const renderVideoItemHtml = (vid) => {
       const commentCount = (this.allCommentCounts && this.allCommentCounts.videos && this.allCommentCounts.videos[vid.id]) || (vid.comments ? (Array.isArray(vid.comments) ? vid.comments.length : Object.keys(vid.comments).length) : 0);
+      const isOwner = this.isItemOwner(vid);
+      const authorName = vid.user || '同學';
       return `
         <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
           <div class="preview-item video-item" data-id="${vid.id}" style="cursor: pointer; margin: 0; position: relative;">
@@ -4179,30 +4657,39 @@ class App {
               <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showVideoModal ? window.app.showVideoModal('${vid.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
             ` : ''}
             <img src="${getThumbnailUrl(vid)}" alt="${vid.filename}" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
-          <div style="position: absolute; bottom: 4px; left: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 2px 4px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
-            ${this.escapeHtml(vid.filename)}
+            <div style="position: absolute; bottom: 4px; left: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 2px 4px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
+              ${this.escapeHtml(vid.filename)}
+            </div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-secondary); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
+            👤 ${this.escapeHtml(authorName)}
+          </div>
+          ${isOwner ? `
+            <div style="display: flex; gap: 6px;" onclick="event.stopPropagation();">
+              <button class="preset-btn" onclick="event.stopPropagation(); window.app.editVideoPrompt('${vid.id}');" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer;">✏️ 標題</button>
+              <button class="preset-btn" onclick="event.stopPropagation(); window.app.deleteMyVideo('${vid.id}');" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer; color: var(--danger-color); border-color: var(--danger-color);">🗑️ 刪除</button>
+            </div>
+          ` : ''}
+          <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px; width: 100%; flex-wrap: wrap;">
+            <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'like')" style="min-width: 28px; padding: 2px 4px;" title="讚">
+              <span class="reaction-emoji" style="font-size: 10px;">👍</span>
+              <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.like || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'love')" style="min-width: 28px; padding: 2px 4px;" title="愛心">
+              <span class="reaction-emoji" style="font-size: 10px;">❤️</span>
+              <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.love || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'laugh')" style="min-width: 28px; padding: 2px 4px;" title="大笑">
+              <span class="reaction-emoji" style="font-size: 10px;">😆</span>
+              <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.laugh || 0}</span>
+            </button>
+            <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'wow')" style="min-width: 28px; padding: 2px 4px;" title="驚訝">
+              <span class="reaction-emoji" style="font-size: 10px;">😮</span>
+              <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.wow || 0}</span>
+            </button>
           </div>
         </div>
-        <div class="reactions-bar" style="margin-top: 0; justify-content: center; gap: 4px; width: 100%; flex-wrap: wrap;">
-          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'like')" style="min-width: 28px; padding: 2px 4px;" title="讚">
-            <span class="reaction-emoji" style="font-size: 10px;">👍</span>
-            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.like || 0}</span>
-          </button>
-          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'love')" style="min-width: 28px; padding: 2px 4px;" title="愛心">
-            <span class="reaction-emoji" style="font-size: 10px;">❤️</span>
-            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.love || 0}</span>
-          </button>
-          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'laugh')" style="min-width: 28px; padding: 2px 4px;" title="大笑">
-            <span class="reaction-emoji" style="font-size: 10px;">😆</span>
-            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.laugh || 0}</span>
-          </button>
-          <button class="reaction-btn" onclick="reactToVideo('${vid.id}', 'wow')" style="min-width: 28px; padding: 2px 4px;" title="驚訝">
-            <span class="reaction-emoji" style="font-size: 10px;">😮</span>
-            <span class="reaction-count" style="font-size: 8px;">${vid.reactions?.wow || 0}</span>
-          </button>
-        </div>
-      </div>
-    `;
+      `;
     };
 
     // 1. Grouped Folders
@@ -9118,6 +9605,12 @@ class App {
         if (userName && displayUserNameTag && displayUserName) {
           displayUserName.textContent = userName;
           displayUserNameTag.style.display = 'inline-flex';
+        } else {
+          // 進入班級課堂但未設定姓名或暱稱，主動跳出提示彈窗要求同學設定
+          if (displayUserNameTag) displayUserNameTag.style.display = 'none';
+          setTimeout(() => {
+            this.openStudentNameModal();
+          }, 350);
         }
       }
     } else {

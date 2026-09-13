@@ -102,6 +102,16 @@ window.ClassRoomManager = {
     }
   },
 
+  // 使用者唯一識別碼 (跨重整保留)
+  getUserId() {
+    let uid = localStorage.getItem('app_user_id');
+    if (!uid) {
+      uid = 'user_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('app_user_id', uid);
+    }
+    return uid;
+  },
+
   // 身分管理 (student / teacher)
   getUserRole() {
     return localStorage.getItem('user_role') || 'student';

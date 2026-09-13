@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.1.2</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.1.3</span>
         </p>
       </div>
       <div class="top-actions">
@@ -53,7 +53,7 @@
         <div id="modeClassDisplay" class="mode-display-pill classroom" style="display: none;">
           <span class="mode-icon">🏫</span>
           <span class="mode-title">班級：<strong id="displayClassCode">--</strong></span>
-          <span class="user-display-tag" id="displayUserNameTag" style="display: none;">👤 <span id="displayUserName">訪客</span></span>
+          <span class="user-display-tag" id="displayUserNameTag" style="display: none; cursor: pointer;" onclick="window.app && window.app.openStudentNameModal()" title="點擊修改您的姓名或匿稱">👤 <span id="displayUserName">訪客</span> <span style="font-size: 11px; opacity: 0.7;">✏️</span></span>
         </div>
       </div>
       <div class="class-mode-actions">
@@ -1360,6 +1360,56 @@
     </div>
   </div>
 
+  <!-- 學生姓名 / 暱稱設定對話框 (Student Name Modal) -->
+  <div id="studentNameModal" class="modal-overlay">
+    <div class="modal-content class-modal-card" style="max-width: 440px; width: 92%; border-radius: 20px; background: var(--bg-card); padding: 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.25); position: relative; border: 1px solid var(--border-color);">
+      <button onclick="window.app.closeStudentNameModal()" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+
+      <div style="text-align: center; margin-bottom: 18px;">
+        <div style="font-size: 38px; margin-bottom: 6px;">👤</div>
+        <h3 style="margin: 0 0 6px 0; font-size: 20px; color: var(--text-primary); font-weight: bold;">
+          設定您的姓名或匿稱
+        </h3>
+        <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+          您已進入專屬班級課堂！請設定您的姓名或暱稱（例如：座號+姓名），所有提問、圖片、影片分享與留言都將以實名互動，並允許您自由修改或刪除自己的發表內容。
+        </p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+            📝 您的姓名或匿稱 <span style="color: #ff3b30;">*</span>
+          </label>
+          <input type="text" id="inputStudentModalName" class="question-input" placeholder="例如：05 王小明 或 小華" style="margin: 0; width: 100%; font-size: 15px;" autocomplete="name" maxlength="15">
+          <div id="studentNameModalError" style="display: none; margin-top: 6px; color: #ff3b30; font-size: 12px; font-weight: bold;"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+          <button type="button" class="ask-btn" onclick="window.app.saveStudentNameFromModal()" style="width: 100%; padding: 12px; font-size: 15px; font-weight: bold; justify-content: center; border-radius: 10px; cursor: pointer;">
+            💾 儲存姓名並開始上課
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 內容修改彈窗 (Item Edit Modal) -->
+  <div id="itemEditModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 480px; width: 92%; border-radius: 18px; background: var(--bg-card); padding: 22px; box-shadow: 0 16px 40px rgba(0,0,0,0.25); position: relative; border: 1px solid var(--border-color);">
+      <button onclick="window.app.closeItemEditModal()" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      <h3 id="itemEditModalTitle" style="margin: 0 0 14px 0; font-size: 17px; color: var(--text-primary); font-weight: bold; display: flex; align-items: center; gap: 8px;">
+        ✏️ 修改內容
+      </h3>
+      <div>
+        <textarea id="itemEditModalTextarea" class="question-input" rows="4" style="width: 100%; margin: 0 0 14px 0; font-size: 14px; line-height: 1.5; resize: vertical;" placeholder="請輸入修改後的內容..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="preset-btn" onclick="window.app.closeItemEditModal()" style="padding: 8px 16px; font-size: 13px; border-radius: 8px; cursor: pointer;">取消</button>
+        <button type="button" class="ask-btn" id="itemEditModalSaveBtn" style="padding: 8px 18px; font-size: 13px; border-radius: 8px; cursor: pointer;">儲存修改</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 題目庫 TXT 純文字檔範例格式說明對話框 -->
   <div id="quizFormatModal" class="modal-overlay">
     <div class="modal-content" style="max-width: 580px; width: 90%; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;">
@@ -1405,13 +1455,13 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=312"></script>
+  <script src="js/firebase-config.js?v=313"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
   <script src="js/focus_question_bank.js?v=306"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/quiz.js?v=306"></script>
-  <script src="js/app.js?v=312"></script>
+  <script src="js/app.js?v=313"></script>
   <script src="js/classics_quiz.js?v=306"></script>
   <script src="js/video_quiz.js?v=306"></script>
   
