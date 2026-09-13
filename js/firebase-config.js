@@ -104,6 +104,66 @@ window.ClassRoomManager = {
 
   setUserRole(role) {
     localStorage.setItem('user_role', role === 'teacher' ? 'teacher' : 'student');
+  },
+
+  // 檢查班級是否已由老師登記開課
+  async checkClassExists(code) {
+    if (!code) return false;
+    const sanitized = this.sanitizeClassCode(code);
+    if (!sanitized) return false;
+    try {
+      const snap = await rawRef(`registered_classes/${sanitized}`).once('value');
+      return snap.exists() && snap.val() !== null;
+    } catch (e) {
+      console.warn('checkClassExists error:', e);
+      return false;
+    }
+  },
+
+  // 老師登記新班級 (開課)
+  async registerClass(code, name = '', createdBy = '老師') {
+    const sanitized = this.sanitizeClassCode(code);
+    if (!sanitized) throw new Error('班級代碼不可為空或包含不合法字元！');
+    
+    // 檢查是否已存在
+    const exists = await this.checkClassExists(sanitized);
+    if (exists) {
+      throw new Error(`班級代碼【${sanitized}】已存在，無需重複開課！`);
+    }
+
+    const classData = {
+      code: sanitized,
+      name: (name || sanitized).trim(),
+      createdAt: Date.now(),
+      createdBy: createdBy || '老師',
+      status: 'active'
+    };
+
+    await rawRef(`registered_classes/${sanitized}`).set(classData);
+    return classData;
+  },
+
+  // 刪除已登記的班級
+  async deleteClass(code, deleteSpaceData = true) {
+    const sanitized = this.sanitizeClassCode(code);
+    if (!sanitized) return;
+
+    await rawRef(`registered_classes/${sanitized}`).remove();
+    if (deleteSpaceData) {
+      // 一併清空該班專屬資料，徹底釋放空間
+      await rawRef(`classes/${sanitized}`).remove();
+    }
+  },
+
+  // 監聽所有已開課班級清單 (用於管理後台即時顯示)
+  onClassesChange(callback) {
+    return rawRef('registered_classes').on('value', (snap) => {
+      const val = snap.val() || {};
+      const list = Object.keys(val).map(key => ({ id: key, ...val[key] }));
+      // 依建立時間倒序
+      list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      callback(list);
+    });
   }
 };
 
@@ -124,8 +184,8 @@ rawDb.ref = function(path) {
     const code = window.currentClassCode;
     return code ? rawRef(`classes/${code}`) : rawRef();
   }
-  // 系統內部保留路徑不加班級前綴 (如連線檢測 .info/connected)
-  if (path.startsWith('.info/') || path.startsWith('system/') || path.startsWith('classes/')) {
+  // 系統內部保留路徑不加班級前綴 (如連線檢測 .info/connected、班級名單 registered_classes)
+  if (path.startsWith('.info/') || path.startsWith('system/') || path.startsWith('classes/') || path.startsWith('registered_classes')) {
     return rawRef(path);
   }
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;

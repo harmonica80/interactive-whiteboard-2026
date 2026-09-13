@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.0.7';
+    this.APP_VERSION = '3.0.8';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -8946,8 +8946,8 @@ class App {
     }
   }
 
-  // ===== 班級代碼與智慧雙軌管理 (Classroom & Dual-track Management) =====
-  initClassRoomUI() {
+  // ===== 班級代碼與智慧雙軌管理 (Classroom & Dual-track Management - 嚴格管制模式) =====
+  async initClassRoomUI() {
     const code = window.currentClassCode;
     const modeOneOff = document.getElementById('modeOneOffDisplay');
     const modeClass = document.getElementById('modeClassDisplay');
@@ -8961,17 +8961,45 @@ class App {
     const userName = (window.ClassRoomManager && window.ClassRoomManager.getUserName()) || localStorage.getItem('user_name') || '';
 
     if (code) {
-      // 專屬班級模式
-      if (modeOneOff) modeOneOff.style.display = 'none';
-      if (modeClass) modeClass.style.display = 'inline-flex';
-      if (displayClassCode) displayClassCode.textContent = code;
-      if (btnShare) btnShare.style.display = 'inline-flex';
-      if (btnExit) btnExit.style.display = 'inline-flex';
-      if (btnActionText) btnActionText.textContent = '切換班級';
+      // 驗證代碼是否確實存在於註冊清單中 (防手滑或無效 URL 參數)
+      let exists = true;
+      if (window.ClassRoomManager && typeof window.ClassRoomManager.checkClassExists === 'function') {
+        exists = await window.ClassRoomManager.checkClassExists(code);
+      }
 
-      if (userName && displayUserNameTag && displayUserName) {
-        displayUserName.textContent = userName;
-        displayUserNameTag.style.display = 'inline-flex';
+      if (!exists) {
+        // 代碼未登記開課，自動退回一次性課堂並跳出提示
+        if (window.ClassRoomManager) {
+          window.ClassRoomManager.setActiveClassCode('');
+        }
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('class');
+        cleanUrl.searchParams.delete('room');
+        window.history.replaceState({}, '', cleanUrl.toString());
+
+        this.showNotification(
+          '查無此班級代碼',
+          `班級代碼【${code}】尚未經老師登記開課或輸入錯誤。為避免浪費資料庫空間，已為您自動返回一次性課堂（公開空間）。`
+        );
+
+        if (modeOneOff) modeOneOff.style.display = 'inline-flex';
+        if (modeClass) modeClass.style.display = 'none';
+        if (btnShare) btnShare.style.display = 'none';
+        if (btnExit) btnExit.style.display = 'none';
+        if (btnActionText) btnActionText.textContent = '輸入班級代碼';
+      } else {
+        // 專屬班級模式（正常開課班級）
+        if (modeOneOff) modeOneOff.style.display = 'none';
+        if (modeClass) modeClass.style.display = 'inline-flex';
+        if (displayClassCode) displayClassCode.textContent = code;
+        if (btnShare) btnShare.style.display = 'inline-flex';
+        if (btnExit) btnExit.style.display = 'inline-flex';
+        if (btnActionText) btnActionText.textContent = '切換班級';
+
+        if (userName && displayUserNameTag && displayUserName) {
+          displayUserName.textContent = userName;
+          displayUserNameTag.style.display = 'inline-flex';
+        }
       }
     } else {
       // 一次性課堂模式
@@ -8983,16 +9011,10 @@ class App {
     }
 
     // 更新管理員後台的空間提示標籤
-    const adminScopeBadge = document.getElementById('adminCurrentScopeBadge');
-    if (adminScopeBadge) {
-      if (code) {
-        adminScopeBadge.className = 'mode-display-pill classroom';
-        adminScopeBadge.innerHTML = `🏫 目前管理空間：專屬班級【${code}】（清除或重設僅影響本班）`;
-      } else {
-        adminScopeBadge.className = 'mode-display-pill one-off';
-        adminScopeBadge.innerHTML = '🌱 目前管理空間：一次性課堂（清除或重設僅影響公開空間）';
-      }
-    }
+    this.updateAdminScopeBadge();
+
+    // 初始化管理後台的班級即時清單監聽
+    this.initAdminClassManagement();
 
     // Modal 點擊背景關閉與 ESC 鍵支援
     const modal = document.getElementById('classSwitchModal');
@@ -9013,6 +9035,20 @@ class App {
     }
   }
 
+  updateAdminScopeBadge() {
+    const adminScopeBadge = document.getElementById('adminCurrentScopeBadge');
+    if (adminScopeBadge) {
+      const code = window.currentClassCode;
+      if (code) {
+        adminScopeBadge.className = 'mode-display-pill classroom';
+        adminScopeBadge.innerHTML = `🏫 目前管理空間：專屬班級【${code}】（清除或重設僅影響本班）`;
+      } else {
+        adminScopeBadge.className = 'mode-display-pill one-off';
+        adminScopeBadge.innerHTML = '🌱 目前管理空間：一次性課堂（清除或重設僅影響公開空間）';
+      }
+    }
+  }
+
   openClassModal() {
     const modal = document.getElementById('classSwitchModal');
     if (!modal) return;
@@ -9022,7 +9058,10 @@ class App {
     const historyItems = document.getElementById('modalClassHistoryItems');
     const errorEl = document.getElementById('modalClassError');
 
-    if (errorEl) errorEl.style.display = 'none';
+    if (errorEl) {
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+    }
 
     if (inputCode) {
       inputCode.value = window.currentClassCode || '';
@@ -9066,7 +9105,7 @@ class App {
     if (modal) modal.classList.remove('active');
   }
 
-  submitClassSwitch() {
+  async submitClassSwitch() {
     const inputCode = document.getElementById('inputModalClassCode');
     const inputUser = document.getElementById('inputModalUserName');
     const errorEl = document.getElementById('modalClassError');
@@ -9089,6 +9128,36 @@ class App {
       return;
     }
 
+    // ===== 嚴格管制機制：先向資料庫檢查代碼是否已登記開課 =====
+    if (errorEl) {
+      errorEl.style.display = 'block';
+      errorEl.style.background = 'rgba(0, 122, 255, 0.08)';
+      errorEl.style.borderLeftColor = '#007aff';
+      errorEl.style.color = 'var(--text-secondary)';
+      errorEl.innerHTML = '⏳ 正在向系統驗證班級代碼...';
+    }
+
+    let exists = false;
+    try {
+      if (window.ClassRoomManager && typeof window.ClassRoomManager.checkClassExists === 'function') {
+        exists = await window.ClassRoomManager.checkClassExists(sanitized);
+      }
+    } catch (e) {
+      exists = false;
+    }
+
+    if (!exists) {
+      if (errorEl) {
+        errorEl.style.background = 'rgba(255, 59, 48, 0.1)';
+        errorEl.style.borderLeftColor = '#ff3b30';
+        errorEl.style.color = '#ff3b30';
+        errorEl.innerHTML = `❌ 查無此班級代碼【<strong>${sanitized}</strong>】！<br><span style="font-size:12px; font-weight:normal; color:var(--text-secondary);">系統已啟用嚴格開課管制。請向授課老師確認代碼，或請老師先至「⚙️ 管理後台」登記開課。</span>`;
+        errorEl.style.display = 'block';
+      }
+      return; // 嚴格阻擋！絕不在資料庫建立垃圾空間
+    }
+
+    // 驗證通過，儲存姓名與班級代碼
     const rawUser = inputUser ? inputUser.value.trim() : '';
     if (rawUser && window.ClassRoomManager) {
       window.ClassRoomManager.setUserName(rawUser);
@@ -9141,6 +9210,144 @@ class App {
     }).catch(() => {
       prompt('請手動複製下列班級邀請連結：', finalUrl);
     });
+  }
+
+  // ===== 管理後台：班級管理與開課管制業務 =====
+  initAdminClassManagement() {
+    if (!window.ClassRoomManager || typeof window.ClassRoomManager.onClassesChange !== 'function') return;
+    window.ClassRoomManager.onClassesChange((classList) => {
+      this.renderAdminClassList(classList);
+    });
+  }
+
+  async adminCreateNewClass() {
+    const codeInput = document.getElementById('adminNewClassCode');
+    const nameInput = document.getElementById('adminNewClassName');
+    if (!codeInput) return;
+
+    const rawCode = codeInput.value.trim();
+    if (!rawCode) {
+      this.showNotification('請輸入代碼', '請輸入欲登記開課的班級代碼！');
+      codeInput.focus();
+      return;
+    }
+
+    const rawName = nameInput ? nameInput.value.trim() : '';
+
+    try {
+      const created = await window.ClassRoomManager.registerClass(rawCode, rawName, '授課老師');
+      this.showNotification('🎉 開課成功', `班級【${created.code}】（${created.name}）已成功登記！學生現在可以輸入此代碼加入課堂。`);
+      codeInput.value = '';
+      if (nameInput) nameInput.value = '';
+    } catch (err) {
+      this.showNotification('開課失敗', err.message || '登記班級時發生錯誤');
+    }
+  }
+
+  renderAdminClassList(list = []) {
+    const container = document.getElementById('adminClassListContainer');
+    const badge = document.getElementById('adminClassCountBadge');
+    if (!container) return;
+
+    if (badge) {
+      badge.textContent = `共 ${list.length} 個班級`;
+    }
+
+    if (!list || list.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 24px 16px; background: var(--bg-card); border-radius: 8px; border: 1px dashed var(--border-color);">
+          目前尚未登記任何班級。請在上方輸入班級代碼（例如 301）進行登記開課！
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = '';
+    list.forEach(cls => {
+      const isCurrent = window.currentClassCode === cls.code;
+      const card = document.createElement('div');
+      card.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        background: var(--bg-card);
+        border: 1px solid ${isCurrent ? 'var(--accent-color)' : 'var(--border-color)'};
+        border-radius: 10px;
+        flex-wrap: wrap;
+        gap: 8px;
+        ${isCurrent ? 'box-shadow: 0 0 0 1px var(--accent-color);' : ''}
+      `;
+
+      const dateStr = cls.createdAt ? new Date(cls.createdAt).toLocaleDateString() : '';
+
+      card.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-weight: bold; font-size: 14px; color: var(--accent-color); background: rgba(0, 122, 255, 0.1); padding: 3px 8px; border-radius: 6px;">
+            ${cls.code}
+          </span>
+          <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+            ${cls.name !== cls.code ? cls.name : ''}
+          </span>
+          ${isCurrent ? '<span style="font-size: 11px; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">目前所在</span>' : ''}
+          <span style="font-size: 11px; color: var(--text-secondary);">${dateStr}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button type="button" class="class-action-btn" onclick="window.app.adminSwitchToClass('${cls.code}')" style="font-size: 12px; padding: 4px 8px;" title="立即切換至此班級">
+            🚀 進入此班
+          </button>
+          <button type="button" class="class-action-btn btn-share-link" onclick="window.app.copyClassInviteLink('${cls.code}')" style="font-size: 12px; padding: 4px 8px;" title="複製學生邀請連結">
+            📋 複製連結
+          </button>
+          <button type="button" class="class-action-btn btn-exit-class" onclick="window.app.adminDeleteClass('${cls.code}', '${cls.name}')" style="font-size: 12px; padding: 4px 8px;" title="刪除班級與清除其佔用空間">
+            🗑️ 刪除
+          </button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  adminSwitchToClass(code) {
+    if (!code) return;
+    if (window.ClassRoomManager) {
+      window.ClassRoomManager.setActiveClassCode(code);
+    }
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('class', code);
+    newUrl.searchParams.delete('room');
+    window.location.href = newUrl.toString();
+  }
+
+  copyClassInviteLink(code) {
+    if (!code) return;
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set('class', code);
+    shareUrl.searchParams.delete('room');
+    const finalUrl = shareUrl.toString();
+
+    navigator.clipboard.writeText(finalUrl).then(() => {
+      this.showNotification('📋 複製成功', `已複製【${code}】班級學生邀請連結！發送給學生點擊即可直達該班專屬白板。`);
+    }).catch(() => {
+      prompt('請手動複製下列班級邀請連結：', finalUrl);
+    });
+  }
+
+  async adminDeleteClass(code, name) {
+    if (!code) return;
+    const displayName = name && name !== code ? `${name} (${code})` : code;
+    const confirmMsg = `確定要刪除班級【${displayName}】嗎？\n\n⚠️ 警告：這將徹底刪除此班級的註冊資料，並清空該班級的白板板書、發問與測驗紀錄，釋放資料庫空間！\n\n此動作無法復原，是否確定？`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      await window.ClassRoomManager.deleteClass(code, true);
+      this.showNotification('已刪除', `班級【${code}】已成功刪除並清空其佔用空間！`);
+      if (window.currentClassCode === code) {
+        this.exitClassRoom();
+      }
+    } catch (err) {
+      this.showNotification('刪除失敗', err.message || '刪除班級時發生錯誤');
+    }
   }
 }
 
