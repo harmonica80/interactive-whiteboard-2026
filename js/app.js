@@ -135,6 +135,7 @@ class App {
     this.initLuckyWheel();
     this.bindTldrawRealtimeSync();
     this.checkSecurityRuleExpiry();
+    this.initClassRoomUI();
     if (window.timerMusicManager) {
       window.timerMusicManager.updateDropdown();
     }
@@ -9111,6 +9112,203 @@ class WheelSoundEffects {
       ];
       (fanfares[this.style] || fanfares[0])();
     } catch(e) {}
+  }
+
+  // ===== 班級代碼與智慧雙軌管理 (Classroom & Dual-track Management) =====
+  initClassRoomUI() {
+    const code = window.currentClassCode;
+    const modeOneOff = document.getElementById('modeOneOffDisplay');
+    const modeClass = document.getElementById('modeClassDisplay');
+    const displayClassCode = document.getElementById('displayClassCode');
+    const displayUserNameTag = document.getElementById('displayUserNameTag');
+    const displayUserName = document.getElementById('displayUserName');
+    const btnShare = document.getElementById('btnShareClassLink');
+    const btnExit = document.getElementById('btnExitClass');
+    const btnActionText = document.getElementById('btnClassActionText');
+
+    const userName = (window.ClassRoomManager && window.ClassRoomManager.getUserName()) || localStorage.getItem('user_name') || '';
+
+    if (code) {
+      // 專屬班級模式
+      if (modeOneOff) modeOneOff.style.display = 'none';
+      if (modeClass) modeClass.style.display = 'inline-flex';
+      if (displayClassCode) displayClassCode.textContent = code;
+      if (btnShare) btnShare.style.display = 'inline-flex';
+      if (btnExit) btnExit.style.display = 'inline-flex';
+      if (btnActionText) btnActionText.textContent = '切換班級';
+
+      if (userName && displayUserNameTag && displayUserName) {
+        displayUserName.textContent = userName;
+        displayUserNameTag.style.display = 'inline-flex';
+      }
+    } else {
+      // 一次性課堂模式
+      if (modeOneOff) modeOneOff.style.display = 'inline-flex';
+      if (modeClass) modeClass.style.display = 'none';
+      if (btnShare) btnShare.style.display = 'none';
+      if (btnExit) btnExit.style.display = 'none';
+      if (btnActionText) btnActionText.textContent = '輸入班級代碼';
+    }
+
+    // 更新管理員後台的空間提示標籤
+    const adminScopeBadge = document.getElementById('adminCurrentScopeBadge');
+    if (adminScopeBadge) {
+      if (code) {
+        adminScopeBadge.className = 'mode-display-pill classroom';
+        adminScopeBadge.innerHTML = `🏫 目前管理空間：專屬班級【${code}】（清除或重設僅影響本班）`;
+      } else {
+        adminScopeBadge.className = 'mode-display-pill one-off';
+        adminScopeBadge.innerHTML = '🌱 目前管理空間：一次性課堂（清除或重設僅影響公開空間）';
+      }
+    }
+
+    // Modal 點擊背景關閉與 ESC 鍵支援
+    const modal = document.getElementById('classSwitchModal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) this.closeClassModal();
+      });
+    }
+
+    // 按 Enter 快速送出
+    const inputCode = document.getElementById('inputModalClassCode');
+    if (inputCode) {
+      inputCode.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          this.submitClassSwitch();
+        }
+      });
+    }
+  }
+
+  openClassModal() {
+    const modal = document.getElementById('classSwitchModal');
+    if (!modal) return;
+    const inputCode = document.getElementById('inputModalClassCode');
+    const inputUser = document.getElementById('inputModalUserName');
+    const historyContainer = document.getElementById('modalClassHistory');
+    const historyItems = document.getElementById('modalClassHistoryItems');
+    const errorEl = document.getElementById('modalClassError');
+
+    if (errorEl) errorEl.style.display = 'none';
+
+    if (inputCode) {
+      inputCode.value = window.currentClassCode || '';
+    }
+    if (inputUser) {
+      inputUser.value = (window.ClassRoomManager && window.ClassRoomManager.getUserName()) || localStorage.getItem('user_name') || '';
+    }
+
+    // 渲染最近使用代碼標籤
+    if (historyContainer && historyItems && window.ClassRoomManager) {
+      const history = window.ClassRoomManager.getClassHistory();
+      if (history && history.length > 0) {
+        historyItems.innerHTML = '';
+        history.forEach(item => {
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'history-code-chip';
+          chip.textContent = item;
+          chip.onclick = () => {
+            if (inputCode) {
+              inputCode.value = item;
+              inputCode.focus();
+            }
+          };
+          historyItems.appendChild(chip);
+        });
+        historyContainer.style.display = 'block';
+      } else {
+        historyContainer.style.display = 'none';
+      }
+    }
+
+    modal.classList.add('active');
+    setTimeout(() => {
+      if (inputCode) inputCode.focus();
+    }, 100);
+  }
+
+  closeClassModal() {
+    const modal = document.getElementById('classSwitchModal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  submitClassSwitch() {
+    const inputCode = document.getElementById('inputModalClassCode');
+    const inputUser = document.getElementById('inputModalUserName');
+    const errorEl = document.getElementById('modalClassError');
+
+    const rawCode = inputCode ? inputCode.value.trim() : '';
+    if (!rawCode) {
+      if (errorEl) {
+        errorEl.textContent = '請輸入班級代碼！';
+        errorEl.style.display = 'block';
+      }
+      return;
+    }
+
+    const sanitized = window.ClassRoomManager ? window.ClassRoomManager.sanitizeClassCode(rawCode) : rawCode.toUpperCase();
+    if (!sanitized) {
+      if (errorEl) {
+        errorEl.textContent = '班級代碼格式不正確，請勿使用特殊符號。';
+        errorEl.style.display = 'block';
+      }
+      return;
+    }
+
+    const rawUser = inputUser ? inputUser.value.trim() : '';
+    if (rawUser && window.ClassRoomManager) {
+      window.ClassRoomManager.setUserName(rawUser);
+    }
+
+    if (window.ClassRoomManager) {
+      window.ClassRoomManager.setActiveClassCode(sanitized);
+    }
+
+    // 更新網址並重新載入，確保所有 Firebase 監聽器乾淨切換到該班級空間
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('class', sanitized);
+    newUrl.searchParams.delete('room'); // 統一使用 class
+    window.location.href = newUrl.toString();
+  }
+
+  exitClassRoom() {
+    if (!window.currentClassCode) {
+      this.closeClassModal();
+      return;
+    }
+
+    const confirmExit = confirm('確定要退出當前班級，返回免代碼的一次性課堂（公開空間）嗎？');
+    if (!confirmExit) return;
+
+    if (window.ClassRoomManager) {
+      window.ClassRoomManager.setActiveClassCode('');
+    }
+
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('class');
+    newUrl.searchParams.delete('room');
+    window.location.href = newUrl.toString();
+  }
+
+  shareClassLink() {
+    const code = window.currentClassCode;
+    if (!code) {
+      this.showNotification('提示', '目前處於一次性課堂，無專屬班級代碼可分享。');
+      return;
+    }
+
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set('class', code);
+    shareUrl.searchParams.delete('room');
+    const finalUrl = shareUrl.toString();
+
+    navigator.clipboard.writeText(finalUrl).then(() => {
+      this.showNotification('📋 複製成功', `已複製【${code}】班級邀請連結！發送此連結給學生，點開即可直接進入該班專屬白板。`);
+    }).catch(() => {
+      prompt('請手動複製下列班級邀請連結：', finalUrl);
+    });
   }
 }
 

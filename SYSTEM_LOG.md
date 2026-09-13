@@ -1574,3 +1574,23 @@
 - 防護：自動測試新增所有詩詞題必以引號名句開頭，以及中讀網詩詞關鍵字不得含詞牌副題的規則。
 - 驗證：200 題題庫檢查通過；Playwright 全套 8 項測試通過。
 - 版本：主頁與 APP_VERSION 升級為 2.7.2；題庫、互動模組與主程式 cache version 更新為 v=203。
+
+## 2026-09-13 - 智慧雙軌合一架構：班級代碼與一次性課堂自動分流系統
+- 影響檔案：`index.html`、`css/style.css`、`js/firebase-config.js`、`js/app.js`、`SYSTEM_LOG.md`。
+- 修改項目：
+  1. **Firebase 智慧雙軌透明路由 (Transparent Proxy Routing)**：
+     - 在 `js/firebase-config.js` 引入 `window.ClassRoomManager`，負責班級代碼標準化、URL 參數（`?class=`/`?room=`）解析、`localStorage` 狀態記憶與歷史紀錄維護。
+     - 封裝 `db.ref` 支援雙軌自動分流：未設定班級代碼時（一次性課堂），100% 維持原有路徑（零破壞、完美相容既有資料）；指定班級代碼時，自動無縫隔離至 `classes/{classCode}/...`。
+  2. **課堂模式與班級狀態列 (Class Mode Bar)**：
+     - 頂部增設狀態列，一次性模式下顯示「🌱 一次性課堂（免代碼公開空間）」與「🔑 輸入班級代碼」按鈕。
+     - 專屬班級模式下顯示「🏫 班級：[代碼]」、「👤 學生姓名」、「📋 複製班級連結」、「🚪 退出班級」與「🔄 切換班級」。
+  3. **班級代碼輸入與切換視窗 (Class Switch Modal)**：
+     - 新增非阻擋式優雅彈窗，支援班級代碼、姓名輸入與最近使用過的代碼快捷標籤。
+  4. **tldraw 白板多次上課板書延續**：
+     - 專屬班級的 tldraw 畫稿完全隔離存取於 `classes/{classCode}/whiteboard_room`，每次回訪該班級自動還原歷史板書，支援跨堂課連續教學。
+  5. **一鍵分享邀請連結**：
+     - 點選「📋 複製班級連結」，自動產生 `?class={classCode}` 網址至剪貼簿，學生點開即秒入該班專屬白板。
+- 驗證：
+  - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
+  - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
+  - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。

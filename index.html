@@ -40,6 +40,37 @@
       </div>
     </div>
     
+    <!-- 課堂模式與班級狀態列 -->
+    <div class="class-mode-bar" id="classModeBar">
+      <div class="class-mode-info">
+        <!-- 一次性模式下顯示 -->
+        <div id="modeOneOffDisplay" class="mode-display-pill one-off">
+          <span class="mode-icon">🌱</span>
+          <span class="mode-title">一次性課堂</span>
+          <span class="mode-desc desktop-only">（免代碼公開空間，適合單堂演講/體驗）</span>
+        </div>
+        <!-- 專屬班級模式下顯示 -->
+        <div id="modeClassDisplay" class="mode-display-pill classroom" style="display: none;">
+          <span class="mode-icon">🏫</span>
+          <span class="mode-title">班級：<strong id="displayClassCode">--</strong></span>
+          <span class="user-display-tag" id="displayUserNameTag" style="display: none;">👤 <span id="displayUserName">訪客</span></span>
+        </div>
+      </div>
+      <div class="class-mode-actions">
+        <!-- 專屬班級專用按鈕 -->
+        <button type="button" class="class-action-btn btn-share-link" id="btnShareClassLink" style="display: none;" onclick="window.app.shareClassLink()" title="複製專屬邀請連結傳給學生">
+          📋 複製班級連結
+        </button>
+        <button type="button" class="class-action-btn btn-exit-class" id="btnExitClass" style="display: none;" onclick="window.app.exitClassRoom()" title="離開此班級，返回免代碼的一次性課堂">
+          🚪 退出班級
+        </button>
+        <!-- 通用按鈕：輸入/切換班級代碼 -->
+        <button type="button" class="class-action-btn btn-switch-class" id="btnOpenClassModal" onclick="window.app.openClassModal()" title="輸入班級代碼進入多次上課的專屬空間">
+          🔑 <span id="btnClassActionText">輸入班級代碼</span>
+        </button>
+      </div>
+    </div>
+    
     <div class="function-menu-wrapper">
       <button class="nav-scroll-btn left-scroll-btn" id="menuScrollLeft" title="向左查看更多選單">◀</button>
       <div class="function-menu" id="functionMenuContainer">
@@ -473,9 +504,12 @@
       <!-- 管理員後台 -->
       <div class="panel-card" id="panel-admin">
         <div class="panel-body">
-          <!-- 登出按鈕 -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
-            <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">您已進入管理員模式</span>
+          <!-- 登出按鈕與目前空間提示 -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">您已進入管理員模式</span>
+              <span id="adminCurrentScopeBadge" class="mode-display-pill one-off" style="font-size: 12px;">🌱 目前管理空間：一次性課堂（公共空間）</span>
+            </div>
             <button class="preset-btn" onclick="logoutAdmin()" style="border-color: var(--danger-color); color: var(--danger-color); padding: 6px 12px; font-weight: bold;">登出管理員</button>
           </div>
           
@@ -1230,6 +1264,61 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 班級代碼輸入與切換對話框 (Class Switch Modal) -->
+  <div id="classSwitchModal" class="modal-overlay">
+    <div class="modal-content class-modal-card" style="max-width: 500px; width: 92%; border-radius: 20px; background: var(--bg-card); padding: 26px; box-shadow: 0 16px 40px rgba(0,0,0,0.25); position: relative; border: 1px solid var(--border-color);">
+      <button onclick="window.app.closeClassModal()" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 38px; margin-bottom: 6px;">🏫</div>
+        <h3 style="margin: 0 0 6px 0; font-size: 20px; color: var(--text-primary); font-weight: bold;">
+          加入或切換專屬班級
+        </h3>
+        <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+          輸入班級代碼進入獨立空間。多次上課請輸入同一代碼，白板板書與課堂紀錄將完整延續！
+        </p>
+      </div>
+
+      <!-- 輸入區塊 -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- 班級代碼 -->
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+            🏷️ 班級代碼 (Class Code) <span style="color: #ff3b30;">*</span>
+          </label>
+          <input type="text" id="inputModalClassCode" class="question-input" placeholder="例如：301、MATH-A 或 資訊課" style="margin: 0; width: 100%; font-size: 15px; font-weight: bold; text-transform: uppercase;" autocomplete="off" spellcheck="false" maxlength="20">
+          
+          <!-- 最近使用過的代碼標籤 -->
+          <div id="modalClassHistory" style="margin-top: 8px; display: none;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">🕒 最近加入過：</div>
+            <div id="modalClassHistoryItems" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+          </div>
+        </div>
+
+        <!-- 姓名 / 暱稱 -->
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+            👤 您的姓名或座號
+          </label>
+          <input type="text" id="inputModalUserName" class="question-input" placeholder="例如：05 王小明 或 陳老師" style="margin: 0; width: 100%; font-size: 14px;" autocomplete="name" maxlength="15">
+        </div>
+
+        <!-- 錯誤提示 -->
+        <div id="modalClassError" style="display: none; padding: 8px 12px; background: rgba(255, 59, 48, 0.1); border-left: 4px solid #ff3b30; color: #ff3b30; font-size: 13px; border-radius: 6px;"></div>
+
+        <!-- 動作按鈕 -->
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+          <button type="button" class="ask-btn" onclick="window.app.submitClassSwitch()" style="width: 100%; padding: 12px; font-size: 15px; font-weight: bold; justify-content: center; border-radius: 10px; cursor: pointer;">
+            🚀 進入班級課堂
+          </button>
+          <button type="button" class="preset-btn" onclick="window.app.exitClassRoom()" id="modalBtnResetToOneOff" style="width: 100%; padding: 10px; font-size: 13px; color: var(--text-secondary); justify-content: center; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color); background: transparent;">
+            🌱 返回「免代碼一次性課堂（公開空間）」
+          </button>
         </div>
       </div>
     </div>
