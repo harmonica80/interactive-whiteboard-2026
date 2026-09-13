@@ -10,9 +10,9 @@ const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
 
 const checks = [
-  ['package.json version 3.0.7', pkg.version === '3.0.7'],
-  ['app.js APP_VERSION 3.0.7', appJs.includes("this.APP_VERSION = '3.0.7';")],
-  ['index.html badge ver 3.0.7', html.includes('ver 3.0.7')],
+  ['package.json version 3.0.8', pkg.version === '3.0.8'],
+  ['app.js APP_VERSION 3.0.8', appJs.includes("this.APP_VERSION = '3.0.8';")],
+  ['index.html badge ver 3.0.8', html.includes('ver 3.0.8')],
   ['index.html style.css?v=175', html.includes('css/style.css?v=175')],
   ['index.html video_quiz.js?v=306', html.includes('js/video_quiz.js?v=306')],
   ['quiz.js clearQuizResults method', quizJs.includes('clearQuizResults()') && quizJs.includes('resultsContainer.innerHTML = \'\'')],
@@ -51,7 +51,7 @@ const checks = [
 ];
 
 let allPassed = true;
-console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.0.7) ---');
+console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.0.8) ---');
 for (const [name, passed] of checks) {
   if (passed) {
     console.log(`✅ ${name}`);

@@ -1595,3 +1595,22 @@
   - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
   - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
   - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
+
+## 2026-09-13 - ver 3.0.8 班級代碼嚴格管制模式：後台登記開課與防濫開防護
+- 影響檔案：`index.html`、`js/firebase-config.js`、`js/app.js`、`package.json`、`scripts/verify-video-quiz.mjs`、`SYSTEM_LOG.md`。
+- 版本：依規定版本號增加 `+0.01`，由 `ver 3.0.7` 升級為 **`ver 3.0.8`**。
+- 修改項目：
+  1. **班級註冊與代碼白名單審核機制 (Strict Class Code Provisioning)**：
+     - 在 `js/firebase-config.js` 增設 `registered_classes` 專屬全域節點，記錄所有由老師登記審核的有效班級。
+     - 封裝 `checkClassExists(code)`、`registerClass(code, name)`、`deleteClass(code)` 與 `onClassesChange(callback)`。
+  2. **學生端防呆與防濫開驗證**：
+     - 學生輸入班級代碼加入時，系統會先向資料庫檢查該代碼是否已由老師登記開課。
+     - 若代碼不存在（學生打錯或未開課），立即跳出紅色提示阻擋，**絕不在資料庫建立垃圾空間節點**，徹底杜絕資料庫空間浪費。
+     - 若網址帶有不存在的 `?class=XXX` 參數，自動提示並回退至一次性課堂（公開空間）。
+  3. **管理後台「🏫 班級代碼管理與開課管制」面板**：
+     - 老師可直接在後台輸入代碼與班級備註進行「➕ 登記並開課」。
+     - 即時列出所有已開課班級清單，支援「🚀 進入此班」、「📋 複製學生邀請連結」與「🗑️ 刪除班級（清空其空間）」。
+- 驗證：
+  - `node scripts/check-whiteboard-syntax.mjs` 語法通過。
+  - `node scripts/verify-video-quiz.mjs` 38 項全數通過。
+  - `node -c js/app.js` 與 `node -c js/firebase-config.js` 檢查無誤。
