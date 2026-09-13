@@ -8946,174 +8946,6 @@ class App {
     }
   }
 
-}
-
-// ===== 轉盤音效合成器 (Web Audio API) =====
-// soundStyle: 0=歡樂鋼琴, 1=復古電玩, 2=爵士鼓點, 3=民族打擊, 4=太空電音
-class WheelSoundEffects {
-  constructor() {
-    this.ctx = null;
-    this.musicInterval = null;
-    this.style = 0;
-  }
-  
-  init() {
-    if (!this.ctx) {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-  }
-
-  setStyle(s) { this.style = s; }
-  
-  // ── Tick 聲：依樣式調整音色 ──
-  playTick() {
-    try {
-      this.init();
-      if (!this.ctx) return;
-      const t = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      
-      const configs = [
-        { type: 'triangle', f0: 600, f1: 80, dur: 0.05 },   // 歡樂鋼琴
-        { type: 'square',   f0: 400, f1: 200, dur: 0.04 },   // 復古電玩
-        { type: 'sine',     f0: 300, f1: 150, dur: 0.06 },   // 爵士鼓點
-        { type: 'triangle', f0: 220, f1: 110, dur: 0.08 },   // 民族打擊
-        { type: 'sawtooth', f0: 800, f1: 400, dur: 0.03 },   // 太空電音
-      ];
-      const c = configs[this.style] || configs[0];
-      osc.type = c.type;
-      osc.frequency.setValueAtTime(c.f0, t);
-      osc.frequency.exponentialRampToValueAtTime(c.f1, t + c.dur);
-      gain.gain.setValueAtTime(0.06, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + c.dur);
-      osc.connect(gain); gain.connect(this.ctx.destination);
-      osc.start(); osc.stop(t + c.dur);
-    } catch(e) {}
-  }
-
-  // ── 旋轉背景音樂 ──
-  startCheerfulMusic() {
-    try {
-      this.init();
-      if (!this.ctx) return;
-      this.stopMusic();
-
-      // 5 種旋律
-      const melodies = [
-        // 0 歡樂鋼琴 - C大調歡快
-        { notes: [523.25, 659.25, 783.99, 1046.5, 783.99, 659.25, 523.25, 392.00], type: 'sine', interval: 140 },
-        // 1 復古電玩 - 8bit 上行音階
-        { notes: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25], type: 'square', interval: 100 },
-        // 2 爵士鼓點 - 切分音型
-        { notes: [440.00, 493.88, 440.00, 392.00, 440.00, 523.25, 440.00, 392.00], type: 'sine', interval: 160 },
-        // 3 民族打擊 - 五聲音階
-        { notes: [261.63, 293.66, 349.23, 392.00, 523.25, 392.00, 349.23, 293.66], type: 'triangle', interval: 180 },
-        // 4 太空電音 - 高頻漸進
-        { notes: [880.00, 1046.5, 1174.66, 1318.5, 1046.5, 880.00, 783.99, 880.00], type: 'sawtooth', interval: 120 },
-      ];
-
-      const m = melodies[this.style] || melodies[0];
-      let idx = 0;
-
-      const playNote = () => {
-        try {
-          if (!this.ctx || this.ctx.state === 'suspended') return;
-          const t = this.ctx.currentTime;
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          const dur = m.interval / 1000 * 0.85;
-          osc.type = m.type;
-          osc.frequency.setValueAtTime(m.notes[idx % m.notes.length], t);
-          gain.gain.setValueAtTime(0.07, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-          osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(t + dur);
-          idx++;
-        } catch(e) {}
-      };
-      playNote();
-      this.musicInterval = setInterval(playNote, m.interval);
-    } catch(e) {}
-  }
-  
-  stopMusic() {
-    if (this.musicInterval) {
-      clearInterval(this.musicInterval);
-      this.musicInterval = null;
-    }
-  }
-  
-  // ── 得獎號角 ──
-  playWinFanfare() {
-    try {
-      this.init();
-      if (!this.ctx) return;
-      this.stopMusic();
-      const now = this.ctx.currentTime;
-
-      // 5 種慶祝音效
-      const fanfares = [
-        // 0 歡樂鋼琴 - 大三和弦上行
-        () => {
-          [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
-            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-            o.type = 'sine'; o.frequency.value = f;
-            g.gain.setValueAtTime(0.10, now + i*0.10);
-            g.gain.exponentialRampToValueAtTime(0.001, now + i*0.10 + 1.2);
-            o.connect(g); g.connect(this.ctx.destination);
-            o.start(now + i*0.10); o.stop(now + i*0.10 + 1.2);
-          });
-        },
-        // 1 復古電玩 - 8bit 勝利音效
-        () => {
-          [[392,0],[523,0.1],[659,0.2],[784,0.3],[1047,0.4],[784,0.6]].forEach(([f,t]) => {
-            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-            o.type = 'square'; o.frequency.value = f;
-            g.gain.setValueAtTime(0.07, now+t); g.gain.exponentialRampToValueAtTime(0.001, now+t+0.18);
-            o.connect(g); g.connect(this.ctx.destination);
-            o.start(now+t); o.stop(now+t+0.18);
-          });
-        },
-        // 2 爵士鼓點 - 鼓組擊打
-        () => {
-          [0, 0.15, 0.3, 0.45, 0.6].forEach((t) => {
-            const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.1, this.ctx.sampleRate);
-            const data = buf.getChannelData(0);
-            for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.3));
-            const src = this.ctx.createBufferSource(), g = this.ctx.createGain();
-            src.buffer = buf; g.gain.value = 0.4;
-            src.connect(g); g.connect(this.ctx.destination);
-            src.start(now + t);
-          });
-        },
-        // 3 民族打擊 - 五聲音階琶音
-        () => {
-          [261.63,329.63,392.00,523.25,659.25,523.25,392.00,659.25].forEach((f,i) => {
-            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-            o.type = 'triangle'; o.frequency.value = f;
-            g.gain.setValueAtTime(0.09, now+i*0.08); g.gain.exponentialRampToValueAtTime(0.001, now+i*0.08+0.25);
-            o.connect(g); g.connect(this.ctx.destination);
-            o.start(now+i*0.08); o.stop(now+i*0.08+0.25);
-          });
-        },
-        // 4 太空電音 - 合成器掃頻
-        () => {
-          const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-          o.type = 'sawtooth';
-          o.frequency.setValueAtTime(200, now);
-          o.frequency.exponentialRampToValueAtTime(1600, now + 0.8);
-          o.frequency.exponentialRampToValueAtTime(800, now + 1.2);
-          g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
-          const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1800;
-          o.connect(f); f.connect(g); g.connect(this.ctx.destination);
-          o.start(now); o.stop(now + 1.4);
-        }
-      ];
-      (fanfares[this.style] || fanfares[0])();
-    } catch(e) {}
-  }
-
   // ===== 班級代碼與智慧雙軌管理 (Classroom & Dual-track Management) =====
   initClassRoomUI() {
     const code = window.currentClassCode;
@@ -9309,6 +9141,173 @@ class WheelSoundEffects {
     }).catch(() => {
       prompt('請手動複製下列班級邀請連結：', finalUrl);
     });
+  }
+}
+
+// ===== 轉盤音效合成器 (Web Audio API) =====
+// soundStyle: 0=歡樂鋼琴, 1=復古電玩, 2=爵士鼓點, 3=民族打擊, 4=太空電音
+class WheelSoundEffects {
+  constructor() {
+    this.ctx = null;
+    this.musicInterval = null;
+    this.style = 0;
+  }
+  
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+
+  setStyle(s) { this.style = s; }
+  
+  // ── Tick 聲：依樣式調整音色 ──
+  playTick() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      
+      const configs = [
+        { type: 'triangle', f0: 600, f1: 80, dur: 0.05 },   // 歡樂鋼琴
+        { type: 'square',   f0: 400, f1: 200, dur: 0.04 },   // 復古電玩
+        { type: 'sine',     f0: 300, f1: 150, dur: 0.06 },   // 爵士鼓點
+        { type: 'triangle', f0: 220, f1: 110, dur: 0.08 },   // 民族打擊
+        { type: 'sawtooth', f0: 800, f1: 400, dur: 0.03 },   // 太空電音
+      ];
+      const c = configs[this.style] || configs[0];
+      osc.type = c.type;
+      osc.frequency.setValueAtTime(c.f0, t);
+      osc.frequency.exponentialRampToValueAtTime(c.f1, t + c.dur);
+      gain.gain.setValueAtTime(0.06, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + c.dur);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(); osc.stop(t + c.dur);
+    } catch(e) {}
+  }
+
+  // ── 旋轉背景音樂 ──
+  startCheerfulMusic() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      this.stopMusic();
+
+      // 5 種旋律
+      const melodies = [
+        // 0 歡樂鋼琴 - C大調歡快
+        { notes: [523.25, 659.25, 783.99, 1046.5, 783.99, 659.25, 523.25, 392.00], type: 'sine', interval: 140 },
+        // 1 復古電玩 - 8bit 上行音階
+        { notes: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25], type: 'square', interval: 100 },
+        // 2 爵士鼓點 - 切分音型
+        { notes: [440.00, 493.88, 440.00, 392.00, 440.00, 523.25, 440.00, 392.00], type: 'sine', interval: 160 },
+        // 3 民族打擊 - 五聲音階
+        { notes: [261.63, 293.66, 349.23, 392.00, 523.25, 392.00, 349.23, 293.66], type: 'triangle', interval: 180 },
+        // 4 太空電音 - 高頻漸進
+        { notes: [880.00, 1046.5, 1174.66, 1318.5, 1046.5, 880.00, 783.99, 880.00], type: 'sawtooth', interval: 120 },
+      ];
+
+      const m = melodies[this.style] || melodies[0];
+      let idx = 0;
+
+      const playNote = () => {
+        try {
+          if (!this.ctx || this.ctx.state === 'suspended') return;
+          const t = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const dur = m.interval / 1000 * 0.85;
+          osc.type = m.type;
+          osc.frequency.setValueAtTime(m.notes[idx % m.notes.length], t);
+          gain.gain.setValueAtTime(0.07, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(); osc.stop(t + dur);
+          idx++;
+        } catch(e) {}
+      };
+      playNote();
+      this.musicInterval = setInterval(playNote, m.interval);
+    } catch(e) {}
+  }
+  
+  stopMusic() {
+    if (this.musicInterval) {
+      clearInterval(this.musicInterval);
+      this.musicInterval = null;
+    }
+  }
+  
+  // ── 得獎號角 ──
+  playWinFanfare() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      this.stopMusic();
+      const now = this.ctx.currentTime;
+
+      // 5 種慶祝音效
+      const fanfares = [
+        // 0 歡樂鋼琴 - 大三和弦上行
+        () => {
+          [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+            o.type = 'sine'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.10, now + i*0.10);
+            g.gain.exponentialRampToValueAtTime(0.001, now + i*0.10 + 1.2);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(now + i*0.10); o.stop(now + i*0.10 + 1.2);
+          });
+        },
+        // 1 復古電玩 - 8bit 勝利音效
+        () => {
+          [[392,0],[523,0.1],[659,0.2],[784,0.3],[1047,0.4],[784,0.6]].forEach(([f,t]) => {
+            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+            o.type = 'square'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.07, now+t); g.gain.exponentialRampToValueAtTime(0.001, now+t+0.18);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(now+t); o.stop(now+t+0.18);
+          });
+        },
+        // 2 爵士鼓點 - 鼓組擊打
+        () => {
+          [0, 0.15, 0.3, 0.45, 0.6].forEach((t) => {
+            const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.1, this.ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.3));
+            const src = this.ctx.createBufferSource(), g = this.ctx.createGain();
+            src.buffer = buf; g.gain.value = 0.4;
+            src.connect(g); g.connect(this.ctx.destination);
+            src.start(now + t);
+          });
+        },
+        // 3 民族打擊 - 五聲音階琶音
+        () => {
+          [261.63,329.63,392.00,523.25,659.25,523.25,392.00,659.25].forEach((f,i) => {
+            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+            o.type = 'triangle'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.09, now+i*0.08); g.gain.exponentialRampToValueAtTime(0.001, now+i*0.08+0.25);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(now+i*0.08); o.stop(now+i*0.08+0.25);
+          });
+        },
+        // 4 太空電音 - 合成器掃頻
+        () => {
+          const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+          o.type = 'sawtooth';
+          o.frequency.setValueAtTime(200, now);
+          o.frequency.exponentialRampToValueAtTime(1600, now + 0.8);
+          o.frequency.exponentialRampToValueAtTime(800, now + 1.2);
+          g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+          const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1800;
+          o.connect(f); f.connect(g); g.connect(this.ctx.destination);
+          o.start(now); o.stop(now + 1.4);
+        }
+      ];
+      (fanfares[this.style] || fanfares[0])();
+    } catch(e) {}
   }
 }
 
