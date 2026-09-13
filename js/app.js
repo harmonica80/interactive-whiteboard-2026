@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.0.9';
+    this.APP_VERSION = '3.1.0';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -339,7 +339,7 @@ class App {
     
     document.getElementById('confirmModalIcon').textContent = icon || '⚠️';
     document.getElementById('confirmModalText').textContent = title || '確認執行此動作？';
-    document.getElementById('confirmModalSubtext').textContent = subtitle || '';
+    document.getElementById('confirmModalSubtext').innerHTML = subtitle || '';
     
     const confirmBtn = document.getElementById('confirmModalBtn');
     if (confirmBtn) {
@@ -5658,8 +5658,18 @@ class App {
       ]);
       
       const quizData = quizSnap.val() || {};
-      
+      const isClass = window.ClassRoomManager ? window.ClassRoomManager.isClassMode() : false;
+      const currentCode = isClass ? window.ClassRoomManager.getActiveClassCode() : null;
+      const classInfo = isClass && this.adminRegisteredClasses ? this.adminRegisteredClasses.find(c => c.code === currentCode) : null;
+      const currentClassName = classInfo ? (classInfo.name || '') : '';
+
       const exportData = {
+        sourceMode: isClass ? 'class' : 'one-off',
+        classCode: currentCode || null,
+        className: currentClassName || null,
+        appVersion: this.APP_VERSION || '3.1.0',
+        exportedAt: new Date().toISOString(),
+        dbUrl: db.app.options.databaseURL || "",
         questions: questionsSnap.val() || {},
         images: imagesSnap.val() || {},
         videos: videosSnap.val() || {},
@@ -5681,9 +5691,7 @@ class App {
             soundStyle: quizData.luckyWheel.soundStyle ?? 0,
             removeWinner: quizData.luckyWheel.removeWinner ?? false
           } : null
-        },
-        exportedAt: new Date().toISOString(),
-        dbUrl: db.app.options.databaseURL || ""
+        }
       };
       
       const jsonString = JSON.stringify(exportData, null, 2);
@@ -5692,8 +5700,11 @@ class App {
       
       const downloadAnchor = document.createElement('a');
       const dateStr = new Date().toISOString().slice(0, 10);
+      const fileName = isClass 
+        ? `classroom_record_班級${currentCode}_${dateStr}.json`
+        : `classroom_record_一次性課堂_${dateStr}.json`;
       downloadAnchor.setAttribute("href", url);
-      downloadAnchor.setAttribute("download", `classroom_record_${dateStr}.json`);
+      downloadAnchor.setAttribute("download", fileName);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       
@@ -5703,7 +5714,10 @@ class App {
         URL.revokeObjectURL(url);
       }, 100);
       
-      this.showNotification('成功', '匯出記錄檔完成！');
+      const successMsg = isClass 
+        ? `已匯出【${currentCode} 班${currentClassName ? ' (' + currentClassName + ')' : ''}】課堂記錄檔！` 
+        : '已匯出【一次性課堂】記錄檔！';
+      this.showNotification('成功', successMsg);
     } catch (err) {
       console.error("Export failed:", err);
       this.showNotification('錯誤', '匯出失敗: ' + err.message);
@@ -5714,6 +5728,13 @@ class App {
     const file = event.target.files[0];
     if (!file) return;
     
+    // 清空 input 值，確保若取消或重新選同檔時仍會觸發 onchange
+    const clearFileInput = () => {
+      try {
+        event.target.value = '';
+      } catch (e) {}
+    };
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -5722,135 +5743,196 @@ class App {
         // Validate format
         if (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard && !importedData.tldrawSnapshot) {
           this.showNotification('錯誤', '無效的記錄檔格式！');
+          clearFileInput();
           return;
         }
 
-        // 若包含 tldraw 白板畫稿快照，發送給 iframe 恢復
-        if (importedData.tldrawSnapshot) {
-          this.loadTldrawSnapshot(importedData.tldrawSnapshot);
-        }
-        
-        this.showConfirmModal(
-          '📥',
-          '確定要匯入此記錄檔嗎？',
-          '此動作會覆蓋當前資料庫的所有資料（提問、測驗與白板畫跡），且無法復原。',
-          () => {
-            this.showNotification('提示', '正在匯入資料，請稍候...');
-            
-            const promises = [];
-            
-            // Set data nodes
-            promises.push(db.ref('questions').set(importedData.questions || null));
-            promises.push(db.ref('whiteboard').set(importedData.whiteboard || null));
-            promises.push(db.ref('quiz/broadcastVideo').remove()); // Reset broadcast state
-            
-            // Write images sequentially to prevent WebSocket connection frame overflow & disconnects
-            const writeImagesSequentially = async () => {
-              await db.ref('images').remove();
-              const imagesObj = importedData.images || {};
-              const keys = Object.keys(imagesObj);
-              for (const imgId of keys) {
-                await db.ref(`images/${imgId}`).set(imagesObj[imgId]);
-              }
-            };
-            promises.push(writeImagesSequentially());
+        // 解析備份檔案空間資訊與目前空間
+        const fileClassCode = importedData.classCode ? String(importedData.classCode).trim().toUpperCase() : null;
+        const fileClassName = importedData.className ? String(importedData.className).trim() : '';
+        const fileSourceMode = importedData.sourceMode || (fileClassCode ? 'class' : 'one-off');
+        const fileExportedAt = importedData.exportedAt ? new Date(importedData.exportedAt).toLocaleString() : '未知時間';
 
-            // Write videos sequentially
-            const writeVideosSequentially = async () => {
-              await db.ref('videos').remove();
-              const videosObj = importedData.videos || {};
-              const keys = Object.keys(videosObj);
-              for (const vidId of keys) {
-                await db.ref(`videos/${vidId}`).set(videosObj[vidId]);
-              }
-            };
-            promises.push(writeVideosSequentially());
+        const currentIsClass = window.ClassRoomManager ? window.ClassRoomManager.isClassMode() : false;
+        const currentClassCode = currentIsClass ? window.ClassRoomManager.getActiveClassCode() : null;
 
-            // Write teacher shares sequentially
-            const writeSharesSequentially = async () => {
-              await db.ref('teacherShares').remove();
-              const sharesObj = importedData.teacherShares || {};
-              const keys = Object.keys(sharesObj);
-              for (const shareId of keys) {
-                await db.ref(`teacherShares/${shareId}`).set(sharesObj[shareId]);
-              }
-            };
-            promises.push(writeSharesSequentially());
-            
-            // Set subnodes of quiz explicitly (excluding presence to prevent connection issues)
-            const quizNode = importedData.quiz || {};
-            
-            // Defensive check: If the imported file has no folders but the current database has folders, preserve them!
-            let questionFolders = quizNode.questionFolders;
-            if (!questionFolders && this.questionFolders && this.questionFolders.length > 0) {
-              questionFolders = {};
-              this.questionFolders.forEach(f => {
-                questionFolders[f.id] = { name: f.name };
-              });
-            }
-            
-            let imageFolders = quizNode.imageFolders;
-            if (!imageFolders && this.imageFolders && this.imageFolders.length > 0) {
-              imageFolders = {};
-              this.imageFolders.forEach(f => {
-                imageFolders[f.id] = { name: f.name };
-              });
-            }
+        // 標籤描述文字
+        const sourceDesc = fileClassCode 
+          ? `【${fileClassCode} 班${fileClassName ? ' (' + fileClassName + ')' : ''}】` 
+          : `【一次性課堂（公開空間）】`;
+        const currentDesc = currentClassCode 
+          ? `【${currentClassCode} 班】` 
+          : `【一次性課堂（公開空間）】`;
 
-            let videoFolders = quizNode.videoFolders;
-            if (!videoFolders && this.videoFolders && this.videoFolders.length > 0) {
-              videoFolders = {};
-              this.videoFolders.forEach(f => {
-                videoFolders[f.id] = { name: f.name };
-              });
-            }
+        // 空間是否一致
+        const isMatched = (currentClassCode || null) === (fileClassCode || null);
 
-            let teacherShareFolders = quizNode.teacherShareFolders;
-            if (!teacherShareFolders && this.shareFolders && this.shareFolders.length > 0) {
-              teacherShareFolders = {};
-              this.shareFolders.forEach(f => {
-                teacherShareFolders[f.id] = { name: f.name };
-              });
-            }
-            
-            promises.push(db.ref('quiz/current').set(quizNode.current || null));
-            promises.push(db.ref('quiz/answers').set(quizNode.answers || null));
-            promises.push(db.ref('quiz/timer').set(quizNode.timer || null));
-            promises.push(db.ref('quiz/questionFolders').set(questionFolders || null));
-            promises.push(db.ref('quiz/imageFolders').set(imageFolders || null));
-            promises.push(db.ref('quiz/videoFolders').set(videoFolders || null));
-            promises.push(db.ref('quiz/teacherShareFolders').set(teacherShareFolders || null));
+        // 執行實際資料庫覆蓋匯入作業
+        const doExecuteImport = () => {
+          this.showNotification('提示', '正在匯入資料，請稍候...');
 
-            // 抽人轉盤設定（如果 JSON 內有就寫入）
-            if (quizNode.luckyWheel) {
-              const lw = quizNode.luckyWheel;
-              if (lw.names !== undefined) promises.push(db.ref('quiz/luckyWheel/names').set(lw.names));
-              if (lw.colorTheme !== undefined) promises.push(db.ref('quiz/luckyWheel/colorTheme').set(lw.colorTheme));
-              if (lw.soundStyle !== undefined) promises.push(db.ref('quiz/luckyWheel/soundStyle').set(lw.soundStyle));
-              if (lw.removeWinner !== undefined) promises.push(db.ref('quiz/luckyWheel/removeWinner').set(lw.removeWinner));
+          // 若包含 tldraw 白板畫稿快照，發送給 iframe 恢復
+          if (importedData.tldrawSnapshot) {
+            this.loadTldrawSnapshot(importedData.tldrawSnapshot);
+          }
+          
+          const promises = [];
+          
+          // Set data nodes
+          promises.push(db.ref('questions').set(importedData.questions || null));
+          promises.push(db.ref('whiteboard').set(importedData.whiteboard || null));
+          promises.push(db.ref('quiz/broadcastVideo').remove()); // Reset broadcast state
+          
+          // Write images sequentially to prevent WebSocket connection frame overflow & disconnects
+          const writeImagesSequentially = async () => {
+            await db.ref('images').remove();
+            const imagesObj = importedData.images || {};
+            const keys = Object.keys(imagesObj);
+            for (const imgId of keys) {
+              await db.ref(`images/${imgId}`).set(imagesObj[imgId]);
             }
-            
-            Promise.all(promises).then(() => {
-              this.showNotification('成功', '匯入記錄檔完成！');
-              // Clear file input value
-              event.target.value = '';
-              
-              // Force reload to refresh UI
-              setTimeout(() => {
-                location.reload();
-              }, 1000);
-            }).catch(err => {
-              console.error("Import set failed:", err);
-              this.showNotification('錯誤', '寫入資料庫失敗: ' + err.message);
+          };
+          promises.push(writeImagesSequentially());
+
+          // Write videos sequentially
+          const writeVideosSequentially = async () => {
+            await db.ref('videos').remove();
+            const videosObj = importedData.videos || {};
+            const keys = Object.keys(videosObj);
+            for (const vidId of keys) {
+              await db.ref(`videos/${vidId}`).set(videosObj[vidId]);
+            }
+          };
+          promises.push(writeVideosSequentially());
+
+          // Write teacher shares sequentially
+          const writeSharesSequentially = async () => {
+            await db.ref('teacherShares').remove();
+            const sharesObj = importedData.teacherShares || {};
+            const keys = Object.keys(sharesObj);
+            for (const shareId of keys) {
+              await db.ref(`teacherShares/${shareId}`).set(sharesObj[shareId]);
+            }
+          };
+          promises.push(writeSharesSequentially());
+          
+          // Set subnodes of quiz explicitly (excluding presence to prevent connection issues)
+          const quizNode = importedData.quiz || {};
+          
+          let questionFolders = quizNode.questionFolders;
+          if (!questionFolders && this.questionFolders && this.questionFolders.length > 0) {
+            questionFolders = {};
+            this.questionFolders.forEach(f => {
+              questionFolders[f.id] = { name: f.name };
             });
           }
-        );
+          
+          let imageFolders = quizNode.imageFolders;
+          if (!imageFolders && this.imageFolders && this.imageFolders.length > 0) {
+            imageFolders = {};
+            this.imageFolders.forEach(f => {
+              imageFolders[f.id] = { name: f.name };
+            });
+          }
+
+          let videoFolders = quizNode.videoFolders;
+          if (!videoFolders && this.videoFolders && this.videoFolders.length > 0) {
+            videoFolders = {};
+            this.videoFolders.forEach(f => {
+              videoFolders[f.id] = { name: f.name };
+            });
+          }
+
+          let teacherShareFolders = quizNode.teacherShareFolders;
+          if (!teacherShareFolders && this.shareFolders && this.shareFolders.length > 0) {
+            teacherShareFolders = {};
+            this.shareFolders.forEach(f => {
+              teacherShareFolders[f.id] = { name: f.name };
+            });
+          }
+          
+          promises.push(db.ref('quiz/current').set(quizNode.current || null));
+          promises.push(db.ref('quiz/answers').set(quizNode.answers || null));
+          promises.push(db.ref('quiz/timer').set(quizNode.timer || null));
+          promises.push(db.ref('quiz/questionFolders').set(questionFolders || null));
+          promises.push(db.ref('quiz/imageFolders').set(imageFolders || null));
+          promises.push(db.ref('quiz/videoFolders').set(videoFolders || null));
+          promises.push(db.ref('quiz/teacherShareFolders').set(teacherShareFolders || null));
+
+          // 抽人轉盤設定（如果 JSON 內有就寫入）
+          if (quizNode.luckyWheel) {
+            const lw = quizNode.luckyWheel;
+            if (lw.names !== undefined) promises.push(db.ref('quiz/luckyWheel/names').set(lw.names));
+            if (lw.colorTheme !== undefined) promises.push(db.ref('quiz/luckyWheel/colorTheme').set(lw.colorTheme));
+            if (lw.soundStyle !== undefined) promises.push(db.ref('quiz/luckyWheel/soundStyle').set(lw.soundStyle));
+            if (lw.removeWinner !== undefined) promises.push(db.ref('quiz/luckyWheel/removeWinner').set(lw.removeWinner));
+          }
+          
+          Promise.all(promises).then(() => {
+            this.showNotification('成功', `記錄檔已成功匯入至 ${currentDesc}！`);
+            clearFileInput();
+            
+            // Force reload to refresh UI
+            setTimeout(() => {
+              location.reload();
+            }, 1000);
+          }).catch(err => {
+            console.error("Import set failed:", err);
+            this.showNotification('錯誤', '寫入資料庫失敗: ' + err.message);
+            clearFileInput();
+          });
+        };
+
+        if (isMatched) {
+          // 空間一致，正常確認覆蓋
+          const subtitleHtml = `
+            <div style="text-align: left; background: var(--bg-input, rgba(0,0,0,0.04)); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px;">
+              <div>📁 備份來源：<strong>${sourceDesc}</strong></div>
+              <div>🕒 匯出時間：${fileExportedAt}</div>
+              <div>📍 匯入目標：<strong>${currentDesc}</strong></div>
+            </div>
+            <div style="color: #ff3b30; font-weight: bold; font-size: 13px;">
+              ⚠️ 此動作會覆蓋當前 ${currentDesc} 的所有資料（提問、測驗、圖片與白板畫跡），且無法復原。
+            </div>
+          `;
+          this.showConfirmModal(
+            '📥',
+            '確定要匯入此記錄檔嗎？',
+            subtitleHtml,
+            doExecuteImport
+          );
+        } else {
+          // 空間不一致！跨空間警告
+          const subtitleHtml = `
+            <div style="text-align: left; background: rgba(255, 149, 0, 0.1); border: 1px solid #ff9500; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px;">
+              <div>📁 檔案來源：<strong style="color: #ff9500;">${sourceDesc}</strong></div>
+              <div>📍 目前位置：<strong>${currentDesc}</strong></div>
+              <div>🕒 匯出時間：${fileExportedAt}</div>
+            </div>
+            <div style="color: #ff3b30; font-size: 13px; line-height: 1.5; margin-bottom: 8px;">
+              ⚠️ <strong>課堂空間不相符提示！</strong><br>
+              您選取的備份檔案來自 <strong>${sourceDesc}</strong>，但您目前位於 <strong>${currentDesc}</strong>。<br>
+              若確定匯入，內容將會寫入並覆蓋目前的 <strong>${currentDesc}</strong>！
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              （若欲恢復至原班級，請按「取消」並先切換至該班級後再進行匯入）
+            </div>
+          `;
+          this.showConfirmModal(
+            '⚠️',
+            '跨課堂空間匯入警告',
+            subtitleHtml,
+            doExecuteImport
+          );
+        }
       } catch (err) {
         console.error("Parse failed:", err);
         this.showNotification('錯誤', '解析 JSON 檔案失敗！');
+        clearFileInput();
       }
     };
     reader.readAsText(file);
+    clearFileInput();
   }
 
   // ==========================================
@@ -9245,6 +9327,7 @@ class App {
   }
 
   renderAdminClassList(list = []) {
+    this.adminRegisteredClasses = list;
     const container = document.getElementById('adminClassListContainer');
     const badge = document.getElementById('adminClassCountBadge');
     if (!container) return;
