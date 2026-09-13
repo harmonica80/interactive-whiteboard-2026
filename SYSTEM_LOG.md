@@ -1575,8 +1575,9 @@
 - 驗證：200 題題庫檢查通過；Playwright 全套 8 項測試通過。
 - 版本：主頁與 APP_VERSION 升級為 2.7.2；題庫、互動模組與主程式 cache version 更新為 v=203。
 
-## 2026-09-13 - 智慧雙軌合一架構：班級代碼與一次性課堂自動分流系統
-- 影響檔案：`index.html`、`css/style.css`、`js/firebase-config.js`、`js/app.js`、`SYSTEM_LOG.md`。
+## 2026-09-13 - ver 3.0.7 智慧雙軌合一架構：班級代碼與一次性課堂自動分流系統
+- 影響檔案：`index.html`、`css/style.css`、`js/firebase-config.js`、`js/app.js`、`package.json`、`scripts/verify-video-quiz.mjs`、`SYSTEM_LOG.md`。
+- 版本：依規定版本號增加 `+0.01`，由 `ver 3.0.6` 升級為 **`ver 3.0.7`**。
 - 修改項目：
   1. **Firebase 智慧雙軌透明路由 (Transparent Proxy Routing)**：
      - 在 `js/firebase-config.js` 引入 `window.ClassRoomManager`，負責班級代碼標準化、URL 參數（`?class=`/`?room=`）解析、`localStorage` 狀態記憶與歷史紀錄維護。
