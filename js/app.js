@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.1.3';
+    this.APP_VERSION = '3.1.4';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -9909,6 +9909,9 @@ class App {
           <button type="button" class="class-action-btn" onclick="window.app.adminSwitchToClass('${cls.code}')" style="font-size: 12px; padding: 4px 8px;" title="立即切換至此班級">
             🚀 進入此班
           </button>
+          <button type="button" class="class-action-btn" onclick="window.app.adminOpenEditClassModal('${cls.code}')" style="font-size: 12px; padding: 4px 8px;" title="修改班級代碼與名稱">
+            ✏️ 編輯
+          </button>
           <button type="button" class="class-action-btn btn-share-link" onclick="window.app.copyClassInviteLink('${cls.code}')" style="font-size: 12px; padding: 4px 8px;" title="複製學生邀請連結">
             📋 複製連結
           </button>
@@ -9960,6 +9963,181 @@ class App {
       }
     } catch (err) {
       this.showNotification('刪除失敗', err.message || '刪除班級時發生錯誤');
+    }
+  }
+
+  // ===== 班級修改與代碼變更提醒流程 =====
+  adminOpenEditClassModal(code) {
+    if (!code) return;
+    const oldCodeInput = document.getElementById('adminEditClassOldCode');
+    const codeInput = document.getElementById('adminEditClassCode');
+    const nameInput = document.getElementById('adminEditClassName');
+    const errorEl = document.getElementById('adminEditClassError');
+    const modal = document.getElementById('adminEditClassModal');
+
+    if (!modal) return;
+
+    // 尋找該班級資訊
+    const cls = (this.adminRegisteredClasses || []).find(c => c.code === code) || { code: code, name: code };
+
+    if (oldCodeInput) oldCodeInput.value = cls.code;
+    if (codeInput) codeInput.value = cls.code;
+    if (nameInput) nameInput.value = (cls.name && cls.name !== cls.code) ? cls.name : '';
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.style.display = 'none';
+    }
+
+    modal.style.display = 'flex';
+    if (codeInput) {
+      setTimeout(() => codeInput.focus(), 50);
+    }
+  }
+
+  adminCloseEditClassModal() {
+    const modal = document.getElementById('adminEditClassModal');
+    if (modal) modal.style.display = 'none';
+    const errorEl = document.getElementById('adminEditClassError');
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.style.display = 'none';
+    }
+  }
+
+  async adminConfirmEditClass() {
+    const oldCodeInput = document.getElementById('adminEditClassOldCode');
+    const codeInput = document.getElementById('adminEditClassCode');
+    const nameInput = document.getElementById('adminEditClassName');
+    const errorEl = document.getElementById('adminEditClassError');
+    const saveBtn = document.getElementById('adminSaveEditClassBtn');
+
+    if (!oldCodeInput || !codeInput) return;
+
+    const oldCode = oldCodeInput.value.trim();
+    const newCode = codeInput.value.trim();
+    const newName = nameInput ? nameInput.value.trim() : '';
+
+    if (!newCode) {
+      if (errorEl) {
+        errorEl.textContent = '❌ 班級代碼不可為空！';
+        errorEl.style.display = 'block';
+      }
+      codeInput.focus();
+      return;
+    }
+
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.style.display = 'none';
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = '儲存中...';
+    }
+
+    try {
+      if (!window.ClassRoomManager || typeof window.ClassRoomManager.updateClass !== 'function') {
+        throw new Error('班級管理器尚未就緒，請重整頁面後重試');
+      }
+
+      const result = await window.ClassRoomManager.updateClass(oldCode, newCode, newName);
+
+      // 關閉編輯彈窗
+      this.adminCloseEditClassModal();
+
+      if (result.codeChanged) {
+        // 代碼已修改：彈出醒目強提醒，引導老師重新給同學新連結
+        this.adminShowClassChangedReminder(result.oldCode, result.newCode, result.name);
+      } else {
+        // 僅修改名稱
+        this.showNotification('🎉 修改成功', `班級名稱已成功更新為【${result.name}】！`);
+      }
+    } catch (err) {
+      if (errorEl) {
+        errorEl.innerHTML = `❌ ${err.message || '修改班級時發生錯誤'}`;
+        errorEl.style.display = 'block';
+      } else {
+        this.showNotification('修改失敗', err.message || '修改班級時發生錯誤');
+      }
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 儲存修改';
+      }
+    }
+  }
+
+  adminShowClassChangedReminder(oldCode, newCode, name) {
+    const modal = document.getElementById('adminClassChangedReminderModal');
+    const oldEl = document.getElementById('adminReminderOldCode');
+    const newEl = document.getElementById('adminReminderNewCode');
+    const urlInput = document.getElementById('adminReminderNewShareUrl');
+
+    if (oldEl) oldEl.textContent = oldCode;
+    if (newEl) newEl.textContent = `${newCode}（${name}）`;
+
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set('class', newCode);
+    shareUrl.searchParams.delete('room');
+    if (urlInput) urlInput.value = shareUrl.toString();
+
+    this._pendingNewClassCode = newCode;
+    if (modal) modal.style.display = 'flex';
+  }
+
+  adminCloseClassChangedReminder() {
+    const modal = document.getElementById('adminClassChangedReminderModal');
+    if (modal) modal.style.display = 'none';
+
+    // 若老師當前所在的班級代碼就是剛被修改的舊代碼，關閉提醒後自動切換至新代碼頁面
+    if (this._pendingNewClassCode && window.currentClassCode === this._pendingNewClassCode) {
+      const newUrl = new URL(window.location.href);
+      if (newUrl.searchParams.get('class') !== this._pendingNewClassCode) {
+        newUrl.searchParams.set('class', this._pendingNewClassCode);
+        newUrl.searchParams.delete('room');
+        window.location.href = newUrl.toString();
+      }
+    }
+  }
+
+  copyNewClassShareLink(code) {
+    const targetCode = code || this._pendingNewClassCode || (document.getElementById('adminReminderNewShareUrl')?.value ? null : window.currentClassCode);
+    let finalUrl = '';
+    const urlInput = document.getElementById('adminReminderNewShareUrl');
+    if (urlInput && urlInput.value) {
+      finalUrl = urlInput.value;
+    } else if (targetCode) {
+      const shareUrl = new URL(window.location.href);
+      shareUrl.searchParams.set('class', targetCode);
+      shareUrl.searchParams.delete('room');
+      finalUrl = shareUrl.toString();
+    }
+
+    if (!finalUrl) return;
+
+    navigator.clipboard.writeText(finalUrl).then(() => {
+      const btn = document.getElementById('adminReminderCopyBtn');
+      if (btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ 已複製！';
+        btn.style.background = '#28a745';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.style.background = '#5856d6';
+        }, 2000);
+      }
+      this.showNotification('📋 複製成功', '已複製新班級邀請連結！請務必立即發送給同學。');
+    }).catch(() => {
+      prompt('請手動複製下列新班級邀請連結：', finalUrl);
+    });
+  }
+
+  adminEnterNewClassFromReminder() {
+    const code = this._pendingNewClassCode;
+    this.adminCloseClassChangedReminder();
+    if (code) {
+      this.adminSwitchToClass(code);
     }
   }
 }
