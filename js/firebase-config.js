@@ -170,6 +170,82 @@ window.ClassRoomManager = {
     }
   },
 
+  // 修改已登記班級之代碼與名稱（防範重複代碼與無損遷移資料空間）
+  async updateClass(oldCode, newCode, newName = '') {
+    const sanitizedOld = this.sanitizeClassCode(oldCode);
+    const sanitizedNew = this.sanitizeClassCode(newCode);
+    if (!sanitizedOld) throw new Error('原始班級代碼無效！');
+    if (!sanitizedNew) throw new Error('新班級代碼不可為空或包含不合法字元！');
+
+    const nameToSet = (newName || sanitizedNew).trim();
+    const codeChanged = sanitizedOld !== sanitizedNew;
+
+    if (codeChanged) {
+      // 檢查新代碼是否已被其他已註冊班級使用
+      const exists = await this.checkClassExists(sanitizedNew);
+      if (exists) {
+        throw new Error(`班級代碼【${sanitizedNew}】已存在，無法使用此代碼！請更換其他代碼。`);
+      }
+
+      // 取得舊註冊資料以繼承建立資訊
+      const oldSnap = await rawRef(`registered_classes/${sanitizedOld}`).once('value');
+      const oldData = oldSnap.val() || {};
+
+      // 遷移 classes/${sanitizedOld} 專屬資料空間至 classes/${sanitizedNew}
+      try {
+        const spaceSnap = await rawRef(`classes/${sanitizedOld}`).once('value');
+        if (spaceSnap.exists() && spaceSnap.val() !== null) {
+          await rawRef(`classes/${sanitizedNew}`).set(spaceSnap.val());
+          await rawRef(`classes/${sanitizedOld}`).remove();
+        }
+      } catch (err) {
+        console.warn('遷移班級專屬空間資料時發生錯誤:', err);
+      }
+
+      // 建立新代碼之註冊資料並移除舊註冊資料
+      const newClassData = {
+        ...oldData,
+        code: sanitizedNew,
+        name: nameToSet,
+        updatedAt: Date.now()
+      };
+      await rawRef(`registered_classes/${sanitizedNew}`).set(newClassData);
+      await rawRef(`registered_classes/${sanitizedOld}`).remove();
+
+      // 更新本機歷史紀錄
+      try {
+        let history = this.getClassHistory();
+        history = history.map(c => c === sanitizedOld ? sanitizedNew : c);
+        history = [...new Set(history)].slice(0, 5);
+        localStorage.setItem('class_code_history', JSON.stringify(history));
+      } catch (e) {}
+
+      // 若目前活躍的班級代碼為舊代碼，切換至新代碼
+      if (this.getActiveClassCode() === sanitizedOld) {
+        this.setActiveClassCode(sanitizedNew);
+      }
+
+      return {
+        oldCode: sanitizedOld,
+        newCode: sanitizedNew,
+        name: nameToSet,
+        codeChanged: true
+      };
+    } else {
+      // 代碼未變更，僅更新班級名稱
+      await rawRef(`registered_classes/${sanitizedOld}`).update({
+        name: nameToSet,
+        updatedAt: Date.now()
+      });
+      return {
+        oldCode: sanitizedOld,
+        newCode: sanitizedOld,
+        name: nameToSet,
+        codeChanged: false
+      };
+    }
+  },
+
   // 監聽所有已開課班級清單 (用於管理後台即時顯示)
   onClassesChange(callback) {
     return rawRef('registered_classes').on('value', (snap) => {

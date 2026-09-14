@@ -9,16 +9,28 @@ const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
 const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
 
+const fbJs = fs.readFileSync('js/firebase-config.js', 'utf8');
+
 const checks = [
-  ['package.json version 3.1.3', pkg.version === '3.1.3'],
-  ['app.js APP_VERSION 3.1.3', appJs.includes("this.APP_VERSION = '3.1.3';")],
-  ['index.html badge ver 3.1.3', html.includes('ver 3.1.3')],
+  ['package.json version 3.1.4', pkg.version === '3.1.4'],
+  ['app.js APP_VERSION 3.1.4', appJs.includes("this.APP_VERSION = '3.1.4';")],
+  ['index.html badge ver 3.1.4', html.includes('ver 3.1.4')],
   ['index.html studentNameModal exists', html.includes('id="studentNameModal"')],
   ['index.html itemEditModal exists', html.includes('id="itemEditModal"')],
   ['app.js openStudentNameModal method', appJs.includes('openStudentNameModal()')],
   ['app.js isItemOwner method', appJs.includes('isItemOwner(item)')],
-  ['index.html style.css?v=175', html.includes('css/style.css?v=175')],
-  ['index.html video_quiz.js?v=306', html.includes('js/video_quiz.js?v=306')],
+  ['index.html style.css?v=176', html.includes('css/style.css?v=176')],
+  ['index.html firebase-config.js?v=314', html.includes('js/firebase-config.js?v=314')],
+  ['index.html app.js?v=314', html.includes('js/app.js?v=314')],
+  ['firebase-config.js updateClass method exists', fbJs.includes('async updateClass(oldCode, newCode, newName')],
+  ['firebase-config.js updateClass checks duplicate code', fbJs.includes('checkClassExists(sanitizedNew)') && fbJs.includes('已存在，無法使用此代碼')],
+  ['index.html adminEditClassModal exists', html.includes('id="adminEditClassModal"')],
+  ['index.html adminClassChangedReminderModal exists', html.includes('id="adminClassChangedReminderModal"')],
+  ['app.js renderAdminClassList has edit button', appJs.includes('adminOpenEditClassModal(') && appJs.includes('✏️ 編輯')],
+  ['app.js adminOpenEditClassModal method', appJs.includes('adminOpenEditClassModal(code)')],
+  ['app.js adminConfirmEditClass method', appJs.includes('adminConfirmEditClass()')],
+  ['app.js adminShowClassChangedReminder method', appJs.includes('adminShowClassChangedReminder(')],
+  ['app.js copyNewClassShareLink method', appJs.includes('copyNewClassShareLink(')],
   ['quiz.js clearQuizResults method', quizJs.includes('clearQuizResults()') && quizJs.includes('resultsContainer.innerHTML = \'\'')],
   ['app.js resetAll clears quiz results', appJs.includes('window.quiz.clearQuizResults()')],
   ['index.html panel-video-quiz', html.includes('id="panel-video-quiz"')],
@@ -55,7 +67,7 @@ const checks = [
 ];
 
 let allPassed = true;
-console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.1.3) ---');
+console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.1.4) ---');
 for (const [name, passed] of checks) {
   if (passed) {
     console.log(`✅ ${name}`);
