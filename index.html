@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=176">
+  <link rel="stylesheet" href="css/style.css?v=177">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.1.4</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.2.0</span>
         </p>
       </div>
       <div class="top-actions">
@@ -636,6 +636,123 @@
                 <div id="adminClassListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; padding-right: 4px;">
                   <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 20px;">載入中或尚無登記班級...</div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 📦 跨班教材與測驗複製中心 (可折疊區塊) -->
+          <div class="admin-section admin-section-collapsible collapsed" id="adminCrossClassCopySection">
+            <div class="admin-section-header">
+              <h3>📦 跨班教材與測驗複製中心（多班級一鍵同步）</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 14px 0;">
+                💡 讓您將目前或指定班級準備好的教材（提問、圖片、影片、教師分享、選擇題庫、影片測驗組合及各分類資料夾），一鍵複製到其他多個班級，免除重複出題與備課！
+              </p>
+
+              <!-- 第 1 步：選擇來源班級 -->
+              <div style="background: var(--bg-input); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                  <label for="copySourceClassSelect" style="font-size: 13px; font-weight: bold; color: var(--text-primary);">
+                    1️⃣ 選擇教材來源班級：
+                  </label>
+                  <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px;">
+                    <select id="copySourceClassSelect" onchange="window.app.onCopySourceClassChange(this.value)" style="flex: 1; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 13px; font-weight: bold;">
+                      <option value="">載入班級中...</option>
+                    </select>
+                    <button type="button" class="preset-btn" onclick="window.app.refreshCopySourceCounts()" style="padding: 6px 10px; font-size: 12px; margin: 0; background: var(--bg-card);" title="重新整理來源統計">🔄 整理</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 第 2 步：勾選欲複製的教材項目 -->
+              <div style="background: var(--bg-input); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">2️⃣ 選擇欲複製的教材項目：</span>
+                  <button type="button" onclick="window.app.toggleSelectAllCopyModules()" style="background: transparent; border: none; font-size: 12px; color: var(--accent-color); cursor: pointer; font-weight: bold;">
+                    全選 / 全不選
+                  </button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
+                    <input type="checkbox" id="chkCopyQuestions" checked style="cursor: pointer;">
+                    <span>💬 提問與引導題</span>
+                    <span id="badgeCopyQuestionsCount" style="font-size: 11px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 10px; margin-left: auto;">0則</span>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
+                    <input type="checkbox" id="chkCopyImages" checked style="cursor: pointer;">
+                    <span>🖼️ 圖片分享</span>
+                    <span id="badgeCopyImagesCount" style="font-size: 11px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 10px; margin-left: auto;">0張</span>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
+                    <input type="checkbox" id="chkCopyVideos" checked style="cursor: pointer;">
+                    <span>🎥 影片分享</span>
+                    <span id="badgeCopyVideosCount" style="font-size: 11px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 10px; margin-left: auto;">0部</span>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
+                    <input type="checkbox" id="chkCopyTeacherShares" checked style="cursor: pointer;">
+                    <span>📢 教師分享教材</span>
+                    <span id="badgeCopyTeacherSharesCount" style="font-size: 11px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 10px; margin-left: auto;">0則</span>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
+                    <input type="checkbox" id="chkCopyQuiz" checked style="cursor: pointer;">
+                    <span>📝 選擇題題庫</span>
+                    <span id="badgeCopyQuizCount" style="font-size: 11px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 10px; margin-left: auto;">0題</span>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
+                    <input type="checkbox" id="chkCopyVideoQuiz" checked style="cursor: pointer;">
+                    <span>🎬 影片測驗組合</span>
+                    <span id="badgeCopyVideoQuizCount" style="font-size: 11px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 10px; margin-left: auto;">0組</span>
+                  </label>
+                </div>
+                <div style="margin-top: 8px; font-size: 11px; color: var(--text-secondary);">
+                  📁 備註：提問、圖片、影片、教師分享之<strong>分類資料夾將自動完整隨附複製</strong>，保持分類井然有序。
+                </div>
+              </div>
+
+              <!-- 第 3 步：選擇目標班級（可多選） -->
+              <div style="background: var(--bg-input); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">3️⃣ 複製到目標班級（可同時複選多個）：</span>
+                  <button type="button" onclick="window.app.toggleSelectAllTargetClasses()" style="background: transparent; border: none; font-size: 12px; color: var(--accent-color); cursor: pointer; font-weight: bold;">
+                    全選 / 全不選
+                  </button>
+                </div>
+
+                <div id="copyTargetClassesList" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow-y: auto;">
+                  <div style="font-size: 12px; color: var(--text-secondary); padding: 6px;">載入班級中...</div>
+                </div>
+              </div>
+
+              <!-- 第 4 步：寫入方式與執行按鈕 -->
+              <div style="background: var(--bg-input); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                  <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">4️⃣ 寫入模式：</span>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; font-weight: 600; color: var(--text-primary);">
+                    <input type="radio" name="copyModeRadio" value="append" checked style="cursor: pointer;">
+                    🔘 累加追加（保留目標班既有資料，推薦）
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; font-weight: 600; color: var(--danger-color);">
+                    <input type="radio" name="copyModeRadio" value="overwrite" style="cursor: pointer;">
+                    ⚪ 完全覆蓋（清空目標班所選模組後寫入）
+                  </label>
+                </div>
+
+                <button type="button" id="btnStartCrossClassCopy" class="ask-btn" onclick="window.app.startCrossClassCopy()" style="padding: 8px 24px; height: auto; font-size: 14px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,122,255,0.3);">
+                  🚀 開始複製到所選班級
+                </button>
+              </div>
+
+              <!-- 提示訊息 -->
+              <div style="background: rgba(52,199,89,0.08); border-left: 3px solid #34c759; padding: 8px 12px; border-radius: 4px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                🛡️ <strong>安全保護機制</strong>：複製過程會自動排除學生的作答紀錄、成績與表情反應，確保每個目標班級皆為乾淨的測驗與學習環境。
               </div>
             </div>
           </div>
@@ -1455,13 +1572,13 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=314"></script>
+  <script src="js/firebase-config.js?v=320"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
   <script src="js/focus_question_bank.js?v=306"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/quiz.js?v=306"></script>
-  <script src="js/app.js?v=314"></script>
+  <script src="js/app.js?v=320"></script>
   <script src="js/classics_quiz.js?v=306"></script>
   <script src="js/video_quiz.js?v=306"></script>
   
@@ -2491,6 +2608,50 @@ Python</pre>
       <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 14px;">
         <button type="button" onclick="window.app.adminCloseClassChangedReminder()" style="padding: 8px 18px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);">了解並關閉</button>
         <button type="button" id="adminReminderEnterBtn" onclick="window.app.adminEnterNewClassFromReminder()" style="padding: 8px 20px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">🚀 進入新班級</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 影片測驗：快捷複製測驗組合到其他班級彈窗 -->
+  <div id="quickCopyCustomSetModal" class="video-quiz-overlay" style="display: none; z-index: 2750;" onclick="if(event.target===this) window.app.closeQuickCopyCustomSetModal()">
+    <div class="video-quiz-card" style="max-width: 500px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <span>📤 複製測驗組合到其他班級</span>
+        </h3>
+        <button type="button" onclick="window.app.closeQuickCopyCustomSetModal()" style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <input type="hidden" id="quickCopyCustomSetId" value="">
+
+      <div style="background: var(--bg-input); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 14px;">
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">測驗組合名稱：</div>
+        <div id="quickCopyCustomSetName" style="font-size: 15px; font-weight: bold; color: var(--accent-color);">--</div>
+        <div id="quickCopyCustomSetInfo" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">--</div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 13px; font-weight: bold; color: var(--text-primary);">
+            選擇要發送的目標班級（可多選）：
+          </label>
+          <button type="button" onclick="window.app.toggleSelectAllQuickCopyTargets()" style="background: transparent; border: none; font-size: 12px; color: var(--accent-color); cursor: pointer; font-weight: bold;">
+            全選 / 全不選
+          </button>
+        </div>
+
+        <div id="quickCopyTargetClassesList" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow-y: auto; padding: 4px 0;">
+          <div style="font-size: 12px; color: var(--text-secondary);">載入班級中...</div>
+        </div>
+      </div>
+
+      <div style="background: rgba(88, 86, 214, 0.08); border-left: 3px solid #5856d6; padding: 8px 12px; border-radius: 4px; font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+        💡 發送後，該測驗組合及其關聯的影片題目將自動加入所選目標班級的題庫中，該班學生與老師可直接開測！
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+        <button type="button" onclick="window.app.closeQuickCopyCustomSetModal()" style="padding: 8px 16px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);">取消</button>
+        <button type="button" id="btnConfirmQuickCopyCustomSet" onclick="window.app.confirmQuickCopyCustomSet()" style="padding: 8px 22px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">🚀 確認發送</button>
       </div>
     </div>
   </div>
