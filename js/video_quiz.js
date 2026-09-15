@@ -2055,6 +2055,9 @@
                   <button class="action-btn" onclick="window.videoQuiz.assignCustomSetToSelfPaced('${set.id}')" style="flex: 1; background: #34c759; color: white; border: none; padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="切換為學生自主學習此組合">
                     🎧 自主學習
                   </button>
+                  <button class="action-btn" onclick="window.app.openQuickCopyCustomSetModal('${set.id}')" style="background: rgba(88, 86, 214, 0.12); color: #5856d6; border: 1px solid rgba(88, 86, 214, 0.3); padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="複製此測驗組合到其他班級">
+                    📤 複製到其他班
+                  </button>
                   <button class="action-btn" onclick="window.videoQuiz.deleteCustomSet('${set.id}')" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--danger-color); padding: 6px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;" title="刪除此組合">
                     🗑️
                   </button>

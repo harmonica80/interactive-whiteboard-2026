@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.1.4';
+    this.APP_VERSION = '3.2.0';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -9829,6 +9829,7 @@ class App {
     if (!window.ClassRoomManager || typeof window.ClassRoomManager.onClassesChange !== 'function') return;
     window.ClassRoomManager.onClassesChange((classList) => {
       this.renderAdminClassList(classList);
+      this.initCrossClassCopySection(classList);
     });
   }
 
@@ -10138,6 +10139,303 @@ class App {
     this.adminCloseClassChangedReminder();
     if (code) {
       this.adminSwitchToClass(code);
+    }
+  }
+
+  // ===== 跨班教材與測驗複製中心邏輯 =====
+  initCrossClassCopySection(classList = null) {
+    if (classList && Array.isArray(classList)) {
+      this.adminRegisteredClasses = classList;
+    }
+    const list = this.adminRegisteredClasses || [];
+    const select = document.getElementById('copySourceClassSelect');
+    if (!select) return;
+
+    const currentSelected = select.value || window.currentClassCode || '';
+
+    // 建立來源選單選項
+    let optionsHtml = `<option value="">（免代碼公開課堂 / 免代碼空間）</option>`;
+    list.forEach(cls => {
+      const displayName = cls.name && cls.name !== cls.code ? `${cls.code} (${cls.name})` : cls.code;
+      const isCurrent = window.currentClassCode === cls.code;
+      optionsHtml += `<option value="${cls.code}" ${isCurrent ? 'selected' : ''}>🏫 ${displayName} ${isCurrent ? '【目前所在】' : ''}</option>`;
+    });
+
+    select.innerHTML = optionsHtml;
+    // 若原先有選定值且存在於清單中，維持選取
+    if (currentSelected && Array.from(select.options).some(o => o.value === currentSelected)) {
+      select.value = currentSelected;
+    }
+
+    this.renderCopyTargetClassesList(select.value);
+    this.refreshCopySourceCounts(select.value);
+  }
+
+  onCopySourceClassChange(sourceCode) {
+    this.renderCopyTargetClassesList(sourceCode);
+    this.refreshCopySourceCounts(sourceCode);
+  }
+
+  renderCopyTargetClassesList(currentSourceCode = '') {
+    const container = document.getElementById('copyTargetClassesList');
+    if (!container) return;
+
+    const list = this.adminRegisteredClasses || [];
+    // 目標班級可包含公開課堂與其他已註冊班級（排除當前來源班級）
+    const targets = [];
+    if (currentSourceCode !== '') {
+      targets.push({ code: '', name: '免代碼公開課堂（公共大廳）' });
+    }
+    list.forEach(cls => {
+      if (cls.code !== currentSourceCode) {
+        targets.push(cls);
+      }
+    });
+
+    if (targets.length === 0) {
+      container.innerHTML = `
+        <div style="font-size: 12px; color: var(--text-secondary); padding: 8px; width: 100%; text-align: center; background: var(--bg-card); border-radius: 6px; border: 1px dashed var(--border-color);">
+          目前無其他可用目標班級。請先在上方「開課登記」建立更多班級！
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = targets.map(tgt => {
+      const labelText = tgt.code ? `${tgt.code} ${tgt.name && tgt.name !== tgt.code ? `(${tgt.name})` : ''}` : tgt.name;
+      return `
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; user-select: none;">
+          <input type="checkbox" class="copy-target-class-chk" value="${tgt.code}" checked style="cursor: pointer;">
+          <span style="font-weight: bold; color: var(--text-primary);">${labelText}</span>
+        </label>
+      `;
+    }).join('');
+  }
+
+  async refreshCopySourceCounts(sourceCode = undefined) {
+    const select = document.getElementById('copySourceClassSelect');
+    const sCode = sourceCode !== undefined ? sourceCode : (select ? select.value : '');
+
+    const bQuestions = document.getElementById('badgeCopyQuestionsCount');
+    const bImages = document.getElementById('badgeCopyImagesCount');
+    const bVideos = document.getElementById('badgeCopyVideosCount');
+    const bShares = document.getElementById('badgeCopyTeacherSharesCount');
+    const bQuiz = document.getElementById('badgeCopyQuizCount');
+    const bVideoQuiz = document.getElementById('badgeCopyVideoQuizCount');
+
+    if (bQuestions) bQuestions.textContent = '計算中...';
+    if (bImages) bImages.textContent = '計算中...';
+    if (bVideos) bVideos.textContent = '計算中...';
+    if (bShares) bShares.textContent = '計算中...';
+    if (bQuiz) bQuiz.textContent = '計算中...';
+    if (bVideoQuiz) bVideoQuiz.textContent = '計算中...';
+
+    try {
+      if (window.ClassRoomManager && typeof window.ClassRoomManager.getModuleCounts === 'function') {
+        const counts = await window.ClassRoomManager.getModuleCounts(sCode);
+        if (bQuestions) bQuestions.textContent = `${counts.questions || 0}則${counts.questionFolders ? ` (${counts.questionFolders}夾)` : ''}`;
+        if (bImages) bImages.textContent = `${counts.images || 0}張${counts.imageFolders ? ` (${counts.imageFolders}夾)` : ''}`;
+        if (bVideos) bVideos.textContent = `${counts.videos || 0}部${counts.videoFolders ? ` (${counts.videoFolders}夾)` : ''}`;
+        if (bShares) bShares.textContent = `${counts.teacherShares || 0}則${counts.teacherShareFolders ? ` (${counts.teacherShareFolders}夾)` : ''}`;
+        if (bQuiz) bQuiz.textContent = `${counts.quiz || 0}題`;
+        if (bVideoQuiz) bVideoQuiz.textContent = `${counts.videoQuizSets || 0}組`;
+      }
+    } catch (e) {
+      console.warn('refreshCopySourceCounts error:', e);
+    }
+  }
+
+  toggleSelectAllCopyModules(forcedState = undefined) {
+    const chkIds = ['chkCopyQuestions', 'chkCopyImages', 'chkCopyVideos', 'chkCopyTeacherShares', 'chkCopyQuiz', 'chkCopyVideoQuiz'];
+    const chks = chkIds.map(id => document.getElementById(id)).filter(Boolean);
+    const anyUnchecked = chks.some(c => !c.checked);
+    const targetState = forcedState !== undefined ? forcedState : anyUnchecked;
+    chks.forEach(c => { c.checked = targetState; });
+  }
+
+  toggleSelectAllTargetClasses(forcedState = undefined) {
+    const chks = Array.from(document.querySelectorAll('.copy-target-class-chk'));
+    const anyUnchecked = chks.some(c => !c.checked);
+    const targetState = forcedState !== undefined ? forcedState : anyUnchecked;
+    chks.forEach(c => { c.checked = targetState; });
+  }
+
+  async startCrossClassCopy() {
+    const select = document.getElementById('copySourceClassSelect');
+    const sourceCode = select ? select.value : '';
+
+    const modules = {
+      questions: Boolean(document.getElementById('chkCopyQuestions')?.checked),
+      images: Boolean(document.getElementById('chkCopyImages')?.checked),
+      videos: Boolean(document.getElementById('chkCopyVideos')?.checked),
+      teacherShares: Boolean(document.getElementById('chkCopyTeacherShares')?.checked),
+      quiz: Boolean(document.getElementById('chkCopyQuiz')?.checked),
+      videoQuiz: Boolean(document.getElementById('chkCopyVideoQuiz')?.checked)
+    };
+
+    const hasAnyModule = Object.values(modules).some(Boolean);
+    if (!hasAnyModule) {
+      this.showNotification('提示', '請至少勾選一個欲複製的教材項目！');
+      return;
+    }
+
+    const targetChks = Array.from(document.querySelectorAll('.copy-target-class-chk:checked'));
+    const targetCodes = targetChks.map(c => c.value);
+    if (targetCodes.length === 0) {
+      this.showNotification('提示', '請至少勾選一個目標班級！');
+      return;
+    }
+
+    const copyModeRadio = document.querySelector('input[name="copyModeRadio"]:checked');
+    const copyMode = copyModeRadio ? copyModeRadio.value : 'append';
+
+    if (copyMode === 'overwrite') {
+      const confirmOverwrite = confirm(`⚠️ 警告：您選擇了「完全覆蓋」模式！\n\n這將會【清空所選目標班級】中被勾選模組的原有內容，並以來源班級資料取代！\n\n此操作無法復原，是否確定要執行？`);
+      if (!confirmOverwrite) return;
+    }
+
+    const btn = document.getElementById('btnStartCrossClassCopy');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ 正在複製中...';
+    }
+
+    try {
+      if (!window.ClassRoomManager || typeof window.ClassRoomManager.copyModuleData !== 'function') {
+        throw new Error('班級管理器尚未就緒，請重整頁面');
+      }
+
+      const results = await window.ClassRoomManager.copyModuleData({
+        sourceCode,
+        targetCodes,
+        modules,
+        copyMode
+      });
+
+      const srcName = sourceCode ? `班級【${sourceCode}】` : '免代碼公開課堂';
+      const tgtNames = results.map(c => c ? `【${c}】` : '【免代碼公開課堂】').join('、');
+      this.showNotification('🎉 複製成功', `已成功將 ${srcName} 的教材複製同步至 ${tgtNames}！學生進入即可看到最新教材。`);
+    } catch (err) {
+      console.error('startCrossClassCopy error:', err);
+      this.showNotification('複製失敗', err.message || '跨班複製時發生錯誤');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🚀 開始複製到所選班級';
+      }
+    }
+  }
+
+  // ===== 測驗組合單項快捷發送彈窗 =====
+  openQuickCopyCustomSetModal(setId) {
+    if (!setId) return;
+    const modal = document.getElementById('quickCopyCustomSetModal');
+    if (!modal) return;
+
+    let targetSet = null;
+    if (window.videoQuiz && window.videoQuiz.customSets) {
+      targetSet = window.videoQuiz.customSets.find(s => s && s.id === setId);
+    }
+    if (!targetSet) {
+      try {
+        const localSets = JSON.parse(localStorage.getItem('video_quiz_custom_sets_v1') || '[]');
+        targetSet = localSets.find(s => s && s.id === setId);
+      } catch (e) {}
+    }
+
+    if (!targetSet) {
+      this.showNotification('提示', '查無此測驗組合資訊！');
+      return;
+    }
+
+    const idInput = document.getElementById('quickCopyCustomSetId');
+    const nameEl = document.getElementById('quickCopyCustomSetName');
+    const infoEl = document.getElementById('quickCopyCustomSetInfo');
+    const container = document.getElementById('quickCopyTargetClassesList');
+
+    if (idInput) idInput.value = targetSet.id;
+    if (nameEl) nameEl.textContent = targetSet.name || '未命名測驗組合';
+    if (infoEl) infoEl.textContent = `🎬 包含 ${targetSet.quizCount || targetSet.quizIds?.length || 1} 部影片，共 ${targetSet.totalQuestions || 0} 道題目`;
+
+    // 渲染目標班級列表（排除當前班級）
+    const list = this.adminRegisteredClasses || [];
+    const currentCode = window.currentClassCode || '';
+    const targets = [];
+    if (currentCode !== '') {
+      targets.push({ code: '', name: '免代碼公開課堂（公共大廳）' });
+    }
+    list.forEach(cls => {
+      if (cls.code !== currentCode) {
+        targets.push(cls);
+      }
+    });
+
+    if (container) {
+      if (targets.length === 0) {
+        container.innerHTML = `<div style="font-size: 12px; color: var(--text-secondary); padding: 8px;">目前無其他可用的目標班級。</div>`;
+      } else {
+        container.innerHTML = targets.map(tgt => {
+          const labelText = tgt.code ? `${tgt.code} ${tgt.name && tgt.name !== tgt.code ? `(${tgt.name})` : ''}` : tgt.name;
+          return `
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; user-select: none;">
+              <input type="checkbox" class="quick-copy-target-chk" value="${tgt.code}" checked style="cursor: pointer;">
+              <span style="font-weight: bold; color: var(--text-primary);">${labelText}</span>
+            </label>
+          `;
+        }).join('');
+      }
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  closeQuickCopyCustomSetModal() {
+    const modal = document.getElementById('quickCopyCustomSetModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  toggleSelectAllQuickCopyTargets(forcedState = undefined) {
+    const chks = Array.from(document.querySelectorAll('.quick-copy-target-chk'));
+    const anyUnchecked = chks.some(c => !c.checked);
+    const targetState = forcedState !== undefined ? forcedState : anyUnchecked;
+    chks.forEach(c => { c.checked = targetState; });
+  }
+
+  async confirmQuickCopyCustomSet() {
+    const idInput = document.getElementById('quickCopyCustomSetId');
+    const setId = idInput ? idInput.value : '';
+    if (!setId) return;
+
+    const targetChks = Array.from(document.querySelectorAll('.quick-copy-target-chk:checked'));
+    const targetCodes = targetChks.map(c => c.value);
+    if (targetCodes.length === 0) {
+      this.showNotification('提示', '請至少勾選一個目標班級！');
+      return;
+    }
+
+    const btn = document.getElementById('btnConfirmQuickCopyCustomSet');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ 正在發送...';
+    }
+
+    try {
+      if (!window.ClassRoomManager || typeof window.ClassRoomManager.copySingleCustomSet !== 'function') {
+        throw new Error('班級管理器尚未就緒，請重整頁面');
+      }
+
+      const res = await window.ClassRoomManager.copySingleCustomSet(setId, targetCodes, window.currentClassCode || '');
+      this.closeQuickCopyCustomSetModal();
+      const tgtNames = res.copiedCount.map(c => c ? `【${c}】` : '【免代碼公開課堂】').join('、');
+      this.showNotification('🎉 發送成功', `測驗組合「${res.set.name}」已成功發送至 ${tgtNames}！該班級可立即在後台開測或指派自主學習。`);
+    } catch (err) {
+      console.error('confirmQuickCopyCustomSet error:', err);
+      this.showNotification('發送失敗', err.message || '發送測驗組合時發生錯誤');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🚀 確認發送';
+      }
     }
   }
 }

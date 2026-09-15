@@ -255,6 +255,504 @@ window.ClassRoomManager = {
       list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       callback(list);
     });
+  },
+
+  // 取得特定班級各模組資源數量（用於複製中心即時統計）
+  async getModuleCounts(classCode = '') {
+    const code = this.sanitizeClassCode(classCode);
+    const getPath = (p) => code ? `classes/${code}/${p}` : p;
+
+    const counts = {
+      questions: 0,
+      questionFolders: 0,
+      images: 0,
+      imageFolders: 0,
+      videos: 0,
+      videoFolders: 0,
+      teacherShares: 0,
+      teacherShareFolders: 0,
+      quiz: 0,
+      videoQuizSets: 0
+    };
+
+    try {
+      const [qSnap, qfSnap, imgSnap, imgfSnap, vidSnap, vidfSnap, tsSnap, tsfSnap, qzSnap, vqSnap] = await Promise.all([
+        rawRef(getPath('questions')).once('value'),
+        rawRef(getPath('quiz/questionFolders')).once('value'),
+        rawRef(getPath('images')).once('value'),
+        rawRef(getPath('quiz/imageFolders')).once('value'),
+        rawRef(getPath('videos')).once('value'),
+        rawRef(getPath('quiz/videoFolders')).once('value'),
+        rawRef(getPath('teacherShares')).once('value'),
+        rawRef(getPath('quiz/teacherShareFolders')).once('value'),
+        rawRef(getPath('quiz/history')).once('value'),
+        rawRef(getPath('quiz/videoQuizCustomSets')).once('value')
+      ]);
+
+      const countVal = (val) => {
+        if (!val) return 0;
+        if (Array.isArray(val)) return val.filter(Boolean).length;
+        return Object.keys(val).length;
+      };
+
+      counts.questions = countVal(qSnap.val());
+      counts.questionFolders = countVal(qfSnap.val());
+      counts.images = countVal(imgSnap.val());
+      counts.imageFolders = countVal(imgfSnap.val());
+      counts.videos = countVal(vidSnap.val());
+      counts.videoFolders = countVal(vidfSnap.val());
+      counts.teacherShares = countVal(tsSnap.val());
+      counts.teacherShareFolders = countVal(tsfSnap.val());
+      counts.quiz = countVal(qzSnap.val());
+      counts.videoQuizSets = countVal(vqSnap.val());
+    } catch (err) {
+      console.warn('getModuleCounts error:', err);
+    }
+
+    return counts;
+  },
+
+  // 跨班複製核心方法（支援提問、圖片、影片、教師分享、選擇題庫、影片測驗組合與分類資料夾）
+  async copyModuleData({
+    sourceCode = '',
+    targetCodes = [],
+    modules = { questions: true, images: true, videos: true, teacherShares: true, quiz: true, videoQuiz: true },
+    copyMode = 'append' // 'append' | 'overwrite'
+  }) {
+    const sCode = this.sanitizeClassCode(sourceCode);
+    const targets = (targetCodes || []).map(c => this.sanitizeClassCode(c)).filter(Boolean);
+    if (!targets.length) throw new Error('請至少選擇一個目標班級！');
+
+    const srcPath = (p) => sCode ? `classes/${sCode}/${p}` : p;
+    const tgtPath = (tCode, p) => tCode ? `classes/${tCode}/${p}` : p;
+
+    // 1. 讀取來源班級資料
+    const readPromises = {};
+    if (modules.questions) {
+      readPromises.questions = rawRef(srcPath('questions')).once('value');
+      readPromises.questionFolders = rawRef(srcPath('quiz/questionFolders')).once('value');
+    }
+    if (modules.images) {
+      readPromises.images = rawRef(srcPath('images')).once('value');
+      readPromises.imageFolders = rawRef(srcPath('quiz/imageFolders')).once('value');
+    }
+    if (modules.videos) {
+      readPromises.videos = rawRef(srcPath('videos')).once('value');
+      readPromises.videoFolders = rawRef(srcPath('quiz/videoFolders')).once('value');
+    }
+    if (modules.teacherShares) {
+      readPromises.teacherShares = rawRef(srcPath('teacherShares')).once('value');
+      readPromises.teacherShareFolders = rawRef(srcPath('quiz/teacherShareFolders')).once('value');
+    }
+    if (modules.quiz) {
+      readPromises.quizHistory = rawRef(srcPath('quiz/history')).once('value');
+      readPromises.quizCurrent = rawRef(srcPath('quiz/current')).once('value');
+    }
+    if (modules.videoQuiz) {
+      readPromises.videoQuizCustomSets = rawRef(srcPath('quiz/videoQuizCustomSets')).once('value');
+      readPromises.videoQuizzes = rawRef(srcPath('quiz/videoQuizzes')).once('value');
+    }
+
+    const srcData = {};
+    for (const [key, promise] of Object.entries(readPromises)) {
+      srcData[key] = (await promise).val();
+    }
+
+    // 輔助函式：轉換與重整
+    const toArray = (val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val.filter(Boolean);
+      return Object.entries(val).map(([id, item]) => {
+        if (typeof item === 'object' && item !== null) {
+          return { id: item.id || id, ...item };
+        }
+        return { id, val: item };
+      });
+    };
+
+    const toMap = (arr) => {
+      const obj = {};
+      arr.forEach((item, idx) => {
+        const id = item.id || `item_${idx}_${Date.now()}`;
+        obj[id] = item;
+      });
+      return obj;
+    };
+
+    const results = [];
+
+    // 2. 處理各目標班級寫入
+    for (const tCode of targets) {
+      if (sCode && sCode === tCode) continue;
+
+      const writePromises = [];
+
+      // A. 處理提問與分類資料夾
+      if (modules.questions) {
+        const srcFolders = toArray(srcData.questionFolders);
+        const srcQuestions = toArray(srcData.questions);
+
+        if (copyMode === 'overwrite') {
+          const cleanedQuestions = srcQuestions.map(q => ({
+            ...q,
+            reactions: { like: 0, love: 0, laugh: 0, wow: 0 },
+            commentCount: 0
+          }));
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/questionFolders')).set(toMap(srcFolders)));
+          writePromises.push(rawRef(tgtPath(tCode, 'questions')).set(toMap(cleanedQuestions)));
+        } else {
+          const [existFoldersSnap, existQuestionsSnap] = await Promise.all([
+            rawRef(tgtPath(tCode, 'quiz/questionFolders')).once('value'),
+            rawRef(tgtPath(tCode, 'questions')).once('value')
+          ]);
+          const existFolders = toArray(existFoldersSnap.val());
+          const existQuestions = toArray(existQuestionsSnap.val());
+
+          const folderIdMap = {};
+          srcFolders.forEach(sf => {
+            const match = existFolders.find(ef => ef.name === sf.name);
+            if (match) {
+              folderIdMap[sf.id] = match.id;
+            } else {
+              const newFolderId = `qf_copy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+              folderIdMap[sf.id] = newFolderId;
+              existFolders.push({ ...sf, id: newFolderId });
+            }
+          });
+
+          srcQuestions.forEach(sq => {
+            const newQId = `q_copy_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+            const mappedFolderId = sq.folderId ? (folderIdMap[sq.folderId] || sq.folderId) : null;
+            existQuestions.push({
+              ...sq,
+              id: newQId,
+              folderId: mappedFolderId,
+              reactions: { like: 0, love: 0, laugh: 0, wow: 0 },
+              commentCount: 0
+            });
+          });
+
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/questionFolders')).set(toMap(existFolders)));
+          writePromises.push(rawRef(tgtPath(tCode, 'questions')).set(toMap(existQuestions)));
+        }
+      }
+
+      // B. 處理圖片與分類資料夾
+      if (modules.images) {
+        const srcFolders = toArray(srcData.imageFolders);
+        const srcImages = toArray(srcData.images);
+
+        if (copyMode === 'overwrite') {
+          const cleanedImages = srcImages.map(img => ({
+            ...img,
+            reactions: { like: 0, love: 0, laugh: 0, wow: 0 }
+          }));
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/imageFolders')).set(toMap(srcFolders)));
+          writePromises.push(rawRef(tgtPath(tCode, 'images')).set(toMap(cleanedImages)));
+        } else {
+          const [existFoldersSnap, existImagesSnap] = await Promise.all([
+            rawRef(tgtPath(tCode, 'quiz/imageFolders')).once('value'),
+            rawRef(tgtPath(tCode, 'images')).once('value')
+          ]);
+          const existFolders = toArray(existFoldersSnap.val());
+          const existImages = toArray(existImagesSnap.val());
+
+          const folderIdMap = {};
+          srcFolders.forEach(sf => {
+            const match = existFolders.find(ef => ef.name === sf.name);
+            if (match) {
+              folderIdMap[sf.id] = match.id;
+            } else {
+              const newFolderId = `imgf_copy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+              folderIdMap[sf.id] = newFolderId;
+              existFolders.push({ ...sf, id: newFolderId });
+            }
+          });
+
+          srcImages.forEach(img => {
+            const newId = `img_copy_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+            const mappedFolderId = img.folderId ? (folderIdMap[img.folderId] || img.folderId) : null;
+            existImages.push({
+              ...img,
+              id: newId,
+              folderId: mappedFolderId,
+              reactions: { like: 0, love: 0, laugh: 0, wow: 0 }
+            });
+          });
+
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/imageFolders')).set(toMap(existFolders)));
+          writePromises.push(rawRef(tgtPath(tCode, 'images')).set(toMap(existImages)));
+        }
+      }
+
+      // C. 處理影片與分類資料夾
+      if (modules.videos) {
+        const srcFolders = toArray(srcData.videoFolders);
+        const srcVideos = toArray(srcData.videos);
+
+        if (copyMode === 'overwrite') {
+          const cleanedVideos = srcVideos.map(vid => ({
+            ...vid,
+            reactions: { like: 0, love: 0, laugh: 0, wow: 0 }
+          }));
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/videoFolders')).set(toMap(srcFolders)));
+          writePromises.push(rawRef(tgtPath(tCode, 'videos')).set(toMap(cleanedVideos)));
+        } else {
+          const [existFoldersSnap, existVideosSnap] = await Promise.all([
+            rawRef(tgtPath(tCode, 'quiz/videoFolders')).once('value'),
+            rawRef(tgtPath(tCode, 'videos')).once('value')
+          ]);
+          const existFolders = toArray(existFoldersSnap.val());
+          const existVideos = toArray(existVideosSnap.val());
+
+          const folderIdMap = {};
+          srcFolders.forEach(sf => {
+            const match = existFolders.find(ef => ef.name === sf.name);
+            if (match) {
+              folderIdMap[sf.id] = match.id;
+            } else {
+              const newFolderId = `vidf_copy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+              folderIdMap[sf.id] = newFolderId;
+              existFolders.push({ ...sf, id: newFolderId });
+            }
+          });
+
+          srcVideos.forEach(vid => {
+            const newId = `vid_copy_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+            const mappedFolderId = vid.folderId ? (folderIdMap[vid.folderId] || vid.folderId) : null;
+            existVideos.push({
+              ...vid,
+              id: newId,
+              folderId: mappedFolderId,
+              reactions: { like: 0, love: 0, laugh: 0, wow: 0 }
+            });
+          });
+
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/videoFolders')).set(toMap(existFolders)));
+          writePromises.push(rawRef(tgtPath(tCode, 'videos')).set(toMap(existVideos)));
+        }
+      }
+
+      // D. 處理教師分享與分類資料夾
+      if (modules.teacherShares) {
+        const srcFolders = toArray(srcData.teacherShareFolders);
+        const srcShares = toArray(srcData.teacherShares);
+
+        if (copyMode === 'overwrite') {
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/teacherShareFolders')).set(toMap(srcFolders)));
+          writePromises.push(rawRef(tgtPath(tCode, 'teacherShares')).set(toMap(srcShares)));
+        } else {
+          const [existFoldersSnap, existSharesSnap] = await Promise.all([
+            rawRef(tgtPath(tCode, 'quiz/teacherShareFolders')).once('value'),
+            rawRef(tgtPath(tCode, 'teacherShares')).once('value')
+          ]);
+          const existFolders = toArray(existFoldersSnap.val());
+          const existShares = toArray(existSharesSnap.val());
+
+          const folderIdMap = {};
+          srcFolders.forEach(sf => {
+            const match = existFolders.find(ef => ef.name === sf.name);
+            if (match) {
+              folderIdMap[sf.id] = match.id;
+            } else {
+              const newFolderId = `tsf_copy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+              folderIdMap[sf.id] = newFolderId;
+              existFolders.push({ ...sf, id: newFolderId });
+            }
+          });
+
+          srcShares.forEach(sh => {
+            const newId = `share_copy_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+            const mappedFolderId = sh.folderId ? (folderIdMap[sh.folderId] || sh.folderId) : null;
+            existShares.push({
+              ...sh,
+              id: newId,
+              folderId: mappedFolderId
+            });
+          });
+
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/teacherShareFolders')).set(toMap(existFolders)));
+          writePromises.push(rawRef(tgtPath(tCode, 'teacherShares')).set(toMap(existShares)));
+        }
+      }
+
+      // E. 處理選擇題測驗題庫 (quiz/history, 排除 quiz/answers)
+      if (modules.quiz) {
+        const srcHistory = toArray(srcData.quizHistory);
+        if (copyMode === 'overwrite') {
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/history')).set(toMap(srcHistory)));
+          if (srcData.quizCurrent) {
+            writePromises.push(rawRef(tgtPath(tCode, 'quiz/current')).set(srcData.quizCurrent));
+          }
+        } else {
+          const existSnap = await rawRef(tgtPath(tCode, 'quiz/history')).once('value');
+          const existHistory = toArray(existSnap.val());
+
+          srcHistory.forEach(q => {
+            const duplicate = existHistory.some(eq => eq.question === q.question);
+            if (!duplicate) {
+              const newId = `quiz_copy_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+              existHistory.push({ ...q, id: newId });
+            }
+          });
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/history')).set(toMap(existHistory)));
+        }
+      }
+
+      // F. 處理影片測驗組合 (quiz/videoQuizCustomSets 與 quiz/videoQuizzes; 排除 answers & session)
+      if (modules.videoQuiz) {
+        const srcSets = toArray(srcData.videoQuizCustomSets);
+        const srcQuizzes = toArray(srcData.videoQuizzes);
+
+        if (copyMode === 'overwrite') {
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/videoQuizCustomSets')).set(toMap(srcSets)));
+          if (srcQuizzes.length > 0) {
+            writePromises.push(rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).set(toMap(srcQuizzes)));
+          }
+        } else {
+          const [existSetsSnap, existQuizzesSnap] = await Promise.all([
+            rawRef(tgtPath(tCode, 'quiz/videoQuizCustomSets')).once('value'),
+            rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).once('value')
+          ]);
+          const existSets = toArray(existSetsSnap.val());
+          const existQuizzes = toArray(existQuizzesSnap.val());
+
+          srcSets.forEach(set => {
+            const match = existSets.find(es => es.name === set.name);
+            if (!match) {
+              const newSetId = `set_copy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+              existSets.push({ ...set, id: newSetId });
+            }
+          });
+
+          srcQuizzes.forEach(quiz => {
+            const match = existQuizzes.find(eq => eq.title === quiz.title || eq.videoUrl === quiz.videoUrl);
+            if (!match) {
+              const newQuizId = `vq_copy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+              existQuizzes.push({ ...quiz, id: newQuizId });
+            }
+          });
+
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/videoQuizCustomSets')).set(toMap(existSets)));
+          if (srcQuizzes.length > 0) {
+            writePromises.push(rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).set(toMap(existQuizzes)));
+          }
+        }
+      }
+
+      await Promise.all(writePromises);
+      results.push(tCode);
+    }
+
+    return results;
+  },
+
+  // 複製單一測驗組合到指定多個班級
+  async copySingleCustomSet(setId, targetCodes = [], sourceCode = '') {
+    const sCode = this.sanitizeClassCode(sourceCode);
+    const targets = (targetCodes || []).map(c => this.sanitizeClassCode(c)).filter(Boolean);
+    if (!targets.length) throw new Error('請至少選擇一個目標班級！');
+
+    const srcPath = (p) => sCode ? `classes/${sCode}/${p}` : p;
+    const tgtPath = (tCode, p) => tCode ? `classes/${tCode}/${p}` : p;
+
+    // 讀取來源組合
+    const snap = await rawRef(srcPath('quiz/videoQuizCustomSets')).once('value');
+    const val = snap.val() || {};
+    let targetSet = null;
+    if (Array.isArray(val)) {
+      targetSet = val.find(s => s && s.id === setId);
+    } else if (val[setId]) {
+      targetSet = val[setId];
+    } else {
+      targetSet = Object.values(val).find(s => s && s.id === setId);
+    }
+
+    // 若 Firebase 尚未儲存，嘗試由 LocalStorage 讀取
+    if (!targetSet && typeof localStorage !== 'undefined') {
+      try {
+        const localSets = JSON.parse(localStorage.getItem('video_quiz_custom_sets_v1') || '[]');
+        targetSet = localSets.find(s => s && s.id === setId);
+      } catch (e) {}
+    }
+
+    if (!targetSet) {
+      throw new Error(`查無 ID 為【${setId}】的測驗組合！`);
+    }
+
+    // 讀取相關題目定義
+    const vqSnap = await rawRef(srcPath('quiz/videoQuizzes')).once('value');
+    let allQuizzes = vqSnap.val() || {};
+    if (!allQuizzes && typeof localStorage !== 'undefined') {
+      try {
+        allQuizzes = JSON.parse(localStorage.getItem('video_quizzes_v1') || '[]');
+      } catch (e) {}
+    }
+
+    const toArray = (v) => {
+      if (!v) return [];
+      if (Array.isArray(v)) return v.filter(Boolean);
+      return Object.values(v);
+    };
+
+    const toMap = (arr) => {
+      const obj = {};
+      arr.forEach((item, idx) => {
+        const id = item.id || `item_${idx}_${Date.now()}`;
+        obj[id] = item;
+      });
+      return obj;
+    };
+
+    const copiedCount = [];
+
+    for (const tCode of targets) {
+      if (sCode && sCode === tCode) continue;
+
+      const [existSetsSnap, existQuizzesSnap] = await Promise.all([
+        rawRef(tgtPath(tCode, 'quiz/videoQuizCustomSets')).once('value'),
+        rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).once('value')
+      ]);
+
+      const existSets = toArray(existSetsSnap.val());
+      const existQuizzes = toArray(existQuizzesSnap.val());
+
+      // 檢查是否已有名稱相同的組合
+      const matchIndex = existSets.findIndex(es => es.name === targetSet.name);
+      const newSetId = `set_copy_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      const setToAdd = {
+        ...targetSet,
+        id: newSetId,
+        createdAt: Date.now()
+      };
+
+      if (matchIndex >= 0) {
+        existSets[matchIndex] = setToAdd;
+      } else {
+        existSets.unshift(setToAdd);
+      }
+
+      // 合併關聯的影片題目
+      const relatedQuizzes = toArray(allQuizzes).filter(q => {
+        return (targetSet.quizIds || []).includes(q.id) || (targetSet.quizTitles || []).includes(q.title);
+      });
+
+      relatedQuizzes.forEach(rq => {
+        const qMatch = existQuizzes.find(eq => eq.title === rq.title);
+        if (!qMatch) {
+          existQuizzes.push(rq);
+        }
+      });
+
+      await Promise.all([
+        rawRef(tgtPath(tCode, 'quiz/videoQuizCustomSets')).set(toMap(existSets)),
+        rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).set(toMap(existQuizzes))
+      ]);
+
+      copiedCount.push(tCode);
+    }
+
+    return { set: targetSet, copiedCount };
   }
 };
 
