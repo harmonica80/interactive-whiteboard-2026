@@ -332,6 +332,7 @@ class Quiz {
             </div>
           </div>
           <div style="display: flex; gap: 6px; flex-shrink: 0;">
+            <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="padding: 4px 8px; font-size: 11px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級歷屆題庫">📤 複製</button>
             <button type="button" class="btn btn-secondary" onclick="window.quiz.loadQuizFromHistory('${key}')" style="padding: 4px 8px; font-size: 11px; font-weight: bold;" title="帶入此題到出題框">🚀 載入</button>
             <button type="button" class="btn btn-secondary" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="padding: 4px 8px; font-size: 11px; color: var(--danger-color);" title="刪除此題">✕</button>
           </div>

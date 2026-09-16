@@ -12,27 +12,35 @@ const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
 const fbJs = fs.readFileSync('js/firebase-config.js', 'utf8');
 
 const checks = [
-  ['package.json version 3.2.0', pkg.version === '3.2.0'],
-  ['app.js APP_VERSION 3.2.0', appJs.includes("this.APP_VERSION = '3.2.0';")],
-  ['index.html badge ver 3.2.0', html.includes('ver 3.2.0')],
+  ['package.json version 3.2.1', pkg.version === '3.2.1'],
+  ['app.js APP_VERSION 3.2.1', appJs.includes("this.APP_VERSION = '3.2.1';")],
+  ['index.html badge ver 3.2.1', html.includes('ver 3.2.1')],
   ['index.html studentNameModal exists', html.includes('id="studentNameModal"')],
   ['index.html itemEditModal exists', html.includes('id="itemEditModal"')],
   ['app.js openStudentNameModal method', appJs.includes('openStudentNameModal()')],
   ['app.js isItemOwner method', appJs.includes('isItemOwner(item)')],
-  ['index.html style.css?v=177', html.includes('css/style.css?v=177')],
-  ['index.html firebase-config.js?v=320', html.includes('js/firebase-config.js?v=320')],
-  ['index.html app.js?v=320', html.includes('js/app.js?v=320')],
+  ['index.html style.css?v=178', html.includes('css/style.css?v=178')],
+  ['index.html firebase-config.js?v=321', html.includes('js/firebase-config.js?v=321')],
+  ['index.html app.js?v=321', html.includes('js/app.js?v=321')],
+  ['index.html quiz.js?v=321', html.includes('js/quiz.js?v=321')],
+  ['index.html video_quiz.js?v=321', html.includes('js/video_quiz.js?v=321')],
   ['firebase-config.js updateClass method exists', fbJs.includes('async updateClass(oldCode, newCode, newName')],
   ['firebase-config.js updateClass checks duplicate code', fbJs.includes('checkClassExists(sanitizedNew)') && fbJs.includes('已存在，無法使用此代碼')],
   ['firebase-config.js getModuleCounts method exists', fbJs.includes('async getModuleCounts(')],
   ['firebase-config.js copyModuleData method exists', fbJs.includes('async copyModuleData(')],
   ['firebase-config.js copySingleCustomSet method exists', fbJs.includes('async copySingleCustomSet(')],
+  ['firebase-config.js copySingleItem method exists', fbJs.includes('async copySingleItem(')],
   ['index.html adminCrossClassCopySection exists', html.includes('id="adminCrossClassCopySection"')],
   ['index.html quickCopyCustomSetModal exists', html.includes('id="quickCopyCustomSetModal"')],
+  ['index.html singleItemCopyModal exists', html.includes('id="singleItemCopyModal"')],
   ['app.js startCrossClassCopy method exists', appJs.includes('async startCrossClassCopy()')],
   ['app.js openQuickCopyCustomSetModal method exists', appJs.includes('openQuickCopyCustomSetModal(')],
   ['app.js confirmQuickCopyCustomSet method exists', appJs.includes('async confirmQuickCopyCustomSet()')],
+  ['app.js openSingleItemCopyModal method exists', appJs.includes('openSingleItemCopyModal(')],
+  ['app.js confirmSingleItemCopy method exists', appJs.includes('async confirmSingleItemCopy()')],
   ['video_quiz.js custom set has quick copy button', vqJs.includes('openQuickCopyCustomSetModal(') && vqJs.includes('📤 複製到其他班')],
+  ['video_quiz.js quiz card has single item copy button', vqJs.includes("openSingleItemCopyModal('videoQuiz'") && vqJs.includes('📤 複製到其他班')],
+  ['quiz.js history has single item copy button', quizJs.includes("openSingleItemCopyModal('quiz'")],
   ['index.html adminEditClassModal exists', html.includes('id="adminEditClassModal"')],
   ['index.html adminClassChangedReminderModal exists', html.includes('id="adminClassChangedReminderModal"')],
   ['app.js renderAdminClassList has edit button', appJs.includes('adminOpenEditClassModal(') && appJs.includes('✏️ 編輯')],
@@ -76,7 +84,7 @@ const checks = [
 ];
 
 let allPassed = true;
-console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.2.0) ---');
+console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.2.1) ---');
 for (const [name, passed] of checks) {
   if (passed) {
     console.log(`✅ ${name}`);
