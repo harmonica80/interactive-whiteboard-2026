@@ -1981,6 +1981,7 @@ body {
   font-size: 12px;
   cursor: pointer;
   font-weight: bold;
+  pointer-events: none;
   transition: background 0.2s;
 }
 
@@ -2237,7 +2238,7 @@ body {
 }
 
 .admin-section-collapsible .admin-section-header .collapse-icon {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
   transition: transform 0.3s ease;
 }

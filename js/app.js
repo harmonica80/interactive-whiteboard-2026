@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.2.2';
+    this.APP_VERSION = '3.2.3';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -1463,6 +1463,7 @@ class App {
   }
 
   toggleFolderCollapse(folderId) {
+    if (!folderId) return;
     if (this.expandedFolders.has(folderId)) {
       // 點擊已展開群組時收合
       this.expandedFolders.delete(folderId);
@@ -1471,14 +1472,14 @@ class App {
       this.expandedFolders.clear();
       this.expandedFolders.add(folderId);
     }
-    this.renderQuestions();
-    this.renderImages();
-    this.renderVideos();
-    this.renderTeacherShares();
-    this.renderAdminQuestions();
-    this.renderAdminImages();
-    this.renderAdminVideos();
-    this.renderAdminShares();
+    try { this.renderQuestions(); } catch (e) { console.warn('renderQuestions error:', e); }
+    try { this.renderImages(); } catch (e) { console.warn('renderImages error:', e); }
+    try { this.renderVideos(); } catch (e) { console.warn('renderVideos error:', e); }
+    try { this.renderTeacherShares(); } catch (e) { console.warn('renderTeacherShares error:', e); }
+    try { this.renderAdminQuestions(); } catch (e) { console.warn('renderAdminQuestions error:', e); }
+    try { this.renderAdminImages(); } catch (e) { console.warn('renderAdminImages error:', e); }
+    try { this.renderAdminVideos(); } catch (e) { console.warn('renderAdminVideos error:', e); }
+    try { this.renderAdminShares(); } catch (e) { console.warn('renderAdminShares error:', e); }
   }
 
   isFolderCollapsed(folderId) {
@@ -1920,16 +1921,16 @@ class App {
         const isCollapsed = this.isFolderCollapsed(f.id);
         groupedHtml += `
           <div class="folder-group-row folder-videos-${f.id}" style="margin-bottom: 16px; border-left: 6px solid #34c759; background: var(--bg-card); border-radius: 12px; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
-            <div class="folder-group-header" style="padding: 10px 14px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; user-select: none;">
-              <span onclick="window.app.toggleFolderCollapse('${f.id}')" style="font-size: 13px; font-weight: bold; color: var(--text-primary); cursor: pointer; flex: 1;">
+            <div class="folder-group-header" data-folder-id="${f.id}" onclick="if(!event.target.closest('button') && !event.target.closest('input')) window.app.toggleFolderCollapse(this.dataset.folderId || '${f.id}')" style="padding: 10px 14px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; user-select: none; cursor: pointer;">
+              <span style="font-size: 13px; font-weight: bold; color: var(--text-primary); flex: 1;">
                 📁 ${this.escapeHtml(f.name)} (${folderVideos.length} 個影片)
               </span>
               <div style="display: flex; align-items: center; gap: 10px;">
                 <label style="font-size: 11px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none; margin: 0;">
                   <input type="checkbox" class="folder-select-all-checkbox-${f.id}" onchange="window.app.toggleSelectAllFolderVideos('${f.id}', this.checked)" style="width: 12px; height: 12px; margin: 0;"> 全選
                 </label>
-                <button onclick="window.app.deleteSelectedFolderVideos('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">🗑️ 刪除選取</button>
-                <button onclick="window.app.toggleFolderCollapse('${f.id}')" style="background: transparent; border: none; font-size: 12px; color: var(--accent-color); cursor: pointer; font-weight: bold;">${isCollapsed ? '展開' : '折疊'}</button>
+                <button type="button" onclick="window.app.deleteSelectedFolderVideos('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">🗑️ 刪除選取</button>
+                <button type="button" class="folder-toggle-btn" style="background: transparent; border: none; font-size: 12px; color: var(--accent-color); font-weight: bold;">${isCollapsed ? '展開' : '折疊'}</button>
               </div>
             </div>
             <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 12px; background: var(--bg-card);">
@@ -4019,6 +4020,7 @@ class App {
       <button class="share-copy-btn" onclick="window.app.openSingleItemCopyModal('teacherShares', '${item.id}')" style="background: rgba(0,122,255,0.1); color: var(--accent-color); border: 1px solid var(--accent-color);">📤 複製到其他班</button>
     ` : '';
 
+    let contentHTML = '';
     if (item.type === 'text') {
       contentHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
@@ -4821,12 +4823,12 @@ class App {
         const isCollapsed = this.isFolderCollapsed(f.id);
         groupedHtml += `
           <div class="folder-group-row" style="margin-bottom: 16px; border-left: 6px solid #ff9500; background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow: hidden; width: 100%;">
-            <div class="folder-group-header" onclick="window.app.toggleFolderCollapse('${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
+            <div class="folder-group-header" data-folder-id="${f.id}" onclick="window.app.toggleFolderCollapse(this.dataset.folderId || '${f.id}')" style="padding: 14px 20px; background: rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-weight: bold; color: var(--text-primary);">
               <span style="font-size: 15px; display: flex; align-items: center; gap: 6px;">
                 📁 ${this.escapeHtml(f.name)} 
                 <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${folderQuestions.length} 個提問)</span>
               </span>
-              <button class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
+              <button type="button" class="folder-toggle-btn" style="background: transparent; border: none; font-size: 13px; font-weight: bold; color: var(--accent-color); cursor: pointer; pointer-events: none;">${isCollapsed ? '▶ 展開' : '▼ 折疊'}</button>
             </div>
             <div class="folder-group-content" style="display: ${isCollapsed ? 'none' : 'block'}; padding: 16px 20px; background: var(--bg-card);">
               <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 10px; width: 100%;">
@@ -9900,7 +9902,7 @@ class App {
 
     if (!list || list.length === 0) {
       container.innerHTML = `
-        <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 24px 16px; background: var(--bg-card); border-radius: 8px; border: 1px dashed var(--border-color);">
+        <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 24px 16px; background: var(--bg-card); border-radius: 8px; border: 1px dashed var(--border-color);">
           目前尚未登記任何班級。請在上方輸入班級代碼（例如 301）進行登記開課！
         </div>
       `;
@@ -9931,23 +9933,23 @@ class App {
           <span style="font-weight: bold; font-size: 14px; color: var(--accent-color); background: rgba(0, 122, 255, 0.1); padding: 3px 8px; border-radius: 6px;">
             ${cls.code}
           </span>
-          <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+          <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
             ${cls.name !== cls.code ? cls.name : ''}
           </span>
-          ${isCurrent ? '<span style="font-size: 11px; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">目前所在</span>' : ''}
-          <span style="font-size: 11px; color: var(--text-secondary);">${dateStr}</span>
+          ${isCurrent ? '<span style="font-size: 14px; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">目前所在</span>' : ''}
+          <span style="font-size: 14px; color: var(--text-secondary);">${dateStr}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <button type="button" class="class-action-btn" onclick="window.app.adminSwitchToClass('${cls.code}')" style="font-size: 12px; padding: 4px 8px;" title="立即切換至此班級">
+          <button type="button" class="class-action-btn" onclick="window.app.adminSwitchToClass('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="立即切換至此班級">
             🚀 進入此班
           </button>
-          <button type="button" class="class-action-btn" onclick="window.app.adminOpenEditClassModal('${cls.code}')" style="font-size: 12px; padding: 4px 8px;" title="修改班級代碼與名稱">
+          <button type="button" class="class-action-btn" onclick="window.app.adminOpenEditClassModal('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="修改班級代碼與名稱">
             ✏️ 編輯
           </button>
-          <button type="button" class="class-action-btn btn-share-link" onclick="window.app.copyClassInviteLink('${cls.code}')" style="font-size: 12px; padding: 4px 8px;" title="複製學生邀請連結">
+          <button type="button" class="class-action-btn btn-share-link" onclick="window.app.copyClassInviteLink('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="複製學生邀請連結">
             📋 複製連結
           </button>
-          <button type="button" class="class-action-btn btn-exit-class" onclick="window.app.adminDeleteClass('${cls.code}', '${cls.name}')" style="font-size: 12px; padding: 4px 8px;" title="刪除班級與清除其佔用空間">
+          <button type="button" class="class-action-btn btn-exit-class" onclick="window.app.adminDeleteClass('${cls.code}', '${cls.name}')" style="font-size: 14px; padding: 4px 8px;" title="刪除班級與清除其佔用空間">
             🗑️ 刪除
           </button>
         </div>
@@ -10225,7 +10227,7 @@ class App {
 
     if (targets.length === 0) {
       container.innerHTML = `
-        <div style="font-size: 12px; color: var(--text-secondary); padding: 8px; width: 100%; text-align: center; background: var(--bg-card); border-radius: 6px; border: 1px dashed var(--border-color);">
+        <div style="font-size: 14px; color: var(--text-secondary); padding: 8px; width: 100%; text-align: center; background: var(--bg-card); border-radius: 6px; border: 1px dashed var(--border-color);">
           目前無其他可用目標班級。請先在上方「開課登記」建立更多班級！
         </div>
       `;
@@ -10235,8 +10237,8 @@ class App {
     container.innerHTML = targets.map(tgt => {
       const labelText = tgt.code ? `${tgt.code} ${tgt.name && tgt.name !== tgt.code ? `(${tgt.name})` : ''}` : tgt.name;
       return `
-        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; user-select: none;">
-          <input type="checkbox" class="copy-target-class-chk" value="${tgt.code}" checked style="cursor: pointer;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding: 6px 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; user-select: none;">
+          <input type="checkbox" class="copy-target-class-chk" value="${tgt.code}" style="cursor: pointer;">
           <span style="font-weight: bold; color: var(--text-primary);">${labelText}</span>
         </label>
       `;
@@ -10409,7 +10411,7 @@ class App {
           const labelText = tgt.code ? `${tgt.code} ${tgt.name && tgt.name !== tgt.code ? `(${tgt.name})` : ''}` : tgt.name;
           return `
             <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; user-select: none;">
-              <input type="checkbox" class="quick-copy-target-chk" value="${tgt.code}" checked style="cursor: pointer;">
+              <input type="checkbox" class="quick-copy-target-chk" value="${tgt.code}" style="cursor: pointer;">
               <span style="font-weight: bold; color: var(--text-primary);">${labelText}</span>
             </label>
           `;
@@ -10590,13 +10592,13 @@ class App {
 
     if (container) {
       if (targets.length === 0) {
-        container.innerHTML = `<div style="font-size: 12px; color: var(--text-secondary); padding: 8px;">目前無其他可用的目標班級。</div>`;
+        container.innerHTML = `<div style="font-size: 14px; color: var(--text-secondary); padding: 8px;">目前無其他可用的目標班級。</div>`;
       } else {
         container.innerHTML = targets.map(tgt => {
           const labelText = tgt.code ? `${tgt.code} ${tgt.name && tgt.name !== tgt.code ? `(${tgt.name})` : ''}` : tgt.name;
           return `
-            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; user-select: none;">
-              <input type="checkbox" class="single-item-copy-target-chk" value="${tgt.code}" checked style="cursor: pointer;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding: 6px 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; user-select: none;">
+              <input type="checkbox" class="single-item-copy-target-chk" value="${tgt.code}" style="cursor: pointer;">
               <span style="font-weight: bold; color: var(--text-primary);">${labelText}</span>
             </label>
           `;
