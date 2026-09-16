@@ -753,6 +753,227 @@ window.ClassRoomManager = {
     }
 
     return { set: targetSet, copiedCount };
+  },
+
+  // 複製單一項目到指定多個班級（提問、圖片、影片、教師分享、選擇題、影片出題）
+  async copySingleItem({ moduleType, itemId, targetCodes = [], sourceCode = '' }) {
+    const sCode = this.sanitizeClassCode(sourceCode);
+    const targets = (targetCodes || []).map(c => this.sanitizeClassCode(c));
+    if (!targets.length) throw new Error('請至少選擇一個目標班級！');
+
+    const srcPath = (p) => sCode ? `classes/${sCode}/${p}` : p;
+    const tgtPath = (tCode, p) => tCode ? `classes/${tCode}/${p}` : p;
+
+    const toArray = (v) => {
+      if (!v) return [];
+      if (Array.isArray(v)) return v.filter(Boolean);
+      return Object.values(v);
+    };
+
+    const toMap = (arr) => {
+      const obj = {};
+      arr.forEach((item, idx) => {
+        const id = item.id || `item_${idx}_${Date.now()}`;
+        obj[id] = item;
+      });
+      return obj;
+    };
+
+    let itemData = null;
+    let folderName = '';
+    let folderTypePath = '';
+
+    if (moduleType === 'questions') {
+      const snap = await rawRef(srcPath(`questions/${itemId}`)).once('value');
+      itemData = snap.val();
+      if (!itemData) {
+        const pSnap = await rawRef(srcPath('questions')).once('value');
+        const pVal = pSnap.val();
+        if (pVal) itemData = pVal[itemId];
+      }
+      if (!itemData && window.app && window.app.questions) {
+        itemData = window.app.questions.find(q => q && q.id === itemId);
+      }
+      folderTypePath = 'quiz/questionFolders';
+    } else if (moduleType === 'images') {
+      const snap = await rawRef(srcPath(`images/${itemId}`)).once('value');
+      itemData = snap.val();
+      if (!itemData) {
+        const pSnap = await rawRef(srcPath('images')).once('value');
+        const pVal = pSnap.val();
+        if (pVal) itemData = pVal[itemId];
+      }
+      if (!itemData && window.app && window.app.images) {
+        itemData = window.app.images.find(img => img && img.id === itemId);
+      }
+      folderTypePath = 'quiz/imageFolders';
+    } else if (moduleType === 'videos') {
+      const snap = await rawRef(srcPath(`videos/${itemId}`)).once('value');
+      itemData = snap.val();
+      if (!itemData) {
+        const pSnap = await rawRef(srcPath('videos')).once('value');
+        const pVal = pSnap.val();
+        if (pVal) itemData = pVal[itemId];
+      }
+      if (!itemData && window.app && window.app.videos) {
+        itemData = window.app.videos.find(v => v && v.id === itemId);
+      }
+      folderTypePath = 'quiz/videoFolders';
+    } else if (moduleType === 'teacherShares') {
+      const snap = await rawRef(srcPath(`teacherShares/${itemId}`)).once('value');
+      itemData = snap.val();
+      if (!itemData) {
+        const pSnap = await rawRef(srcPath('teacherShares')).once('value');
+        const pVal = pSnap.val();
+        if (pVal) itemData = pVal[itemId];
+      }
+      if (!itemData && window.app && window.app.shares) {
+        itemData = window.app.shares.find(s => s && s.id === itemId);
+      }
+      folderTypePath = 'quiz/teacherShareFolders';
+    } else if (moduleType === 'quiz') {
+      const snap = await rawRef(srcPath(`quiz/history/${itemId}`)).once('value');
+      itemData = snap.val();
+      if (!itemData) {
+        const pSnap = await rawRef(srcPath('quiz/history')).once('value');
+        const pVal = pSnap.val();
+        if (pVal) itemData = pVal[itemId];
+      }
+      if (!itemData && window.quiz && window.quiz.historyBank) {
+        itemData = window.quiz.historyBank[itemId];
+      }
+    } else if (moduleType === 'videoQuiz') {
+      const snap = await rawRef(srcPath(`quiz/videoQuizzes/${itemId}`)).once('value');
+      itemData = snap.val();
+      if (!itemData) {
+        const pSnap = await rawRef(srcPath('quiz/videoQuizzes')).once('value');
+        const pVal = pSnap.val();
+        if (pVal) itemData = pVal[itemId];
+      }
+      if (!itemData && window.videoQuiz && window.videoQuiz.quizzes) {
+        itemData = window.videoQuiz.quizzes.find(q => q && q.id === itemId);
+      }
+    }
+
+    if (!itemData) {
+      throw new Error(`找不到欲複製的項目（ID: ${itemId}）！`);
+    }
+
+    // 若有資料夾，取得來源資料夾名稱
+    if (itemData.folderId && folderTypePath) {
+      const fSnap = await rawRef(srcPath(`${folderTypePath}/${itemData.folderId}`)).once('value');
+      let fVal = fSnap.val();
+      if (!fVal) {
+        const pfSnap = await rawRef(srcPath(folderTypePath)).once('value');
+        const pfVal = pfSnap.val();
+        if (pfVal) fVal = pfVal[itemData.folderId];
+      }
+      if (fVal && fVal.name) {
+        folderName = fVal.name;
+      } else if (window.app) {
+        const folderList = moduleType === 'questions' ? window.app.questionFolders
+          : moduleType === 'images' ? window.app.imageFolders
+          : moduleType === 'videos' ? window.app.videoFolders
+          : window.app.shareFolders;
+        const found = (folderList || []).find(f => f && f.id === itemData.folderId);
+        if (found) folderName = found.name;
+      }
+    }
+
+    const copiedTargets = [];
+
+    for (const tCode of targets) {
+      if (sCode && sCode === tCode) continue;
+
+      let mappedFolderId = null;
+      if (folderName && folderTypePath) {
+        const tgtFoldersSnap = await rawRef(tgtPath(tCode, folderTypePath)).once('value');
+        const tgtFolders = toArray(tgtFoldersSnap.val());
+        const matchFolder = tgtFolders.find(f => f && f.name === folderName);
+        if (matchFolder) {
+          mappedFolderId = matchFolder.id;
+        } else {
+          mappedFolderId = `folder_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+          tgtFolders.push({
+            id: mappedFolderId,
+            name: folderName,
+            sortOrder: tgtFolders.length
+          });
+          await rawRef(tgtPath(tCode, folderTypePath)).set(toMap(tgtFolders));
+        }
+      }
+
+      const newId = `${moduleType.slice(0, 4)}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+
+      if (moduleType === 'questions') {
+        const newQuestion = {
+          ...itemData,
+          id: newId,
+          folderId: mappedFolderId || null,
+          timestamp: Date.now(),
+          reactions: { like: 0, love: 0, laugh: 0, wow: 0 },
+          comments: null
+        };
+        await rawRef(tgtPath(tCode, `questions/${newId}`)).set(newQuestion);
+      } else if (moduleType === 'images') {
+        const newImage = {
+          ...itemData,
+          id: newId,
+          folderId: mappedFolderId || null,
+          timestamp: Date.now(),
+          reactions: { like: 0, love: 0, laugh: 0, wow: 0 },
+          comments: null
+        };
+        await rawRef(tgtPath(tCode, `images/${newId}`)).set(newImage);
+      } else if (moduleType === 'videos') {
+        const newVideo = {
+          ...itemData,
+          id: newId,
+          folderId: mappedFolderId || null,
+          timestamp: Date.now(),
+          reactions: { like: 0, love: 0, laugh: 0, wow: 0 },
+          comments: null
+        };
+        await rawRef(tgtPath(tCode, `videos/${newId}`)).set(newVideo);
+      } else if (moduleType === 'teacherShares') {
+        const newShare = {
+          ...itemData,
+          id: newId,
+          folderId: mappedFolderId || null,
+          timestamp: Date.now(),
+          comments: null
+        };
+        await rawRef(tgtPath(tCode, `teacherShares/${newId}`)).set(newShare);
+      } else if (moduleType === 'quiz') {
+        const newQuizItem = {
+          ...itemData,
+          id: newId,
+          createdAt: Date.now()
+        };
+        await rawRef(tgtPath(tCode, `quiz/history/${newId}`)).set(newQuizItem);
+      } else if (moduleType === 'videoQuiz') {
+        const existQuizzesSnap = await rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).once('value');
+        const existQuizzes = toArray(existQuizzesSnap.val());
+        const cleanedQuiz = {
+          ...itemData,
+          id: newId,
+          createdAt: Date.now()
+        };
+        delete cleanedQuiz.answers;
+        delete cleanedQuiz.studentScores;
+        const matchIdx = existQuizzes.findIndex(q => q && q.title === cleanedQuiz.title);
+        if (matchIdx >= 0) {
+          existQuizzes[matchIdx] = cleanedQuiz;
+        } else {
+          existQuizzes.unshift(cleanedQuiz);
+        }
+        await rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).set(toMap(existQuizzes));
+      }
+
+      copiedTargets.push(tCode);
+    }
+
+    return { item: itemData, copiedTargets };
   }
 };
 

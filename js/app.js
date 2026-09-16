@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.2.0';
+    this.APP_VERSION = '3.2.1';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -1888,7 +1888,10 @@ class App {
       <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); position: relative; margin-bottom: 12px;">
         <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 4px;">
           <input type="checkbox" class="admin-select-video" value="${vid.id}" onchange="window.app.updateBatchSelectCount()" style="width: 14px; height: 14px; margin: 0; cursor: pointer;">
-          <button onclick="window.app.broadcastVideo('${vid.id}')" style="background: var(--accent-color); color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;" title="廣播播放此影片到學生端螢幕">📢 廣播</button>
+          <div style="display: flex; gap: 4px;">
+            <button onclick="window.app.openSingleItemCopyModal('videos', '${vid.id}')" style="background: var(--bg-card); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;" title="複製此影片至其他班級">📤 複製</button>
+            <button onclick="window.app.broadcastVideo('${vid.id}')" style="background: var(--accent-color); color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;" title="廣播播放此影片到學生端螢幕">📢 廣播</button>
+          </div>
         </div>
         <div class="preview-item video-item" style="cursor: pointer; margin: 0; position: relative;">
           <img src="${getThumbnailUrl(vid)}" onclick="window.app.showVideoModal('${vid.id}')" alt="${vid.filename}" style="width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border-color);">
@@ -2316,8 +2319,9 @@ class App {
       userContainer.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
           <span style="font-size: 15px; font-weight: bold; color: var(--accent-color);">👤 提問者：${this.escapeHtml(authorName)}</span>
-          ${isOwner ? `
+          ${(isOwner || this.isAdmin) ? `
             <div style="display: inline-flex; gap: 6px;">
+              <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('questions', '${q.id}')" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; cursor: pointer; color: var(--accent-color); border-color: var(--accent-color);">📤 複製到其他班</button>
               <button type="button" class="preset-btn" onclick="window.app.editQuestionPrompt('${q.id}')" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; cursor: pointer;">✏️ 修改問題</button>
               <button type="button" class="preset-btn" onclick="window.app.deleteMyQuestion('${q.id}')" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; cursor: pointer; color: var(--danger-color); border-color: var(--danger-color);">🗑️ 刪除問題</button>
             </div>
@@ -2394,8 +2398,9 @@ class App {
       imgUserEl.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
           <span style="font-size: 13px; color: #fff;">👤 上傳者：${this.escapeHtml(img.user || '同學')}</span>
-          ${isOwnerImg ? `
+          ${(isOwnerImg || this.isAdmin) ? `
             <div style="display: inline-flex; gap: 6px;">
+              <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('images', '${img.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(0,122,255,0.3); color: #fff; border: 1px solid var(--accent-color);">📤 複製到其他班</button>
               <button type="button" class="preset-btn" onclick="window.app.editImagePrompt('${img.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3);">✏️ 修改檔名</button>
               <button type="button" class="preset-btn" onclick="window.app.deleteMyImage('${img.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; color: #ff453a; border-color: #ff453a; background: transparent;">🗑️ 刪除圖片</button>
             </div>
@@ -2499,8 +2504,9 @@ class App {
       vidUserEl.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
           <span style="font-size: 13px; color: #fff;">👤 分享者：${this.escapeHtml(vid.user || '同學')}</span>
-          ${isOwnerVid ? `
+          ${(isOwnerVid || this.isAdmin) ? `
             <div style="display: inline-flex; gap: 6px;">
+              <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('videos', '${vid.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(0,122,255,0.3); color: #fff; border: 1px solid var(--accent-color);">📤 複製到其他班</button>
               <button type="button" class="preset-btn" onclick="window.app.editVideoPrompt('${vid.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3);">✏️ 修改標題</button>
               <button type="button" class="preset-btn" onclick="window.app.deleteMyVideo('${vid.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; color: #ff453a; border-color: #ff453a; background: transparent;">🗑️ 刪除影片</button>
             </div>
@@ -2792,8 +2798,9 @@ class App {
             </div>
             <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
               <span class="time">${this.formatTime(q.timestamp)}</span>
-              ${isOwner ? `
+              ${(isOwner || this.isAdmin) ? `
                 <div class="item-owner-actions" onclick="event.stopPropagation();" style="display: inline-flex; gap: 4px;">
+                  <button class="icon-action-btn" onclick="event.stopPropagation(); window.app.openSingleItemCopyModal('questions', '${q.id}');" title="複製此提問至其他班級" style="background: transparent; border: none; cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px; color: var(--accent-color);">📤</button>
                   <button class="icon-action-btn" onclick="event.stopPropagation(); window.app.editQuestionPrompt('${q.id}');" title="修改提問" style="background: transparent; border: none; cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px;">✏️</button>
                   <button class="icon-action-btn" onclick="event.stopPropagation(); window.app.deleteMyQuestion('${q.id}');" title="刪除提問" style="background: transparent; border: none; cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px; color: var(--danger-color);">🗑️</button>
                 </div>
@@ -4008,21 +4015,31 @@ class App {
   buildShareItemHTML(item) {
     const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const commentCount = (this.allCommentCounts && this.allCommentCounts.shares && this.allCommentCounts.shares[item.id]) || (item.comments ? (Array.isArray(item.comments) ? item.comments.length : Object.keys(item.comments).length) : 0);
-    let contentHTML = '';
-    
+    const adminCopyBtn = this.isAdmin ? `
+      <button class="share-copy-btn" onclick="window.app.openSingleItemCopyModal('teacherShares', '${item.id}')" style="background: rgba(0,122,255,0.1); color: var(--accent-color); border: 1px solid var(--accent-color);">📤 複製到其他班</button>
+    ` : '';
+
     if (item.type === 'text') {
       contentHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
           <div class="share-item-content-text" style="flex: 1; text-align: left; min-height: 80px; white-space: pre-wrap; word-break: break-word; line-height: 1.5; padding: 4px 0;">${this.linkify ? this.linkify(item.content) : this.escapeHtml(item.content)}</div>
-          <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+          <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
+            ${adminCopyBtn}
             <button class="share-copy-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)">📋 複製文字</button>
           </div>
         </div>
       `;
     } else if (item.type === 'link') {
       contentHTML = `
-        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 60px; text-align: center;">
-          <a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%; min-height: 80px;">
+          <div style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">
+            <a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>
+          </div>
+          ${this.isAdmin ? `
+            <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+              ${adminCopyBtn}
+            </div>
+          ` : ''}
         </div>
       `;
     } else if (item.type === 'image') {
@@ -4031,7 +4048,8 @@ class App {
           <div style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 140px;">
             <img src="${item.content}" class="share-item-content-image" onclick="window.app.zoomShareImage('${item.content}')" alt="Shared Image">
           </div>
-          <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+          <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
+            ${adminCopyBtn}
             <button class="share-copy-btn" onclick="window.app.copyShareImage('${item.content}')">📋 複製圖片</button>
           </div>
         </div>
@@ -4260,6 +4278,7 @@ class App {
             <div id="share-preview-${item.id}" style="word-break: break-all;">${preview}</div>
           </div>
           <div style="display: flex; gap: 4px; flex-shrink: 0;">
+            <button class="preset-btn" onclick="window.app.openSingleItemCopyModal('teacherShares', '${item.id}')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;" title="複製此分享至其他班級">📤 複製</button>
             <button class="preset-btn" onclick="window.app.adminEditShare('${item.id}')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">✏️ 編輯</button>
             <button class="preset-btn" onclick="window.app.deleteShareItem('${item.id}')" style="background: var(--danger-color); color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
           </div>
@@ -4548,8 +4567,9 @@ class App {
           <div style="font-size: 11px; color: var(--text-secondary); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
             👤 ${this.escapeHtml(authorName)}
           </div>
-          ${isOwner ? `
+          ${(isOwner || this.isAdmin) ? `
             <div style="display: flex; gap: 6px;" onclick="event.stopPropagation();">
+              <button class="preset-btn" onclick="event.stopPropagation(); window.app.openSingleItemCopyModal('images', '${img.id}');" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer; color: var(--accent-color); border-color: var(--accent-color);">📤 複製</button>
               <button class="preset-btn" onclick="event.stopPropagation(); window.app.editImagePrompt('${img.id}');" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer;">✏️ 檔名</button>
               <button class="preset-btn" onclick="event.stopPropagation(); window.app.deleteMyImage('${img.id}');" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer; color: var(--danger-color); border-color: var(--danger-color);">🗑️ 刪除</button>
             </div>
@@ -4777,6 +4797,7 @@ class App {
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: 12px;">
+            <button onclick="window.app.openSingleItemCopyModal('questions', '${q.id}')" title="複製此提問至其他班級" style="width:28px;height:28px;font-size:13px;background:transparent;border:1px solid var(--accent-color);border-radius:6px;cursor:pointer;color:var(--accent-color);">📤</button>
             <button onclick="adminEditQuestion('${q.id}')" title="編輯問題" style="width:28px;height:28px;font-size:13px;background:transparent;border:1px solid var(--accent-color);border-radius:6px;cursor:pointer;color:var(--accent-color);">✏️</button>
             <button class="remove-option-btn" onclick="deleteQuestion('${q.id}')" title="刪除問題" style="width: 28px; height: 28px; font-size: 13px;">✕</button>
           </div>
@@ -4879,6 +4900,16 @@ class App {
       <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg-card); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); position: relative; margin-bottom: 12px;">
         <div class="preview-item" style="position: relative; margin: 0;">
           <img src="${img.url}" alt="${img.filename}">
+          <button onclick="window.app.openSingleItemCopyModal('images', '${img.id}')" title="複製此圖片至其他班級" style="
+            position: absolute; top: -6px; left: -6px;
+            width: 24px; height: 24px; border: none;
+            background: var(--accent-color); color: white;
+            border-radius: 50%; cursor: pointer;
+            font-size: 11px; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 5;
+          ">📤</button>
           <button onclick="deleteImage('${img.id}')" title="刪除圖片" style="
             position: absolute; top: -6px; right: -6px;
             width: 24px; height: 24px; border: none;
@@ -10435,6 +10466,201 @@ class App {
       if (btn) {
         btn.disabled = false;
         btn.textContent = '🚀 確認發送';
+      }
+    }
+  }
+
+  // ===== 單一項目跨班級複製彈窗 (提問、圖片、影片、教師分享、選擇題、影片出題) =====
+  openSingleItemCopyModal(moduleType, itemId) {
+    if (!moduleType || !itemId) return;
+    const modal = document.getElementById('singleItemCopyModal');
+    if (!modal) return;
+
+    const typeInput = document.getElementById('singleItemCopyType');
+    const idInput = document.getElementById('singleItemCopyId');
+    const titleModal = document.getElementById('singleItemCopyModalTitle');
+    const badgeEl = document.getElementById('singleItemCopyBadge');
+    const titleEl = document.getElementById('singleItemCopyTitle');
+    const folderInfoEl = document.getElementById('singleItemCopyFolderInfo');
+    const folderNameEl = document.getElementById('singleItemCopyFolderName');
+    const container = document.getElementById('singleItemCopyTargetClassesList');
+
+    if (typeInput) typeInput.value = moduleType;
+    if (idInput) idInput.value = itemId;
+
+    let typeName = '';
+    let badgeText = '';
+    let previewTitle = '';
+    let folderName = '';
+
+    if (moduleType === 'questions') {
+      typeName = '提問';
+      badgeText = '❓ 提問';
+      const q = (this.questions || []).find(item => item && item.id === itemId);
+      if (q) {
+        previewTitle = q.text || '（空白提問內容）';
+        if (q.folderId) {
+          const f = (this.questionFolders || []).find(folder => folder && folder.id === q.folderId);
+          if (f) folderName = f.name;
+        }
+      }
+    } else if (moduleType === 'images') {
+      typeName = '圖片';
+      badgeText = '🖼️ 圖片';
+      const img = (this.images || []).find(item => item && item.id === itemId);
+      if (img) {
+        previewTitle = img.filename || '圖片檔案';
+        if (img.folderId) {
+          const f = (this.imageFolders || []).find(folder => folder && folder.id === img.folderId);
+          if (f) folderName = f.name;
+        }
+      }
+    } else if (moduleType === 'videos') {
+      typeName = '影片';
+      badgeText = '🎬 影片';
+      const vid = (this.videos || []).find(item => item && item.id === itemId);
+      if (vid) {
+        previewTitle = vid.filename || vid.url || '影片教材';
+        if (vid.folderId) {
+          const f = (this.videoFolders || []).find(folder => folder && folder.id === vid.folderId);
+          if (f) folderName = f.name;
+        }
+      }
+    } else if (moduleType === 'teacherShares') {
+      typeName = '教師分享';
+      badgeText = '📢 教師分享';
+      const share = (this.shares || []).find(item => item && item.id === itemId);
+      if (share) {
+        previewTitle = share.type === 'link' ? (share.title || share.content) : (share.content || '教師分享內容');
+        if (share.folderId) {
+          const f = (this.shareFolders || []).find(folder => folder && folder.id === share.folderId);
+          if (f) folderName = f.name;
+        }
+      }
+    } else if (moduleType === 'quiz') {
+      typeName = '選擇題';
+      badgeText = '📝 選擇題';
+      let q = null;
+      if (window.quiz && window.quiz.historyBank) {
+        q = window.quiz.historyBank[itemId];
+      }
+      if (q) {
+        previewTitle = `【${q.quizType === 'multiple' ? '複選' : '單選'}】${q.question || ''}（${(q.options || []).join(' | ')}）`;
+      }
+    } else if (moduleType === 'videoQuiz') {
+      typeName = '影片測驗';
+      badgeText = '🎥 影片測驗';
+      let vq = null;
+      if (window.videoQuiz && window.videoQuiz.quizzes) {
+        vq = window.videoQuiz.quizzes.find(q => q && q.id === itemId);
+      }
+      if (vq) {
+        const qCount = (vq.questions || []).length;
+        previewTitle = `🎬 ${vq.title || '影片測驗'}（包含 ${qCount} 道題目）`;
+      }
+    }
+
+    if (titleModal) {
+      titleModal.innerHTML = `<span>📤 複製【${typeName}】到其他班級</span>`;
+    }
+    if (badgeEl) badgeEl.textContent = badgeText;
+    if (titleEl) titleEl.textContent = previewTitle || itemId;
+
+    if (folderInfoEl && folderNameEl) {
+      if (folderName) {
+        folderNameEl.textContent = folderName;
+        folderInfoEl.style.display = 'block';
+      } else {
+        folderInfoEl.style.display = 'none';
+      }
+    }
+
+    // 渲染目標班級列表（排除當前班級）
+    const list = this.adminRegisteredClasses || [];
+    const currentCode = window.currentClassCode || '';
+    const targets = [];
+    if (currentCode !== '') {
+      targets.push({ code: '', name: '免代碼公開課堂（公共大廳）' });
+    }
+    list.forEach(cls => {
+      if (cls.code !== currentCode) {
+        targets.push(cls);
+      }
+    });
+
+    if (container) {
+      if (targets.length === 0) {
+        container.innerHTML = `<div style="font-size: 12px; color: var(--text-secondary); padding: 8px;">目前無其他可用的目標班級。</div>`;
+      } else {
+        container.innerHTML = targets.map(tgt => {
+          const labelText = tgt.code ? `${tgt.code} ${tgt.name && tgt.name !== tgt.code ? `(${tgt.name})` : ''}` : tgt.name;
+          return `
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; user-select: none;">
+              <input type="checkbox" class="single-item-copy-target-chk" value="${tgt.code}" checked style="cursor: pointer;">
+              <span style="font-weight: bold; color: var(--text-primary);">${labelText}</span>
+            </label>
+          `;
+        }).join('');
+      }
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  closeSingleItemCopyModal() {
+    const modal = document.getElementById('singleItemCopyModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  toggleSelectAllSingleItemTargets(forcedState = undefined) {
+    const chks = Array.from(document.querySelectorAll('.single-item-copy-target-chk'));
+    const anyUnchecked = chks.some(c => !c.checked);
+    const targetState = forcedState !== undefined ? forcedState : anyUnchecked;
+    chks.forEach(c => { c.checked = targetState; });
+  }
+
+  async confirmSingleItemCopy() {
+    const typeInput = document.getElementById('singleItemCopyType');
+    const idInput = document.getElementById('singleItemCopyId');
+    const moduleType = typeInput ? typeInput.value : '';
+    const itemId = idInput ? idInput.value : '';
+    if (!moduleType || !itemId) return;
+
+    const targetChks = Array.from(document.querySelectorAll('.single-item-copy-target-chk:checked'));
+    const targetCodes = targetChks.map(c => c.value);
+    if (targetCodes.length === 0) {
+      this.showNotification('提示', '請至少勾選一個目標班級！');
+      return;
+    }
+
+    const btn = document.getElementById('btnConfirmSingleItemCopy');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ 正在複製...';
+    }
+
+    try {
+      if (!window.ClassRoomManager || typeof window.ClassRoomManager.copySingleItem !== 'function') {
+        throw new Error('班級管理器尚未就緒，請重整頁面');
+      }
+
+      const res = await window.ClassRoomManager.copySingleItem({
+        moduleType,
+        itemId,
+        targetCodes,
+        sourceCode: window.currentClassCode || ''
+      });
+
+      this.closeSingleItemCopyModal();
+      const tgtNames = res.copiedTargets.map(c => c ? `【${c}】` : '【免代碼公開課堂】').join('、');
+      this.showNotification('🎉 複製成功', `該項目已成功複製同步至 ${tgtNames}！該班級可立即在相同單元查看與使用。`);
+    } catch (err) {
+      console.error('confirmSingleItemCopy error:', err);
+      this.showNotification('複製失敗', err.message || '複製項目時發生錯誤');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🚀 確認複製';
       }
     }
   }

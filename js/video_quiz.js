@@ -2404,6 +2404,7 @@
                   <button class="action-btn" onclick="window.videoQuiz.toggleQuizEnabled('${quiz.id}')" style="background: ${isEnabled ? 'rgba(52,199,89,0.12)' : 'rgba(142,142,147,0.15)'}; color: ${isEnabled ? '#28a745' : 'var(--text-muted)'}; border: 1px solid ${isEnabled ? 'rgba(52,199,89,0.3)' : 'var(--border-color)'}; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="${isEnabled ? '點擊設為隱藏（前台學生選單不顯示此影片）' : '點擊設為開放（前台學生可見並能測驗此影片）'}">
                     ${isEnabled ? '🟢 前台開放測驗' : '⚪ 前台隱藏 (不顯示)'}
                   </button>
+                  <button class="action-btn" onclick="window.app && window.app.openSingleItemCopyModal('videoQuiz', '${quiz.id}')" style="background: var(--bg-card); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="複製此部影片測驗至其他班級">📤 複製到其他班</button>
                   <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal('${quiz.id}')" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">✏️ 編輯題目</button>
                   <button class="action-btn" onclick="window.videoQuiz.deleteQuiz('${quiz.id}')" style="background: var(--danger-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">🗑️ 刪除</button>
                 </div>
