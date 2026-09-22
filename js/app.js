@@ -18,7 +18,8 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.2.9';
+    this.APP_VERSION = '3.3.0';
+    this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6566,17 +6567,22 @@ class App {
         return;
       }
     } else if (gameType === 'songQuiz') {
-      const tagSelect = document.getElementById('focusSongQuizTag');
-      const songQuizTag = (tagSelect && tagSelect.value) || 'all';
+      const selectedTags = this.getSelectedSongQuizTags();
+      const allTags = window.focusQB ? window.focusQB.getAllTags('songQuiz') : [];
+      if (!selectedTags || selectedTags.length === 0) {
+        this.showNotification('請先勾選歌單標籤', '請至少勾選一個出題歌單標籤（例如古典音樂、台灣五年級等）！');
+        return;
+      }
       const countSelect = document.getElementById('focusSongQuizCount');
       const countStr = (countSelect && countSelect.value) || '5';
       const rawPool = window.focusQB ? window.focusQB.getPool('songQuiz') : (window.DEFAULT_SONG_QUIZ_POOL || []);
       let pool = rawPool.map((item) => window.focusQB ? window.focusQB.normalizeItem('songQuiz', item) : item);
-      if (songQuizTag !== 'all') {
-        pool = pool.filter(item => item.tag === songQuizTag);
+      // 若非全選所有標籤，過濾符合勾選之歌曲
+      if (selectedTags.length < allTags.length) {
+        pool = pool.filter(item => selectedTags.includes(item.tag));
       }
       if (pool.length === 0) {
-        this.showNotification('錯誤', `標籤【${songQuizTag}】中目前無題目，請至題庫管理中心新增題目或選擇其他標籤！`);
+        this.showNotification('錯誤', `所勾選的標籤【${selectedTags.join('、')}】中目前無題目，請至題庫管理中心新增題目或勾選其他標籤！`);
         return;
       }
       const durationSelect = document.getElementById('focusSongQuizDuration');
@@ -6628,7 +6634,14 @@ class App {
       reverseMode: gameType === 'memoryPosition' ? memoryReverse : false,
       sequence: memorySequence,
       questions: selectedQuestions,
-      selectedTag: gameType === 'songQuiz' ? ((document.getElementById('focusSongQuizTag')?.value) || 'all') : null,
+      selectedTag: gameType === 'songQuiz' ? (
+        (() => {
+          const sel = this.getSelectedSongQuizTags();
+          const allT = window.focusQB ? window.focusQB.getAllTags('songQuiz') : [];
+          if (!sel || sel.length === 0 || sel.length === allT.length) return 'all';
+          return sel.join('、');
+        })()
+      ) : null,
       songDuration: gameType === 'songQuiz' ? (parseInt(document.getElementById('focusSongQuizDuration')?.value) || 60) : null,
       classicsQuestionCount: gameType === 'classicsQuiz' ? classicsQuestionCount : null,
       countdownSeconds: countdownSecs,
@@ -6717,19 +6730,112 @@ class App {
     }
   }
 
-  // 更新後台聽歌搶答的出題歌單標籤選單
-  updateSongQuizAdminTagSelect() {
+  // 取得目前後台勾選的出題歌單標籤清單
+  getSelectedSongQuizTags() {
+    const cbs = document.querySelectorAll('.focus-song-quiz-tag-cb');
+    if (cbs.length > 0) {
+      const selected = [];
+      cbs.forEach(cb => {
+        if (cb.checked) selected.push(cb.value);
+      });
+      this.selectedSongQuizTags = selected;
+      return selected;
+    }
+    if (Array.isArray(this.selectedSongQuizTags) && this.selectedSongQuizTags.length > 0) {
+      return this.selectedSongQuizTags;
+    }
+    const allTags = window.focusQB ? window.focusQB.getAllTags('songQuiz') : [];
+    return allTags;
+  }
+
+  // 歌單標籤核選方塊變更事件
+  onSongQuizTagCheckboxChange() {
+    this.getSelectedSongQuizTags();
+    this.updateSongQuizTagSummary();
+  }
+
+  // 一鍵全選或清空歌單標籤核選方塊
+  setAllSongQuizTags(selectAll) {
+    const cbs = document.querySelectorAll('.focus-song-quiz-tag-cb');
+    const selected = [];
+    cbs.forEach(cb => {
+      cb.checked = !!selectAll;
+      if (cb.checked) selected.push(cb.value);
+    });
+    this.selectedSongQuizTags = selected;
+    this.updateSongQuizTagSummary();
+  }
+
+  // 更新已選標籤之歌曲總數統計提示
+  updateSongQuizTagSummary() {
+    const summaryEl = document.getElementById('focusSongQuizTagSummary');
+    if (!summaryEl || !window.focusQB) return;
+    const pool = window.focusQB.getPool('songQuiz');
+    const allTags = window.focusQB.getAllTags('songQuiz');
+    const selected = this.getSelectedSongQuizTags();
+
+    if (selected.length === 0) {
+      summaryEl.innerHTML = `<span style="color: #ef4444; font-weight: bold;">⚠️ 未勾選任何標籤，請至少勾選一個出題歌單！</span>`;
+    } else if (selected.length === allTags.length) {
+      summaryEl.innerHTML = `<span style="color: var(--accent-color); font-weight: bold;">✅ 已全選所有標籤 (共 ${allTags.length} 個分類，${pool.length} 首歌曲可供隨機抽題)</span>`;
+    } else {
+      const filteredCount = pool.filter(raw => selected.includes(window.focusQB.normalizeItem('songQuiz', raw).tag)).length;
+      summaryEl.innerHTML = `<span style="color: var(--accent-color); font-weight: bold;">✅ 已勾選 ${selected.length} 個標籤：${selected.join('、')} (共 ${filteredCount} 首歌曲可供隨機抽題)</span>`;
+    }
+
     const select = document.getElementById('focusSongQuizTag');
-    if (!select || !window.focusQB) return;
+    if (select) {
+      if (selected.length === allTags.length) {
+        select.value = 'all';
+      } else if (selected.length === 1) {
+        select.value = selected[0];
+      } else {
+        select.value = selected.join(',');
+      }
+    }
+  }
+
+  // 更新後台聽歌搶答的出題歌單標籤選單與核選方塊
+  updateSongQuizAdminTagSelect() {
+    const container = document.getElementById('focusSongQuizTagContainer');
+    const select = document.getElementById('focusSongQuizTag');
+    if (!window.focusQB) return;
     const tags = window.focusQB.getAllTags('songQuiz');
     const pool = window.focusQB.getPool('songQuiz');
-    const currentVal = select.value || 'all';
-    let html = `<option value="all" ${currentVal === 'all' ? 'selected' : ''}>🏷️ 全部歌單 (隨機抽題，共 ${pool.length} 首)</option>`;
-    tags.forEach(tag => {
-      const count = pool.filter(raw => window.focusQB.normalizeItem('songQuiz', raw).tag === tag).length;
-      html += `<option value="${tag}" ${currentVal === tag ? 'selected' : ''}>🏷️ ${tag} (${count} 首)</option>`;
-    });
-    select.innerHTML = html;
+
+    // 取得當前已勾選的標籤（若初次進入則預設全選所有標籤）
+    let currentSelected = this.selectedSongQuizTags;
+    if (!currentSelected || !Array.isArray(currentSelected) || currentSelected.length === 0) {
+      currentSelected = [...tags];
+      this.selectedSongQuizTags = currentSelected;
+    }
+
+    if (container) {
+      let html = '';
+      tags.forEach(tag => {
+        const count = pool.filter(raw => window.focusQB.normalizeItem('songQuiz', raw).tag === tag).length;
+        const isChecked = currentSelected.includes(tag);
+        html += `
+          <label style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; user-select: none; transition: background 0.15s, border-color 0.15s;">
+            <input type="checkbox" class="focus-song-quiz-tag-cb" value="${tag}" ${isChecked ? 'checked' : ''} onchange="window.app && window.app.onSongQuizTagCheckboxChange()">
+            <span style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🏷️ ${tag}</span>
+            <span style="font-size: 11px; color: var(--text-secondary); margin-left: auto;">(${count}首)</span>
+          </label>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    if (select) {
+      let selectHtml = `<option value="all">🏷️ 全部歌單 (隨機抽題，共 ${pool.length} 首)</option>`;
+      tags.forEach(tag => {
+        const count = pool.filter(raw => window.focusQB.normalizeItem('songQuiz', raw).tag === tag).length;
+        selectHtml += `<option value="${tag}">🏷️ ${tag} (${count} 首)</option>`;
+      });
+      select.innerHTML = selectHtml;
+    }
+
+    this.updateSongQuizTagSummary();
   }
 
   // OpenCode 修改：倒數畫面依專注力遊戲類型顯示不同說明文字

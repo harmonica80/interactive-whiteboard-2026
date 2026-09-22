@@ -1,5 +1,21 @@
 # System Log
-## 2026-09-22 - ver 3.2.9 聽歌搶答設定與音訊優化：每局題數新增「1題」與「2題」、玩法預設「全班同步搶答」、全班搶答僅老師端播放音樂 (學生端靜音)
+## 2026-09-22 - ver 3.3.0 聽歌搶答出題歌單標籤核選功能：支援多選、單選、全選與清空，動態統計可抽題數
+- 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **歌單標籤由下拉選單改為核選方塊面板 (`index.html`)**：
+     - 將原先單一選擇的下拉選單升級為獨立的「🏷️ 出題歌單標籤（可核選單一或多個類別）」核選面板（`#focusSongQuizTagContainer`）。
+     - 提供一鍵快捷控制按鈕「全選」與「清空」，並具備即時統計摘要提示（`#focusSongQuizTagSummary`），清晰顯示目前勾選了幾個標籤、共計多少首歌曲可供隨機抽題。
+     - 整合每局題數與每題試聽長度為清晰的二欄排版，版面整潔且易於觸控點選操作。
+  2. **多標籤抽題篩選與防呆校驗 (`js/app.js`)**：
+     - 新增 `getSelectedSongQuizTags()`、`onSongQuizTagCheckboxChange()`、`setAllSongQuizTags(selectAll)` 與 `updateSongQuizTagSummary()` 方法。
+     - 預設全選所有標籤（112 首歌曲），老師可自由勾選單一分類（如僅古典音樂 20 首）、勾選任意多個分類（如五年級 + 六年級共 40 首）、或全選。
+     - 在 `startFocusGame()` 中嚴格判定勾選狀態：若老師取消勾選所有標籤，發起遊戲時會主動跳出防呆提示「請先勾選歌單標籤，至少勾選一個出題歌單」，避免空題目局發生。
+     - Firebase 同步紀錄所選標籤資訊（全選記錄為 `'all'`，單選記錄單一標籤名稱，多選記錄如 `'古典音樂、台灣五年級'`），學生端與大螢幕題目標籤皆精準對應個別題目的原屬分類。
+  3. **版本號嚴格遞增至 `ver 3.3.0`**：
+     - 依規範由 `ver 3.2.9` 嚴格遞增 `+0.01` 升至 **`ver 3.3.0`**。
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=330`）、`app.js`（`this.APP_VERSION = '3.3.0'`），並通過 50+ 項 `scripts/verify-song-quiz.mjs` 與 72+ 項 `scripts/verify-video-quiz.mjs` 自動化檢查。
+
+---
 - 影響檔案：`index.html`, `js/song_quiz.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：
   1. **每局題數新增 1 題與 2 題選項 (`index.html`)**：
