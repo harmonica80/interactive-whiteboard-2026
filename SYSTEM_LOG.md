@@ -1,5 +1,32 @@
 # System Log
-## 2026-09-22 - ver 3.2.4 專注力測驗新增「聽歌搶答 (歌曲辨曲)」單元、YouTube防作弊音訊播放、標籤歌單分組管理與自選標籤出題系統
+## 2026-09-22 - ver 3.2.5 專注力測驗「聽歌搶答」全面修復 YouTube 歌曲播放（更新 32 首真實有效且開放嵌入 ID）與支援個人自主挑戰 vs 全班即時搶答雙玩法模式
+- 影響檔案：`js/song_quiz_pool.js`, `js/song_quiz.js`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **全面修復 YouTube 歌曲播放失效問題**：
+     - 診斷出原預設題庫中多數歌曲 YouTube ID 存在錯誤（例如《紅蓮華》誤填為失效 ID `CwkzK-F0VW0`；《小幸運》、《刻在我心底的名字》等有英文字母大小寫與字符偏差）。
+     - 透過 YouTube 官方 API 檢驗，全面更新題庫全部 32 首歌曲之真實有效、官方/熱門且允許公開嵌入（Embeddable）的 YouTube ID（例如《紅蓮華》更新為 LiSA 官方破 1.4 億點閱之 THE FIRST TAKE 版本 `MpYy6wwqxoo`、《小幸運》更新為官方 MV `HDMQuMJ4MSk`、《刻在我心底的名字》更新為官方 MV `m78lJuzftcc`、《稻香》更新為官方 MV `sHD_z90ZKV0` 等，全部 32 首 100% 驗證通過）。
+     - 改進音訊播放容器架構與層級，避免瀏覽器背景阻擋 Autoplay。
+  2. **支援雙軌玩法模式（個人自主挑戰 vs 全班同步搶答）**：
+     - **後台玩法設定 (`index.html`)**：在聽歌搶答出題區新增「🎮 玩法模式」選項：
+       - `🎧 個人自主挑戰`：每位同學按自己步調聽歌、作答四選一、使用歌手/刪去法提示、計時與個人結算。
+       - `⚡ 全班同步搶答`：全班大螢幕與學生端同步播放歌曲，任一學生按下「⚡ 按我搶答！」即全班暫停音訊，支援答錯續播與跳題。
+  3. **全班即時同步搶答狀態機 (`js/song_quiz.js` & `js/app.js`)**：
+     - **Firebase Transaction 原子性搶答**：歌曲播放時學生端中央出現脈衝動畫按鈕「⚡ 按我搶答！」，第一位按下者透過 Transaction 奪得答題權，音樂立即為全班即刻暫停，並顯示「🔔 [XXX 同學] 搶答成功！正在作答中...」。
+     - **限時作答機制**：搶答者享有 10 秒倒數四選一作答介面。
+     - **答對流程**：搶答者答對即獲得搶答積分 (+10 分)，全班揭曉正解與歌手，老師按「下一題」。
+     - **答錯與老師主控機制 (完全契合使用者需求)**：
+       - 搶答者答錯時，該生記錄為本題出局（本題不能再搶），音樂維持暫停。
+       - 老師端主控台即時呈現兩大核心操作按鈕：
+         1. **`▶️ 繼續播放音樂 (開放其餘同學繼續搶答)`**：歌曲從暫停處接續播放，其他未出局同學搶答按鈕重新點亮，可繼續聽歌搶答！
+         2. **`⏭️ 跳至下一題`**：公佈正解並直接進入下一首題目。
+     - **大螢幕支援**：大螢幕與老師端 Overlay 可直接作為現場主持大螢幕，並在底端提供即時積分看板與最終冠亞季軍頒獎典禮。
+  4. **版本號升級**：
+     - 依規範嚴格遞增 `+0.01`，由 `ver 3.2.4` 升級至 **`ver 3.2.5`**。
+     - 更新 `package.json`、`index.html` 標籤與腳本引用快取（`?v=325`）、`app.js`（`this.APP_VERSION = '3.2.5'`）以及測試驗證腳本。
+
+---
+
+
 - 影響檔案：`js/song_quiz_pool.js`, `js/song_quiz.js`, `js/focus_question_bank.js`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`, `tests/focus-question-bank.spec.mjs`。
 - 修改項目：
   1. **專注力測驗新增「🎵 聽歌搶答 (歌曲聽音辨曲)」單元 (`songQuiz`)**：
