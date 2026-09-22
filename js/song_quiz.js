@@ -247,6 +247,11 @@
     const state = this.songQuizState;
     if (!question) return;
 
+    // 全班同步搶答模式下：只在老師端播放音樂，學生端不要播放
+    if (this.focusGame && this.focusGame.playMode === 'buzzer' && !this.isAdmin) {
+      return;
+    }
+
     this.stopSongQuizAudio();
 
     const duration = Math.max(5, Math.min(120, parseInt(question.duration) || 60));
@@ -709,7 +714,7 @@
               <button type="button" onclick="window.app.pressBuzzerButton()" style="width:100%; max-width:400px; height:110px; border-radius:55px; border:none; background:linear-gradient(135deg, #ff3b30 0%, #ff9500 100%); color:white; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 8px 24px rgba(255,59,48,0.4); animation: pulseBuzzer 1.5s infinite; transition:transform 0.1s;">
                 ⚡ 按我搶答！
               </button>
-              <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">按下後音樂將立即全班暫停，由您獲得 10 秒作答權！</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">請聆聽老師端播放音樂，按下搶答後老師端音樂將立即暫停，由您獲得 10 秒作答權！</div>
             </div>
           `;
         }
@@ -740,7 +745,7 @@
                 🔔 【${escapeForSong(buzzedUser?.name || '同學')}】搶答成功！
               </div>
               <div style="font-size:14px; color:var(--text-secondary); margin-top:8px;">
-                正在作答中，歌曲已為全班暫停，請稍候...
+                正在作答中，老師端歌曲已暫停，請稍候...
               </div>
             </div>
           `;
@@ -753,7 +758,7 @@
               ❌ 【${escapeForSong(buzzedUser?.name || '同學')}】答錯了！
             </div>
             <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">
-              音樂維持暫停。等待老師指示【繼續播放讓大家再搶】或【跳至下一題】...
+              老師端音樂維持暫停。等待老師指示【繼續播放讓大家再搶】或【跳至下一題】...
             </div>
           </div>
         `;
@@ -786,7 +791,7 @@
               🎵 等待老師開始播放音樂
             </div>
             <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">
-              老師按下開始後，請仔細聆聽歌曲並準備按搶答！
+              老師端按下開始播放後，請仔細聆聽音樂並準備按搶答！
             </div>
           </div>
         `;
@@ -885,6 +890,13 @@
 
   // 處理全班音訊同步播放 / 暫停
   App.prototype.handleBuzzerAudioSync = function handleBuzzerAudioSync(question, round) {
+    // 依需求：全班搶答時，只需要在老師端播放音樂，學生端不要播放
+    if (!this.isAdmin) {
+      this.lastBuzzerAudioKey = null;
+      this.stopSongQuizAudio();
+      return;
+    }
+
     const roundStatus = round.status || 'waiting';
     const action = round.audioAction || 'stop';
 

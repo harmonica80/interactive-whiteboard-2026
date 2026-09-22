@@ -1,4 +1,25 @@
 # System Log
+## 2026-09-22 - ver 3.2.9 聽歌搶答設定與音訊優化：每局題數新增「1題」與「2題」、玩法預設「全班同步搶答」、全班搶答僅老師端播放音樂 (學生端靜音)
+- 影響檔案：`index.html`, `js/song_quiz.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **每局題數新增 1 題與 2 題選項 (`index.html`)**：
+     - 在後台聽歌搶答出題區之「每局題數」下拉選單（`#focusSongQuizCount`）最上方新增：
+       - `<option value="1">1 題（極速體驗）</option>`
+       - `<option value="2">2 題（快速熱身）</option>`
+     - 方便老師進行課堂快速熱身、單曲破冰體驗或短時間小測試。
+  2. **玩法模式預設改為「全班同步搶答」(`index.html` & `js/app.js`)**：
+     - 將聽歌搶答後台之玩法單選按鈕預設勾選狀態（`checked`）從「個人自主挑戰」轉移至「⚡ **全班同步搶答 (播歌同步搶答，暫停/續播/跳題)**」，老師一進入後台即可直接發起全班即時搶答。
+     - 在 `app.js` 的 `startFocusGame` 中，將 `songQuizPlayMode` 未選取時之降級 fallback 值亦由 `'self'` 同步修正為 `'buzzer'`。
+  3. **全班搶答模式音訊專屬化：僅老師端播放音樂，學生端不播放 (`js/song_quiz.js`)**：
+     - 解決實體教室痛點：全班幾十位學生的裝置若同時播放歌曲會造成嚴重的延遲混音與雜音。
+     - 在 `handleBuzzerAudioSync` 及 `playSongQuizAudio` 核心音訊播放入口加入非管理員阻擋，全班同步搶答時僅由老師端（主控喇叭/投影機）單一聲源清晰播放音樂，學生端自動靜音並清除任何背景播放。
+     - 同時優化學生端畫面提示文案為「請聆聽老師端播放音樂，按下搶答後老師端音樂將立即暫停，由您獲得 10 秒作答權！」。
+  4. **版本號嚴格遞增至 `ver 3.2.9`**：
+     - 依規範由 `ver 3.2.8` 嚴格遞增 `+0.01` 升至 **`ver 3.2.9`**。
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=329`）、`app.js`（`this.APP_VERSION = '3.2.9'`），更新並通過 50+ 項 `scripts/verify-song-quiz.mjs` 與 72+ 項 `scripts/verify-video-quiz.mjs` 自動化檢查。
+
+---
+
 ## 2026-09-22 - ver 3.2.8 聽歌搶答升級：修復頒獎典禮關閉按鈕無作用，大幅擴充題庫至 112 首（古典音樂、台灣五年級、六年級、七年級、八年級各 20 首 100% 通過 YouTube 驗證）
 - 影響檔案：`js/song_quiz.js`, `js/app.js`, `js/song_quiz_pool.js`, `js/focus_question_bank.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：

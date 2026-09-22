@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.2.8</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.2.9</span>
         </p>
       </div>
       <div class="top-actions">
@@ -1161,11 +1161,11 @@
                   <label style="font-size: 13px; color: var(--text-primary); font-weight: bold; display: block; margin-bottom: 6px;">🎮 玩法模式：</label>
                   <div style="display: flex; gap: 14px; flex-wrap: wrap;">
                     <label style="font-size: 13px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                      <input type="radio" name="focusSongQuizPlayMode" value="self" checked>
+                      <input type="radio" name="focusSongQuizPlayMode" value="self">
                       <span>🎧 <strong>個人自主挑戰</strong> (各自按步調作答計時)</span>
                     </label>
                     <label style="font-size: 13px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                      <input type="radio" name="focusSongQuizPlayMode" value="buzzer">
+                      <input type="radio" name="focusSongQuizPlayMode" value="buzzer" checked>
                       <span>⚡ <strong>全班同步搶答</strong> (播歌同步搶答，暫停/續播/跳題)</span>
                     </label>
                   </div>
@@ -1180,6 +1180,8 @@
                   <div>
                     <label style="font-size: 13px; color: var(--text-secondary); font-weight: bold; display: block; margin-bottom: 4px;">每局題數：</label>
                     <select id="focusSongQuizCount" class="question-input" style="width: 100%; box-sizing: border-box; margin: 0; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 7px; border-radius: 8px;">
+                      <option value="1">1 題（極速體驗）</option>
+                      <option value="2">2 題（快速熱身）</option>
                       <option value="3">3 題（快節奏）</option>
                       <option value="5" selected>5 題（標準局）</option>
                       <option value="10">10 題（大挑戰）</option>
@@ -1628,17 +1630,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=328"></script>
+  <script src="js/firebase-config.js?v=329"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=328"></script>
-  <script src="js/focus_question_bank.js?v=328"></script>
+  <script src="js/song_quiz_pool.js?v=329"></script>
+  <script src="js/focus_question_bank.js?v=329"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=328"></script>
-  <script src="js/app.js?v=328"></script>
+  <script src="js/quiz.js?v=329"></script>
+  <script src="js/app.js?v=329"></script>
   <script src="js/classics_quiz.js?v=306"></script>
-  <script src="js/song_quiz.js?v=328"></script>
-  <script src="js/video_quiz.js?v=328"></script>
+  <script src="js/song_quiz.js?v=329"></script>
+  <script src="js/video_quiz.js?v=329"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

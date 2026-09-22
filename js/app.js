@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.2.8';
+    this.APP_VERSION = '3.2.9';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6604,7 +6604,7 @@ class App {
     }
 
     const songQuizPlayModeInput = document.querySelector('input[name="focusSongQuizPlayMode"]:checked');
-    const songQuizPlayMode = (songQuizPlayModeInput && songQuizPlayModeInput.value) || 'self';
+    const songQuizPlayMode = (songQuizPlayModeInput && songQuizPlayModeInput.value) || 'buzzer';
     
     db.ref('quiz/focusGame').set({
       status: 'countdown',
