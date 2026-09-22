@@ -1,5 +1,5 @@
 /**
- * 專注力測驗：聽歌搶答 (歌曲聽音辨曲) 核心運作模組 (ver 3.2.5)
+ * 專注力測驗：聽歌搶答 (歌曲聽音辨曲) 核心運作模組 (ver 3.2.7)
  * 支援：
  * 1. 個人自主挑戰模式 (模式 A: 每位同學各自聽歌作答、計時與結算)
  * 2. 全班同步搶答模式 (模式 B: 全班同步播放，搶答暫停音訊，答錯可由老師決定繼續播放或跳至下一題)
@@ -47,11 +47,13 @@
       return;
     }
 
+    const numHeader = document.getElementById('focusNumberGridHeader');
     const helpBtn = document.getElementById('focusHelpBtn');
     const helpInfo = document.getElementById('focusHelpInfo');
     const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (numHeader) numHeader.style.display = 'none';
     if (helpBtn) helpBtn.style.display = 'none';
-    if (helpInfo) helpInfo.textContent = '';
+    if (helpInfo) { helpInfo.textContent = ''; helpInfo.style.display = 'none'; }
     if (targetLabel) targetLabel.style.display = 'none';
 
     grid.style.aspectRatio = 'auto';
@@ -247,7 +249,7 @@
 
     this.stopSongQuizAudio();
 
-    const duration = Math.max(5, Math.min(30, parseInt(question.duration) || 15));
+    const duration = Math.max(5, Math.min(120, parseInt(question.duration) || 60));
     const startTime = typeof customStartTime === 'number' ? customStartTime : Math.max(0, parseInt(question.startTime) || 0);
     const youtubeId = question.youtubeId || (this.parseYoutubeUrl ? this.parseYoutubeUrl(question.youtubeUrl).videoId : 'bv_cEeDlop0');
 
@@ -272,11 +274,21 @@
           }
         }
       }, 1000);
+    } else {
+      // 全班同步搶答模式：若無人搶答，於播放長度到達後自動停止音訊
+      if (this.buzzerAudioTimeout) clearTimeout(this.buzzerAudioTimeout);
+      this.buzzerAudioTimeout = setTimeout(() => {
+        this.stopSongQuizAudio();
+      }, duration * 1000);
     }
   };
 
   // 停止歌曲播放
   App.prototype.stopSongQuizAudio = function stopSongQuizAudio() {
+    if (this.buzzerAudioTimeout) {
+      clearTimeout(this.buzzerAudioTimeout);
+      this.buzzerAudioTimeout = null;
+    }
     const state = this.songQuizState;
     if (state) {
       state.isPlayingAudio = false;
@@ -498,11 +510,13 @@
     const grid = document.getElementById('focusGameGrid');
     if (!grid) return;
 
+    const numHeader = document.getElementById('focusNumberGridHeader');
     const helpBtn = document.getElementById('focusHelpBtn');
     const helpInfo = document.getElementById('focusHelpInfo');
     const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (numHeader) numHeader.style.display = 'none';
     if (helpBtn) helpBtn.style.display = 'none';
-    if (helpInfo) helpInfo.textContent = '';
+    if (helpInfo) { helpInfo.textContent = ''; helpInfo.style.display = 'none'; }
     if (targetLabel) targetLabel.style.display = 'none';
 
     grid.style.aspectRatio = 'auto';
@@ -524,6 +538,31 @@
   App.prototype.renderBuzzerSongQuizUI = function renderBuzzerSongQuizUI(game) {
     const grid = document.getElementById('focusGameGrid');
     if (!grid || !game) return;
+
+    this.focusGame = game;
+
+    // 確保非數字遊戲元件一律隱藏，包含求救提示按鈕與頂部目標/秒數資訊
+    const numHeader = document.getElementById('focusNumberGridHeader');
+    const helpBtn = document.getElementById('focusHelpBtn');
+    const helpInfo = document.getElementById('focusHelpInfo');
+    const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
+    if (numHeader) numHeader.style.display = 'none';
+    if (helpBtn) helpBtn.style.display = 'none';
+    if (helpInfo) { helpInfo.textContent = ''; helpInfo.style.display = 'none'; }
+    if (targetLabel) targetLabel.style.display = 'none';
+
+    grid.style.aspectRatio = 'auto';
+    grid.style.display = 'flex';
+    grid.style.flexDirection = 'column';
+    grid.style.gap = '14px';
+    grid.style.width = '100%';
+    grid.style.maxWidth = '600px';
+    grid.style.minHeight = 'auto';
+
+    if (this.focusTimerInterval) {
+      clearInterval(this.focusTimerInterval);
+      this.focusTimerInterval = null;
+    }
 
     const questions = Array.isArray(game.questions) ? game.questions : [];
     const qIndex = Number(game.currentQuestionIndex || 0);
@@ -587,105 +626,171 @@
       </div>
     `;
 
-    // 核心互動搶答按鈕 / 作答選項區
+    // 核心互動搶答按鈕 / 作答選項區 (老師端與學生端分離)
     let interactiveAreaHtml = '';
 
-    if (roundStatus === 'playing') {
-      // 播放中：顯示巨大搶答按鈕
-      if (amIEliminated) {
+    if (this.isAdmin) {
+      // 👑 老師端視角：不顯示搶答按鈕，僅呈現課堂狀態，並由下方專屬主控台控制
+      if (roundStatus === 'playing') {
         interactiveAreaHtml = `
-          <div style="padding:24px; text-align:center; background:rgba(255,59,48,0.08); border:2px dashed #ff3b30; border-radius:14px;">
-            <div style="font-size:18px; font-weight:bold; color:#b42318;">❌ 您本題已回答錯誤</div>
-            <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">請等待其他同學搶答，或等待老師切換至下一題！</div>
+          <div style="padding:24px; text-align:center; background:rgba(0,122,255,0.06); border:1.5px dashed var(--accent-color); border-radius:14px;">
+            <div style="font-size:18px; font-weight:900; color:var(--accent-color);">🎧 歌曲播放中，全班搶答進行中...</div>
+            <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">等待同學按下搶答。若有同學搶到，音樂將自動暫停！</div>
           </div>
         `;
-      } else {
-        interactiveAreaHtml = `
-          <div style="text-align:center; padding:10px 0;">
-            <button type="button" onclick="window.app.pressBuzzerButton()" style="width:100%; max-width:400px; height:110px; border-radius:55px; border:none; background:linear-gradient(135deg, #ff3b30 0%, #ff9500 100%); color:white; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 8px 24px rgba(255,59,48,0.4); animation: pulseBuzzer 1.5s infinite; transition:transform 0.1s;">
-              ⚡ 按我搶答！
-            </button>
-            <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">按下後音樂將立即全班暫停，由您獲得 10 秒作答權！</div>
-          </div>
-        `;
-      }
-    } else if (roundStatus === 'buzzed') {
-      // 有人搶到了：搶到者作答，其餘同學等待
-      if (isMeBuzzed) {
-        const optionsButtons = (question.options || []).map((opt, optIdx) => `
-          <button type="button" onclick="window.app.submitBuzzerAnswer(${optIdx})" style="width:100%; text-align:left; padding:13px 16px; border-radius:10px; border:2px solid var(--accent-color); background:var(--bg-card); color:var(--text-primary); font-size:16px; font-weight:bold; cursor:pointer; transition:all 0.15s;">
-            ${String.fromCharCode(65 + optIdx)}．${escapeForSong(opt)}
-          </button>
-        `).join('');
-
-        interactiveAreaHtml = `
-          <div style="padding:16px; border-radius:12px; background:rgba(0,122,255,0.08); border:2px solid var(--accent-color);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:16px; font-weight:900; color:var(--accent-color);">⚡ 您搶到了！請選擇答案：</span>
-              <span id="buzzerAnswerTimer" style="background:#ff3b30; color:white; padding:3px 10px; border-radius:12px; font-size:13px; font-weight:900;">限時 10 秒</span>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-              ${optionsButtons}
-            </div>
-          </div>
-        `;
-      } else {
+      } else if (roundStatus === 'buzzed') {
         interactiveAreaHtml = `
           <div style="padding:24px; text-align:center; background:rgba(0,122,255,0.06); border:1.5px solid var(--accent-color); border-radius:14px;">
             <div style="font-size:19px; font-weight:900; color:var(--accent-color);">
               🔔 【${escapeForSong(buzzedUser?.name || '同學')}】搶答成功！
             </div>
             <div style="font-size:14px; color:var(--text-secondary); margin-top:8px;">
-              正在作答中，歌曲已為全班暫停，請稍候...
+              該同學正在作答中（限時 10 秒），音樂已全班暫停...
+            </div>
+          </div>
+        `;
+      } else if (roundStatus === 'answered_wrong') {
+        interactiveAreaHtml = `
+          <div style="padding:18px; text-align:center; background:rgba(255,59,48,0.1); border:1.5px solid #ff3b30; border-radius:12px;">
+            <div style="font-size:18px; font-weight:900; color:#b42318;">
+              ❌ 【${escapeForSong(buzzedUser?.name || '同學')}】答錯了！
+            </div>
+            <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">
+              音樂目前維持暫停。請由下方主控台點選【繼續播放 (開放其餘同學繼續搶)】或【跳至下一題】。
+            </div>
+          </div>
+        `;
+      } else if (roundStatus === 'answered_correct' || roundStatus === 'revealed') {
+        interactiveAreaHtml = `
+          <div style="padding:18px; border-radius:12px; background:rgba(52,199,89,0.12); border:1.5px solid #34c759; text-align:center;">
+            <div style="font-size:19px; font-weight:900; color:#167a31;">
+              ${roundStatus === 'answered_correct' ? `🎉 恭喜【${escapeForSong(buzzedUser?.name || '同學')}】答對！` : '💡 本題正解揭曉'}
+            </div>
+            <div style="font-size:16px; font-weight:bold; color:var(--text-primary); margin-top:8px;">
+              正解：🎵【${escapeForSong(question.title)}】
+            </div>
+            <div style="font-size:14px; color:var(--accent-color); font-weight:bold; margin-top:4px;">
+              🎤 演唱者：${escapeForSong(question.artist || '未知')}
+            </div>
+            ${question.clue ? `<div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">💡 提示：${escapeForSong(question.clue)}</div>` : ''}
+            <div style="margin-top:10px;">
+              <a href="${escapeForSong(question.youtubeUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:6px; background:#ff0000; color:white; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none;">
+                ▶️ 在 YouTube 聆聽完整歌曲
+              </a>
+            </div>
+          </div>
+        `;
+      } else {
+        interactiveAreaHtml = `
+          <div style="padding:24px; text-align:center; background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px;">
+            <div style="font-size:16px; font-weight:bold; color:var(--text-primary);">
+              🎵 等待老師開始播放音樂
+            </div>
+            <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">
+              請點擊下方主控台【▶️ 開始播放音樂】開放全班同學搶答。
             </div>
           </div>
         `;
       }
-    } else if (roundStatus === 'answered_wrong') {
-      // 答錯：維持暫停，等待老師指令
-      interactiveAreaHtml = `
-        <div style="padding:18px; text-align:center; background:rgba(255,59,48,0.1); border:1.5px solid #ff3b30; border-radius:12px;">
-          <div style="font-size:18px; font-weight:900; color:#b42318;">
-            ❌ 【${escapeForSong(buzzedUser?.name || '同學')}】答錯了！
-          </div>
-          <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">
-            音樂維持暫停。等待老師指示【繼續播放讓大家再搶】或【跳至下一題】...
-          </div>
-        </div>
-      `;
-    } else if (roundStatus === 'answered_correct' || roundStatus === 'revealed') {
-      // 答對或公佈答案
-      interactiveAreaHtml = `
-        <div style="padding:18px; border-radius:12px; background:rgba(52,199,89,0.12); border:1.5px solid #34c759; text-align:center;">
-          <div style="font-size:19px; font-weight:900; color:#167a31;">
-            ${roundStatus === 'answered_correct' ? `🎉 恭喜【${escapeForSong(buzzedUser?.name || '同學')}】答對！` : '💡 本題正解揭曉'}
-          </div>
-          <div style="font-size:16px; font-weight:bold; color:var(--text-primary); margin-top:8px;">
-            正解：🎵【${escapeForSong(question.title)}】
-          </div>
-          <div style="font-size:14px; color:var(--accent-color); font-weight:bold; margin-top:4px;">
-            🎤 演唱者：${escapeForSong(question.artist || '未知')}
-          </div>
-          ${question.clue ? `<div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">💡 提示：${escapeForSong(question.clue)}</div>` : ''}
-          <div style="margin-top:10px;">
-            <a href="${escapeForSong(question.youtubeUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:6px; background:#ff0000; color:white; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none;">
-              ▶️ 在 YouTube 聆聽完整歌曲
-            </a>
-          </div>
-        </div>
-      `;
     } else {
-      // waiting 狀態
-      interactiveAreaHtml = `
-        <div style="padding:24px; text-align:center; background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px;">
-          <div style="font-size:16px; font-weight:bold; color:var(--text-primary);">
-            🎵 等待老師開始播放音樂
+      // 🎒 學生端視角：提供巨大搶答按鈕與搶中四選一按鈕
+      if (roundStatus === 'playing') {
+        // 播放中：顯示巨大搶答按鈕
+        if (amIEliminated) {
+          interactiveAreaHtml = `
+            <div style="padding:24px; text-align:center; background:rgba(255,59,48,0.08); border:2px dashed #ff3b30; border-radius:14px;">
+              <div style="font-size:18px; font-weight:bold; color:#b42318;">❌ 您本題已回答錯誤</div>
+              <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">請等待其他同學搶答，或等待老師切換至下一題！</div>
+            </div>
+          `;
+        } else {
+          interactiveAreaHtml = `
+            <div style="text-align:center; padding:10px 0;">
+              <button type="button" onclick="window.app.pressBuzzerButton()" style="width:100%; max-width:400px; height:110px; border-radius:55px; border:none; background:linear-gradient(135deg, #ff3b30 0%, #ff9500 100%); color:white; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 8px 24px rgba(255,59,48,0.4); animation: pulseBuzzer 1.5s infinite; transition:transform 0.1s;">
+                ⚡ 按我搶答！
+              </button>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">按下後音樂將立即全班暫停，由您獲得 10 秒作答權！</div>
+            </div>
+          `;
+        }
+      } else if (roundStatus === 'buzzed') {
+        // 有人搶到了：搶到者作答，其餘同學等待
+        if (isMeBuzzed) {
+          const optionsButtons = (question.options || []).map((opt, optIdx) => `
+            <button type="button" onclick="window.app.submitBuzzerAnswer(${optIdx})" style="width:100%; text-align:left; padding:13px 16px; border-radius:10px; border:2px solid var(--accent-color); background:var(--bg-card); color:var(--text-primary); font-size:16px; font-weight:bold; cursor:pointer; transition:all 0.15s;">
+              ${String.fromCharCode(65 + optIdx)}．${escapeForSong(opt)}
+            </button>
+          `).join('');
+
+          interactiveAreaHtml = `
+            <div style="padding:16px; border-radius:12px; background:rgba(0,122,255,0.08); border:2px solid var(--accent-color);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:16px; font-weight:900; color:var(--accent-color);">⚡ 您搶到了！請選擇答案：</span>
+                <span id="buzzerAnswerTimer" style="background:#ff3b30; color:white; padding:3px 10px; border-radius:12px; font-size:13px; font-weight:900;">限時 10 秒</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                ${optionsButtons}
+              </div>
+            </div>
+          `;
+        } else {
+          interactiveAreaHtml = `
+            <div style="padding:24px; text-align:center; background:rgba(0,122,255,0.06); border:1.5px solid var(--accent-color); border-radius:14px;">
+              <div style="font-size:19px; font-weight:900; color:var(--accent-color);">
+                🔔 【${escapeForSong(buzzedUser?.name || '同學')}】搶答成功！
+              </div>
+              <div style="font-size:14px; color:var(--text-secondary); margin-top:8px;">
+                正在作答中，歌曲已為全班暫停，請稍候...
+              </div>
+            </div>
+          `;
+        }
+      } else if (roundStatus === 'answered_wrong') {
+        // 答錯：維持暫停，等待老師指令
+        interactiveAreaHtml = `
+          <div style="padding:18px; text-align:center; background:rgba(255,59,48,0.1); border:1.5px solid #ff3b30; border-radius:12px;">
+            <div style="font-size:18px; font-weight:900; color:#b42318;">
+              ❌ 【${escapeForSong(buzzedUser?.name || '同學')}】答錯了！
+            </div>
+            <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">
+              音樂維持暫停。等待老師指示【繼續播放讓大家再搶】或【跳至下一題】...
+            </div>
           </div>
-          <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">
-            老師按下開始後，請仔細聆聽歌曲並準備按搶答！
+        `;
+      } else if (roundStatus === 'answered_correct' || roundStatus === 'revealed') {
+        // 答對或公佈答案
+        interactiveAreaHtml = `
+          <div style="padding:18px; border-radius:12px; background:rgba(52,199,89,0.12); border:1.5px solid #34c759; text-align:center;">
+            <div style="font-size:19px; font-weight:900; color:#167a31;">
+              ${roundStatus === 'answered_correct' ? `🎉 恭喜【${escapeForSong(buzzedUser?.name || '同學')}】答對！` : '💡 本題正解揭曉'}
+            </div>
+            <div style="font-size:16px; font-weight:bold; color:var(--text-primary); margin-top:8px;">
+              正解：🎵【${escapeForSong(question.title)}】
+            </div>
+            <div style="font-size:14px; color:var(--accent-color); font-weight:bold; margin-top:4px;">
+              🎤 演唱者：${escapeForSong(question.artist || '未知')}
+            </div>
+            ${question.clue ? `<div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">💡 提示：${escapeForSong(question.clue)}</div>` : ''}
+            <div style="margin-top:10px;">
+              <a href="${escapeForSong(question.youtubeUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:6px; background:#ff0000; color:white; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none;">
+                ▶️ 在 YouTube 聆聽完整歌曲
+              </a>
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        // waiting 狀態
+        interactiveAreaHtml = `
+          <div style="padding:24px; text-align:center; background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px;">
+            <div style="font-size:16px; font-weight:bold; color:var(--text-primary);">
+              🎵 等待老師開始播放音樂
+            </div>
+            <div style="font-size:13px; color:var(--text-secondary); margin-top:6px;">
+              老師按下開始後，請仔細聆聽歌曲並準備按搶答！
+            </div>
+          </div>
+        `;
+      }
     }
 
     // 老師專屬控制面板 (管理員在畫面底部具備主控權)
@@ -800,6 +905,7 @@
 
   // 學生按下「⚡ 按我搶答！」
   App.prototype.pressBuzzerButton = function pressBuzzerButton() {
+    if (this.isAdmin) return;
     const game = this.focusGame;
     if (!game || game.playMode !== 'buzzer') return;
 

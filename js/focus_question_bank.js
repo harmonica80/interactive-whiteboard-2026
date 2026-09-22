@@ -311,7 +311,7 @@
           if (match && match[1]) youtubeId = match[1];
         }
         const startTime = Math.max(0, parseInt(item.startTime) || 0);
-        const duration = Math.max(5, Math.min(30, parseInt(item.duration) || 15));
+        const duration = Math.max(5, Math.min(120, parseInt(item.duration) || 60));
         let options = Array.isArray(item.options) ? item.options.filter(Boolean) : [];
         if (options.length === 0 && title) {
           options = [title];
@@ -487,7 +487,7 @@
             item.artist || '',
             item.youtubeUrl || '',
             item.startTime ?? 0,
-            item.duration ?? 15,
+            item.duration ?? 60,
             distractors[0] || '',
             distractors[1] || '',
             distractors[2] || '',
@@ -531,11 +531,11 @@
         content += '"森林","木 木 木 木 木","大片生長樹木的廣大土地"\r\n';
       } else if (type === 'songQuiz') {
         content += '標籤分組,歌曲名稱(正解),演唱者,YouTube網址,開始播放秒數,播放秒數,干擾選項1,干擾選項2,干擾選項3,提示說明\r\n';
-        content += '"懷舊經典","月亮代表我的心","鄧麗君","https://www.youtube.com/watch?v=bv_cEeDlop0",30,15,"甜蜜蜜","夜來香","何日君再來","1977年華語傳世經典情歌"\r\n';
-        content += '"熱門流行","晴天","周杰倫","https://www.youtube.com/watch?v=DYptgVvkVLQ",28,15,"不能說的秘密","七里香","簡單愛","收錄於2003年葉惠美專輯"\r\n';
-        content += '"動漫神曲","殘酷天使的行動綱領","高橋洋子","https://www.youtube.com/watch?v=o6wtDPVkKqI",10,15,"魂之輪迴","直到世界的盡頭","前前前世","新世紀福音戰士經典主題曲"\r\n';
-        content += '"童謠兒歌","拔蘿蔔","傳統童謠","https://www.youtube.com/watch?v=G3Y1GZ8m2-o",0,15,"兩隻老虎","泥娃娃","小星星","經典幼兒同樂童謠"\r\n';
-        content += '"影視金曲","那些年","胡夏","https://www.youtube.com/watch?v=KqjgLbKZ1h0",35,15,"小幸運","刻在我心底的名字","修煉愛情","那些年我們一起追的女孩電影主題曲"\r\n';
+        content += '"懷舊經典","月亮代表我的心","鄧麗君","https://www.youtube.com/watch?v=bv_cEeDlop0",30,60,"甜蜜蜜","夜來香","何日君再來","1977年華語傳世經典情歌"\r\n';
+        content += '"熱門流行","晴天","周杰倫","https://www.youtube.com/watch?v=DYptgVvkVLQ",28,60,"不能說的秘密","七里香","簡單愛","收錄於2003年葉惠美專輯"\r\n';
+        content += '"動漫神曲","殘酷天使的行動綱領","高橋洋子","https://www.youtube.com/watch?v=o6wtDPVkKqI",10,60,"魂之輪迴","直到世界的盡頭","前前前世","新世紀福音戰士經典主題曲"\r\n';
+        content += '"童謠兒歌","拔蘿蔔","傳統童謠","https://www.youtube.com/watch?v=rwth9dQS1oM",0,60,"兩隻老虎","泥娃娃","小星星","經典幼兒同樂童謠"\r\n';
+        content += '"影視金曲","那些年","胡夏","https://www.youtube.com/watch?v=KqjgLbKZ1h0",35,60,"小幸運","刻在我心底的名字","修煉愛情","那些年我們一起追的女孩電影主題曲"\r\n';
       }
       return content;
     }
@@ -692,7 +692,7 @@
           const artist = cols[2] || '';
           const youtubeUrl = cols[3] || '';
           const startTime = parseInt(cols[4]) || 0;
-          const duration = parseInt(cols[5]) || 15;
+          const duration = parseInt(cols[5]) || 60;
           const d1 = cols[6] || '';
           const d2 = cols[7] || '';
           const d3 = cols[8] || '';
@@ -1280,8 +1280,8 @@
               <input type="number" min="0" id="qb_input_startTime" value="${startTime}" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
             <div>
-              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">試聽播放秒數 (建議 10~20 秒)</label>
-              <input type="number" min="5" max="30" id="qb_input_duration" value="${duration}" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">試聽播放秒數 (建議 30~60 秒，最長120秒)</label>
+              <input type="number" min="5" max="120" id="qb_input_duration" value="${duration}" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
             </div>
           </div>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
@@ -1322,37 +1322,33 @@
     }
 
     // 儲存表單資料
-    handleSaveForm() {
+    saveQuestionEditForm() {
       const type = this.currentActiveType;
-      let questionData = {};
-
       try {
+        let questionData = null;
+
         if (type === 'classicsQuiz') {
           const title = document.getElementById('qb_input_title')?.value.trim();
-          const quote = document.getElementById('qb_input_quote')?.value.trim();
-          const prompt = document.getElementById('qb_input_prompt')?.value.trim() || `「${quote}」出自？`;
           const author = document.getElementById('qb_input_author')?.value.trim() || '';
           const dynasty = document.getElementById('qb_input_dynasty')?.value.trim() || '';
-          const answer = document.getElementById('qb_input_answer')?.value.trim();
-          const fullPoem = document.getElementById('qb_input_fullPoem')?.value.trim() || '';
+          const quote = document.getElementById('qb_input_quote')?.value.trim();
+          const prompt = document.getElementById('qb_input_prompt')?.value.trim() || (quote ? `「${quote}」出自？` : '');
           const opt0 = document.getElementById('qb_input_opt0')?.value.trim();
           const opt1 = document.getElementById('qb_input_opt1')?.value.trim();
           const opt2 = document.getElementById('qb_input_opt2')?.value.trim();
           const opt3 = document.getElementById('qb_input_opt3')?.value.trim();
+          const fullPoem = document.getElementById('qb_input_fullPoem')?.value.trim() || '';
 
-          if (!title && !quote) throw new Error('請輸入作品名稱或名句！');
-          if (!answer) throw new Error('請輸入標準解答！');
-          
+          if (!title) throw new Error('請輸入作品名或典故名！');
+          if (!quote) throw new Error('請輸入名句引言！');
+
           const options = [opt0, opt1, opt2, opt3].filter(Boolean);
           if (options.length < 4) throw new Error('請完整填寫 4 個選項！');
-          if (!options.includes(answer)) throw new Error('標準解答必須與 4 個選項中的其中一個完全相符！');
 
+          const answer = options[0];
           questionData = {
-            id: `custom_q_${Date.now()}`,
-            category: author ? '唐詩宋詞' : '成語典故',
-            type: author ? 'poetry' : 'idiom',
-            title: title || quote,
-            work: title || quote,
+            title,
+            work: title,
             author,
             dynasty,
             quote,
@@ -1362,10 +1358,13 @@
             correctOption: answer,
             fullPoem: fullPoem || quote,
             explanation: fullPoem || `正解為：${answer}`,
+            category: author ? '唐詩宋詞' : '成語典故',
+            type: author ? 'poetry' : 'idiom',
+            id: `custom_q_${Date.now()}`,
             links: {
-              sinoreading: `https://www.google.com/search?q=${encodeURIComponent((title || quote) + ' 中讀網')}`,
-              wikisource: `https://zh.wikisource.org/wiki/${encodeURIComponent(title || quote)}`,
-              wikipedia: `https://zh.wikipedia.org/wiki/${encodeURIComponent(title || quote)}`
+              sinoreading: `https://www.google.com/search?q=${encodeURIComponent(title + ' 中讀網')}`,
+              wikisource: `https://zh.wikisource.org/wiki/${encodeURIComponent(title)}`,
+              wikipedia: `https://zh.wikipedia.org/wiki/${encodeURIComponent(title)}`
             }
           };
         } else if (type === 'characterTest') {
@@ -1404,7 +1403,7 @@
 
           questionData = {
             char: centerChar,
-            centerChar: centerChar,
+            centerChar,
             zhuyin,
             surrounding,
             searchWord: searchWord || `${topWord}${centerChar}、${bottomWord}${centerChar}、${centerChar}${leftWord}、${centerChar}${rightWord}`
@@ -1421,9 +1420,9 @@
           const parts = partsInput.split(/[\s,，、+]+/).filter(Boolean);
           questionData = {
             targetWord: word,
-            word: word,
+            word,
             components: parts,
-            parts: parts,
+            parts,
             clue,
             searchWord: word
           };
@@ -1433,7 +1432,7 @@
           const artist = document.getElementById('qb_input_artist')?.value.trim() || '';
           const youtubeUrl = document.getElementById('qb_input_youtubeUrl')?.value.trim();
           const startTime = Math.max(0, parseInt(document.getElementById('qb_input_startTime')?.value) || 0);
-          const duration = Math.max(5, Math.min(30, parseInt(document.getElementById('qb_input_duration')?.value) || 15));
+          const duration = Math.max(5, Math.min(120, parseInt(document.getElementById('qb_input_duration')?.value) || 60));
           const opt0 = document.getElementById('qb_input_songOpt0')?.value.trim();
           const opt1 = document.getElementById('qb_input_songOpt1')?.value.trim();
           const opt2 = document.getElementById('qb_input_songOpt2')?.value.trim();

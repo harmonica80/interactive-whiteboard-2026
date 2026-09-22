@@ -1,4 +1,26 @@
 # System Log
+## 2026-09-22 - ver 3.2.7 聽歌搶答升級：歌曲播放長度加長至 60 秒 (可自訂)、選項隨機打亂徹底修正每題答案皆為 A、全班搶答徹底隱藏舒爾特求救與目標區塊、老師後台純主控不顯示搶答按鈕
+- 影響檔案：`js/song_quiz_pool.js`, `js/focus_question_bank.js`, `js/song_quiz.js`, `js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **歌曲試聽長度加長至 60 秒 (1分鐘) 並支援自訂**：
+     - `DEFAULT_SONG_QUIZ_POOL` 全部 32 首歌曲之預設播放長度由 15 秒全面加長至 60 秒（1分鐘），給予充分聆聽與辨識時間。
+     - 在聽歌搶答設定面板加入「每題試聽長度」下拉選單（`focusSongQuizDuration`），提供 30 秒、45 秒、60 秒 (預設/推薦)、90 秒、120 秒，老師可依教學節奏彈性調整。
+     - 解除原本播放長度被截斷至 30 秒之限制，放寬至最高 120 秒，並在未被搶答時於時限到達後自動安全停止音訊。
+  2. **徹底修復「每首歌答案都是 A」問題（選項隨機打亂）**：
+     - 診斷出原先各題目建立時 `options[0]` 均為標準答案（歌曲名稱），且發起遊戲時僅打亂題庫題號陣列、未打亂每題內部選項，導致每一道題目的選項 A 永遠是正確解答。
+     - 在 `startFocusGame` 抽題與出題邏輯中，針對每道題目的 `options` 選項陣列實作 Fisher-Yates 隨機洗牌演算法，確保正解均勻分佈於 A、B、C、D 四個選項，兼顧公平與挑戰性。
+  3. **隱藏舒爾特方格干擾元素（求救按鈕、依序點擊數字目標與計時區）**：
+     - 診斷出聽歌搶答在進入大螢幕與作答區時，底層共用之 `focusNumberGridHeader`（「目標：依序點擊數字 1」與「⏱️ 0.00 秒」）以及 `focusHelpBtn`（「🆘 找不到？提示下一個數字 (+5秒)」）未被完整隱藏。
+     - 在個人挑戰與全班搶答模式之啟動與渲染函式中，全面將 `focusNumberGridHeader`、`focusHelpBtn`、`focusHelpInfo` 強制隱藏，並在舒爾特數字遊戲開始時自動還原，徹底根除畫面疊加與未重整時之殘留問題。
+  4. **老師端後台純主控設計（不顯示搶答按鈕與學生選項）**：
+     - 老師主控台全面純淨化：老師端在全班搶答時不顯示「⚡ 按我搶答！」按鈕與四選一作答按鈕，改為顯示清晰的課堂全班狀態（歌曲播放中/同學作答中/答錯待指示/答對揭曉）。
+     - 老師專注使用畫面下方的專屬控制台操作「▶️ 開始播放」、「⏸️ 暫停播放」、「▶️ 繼續播放 (開放其餘同學搶答)」、「⏭️ 跳至下一題」、「💡 揭曉答案」，並加入 `pressBuzzerButton` 的管理者防護阻擋。
+  5. **版本號嚴格遞增**：
+     - 依規範由 `ver 3.2.6` 嚴格遞增 `+0.01` 升至 **`ver 3.2.7`**。
+     - 更新 `package.json`、`index.html`（標籤與快取 `?v=327`）、`app.js`（`this.APP_VERSION = '3.2.7'`）及自動化驗證腳本。
+
+---
+
 ## 2026-09-22 - ver 3.2.6 緊急修復啟動時 db is not defined 載入錯誤，加固 Firebase 全域宣告與 Fail-safe 防禦性初始化
 - 影響檔案：`js/firebase-config.js`, `js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：
