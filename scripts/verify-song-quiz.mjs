@@ -117,14 +117,29 @@ if (qb.getPool('songQuiz').length !== defaultPool.length) {
   throw new Error('重置後題庫未還原為原廠預設題庫！');
 }
 
+// 測試多標籤核選篩選邏輯 (單選/多選/全選)
+const rawSongPool = qb.getPool('songQuiz');
+const classicalOnly = rawSongPool.filter(s => ['古典音樂'].includes(s.tag));
+if (classicalOnly.length !== 20) throw new Error(`單一標籤古典音樂歌曲數應為 20，實際為：${classicalOnly.length}`);
+
+const twoTagSongs = rawSongPool.filter(s => ['古典音樂', '台灣五年級'].includes(s.tag));
+if (twoTagSongs.length !== 40) throw new Error(`雙標籤歌曲數應為 40，實際為：${twoTagSongs.length}`);
+
+const threeTagSongs = rawSongPool.filter(s => ['古典音樂', '台灣五年級', '動漫神曲'].includes(s.tag));
+if (threeTagSongs.length !== 46) throw new Error(`三標籤歌曲數應為 46，實際為：${threeTagSongs.length}`);
+
 // 3. 測試 index.html 元素與配置
 const html = fs.readFileSync('index.html', 'utf8');
 const htmlChecks = [
-  ['index.html 包含 ver 3.2.9 版本標示', html.includes('ver 3.2.9')],
+  ['index.html 包含 ver 3.3.0 版本標示', html.includes('ver 3.3.0')],
   ['focusGameType 包含 songQuiz 選項', html.includes('value="songQuiz"')],
   ['包含 focusSongQuizSettings 設定區塊', html.includes('id="focusSongQuizSettings"')],
   ['包含玩法模式選擇單選按鈕 focusSongQuizPlayMode 且預設選中 buzzer (全班同步搶答)', html.includes('name="focusSongQuizPlayMode" value="buzzer" checked')],
-  ['包含出題歌單標籤下拉選單 focusSongQuizTag', html.includes('id="focusSongQuizTag"')],
+  ['包含歌單標籤核選容器 focusSongQuizTagContainer', html.includes('id="focusSongQuizTagContainer"')],
+  ['包含出題歌單標籤統計與相容元素 focusSongQuizTag', html.includes('id="focusSongQuizTag"')],
+  ['包含歌單標籤統計資訊摘要 focusSongQuizTagSummary', html.includes('id="focusSongQuizTagSummary"')],
+  ['包含全選按鈕呼叫 setAllSongQuizTags(true)', html.includes('setAllSongQuizTags(true)')],
+  ['包含清空按鈕呼叫 setAllSongQuizTags(false)', html.includes('setAllSongQuizTags(false)')],
   ['包含每局題數下拉選單 focusSongQuizCount', html.includes('id="focusSongQuizCount"')],
   ['每局題數支援 1 題選項', html.includes('<option value="1">1 題')],
   ['每局題數支援 2 題選項', html.includes('<option value="2">2 題')],
@@ -132,10 +147,10 @@ const htmlChecks = [
   ['包含題庫徽章 focusQbBadge_songQuiz', html.includes('id="focusQbBadge_songQuiz"')],
   ['題庫彈窗包含 songQuiz 頁籤按鈕', html.includes('data-type="songQuiz"')],
   ['題庫彈窗包含標籤篩選下拉選單 focusQbTagFilterSelect', html.includes('id="focusQbTagFilterSelect"')],
-  ['引用 song_quiz_pool.js?v=329', html.includes('js/song_quiz_pool.js?v=329')],
-  ['引用 song_quiz.js?v=329', html.includes('js/song_quiz.js?v=329')],
-  ['引用 focus_question_bank.js?v=329', html.includes('js/focus_question_bank.js?v=329')],
-  ['引用 app.js?v=329', html.includes('js/app.js?v=329')]
+  ['引用 song_quiz_pool.js?v=330', html.includes('js/song_quiz_pool.js?v=330')],
+  ['引用 song_quiz.js?v=330', html.includes('js/song_quiz.js?v=330')],
+  ['引用 focus_question_bank.js?v=330', html.includes('js/focus_question_bank.js?v=330')],
+  ['引用 app.js?v=330', html.includes('js/app.js?v=330')]
 ];
 
 htmlChecks.forEach(([desc, cond]) => {
@@ -145,13 +160,18 @@ htmlChecks.forEach(([desc, cond]) => {
 // 4. 測試 app.js 邏輯
 const appCode = fs.readFileSync('js/app.js', 'utf8');
 const appChecks = [
-  ['app.js APP_VERSION 為 3.2.9', appCode.includes("this.APP_VERSION = '3.2.9';")],
+  ['app.js APP_VERSION 為 3.3.0', appCode.includes("this.APP_VERSION = '3.3.0';")],
   ['startFocusGame 支援 songQuiz 抽題與標籤篩選', appCode.includes("gameType === 'songQuiz'")],
+  ['startFocusGame 支援多標籤核選篩選與空標籤防呆', appCode.includes("getSelectedSongQuizTags") && appCode.includes("請先勾選歌單標籤")],
   ['startFocusGame 支援全班搶答模式 buzzerRound 初始化', appCode.includes("songQuizPlayMode === 'buzzer'")],
   ['startFocusGame 支援選項隨機打亂', appCode.includes('opts[k], opts[r]')],
   ['startFocusGame 支援自訂播放長度 focusSongQuizDuration', appCode.includes('focusSongQuizDuration')],
   ['updateFocusGameAdminOptions 支援 songQuizSettings', appCode.includes('focusSongQuizSettings')],
   ['updateSongQuizAdminTagSelect 方法存在', appCode.includes('updateSongQuizAdminTagSelect()')],
+  ['getSelectedSongQuizTags 方法存在', appCode.includes('getSelectedSongQuizTags()')],
+  ['onSongQuizTagCheckboxChange 方法存在', appCode.includes('onSongQuizTagCheckboxChange()')],
+  ['setAllSongQuizTags 方法存在', appCode.includes('setAllSongQuizTags(selectAll)')],
+  ['updateSongQuizTagSummary 方法存在', appCode.includes('updateSongQuizTagSummary()')],
   ['updateFocusCountdownCopy 包含聽歌搶答倒數文案', appCode.includes('🎵 聽歌搶答 (歌曲聽音辨曲)！')],
   ['stopFocusTimers 包含 stopSongQuizAudio', appCode.includes('this.stopSongQuizAudio()')],
   ['專注力主迴圈分流 startSongQuizGame', appCode.includes('this.startSongQuizGame(game)')],
@@ -191,4 +211,4 @@ sqChecks.forEach(([desc, cond]) => {
   if (!cond) throw new Error(`song_quiz.js 檢查失敗：${desc}`);
 });
 
-console.log('🎉 聽歌搶答 (songQuiz) ver 3.2.9 預設全班搶答、新增1~2題選項、老師端專屬播放音樂 50+ 項驗證均全數通過！');
+console.log('🎉 聽歌搶答 (songQuiz) ver 3.3.0 支援歌單標籤核選（單選/多選/全選/清空）50+ 項驗證均全數通過！');
