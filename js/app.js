@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.2.6';
+    this.APP_VERSION = '3.2.7';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6579,13 +6579,28 @@ class App {
         this.showNotification('錯誤', `標籤【${songQuizTag}】中目前無題目，請至題庫管理中心新增題目或選擇其他標籤！`);
         return;
       }
+      const durationSelect = document.getElementById('focusSongQuizDuration');
+      const songQuizDuration = Math.max(10, Math.min(120, parseInt(durationSelect && durationSelect.value) || 60));
       const shuffled = [...pool];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
       const numQuestions = countStr === 'all' ? shuffled.length : Math.min(shuffled.length, parseInt(countStr) || 5);
-      selectedQuestions = shuffled.slice(0, numQuestions);
+      selectedQuestions = shuffled.slice(0, numQuestions).map(raw => {
+        const item = { ...raw };
+        item.duration = songQuizDuration;
+        // 隨機打亂四選一選項順序，確保正解平均分佈於 A, B, C, D
+        if (Array.isArray(item.options)) {
+          const opts = [...item.options];
+          for (let k = opts.length - 1; k > 0; k--) {
+            const r = Math.floor(Math.random() * (k + 1));
+            [opts[k], opts[r]] = [opts[r], opts[k]];
+          }
+          item.options = opts;
+        }
+        return item;
+      });
     }
 
     const songQuizPlayModeInput = document.querySelector('input[name="focusSongQuizPlayMode"]:checked');
@@ -6614,6 +6629,7 @@ class App {
       sequence: memorySequence,
       questions: selectedQuestions,
       selectedTag: gameType === 'songQuiz' ? ((document.getElementById('focusSongQuizTag')?.value) || 'all') : null,
+      songDuration: gameType === 'songQuiz' ? (parseInt(document.getElementById('focusSongQuizDuration')?.value) || 60) : null,
       classicsQuestionCount: gameType === 'classicsQuiz' ? classicsQuestionCount : null,
       countdownSeconds: countdownSecs,
       countdownStartTime: Date.now(),
@@ -6928,6 +6944,12 @@ class App {
       if (isSongQuizBuzzer) {
         document.getElementById('focusPlayArea').style.display = 'flex';
         document.getElementById('focusFinishArea').style.display = 'none';
+        const numHeader = document.getElementById('focusNumberGridHeader');
+        const helpBtn = document.getElementById('focusHelpBtn');
+        const helpInfo = document.getElementById('focusHelpInfo');
+        if (numHeader) numHeader.style.display = 'none';
+        if (helpBtn) helpBtn.style.display = 'none';
+        if (helpInfo) { helpInfo.textContent = ''; helpInfo.style.display = 'none'; }
         this.renderBuzzerSongQuizUI(game);
         return;
       }
@@ -7245,10 +7267,12 @@ class App {
 
     this.focusCurrentExpected = 1;
     this.focusGridSize = game.gridSize || 36;
+    const numHeader = document.getElementById('focusNumberGridHeader');
+    if (numHeader) numHeader.style.display = 'flex';
     const helpBtn = document.getElementById('focusHelpBtn');
     if (helpBtn) helpBtn.style.display = 'inline-block';
     const helpInfo = document.getElementById('focusHelpInfo');
-    if (helpInfo) helpInfo.textContent = '';
+    if (helpInfo) { helpInfo.textContent = ''; helpInfo.style.display = ''; }
     
     const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
     if (targetLabel) targetLabel.style.display = '';
