@@ -1,5 +1,23 @@
 # System Log
-## 2026-09-22 - ver 3.2.5 專注力測驗「聽歌搶答」全面修復 YouTube 歌曲播放（更新 32 首真實有效且開放嵌入 ID）與支援個人自主挑戰 vs 全班即時搶答雙玩法模式
+## 2026-09-22 - ver 3.2.6 緊急修復啟動時 db is not defined 載入錯誤，加固 Firebase 全域宣告與 Fail-safe 防禦性初始化
+- 影響檔案：`js/firebase-config.js`, `js/app.js`, `index.html`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **修復全域 `db` 宣告與 `window.db` 綁定 (`js/firebase-config.js`)**：
+     - 診斷出原 `const db = rawDb;` 屬於詞法區塊作用域，未明確掛載至全域物件 `window.db`，在跨腳本引用或個別瀏覽器環境下可能觸發 `ReferenceError: db is not defined`。
+     - 改為雙重宣告與全域明確綁定：`var db = rawDb; window.db = rawDb; window.rawDb = rawDb; window.storage = storage;`，確保跨腳本與所有作用域均能 100% 存取。
+  2. **加固 Firebase 與資料庫初始化防禦性邏輯**：
+     - 在 `firebase.initializeApp` 處增加重入防禦與重複調用保護 (`!firebase.apps || !firebase.apps.length`)，防止重複初始化拋錯中斷腳本。
+     - 封裝 `try...catch` 捕捉所有非預期初始化例外，避免腳本中斷。
+  3. **App Constructor 增加 Fail-safe 容錯取得 (`js/app.js`)**：
+     - 在 `App.constructor` 開頭使用三重降級取得：`(typeof db !== 'undefined' && db) ? db : (window.db || firebase.database())`。
+     - 對 `imageRef`, `videoRef`, `sharesRef`, `shareFoldersRef` 增加 `safeRef` 代理保護，徹底杜絕因 `db` 未定義導致整頁崩潰。
+  4. **版本號升級**：
+     - 依規範嚴格遞增 `+0.01`，由 `ver 3.2.5` 升級至 **`ver 3.2.6`**。
+     - 更新 `package.json`、`index.html` 標籤與腳本引用快取（`?v=326`）、`app.js`（`this.APP_VERSION = '3.2.6'`）以及測試驗證腳本。
+
+---
+
+
 - 影響檔案：`js/song_quiz_pool.js`, `js/song_quiz.js`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：
   1. **全面修復 YouTube 歌曲播放失效問題**：
