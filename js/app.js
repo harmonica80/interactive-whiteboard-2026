@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.2.4';
+    this.APP_VERSION = '3.2.5';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6581,10 +6581,24 @@ class App {
       const numQuestions = countStr === 'all' ? shuffled.length : Math.min(shuffled.length, parseInt(countStr) || 5);
       selectedQuestions = shuffled.slice(0, numQuestions);
     }
+
+    const songQuizPlayModeInput = document.querySelector('input[name="focusSongQuizPlayMode"]:checked');
+    const songQuizPlayMode = (songQuizPlayModeInput && songQuizPlayModeInput.value) || 'self';
     
     db.ref('quiz/focusGame').set({
       status: 'countdown',
       gameType: gameType,
+      playMode: gameType === 'songQuiz' ? songQuizPlayMode : 'self',
+      currentQuestionIndex: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? 0 : null,
+      buzzerRound: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? {
+        status: 'waiting',
+        buzzedUser: null,
+        buzzedAt: null,
+        eliminatedUsers: {},
+        audioAction: 'init',
+        timestamp: Date.now()
+      } : null,
+      buzzerScores: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? {} : null,
       gridSize: selectedSize,
       pairCount: gameType === 'memoryMatch' ? pairCount : null,
       theme: gameType === 'memoryMatch' ? memoryMatchTheme : null,
@@ -6850,8 +6864,9 @@ class App {
       return;
     }
 
-    // 已進入管理介面者，畫面不用顯示專注力遊戲，只要留在管理頁面就好
-    if (this.isAdmin) {
+    // 已進入管理介面者，畫面不用顯示專注力遊戲，只要留在管理頁面就好 (全班聽歌搶答除外，需在主畫面呈現全班搶答大螢幕)
+    const isSongQuizBuzzer = game && game.gameType === 'songQuiz' && game.playMode === 'buzzer';
+    if (this.isAdmin && !isSongQuizBuzzer) {
       if (gameOverlay) {
         gameOverlay.style.display = 'none';
         gameOverlay.classList.remove('active');
@@ -6876,6 +6891,10 @@ class App {
     if (instEl && game) {
       if (game.gameType === 'classicsQuiz') {
         instEl.textContent = '💡 選擇一個答案；可用「刪去法提示」排除一個錯誤選項。每題作答後可查看正解、原典與導讀連結。';
+      } else if (game.gameType === 'songQuiz') {
+        instEl.textContent = isSongQuizBuzzer
+          ? '⚡ 全班同步搶答：仔細聆聽歌曲片段，聽出歌名請立刻按搶答！答錯將暫停並可由老師繼續播放。'
+          : '🎵 聽歌搶答：聆聽黑膠唱片播放的歌曲片段，選出正確歌名！';
       } else if (game.gameType === 'characterTest') {
         instEl.textContent = '💡 請寫出正確的國字，填寫完後點選「送出答案」讓老師評分。';
       } else if (game.gameType === 'characterCrossword') {
@@ -6898,6 +6917,14 @@ class App {
     }
     else if (game.status === 'playing') {
       document.getElementById('focusCountdownArea').style.display = 'none';
+      
+      // 全班同步聽歌搶答：直接由專屬即時狀態機驅動
+      if (isSongQuizBuzzer) {
+        document.getElementById('focusPlayArea').style.display = 'flex';
+        document.getElementById('focusFinishArea').style.display = 'none';
+        this.renderBuzzerSongQuizUI(game);
+        return;
+      }
       
       const userId = localStorage.getItem('user_id') || 'guest';
       const result = game.results && game.results[userId];
