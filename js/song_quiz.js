@@ -1155,7 +1155,7 @@
       </div>
 
       ${this.isAdmin ? `
-        <button type="button" onclick="window.app.stopFocusGame()" style="margin-top:14px; width:100%; padding:13px; border:none; border-radius:10px; background:#ff3b30; color:white; font-size:16px; font-weight:bold; cursor:pointer;">
+        <button type="button" onclick="window.app.endFocusGame()" style="margin-top:14px; width:100%; padding:13px; border:none; border-radius:10px; background:#ff3b30; color:white; font-size:16px; font-weight:bold; cursor:pointer;">
           🛑 關閉全班測驗並重置
         </button>
       ` : ''}
