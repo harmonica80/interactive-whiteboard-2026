@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.2.3</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.2.4</span>
         </p>
       </div>
       <div class="top-actions">
@@ -1028,6 +1028,7 @@
                   <option value="characterCrossword">✍️ 一字千金：字字珠璣 (十字選字)</option>
                   <option value="characterUnitedWords">✍️ 一字千金：團結一詞 (部件組詞)</option>
                   <option value="classicsQuiz">📜 成語與佳句名言典故 (選擇題)</option>
+                  <option value="songQuiz">🎵 聽歌搶答 (歌曲聽音辨曲)</option>
                 </select>
               </div>
               <div id="focusNumberGridSettings" style="margin-bottom: 16px;">
@@ -1147,6 +1148,38 @@
                   <button type="button" onclick="window.focusQB.exportPool('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (CSV)</button>
                   <button type="button" onclick="window.focusQB.downloadTemplate('characterUnitedWords')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載 CSV 範本檔</button>
                   <button type="button" onclick="window.focusQB.handleResetDefault('characterUnitedWords')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
+                </div>
+              </div>
+
+              <!-- 聽歌搶答設定與題庫管理 -->
+              <div id="focusSongQuizSettings" style="display: none; margin-bottom: 20px; padding: 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-input);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                  <label style="font-weight: bold; font-size: 14px; margin: 0; color: var(--text-primary);">🎵 聽歌搶答 (歌曲聽音辨曲)：</label>
+                  <div id="focusQbBadge_songQuiz"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                  <div>
+                    <label style="font-size: 13px; color: var(--text-secondary); font-weight: bold; display: block; margin-bottom: 4px;">出題歌單標籤分組：</label>
+                    <select id="focusSongQuizTag" class="question-input" style="width: 100%; box-sizing: border-box; margin: 0; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 7px; border-radius: 8px;">
+                      <option value="all">🏷️ 全部歌單 (隨機抽題)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 13px; color: var(--text-secondary); font-weight: bold; display: block; margin-bottom: 4px;">每局題數：</label>
+                    <select id="focusSongQuizCount" class="question-input" style="width: 100%; box-sizing: border-box; margin: 0; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 7px; border-radius: 8px;">
+                      <option value="3">3 題（快節奏）</option>
+                      <option value="5" selected>5 題（標準局）</option>
+                      <option value="10">10 題（大挑戰）</option>
+                      <option value="all">全部題目</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" onclick="window.focusQB.openModal('songQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">🔍 管理與搜尋題庫</button>
+                  <button type="button" onclick="window.focusQB.openImportDialog('songQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">📥 匯入題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.exportPool('songQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">📤 匯出題庫 (CSV)</button>
+                  <button type="button" onclick="window.focusQB.downloadTemplate('songQuiz')" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">📄 下載 CSV 範本檔</button>
+                  <button type="button" onclick="window.focusQB.handleResetDefault('songQuiz')" class="preset-btn" style="padding: 6px 10px; font-size: 12px; font-weight: bold; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; cursor: pointer;" title="重置為原廠預設題庫">🔄 恢復預設</button>
                 </div>
               </div>
 
@@ -1572,15 +1605,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=323"></script>
+  <script src="js/firebase-config.js?v=324"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/focus_question_bank.js?v=306"></script>
+  <script src="js/song_quiz_pool.js?v=324"></script>
+  <script src="js/focus_question_bank.js?v=324"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=323"></script>
-  <script src="js/app.js?v=323"></script>
+  <script src="js/quiz.js?v=324"></script>
+  <script src="js/app.js?v=324"></script>
   <script src="js/classics_quiz.js?v=306"></script>
-  <script src="js/video_quiz.js?v=323"></script>
+  <script src="js/song_quiz.js?v=324"></script>
+  <script src="js/video_quiz.js?v=324"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -2082,7 +2117,7 @@ Python</pre>
       <div style="padding: 20px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column;">
         
         <!-- Unit Switcher Tabs -->
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px;">
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 18px;">
           <button type="button" class="focus-qb-tab-btn" data-type="classicsQuiz" onclick="window.focusQB.switchTab('classicsQuiz')" style="padding: 10px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; text-align: center; transition: all 0.2s;">
             📜 成語與佳句名言
           </button>
@@ -2095,12 +2130,21 @@ Python</pre>
           <button type="button" class="focus-qb-tab-btn" data-type="characterUnitedWords" onclick="window.focusQB.switchTab('characterUnitedWords')" style="padding: 10px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; text-align: center; transition: all 0.2s;">
             ✍️ 團結一詞
           </button>
+          <button type="button" class="focus-qb-tab-btn" data-type="songQuiz" onclick="window.focusQB.switchTab('songQuiz')" style="padding: 10px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; text-align: center; transition: all 0.2s;">
+            🎵 聽歌搶答
+          </button>
         </div>
 
         <!-- Action & Search Toolbar -->
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: var(--bg-input); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color);">
-          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px;">
-            <input type="text" id="focusQbSearchInput" oninput="window.focusQB.handleSearchInput(this.value)" placeholder="🔍 搜尋題目、作者、名句、字詞、提示..." class="question-input" style="width: 100%; box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 13px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 280px; flex-wrap: wrap;">
+            <input type="text" id="focusQbSearchInput" oninput="window.focusQB.handleSearchInput(this.value)" placeholder="🔍 搜尋題目、作者、歌名、歌手、字詞、提示..." class="question-input" style="flex: 1; min-width: 180px; box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 13px;">
+            <!-- 標籤分組篩選下拉選單 (聽歌搶答專用) -->
+            <div id="focusQbTagFilterWrapper" style="display: none; align-items: center; gap: 6px;">
+              <select id="focusQbTagFilterSelect" onchange="window.focusQB.handleTagFilter(this.value)" class="question-input" style="margin: 0; padding: 7px 10px; font-size: 12px; font-weight: bold; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; max-width: 200px;">
+                <option value="all">🏷️ 全部標籤歌單</option>
+              </select>
+            </div>
           </div>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button type="button" onclick="window.focusQB.openQuestionEditForm()" class="preset-btn" style="padding: 7px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">➕ 新增題目</button>

@@ -105,13 +105,23 @@
         classicsQuiz: '',
         characterTest: '',
         characterCrossword: '',
-        characterUnitedWords: ''
+        characterUnitedWords: '',
+        songQuiz: ''
+      };
+      this.selectedTagFilters = {
+        songQuiz: 'all'
       };
       this.editingIndex = -1;
     }
 
     // 取得指定單元的原廠預設題庫
     getDefaultPool(type) {
+      if (type === 'songQuiz') {
+        const pool = (global.DEFAULT_SONG_QUIZ_POOL && Array.isArray(global.DEFAULT_SONG_QUIZ_POOL))
+          ? global.DEFAULT_SONG_QUIZ_POOL
+          : [];
+        return JSON.parse(JSON.stringify(pool));
+      }
       if (type === 'classicsQuiz') {
         const pool = (global.CLASSICS_QUIZ_POOL && Array.isArray(global.CLASSICS_QUIZ_POOL))
           ? global.CLASSICS_QUIZ_POOL
@@ -186,7 +196,8 @@
         classicsQuiz: '成語與佳句名言典故',
         characterTest: '一字千金：字力測驗',
         characterCrossword: '一字千金：字字珠璣',
-        characterUnitedWords: '一字千金：團結一詞'
+        characterUnitedWords: '一字千金：團結一詞',
+        songQuiz: '聽歌搶答：歌曲辨曲'
       };
       return names[type] || type;
     }
@@ -289,6 +300,49 @@
         };
       }
 
+      if (type === 'songQuiz') {
+        const title = (item.title || item.name || '').trim();
+        const artist = (item.artist || item.singer || '').trim();
+        const tag = (item.tag || item.category || '懷舊經典').trim();
+        const youtubeUrl = (item.youtubeUrl || item.url || '').trim();
+        let youtubeId = (item.youtubeId || '').trim();
+        if (!youtubeId && youtubeUrl) {
+          const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/);
+          if (match && match[1]) youtubeId = match[1];
+        }
+        const startTime = Math.max(0, parseInt(item.startTime) || 0);
+        const duration = Math.max(5, Math.min(30, parseInt(item.duration) || 15));
+        let options = Array.isArray(item.options) ? item.options.filter(Boolean) : [];
+        if (options.length === 0 && title) {
+          options = [title];
+        }
+        if (options.length < 4 && global.DEFAULT_SONG_QUIZ_POOL) {
+          const others = global.DEFAULT_SONG_QUIZ_POOL
+            .map(s => s.title)
+            .filter(t => t && t !== title && !options.includes(t));
+          while (options.length < 4 && others.length > 0) {
+            const rand = others.splice(Math.floor(Math.random() * others.length), 1)[0];
+            options.push(rand);
+          }
+        }
+        if (!options.includes(title) && title) {
+          options[0] = title;
+        }
+        const clue = (item.clue || item.hint || item.description || '').trim();
+        return {
+          id: item.id || `song_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          tag: tag || '精選歌單',
+          title,
+          artist,
+          youtubeUrl: youtubeUrl || (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : ''),
+          youtubeId,
+          startTime,
+          duration,
+          options,
+          clue
+        };
+      }
+
       return item;
     }
 
@@ -296,11 +350,29 @@
     searchPool(type, query = '') {
       const pool = this.getPool(type);
       const q = (query || '').trim().toLowerCase();
-      if (!q) return pool.map((item, idx) => ({ ...this.normalizeItem(type, item), _originalIndex: idx }));
+      const selectedTag = (this.selectedTagFilters && this.selectedTagFilters[type]) || 'all';
+
+      if (!q && selectedTag === 'all') {
+        return pool.map((item, idx) => ({ ...this.normalizeItem(type, item), _originalIndex: idx }));
+      }
 
       return pool
         .map((item, idx) => ({ ...this.normalizeItem(type, item), _originalIndex: idx }))
         .filter((norm) => {
+          if (type === 'songQuiz' && selectedTag !== 'all') {
+            if (norm.tag !== selectedTag) return false;
+          }
+          if (!q) return true;
+
+          if (type === 'songQuiz') {
+            return (
+              (norm.title && norm.title.toLowerCase().includes(q)) ||
+              (norm.artist && norm.artist.toLowerCase().includes(q)) ||
+              (norm.tag && norm.tag.toLowerCase().includes(q)) ||
+              (norm.clue && norm.clue.toLowerCase().includes(q)) ||
+              (norm.options && norm.options.join(' ').toLowerCase().includes(q))
+            );
+          }
           if (type === 'classicsQuiz') {
             return (
               (norm.title && norm.title.toLowerCase().includes(q)) ||
@@ -404,6 +476,25 @@
           ].map(escapeCSVCell).join(',');
           csvContent += row + '\r\n';
         });
+      } else if (type === 'songQuiz') {
+        csvContent += '標籤分組,歌曲名稱(正解),演唱者,YouTube網址,開始播放秒數,播放秒數,干擾選項1,干擾選項2,干擾選項3,提示說明\r\n';
+        pool.forEach(rawItem => {
+          const item = this.normalizeItem(type, rawItem);
+          const distractors = (item.options || []).filter(o => o !== item.title);
+          const row = [
+            item.tag || '懷舊經典',
+            item.title || '',
+            item.artist || '',
+            item.youtubeUrl || '',
+            item.startTime ?? 0,
+            item.duration ?? 15,
+            distractors[0] || '',
+            distractors[1] || '',
+            distractors[2] || '',
+            item.clue || ''
+          ].map(escapeCSVCell).join(',');
+          csvContent += row + '\r\n';
+        });
       }
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -438,6 +529,13 @@
         content += '解答詞語,散裝部件(以空格分開),詞語解釋提示\r\n';
         content += '"明月","日 月 月","形容夜空中明亮的月亮"\r\n';
         content += '"森林","木 木 木 木 木","大片生長樹木的廣大土地"\r\n';
+      } else if (type === 'songQuiz') {
+        content += '標籤分組,歌曲名稱(正解),演唱者,YouTube網址,開始播放秒數,播放秒數,干擾選項1,干擾選項2,干擾選項3,提示說明\r\n';
+        content += '"懷舊經典","月亮代表我的心","鄧麗君","https://www.youtube.com/watch?v=bv_cEeDlop0",30,15,"甜蜜蜜","夜來香","何日君再來","1977年華語傳世經典情歌"\r\n';
+        content += '"熱門流行","晴天","周杰倫","https://www.youtube.com/watch?v=DYptgVvkVLQ",28,15,"不能說的秘密","七里香","簡單愛","收錄於2003年葉惠美專輯"\r\n';
+        content += '"動漫神曲","殘酷天使的行動綱領","高橋洋子","https://www.youtube.com/watch?v=o6wtDPVkKqI",10,15,"魂之輪迴","直到世界的盡頭","前前前世","新世紀福音戰士經典主題曲"\r\n';
+        content += '"童謠兒歌","拔蘿蔔","傳統童謠","https://www.youtube.com/watch?v=G3Y1GZ8m2-o",0,15,"兩隻老虎","泥娃娃","小星星","經典幼兒同樂童謠"\r\n';
+        content += '"影視金曲","那些年","胡夏","https://www.youtube.com/watch?v=KqjgLbKZ1h0",35,15,"小幸運","刻在我心底的名字","修煉愛情","那些年我們一起追的女孩電影主題曲"\r\n';
       }
       return content;
     }
@@ -587,6 +685,48 @@
             clue: clue.trim(),
             searchWord: word.trim()
           });
+        } else if (type === 'songQuiz') {
+          // 欄位：標籤分組,歌曲名稱(正解),演唱者,YouTube網址,開始播放秒數,播放秒數,干擾選項1,干擾選項2,干擾選項3,提示說明
+          const tag = cols[0] || '精選歌單';
+          const title = cols[1] || '';
+          const artist = cols[2] || '';
+          const youtubeUrl = cols[3] || '';
+          const startTime = parseInt(cols[4]) || 0;
+          const duration = parseInt(cols[5]) || 15;
+          const d1 = cols[6] || '';
+          const d2 = cols[7] || '';
+          const d3 = cols[8] || '';
+          const clue = cols[9] || '';
+
+          if (!title) {
+            throw new Error(`第 ${i + 2} 行缺少「歌曲名稱(正解)」！`);
+          }
+
+          let options = [title, d1, d2, d3].filter(Boolean);
+          // 補足4個選項
+          let optFill = 1;
+          while (options.length < 4) {
+            options.push(`其他推薦歌曲 ${optFill++}`);
+          }
+
+          let youtubeId = '';
+          if (youtubeUrl) {
+            const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/);
+            if (match && match[1]) youtubeId = match[1];
+          }
+
+          validatedList.push({
+            id: `song_csv_${Date.now()}_${i}`,
+            tag: tag.trim(),
+            title: title.trim(),
+            artist: artist.trim(),
+            youtubeUrl: youtubeUrl.trim(),
+            youtubeId: youtubeId || youtubeUrl.trim(),
+            startTime,
+            duration,
+            options,
+            clue: clue.trim()
+          });
         }
       }
 
@@ -719,7 +859,48 @@
       if (searchInput) {
         searchInput.value = this.searchKeywords[type] || '';
       }
+
+      this.updateTagFilterSelect(type);
       this.renderList();
+    }
+
+    // 取得指定單元目前所有不重複的標籤清單
+    getAllTags(type = this.currentActiveType) {
+      const pool = this.getPool(type);
+      const tags = new Set();
+      pool.forEach(raw => {
+        const item = this.normalizeItem(type, raw);
+        if (item.tag) tags.add(item.tag);
+      });
+      return Array.from(tags);
+    }
+
+    // 處理標籤篩選切換
+    handleTagFilter(val) {
+      if (!this.selectedTagFilters) this.selectedTagFilters = {};
+      this.selectedTagFilters[this.currentActiveType] = val;
+      this.renderList();
+    }
+
+    // 更新題庫管理彈窗工具列之標籤篩選器
+    updateTagFilterSelect(type = this.currentActiveType) {
+      const wrapper = document.getElementById('focusQbTagFilterWrapper');
+      const select = document.getElementById('focusQbTagFilterSelect');
+      if (!wrapper || !select) return;
+
+      if (type === 'songQuiz') {
+        wrapper.style.display = 'flex';
+        const tags = this.getAllTags('songQuiz');
+        const currentTag = (this.selectedTagFilters && this.selectedTagFilters.songQuiz) || 'all';
+        let html = `<option value="all" ${currentTag === 'all' ? 'selected' : ''}>🏷️ 全部標籤歌單 (全部 ${this.getPool('songQuiz').length} 首)</option>`;
+        tags.forEach(tag => {
+          const count = this.getPool('songQuiz').filter(raw => this.normalizeItem('songQuiz', raw).tag === tag).length;
+          html += `<option value="${tag}" ${currentTag === tag ? 'selected' : ''}>🏷️ ${tag} (${count} 首)</option>`;
+        });
+        select.innerHTML = html;
+      } else {
+        wrapper.style.display = 'none';
+      }
     }
 
     // 渲染題目清單
@@ -827,6 +1008,31 @@
                 </div>
                 <div style="font-size: 12px; color: var(--text-muted);">
                   <span><strong>解釋提示：</strong>${this.highlightText(item.clue || '無', query)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (type === 'songQuiz') {
+          contentHtml = `
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 48px; height: 48px; border-radius: 50%; background: #1f2937; border: 2px solid #374151; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                🎵
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+                  <span style="background: rgba(16,185,129,0.12); color: #10b981; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;">🏷️ ${this.highlightText(item.tag, query)}</span>
+                  <span style="font-weight: bold; font-size: 15px; color: var(--text-primary);">
+                    ${displayIdx + 1}. ${this.highlightText(item.title, query)}
+                  </span>
+                  ${item.artist ? `<span style="font-size: 13px; color: var(--accent-color); font-weight: bold;">(${this.highlightText(item.artist, query)})</span>` : ''}
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 5px;">
+                  <span><strong>試聽播放：</strong>從第 ${item.startTime || 0} 秒播放 ${item.duration || 15} 秒</span>
+                  ${item.youtubeUrl ? `<a href="${item.youtubeUrl}" target="_blank" rel="noopener noreferrer" style="color: #ef4444; font-weight: bold; text-decoration: underline;">▶️ YouTube 試聽</a>` : ''}
+                </div>
+                ${item.clue ? `<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">💡 提示：${this.highlightText(item.clue, query)}</div>` : ''}
+                <div style="font-size: 12px; color: var(--text-muted); background: var(--bg-input); padding: 5px 8px; border-radius: 6px;">
+                  <strong>選項：</strong>${(item.options || []).map(opt => opt === item.title ? `<span style="color: #10b981; font-weight:bold;">${opt} (正解)</span>` : opt).join('、 ')}
                 </div>
               </div>
             </div>
@@ -1032,6 +1238,75 @@
             <input type="text" id="qb_input_clue" value="${item.clue || ''}" placeholder="例如：形容夜空中明亮的月亮" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
           </div>
         `;
+      } else if (type === 'songQuiz') {
+        const tag = item.tag || '懷舊經典';
+        const title = item.title || '';
+        const artist = item.artist || '';
+        const youtubeUrl = item.youtubeUrl || '';
+        const startTime = item.startTime ?? 0;
+        const duration = item.duration ?? 15;
+        const opts = item.options || [title, '', '', ''];
+        const clue = item.clue || '';
+
+        fieldsHtml = `
+          <div style="margin-bottom: 12px;">
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">標籤分組 (可自訂或點擊快捷標籤) *</label>
+            <div style="display:flex; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='懷舊經典'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 懷舊經典</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='熱門流行'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 熱門流行</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='動漫神曲'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 動漫神曲</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='童謠兒歌'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 童謠兒歌</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='影視金曲'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 影視金曲</button>
+            </div>
+            <input type="text" id="qb_input_tag" value="${tag}" placeholder="例如：懷舊經典、熱門流行 或 自訂標籤" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px; color:#10b981;">歌曲名稱 (標準正解) *</label>
+              <input type="text" id="qb_input_songTitle" value="${title}" placeholder="例如：月亮代表我的心" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid #10b981; background:var(--bg-input); color:var(--text-primary); font-weight:bold;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">演唱者 / 歌手</label>
+              <input type="text" id="qb_input_artist" value="${artist}" placeholder="例如：鄧麗君" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">YouTube 網址或影片 ID *</label>
+            <input type="text" id="qb_input_youtubeUrl" value="${youtubeUrl}" placeholder="例如：https://www.youtube.com/watch?v=bv_cEeDlop0" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">開始播放秒數 (秒)</label>
+              <input type="number" min="0" id="qb_input_startTime" value="${startTime}" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">試聽播放秒數 (建議 10~20 秒)</label>
+              <input type="number" min="5" max="30" id="qb_input_duration" value="${duration}" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">選項 1 (A)</label>
+              <input type="text" id="qb_input_songOpt0" value="${opts[0] || ''}" placeholder="選項A" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">選項 2 (B)</label>
+              <input type="text" id="qb_input_songOpt1" value="${opts[1] || ''}" placeholder="選項B" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">選項 3 (C)</label>
+              <input type="text" id="qb_input_songOpt2" value="${opts[2] || ''}" placeholder="選項C" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">選項 4 (D)</label>
+              <input type="text" id="qb_input_songOpt3" value="${opts[3] || ''}" placeholder="選項D" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            </div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">歌曲提示 / 背景說明</label>
+            <input type="text" id="qb_input_songClue" value="${clue}" placeholder="例如：1977年鄧麗君經典傳唱情歌" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+          </div>
+        `;
       }
 
       fieldsContainer.innerHTML = fieldsHtml;
@@ -1151,6 +1426,42 @@
             parts: parts,
             clue,
             searchWord: word
+          };
+        } else if (type === 'songQuiz') {
+          const tag = document.getElementById('qb_input_tag')?.value.trim() || '精選歌單';
+          const title = document.getElementById('qb_input_songTitle')?.value.trim();
+          const artist = document.getElementById('qb_input_artist')?.value.trim() || '';
+          const youtubeUrl = document.getElementById('qb_input_youtubeUrl')?.value.trim();
+          const startTime = Math.max(0, parseInt(document.getElementById('qb_input_startTime')?.value) || 0);
+          const duration = Math.max(5, Math.min(30, parseInt(document.getElementById('qb_input_duration')?.value) || 15));
+          const opt0 = document.getElementById('qb_input_songOpt0')?.value.trim();
+          const opt1 = document.getElementById('qb_input_songOpt1')?.value.trim();
+          const opt2 = document.getElementById('qb_input_songOpt2')?.value.trim();
+          const opt3 = document.getElementById('qb_input_songOpt3')?.value.trim();
+          const clue = document.getElementById('qb_input_songClue')?.value.trim() || '';
+
+          if (!title) throw new Error('請輸入歌曲名稱(標準正解)！');
+          if (!youtubeUrl) throw new Error('請輸入 YouTube 網址！');
+
+          let options = [opt0, opt1, opt2, opt3].filter(Boolean);
+          if (options.length < 4) throw new Error('請完整填寫 4 個選項！');
+          if (!options.includes(title)) throw new Error('歌曲正解必須包含在 4 個選項之中！');
+
+          let youtubeId = '';
+          const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/);
+          if (match && match[1]) youtubeId = match[1];
+
+          questionData = {
+            id: `song_${Date.now()}`,
+            tag,
+            title,
+            artist,
+            youtubeUrl,
+            youtubeId: youtubeId || youtubeUrl,
+            startTime,
+            duration,
+            options,
+            clue
           };
         }
 
