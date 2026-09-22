@@ -12,7 +12,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.2.3';
+    this.APP_VERSION = '3.2.4';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
@@ -6559,6 +6559,27 @@ class App {
         this.showNotification('錯誤', '成語與佳句名言典故題庫未完成載入，請重新整理後再試。');
         return;
       }
+    } else if (gameType === 'songQuiz') {
+      const tagSelect = document.getElementById('focusSongQuizTag');
+      const songQuizTag = (tagSelect && tagSelect.value) || 'all';
+      const countSelect = document.getElementById('focusSongQuizCount');
+      const countStr = (countSelect && countSelect.value) || '5';
+      const rawPool = window.focusQB ? window.focusQB.getPool('songQuiz') : (window.DEFAULT_SONG_QUIZ_POOL || []);
+      let pool = rawPool.map((item) => window.focusQB ? window.focusQB.normalizeItem('songQuiz', item) : item);
+      if (songQuizTag !== 'all') {
+        pool = pool.filter(item => item.tag === songQuizTag);
+      }
+      if (pool.length === 0) {
+        this.showNotification('錯誤', `標籤【${songQuizTag}】中目前無題目，請至題庫管理中心新增題目或選擇其他標籤！`);
+        return;
+      }
+      const shuffled = [...pool];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      const numQuestions = countStr === 'all' ? shuffled.length : Math.min(shuffled.length, parseInt(countStr) || 5);
+      selectedQuestions = shuffled.slice(0, numQuestions);
     }
     
     db.ref('quiz/focusGame').set({
@@ -6572,6 +6593,7 @@ class App {
       reverseMode: gameType === 'memoryPosition' ? memoryReverse : false,
       sequence: memorySequence,
       questions: selectedQuestions,
+      selectedTag: gameType === 'songQuiz' ? ((document.getElementById('focusSongQuizTag')?.value) || 'all') : null,
       classicsQuestionCount: gameType === 'classicsQuiz' ? classicsQuestionCount : null,
       countdownSeconds: countdownSecs,
       countdownStartTime: Date.now(),
@@ -6639,6 +6661,7 @@ class App {
     const charTestSettings = document.getElementById('focusCharacterTestSettings');
     const charCrosswordSettings = document.getElementById('focusCharacterCrosswordSettings');
     const charUnitedWordsSettings = document.getElementById('focusCharacterUnitedWordsSettings');
+    const songQuizSettings = document.getElementById('focusSongQuizSettings');
 
     if (numberGridSettings) numberGridSettings.style.display = gameType === 'numberGrid' ? 'block' : 'none';
     if (memorySettings) memorySettings.style.display = gameType === 'memoryPosition' ? 'block' : 'none';
@@ -6647,10 +6670,30 @@ class App {
     if (charTestSettings) charTestSettings.style.display = gameType === 'characterTest' ? 'block' : 'none';
     if (charCrosswordSettings) charCrosswordSettings.style.display = gameType === 'characterCrossword' ? 'block' : 'none';
     if (charUnitedWordsSettings) charUnitedWordsSettings.style.display = gameType === 'characterUnitedWords' ? 'block' : 'none';
+    if (songQuizSettings) songQuizSettings.style.display = gameType === 'songQuiz' ? 'block' : 'none';
+
+    if (gameType === 'songQuiz') {
+      this.updateSongQuizAdminTagSelect();
+    }
 
     if (window.focusQB && typeof window.focusQB.updateAdminBadge === 'function') {
       window.focusQB.updateAdminBadge(gameType);
     }
+  }
+
+  // 更新後台聽歌搶答的出題歌單標籤選單
+  updateSongQuizAdminTagSelect() {
+    const select = document.getElementById('focusSongQuizTag');
+    if (!select || !window.focusQB) return;
+    const tags = window.focusQB.getAllTags('songQuiz');
+    const pool = window.focusQB.getPool('songQuiz');
+    const currentVal = select.value || 'all';
+    let html = `<option value="all" ${currentVal === 'all' ? 'selected' : ''}>🏷️ 全部歌單 (隨機抽題，共 ${pool.length} 首)</option>`;
+    tags.forEach(tag => {
+      const count = pool.filter(raw => window.focusQB.normalizeItem('songQuiz', raw).tag === tag).length;
+      html += `<option value="${tag}" ${currentVal === tag ? 'selected' : ''}>🏷️ ${tag} (${count} 首)</option>`;
+    });
+    select.innerHTML = html;
   }
 
   // OpenCode 修改：倒數畫面依專注力遊戲類型顯示不同說明文字
@@ -6660,6 +6703,15 @@ class App {
     const hintEl = document.getElementById('focusCountdownHint');
     const gridSize = game.gridSize || 36;
     const sequenceLength = game.sequenceLength || 5;
+
+    if (game.gameType === 'songQuiz') {
+      const questionCount = Array.isArray(game.questions) ? game.questions.length : 5;
+      const tagText = game.selectedTag && game.selectedTag !== 'all' ? `【${game.selectedTag}】` : '精選歌單';
+      if (titleEl) titleEl.textContent = '🎵 聽歌搶答 (歌曲聽音辨曲)！';
+      if (descriptionEl) descriptionEl.textContent = `本局出題歌單：${tagText}，共有 ${questionCount} 首歌曲；仔細聆聽旋律搶答歌名！`;
+      if (hintEl) hintEl.textContent = '戴上耳機或打開喇叭，準備聽歌辨曲搶答囉！';
+      return;
+    }
 
     if (game.gameType === 'memoryMatch') {
       const pairCount = game.pairCount || 6;
@@ -6970,6 +7022,9 @@ class App {
     if (typeof this.stopTaikoBackgroundMusic === 'function') {
       this.stopTaikoBackgroundMusic();
     }
+    if (typeof this.stopSongQuizAudio === 'function') {
+      this.stopSongQuizAudio();
+    }
     
     const canvas = document.getElementById('focusFireworkCanvas');
     if (canvas) {
@@ -7144,6 +7199,10 @@ class App {
     
     if (game.gameType === 'classicsQuiz') {
       this.startClassicsQuizGame(game);
+      return;
+    }
+    if (game.gameType === 'songQuiz') {
+      this.startSongQuizGame(game);
       return;
     }
     if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {

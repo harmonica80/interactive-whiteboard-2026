@@ -14,7 +14,9 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
         hasYangShen: window.focusQB.getPool('classicsQuiz').some(q => q.quote?.includes('滾滾長江東逝水')),
         charTestCount: window.focusQB.getPool('characterTest').length,
         crosswordCount: window.focusQB.getPool('characterCrossword').length,
-        unitedWordsCount: window.focusQB.getPool('characterUnitedWords').length
+        unitedWordsCount: window.focusQB.getPool('characterUnitedWords').length,
+        songQuizCount: window.focusQB.getPool('songQuiz').length,
+        hasMoonSong: window.focusQB.getPool('songQuiz').some(q => q.title?.includes('月亮代表我的心'))
       }
     })
 
@@ -24,6 +26,8 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(result.charTestCount).toBeGreaterThanOrEqual(500)
     expect(result.crosswordCount).toBeGreaterThanOrEqual(100)
     expect(result.unitedWordsCount).toBeGreaterThanOrEqual(150)
+    expect(result.songQuizCount).toBeGreaterThanOrEqual(30)
+    expect(result.hasMoonSong).toBe(true)
   })
 
   test('Focus Question Bank CSV Template Generator contains UTF-8 BOM and correct headers', async ({ page }) => {
@@ -33,7 +37,8 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
         classics: qb.getCSVTemplateContent('classicsQuiz'),
         charTest: qb.getCSVTemplateContent('characterTest'),
         crossword: qb.getCSVTemplateContent('characterCrossword'),
-        unitedWords: qb.getCSVTemplateContent('characterUnitedWords')
+        unitedWords: qb.getCSVTemplateContent('characterUnitedWords'),
+        songQuiz: qb.getCSVTemplateContent('songQuiz')
       }
     })
 
@@ -52,6 +57,10 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     // United Words CSV Header
     expect(csvTemplates.unitedWords).toContain('解答詞語,散裝部件(以空格分開),詞語解釋提示')
     expect(csvTemplates.unitedWords).toContain('明月')
+
+    // Song Quiz CSV Header
+    expect(csvTemplates.songQuiz).toContain('標籤分組,歌曲名稱(正解),演唱者,YouTube網址,開始播放秒數,播放秒數,干擾選項1,干擾選項2,干擾選項3,提示說明')
+    expect(csvTemplates.songQuiz).toContain('月亮代表我的心')
   })
 
   test('Focus Question Bank imports CSV data correctly', async ({ page }) => {
@@ -82,6 +91,49 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
     expect(importResult.firstChar).toBe('鳳')
     expect(importResult.firstClue).toBe('龍（　）呈祥')
     expect(importResult.isCustom).toBe(true)
+  })
+
+  test('Focus Question Bank imports Song Quiz CSV and supports tag filtering', async ({ page }) => {
+    const songQuizResult = await page.evaluate(() => {
+      const qb = window.focusQB
+      const sampleSongCsv = `標籤分組,歌曲名稱(正解),演唱者,YouTube網址,開始播放秒數,播放秒數,干擾選項1,干擾選項2,干擾選項3,提示說明
+校園民歌,外婆的澎湖灣,潘安邦,https://www.youtube.com/watch?v=sample1,10,15,鄉間的小路,橄欖樹,童年,澎湖灣澎湖灣外婆的澎湖灣
+動漫特攝,殘酷天使的行動綱領,高橋洋子,https://www.youtube.com/watch?v=sample2,5,15,魂之輪迴,紅蓮華,前前前世,EVA片頭曲`
+
+      const count = qb.importPool('songQuiz', sampleSongCsv, 'replace')
+      const pool = qb.getPool('songQuiz')
+      const isCustom = qb.isCustomPool('songQuiz')
+      const allTags = qb.getAllTags('songQuiz')
+
+      // Filter by tag
+      qb.selectedTagFilters.songQuiz = '校園民歌'
+      const campusFiltered = qb.searchPool('songQuiz', '')
+
+      // Reset filter and pool
+      qb.selectedTagFilters.songQuiz = 'all'
+      qb.resetPool('songQuiz')
+
+      return {
+        count,
+        poolLength: pool.length,
+        firstTitle: pool[0].title,
+        firstTag: pool[0].tag,
+        isCustom,
+        allTags,
+        campusFilteredCount: campusFiltered.length,
+        campusFilteredTitle: campusFiltered[0]?.title
+      }
+    })
+
+    expect(songQuizResult.count).toBe(2)
+    expect(songQuizResult.poolLength).toBe(2)
+    expect(songQuizResult.firstTitle).toBe('外婆的澎湖灣')
+    expect(songQuizResult.firstTag).toBe('校園民歌')
+    expect(songQuizResult.isCustom).toBe(true)
+    expect(songQuizResult.allTags).toContain('校園民歌')
+    expect(songQuizResult.allTags).toContain('動漫特攝')
+    expect(songQuizResult.campusFilteredCount).toBe(1)
+    expect(songQuizResult.campusFilteredTitle).toBe('外婆的澎湖灣')
   })
 
   test('Timer Music Manager loads properly and supports search & CRUD', async ({ page }) => {
