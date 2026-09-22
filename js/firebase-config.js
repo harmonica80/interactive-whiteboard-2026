@@ -978,39 +978,66 @@ window.ClassRoomManager = {
 };
 
 // 初始化全域當前班級代碼
-window.currentClassCode = window.ClassRoomManager.getActiveClassCode();
+try {
+  window.currentClassCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+    ? window.ClassRoomManager.getActiveClassCode()
+    : '';
+} catch (e) {
+  window.currentClassCode = '';
+}
 
-// 初始化 Firebase
-firebase.initializeApp(firebaseConfig);
+// 初始化 Firebase (防禦重入與重複調用)
+if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+  try {
+    if (!firebase.apps || !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  } catch (initErr) {
+    console.warn('Firebase initializeApp warning:', initErr);
+  }
+}
 
 // 取得資料庫原生實例
-const rawDb = firebase.database();
-const rawRef = rawDb.ref.bind(rawDb);
-rawDb.rawRef = rawRef;
+var rawDb = null;
+var rawRef = null;
+try {
+  if (typeof firebase !== 'undefined' && typeof firebase.database === 'function') {
+    rawDb = firebase.database();
+    rawRef = rawDb.ref.bind(rawDb);
+    rawDb.rawRef = rawRef;
 
-// 透過透明代理 (Transparent Routing)，支援「一次性課堂」與「專屬班級」雙軌自動分流
-rawDb.ref = function(path) {
-  if (!path || path === '/') {
-    const code = window.currentClassCode;
-    return code ? rawRef(`classes/${code}`) : rawRef();
-  }
-  // 系統內部保留路徑不加班級前綴 (如連線檢測 .info/connected、班級名單 registered_classes)
-  if (path.startsWith('.info/') || path.startsWith('system/') || path.startsWith('classes/') || path.startsWith('registered_classes')) {
-    return rawRef(path);
-  }
-  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  const code = window.currentClassCode;
+    // 透過透明代理 (Transparent Routing)，支援「一次性課堂」與「專屬班級」雙軌自動分流
+    rawDb.ref = function(path) {
+      if (!path || path === '/') {
+        const code = window.currentClassCode;
+        return code ? rawRef(`classes/${code}`) : rawRef();
+      }
+      // 系統內部保留路徑不加班級前綴 (如連線檢測 .info/connected、班級名單 registered_classes)
+      if (path.startsWith('.info/') || path.startsWith('system/') || path.startsWith('classes/') || path.startsWith('registered_classes')) {
+        return rawRef(path);
+      }
+      const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+      const code = window.currentClassCode;
 
-  // 雙軌分流核心：
-  // 1. 若處於專屬班級（有班級代碼）：自動導向 classes/{classCode}/{cleanPath}
-  // 2. 若處於一次性課堂（無班級代碼）：維持原本的 cleanPath（零破壞、100% 相容既有課堂資料！）
-  if (code) {
-    return rawRef(`classes/${code}/${cleanPath}`);
-  } else {
-    return rawRef(cleanPath);
+      // 雙軌分流核心：
+      // 1. 若處於專屬班級（有班級代碼）：自動導向 classes/{classCode}/{cleanPath}
+      // 2. 若處於一次性課堂（無班級代碼）：維持原本的 cleanPath（零破壞、100% 相容既有課堂資料！）
+      if (code) {
+        return rawRef(`classes/${code}/${cleanPath}`);
+      } else {
+        return rawRef(cleanPath);
+      }
+    };
   }
-};
+} catch (dbErr) {
+  console.error('Firebase Database 初始化錯誤:', dbErr);
+}
 
-const db = rawDb;
-let storage = null; // 免費版 Spark 方案不支援 Storage，設為 null 以直接啟用本地壓縮資料庫備用方案
+// 雙重宣告與全域物件綁定 (確保所有腳本與作用域 100% 均可安全存取)
+var db = rawDb;
+window.db = rawDb;
+window.rawDb = rawDb;
+var storage = null; // 免費版 Spark 方案不支援 Storage，設為 null 以直接啟用本地壓縮資料庫備用方案
+window.storage = storage;
+
 

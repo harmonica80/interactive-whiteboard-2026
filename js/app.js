@@ -3,16 +3,22 @@
 class App {
   constructor() {
     this.quiz = null;
-    this.imageRef = db.ref('images');
-    this.videoRef = db.ref('videos');
-    this.sharesRef = db.ref('teacherShares');
-    this.shareFoldersRef = db.ref('quiz/teacherShareFolders');
+    const activeDb = (typeof db !== 'undefined' && db) ? db : ((typeof window !== 'undefined' && window.db) ? window.db : (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null));
+    if (!activeDb) {
+      console.warn("警告：Firebase Database 實例尚未就緒");
+    }
+    this.db = activeDb;
+    const safeRef = (path) => activeDb ? activeDb.ref(path) : { on() {}, off() {}, once() { return Promise.resolve({ val: () => null, forEach() {} }); }, set() { return Promise.resolve(); }, update() { return Promise.resolve(); }, remove() { return Promise.resolve(); } };
+    this.imageRef = safeRef('images');
+    this.videoRef = safeRef('videos');
+    this.sharesRef = safeRef('teacherShares');
+    this.shareFoldersRef = safeRef('quiz/teacherShareFolders');
     this.currentZoom = 1;
     this.isDragging = false;
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.2.5';
+    this.APP_VERSION = '3.2.6';
     // 初始化狀態快取
     this.questions = [];
     this.images = [];
