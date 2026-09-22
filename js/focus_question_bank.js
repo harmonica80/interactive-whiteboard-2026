@@ -1252,13 +1252,15 @@
           <div style="margin-bottom: 12px;">
             <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">標籤分組 (可自訂或點擊快捷標籤) *</label>
             <div style="display:flex; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='懷舊經典'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 懷舊經典</button>
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='熱門流行'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 熱門流行</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='古典音樂'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 古典音樂</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣五年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣五年級</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣六年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣六年級</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣七年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣七年級</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣八年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣八年級</button>
               <button type="button" onclick="document.getElementById('qb_input_tag').value='動漫神曲'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 動漫神曲</button>
               <button type="button" onclick="document.getElementById('qb_input_tag').value='童謠兒歌'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 童謠兒歌</button>
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='影視金曲'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 影視金曲</button>
             </div>
-            <input type="text" id="qb_input_tag" value="${tag}" placeholder="例如：懷舊經典、熱門流行 或 自訂標籤" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            <input type="text" id="qb_input_tag" value="${tag}" placeholder="例如：古典音樂、台灣五年級、台灣六年級 等" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
           </div>
           <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
             <div>
