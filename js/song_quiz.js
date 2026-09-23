@@ -19,13 +19,13 @@
     }[char]));
   }
 
-  // 取得/建立音訊播放容器 (置於可視範圍外邊緣，避免瀏覽器防作弊/背景阻擋 Autoplay)
+  // 取得/建立音訊播放容器 (置於背後不可見區域，避免瀏覽器防作弊/背景阻擋 Autoplay)
   function getHiddenPlayerContainer() {
     let container = document.getElementById('songQuizAudioWrapper');
     if (!container) {
       container = document.createElement('div');
       container.id = 'songQuizAudioWrapper';
-      container.style.cssText = 'position:fixed; bottom:0; right:0; width:1px; height:1px; opacity:0.01; z-index:-1; pointer-events:none; overflow:hidden;';
+      container.style.cssText = 'position:fixed; bottom:0; right:0; width:200px; height:200px; opacity:0.01; z-index:-999; pointer-events:none; overflow:hidden;';
       document.body.appendChild(container);
     }
     return container;
@@ -247,8 +247,8 @@
     const state = this.songQuizState;
     if (!question) return;
 
-    // 全班同步搶答模式下：只在老師端播放音樂，學生端不要播放
-    if (this.focusGame && this.focusGame.playMode === 'buzzer' && !this.isAdmin) {
+    // 全班同步搶答模式下：若設定為僅老師端發聲，且當前為學生端時阻擋
+    if (this.focusGame && this.focusGame.playMode === 'buzzer' && this.focusGame.audioMode === 'teacher' && !this.isAdmin) {
       return;
     }
 
@@ -259,9 +259,10 @@
     const youtubeId = question.youtubeId || (this.parseYoutubeUrl ? this.parseYoutubeUrl(question.youtubeUrl).videoId : 'bv_cEeDlop0');
 
     const wrapper = getHiddenPlayerContainer();
-    // 使用 YouTube Iframe 播放
+    const originParam = window.location.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
+    // 使用 YouTube Iframe 播放，加入完整 allow 權限支援現代瀏覽器自動播放
     wrapper.innerHTML = `
-      <iframe id="songQuizHiddenIframe" width="200" height="200" src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&start=${startTime}&enablejsapi=1&controls=0" allow="autoplay" style="border:none;"></iframe>
+      <iframe id="songQuizHiddenIframe" width="200" height="200" src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&start=${startTime}&enablejsapi=1&controls=0${originParam}" allow="autoplay; encrypted-media; picture-in-picture" style="border:none;"></iframe>
     `;
 
     if (state) {
@@ -709,12 +710,23 @@
             </div>
           `;
         } else {
+          const isTeacherOnly = game.audioMode === 'teacher';
+          const tipText = isTeacherOnly
+            ? '請聆聽老師端播放音樂，按下搶答後老師端音樂將立即暫停，由您獲得 10 秒作答權！'
+            : '仔細聆聽歌曲片段，聽出歌名請立刻按搶答！按下後音樂將全班暫停，由您獲得 10 秒作答權！';
           interactiveAreaHtml = `
             <div style="text-align:center; padding:10px 0;">
               <button type="button" onclick="window.app.pressBuzzerButton()" style="width:100%; max-width:400px; height:110px; border-radius:55px; border:none; background:linear-gradient(135deg, #ff3b30 0%, #ff9500 100%); color:white; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 8px 24px rgba(255,59,48,0.4); animation: pulseBuzzer 1.5s infinite; transition:transform 0.1s;">
                 ⚡ 按我搶答！
               </button>
-              <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">請聆聽老師端播放音樂，按下搶答後老師端音樂將立即暫停，由您獲得 10 秒作答權！</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">${tipText}</div>
+              ${!isTeacherOnly ? `
+                <div style="margin-top:10px; display:flex; justify-content:center;">
+                  <button type="button" onclick="event.stopPropagation(); window.app.playSongQuizAudio(window.app.focusGame.questions[window.app.focusGame.currentQuestionIndex || 0])" style="background:rgba(0,122,255,0.08); border:1px solid var(--accent-color); color:var(--accent-color); padding:5px 14px; border-radius:20px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                    🔊 聽不到音樂？點我發聲
+                  </button>
+                </div>
+              ` : ''}
             </div>
           `;
         }
@@ -890,8 +902,8 @@
 
   // 處理全班音訊同步播放 / 暫停
   App.prototype.handleBuzzerAudioSync = function handleBuzzerAudioSync(question, round) {
-    // 依需求：全班搶答時，只需要在老師端播放音樂，學生端不要播放
-    if (!this.isAdmin) {
+    // 全班同步搶答模式下：若設定為僅老師端發聲，且當前為學生端時阻擋
+    if (this.focusGame && this.focusGame.audioMode === 'teacher' && !this.isAdmin) {
       this.lastBuzzerAudioKey = null;
       this.stopSongQuizAudio();
       return;
@@ -924,8 +936,16 @@
     const round = game.buzzerRound || {};
     if (round.status !== 'playing') return;
 
-    const userId = localStorage.getItem('user_id') || 'guest';
-    const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '同學';
+    // 檢查是否有設定姓名或暱稱，防呆強制驗證以利老師辨識答題者
+    const currentName = this.getCurrentUserName ? this.getCurrentUserName() : (localStorage.getItem('user_nickname') || localStorage.getItem('user_name') || '');
+    if (!currentName || currentName === '同學' || currentName === '訪客' || currentName === '匿名') {
+      if (this.openStudentNameModal) this.openStudentNameModal();
+      this.showNotification('請先設定姓名', '搶答前請先輸入您的姓名或暱稱，讓老師知道是誰搶答！');
+      return;
+    }
+
+    const userId = (this.getUserId && typeof this.getUserId === 'function') ? this.getUserId() : (localStorage.getItem('user_id') || 'guest');
+    const userName = currentName;
 
     // 檢查是否已被淘汰
     if (round.eliminatedUsers && round.eliminatedUsers[userId]) {

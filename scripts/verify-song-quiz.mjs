@@ -131,10 +131,11 @@ if (threeTagSongs.length !== 46) throw new Error(`三標籤歌曲數應為 46，
 // 3. 測試 index.html 元素與配置
 const html = fs.readFileSync('index.html', 'utf8');
 const htmlChecks = [
-  ['index.html 包含 ver 3.3.0 版本標示', html.includes('ver 3.3.0')],
+  ['index.html 包含 ver 3.3.1 版本標示', html.includes('ver 3.3.1')],
   ['focusGameType 包含 songQuiz 選項', html.includes('value="songQuiz"')],
   ['包含 focusSongQuizSettings 設定區塊', html.includes('id="focusSongQuizSettings"')],
   ['包含玩法模式選擇單選按鈕 focusSongQuizPlayMode 且預設選中 buzzer (全班同步搶答)', html.includes('name="focusSongQuizPlayMode" value="buzzer" checked')],
+  ['包含音訊廣播選擇選單 focusSongQuizAudioMode', html.includes('id="focusSongQuizAudioMode"')],
   ['包含歌單標籤核選容器 focusSongQuizTagContainer', html.includes('id="focusSongQuizTagContainer"')],
   ['包含出題歌單標籤統計與相容元素 focusSongQuizTag', html.includes('id="focusSongQuizTag"')],
   ['包含歌單標籤統計資訊摘要 focusSongQuizTagSummary', html.includes('id="focusSongQuizTagSummary"')],
@@ -147,10 +148,10 @@ const htmlChecks = [
   ['包含題庫徽章 focusQbBadge_songQuiz', html.includes('id="focusQbBadge_songQuiz"')],
   ['題庫彈窗包含 songQuiz 頁籤按鈕', html.includes('data-type="songQuiz"')],
   ['題庫彈窗包含標籤篩選下拉選單 focusQbTagFilterSelect', html.includes('id="focusQbTagFilterSelect"')],
-  ['引用 song_quiz_pool.js?v=330', html.includes('js/song_quiz_pool.js?v=330')],
-  ['引用 song_quiz.js?v=330', html.includes('js/song_quiz.js?v=330')],
-  ['引用 focus_question_bank.js?v=330', html.includes('js/focus_question_bank.js?v=330')],
-  ['引用 app.js?v=330', html.includes('js/app.js?v=330')]
+  ['引用 song_quiz_pool.js?v=331', html.includes('js/song_quiz_pool.js?v=331')],
+  ['引用 song_quiz.js?v=331', html.includes('js/song_quiz.js?v=331')],
+  ['引用 focus_question_bank.js?v=331', html.includes('js/focus_question_bank.js?v=331')],
+  ['引用 app.js?v=331', html.includes('js/app.js?v=331')]
 ];
 
 htmlChecks.forEach(([desc, cond]) => {
@@ -160,13 +161,18 @@ htmlChecks.forEach(([desc, cond]) => {
 // 4. 測試 app.js 邏輯
 const appCode = fs.readFileSync('js/app.js', 'utf8');
 const appChecks = [
-  ['app.js APP_VERSION 為 3.3.0', appCode.includes("this.APP_VERSION = '3.3.0';")],
+  ['app.js APP_VERSION 為 3.3.1', appCode.includes("this.APP_VERSION = '3.3.1';")],
   ['startFocusGame 支援 songQuiz 抽題與標籤篩選', appCode.includes("gameType === 'songQuiz'")],
   ['startFocusGame 支援多標籤核選篩選與空標籤防呆', appCode.includes("getSelectedSongQuizTags") && appCode.includes("請先勾選歌單標籤")],
   ['startFocusGame 支援全班搶答模式 buzzerRound 初始化', appCode.includes("songQuizPlayMode === 'buzzer'")],
+  ['startFocusGame 支援 audioMode 音訊廣播參數設定', appCode.includes("focusSongQuizAudioMode") && appCode.includes("audioMode:")],
   ['startFocusGame 支援選項隨機打亂', appCode.includes('opts[k], opts[r]')],
   ['startFocusGame 支援自訂播放長度 focusSongQuizDuration', appCode.includes('focusSongQuizDuration')],
   ['updateFocusGameAdminOptions 支援 songQuizSettings', appCode.includes('focusSongQuizSettings')],
+  ['adminEditQuestionFolder 方法存在 (支援群組名稱編輯)', appCode.includes('adminEditQuestionFolder(folderId)')],
+  ['adminEditImageFolder 方法存在', appCode.includes('adminEditImageFolder(folderId)')],
+  ['adminEditVideoFolder 方法存在', appCode.includes('adminEditVideoFolder(folderId)')],
+  ['adminEditShareFolder 方法存在', appCode.includes('adminEditShareFolder(folderId)')],
   ['updateSongQuizAdminTagSelect 方法存在', appCode.includes('updateSongQuizAdminTagSelect()')],
   ['getSelectedSongQuizTags 方法存在', appCode.includes('getSelectedSongQuizTags()')],
   ['onSongQuizTagCheckboxChange 方法存在', appCode.includes('onSongQuizTagCheckboxChange()')],
@@ -197,12 +203,13 @@ const sqChecks = [
   ['song_quiz.js 定義 initBuzzerSongQuiz', songQuizCode.includes('initBuzzerSongQuiz')],
   ['song_quiz.js 定義 renderBuzzerSongQuizUI', songQuizCode.includes('renderBuzzerSongQuizUI')],
   ['song_quiz.js 定義 pressBuzzerButton (Transaction 搶答)', songQuizCode.includes('pressBuzzerButton')],
+  ['pressBuzzerButton 具備學生姓名強制驗證防呆', songQuizCode.includes('請先設定姓名') && songQuizCode.includes('openStudentNameModal')],
   ['song_quiz.js 定義 submitBuzzerAnswer (四選一搶答作答)', songQuizCode.includes('submitBuzzerAnswer')],
   ['song_quiz.js 定義 teacherBuzzerAction (老師續播/跳題/揭曉主控)', songQuizCode.includes('teacherBuzzerAction')],
   ['song_quiz.js 定義 renderBuzzerFinalLeaderboard', songQuizCode.includes('renderBuzzerFinalLeaderboard')],
   ['頒獎典禮重置按鈕呼叫 endFocusGame', songQuizCode.includes('window.app.endFocusGame()')],
-  ['全班搶答 handleBuzzerAudioSync 僅老師端播放音樂，學生端禁止播放', songQuizCode.includes('!this.isAdmin') && songQuizCode.includes('this.stopSongQuizAudio()')],
-  ['playSongQuizAudio 包含全班搶答模式學生端阻擋保護', songQuizCode.includes("this.focusGame.playMode === 'buzzer' && !this.isAdmin")],
+  ['handleBuzzerAudioSync 依 audioMode 支援全班發聲與老師專屬模式', songQuizCode.includes("audioMode === 'teacher'")],
+  ['playSongQuizAudio 包含 audioMode 廣播分流支援', songQuizCode.includes("audioMode === 'teacher'")],
   ['song_quiz.js 包含旋轉黑膠唱片動畫 spinVinyl', songQuizCode.includes('spinVinyl')],
   ['song_quiz.js 包含搶答脈衝動畫 pulseBuzzer', songQuizCode.includes('pulseBuzzer')]
 ];
@@ -211,4 +218,4 @@ sqChecks.forEach(([desc, cond]) => {
   if (!cond) throw new Error(`song_quiz.js 檢查失敗：${desc}`);
 });
 
-console.log('🎉 聽歌搶答 (songQuiz) ver 3.3.0 支援歌單標籤核選（單選/多選/全選/清空）50+ 項驗證均全數通過！');
+console.log('🎉 聽歌搶答 (songQuiz) ver 3.3.1 後台群組名稱編輯、音訊廣播支援與一次性課堂姓名驗證 50+ 項驗證均全數通過！');

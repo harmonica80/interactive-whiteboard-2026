@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.3.0';
+    this.APP_VERSION = '3.3.1';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -201,7 +201,7 @@ class App {
     const displayUserName = document.getElementById('displayUserName');
     const displayUserNameTag = document.getElementById('displayUserNameTag');
     if (displayUserName) displayUserName.textContent = trimmed;
-    if (displayUserNameTag && this.isClassMode()) {
+    if (displayUserNameTag) {
       displayUserNameTag.style.display = 'inline-flex';
     }
 
@@ -1390,6 +1390,26 @@ class App {
     );
   }
 
+  adminEditQuestionFolder(folderId) {
+    const f = (this.questionFolders || []).find(item => item.id === folderId);
+    if (!f) return;
+    this.openEditItemModal({
+      title: '📁 編輯提問群組名稱',
+      initialValue: f.name || '',
+      placeholder: '請輸入新的提問群組名稱...',
+      onSave: (newName) => {
+        const trimmed = newName.trim();
+        if (!trimmed) {
+          this.showNotification('提示', '提問群組名稱不可為空！');
+          return;
+        }
+        db.ref(`quiz/questionFolders/${folderId}/name`).set(trimmed).then(() => {
+          this.showNotification('成功', '提問群組名稱已更新！');
+        });
+      }
+    });
+  }
+
   adminCreateImageFolder() {
     const input = document.getElementById('newImageFolderName');
     if (!input) return;
@@ -1425,6 +1445,26 @@ class App {
         });
       }
     );
+  }
+
+  adminEditImageFolder(folderId) {
+    const f = (this.imageFolders || []).find(item => item.id === folderId);
+    if (!f) return;
+    this.openEditItemModal({
+      title: '🖼️ 編輯圖片群組名稱',
+      initialValue: f.name || '',
+      placeholder: '請輸入新的圖片群組名稱...',
+      onSave: (newName) => {
+        const trimmed = newName.trim();
+        if (!trimmed) {
+          this.showNotification('提示', '圖片群組名稱不可為空！');
+          return;
+        }
+        db.ref(`quiz/imageFolders/${folderId}/name`).set(trimmed).then(() => {
+          this.showNotification('成功', '圖片群組名稱已更新！');
+        });
+      }
+    });
   }
 
   assignQuestionFolder(questionId, folderId) {
@@ -1738,6 +1778,26 @@ class App {
     );
   }
 
+  adminEditVideoFolder(folderId) {
+    const f = (this.videoFolders || []).find(item => item.id === folderId);
+    if (!f) return;
+    this.openEditItemModal({
+      title: '🎥 編輯影片群組名稱',
+      initialValue: f.name || '',
+      placeholder: '請輸入新的影片群組名稱...',
+      onSave: (newName) => {
+        const trimmed = newName.trim();
+        if (!trimmed) {
+          this.showNotification('提示', '影片群組名稱不可為空！');
+          return;
+        }
+        db.ref(`quiz/videoFolders/${folderId}/name`).set(trimmed).then(() => {
+          this.showNotification('成功', '影片群組名稱已更新！');
+        });
+      }
+    });
+  }
+
   renderVideoFoldersList() {
     const container = document.getElementById('adminVideoFolderList');
     if (!container) return;
@@ -1753,7 +1813,10 @@ class App {
           <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
           📁 ${this.escapeHtml(f.name)}
         </span>
-        <button class="preset-btn" onclick="window.app.adminDeleteVideoFolder('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">刪除</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminEditVideoFolder('${f.id}')" style="background: var(--accent-color); color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">編輯</button>
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteVideoFolder('${f.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">刪除</button>
+        </div>
       </div>
     `).join('');
 
@@ -2014,7 +2077,10 @@ class App {
           <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
           📁 ${this.escapeHtml(f.name)}
         </span>
-        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteQuestionFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminEditQuestionFolder('${f.id}')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">編輯</button>
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteQuestionFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+        </div>
       </div>
     `).join('');
 
@@ -2267,7 +2333,10 @@ class App {
           <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
           📁 ${this.escapeHtml(f.name)}
         </span>
-        <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteImageFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminEditImageFolder('${f.id}')" style="color: var(--accent-color); border-color: var(--accent-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">編輯</button>
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteImageFolder('${f.id}')" style="color: var(--danger-color); border-color: var(--danger-color); padding: 2px 6px; font-size: 11px; margin: 0; background: transparent; cursor: pointer;">刪除</button>
+        </div>
       </div>
     `).join('');
 
@@ -4365,6 +4434,28 @@ class App {
     );
   }
 
+  adminEditShareFolder(folderId) {
+    const f = (this.shareFolders || []).find(item => item.id === folderId);
+    if (!f) return;
+    this.openEditItemModal({
+      title: '📢 編輯資料夾名稱',
+      initialValue: f.name || '',
+      placeholder: '請輸入新的資料夾名稱...',
+      onSave: (newName) => {
+        const trimmed = newName.trim();
+        if (!trimmed) {
+          this.showNotification('提示', '資料夾名稱不可為空！');
+          return;
+        }
+        this.shareFoldersRef.child(folderId).update({ name: trimmed }).then(() => {
+          this.showNotification('成功', '資料夾名稱已更新！');
+        }).catch(err => {
+          this.showNotification('錯誤', '更新失敗: ' + err.message);
+        });
+      }
+    });
+  }
+
   renderShareFoldersList() {
     const container = document.getElementById('adminShareFolderList');
     if (!container) return;
@@ -4380,7 +4471,10 @@ class App {
           <span style="color: var(--text-muted); font-size: 12px; cursor: grab; user-select: none;">☰</span>
           📁 ${this.escapeHtml(folder.name)}
         </span>
-        <button class="preset-btn" onclick="window.app.adminDeleteShareFolder('${folder.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminEditShareFolder('${folder.id}')" style="background: var(--accent-color); color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto; cursor: pointer;">編輯</button>
+          <button class="preset-btn" onclick="event.stopPropagation(); window.app.adminDeleteShareFolder('${folder.id}')" style="background: var(--danger-color); color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; height: auto; cursor: pointer;">刪除</button>
+        </div>
       </div>
     `).join('');
 
@@ -6611,11 +6705,14 @@ class App {
 
     const songQuizPlayModeInput = document.querySelector('input[name="focusSongQuizPlayMode"]:checked');
     const songQuizPlayMode = (songQuizPlayModeInput && songQuizPlayModeInput.value) || 'buzzer';
+    const songQuizAudioModeInput = document.getElementById('focusSongQuizAudioMode');
+    const songQuizAudioMode = (songQuizAudioModeInput && songQuizAudioModeInput.value) || 'all';
     
     db.ref('quiz/focusGame').set({
       status: 'countdown',
       gameType: gameType,
       playMode: gameType === 'songQuiz' ? songQuizPlayMode : 'self',
+      audioMode: gameType === 'songQuiz' ? songQuizAudioMode : 'all',
       currentQuestionIndex: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? 0 : null,
       buzzerRound: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? {
         status: 'waiting',
@@ -9879,6 +9976,19 @@ class App {
       if (btnShare) btnShare.style.display = 'none';
       if (btnExit) btnExit.style.display = 'none';
       if (btnActionText) btnActionText.textContent = '輸入班級代碼';
+
+      if (userName && displayUserNameTag && displayUserName) {
+        displayUserName.textContent = userName;
+        displayUserNameTag.style.display = 'inline-flex';
+      } else {
+        // 一次性課堂未設定姓名或暱稱，非管理員主動提示設定，以利互動與搶答辨識
+        if (displayUserNameTag) displayUserNameTag.style.display = 'none';
+        if (!this.isAdmin) {
+          setTimeout(() => {
+            this.openStudentNameModal();
+          }, 350);
+        }
+      }
     }
 
     // 更新管理員後台的空間提示標籤
