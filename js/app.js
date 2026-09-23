@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.3.2';
+    this.APP_VERSION = '3.3.3';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -7213,6 +7213,8 @@ class App {
           if (suffixEl) suffixEl.textContent = '完成';
           
           this.renderFocusGameLeaderboard('focusGameRankList', game.results);
+          if (document.getElementById('songQuizSelfRankList')) this.renderFocusGameLeaderboard('songQuizSelfRankList', game.results);
+          if (document.getElementById('classicsQuizSelfRankList')) this.renderFocusGameLeaderboard('classicsQuizSelfRankList', game.results);
           
           this.initFireworkCanvas();
           this.triggerFireworkEffect();
@@ -7243,6 +7245,12 @@ class App {
         this.renderClassicsQuizCompleted(game, result);
         return;
       }
+      if (game.gameType === 'songQuiz' && game.playMode === 'self' && result) {
+        document.getElementById('focusPlayArea').style.display = 'flex';
+        document.getElementById('focusFinishArea').style.display = 'none';
+        this.renderSongQuizCompleted(game, result);
+        return;
+      }
       if (result) {
         document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
         if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
@@ -7270,6 +7278,8 @@ class App {
       }
       
       this.renderFocusGameLeaderboard('focusGameRankList', game.results);
+      if (document.getElementById('songQuizSelfRankList')) this.renderFocusGameLeaderboard('songQuizSelfRankList', game.results);
+      if (document.getElementById('classicsQuizSelfRankList')) this.renderFocusGameLeaderboard('classicsQuizSelfRankList', game.results);
     }
   }
 
@@ -7305,8 +7315,12 @@ class App {
     }));
 
     const sorted = items.sort((a, b) => {
-      const isClassicsQuiz = a.gameType === 'classicsQuiz' || b.gameType === 'classicsQuiz';
-      if (isClassicsQuiz && (b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+      const isQuiz = a.gameType === 'songQuiz' || a.gameType === 'classicsQuiz' || b.gameType === 'songQuiz' || b.gameType === 'classicsQuiz' || a.totalQuestions != null || b.totalQuestions != null;
+      if (isQuiz) {
+        const scoreA = Number(a.score != null ? a.score : ((a.answers || []).filter(ans => ans.correct).length));
+        const scoreB = Number(b.score != null ? b.score : ((b.answers || []).filter(ans => ans.correct).length));
+        if (scoreB !== scoreA) return scoreB - scoreA;
+      }
       const timeA = typeof a.timeSpent === 'number' ? a.timeSpent : 999999;
       const timeB = typeof b.timeSpent === 'number' ? b.timeSpent : 999999;
       if (timeA !== timeB) return timeA - timeB;
@@ -8372,31 +8386,123 @@ class App {
       ...results[uid]
     }));
 
+    // 判斷是否為題庫測驗型遊戲 (有題目、答對統計或選擇題)
+    const isQuizGame = items.some(it => it.gameType === 'songQuiz' || it.gameType === 'classicsQuiz' || it.totalQuestions != null || it.answers != null);
+
     const sorted = items.sort((a, b) => {
+      if (isQuizGame) {
+        // 優先比答對題數 (多者在前)
+        const scoreA = Number(a.score != null ? a.score : ((a.answers || []).filter(ans => ans.correct).length));
+        const scoreB = Number(b.score != null ? b.score : ((b.answers || []).filter(ans => ans.correct).length));
+        if (scoreB !== scoreA) return scoreB - scoreA;
+      }
+      // 答對題數相同或非題庫遊戲：耗時越少越靠前
       const timeA = typeof a.timeSpent === 'number' ? a.timeSpent : 999999;
       const timeB = typeof b.timeSpent === 'number' ? b.timeSpent : 999999;
-      if (timeA !== timeB) return timeA - timeB; // 耗時越少越靠前
+      if (timeA !== timeB) return timeA - timeB;
       return (a.completedAt || 0) - (b.completedAt || 0);
     });
 
-    list.innerHTML = sorted.map((res, index) => {
-      const isTop3 = index < 3;
-      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-      const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
-      const fontWeight = isTop3 ? 'bold' : 'normal';
-      const displayName = this.escapeHtml(res.userName || res.name || '匿名學生');
+    // 計算名次 (支援同分同秒並列)
+    let currentRank = 1;
+    const rankedItems = sorted.map((res, index) => {
+      if (index > 0) {
+        const prev = sorted[index - 1];
+        const isPrevEqual = isQuizGame
+          ? (Number(prev.score || 0) === Number(res.score || 0) && Number(prev.timeSpent || 0).toFixed(2) === Number(res.timeSpent || 0).toFixed(2))
+          : (Number(prev.timeSpent || 0).toFixed(2) === Number(res.timeSpent || 0).toFixed(2));
+        if (!isPrevEqual) {
+          currentRank = index + 1;
+        }
+      }
+      return { ...res, rank: currentRank };
+    });
 
+    // 計算各名次人數以判定並列
+    const rankCounts = {};
+    rankedItems.forEach(it => { rankCounts[it.rank] = (rankCounts[it.rank] || 0) + 1; });
+
+    list.innerHTML = rankedItems.map((res) => {
+      const rank = res.rank;
+      const isTied = (rankCounts[rank] || 0) > 1;
+      let medal = `#${rank}`;
+      let bg = 'var(--bg-input, #f8f9fa)';
+      let border = '1px solid var(--border-color)';
+      let color = 'var(--text-secondary)';
+
+      if (rank === 1) {
+        medal = isTied ? '🥇 並列' : '🥇 冠軍';
+        color = '#b8860b';
+        bg = 'rgba(255, 215, 0, 0.12)';
+        border = '1.5px solid #ffd700';
+      } else if (rank === 2) {
+        medal = isTied ? '🥈 並列' : '🥈 亞軍';
+        color = '#708090';
+        bg = 'rgba(192, 192, 192, 0.14)';
+        border = '1.5px solid #c0c0c0';
+      } else if (rank === 3) {
+        medal = isTied ? '🥉 並列' : '🥉 季軍';
+        color = '#a0522d';
+        bg = 'rgba(205, 127, 50, 0.12)';
+        border = '1.5px solid #cd7f32';
+      } else if (isTied) {
+        medal = `#${rank} 並列`;
+      }
+
+      const displayName = this.escapeHtml(res.userName || res.name || '匿名學生');
+      const timeStr = typeof res.timeSpent === 'number' ? res.timeSpent.toFixed(2) : '-';
       const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
       const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
-      const timeStr = typeof res.timeSpent === 'number' ? res.timeSpent.toFixed(2) : '-';
-      const classicsNote = res.gameType === 'classicsQuiz' ? `（答對 ${res.score || 0}/${res.totalQuestions || 0} 題）` : '';
-      const detailHtml = `<span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${timeStr} 秒 ${helpNote}${memoryNote}${classicsNote}</span>`;
+
+      // 判斷該項目是否為測驗題型 (包含答對題數與統計)
+      const isQuizItem = res.gameType === 'songQuiz' || res.gameType === 'classicsQuiz' || res.totalQuestions != null || res.answers != null;
+      let detailHtml = '';
+
+      if (isQuizItem) {
+        const correctCount = res.score != null ? Number(res.score) : ((res.answers || []).filter(ans => ans.correct).length);
+        const totalCount = Number(res.totalQuestions || (res.answers ? res.answers.length : correctCount));
+        const wrongCount = Math.max(0, totalCount - correctCount);
+        const points = correctCount * 10;
+        const unit = res.gameType === 'songQuiz' ? '首' : '題';
+
+        detailHtml = `
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+              <span style="font-size: 15px; font-weight: 900; color: var(--accent-color); margin-right: 2px;">${points} 分</span>
+              <span style="font-size: 12px; color: #167a31; background: rgba(52, 199, 89, 0.14); padding: 2px 7px; border-radius: 6px; font-weight: bold; white-space: nowrap;">
+                ✅ 答對 ${correctCount} ${unit}
+              </span>
+              ${wrongCount > 0 ? `
+                <span style="font-size: 12px; color: #d70015; background: rgba(255, 59, 48, 0.12); padding: 2px 7px; border-radius: 6px; font-weight: bold; white-space: nowrap;">
+                  ❌ 答錯 ${wrongCount} ${unit}
+                </span>
+              ` : `
+                <span style="font-size: 11px; color: #167a31; background: rgba(52, 199, 89, 0.08); padding: 2px 5px; border-radius: 5px; font-weight: bold;">
+                  全對
+                </span>
+              `}
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary);">
+              <span style="font-family: monospace; font-weight: bold; color: var(--danger-color);">⏱️ ${timeStr} 秒</span>
+              ${helpNote ? `<span style="font-size: 11px; color: var(--text-muted);">${helpNote}</span>` : ''}
+            </div>
+          </div>
+        `;
+      } else {
+        detailHtml = `
+          <div style="text-align: right;">
+            <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">⏱️ ${timeStr} 秒</span>
+            ${helpNote ? `<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${helpNote}</div>` : ''}
+            ${memoryNote ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${memoryNote}</div>` : ''}
+          </div>
+        `;
+      }
 
       return `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: ${bg}; border: ${border}; border-radius: 12px; font-size: 14px; margin-bottom: 8px; box-sizing: border-box;">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
-            <span style="color: var(--text-primary); font-weight: 600;">${displayName}</span>
+            <span style="font-size: 14px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; min-width: 60px; white-space: nowrap;">${medal}</span>
+            <span style="color: var(--text-primary); font-weight: 600; font-size: 15px;">${displayName}</span>
           </div>
           <div>${detailHtml}</div>
         </div>

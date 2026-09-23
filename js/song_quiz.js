@@ -508,7 +508,20 @@
           </div>
         `;
       }).join('')}
+
+      <div style="margin-top:16px; padding:16px; border-radius:14px; background:var(--bg-card); border:1px solid var(--border-color); width:100%; box-sizing:border-box;">
+        <h4 style="font-size:15px; margin:0 0 12px 0; color:var(--text-primary); display:flex; align-items:center; gap:6px; font-weight:bold;">
+          🏆 全班即時成績排行榜
+        </h4>
+        <div id="songQuizSelfRankList" style="display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto;">
+          <!-- 排行榜由 renderFocusGameLeaderboard 自動填入 -->
+        </div>
+      </div>
     `;
+
+    if (this.renderFocusGameLeaderboard) {
+      this.renderFocusGameLeaderboard('songQuizSelfRankList', game.results);
+    }
   };
 
   // ==========================================
