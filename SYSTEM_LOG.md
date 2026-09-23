@@ -1,4 +1,22 @@
 # System Log
+## 2026-09-23 - ver 3.3.2 聽歌搶答繼續播放時間點精確保留與同分並列冠軍榮譽榜修復
+- 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **聽歌搶答繼續播放時間點精確保留 (圖 1) (`js/song_quiz.js`, `js/app.js`)**：
+     - 在學生按下搶答（`pressBuzzerButton`）與老師手動暫停（`teacherBuzzerAction('pause')`）時，透過播放開始時間（`playStartedAt`）與基準起點（`baseSeek`）即時計算已播放秒數，原子性存入 Firebase `quiz/focusGame/buzzerRound/audioSeekTime`。
+     - 老師點選「▶️ 繼續播放音樂 (開放其餘同學繼續搶答)」或「▶️ 繼續播放音樂 (從暫停進度)」時，系統從剛才暫停的時間點無縫續播，不再從頭重新播放。
+     - 在 `playSongQuizAudio` 中精準計算扣除已播放秒數後的 `remainingDuration`，確保自訂起點續播時自動停止定時器準確倒數。
+     - 老師主控台同步提供「⏮️ 從頭重新播放」備援按鈕，若學生未聽清楚老師亦能隨時一鍵從頭重播。
+  2. **頒獎典禮排行榜同分並列冠軍修復 (圖 2) (`js/song_quiz.js`)**：
+     - 在全班聽歌搶答頒獎典禮（`renderBuzzerFinalLeaderboard`）中，重構名次計算邏輯為競賽標準排名演算法。
+     - 當最高分有兩位或多位同學時，均顯示為「🥇 並列冠軍」，並套用冠軍金黃色榮譽外框與底色；亞軍與季軍同分時亦同步支援「🥈 並列亞軍」與「🥉 並列季軍」。
+     - 同步更新遊戲進行中的底部縮小版即時排行榜，使兩處同分排名標籤保持完全一致。
+  3. **版本號嚴格遞增至 `ver 3.3.2`**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=332`）、`app.js`（`this.APP_VERSION = '3.3.2'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-23 - ver 3.3.1 後台群組名稱編輯功能、聽歌搶答音訊廣播範圍設定與一次性課堂學生姓名防呆設定
 - 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：
