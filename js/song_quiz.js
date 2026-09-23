@@ -254,12 +254,17 @@
 
     this.stopSongQuizAudio();
 
-    const duration = Math.max(5, Math.min(120, parseInt(question.duration) || 60));
-    const startTime = typeof customStartTime === 'number' ? customStartTime : Math.max(0, parseInt(question.startTime) || 0);
+    const baseDuration = Math.max(5, Math.min(120, parseInt(question.duration) || 60));
+    const questionStart = Math.max(0, parseInt(question.startTime) || 0);
+    const startTime = typeof customStartTime === 'number' ? Math.max(0, customStartTime) : questionStart;
     const youtubeId = question.youtubeId || (this.parseYoutubeUrl ? this.parseYoutubeUrl(question.youtubeUrl).videoId : 'bv_cEeDlop0');
 
+    // 計算自題目設定起點以來的偏移秒數，以及本段音訊剩餘可播放秒數
+    const elapsedFromStart = Math.max(0, startTime - questionStart);
+    const remainingDuration = Math.max(3, baseDuration - elapsedFromStart);
+
     const wrapper = getHiddenPlayerContainer();
-    const originParam = window.location.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
+    const originParam = (typeof window !== 'undefined' && window.location && window.location.origin) ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
     // 使用 YouTube Iframe 播放，加入完整 allow 權限支援現代瀏覽器自動播放
     wrapper.innerHTML = `
       <iframe id="songQuizHiddenIframe" width="200" height="200" src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&start=${startTime}&enablejsapi=1&controls=0${originParam}" allow="autoplay; encrypted-media; picture-in-picture" style="border:none;"></iframe>
@@ -267,7 +272,7 @@
 
     if (state) {
       state.isPlayingAudio = true;
-      state.audioRemainingSeconds = duration;
+      state.audioRemainingSeconds = remainingDuration;
       state.audioTimerInterval = setInterval(() => {
         state.audioRemainingSeconds--;
         if (state.audioRemainingSeconds <= 0) {
@@ -281,11 +286,11 @@
         }
       }, 1000);
     } else {
-      // 全班同步搶答模式：若無人搶答，於播放長度到達後自動停止音訊
+      // 全班同步搶答模式：若無人搶答，於剩餘播放長度到達後自動停止音訊
       if (this.buzzerAudioTimeout) clearTimeout(this.buzzerAudioTimeout);
       this.buzzerAudioTimeout = setTimeout(() => {
         this.stopSongQuizAudio();
-      }, duration * 1000);
+      }, remainingDuration * 1000);
     }
   };
 
@@ -813,17 +818,24 @@
     // 老師專屬控制面板 (管理員在畫面底部具備主控權)
     let teacherControlHtml = '';
     if (this.isAdmin) {
+      const hasPausedProgress = round.audioSeekTime != null && Number(round.audioSeekTime) > Number(question?.startTime || 0);
+
       teacherControlHtml = `
         <div style="margin-top:10px; padding:14px; border-radius:12px; background:var(--bg-input); border:1.5px solid var(--accent-color);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <span style="font-size:13px; font-weight:900; color:var(--accent-color);">👑 老師主控台 (正解：${escapeForSong(question.title)} / ${escapeForSong(question.artist || '')})</span>
-            <span style="font-size:12px; color:var(--text-muted);">狀態：${roundStatus}</span>
+            <span style="font-size:12px; color:var(--text-muted);">狀態：${roundStatus}${hasPausedProgress ? ` (進度 ${round.audioSeekTime}s)` : ''}</span>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             ${roundStatus === 'waiting' ? `
               <button type="button" onclick="window.app.teacherBuzzerAction('play')" style="flex:1; padding:10px; border:none; border-radius:8px; background:#34c759; color:white; font-size:14px; font-weight:bold; cursor:pointer;">
-                ▶️ 開始播放音樂 (開放搶答)
+                ${hasPausedProgress ? '▶️ 繼續播放音樂 (從暫停進度)' : '▶️ 開始播放音樂 (開放搶答)'}
               </button>
+              ${hasPausedProgress ? `
+                <button type="button" onclick="window.app.teacherBuzzerAction('restart')" style="padding:10px 14px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer;">
+                  ⏮️ 從頭重新播放
+                </button>
+              ` : ''}
             ` : ''}
 
             ${roundStatus === 'playing' ? `
@@ -833,8 +845,11 @@
             ` : ''}
 
             ${roundStatus === 'answered_wrong' ? `
-              <button type="button" onclick="window.app.teacherBuzzerAction('resume')" style="flex:1; padding:12px; border:none; border-radius:8px; background:#34c759; color:white; font-size:14px; font-weight:900; cursor:pointer; box-shadow:0 2px 8px rgba(52,199,89,0.3);">
+              <button type="button" onclick="window.app.teacherBuzzerAction('resume')" style="flex:2; padding:12px; border:none; border-radius:8px; background:#34c759; color:white; font-size:14px; font-weight:900; cursor:pointer; box-shadow:0 2px 8px rgba(52,199,89,0.3);">
                 ▶️ 繼續播放音樂 (開放其餘同學繼續搶答)
+              </button>
+              <button type="button" onclick="window.app.teacherBuzzerAction('restart')" style="padding:10px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer;">
+                ⏮️ 從頭重播
               </button>
               <button type="button" onclick="window.app.teacherBuzzerAction('next')" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff3b30; color:white; font-size:14px; font-weight:900; cursor:pointer;">
                 ⏭️ 跳至下一題
@@ -860,18 +875,26 @@
       `;
     }
 
-    // 即時積分看板 (縮小版置於底部)
+    // 即時積分看板 (縮小版置於底部，支援同分並列名次)
     const scores = game.buzzerScores || {};
     const scoreEntries = Object.values(scores).sort((a, b) => (b.score || 0) - (a.score || 0));
     let scoreBoardHtml = '';
     if (scoreEntries.length > 0) {
+      let inGameRank = 1;
+      const rankedScoreEntries = scoreEntries.map((u, i) => {
+        if (i > 0 && Number(u.score || 0) < Number(scoreEntries[i - 1].score || 0)) {
+          inGameRank = i + 1;
+        }
+        return { ...u, rank: inGameRank };
+      });
+
       scoreBoardHtml = `
         <div style="margin-top:10px; padding:10px 14px; border-radius:10px; background:var(--bg-card); border:1px solid var(--border-color);">
           <div style="font-size:12px; font-weight:bold; color:var(--text-secondary); margin-bottom:6px;">🏆 目前搶答積分排行榜：</div>
           <div style="display:flex; gap:12px; overflow-x:auto; padding-bottom:4px;">
-            ${scoreEntries.slice(0, 5).map((u, i) => `
+            ${rankedScoreEntries.slice(0, 5).map((u) => `
               <span style="font-size:12px; font-weight:bold; white-space:nowrap; background:rgba(0,122,255,0.08); padding:3px 8px; border-radius:6px; color:var(--text-primary);">
-                ${i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : `${i + 1}.`))} ${escapeForSong(u.name)}: <strong style="color:var(--accent-color);">${u.score || 0}分</strong>
+                ${u.rank === 1 ? '🥇' : (u.rank === 2 ? '🥈' : (u.rank === 3 ? '🥉' : `${u.rank}.`))} ${escapeForSong(u.name)}: <strong style="color:var(--accent-color);">${u.score || 0}分</strong>
               </span>
             `).join('')}
           </div>
@@ -913,11 +936,11 @@
     const action = round.audioAction || 'stop';
 
     if (roundStatus === 'playing') {
-      // 播放中：如果尚未播放，啟動播放
-      const currentActionKey = `${question.id}_${round.timestamp || 0}`;
+      // 播放中：如果尚未播放，啟動播放 (包含 action, timestamp 與 audioSeekTime 變更)
+      const currentActionKey = `${question.id}_${round.timestamp || 0}_${round.audioSeekTime || 0}`;
       if (this.lastBuzzerAudioKey !== currentActionKey) {
         this.lastBuzzerAudioKey = currentActionKey;
-        const seekTime = Number(round.audioSeekTime || question.startTime || 0);
+        const seekTime = Number(round.audioSeekTime != null ? round.audioSeekTime : (question.startTime || 0));
         this.playSongQuizAudio(question, seekTime);
       }
     } else {
@@ -935,6 +958,8 @@
 
     const round = game.buzzerRound || {};
     if (round.status !== 'playing') return;
+
+    const question = (game.questions || [])[Number(game.currentQuestionIndex || 0)];
 
     // 檢查是否有設定姓名或暱稱，防呆強制驗證以利老師辨識答題者
     const currentName = this.getCurrentUserName ? this.getCurrentUserName() : (localStorage.getItem('user_nickname') || localStorage.getItem('user_name') || '');
@@ -960,14 +985,21 @@
     db.ref('quiz/focusGame/buzzerRound').transaction((current) => {
       if (!current) return current;
       if (current.status === 'playing' && !current.buzzedUser) {
+        const now = Date.now();
+        const baseSeek = Number(current.audioSeekTime != null ? current.audioSeekTime : (question?.startTime || 0));
+        const playedMs = current.playStartedAt ? Math.max(0, now - current.playStartedAt) : 0;
+        const currentPos = Math.round(baseSeek + playedMs / 1000);
+
         current.status = 'buzzed';
         current.buzzedUser = {
           uid: userId,
           name: userName,
-          buzzedAt: Date.now()
+          buzzedAt: now
         };
         current.audioAction = 'pause';
-        current.timestamp = Date.now();
+        current.audioSeekTime = currentPos;
+        current.playStartedAt = null;
+        current.timestamp = now;
         return current;
       }
       return; // 已被搶走，取消操作
@@ -1070,37 +1102,67 @@
 
     const questions = game.questions || [];
     const qIndex = Number(game.currentQuestionIndex || 0);
+    const question = questions[qIndex];
     const round = game.buzzerRound || {};
 
     if (action === 'play') {
-      // 開始播放
+      // 開始播放：若之前有暫停進度則從暫停點播放，否則從題目起點播放
+      const now = Date.now();
+      const startSeek = Number(round.audioSeekTime != null ? round.audioSeekTime : (question?.startTime || 0));
       db.ref('quiz/focusGame/buzzerRound').update({
         status: 'playing',
         audioAction: 'play',
+        audioSeekTime: startSeek,
+        playStartedAt: now,
         buzzedUser: null,
-        timestamp: Date.now()
+        timestamp: now
       });
     } else if (action === 'pause') {
-      // 手動暫停
+      // 手動暫停：精確計算並儲存當前音訊進度
+      const now = Date.now();
+      const baseSeek = Number(round.audioSeekTime != null ? round.audioSeekTime : (question?.startTime || 0));
+      const playedMs = round.playStartedAt ? Math.max(0, now - round.playStartedAt) : 0;
+      const currentPos = Math.round(baseSeek + playedMs / 1000);
+
       db.ref('quiz/focusGame/buzzerRound').update({
         status: 'waiting',
         audioAction: 'pause',
-        timestamp: Date.now()
+        audioSeekTime: currentPos,
+        playStartedAt: null,
+        timestamp: now
       });
     } else if (action === 'resume') {
-      // 繼續播放 (答錯後讓其他同學繼續搶)
+      // 繼續播放 (答錯後讓其他同學繼續搶)：從剛才暫停的時間點開始續播
+      const now = Date.now();
+      const currentSeek = Number(round.audioSeekTime != null ? round.audioSeekTime : (question?.startTime || 0));
       db.ref('quiz/focusGame/buzzerRound').update({
         status: 'playing',
         audioAction: 'resume',
+        audioSeekTime: currentSeek,
+        playStartedAt: now,
         buzzedUser: null,
-        timestamp: Date.now()
+        timestamp: now
       });
       this.showNotification('指令發送', '已繼續播放歌曲，開放其他同學搶答！');
+    } else if (action === 'restart') {
+      // 從頭重播本題
+      const now = Date.now();
+      const initialStart = Number(question?.startTime || 0);
+      db.ref('quiz/focusGame/buzzerRound').update({
+        status: 'playing',
+        audioAction: 'play',
+        audioSeekTime: initialStart,
+        playStartedAt: now,
+        buzzedUser: null,
+        timestamp: now
+      });
+      this.showNotification('重新播放', '已從頭重新播放本題歌曲片段！');
     } else if (action === 'reveal') {
       // 揭曉答案
       db.ref('quiz/focusGame/buzzerRound').update({
         status: 'revealed',
         audioAction: 'stop',
+        playStartedAt: null,
         timestamp: Date.now()
       });
     } else if (action === 'next') {
@@ -1113,16 +1175,21 @@
           buzzerRound: {
             status: 'finished',
             audioAction: 'stop',
+            playStartedAt: null,
             timestamp: Date.now()
           }
         });
       } else {
         // 進入下一題，重置 round
+        const nextQ = questions[nextIndex];
+        const nextStart = nextQ ? Number(nextQ.startTime || 0) : 0;
         db.ref('quiz/focusGame').update({
           currentQuestionIndex: nextIndex,
           buzzerRound: {
             status: 'waiting',
             audioAction: 'init',
+            audioSeekTime: nextStart,
+            playStartedAt: null,
             buzzedUser: null,
             eliminatedUsers: {},
             timestamp: Date.now()
@@ -1142,6 +1209,26 @@
     const scores = game.buzzerScores || {};
     const entries = Object.values(scores).sort((a, b) => (b.score || 0) - (a.score || 0));
 
+    // 計算同分人數與並列名次
+    const scoreCounts = {};
+    entries.forEach((e) => {
+      const s = Number(e.score || 0);
+      scoreCounts[s] = (scoreCounts[s] || 0) + 1;
+    });
+
+    let currentRank = 1;
+    const rankedEntries = entries.map((entry, index) => {
+      if (index > 0 && Number(entry.score || 0) < Number(entries[index - 1].score || 0)) {
+        currentRank = index + 1;
+      }
+      const isTied = (scoreCounts[Number(entry.score || 0)] || 1) > 1;
+      return {
+        ...entry,
+        rank: currentRank,
+        isTied
+      };
+    });
+
     grid.innerHTML = `
       <div style="padding:20px; border-radius:16px; background:linear-gradient(135deg, rgba(0,122,255,0.12) 0%, rgba(52,199,89,0.12) 100%); border:1.5px solid var(--accent-color); text-align:center; box-sizing:border-box;">
         <div style="font-size:26px; font-weight:900; color:var(--text-primary);">🏆 全班聽歌搶答 頒獎典禮 🏆</div>
@@ -1149,24 +1236,24 @@
       </div>
 
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
-        ${entries.length === 0 ? `
+        ${rankedEntries.length === 0 ? `
           <div style="padding:24px; text-align:center; color:var(--text-muted); background:var(--bg-card); border-radius:12px; border:1px solid var(--border-color);">
             本局無同學得分
           </div>
-        ` : entries.map((entry, rank) => {
-          let badge = `${rank + 1}`;
+        ` : rankedEntries.map((entry) => {
+          let badge = `第 ${entry.rank} 名${entry.isTied ? ' (並列)' : ''}`;
           let bg = 'var(--bg-card)';
           let border = '1px solid var(--border-color)';
-          if (rank === 0) {
-            badge = '🥇 冠軍';
+          if (entry.rank === 1) {
+            badge = entry.isTied ? '🥇 並列冠軍' : '🥇 冠軍';
             bg = 'rgba(255,215,0,0.15)';
             border = '2px solid #ffd700';
-          } else if (rank === 1) {
-            badge = '🥈 亞軍';
+          } else if (entry.rank === 2) {
+            badge = entry.isTied ? '🥈 並列亞軍' : '🥈 亞軍';
             bg = 'rgba(192,192,192,0.15)';
             border = '2px solid #c0c0c0';
-          } else if (rank === 2) {
-            badge = '🥉 季軍';
+          } else if (entry.rank === 3) {
+            badge = entry.isTied ? '🥉 並列季軍' : '🥉 季軍';
             bg = 'rgba(205,127,50,0.15)';
             border = '2px solid #cd7f32';
           }
@@ -1174,7 +1261,7 @@
           return `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-radius:12px; background:${bg}; border:${border};">
               <div style="display:flex; align-items:center; gap:12px;">
-                <span style="font-weight:900; font-size:15px; color:var(--text-primary); min-width:60px;">${badge}</span>
+                <span style="font-weight:900; font-size:15px; color:var(--text-primary); min-width:90px; white-space:nowrap;">${badge}</span>
                 <span style="font-size:16px; font-weight:bold; color:var(--text-primary);">${escapeForSong(entry.name)}</span>
               </div>
               <div style="text-align:right;">

@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.3.1';
+    this.APP_VERSION = '3.3.2';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -6720,6 +6720,8 @@ class App {
         buzzedAt: null,
         eliminatedUsers: {},
         audioAction: 'init',
+        audioSeekTime: selectedQuestions[0]?.startTime || 0,
+        playStartedAt: null,
         timestamp: Date.now()
       } : null,
       buzzerScores: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? {} : null,
