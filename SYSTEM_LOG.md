@@ -1,4 +1,21 @@
 # System Log
+## 2026-09-23 - ver 3.3.3 自主進行即時排行榜支援答對答錯統計、得分顯示與競賽排名樣式
+- 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `js/classics_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **自主進行即時排行榜支援答對/答錯統計與得分顯示 (`js/app.js`)**：
+     - 重構 `renderFocusGameLeaderboard` 成績渲染：針對題庫測驗型遊戲（`songQuiz`、`classicsQuiz` 等），全面新增「得分（如 20 分）」、「✅ 答對題數（首/題）」與「❌ 答錯題數（首/題）」獨立彩色標籤，不再只有紅色秒數。
+     - 顯示風格比照全班搶答頒獎典禮的高質感規格，包含金、銀、銅牌顏色區分與邊框高亮，清楚展示每位同學的作答戰績。
+     - 排序邏輯全面優化：優先比對答對題數（得分高者在前），分數相同時再以耗時較少者優先，並支援同分同秒時的並列（🥇 並列 / 🥈 並列）名次計算。
+     - 同步更新 `calculateFocusUserRank`，使自主模式個人完成名次亦精準依答對題數優先排定。
+  2. **學生端自主完成畫面內建即時排行榜 (`js/song_quiz.js`, `js/classics_quiz.js`, `js/app.js`)**：
+     - 在聽歌搶答（`renderSongQuizCompleted`）與國學常識（`renderClassicsQuizCompleted`）學生作答完成畫面底部，新增「🏆 全班即時成績排行榜」展示區。
+     - 當其他同學陸續完成作答時，畫面會透過 `handleFocusGameSync` 自動即時更新全班最新戰績。
+  3. **版本號嚴格遞增至 `ver 3.3.3`**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=333`）、`app.js`（`this.APP_VERSION = '3.3.3'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-23 - ver 3.3.2 聽歌搶答繼續播放時間點精確保留與同分並列冠軍榮譽榜修復
 - 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：
