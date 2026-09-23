@@ -1,4 +1,25 @@
 # System Log
+## 2026-09-23 - ver 3.3.1 後台群組名稱編輯功能、聽歌搶答音訊廣播範圍設定與一次性課堂學生姓名防呆設定
+- 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **後台群組名稱編輯功能 (圖 1) (`js/app.js`)**：
+     - 在後台「提問管理」之提問群組清單（`adminQuestionFolderList`）中，每個群組項目的「刪除」按鈕旁新增「編輯」按鈕。
+     - 點擊「編輯」會以通用彈窗 `openEditItemModal` 開啟「📁 編輯提問群組名稱」對話框，即時更新 Firebase `quiz/questionFolders/${folderId}/name`。
+     - 同步為圖片群組（`adminEditImageFolder`）、影片群組（`adminEditVideoFolder`）與教師分享群組（`adminEditShareFolder`）實作名稱編輯功能與按鈕，實現全模組一致的群組管理體驗。
+  2. **音樂題 (聽歌搶答) 聲音問題修復與音訊廣播設定 (`index.html`, `js/app.js`, `js/song_quiz.js`)**：
+     - 解除先前版本學生端強制靜音的限制：在後台出題區新增「音樂播放廣播」設定（`#focusSongQuizAudioMode`），預設為「🔊 全班同步發聲（老師與學生裝置皆能聽歌）」，另可選「📢 僅老師端發聲（實體教室使用單一主控喇叭）」。
+     - 於 `playSongQuizAudio` 與 `handleBuzzerAudioSync` 中依 `audioMode` 智慧分流，預設全班皆能清楚聽歌猜題。
+     - 升級 YouTube Iframe 容器與播放參數：將播放器樣式由 1px 升級為 200px (不可見置底)，補齊 `allow="autoplay; encrypted-media; picture-in-picture"` 與 `origin` 參數，避開現代瀏覽器阻擋 1px 追蹤元素播放的限制。
+     - 在學生端搶答畫面提供「🔊 聽不到音樂？點我發聲」備援按鈕，若受瀏覽器使用者手勢策略限制，點擊即可一鍵觸發音訊。
+  3. **一次性課堂學生姓名設定與辨識修復 (`js/app.js`, `js/song_quiz.js`, `index.html`)**：
+     - 在 `initClassRoomUI()` 中擴展一次性課堂支援：若同學未設定姓名或暱稱，進入一次性課堂時主動跳出 `openStudentNameModal` 引導設定姓名；若已設定，則在頂部常駐顯示 `👤 [姓名] ✏️` 並支援隨時點擊修改。
+     - 在 `setUserName()` 中解除僅班級模式才顯示姓名標籤的限制，讓一次性課堂也能清晰辨識個人身分。
+     - 在 `pressBuzzerButton()` 搶答時加入嚴格防呆校驗：若學生姓名未填寫或仍為預設的「同學」、「訪客」、「匿名」，立即阻擋搶答並跳出設定姓名彈窗，徹底杜絕搶答成功卻顯示無名「同學」無法判斷作答者的問題。
+  4. **版本號嚴格遞增至 `ver 3.3.1`**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=331`）、`app.js`（`this.APP_VERSION = '3.3.1'`），並通過所有自動化整合測試。
+
+---
+
 ## 2026-09-22 - ver 3.3.0 聽歌搶答出題歌單標籤核選功能：支援多選、單選、全選與清空，動態統計可抽題數
 - 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：

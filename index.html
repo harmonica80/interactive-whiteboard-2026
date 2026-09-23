@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.3.0</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.3.1</span>
         </p>
       </div>
       <div class="top-actions">
@@ -1193,7 +1193,7 @@
                   </select>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                   <div>
                     <label style="font-size: 13px; color: var(--text-secondary); font-weight: bold; display: block; margin-bottom: 4px;">每局題數：</label>
                     <select id="focusSongQuizCount" class="question-input" style="width: 100%; box-sizing: border-box; margin: 0; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 7px; border-radius: 8px;">
@@ -1213,6 +1213,13 @@
                       <option value="60" selected>60 秒 (1分鐘，推薦)</option>
                       <option value="90">90 秒 (1分半)</option>
                       <option value="120">120 秒 (2分鐘)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 13px; color: var(--text-secondary); font-weight: bold; display: block; margin-bottom: 4px;">音樂播放廣播：</label>
+                    <select id="focusSongQuizAudioMode" class="question-input" style="width: 100%; box-sizing: border-box; margin: 0; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 7px; border-radius: 8px;">
+                      <option value="all" selected>🔊 全班同步發聲</option>
+                      <option value="teacher">📢 僅老師端發聲</option>
                     </select>
                   </div>
                 </div>
@@ -1563,7 +1570,7 @@
           設定您的姓名或匿稱
         </h3>
         <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
-          您已進入專屬班級課堂！請設定您的姓名或暱稱（例如：座號+姓名），所有提問、圖片、影片分享與留言都將以實名互動，並允許您自由修改或刪除自己的發表內容。
+          歡迎來到互動白板課堂！請設定您的姓名或暱稱（例如：座號+姓名），所有提問、搶答、圖片影片分享與留言都將以實名互動，方便老師與同學即時辨識。
         </p>
       </div>
 
@@ -1647,17 +1654,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=330"></script>
+  <script src="js/firebase-config.js?v=331"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=330"></script>
-  <script src="js/focus_question_bank.js?v=330"></script>
+  <script src="js/song_quiz_pool.js?v=331"></script>
+  <script src="js/focus_question_bank.js?v=331"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=330"></script>
-  <script src="js/app.js?v=330"></script>
+  <script src="js/quiz.js?v=331"></script>
+  <script src="js/app.js?v=331"></script>
   <script src="js/classics_quiz.js?v=306"></script>
-  <script src="js/song_quiz.js?v=330"></script>
-  <script src="js/video_quiz.js?v=330"></script>
+  <script src="js/song_quiz.js?v=331"></script>
+  <script src="js/video_quiz.js?v=331"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
