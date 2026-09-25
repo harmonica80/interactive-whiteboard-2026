@@ -7,11 +7,11 @@
 
   function renderClassicsLinks(question) {
     const ref = question.reference || {}
+    const introLink = ref.introUrl || ref.fullTextUrl || '#'
     return `
       <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 10px;">
         <a href="${escapeForClassics(ref.readcUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold; text-decoration: underline; font-size: 13px;">📖 中讀網導讀（搜尋：${escapeForClassics(ref.readcKeyword || '作品名')}）</a>
-        <a href="${escapeForClassics(ref.fullTextUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold; text-decoration: underline; font-size: 13px;">📜 完整原典／詩詞全文</a>
-        <a href="${escapeForClassics(ref.introUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold; text-decoration: underline; font-size: 13px;">🔎 延伸介紹</a>
+        <a href="${escapeForClassics(introLink)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold; text-decoration: underline; font-size: 13px;">📜 完整原典／詩詞全文</a>
       </div>
     `
   }

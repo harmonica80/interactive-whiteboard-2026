@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.3.3';
+    this.APP_VERSION = '3.3.4';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -577,6 +577,7 @@ class App {
     });
     
     // 記錄目前選按的功能選單，供貼上事件判斷用
+    this.previousTabId = this.activeTabId;
     this.activeTabId = targetId;
 
     if (targetId !== 'panel-video-quiz') {
@@ -605,6 +606,11 @@ class App {
     if (targetId === 'panel-lucky-wheel') {
       this.updateWheelControlPanelVisibility();
       this.drawWheelLocal();
+      if (this.isAdmin) {
+        db.ref('quiz/luckyWheel/active').set({ active: true, timestamp: Date.now() });
+      }
+    } else if (this.isAdmin && this.previousTabId === 'panel-lucky-wheel') {
+      db.ref('quiz/luckyWheel/active').set({ active: false });
     }
     
     if (targetId === 'panel-admin') {
@@ -6611,6 +6617,7 @@ class App {
     const selectedSize = gameType === 'memoryPosition' ? memoryGridSize : numberGridSize;
     const countdownSecs = parseInt(document.getElementById('focusGameCountdown').value) || 10;
     const classicsQuestionCount = parseInt(document.getElementById('focusClassicsQuizCount')?.value) || 5;
+    const characterTestCount = parseInt(document.getElementById('focusCharacterTestCount')?.value) || 3;
     
     // 記憶翻牌配對遊戲 (Memory Match)
     const pairCount = parseInt(document.getElementById('selectedMemoryMatchPairCount')?.value) || 8;
@@ -6633,7 +6640,7 @@ class App {
     if (gameType === 'characterTest') {
       const pool = [...(window.focusQB ? window.focusQB.getPool('characterTest') : CHARACTER_TEST_POOL)];
       selectedQuestions = [];
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < characterTestCount; i++) {
         if (pool.length === 0) break;
         const randIdx = Math.floor(Math.random() * pool.length);
         selectedQuestions.push(pool.splice(randIdx, 1)[0]);
@@ -8766,7 +8773,7 @@ class App {
         }
       });
     } else {
-      const totalAnsCount = isCrossword ? 1 : 3;
+      const totalAnsCount = isCrossword ? 1 : (questions.length || 3);
       for (let i = 0; i < totalAnsCount; i++) {
         const input = document.getElementById(`char-test-input-${i}`);
         const val = input ? input.value.trim() : '';
@@ -9092,7 +9099,7 @@ class App {
     }
     
     container.innerHTML = headerHtml + sorted.map((res, index) => {
-      const answers = res.answers || ['', '', ''];
+      const answers = res.answers || [];
       const status = res.status || 'pending';
       
       let statusBadge = '';
@@ -9351,11 +9358,23 @@ class App {
       if (sel) sel.value = this.wheelSoundStyle;
     });
     
+    // 監聽轉盤啟用狀態 (老師開啟轉盤時全班畫面自動切換呈現，無需手動點按)
+    db.ref('quiz/luckyWheel/active').on('value', (snapshot) => {
+      const val = snapshot.val();
+      if (val && val.active && !this.isAdmin && this.activeTabId !== 'panel-lucky-wheel') {
+        this.switchToTab('panel-lucky-wheel');
+        this.showNotification('隨機抽人轉盤', '老師已開啟隨機抽人轉盤！');
+      }
+    });
+
     // 監聽旋轉事件
     db.ref('quiz/luckyWheel/spinEvent').on('value', (snapshot) => {
       const event = snapshot.val();
       if (!event) return;
       if (event.timestamp && Date.now() - event.timestamp < 10000) {
+        if (!this.isAdmin && this.activeTabId !== 'panel-lucky-wheel') {
+          this.switchToTab('panel-lucky-wheel');
+        }
         this.startWheelAnimation(event);
       }
     });
@@ -9410,6 +9429,11 @@ class App {
     if (txt && this.isAdmin && this.wheelNames) {
       txt.value = this.wheelNames.join('\n');
     }
+  }
+
+  broadcastWheelToClass() {
+    db.ref('quiz/luckyWheel/active').set({ active: true, timestamp: Date.now() });
+    this.showNotification('提示', '已將轉盤畫面同步廣播至全班同學端！');
   }
 
   shuffleWheelNames() {

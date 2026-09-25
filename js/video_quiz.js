@@ -103,6 +103,13 @@
       quizIds: ['vq_science_solar', 'vq_chinese_culture'],
       createdAt: 1725550000000,
       totalQuestions: 6
+    },
+    {
+      id: 'cset_interdisciplinary_default',
+      name: '跨學科精選測驗組',
+      quizIds: ['vq_chinese_culture', 'vq_science_solar'],
+      createdAt: 1789574400000,
+      totalQuestions: 6
     }
   ];
 
@@ -188,14 +195,20 @@
       }
     }
 
-    // 清理與驗證測驗組合清單（官方預設範例僅嚴格保留唯一一組「綜合影音複習測驗組」，其餘舊範例一律清理刪除）
+    // 清理與驗證測驗組合清單（官方預設範例嚴格保留兩組：「綜合影音複習測驗組」與「跨學科精選測驗組」，其餘舊範例一律清理刪除）
     sanitizeCustomSets(list) {
-      const existingDefault = Array.isArray(list) ? list.find(s => s && (s.id === 'cset_comprehensive_default' || s.name === '綜合影音複習測驗組')) : null;
-      const defaultSet = existingDefault
-        ? JSON.parse(JSON.stringify(existingDefault))
+      const existingDefault1 = Array.isArray(list) ? list.find(s => s && (s.id === 'cset_comprehensive_default' || s.name === '綜合影音複習測驗組')) : null;
+      const defaultSet1 = existingDefault1
+        ? JSON.parse(JSON.stringify(existingDefault1))
         : JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS[0]));
+
+      const existingDefault2 = Array.isArray(list) ? list.find(s => s && (s.id === 'cset_interdisciplinary_default' || s.name === '跨學科精選測驗組')) : null;
+      const defaultSet2 = existingDefault2
+        ? JSON.parse(JSON.stringify(existingDefault2))
+        : JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS[1]));
+
       if (!Array.isArray(list) || list.length === 0) {
-        return [defaultSet];
+        return [defaultSet1, defaultSet2];
       }
 
       // 舊版範例名稱或測試留存黑名單，全部自動清除
@@ -210,17 +223,20 @@
         '新測驗組合'
       ]);
 
+      const defaultIds = new Set(['cset_comprehensive_default', 'cset_interdisciplinary_default', defaultSet1.id, defaultSet2.id]);
+      const defaultNames = new Set(['綜合影音複習測驗組', '跨學科精選測驗組', defaultSet1.name, defaultSet2.name]);
+
       // 篩選出使用者自行新建的非範例組合（排除官方預設範例與各舊版範例）
       const userCreatedSets = list.filter(s => {
         if (!s || !s.name) return false;
-        if (s.name === '綜合影音複習測驗組' || s.id === 'cset_comprehensive_default' || s.id === defaultSet.id) return false;
+        if (defaultNames.has(s.name) || defaultIds.has(s.id)) return false;
         if (legacySampleNames.has(s.name)) return false;
         if (s.id && (s.id.startsWith('cset_default') || s.id.startsWith('cset_sample'))) return false;
         return true;
       });
 
-      // 官方預設範例只保留唯一一個（綜合影音複習測驗組），其餘範例全數刪除
-      return [defaultSet, ...userCreatedSets];
+      // 官方預設範例保留兩組（綜合影音複習測驗組、跨學科精選測驗組），其餘範例全數刪除
+      return [defaultSet1, defaultSet2, ...userCreatedSets];
     }
 
     // 載入自訂常用測驗組合清單 (預設範例只保留一組「綜合影音複習測驗組」，其餘/重複自動刪除)
@@ -292,9 +308,14 @@
           const val = snapshot.val();
           const mode = (val && (val.mode === 'self' || val.mode === 'sync')) ? val.mode : 'sync';
           this.applyGlobalMode(mode);
-          if (val && val.assignedQuizId && mode === 'self' && !this.isTeacher) {
+          if (val && val.assignedQuizId && mode === 'self' && !this.isTeacher && !window.app?.isAdmin) {
             this.selectQuiz(val.assignedQuizId);
             this.startSelfPacedQuiz(val.assignedQuizId);
+            if (window.app && typeof window.app.switchToTab === 'function') {
+              if (window.app.activeTabId !== 'panel-video-quiz') {
+                window.app.switchToTab('panel-video-quiz');
+              }
+            }
           }
         });
       }
@@ -445,6 +466,9 @@
       }
 
       this.currentMode = mode;
+      if (this.isTeacher || window.app?.isAdmin) {
+        this.renderSyncTeacherControls();
+      }
     }
 
     // 管理員登入 / 登出狀態連動
@@ -456,14 +480,14 @@
       this.renderQuizSelector();
       this.renderEditorQuizList();
       this.updateAdminBroadcastUI(this.lastSession);
-      const ctrls = document.getElementById('vqSyncTeacherControls');
-      if (ctrls) {
-        ctrls.style.display = (this.isTeacher && this.lastSession && this.lastSession.status !== 'idle') ? 'block' : 'none';
-      }
+      this.renderSyncTeacherControls();
     }
 
     // 當切換進入「影片出題測驗」分頁時的觸發邏輯
     onTabEnter() {
+      if (this.isTeacher || window.app?.isAdmin) {
+        this.renderSyncTeacherControls();
+      }
       if (this.lastSession && this.lastSession.status !== 'idle') {
         const studentNotice = document.getElementById('vqSyncStudentIdleNotice');
         const activeWrapper = document.getElementById('vqSyncActivePlayerWrapper');
@@ -1083,11 +1107,15 @@
         this.pauseVideo();
       }
 
-      this.broadcastQuestion(q, index);
+      if (this.currentMode === 'sync') {
+        this.broadcastQuestion(q, index);
+      } else {
+        this.showQuestionOverlay(q, false);
+      }
       this.renderSyncTeacherControls();
 
       if (window.app) {
-        window.app.showNotification('跳題出題', `已跳轉至第 ${index + 1} 題 (${q.timeFormatted || this.formatSeconds(q.time)}) 並廣播題目！`);
+        window.app.showNotification('跳題出題', `已跳轉至第 ${index + 1} 題 (${q.timeFormatted || this.formatSeconds(q.time)})！`);
       }
     }
 
@@ -1269,10 +1297,16 @@
       }
 
       // 檢查是否處於「影片出題測驗」分頁
-      const isVideoQuizActive = document.getElementById('panel-video-quiz')?.classList.contains('active');
+      let isVideoQuizActive = document.getElementById('panel-video-quiz')?.classList.contains('active');
 
       // 若為學生端（非老師），接收廣播
-      if (!this.isTeacher) {
+      if (!this.isTeacher && !window.app?.isAdmin) {
+        // 比照專注力測驗：當老師發起同步影片測驗時，自動切換至影片測驗分頁，無需學生手動點按按鈕
+        if (!isVideoQuizActive && window.app && typeof window.app.switchToTab === 'function') {
+          window.app.switchToTab('panel-video-quiz');
+          isVideoQuizActive = true;
+        }
+
         if (session.status === 'waiting' || session.status === 'playing' || session.status === 'question') {
           if (!this.activeQuiz || this.activeQuiz.id !== session.quizId || this.activeQuiz.currentSubQuizIndex !== session.currentSubQuizIndex) {
             this.activeQuiz = session.quizData;
@@ -1318,15 +1352,17 @@
       }
     }
 
-    // 渲染教師專屬同步控制列 (圖2 顯示出題時間點與題目清單、支援直接跳題、重複出題開關、多影片導覽)
+    // 渲染教師專屬同步控制列 (圖3 顯示出題時間點與題目清單、支援直接跳題、重複出題開關、多影片導覽，同步與自主學習模式皆支援)
     renderSyncTeacherControls() {
-      const container = document.getElementById('vqSyncTeacherControls');
-      if (!container) return;
-      if (!this.isTeacher && !window.app?.isAdmin) {
-        container.style.display = 'none';
+      const syncContainer = document.getElementById('vqSyncTeacherControls');
+      const selfContainer = document.getElementById('vqSelfTeacherControls');
+      const isTeacherUser = this.isTeacher || window.app?.isAdmin;
+
+      if (!isTeacherUser) {
+        if (syncContainer) { syncContainer.style.display = 'none'; syncContainer.innerHTML = ''; }
+        if (selfContainer) { selfContainer.style.display = 'none'; selfContainer.innerHTML = ''; }
         return;
       }
-      container.style.display = 'block';
 
       // 檢查是否為多影片測驗組合
       const isMultiVideoSet = !!(this.currentCustomSet && this.currentCustomSet.quizIds && this.currentCustomSet.quizIds.length > 1);
@@ -1345,7 +1381,7 @@
         </div>
       ` : '';
 
-      // 圖2 紅色方框區域：出題時間與題目清單按鈕、重複出題控制開關
+      // 圖3 紅色方框區域：出題時間與題目清單按鈕、重複出題控制開關
       const questionsListHtml = `
         <div id="vqTeacherQuestionsList" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1; margin: 4px 8px;">
           <span style="font-size: 12px; font-weight: bold; color: var(--text-secondary); white-space: nowrap;">出題時間軸：</span>
@@ -1363,23 +1399,35 @@
         </div>
       `;
 
-      container.innerHTML = `
+      const submittedCount = Object.keys(this.cachedRemoteAnswers || {}).length;
+      const stopBtnText = (this.currentMode === 'self') ? '⏹ 結束自主學習' : '⏹ 結束全班測驗';
+
+      const controlsHtml = `
         <div style="display: flex; flex-direction: column; background: var(--bg-card); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
           ${multiVideoHtml}
           <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-weight: bold; color: var(--accent-color); white-space: nowrap;">🧑‍🏫 老師同步控制台</span>
-              <span id="vqSyncSubmittedCountBadge" class="badge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap;">已提交 0 人</span>
+              <span class="badge vq-submitted-count-badge" id="vqSyncSubmittedCountBadge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap;">已提交 ${submittedCount} 人</span>
             </div>
             ${questionsListHtml}
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
               <button class="action-btn" onclick="window.videoQuiz.resumeSyncPlayback()" style="background: var(--success-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">▶ 繼續播放影片</button>
               <button class="action-btn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">📊 查看本題統計</button>
-              <button class="action-btn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">⏹ 結束全班測驗</button>
+              <button class="action-btn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">${stopBtnText}</button>
             </div>
           </div>
         </div>
       `;
+
+      if (syncContainer) {
+        syncContainer.innerHTML = controlsHtml;
+        syncContainer.style.display = (this.currentMode === 'sync') ? 'block' : 'none';
+      }
+      if (selfContainer) {
+        selfContainer.innerHTML = controlsHtml;
+        selfContainer.style.display = (this.currentMode === 'self') ? 'block' : 'none';
+      }
     }
 
     // ==========================================
@@ -1425,10 +1473,13 @@
       }
       if (!quiz) return;
       this.activeQuiz = quiz;
-      this.isTeacher = false;
+      this.isTeacher = !!(window.app?.isAdmin || this.isTeacher);
       this.triggeredQuestions.clear();
       this.currentActiveQuestion = null;
       this.userAnswers = {};
+      if (this.isTeacher) {
+        this.renderSyncTeacherControls();
+      }
 
       const progressEl = document.getElementById('vqSelfProgressInfo');
       if (progressEl) {
@@ -1475,6 +1526,9 @@
 
       this.triggeredQuestions.clear();
       this.currentActiveQuestion = null;
+      if (this.isTeacher || window.app?.isAdmin) {
+        this.renderSyncTeacherControls();
+      }
 
       const progressEl = document.getElementById('vqSelfProgressInfo');
       if (progressEl) {
@@ -1739,8 +1793,10 @@
     handleRemoteAnswersUpdate(answers) {
       this.cachedRemoteAnswers = answers;
       const count = Object.keys(answers).length;
-      const badge = document.getElementById('vqSyncSubmittedCountBadge');
-      if (badge) badge.textContent = `已提交 ${count} 人`;
+      const badges = document.querySelectorAll('.vq-submitted-count-badge');
+      badges.forEach(badge => {
+        badge.textContent = `已提交 ${count} 人`;
+      });
 
       // 若當前開啟統計面板，即時重繪
       const analyticsModal = document.getElementById('vqAnalyticsModal');
