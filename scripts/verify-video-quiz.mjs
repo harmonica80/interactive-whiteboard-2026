@@ -12,21 +12,21 @@ const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
 const fbJs = fs.readFileSync('js/firebase-config.js', 'utf8');
 
 const checks = [
-  ['package.json version 3.3.6', pkg.version === '3.3.6'],
-  ['app.js APP_VERSION 3.3.6', appJs.includes("this.APP_VERSION = '3.3.6';")],
-  ['index.html badge ver 3.3.6', html.includes('ver 3.3.6')],
+  ['package.json version 3.3.7', pkg.version === '3.3.7'],
+  ['app.js APP_VERSION 3.3.7', appJs.includes("this.APP_VERSION = '3.3.7';")],
+  ['index.html badge ver 3.3.7', html.includes('ver 3.3.7')],
   ['index.html adminNewClassName maxlength="50"', html.includes('id="adminNewClassName"') && html.includes('maxlength="50"')],
   ['index.html adminEditClassName maxlength="50"', html.includes('id="adminEditClassName"') && html.includes('maxlength="50"')],
   ['index.html studentNameModal exists', html.includes('id="studentNameModal"')],
   ['index.html itemEditModal exists', html.includes('id="itemEditModal"')],
   ['app.js openStudentNameModal method', appJs.includes('openStudentNameModal()')],
   ['app.js isItemOwner method', appJs.includes('isItemOwner(item)')],
-  ['index.html style.css?v=336', html.includes('css/style.css?v=336')],
-  ['index.html firebase-config.js?v=336', html.includes('js/firebase-config.js?v=336')],
-  ['index.html app.js?v=336', html.includes('js/app.js?v=336')],
-  ['index.html quiz.js?v=336', html.includes('js/quiz.js?v=336')],
-  ['index.html video_quiz.js?v=336', html.includes('js/video_quiz.js?v=336')],
-  ['index.html song_quiz.js?v=336', html.includes('js/song_quiz.js?v=336')],
+  ['index.html style.css?v=337', html.includes('css/style.css?v=337')],
+  ['index.html firebase-config.js?v=337', html.includes('js/firebase-config.js?v=337')],
+  ['index.html app.js?v=337', html.includes('js/app.js?v=337')],
+  ['index.html quiz.js?v=337', html.includes('js/quiz.js?v=337')],
+  ['index.html video_quiz.js?v=337', html.includes('js/video_quiz.js?v=337')],
+  ['index.html song_quiz.js?v=337', html.includes('js/song_quiz.js?v=337')],
   ['firebase-config.js updateClass method exists', fbJs.includes('async updateClass(oldCode, newCode, newName')],
   ['firebase-config.js updateClass checks duplicate code', fbJs.includes('checkClassExists(sanitizedNew)') && fbJs.includes('已存在，無法使用此代碼')],
   ['firebase-config.js getModuleCounts method exists', fbJs.includes('async getModuleCounts(')],
@@ -87,11 +87,17 @@ const checks = [
   ['style.css video-quiz styles', css.includes('.video-quiz-player-container') && css.includes('.video-quiz-overlay')],
   ['video_quiz.js sync mode student pauses video on resume playback', vqJs.includes('this.pauseVideo();') && vqJs.includes('// 全班同步測驗模式：老師按下繼續播放時，僅老師端播放，同學端保持暫停')],
   ['classics_quiz.js idioms search links changed to Google query', fs.readFileSync('js/classics_quiz.js', 'utf8').includes('google.com/search?q=') && fs.readFileSync('js/classics_quiz.js', 'utf8').includes('透過 Google 查詢')],
-  ['video_quiz.js delayed self-paced mode assignment', vqJs.includes('hasAssignedSelfQuiz') && vqJs.includes('待指派自主學習')]
+  ['video_quiz.js delayed self-paced mode assignment', vqJs.includes('hasAssignedSelfQuiz') && vqJs.includes('待指派自主學習')],
+  ['index.html vqSelfQuizSelectorRow exists', html.includes('id="vqSelfQuizSelectorRow"')],
+  ['video_quiz.js student self-paced mode hides video selector row', vqJs.includes('vqSelfQuizSelectorRow') && vqJs.includes("selectorRow.style.display = isTeacherUser ? 'flex' : 'none'")],
+  ['index.html focusGameAllowHint checkbox toggle exists', html.includes('id="focusGameAllowHint"')],
+  ['app.js startFocusGame supports allowHint parameter', appJs.includes('focusGameAllowHint') && appJs.includes('allowHint: allowHint')],
+  ['app.js schulte grid respects allowHint toggle', appJs.includes('const allowHint = game.allowHint !== false;') && appJs.includes("helpBtn.style.display = allowHint ? 'inline-block' : 'none'")],
+  ['video_quiz.js no intrusive notification on player load', !vqJs.includes('自主學習測驗已準備就緒，請點擊播放開始觀看！')]
 ];
 
 let allPassed = true;
-console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.3.6) ---');
+console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.3.7) ---');
 for (const [name, passed] of checks) {
   if (passed) {
     console.log(`✅ ${name}`);

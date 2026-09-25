@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.3.6';
+    this.APP_VERSION = '3.3.7';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -6771,12 +6771,15 @@ class App {
     const songQuizPlayMode = (songQuizPlayModeInput && songQuizPlayModeInput.value) || 'buzzer';
     const songQuizAudioModeInput = document.getElementById('focusSongQuizAudioMode');
     const songQuizAudioMode = (songQuizAudioModeInput && songQuizAudioModeInput.value) || 'all';
+    const allowHintInput = document.getElementById('focusGameAllowHint');
+    const allowHint = allowHintInput ? allowHintInput.checked : true;
     
     db.ref('quiz/focusGame').set({
       status: 'countdown',
       gameType: gameType,
       playMode: gameType === 'songQuiz' ? songQuizPlayMode : 'self',
       audioMode: gameType === 'songQuiz' ? songQuizAudioMode : 'all',
+      allowHint: allowHint,
       currentQuestionIndex: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? 0 : null,
       buzzerRound: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? {
         status: 'waiting',
@@ -7556,10 +7559,11 @@ class App {
     this.focusGridSize = game.gridSize || 36;
     const numHeader = document.getElementById('focusNumberGridHeader');
     if (numHeader) numHeader.style.display = 'flex';
+    const allowHint = game.allowHint !== false;
     const helpBtn = document.getElementById('focusHelpBtn');
-    if (helpBtn) helpBtn.style.display = 'inline-block';
+    if (helpBtn) helpBtn.style.display = allowHint ? 'inline-block' : 'none';
     const helpInfo = document.getElementById('focusHelpInfo');
-    if (helpInfo) { helpInfo.textContent = ''; helpInfo.style.display = ''; }
+    if (helpInfo) { helpInfo.textContent = ''; helpInfo.style.display = allowHint ? '' : 'none'; }
     
     const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
     if (targetLabel) targetLabel.style.display = '';
@@ -8099,7 +8103,8 @@ class App {
             : directionText;
         }
         if (helpBtn) {
-          helpBtn.style.display = 'inline-block';
+          const allowHint = game.allowHint !== false;
+          helpBtn.style.display = allowHint ? 'inline-block' : 'none';
           helpBtn.disabled = false;
           helpBtn.textContent = '🆘 重播提示（+5 秒）';
         }
@@ -8358,6 +8363,7 @@ class App {
   // OpenCode 修改：專注力遊戲求救提示；高亮下一個目標數字並加 5 秒懲罰時間
   requestFocusHelp() {
     if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    if (this.focusGame.allowHint === false) return;
     if (this.focusGame.gameType === 'memoryPosition') {
       this.requestMemoryPositionHelp();
       return;
@@ -8390,6 +8396,7 @@ class App {
   // OpenCode 修改：位置序列記憶求救提示，重播同一組閃爍序列並加 5 秒
   requestMemoryPositionHelp() {
     if (!this.focusMemoryAcceptInput) return;
+    if (this.focusGame && this.focusGame.allowHint === false) return;
 
     this.focusHelpCount++;
     this.focusHelpPenaltySeconds += 5;
@@ -8701,11 +8708,13 @@ class App {
     }
     
     const penaltyAmount = isCrossword ? 10 : 5;
+    const allowHint = game.allowHint !== false;
     html += `
       </div>
+      ${allowHint ? `
       <button id="focusCharTestHintBtn" onclick="window.app.showGeneralCharacterHint()" style="margin-top: 12px; width: 100%; padding: 12px; background: #ff9500; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(255,149,0,0.25);">
         💡 顯示提示字 (2秒/+${penaltyAmount}秒)
-      </button>
+      </button>` : ''}
       <button onclick="window.app.submitCharTestAnswers()" style="margin-top: 12px; width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,122,255,0.25);">
         ✔️ 送出答案
       </button>
@@ -8913,6 +8922,7 @@ class App {
 
   showGeneralCharacterHint() {
     if (!this.focusGame || this.focusGame.status !== 'playing') return;
+    if (this.focusGame.allowHint === false) return;
     const questions = this.focusGame.questions || [];
     if (questions.length === 0) return;
 
@@ -11485,6 +11495,7 @@ function resetAll() {
     db.ref('quiz/teacherShareFolders').remove(),
     db.ref('quiz/luckyWheel').remove(),
     db.ref('quiz/videoQuizSession').remove(),
+    db.ref('quiz/videoQuizSettings').remove(),
     db.ref('quiz/videoQuizAnswers').remove(),
     db.ref('whiteboard').remove(),
     db.ref('whiteboard_room').remove()

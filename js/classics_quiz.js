@@ -91,11 +91,11 @@
         <div style="font-size:13px;color:var(--text-secondary);margin-top:6px;">📌 原文／典故：${escapeForClassics(question.quote)}</div>
         ${renderClassicsLinks(question)}
       </div>
-      <button onclick="window.app.nextClassicsQuizQuestion()" style="margin-top:12px;width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent-color);color:white;font-size:15px;font-weight:900;cursor:pointer;">${state.index + 1 === game.questions.length ? '🏁 查看全部解答與成績' : '下一題 ➜'}</button>` : `
+      <button onclick="window.app.nextClassicsQuizQuestion()" style="margin-top:12px;width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent-color);color:white;font-size:15px;font-weight:900;cursor:pointer;">${state.index + 1 === game.questions.length ? '🏁 查看全部解答與成績' : '下一題 ➜'}</button>` : (game.allowHint !== false ? `
       <button onclick="window.app.useClassicsEliminationHint()" ${remainingWrong.length === 0 ? 'disabled' : ''} style="margin-top:12px;width:100%;padding:11px;border:0;border-radius:10px;background:#ff9500;color:white;font-size:14px;font-weight:900;cursor:pointer;opacity:${remainingWrong.length === 0 ? 0.45 : 1};">
         💡 刪去法提示：排除 1 個錯誤選項（+5 秒）
       </button>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:7px;">已使用 ${this.focusHelpCount || 0} 次提示；目前會直接排除錯誤答案，增加答對機會。</div>`
+      <div style="font-size:12px;color:var(--text-muted);margin-top:7px;">已使用 ${this.focusHelpCount || 0} 次提示；目前會直接排除錯誤答案，增加答對機會。</div>` : '')
 
     grid.innerHTML = `
       <div style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(0,122,255,.10),rgba(88,86,214,.08));border:1px solid rgba(0,122,255,.22);box-sizing:border-box;">
@@ -122,7 +122,7 @@
   App.prototype.useClassicsEliminationHint = function useClassicsEliminationHint() {
     const state = this.classicsQuizState
     const question = this.focusGame?.questions?.[state?.index]
-    if (!state || !question || state.answered) return
+    if (!state || !question || state.answered || this.focusGame?.allowHint === false) return
     const candidate = question.options.find((option) => option !== question.correctOption && !state.eliminated.has(option))
     if (!candidate) return
     state.eliminated.add(candidate)
