@@ -12,9 +12,9 @@ const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
 const fbJs = fs.readFileSync('js/firebase-config.js', 'utf8');
 
 const checks = [
-  ['package.json version 3.3.3', pkg.version === '3.3.3'],
-  ['app.js APP_VERSION 3.3.3', appJs.includes("this.APP_VERSION = '3.3.3';")],
-  ['index.html badge ver 3.3.3', html.includes('ver 3.3.3')],
+  ['package.json version 3.3.4', pkg.version === '3.3.4'],
+  ['app.js APP_VERSION 3.3.4', appJs.includes("this.APP_VERSION = '3.3.4';")],
+  ['index.html badge ver 3.3.4', html.includes('ver 3.3.4')],
   ['index.html adminNewClassName maxlength="50"', html.includes('id="adminNewClassName"') && html.includes('maxlength="50"')],
   ['index.html adminEditClassName maxlength="50"', html.includes('id="adminEditClassName"') && html.includes('maxlength="50"')],
   ['index.html studentNameModal exists', html.includes('id="studentNameModal"')],
@@ -22,11 +22,11 @@ const checks = [
   ['app.js openStudentNameModal method', appJs.includes('openStudentNameModal()')],
   ['app.js isItemOwner method', appJs.includes('isItemOwner(item)')],
   ['index.html style.css?v=180', html.includes('css/style.css?v=180')],
-  ['index.html firebase-config.js?v=333', html.includes('js/firebase-config.js?v=333')],
-  ['index.html app.js?v=333', html.includes('js/app.js?v=333')],
-  ['index.html quiz.js?v=333', html.includes('js/quiz.js?v=333')],
-  ['index.html video_quiz.js?v=333', html.includes('js/video_quiz.js?v=333')],
-  ['index.html song_quiz.js?v=333', html.includes('js/song_quiz.js?v=333')],
+  ['index.html firebase-config.js?v=334', html.includes('js/firebase-config.js?v=334')],
+  ['index.html app.js?v=334', html.includes('js/app.js?v=334')],
+  ['index.html quiz.js?v=334', html.includes('js/quiz.js?v=334')],
+  ['index.html video_quiz.js?v=334', html.includes('js/video_quiz.js?v=334')],
+  ['index.html song_quiz.js?v=334', html.includes('js/song_quiz.js?v=334')],
   ['firebase-config.js updateClass method exists', fbJs.includes('async updateClass(oldCode, newCode, newName')],
   ['firebase-config.js updateClass checks duplicate code', fbJs.includes('checkClassExists(sanitizedNew)') && fbJs.includes('已存在，無法使用此代碼')],
   ['firebase-config.js getModuleCounts method exists', fbJs.includes('async getModuleCounts(')],
@@ -82,12 +82,13 @@ const checks = [
   ['video_quiz.js returnToQuizVideo method', vqJs.includes('returnToQuizVideo()')],
   ['video_quiz.js question overlay has 返回測驗影片 button', vqJs.includes('🎬 返回測驗影片')],
   ['video_quiz.js question overlay deleted 返回後台 button', !vqJs.includes('⚙️ 返回後台')],
-  ['video_quiz.js sanitizeCustomSets single default custom set', vqJs.includes('sanitizeCustomSets(list)') && vqJs.includes('綜合影音複習測驗組')],
+  ['video_quiz.js DEFAULT_CUSTOM_SETS two default custom sets', vqJs.includes('綜合影音複習測驗組') && vqJs.includes('跨學科精選測驗組')],
+  ['index.html vqSelfTeacherControls exists', html.includes('id="vqSelfTeacherControls"')],
   ['style.css video-quiz styles', css.includes('.video-quiz-player-container') && css.includes('.video-quiz-overlay')]
 ];
 
 let allPassed = true;
-console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.2.3) ---');
+console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.3.4) ---');
 for (const [name, passed] of checks) {
   if (passed) {
     console.log(`✅ ${name}`);

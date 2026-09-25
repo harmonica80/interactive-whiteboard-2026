@@ -270,15 +270,17 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
         hasReturnMethod,
         noBackToAdminBtn,
         sanitizedCount: sanitized.length,
-        defaultSetName: sanitized[0]?.name,
-        customSetName: sanitized[1]?.name
+        defaultSetName1: sanitized[0]?.name,
+        defaultSetName2: sanitized[1]?.name,
+        customSetName: sanitized[2]?.name
       }
     })
 
     expect(checkResult.hasReturnMethod).toBe(true)
     expect(checkResult.noBackToAdminBtn).toBe(true)
-    expect(checkResult.sanitizedCount).toBe(2)
-    expect(checkResult.defaultSetName).toBe('綜合影音複習測驗組')
+    expect(checkResult.sanitizedCount).toBe(3)
+    expect(checkResult.defaultSetName1).toBe('綜合影音複習測驗組')
+    expect(checkResult.defaultSetName2).toBe('跨學科精選測驗組')
     expect(checkResult.customSetName).toBe('老師私房題組')
   })
 

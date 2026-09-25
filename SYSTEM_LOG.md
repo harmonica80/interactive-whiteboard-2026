@@ -1,4 +1,31 @@
 # System Log
+## 2026-09-25 - ver 3.3.4 字力與成語題數自訂、原典延伸連結精簡、測驗與轉盤免切換自動呈現、影音自學教師控制台
+- 影響檔案：`index.html`, `js/app.js`, `js/classics_quiz.js`, `js/quiz.js`, `js/video_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `tests/video-quiz.spec.mjs`。
+- 修改項目：
+  1. **一字千金：字力測驗增加每次出題數量下拉選單 (`index.html`, `js/app.js`)**：
+     - 在後台專注力字力測驗設定區新增 `#focusCharacterTestCount` 下拉選單，提供 1 題、2 題、3 題（預設）、5 題、10 題供老師彈性選擇。
+     - `startFocusGame()` 依選取題數隨機抽選題目，答題提交與教師後台繳交狀況同步動態計算題數，不再寫死 3 題。
+  2. **成語測驗答題說明連結精簡與更換 (`js/classics_quiz.js`)**：
+     - 將「📜 完整原典／詩詞全文」的連結改指向教育百科等「延伸介紹」網址（`ref.introUrl || ref.fullTextUrl`）。
+     - 移除獨立的「🔎 延伸介紹」按鈕，讓說明區域更加簡潔俐落、直覺易讀。
+  3. **成語測驗出題數量擴充 (`index.html`)**：
+     - 於 `#focusClassicsQuizCount` 新增「1 題」與「2 題」選項，方便老師進行微型快速檢測。
+  4. **影片出題測驗組合預設值範例精簡 (`js/video_quiz.js`)**：
+     - 依指示將測驗組合預設值精簡保留兩組優質範例：`綜合影音複習測驗組` 與 `跨學科精選測驗組`。
+     - 升級 `sanitizeCustomSets()`，嚴格保留這兩組預設範例與使用者自訂組，並徹底清除舊版過時範例。
+  5. **影片出題、選擇題測驗與抽人轉盤比照專注力測驗免切換自動呈現 (`js/video_quiz.js`, `js/quiz.js`, `js/app.js`, `index.html`)**：
+     - 影片出題測驗：無論全班同步模式或自主學習指派，當老師發起或指派時，學生端自動無縫切換至 `panel-video-quiz` 影片測驗分頁，無需學生手動點選標籤。
+     - 選擇題測驗：當老師發起選擇題測驗（`currentQuiz.active` 為 true）時，學生端自動無縫切換至 `panel-quiz` 測驗分頁。
+     - 抽人轉盤：轉盤旋轉或老師啟動時（`quiz/luckyWheel/active`），學生端自動切換至 `panel-lucky-wheel` 轉盤分頁；轉盤結束後自動返回原先分頁。後台控制列並新增「📢 廣播全班」按鈕，方便老師隨時主動向全班展示轉盤。
+  6. **影片出題自主學習模式支援教師同步控制台 (`index.html`, `js/video_quiz.js`)**：
+     - 在自主學習區域新增 `#vqSelfTeacherControls`，讓管理員/教師在自主模式下也能完整看到同步控制台。
+     - 控制台完整提供出題時間軸跳題按鈕（精準跳轉並顯示該題測驗）、繼續播放、查看全班統計與結束自主學習等全套主控功能。
+  7. **版本號嚴格遞增至 `ver 3.3.4`**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=334`）、`app.js`（`this.APP_VERSION = '3.3.4'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-23 - ver 3.3.3 自主進行即時排行榜支援答對答錯統計、得分顯示與競賽排名樣式
 - 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `js/classics_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：

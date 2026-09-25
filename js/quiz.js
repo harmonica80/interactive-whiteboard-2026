@@ -11,8 +11,23 @@ class Quiz {
   
   setupFirebaseSync() {
     this.quizRef.on('value', (snapshot) => {
+      const prevActive = this.currentQuiz?.active;
       this.currentQuiz = snapshot.val();
       this.updateUI();
+
+      // 當老師發起選擇題測驗時，學生端比照專注力測驗，自動切換至測驗分頁無需學生手動點選按鈕
+      if (this.currentQuiz && this.currentQuiz.active) {
+        if (!window.app?.isAdmin) {
+          if (window.app && typeof window.app.switchToTab === 'function') {
+            if (window.app.activeTabId !== 'panel-quiz') {
+              window.app.switchToTab('panel-quiz');
+            }
+          }
+          if (!prevActive && window.app) {
+            window.app.showNotification('測驗進行中', `老師已發起測驗：${this.currentQuiz.question}`);
+          }
+        }
+      }
     });
     
     this.answersRef.on('value', (snapshot) => {
