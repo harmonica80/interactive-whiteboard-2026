@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.3.4';
+    this.APP_VERSION = '3.3.5';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -230,6 +230,61 @@ class App {
     return false;
   }
 
+  // ===== 可愛生物與動物暱稱庫 =====
+  CUTE_CREATURE_NAMES = [
+    '🐱 溫暖小貓', '🐧 活力企鵝', '🦦 快樂水獺', '🐨 呆萌無尾熊', '🦊 機智小狐狸',
+    '🐼 圓滾熊貓', '🐰 蹦跳小兔', '🐬 陽光海豚', '🦔 害羞小刺蝟', '🐿️ 靈巧松鼠',
+    '🐹 淘氣倉鼠', '🦉 智慧貓頭鷹', '🦭 療癒小海豹', '🐥 元氣小雞', '🦆 悠哉小鴨',
+    '🐙 萬能章魚', '🐢 穩健小海龜', '🐝 勤勞小蜜蜂', '🦋 夢幻彩蝶', '🐾 軟萌柴犬',
+    '🦄 夢想獨角獸', '🦕 溫柔雷龍', '🦖 勇敢小恐龍', '🐳 悠游藍鯨', '🦥 慢活樹懶',
+    '🦩 優雅紅鶴', '🦁 威風小獅', '🦒 溫和長頸鹿', '🐘 暖心小象', '🐻 憨厚小熊',
+    '🦌 靈動小鹿', '🐺 敏銳雪狼', '🦫 勤奮海狸', '🦘 健步袋鼠', '🦚 華麗孔雀'
+  ];
+
+  generateRandomCuteName() {
+    const list = this.CUTE_CREATURE_NAMES;
+    const randomName = list[Math.floor(Math.random() * list.length)];
+    const input = document.getElementById('inputStudentModalName');
+    const err = document.getElementById('studentNameModalError');
+    if (input) {
+      input.value = randomName;
+      if (err) {
+        err.style.display = 'none';
+        err.textContent = '';
+      }
+      input.focus();
+    }
+  }
+
+  selectCuteAnimalName(name) {
+    const input = document.getElementById('inputStudentModalName');
+    const err = document.getElementById('studentNameModalError');
+    if (input) {
+      input.value = name;
+      if (err) {
+        err.style.display = 'none';
+        err.textContent = '';
+      }
+      input.focus();
+    }
+  }
+
+  renderCuteAnimalChips() {
+    const container = document.getElementById('cuteAnimalChipsContainer');
+    if (!container) return;
+    const list = [...this.CUTE_CREATURE_NAMES];
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    const picked = list.slice(0, 6);
+    container.innerHTML = picked.map(name => `
+      <button type="button" class="btn btn-secondary" onclick="window.app.selectCuteAnimalName('${name}')" style="padding: 5px 10px; font-size: 12px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; color: var(--text-primary); font-weight: 500; transition: all 0.2s ease;">
+        ${name}
+      </button>
+    `).join('');
+  }
+
   // ===== 學生姓名設定彈窗 =====
   openStudentNameModal() {
     const modal = document.getElementById('studentNameModal');
@@ -243,6 +298,8 @@ class App {
       err.style.display = 'none';
       err.textContent = '';
     }
+
+    this.renderCuteAnimalChips();
 
     modal.classList.add('active');
     setTimeout(() => {
@@ -2167,9 +2224,9 @@ class App {
   }
 
   submitComment(type, itemId, listContainerId, nicknameInputId, inputId) {
-    if (this.isClassMode() && !this.getCurrentUserName()) {
+    if (!this.getCurrentUserName()) {
       this.openStudentNameModal();
-      this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+      this.showNotification('提示', '請先設定您的姓名或暱稱！');
       return;
     }
 
@@ -2797,10 +2854,10 @@ class App {
     const submitQuestion = () => {
       if (this.askBtn.disabled) return;
       
-      // 班級模式下，若未設定姓名則彈窗要求設定
-      if (this.isClassMode() && !this.getCurrentUserName()) {
+      // 若未設定姓名則彈窗要求設定
+      if (!this.getCurrentUserName()) {
         this.openStudentNameModal();
-        this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+        this.showNotification('提示', '請先設定您的姓名或暱稱！');
         return;
       }
 
@@ -3063,9 +3120,9 @@ class App {
   }
   
   handleImageUpload(file) {
-    if (this.isClassMode() && !this.getCurrentUserName()) {
+    if (!this.getCurrentUserName()) {
       this.openStudentNameModal();
-      this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+      this.showNotification('提示', '請先設定您的姓名或暱稱！');
       return;
     }
 
@@ -3438,9 +3495,9 @@ class App {
 
   handleVideoUpload(file) {
     this.videoCompressionCancelled = false;
-    if (this.isClassMode() && !this.getCurrentUserName()) {
+    if (!this.getCurrentUserName()) {
       this.openStudentNameModal();
-      this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+      this.showNotification('提示', '請先設定您的姓名或暱稱！');
       return;
     }
 
@@ -3590,9 +3647,9 @@ class App {
   }
 
   submitVideoLink() {
-    if (this.isClassMode() && !this.getCurrentUserName()) {
+    if (!this.getCurrentUserName()) {
       this.openStudentNameModal();
-      this.showNotification('提示', '進入班級課堂請先設定您的姓名或暱稱！');
+      this.showNotification('提示', '請先設定您的姓名或暱稱！');
       return;
     }
 

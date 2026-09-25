@@ -177,7 +177,19 @@ class Quiz {
         }
       }
     } else if (this.currentQuiz && !this.currentQuiz.active) {
-      if (quizStatus) quizStatus.innerHTML = '<div style="color: var(--text-muted); text-align: center;">測驗已結束</div>';
+      const isMultiple = this.currentQuiz.quizType === 'multiple';
+      const badgeText = isMultiple ? '☑️ 複選題' : '🔘 單選題';
+      if (quizStatus) {
+        quizStatus.innerHTML = `
+          <div class="quiz-status">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px;">
+              <span style="font-size: 14px; font-weight: bold; color: var(--text-muted);">⏹️ 測驗已結束</span>
+              <span class="quiz-type-badge" style="background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">${badgeText}</span>
+            </div>
+            <div style="font-size: 18px; font-weight: bold; color: var(--text-primary); text-align: center;">${this.escapeHtml(this.currentQuiz.question || '')}</div>
+          </div>
+        `;
+      }
       if (quizForm) quizForm.style.display = 'block';
       if (endQuizBtn) endQuizBtn.style.display = 'none';
       if (answerOptions) {
@@ -241,7 +253,7 @@ class Quiz {
       </div>
       ${quizOpts.map((opt, i) => `
         <div class="result-bar">
-          <span class="result-label">${this.escapeHtml(opt)}</span>
+          <span class="result-label" style="white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(opt)}">${this.escapeHtml(opt)}</span>
           <div class="result-progress">
             <div class="result-fill" style="width: ${totalVoters > 0 ? (counts[i] / totalVoters * 100) : 0}%">
               ${counts[i]}
@@ -297,7 +309,7 @@ class Quiz {
         </div>
         ${quizOpts.map((opt, i) => `
           <div class="result-bar">
-            <span class="result-label">${this.escapeHtml(opt)}</span>
+            <span class="result-label" style="white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(opt)}">${this.escapeHtml(opt)}</span>
             <div class="result-progress">
               <div class="result-fill" style="width: ${totalVoters > 0 ? (counts[i] / totalVoters * 100) : 0}%">
                 ${counts[i]} (${totalVoters > 0 ? Math.round(counts[i] / totalVoters * 100) : 0}%)
