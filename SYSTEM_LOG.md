@@ -1,4 +1,21 @@
 # System Log
+## 2026-09-25 - ver 3.3.6 全班同步測驗僅老師端播放影片、成語測驗導航改為 Google 查詢、自主學習指派後學生端才啟動
+- 影響檔案：`js/video_quiz.js`, `js/classics_quiz.js`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **全班同步測驗影片播放調整（老師按下「繼續播放」僅老師端播放，學生端保持暫停）(`js/video_quiz.js`)**：
+     - 在全班同步測驗模式（`session.status === 'playing'`）中，將學生端接收廣播時的自動播放邏輯改為 `this.pauseVideo()`，只有老師端（`this.isTeacher || window.app?.isAdmin`）執行 `playVideo()`。避免全班所有學生設備同時發聲產生雜音或回音干擾。
+  2. **成語／詩詞測驗連結調整為 Google 搜尋 (`js/classics_quiz.js`)**：
+     - 將原先答題解析中之「📖 中讀網導讀」與「📜 完整原典／詩詞全文」兩個固定連結移除。
+     - 改為透過 Google 關鍵字查詢（`https://www.google.com/search?q=${encodeURIComponent(keyword)}`），提供「🔍 透過 Google 查詢『關鍵字』」超連結，解決部分罕見題目在原網站無法查到資料的問題。
+  3. **個人自主學習模式啟動時機調整（點選指派按鈕後學生端才出現）(`js/video_quiz.js`)**：
+     - 老師在管理後台切換為「🎧 個人自主學習模式」Radio 選項時，不立即同步廣播至學生端，廣播徽章顯示「⚪ 待指派自主學習」。
+     - 等老師選定單元並按下「🚀 指派自主學習測驗」（或點擊自訂組合之「🎧 自主學習」）後，才寫入 Firebase `assignedQuizId`，此時學生端才切換至自主學習畫面並開始測驗。
+  4. **版本號嚴格遞增至 `ver 3.3.6` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=336`）、`app.js`（`this.APP_VERSION = '3.3.6'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-25 - ver 3.3.5 學生暱稱說明優化、可愛生物隨機暱稱庫、一次性課堂暱稱防呆、選擇題結束顯示題目與選項不換行
 - 影響檔案：`index.html`, `css/style.css`, `js/quiz.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
 - 修改項目：

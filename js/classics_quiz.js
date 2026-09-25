@@ -6,14 +6,13 @@
   }
 
   function renderClassicsLinks(question) {
-    const ref = question.reference || {}
-    const introLink = ref.introUrl || ref.fullTextUrl || '#'
+    const keyword = question.work || (question.reference && question.reference.readcKeyword) || question.correctOption || '';
+    const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(keyword)}`;
     return `
       <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 10px;">
-        <a href="${escapeForClassics(ref.readcUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold; text-decoration: underline; font-size: 13px;">📖 中讀網導讀（搜尋：${escapeForClassics(ref.readcKeyword || '作品名')}）</a>
-        <a href="${escapeForClassics(introLink)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold; text-decoration: underline; font-size: 13px;">📜 完整原典／詩詞全文</a>
+        <a href="${escapeForClassics(googleSearchUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold; text-decoration: underline; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">🔍 透過 Google 查詢「${escapeForClassics(keyword)}」</a>
       </div>
-    `
+    `;
   }
 
   App.prototype.startClassicsQuizGame = function startClassicsQuizGame(game) {
