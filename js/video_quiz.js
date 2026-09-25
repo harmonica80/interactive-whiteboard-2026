@@ -305,8 +305,11 @@
 
       // 監聽測驗模式全班同步設定 (老師主導)
       if (this.settingsRef) {
+        let isInitialSettingsLoad = true;
         this.settingsRef.on('value', (snapshot) => {
           const val = snapshot.val();
+          const wasInitial = isInitialSettingsLoad;
+          isInitialSettingsLoad = false;
           if (!val) return;
           const mode = (val.mode === 'self' || val.mode === 'sync') ? val.mode : 'sync';
           
@@ -316,10 +319,14 @@
               this.hasAssignedSelfQuiz = true;
               this.applyGlobalMode('self');
               this.selectQuiz(val.assignedQuizId);
-              this.startSelfPacedQuiz(val.assignedQuizId);
-              if (window.app && typeof window.app.switchToTab === 'function') {
-                if (window.app.activeTabId !== 'panel-video-quiz') {
-                  window.app.switchToTab('panel-video-quiz');
+              // 如果是初次載入網頁，僅當指派時間是 15 分鐘以內的新鮮指派時才切換分頁
+              const isRecent = val.assignedAt ? (Date.now() - val.assignedAt < 15 * 60 * 1000) : false;
+              if (!wasInitial || isRecent) {
+                this.startSelfPacedQuiz(val.assignedQuizId);
+                if (!wasInitial && window.app && typeof window.app.switchToTab === 'function') {
+                  if (window.app.activeTabId !== 'panel-video-quiz') {
+                    window.app.switchToTab('panel-video-quiz');
+                  }
                 }
               }
             }
@@ -428,6 +435,7 @@
       // 2. 更新學生端頂部狀態列
       const badge = document.getElementById('vqStudentModeBadge');
       const note = document.getElementById('vqStudentModeNote');
+      const isTeacherUser = this.isTeacher || window.app?.isAdmin;
       if (badge) {
         badge.textContent = mode === 'sync' ? '🧑‍🏫 模式：全班同步測驗' : '🎧 模式：個人自主學習';
         badge.style.background = mode === 'sync' ? 'var(--accent-color)' : '#34c759';
@@ -435,19 +443,22 @@
       if (note) {
         note.textContent = mode === 'sync' 
           ? '由授課老師統一設定與引導播放'
-          : '由授課老師設定為自主學習，可自由選擇影片練習';
+          : (isTeacherUser ? '由授課老師設定為自主學習，可自由選擇影片練習' : '由授課老師指派自主學習測驗');
       }
 
       // 3. 學生端顯示區域連動 (同步模式顯示同步區，自主模式顯示自主區)
       const syncSec = document.getElementById('vqSyncSection');
       const selfSec = document.getElementById('vqSelfSection');
+      const selectorRow = document.getElementById('vqSelfQuizSelectorRow');
+      if (selectorRow) {
+        selectorRow.style.display = isTeacherUser ? 'flex' : 'none';
+      }
       if (syncSec && selfSec) {
         if (mode === 'sync') {
           syncSec.style.display = 'block';
           selfSec.style.display = 'none';
         } else {
           // 自主模式：管理員或老師端可見，學生端須等待老師指派後才出現
-          const isTeacherUser = this.isTeacher || window.app?.isAdmin;
           if (isTeacherUser || this.hasAssignedSelfQuiz) {
             syncSec.style.display = 'none';
             selfSec.style.display = 'block';
@@ -502,6 +513,8 @@
       this.isTeacher = !!isAdmin;
       const link = document.getElementById('vqAdminQuickLinkWrapper');
       if (link) link.style.display = this.isTeacher ? 'block' : 'none';
+      const selectorRow = document.getElementById('vqSelfQuizSelectorRow');
+      if (selectorRow) selectorRow.style.display = this.isTeacher ? 'flex' : 'none';
       this.renderCustomSetsList();
       this.renderQuizSelector();
       this.renderEditorQuizList();
@@ -1516,7 +1529,7 @@
       }
 
       this.setupPlayer('vqSelfPlayerContainer', quiz.videoUrl, () => {
-        if (window.app) window.app.showNotification('提示', '自主學習測驗已準備就緒，請點擊播放開始觀看！');
+        // 自主學習影片播放器載入完成
       }, (currentTime) => {
         this.handleSelfTimelineTick(currentTime);
       });

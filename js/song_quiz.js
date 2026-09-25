@@ -179,7 +179,7 @@
           ${state.index + 1 === game.questions.length ? '🏁 查看全部解答與本局成績' : '下一首 ➜'}
         </button>
       `;
-    } else {
+    } else if (game.allowHint !== false) {
       actionAreaHtml = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">
           <button type="button" onclick="window.app.useSongQuizSingerHint()" ${state.revealedSinger ? 'disabled' : ''} style="padding:10px; border:none; border-radius:8px; background:#6366f1; color:white; font-size:13px; font-weight:bold; cursor:pointer; opacity:${state.revealedSinger ? 0.45 : 1};">
@@ -194,6 +194,8 @@
           累計使用提示懲罰：+${this.focusHelpPenaltySeconds || 0} 秒（已算入總耗時）
         </div>
       `;
+    } else {
+      actionAreaHtml = '';
     }
 
     grid.innerHTML = `
@@ -359,7 +361,7 @@
   // 提示歌手 (懲罰 +5 秒)
   App.prototype.useSongQuizSingerHint = function useSongQuizSingerHint() {
     const state = this.songQuizState;
-    if (!state || state.answered || state.revealedSinger) return;
+    if (!state || state.answered || state.revealedSinger || this.focusGame?.allowHint === false) return;
 
     state.revealedSinger = true;
     this.focusHelpCount = (this.focusHelpCount || 0) + 1;
@@ -372,7 +374,7 @@
   App.prototype.useSongQuizEliminationHint = function useSongQuizEliminationHint() {
     const state = this.songQuizState;
     const game = this.focusGame;
-    if (!state || !game || state.answered) return;
+    if (!state || !game || state.answered || game.allowHint === false) return;
 
     const question = (game.questions || [])[state.index];
     if (!question) return;

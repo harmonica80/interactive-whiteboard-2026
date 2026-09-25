@@ -1,4 +1,24 @@
 # System Log
+## 2026-09-25 - ver 3.3.7 學生自主學習隱藏選單、專注力測驗提示開關控制、首頁載入防阻斷彈窗與分頁修復
+- 影響檔案：`index.html`, `js/video_quiz.js`, `js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **學生端自主學習模式隱藏影片選擇選單 (`index.html`, `js/video_quiz.js`)**：
+     - 將「選擇自主學習影片」下拉選單與「開始自主學習」按鈕區塊封裝為 `#vqSelfQuizSelectorRow`，學生端預設且強制不顯示（`display: none`），僅管理員／教師端保留可見以利測試。
+     - 學生端上方橫幅說明同步調整為「由授課老師指派自主學習測驗」，介面更加簡潔專注。
+  2. **所有專注力測驗支援教師控制是否開放「提示」功能 (`index.html`, `js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`)**：
+     - 在後台「🧠 專注力遊戲管理」共用設定區新增「3. 答題提示功能」核選方塊（`#focusGameAllowHint`，預設開放）。
+     - 發起遊戲時將 `allowHint` 寫入 Firebase `quiz/focusGame`。
+     - 包含舒爾特方格（`numberGrid`）、位置序列記憶（`memoryPosition`）、一字千金系列（`characterTest`, `characterCrossword`, `characterUnitedWords`）、國學常識成語（`classicsQuiz`）與聽歌搶答（`songQuiz`），當老師關閉提示時，學生端所有「求救提示」、「顯示提示字」、「刪去法提示」、「提示歌手」與「刪除錯誤」等提示按鈕皆不顯示且無法調用。
+  3. **載入網頁時移除阻斷性提示彈窗與防分頁搶奪 (`js/video_quiz.js`, `js/app.js`)**：
+     - 徹底移除 `startSelfPacedQuiz` 內 `setupPlayer` 完成時彈出之 `showNotification` 阻斷性視窗（「自主學習測驗已準備就緒，請點擊播放開始觀看！」），不再干擾初次進站或重新整理的使用者。
+     - 在 `settingsRef.on('value')` 加入首次載入判斷與新鮮度檢核（15 分鐘內指派才切換分頁），避免因資料庫舊有自主學習殘留資料而在進站時瞬間搶奪焦點跳轉至影片測驗分頁。
+     - 在 `resetAll()` 中同步加入清空 `quiz/videoQuizSettings`。
+  4. **版本號嚴格遞增至 `ver 3.3.7` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=337`）、`app.js`（`this.APP_VERSION = '3.3.7'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-25 - ver 3.3.6 全班同步測驗僅老師端播放影片、成語測驗導航改為 Google 查詢、自主學習指派後學生端才啟動
 - 影響檔案：`js/video_quiz.js`, `js/classics_quiz.js`, `index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
