@@ -150,6 +150,7 @@
       this.isTeacher = false;
       this.lastSession = null;
       this.pendingQuestion = null;
+      this.hasAssignedSelfQuiz = false;
       
       // 編輯器暫存
       this.editingQuiz = null;
@@ -306,16 +307,25 @@
       if (this.settingsRef) {
         this.settingsRef.on('value', (snapshot) => {
           const val = snapshot.val();
-          const mode = (val && (val.mode === 'self' || val.mode === 'sync')) ? val.mode : 'sync';
-          this.applyGlobalMode(mode);
-          if (val && val.assignedQuizId && mode === 'self' && !this.isTeacher && !window.app?.isAdmin) {
-            this.selectQuiz(val.assignedQuizId);
-            this.startSelfPacedQuiz(val.assignedQuizId);
-            if (window.app && typeof window.app.switchToTab === 'function') {
-              if (window.app.activeTabId !== 'panel-video-quiz') {
-                window.app.switchToTab('panel-video-quiz');
+          if (!val) return;
+          const mode = (val.mode === 'self' || val.mode === 'sync') ? val.mode : 'sync';
+          
+          if (mode === 'self') {
+            // 只有當老師真正按下「指派自主學習測驗」有了 assignedQuizId，學生端才切換並出現
+            if (val.assignedQuizId && !this.isTeacher && !window.app?.isAdmin) {
+              this.hasAssignedSelfQuiz = true;
+              this.applyGlobalMode('self');
+              this.selectQuiz(val.assignedQuizId);
+              this.startSelfPacedQuiz(val.assignedQuizId);
+              if (window.app && typeof window.app.switchToTab === 'function') {
+                if (window.app.activeTabId !== 'panel-video-quiz') {
+                  window.app.switchToTab('panel-video-quiz');
+                }
               }
             }
+          } else {
+            this.hasAssignedSelfQuiz = false;
+            this.applyGlobalMode('sync');
           }
         });
       }
@@ -368,13 +378,23 @@
     setGlobalMode(mode) {
       if (mode !== 'sync' && mode !== 'self') return;
       this.globalMode = mode;
-      if (this.settingsRef) {
-        this.settingsRef.set({ mode, updatedAt: Date.now() });
-      }
-      this.applyGlobalMode(mode);
-      if (window.app) {
-        const modeLabel = mode === 'sync' ? '🧑‍🏫 全班同步測驗模式' : '🎧 個人自主學習模式';
-        window.app.showNotification('測驗模式設定', `已將全班學生端切換為「${modeLabel}」！`);
+
+      if (mode === 'sync') {
+        this.hasAssignedSelfQuiz = false;
+        if (this.settingsRef) {
+          this.settingsRef.set({ mode: 'sync', assignedQuizId: null, updatedAt: Date.now() });
+        }
+        this.applyGlobalMode('sync');
+        if (window.app) {
+          window.app.showNotification('測驗模式設定', '已將全班切換為「🧑‍🏫 全班同步測驗模式」！');
+        }
+      } else {
+        // 自主學習模式：老師在後台選擇時「先不要馬上開始」，等按下「指派自主學習測驗」按鈕後，學生端才出現
+        this.hasAssignedSelfQuiz = false;
+        this.applyGlobalMode('self');
+        if (window.app) {
+          window.app.showNotification('自主學習模式', '已切換為自主學習設定。請選擇測驗單元，並點擊下方「🚀 指派自主學習測驗」後學生端才會開始！');
+        }
       }
     }
 
@@ -426,10 +446,11 @@
           syncSec.style.display = 'block';
           selfSec.style.display = 'none';
         } else {
-          syncSec.style.display = 'none';
-          selfSec.style.display = 'block';
-          if (this.activeQuiz && (!this.playerType || this.currentMode !== 'self')) {
-            this.startSelfPacedQuiz(this.activeQuiz.id);
+          // 自主模式：管理員或老師端可見，學生端須等待老師指派後才出現
+          const isTeacherUser = this.isTeacher || window.app?.isAdmin;
+          if (isTeacherUser || this.hasAssignedSelfQuiz) {
+            syncSec.style.display = 'none';
+            selfSec.style.display = 'block';
           }
         }
       }
@@ -457,8 +478,13 @@
       }
       if (broadcastBadge && (!this.lastSession || this.lastSession.status === 'idle')) {
         if (mode === 'self') {
-          broadcastBadge.textContent = '🟢 自主學習中';
-          broadcastBadge.style.background = '#34c759';
+          if (this.hasAssignedSelfQuiz) {
+            broadcastBadge.textContent = '🟢 自主學習中';
+            broadcastBadge.style.background = '#34c759';
+          } else {
+            broadcastBadge.textContent = '⚪ 待指派自主學習';
+            broadcastBadge.style.background = 'var(--text-muted)';
+          }
         } else {
           broadcastBadge.textContent = '⚪ 未發起測驗';
           broadcastBadge.style.background = 'var(--text-muted)';
@@ -498,7 +524,7 @@
           if (this.lastSession.quizData) {
             this.activeQuiz = this.lastSession.quizData;
             this.setupPlayer('vqSyncPlayerContainer', this.lastSession.quizData.videoUrl, () => {
-              if (this.lastSession.status === 'playing') this.playVideo();
+              if (this.lastSession.status === 'playing' && (this.isTeacher || window.app?.isAdmin)) this.playVideo();
             });
           }
         }
@@ -699,6 +725,8 @@
       }
 
       if (this.globalMode === 'self') {
+        this.hasAssignedSelfQuiz = true;
+        this.applyGlobalMode('self');
         this.startSelfPacedQuiz(quizId);
         if (this.settingsRef) {
           this.settingsRef.update({
@@ -712,7 +740,7 @@
         }
         if (window.app) {
           const quizTitle = this.activeQuiz?.title || '指定單元';
-          window.app.showNotification('自主學習', `已載入「${quizTitle}」，學生端同步切換至此測驗！`);
+          window.app.showNotification('自主學習', `已指派「${quizTitle}」，學生端同步切換至此測驗！`);
         }
       } else {
         this.startSyncQuizAsTeacher(quizId);
@@ -1312,7 +1340,7 @@
             this.activeQuiz = session.quizData;
             if (isVideoQuizActive) {
               this.setupPlayer('vqSyncPlayerContainer', session.quizData.videoUrl, () => {
-                if (session.status === 'playing') this.playVideo();
+                if (session.status === 'playing' && (this.isTeacher || window.app?.isAdmin)) this.playVideo();
               });
             }
           }
@@ -1340,9 +1368,8 @@
           }
         } else if (session.status === 'playing') {
           this.hideQuestionOverlay();
-          if (isVideoQuizActive) {
-            this.playVideo();
-          }
+          // 全班同步測驗模式：老師按下繼續播放時，僅老師端播放，同學端保持暫停
+          this.pauseVideo();
         } else if (session.status === 'completed') {
           this.hideQuestionOverlay();
           if (isVideoQuizActive) {
@@ -2310,13 +2337,22 @@
       const set = this.customSets.find(s => s.id === setId);
       if (!set) return;
 
-      this.setGlobalMode('self');
+      this.globalMode = 'self';
+      this.hasAssignedSelfQuiz = true;
+      this.applyGlobalMode('self');
       this.startSelfPacedQuiz('custom:' + setId);
+      if (this.settingsRef) {
+        this.settingsRef.update({
+          mode: 'self',
+          assignedQuizId: 'custom:' + setId,
+          updatedAt: Date.now()
+        });
+      }
       if (window.app && typeof window.app.switchToTab === 'function') {
         window.app.switchToTab('panel-video-quiz');
       }
       if (window.app) {
-        window.app.showNotification('成功', `已載入「${set.name}」進入個人自主學習！`);
+        window.app.showNotification('成功', `已指派「${set.name}」進入個人自主學習！`);
       }
     }
 
