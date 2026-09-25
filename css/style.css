@@ -612,6 +612,7 @@ body {
   color: var(--text-primary);
   font-weight: bold;
   border: 2px solid var(--border-color);
+  margin-bottom: 12px;
 }
 
 .quiz-results {
@@ -621,15 +622,22 @@ body {
 .result-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 8px;
 }
 
 .result-label {
-  width: 28px;
   font-weight: bold;
   color: var(--accent-color);
   font-size: 13px;
+  white-space: nowrap;
+}
+
+.result-bar .result-label {
+  width: auto;
+  min-width: 32px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .result-progress {
@@ -638,6 +646,7 @@ body {
   background: var(--bg-input);
   border-radius: 12px;
   overflow: hidden;
+  min-width: 60px;
 }
 
 .result-fill {

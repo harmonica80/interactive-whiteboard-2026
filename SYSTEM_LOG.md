@@ -1,4 +1,23 @@
 # System Log
+## 2026-09-25 - ver 3.3.5 學生暱稱說明優化、可愛生物隨機暱稱庫、一次性課堂暱稱防呆、選擇題結束顯示題目與選項不換行
+- 影響檔案：`index.html`, `css/style.css`, `js/quiz.js`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`。
+- 修改項目：
+  1. **學生設定姓名或暱稱彈窗說明文字更新 (`index.html`)**：
+     - 修改說明文字為「歡迎來到互動白板課堂！請設定您的姓名或暱稱，您所發表的內容都可以修改與刪除」。
+  2. **可愛動物與小生物隨機挑選暱稱功能 (`index.html`, `js/app.js`)**：
+     - 在設定姓名彈窗中提供「🎲 隨機挑選」按鈕與 6 個快速點選的可愛動物徽章（如「🐱 溫暖小貓」、「🐨 呆萌無尾熊」、「🦊 機智小狐狸」等 35+ 種可愛生物），支援「🔄 換一批」，方便學生一鍵挑選趣味暱稱。
+  3. **一次性課堂學生姓名強制驗證防呆 (`js/app.js`)**：
+     - 解除原先僅限班級模式才防呆的限制，提問（`submitQuestion`）、留言（`submitComment`）、上傳圖片（`handleImageUpload`）、上傳與分享影片（`handleVideoUpload`, `submitVideoLink`）全面強制要求輸入姓名或暱稱，一次性課堂也能落實友善具名互動。
+  4. **選擇題測驗結束時完整顯示題目與題型標籤 (`js/quiz.js`)**：
+     - 原先測驗結束時只顯示「測驗已結束」，測驗題目消失。現保留題目卡片區塊，上方顯示「⏹️ 測驗已結束」與單選/複選題型標籤，下方清楚顯示題目名稱。
+  5. **選擇題結果選項名稱防折行與自適應寬度 (`css/style.css`, `js/quiz.js`)**：
+     - 移除 `.result-label` 之固定寬度 `28px`，更新為自適應寬度、`white-space: nowrap` 與 `flex-shrink: 0`，使多字元選項（如「影片寬度」、「影片高度」）完整一行呈現不折行。
+  6. **版本號嚴格遞增至 `ver 3.3.5` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=335`）、`app.js`（`this.APP_VERSION = '3.3.5'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-25 - ver 3.3.4 字力與成語題數自訂、原典延伸連結精簡、測驗與轉盤免切換自動呈現、影音自學教師控制台
 - 影響檔案：`index.html`, `js/app.js`, `js/classics_quiz.js`, `js/quiz.js`, `js/video_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `tests/video-quiz.spec.mjs`。
 - 修改項目：
