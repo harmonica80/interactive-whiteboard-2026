@@ -1,4 +1,19 @@
 # System Log
+## 2026-09-26 - ver 3.5.1 手機版班級切換對話框說明文字隱藏、排版緊湊化確保按鈕完整呈現
+- 影響檔案：`index.html`, `css/style.css`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **手機版隱藏班級切換對話框冗長說明文字 (`index.html`)**：
+     - **成因排查**：在手機螢幕高度有限的裝置上開啟「加入或切換專屬班級」對話框時，頂部的說明文字（「請輸入老師已登記開課的班級代碼。多次上課請使用同一個代碼，板書與課堂紀錄將完整延續！」）佔用了過多直向高度，導致底部的「🚀 進入班級課堂」與「🌱 返回免代碼一次性課堂」按鈕被推擠至螢幕外緣甚至無法完整看見。
+     - **修復方案**：為該說明文字段落加上 `.desktop-only` 類別，在手機端自動隱藏不顯示，電腦版與平板端則繼續保留說明。
+  2. **手機版班級切換對話框尺寸與間距緊湊化 (`css/style.css`)**：
+     - 在 `@media (max-width: 768px)` 中，將 `.class-modal-card` 內距由 `26px` 縮減為 `16px 18px`，標題間距與圖示尺寸適度微調，並加上 `max-height: 90vh !important; overflow-y: auto !important;`。
+     - 徹底確保無論手機螢幕高矮，下方的兩個切換與確認按鈕皆能舒適合宜地出現在螢幕視野內，便於使用者即時點擊。
+  3. **版本號嚴格遞增至 `ver 3.5.1` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=351`）、`app.js`（`this.APP_VERSION = '3.5.1'`）。
+     - 更新自動化驗證腳本 `scripts/verify-video-quiz.mjs` 與 `scripts/verify-song-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.5.0 手機版切換班級/回一次性課堂按鈕、教師分享按鈕精簡文字、連線狀態正方形顯示
 - 影響檔案：`index.html`, `css/style.css`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：

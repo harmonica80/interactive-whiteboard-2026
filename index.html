@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=350">
+  <link rel="stylesheet" href="css/style.css?v=351">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.5.0</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.5.1</span>
         </p>
       </div>
       <div class="top-actions">
@@ -1643,18 +1643,18 @@
     <div class="modal-content class-modal-card" style="max-width: 500px; width: 92%; border-radius: 20px; background: var(--bg-card); padding: 26px; box-shadow: 0 16px 40px rgba(0,0,0,0.25); position: relative; border: 1px solid var(--border-color);">
       <button onclick="window.app.closeClassModal()" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
       
-      <div style="text-align: center; margin-bottom: 20px;">
-        <div style="font-size: 38px; margin-bottom: 6px;">🏫</div>
-        <h3 style="margin: 0 0 6px 0; font-size: 20px; color: var(--text-primary); font-weight: bold;">
+      <div class="class-modal-header" style="text-align: center; margin-bottom: 20px;">
+        <div class="class-modal-icon" style="font-size: 38px; margin-bottom: 6px;">🏫</div>
+        <h3 class="class-modal-title" style="margin: 0 0 6px 0; font-size: 20px; color: var(--text-primary); font-weight: bold;">
           加入或切換專屬班級
         </h3>
-        <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+        <p class="desktop-only" style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
           請輸入老師已登記開課的班級代碼。多次上課請使用同一個代碼，板書與課堂紀錄將完整延續！
         </p>
       </div>
 
       <!-- 輸入區塊 -->
-      <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div class="class-modal-form" style="display: flex; flex-direction: column; gap: 16px;">
         <!-- 班級代碼 -->
         <div>
           <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
@@ -1835,17 +1835,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=350"></script>
+  <script src="js/firebase-config.js?v=351"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=350"></script>
-  <script src="js/focus_question_bank.js?v=350"></script>
+  <script src="js/song_quiz_pool.js?v=351"></script>
+  <script src="js/focus_question_bank.js?v=351"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=350"></script>
-  <script src="js/app.js?v=350"></script>
-  <script src="js/classics_quiz.js?v=350"></script>
-  <script src="js/song_quiz.js?v=350"></script>
-  <script src="js/video_quiz.js?v=350"></script>
+  <script src="js/quiz.js?v=351"></script>
+  <script src="js/app.js?v=351"></script>
+  <script src="js/classics_quiz.js?v=351"></script>
+  <script src="js/song_quiz.js?v=351"></script>
+  <script src="js/video_quiz.js?v=351"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
