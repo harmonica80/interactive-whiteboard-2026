@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.4.8';
+    this.APP_VERSION = '3.4.9';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -8214,7 +8214,6 @@ class App {
 
     this.focusCurrentExpected = 1;
     this.focusGridSize = game.gridSize || 36;
-    const numContainer = document.getElementById('focusNumberGridContainer');
     if (numContainer) numContainer.classList.add('schulte-mode');
     const numHeader = document.getElementById('focusNumberGridHeader');
     if (numHeader) numHeader.style.display = 'flex';

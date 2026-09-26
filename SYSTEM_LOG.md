@@ -1,4 +1,16 @@
 # System Log
+## 2026-09-26 - ver 3.4.9 緊急修復 JS 重複宣告 SyntaxError 導致全站無法操作、刷新全域快取
+- 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **緊急修復 `startFocusGame` 中 `numContainer` 重複宣告語法錯誤 (`js/app.js`)**：
+     - **成因排查**：在 `startFocusGame` 函式內部（第 8191 行與第 8217 行）重複宣告了 `const numContainer`，觸發嚴格的 `SyntaxError: Identifier 'numContainer' has already been declared`，導致瀏覽器載入 `app.js` 時中斷編譯執行，進而引發 `window.app` 為 undefined，造成全站按鈕與功能完全無法點擊操作。
+     - **修復方案**：移除重複宣告的 `const numContainer`，直接複用已宣告的變數並套用 `.schulte-mode` 類別，經 `node -c` 完整檢驗全專案 JS 語法 100% 正確零警告。
+  2. **版本號嚴格遞增至 `ver 3.4.9` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=349`）、`app.js`（`this.APP_VERSION = '3.4.9'`）。
+     - 更新自動化驗證腳本 `scripts/verify-video-quiz.mjs` 與 `scripts/verify-song-quiz.mjs`，強制使用者瀏覽器立即抓取修復後的正確腳本。
+
+---
+
 ## 2026-09-26 - ver 3.4.8 聽歌搶答文字重疊修復與搶答按鈕置頂、影片出題手機端隱藏後台按鈕、抽人轉盤支援匯入線上學生名單
 - 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `js/video_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
