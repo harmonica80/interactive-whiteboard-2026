@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.4.9';
+    this.APP_VERSION = '3.5.0';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
