@@ -27,6 +27,15 @@
     if (helpInfo) helpInfo.textContent = ''
     if (targetLabel) targetLabel.style.display = 'none'
 
+    grid.classList.remove('schulte-mode')
+    const numberGridContainer = document.getElementById('focusNumberGridContainer')
+    if (numberGridContainer) numberGridContainer.classList.remove('schulte-mode')
+    const instEl = document.getElementById('focusGameInstruction')
+    if (instEl) {
+      instEl.style.display = 'none'
+      instEl.textContent = ''
+    }
+
     grid.style.aspectRatio = 'auto'
     grid.style.display = 'flex'
     grid.style.flexDirection = 'column'
@@ -191,10 +200,21 @@
   App.prototype.renderClassicsQuizCompleted = function renderClassicsQuizCompleted(game, result) {
     const grid = document.getElementById('focusGameGrid')
     if (!grid) return
+
+    grid.classList.remove('schulte-mode')
+    const numberGridContainer = document.getElementById('focusNumberGridContainer')
+    if (numberGridContainer) numberGridContainer.classList.remove('schulte-mode')
+    const instEl = document.getElementById('focusGameInstruction')
+    if (instEl) {
+      instEl.style.display = 'none'
+      instEl.textContent = ''
+    }
+
     const answers = result.answers || []
     const score = Number(result.score) || 0
     const total = Number(result.totalQuestions) || (game.questions || []).length
     const byId = new Map(answers.map((item) => [item.questionId, item]))
+    grid.style.aspectRatio = 'auto'
     grid.style.display = 'flex'
     grid.style.flexDirection = 'column'
     grid.style.gap = '12px'

@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.4.6';
+    this.APP_VERSION = '3.4.8';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -7817,21 +7817,19 @@ class App {
     // 更新底部遊戲說明提示文字
     const instEl = document.getElementById('focusGameInstruction');
     if (instEl && game) {
-      if (game.gameType === 'classicsQuiz') {
-        instEl.textContent = '💡 選擇一個答案；可用「刪去法提示」排除一個錯誤選項。每題作答後可查看正解、原典與導讀連結。';
+      if (game.gameType === 'classicsQuiz' || game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
+        // 成語測驗、一字千金、字字珠璣、團結一詞已在各題目卡片中顯示專屬指引，隱藏全域說明以杜絕版面重疊
+        instEl.style.display = 'none';
+        instEl.textContent = '';
       } else if (game.gameType === 'songQuiz') {
-        instEl.textContent = isSongQuizBuzzer
-          ? '⚡ 全班同步搶答：仔細聆聽歌曲片段，聽出歌名請立刻按搶答！答錯將暫停並可由老師繼續播放。'
-          : '🎵 聽歌搶答：聆聽黑膠唱片播放的歌曲片段，選出正確歌名！';
-      } else if (game.gameType === 'characterTest') {
-        instEl.textContent = '💡 請寫出正確的國字，填寫完後點選「送出答案」讓老師評分。';
-      } else if (game.gameType === 'characterCrossword') {
-        instEl.textContent = '💡 請寫出中心挖空的關鍵字，填寫完後點選「送出答案」讓老師評分。';
-      } else if (game.gameType === 'characterUnitedWords') {
-        instEl.textContent = '💡 請運用畫面上的部件組合出正確的二字詞，填寫完後點選「送出答案」。';
+        // 聽歌搶答已在 song_quiz.js 內部自帶完整狀態提示與操作引導，隱藏全域說明以杜絕手機版重疊
+        instEl.style.display = 'none';
+        instEl.textContent = '';
       } else if (game.gameType === 'memoryPosition') {
+        instEl.style.display = 'block';
         instEl.textContent = '💡 請依序或反向點選剛才閃爍位置的格子，加油！';
       } else {
+        instEl.style.display = 'block';
         instEl.textContent = '💡 點擊正確數字它將會消失，看誰能用最快的速度完成！';
       }
     }
@@ -8216,6 +8214,8 @@ class App {
 
     this.focusCurrentExpected = 1;
     this.focusGridSize = game.gridSize || 36;
+    const numContainer = document.getElementById('focusNumberGridContainer');
+    if (numContainer) numContainer.classList.add('schulte-mode');
     const numHeader = document.getElementById('focusNumberGridHeader');
     if (numHeader) numHeader.style.display = 'flex';
     const allowHint = game.allowHint !== false;
@@ -8229,6 +8229,7 @@ class App {
 
     const grid = document.getElementById('focusGameGrid');
     if (grid) {
+      grid.classList.add('schulte-mode');
       const cols = Math.max(3, Math.round(Math.sqrt(this.focusGridSize)));
       grid.style.display = 'grid';
       grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
@@ -8722,7 +8723,10 @@ class App {
   startMemoryPositionGame(game) {
     this.focusGridSize = game.gridSize || 36;
     // OpenCode 修改：修正位置序列模式未宣告 grid 導致無作用，並相容 Firebase array/object 序列格式
+    const numContainer = document.getElementById('focusNumberGridContainer');
+    if (numContainer) numContainer.classList.add('schulte-mode');
     const grid = document.getElementById('focusGameGrid');
+    if (grid) grid.classList.add('schulte-mode');
     const sequence = Array.isArray(game.sequence)
       ? game.sequence
       : (game.sequence ? Object.values(game.sequence).map(v => parseInt(v)).filter(v => Number.isFinite(v)) : []);
@@ -9291,6 +9295,16 @@ class App {
     const grid = document.getElementById('focusGameGrid');
     if (!grid) return;
     
+    grid.classList.remove('schulte-mode');
+    const numberGridContainer = document.getElementById('focusNumberGridContainer');
+    if (numberGridContainer) numberGridContainer.classList.remove('schulte-mode');
+
+    const instEl = document.getElementById('focusGameInstruction');
+    if (instEl) {
+      instEl.style.display = 'none';
+      instEl.textContent = '';
+    }
+
     // 隱藏求救按鈕與提示
     const helpBtn = document.getElementById('focusHelpBtn');
     if (helpBtn) helpBtn.style.display = 'none';
@@ -9720,11 +9734,21 @@ class App {
     const grid = document.getElementById('focusGameGrid');
     if (!grid) return;
     
+    grid.classList.remove('schulte-mode');
+    const numberGridContainer = document.getElementById('focusNumberGridContainer');
+    if (numberGridContainer) numberGridContainer.classList.remove('schulte-mode');
+
     const helpBtn = document.getElementById('focusHelpBtn');
     if (helpBtn) helpBtn.style.display = 'none';
     const helpInfo = document.getElementById('focusHelpInfo');
     if (helpInfo) helpInfo.textContent = '';
-    
+
+    const instEl = document.getElementById('focusGameInstruction');
+    if (instEl) {
+      instEl.style.display = 'none';
+      instEl.textContent = '';
+    }
+
     const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
     if (targetLabel) targetLabel.style.display = 'none';
     
@@ -9737,6 +9761,7 @@ class App {
     
     const answers = result.answers || ['', '', ''];
     const status = result.status || 'pending';
+    const isPending = status === 'pending';
     const isCrossword = game.gameType === 'characterCrossword';
     const isUnitedWords = game.gameType === 'characterUnitedWords';
     
@@ -9760,12 +9785,24 @@ class App {
     const questions = game.questions || [];
     questions.forEach((q, idx) => {
       const userWord = answers[idx] || '';
-      const displayWord = status === 'incorrect' ? q.targetWord : userWord;
-      const displayColor = status === 'incorrect' ? '#dc3545' : 'var(--accent-color)';
+      const displayWord = userWord;
+      const displayColor = status === 'incorrect' ? '#dc3545' : (status === 'correct' ? '#28a745' : 'var(--accent-color)');
       
       if (isUnitedWords) {
+        const correctWord = q.targetWord || '';
+        const answerBlock = !isPending
+          ? `<div style="text-align: center; font-size: 16px; color: #167a31; margin-top: 8px; font-weight: bold; background: rgba(52, 199, 89, 0.12); padding: 8px 12px; border-radius: 8px; border: 1px solid #34c759;">
+               💡 正確答案：<span style="font-size: 22px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; font-weight: 900; color: #167a31;">${this.escapeHtml(correctWord)}</span>（${this.escapeHtml(q.clue || '')}）
+             </div>`
+          : `<div style="text-align: center; font-size: 14px; color: var(--text-secondary); margin-top: 6px; font-weight: bold;">
+               💡 提示：${this.escapeHtml(q.clue || '')}
+             </div>
+             <div style="text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+               （答案已送出，請靜候老師評分）
+             </div>`;
+
         html += `
-          <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.9;">
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.95;">
             <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); text-align: center;">🧩 題目部件：${(q.components || []).join(' ')}</div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
               <div class="chinese-writing-grid">
@@ -9775,14 +9812,21 @@ class App {
                 <span style="font-size: 38px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord.charAt(1) || '')}</span>
               </div>
             </div>
-            <div style="text-align: center; font-size: 15px; color: var(--text-secondary); margin-top: 4px; font-weight: bold;">
-              解答詞語：${q.targetWord} (${q.clue})
-            </div>
+            ${answerBlock}
           </div>
         `;
       } else if (isCrossword) {
+        const correctChar = q.char || '';
+        const answerBlock = !isPending
+          ? `<div style="text-align: center; font-size: 16px; color: #167a31; margin-top: 10px; font-weight: bold; background: rgba(52, 199, 89, 0.12); padding: 8px 12px; border-radius: 8px; border: 1px solid #34c759;">
+               💡 關鍵正解：<span style="font-size: 24px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; font-weight: 900; color: #167a31;">${this.escapeHtml(correctChar)}</span>
+             </div>`
+          : `<div style="text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 10px;">
+               ⏳ 答案已送出，請靜候老師評分
+             </div>`;
+
         html += `
-          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.95;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
               <!-- 左側：3x3 十字選字盤 -->
               <div class="character-crossword-container">
@@ -9801,14 +9845,22 @@ class App {
                 <div class="character-crossword-cell surrounding">${q.surrounding[3].char}</div>
               </div>
             </div>
-            <div style="text-align: center; font-size: 24px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
-              關鍵解答：${q.char}
-            </div>
+            ${answerBlock}
           </div>
         `;
       } else {
+        // 字力測驗 (一字千金)
+        const correctChar = q.char || '';
+        const answerBlock = !isPending
+          ? `<div style="text-align: center; font-size: 16px; color: #167a31; margin-top: 10px; font-weight: bold; background: rgba(52, 199, 89, 0.12); padding: 8px 12px; border-radius: 8px; border: 1px solid #34c759;">
+               💡 正確答案：<span style="font-size: 26px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif; font-weight: 900; color: #167a31;">${this.escapeHtml(correctChar)}</span>
+             </div>`
+          : `<div style="text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 8px;">
+               ⏳ 答案已送出，請靜候老師評分
+             </div>`;
+
         html += `
-          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.85;">
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; opacity: 0.95;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
               <div class="chinese-writing-grid">
                 <span style="font-size: 44px; font-weight: bold; color: ${displayColor}; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;">${this.escapeHtml(displayWord)}</span>
@@ -9817,9 +9869,10 @@ class App {
                 <div class="zhuyin-text">${q.zhuyin}</div>
               </div>
             </div>
-            <div style="text-align: center; font-size: 28px; color: var(--text-secondary); margin-top: 10px; font-weight: bold; line-height: 1.4;">
-              提示詞：${q.clue}
+            <div style="text-align: center; font-size: 20px; color: var(--text-secondary); margin-top: 8px; font-weight: bold; line-height: 1.4;">
+              提示詞：${this.escapeHtml(q.clue || '')}
             </div>
+            ${answerBlock}
           </div>
         `;
       }
@@ -9896,8 +9949,10 @@ class App {
         if (isUnited && typeof correct === 'string' && correct.length > idx) {
           correct = correct[idx];
         }
-        const color = (ans && correct && ans === correct) ? '#28a745' : '#dc3545';
-        return `<span style="color: ${color}; font-weight: bold; font-size: 15px; margin: 0 4px; padding: 2px 6px; border: 1px solid ${color}; border-radius: 4px; background: #fff8f8; font-family: 'DFKai-SB', serif;">${this.escapeHtml(ans)}</span>`;
+        const isMatched = Boolean(ans && correct && ans === correct);
+        const color = isMatched ? '#28a745' : '#dc3545';
+        const correctSuffix = (!isMatched && correct) ? `<span style="font-size: 11px; color: #28a745; margin-left: 2px; font-weight: normal;">(正解:${this.escapeHtml(correct)})</span>` : '';
+        return `<span style="color: ${color}; font-weight: bold; font-size: 15px; margin: 0 4px; padding: 2px 6px; border: 1px solid ${color}; border-radius: 4px; background: ${isMatched ? '#f6fff8' : '#fff8f8'}; font-family: 'DFKai-SB', serif;">${this.escapeHtml(ans || '未填')}${correctSuffix}</span>`;
       }).join('');
       
       const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次）` : '';
@@ -10261,6 +10316,54 @@ class App {
     db.ref('quiz/luckyWheel/originalNames').set(names.join('\n'));
     db.ref('quiz/luckyWheel/names').set(names.join('\n'));
     this.showNotification('成功', '名單已完成排序！');
+  }
+
+  importOnlineUsersToWheel() {
+    if (!this.isAdmin) return;
+    const presenceData = this.onlinePresence || {};
+    const now = Date.now();
+    const onlineNames = [];
+    const seenNames = new Set();
+
+    for (const [key, session] of Object.entries(presenceData)) {
+      // 排除過期超過 5 分鐘的殘留連線
+      if (session && session.timestamp && (now - session.timestamp > 300000)) continue;
+      const name = (session && session.userName) ? session.userName.trim() : '';
+      if (name && !seenNames.has(name)) {
+        seenNames.add(name);
+        onlineNames.push(name);
+      }
+    }
+
+    if (onlineNames.length === 0) {
+      this.showNotification('提示', '目前沒有偵測到線上的同學名單，請確認同學已連線並輸入姓名。');
+      return;
+    }
+
+    // 按繁體中文排序
+    onlineNames.sort((a, b) => a.localeCompare(b, 'zh-TW'));
+    const namesStr = onlineNames.join('\n');
+
+    // 更新輸入框與本地狀態
+    const txt = document.getElementById('wheelNamesInput');
+    if (txt) txt.value = namesStr;
+
+    this.wheelNames = [...onlineNames];
+    this.wheelOriginalNames = [...onlineNames];
+    this.pendingRemoveWinner = null;
+
+    const lblCount = document.getElementById('lblWheelCount');
+    if (lblCount) lblCount.textContent = `${onlineNames.length} 人`;
+
+    if (!this.wheelSpinning) {
+      this.wheelAngle = 0;
+      this.drawWheelLocal();
+    }
+
+    // 同步至 Firebase
+    db.ref('quiz/luckyWheel/originalNames').set(namesStr);
+    db.ref('quiz/luckyWheel/names').set(namesStr);
+    this.showNotification('成功', `已匯入 ${onlineNames.length} 位線上同學名單至轉盤！`);
   }
 
   toggleRemoveWinner(checked) {
