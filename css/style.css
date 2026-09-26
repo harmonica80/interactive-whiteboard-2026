@@ -1147,40 +1147,75 @@ body {
   }
   
   .top-actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    width: 100%;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important;
   }
   
   .status-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    padding: 0 4px;
-    box-sizing: border-box;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: auto !important;
+    flex: 0 1 auto !important;
+    padding: 0 !important;
+    overflow: hidden !important;
   }
-  
+
+  /* 手機版本隱藏「線上人數」文字標籤，為互動釋放更多空間 */
+  .status-group #onlineCount,
+  .status-group .online-count {
+    display: none !important;
+  }
+
+  #displayUserNameTagMobile.mobile-only {
+    display: inline-flex !important;
+    align-items: center;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .header-buttons {
-    display: flex;
-    width: 100%;
-    gap: 8px;
-    box-sizing: border-box;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    gap: 6px !important;
   }
   
   /* 手機端按鈕高度減少 1/3，釋放更多螢幕空間給手機使用者 */
   .header-buttons .menu-tab,
-  .header-buttons .admin-top-btn,
   .header-buttons .teacher-share-top-btn {
-    flex: 1;
+    flex: 0 0 auto !important;
     justify-content: center;
-    padding: 5px 12px !important;
+    padding: 5px 10px !important;
     font-size: 12px !important;
     border-radius: 14px !important;
-    white-space: nowrap;
+    white-space: nowrap !important;
     min-height: 28px !important;
     line-height: 1.2 !important;
+  }
+
+  /* 手機端管理後台只留下齒輪圖示，大幅縮減佔用版面 */
+  .header-buttons .admin-top-btn {
+    flex: 0 0 auto !important;
+    justify-content: center;
+    padding: 5px 8px !important;
+    font-size: 13px !important;
+    border-radius: 14px !important;
+    white-space: nowrap !important;
+    min-height: 28px !important;
+    min-width: 30px !important;
+    line-height: 1.2 !important;
+  }
+
+  .admin-btn-text {
+    display: none !important;
   }
   
   .theme-switcher {

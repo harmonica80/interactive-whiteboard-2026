@@ -1,4 +1,23 @@
 # System Log
+## 2026-09-26 - ver 3.4.4 手機版頂部功能列精簡單行排列、隱藏線上人數、管理後台簡化為齒輪圖示
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **手機版隱藏「線上人數 1 人」標籤 (`css/style.css`)**：
+     - 依使用者需求，在行動端螢幕（`@media (max-width: 768px)`）中將 `#onlineCount` 與 `.online-count` 設定為 `display: none !important;`，為手機同學徹底消除多餘佔位。
+     - 平板與電腦端不受影響，維持正常顯示。
+  2. **頂部所有功能按鈕與狀態指示整合至單一行 (`css/style.css`)**：
+     - 在手機版將 `.top-actions` 設定為 `flex-direction: row !important; justify-content: space-between !important; align-items: center !important; flex-wrap: nowrap !important;`。
+     - 左側由身分膠囊（`#displayUserNameTagMobile`，包含可愛頭像與學生姓名）與連線狀態圓角矩形色塊（`#connectionStatus`）並列。
+     - 右側由「📢 教師分享」與「⚙️ 管理後台」緊湊並列，所有元素高度一致、水平單行排開，完全消除原本在手機上佔用兩行的高度。
+  3. **手機版管理後台按鈕簡化為僅齒輪圖示 (`index.html`, `css/style.css`)**：
+     - 在 `index.html` 將管理後台按鈕文字以 `<span class="admin-btn-text"> 管理後台</span>` 包裹。
+     - 在手機版樣式中設定 `.admin-btn-text { display: none !important; }`，只保留 `⚙️` 齒輪圖示，寬度縮減至 30px，保留按鈕所有原生點擊功能與浮動提示（title="管理後台"）。
+  4. **版本號嚴格遞增至 `ver 3.4.4` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=344`）、`app.js`（`this.APP_VERSION = '3.4.4'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.4.3 手機端移除編輯筆圖示（點按頭像或名稱即可開啟）、連線狀態改為圓角矩形精簡色塊（刪除已連線文字）
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
