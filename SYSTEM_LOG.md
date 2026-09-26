@@ -1,4 +1,22 @@
 # System Log
+## 2026-09-26 - ver 3.3.9 一次性課堂姓名與頭像修改一致化、96 款可愛生物透明頭像系統（整合雪碧圖與獨立切圖）
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`, `images/avatars_sheet.png`, `images/avatars_sheet1.png`, `images/avatars_sheet2.png`, `images/avatars/avatar_0.png` ~ `avatar_95.png`。
+- 修改項目：
+  1. **一次性課堂顯示與班級模式一致化 (`index.html`, `css/style.css`, `js/app.js`)**：
+     - 一次性課堂模式（`#modeOneOffDisplay`）新增 `#displayUserNameTagOneOff` 圓角膠囊標籤，結構包含可愛生物頭像（`#displayUserAvatarOneOff`）、學生名稱（`#displayUserNameOneOff`）與編輯圖示（✏️）。
+     - 與班級模式（`#modeClassDisplay`）一致，點擊標籤隨時開啟姓名與頭像設定彈窗（`studentNameModal`），讓一次性課堂使用者也能方便自訂與修改個人身分。
+     - 頂部使用者標籤統一樣式為圓角膠囊（`border-radius: 16px`），具備舒適的 hover 微動效與立體陰影。
+  2. **96 款可愛生物透明頭像系統 (`images/`, `css/style.css`, `js/app.js`, `index.html`)**：
+     - 使用 BFS 邊界泛洪（Flood Fill）演算法去除原始圖檔黑底，**完整保護動物眼睛黑眼珠與黑色花紋**，產出高品質透明背景。
+     - 採用 CSS Sprite 百分比定位（`background-size: 800% 1200%`），將 96 款頭像整合為單一雪碧圖（`images/avatars_sheet.png`），僅需單次 HTTP 請求即完成所有頭像載入，大幅節省流量並消除切換延遲；同步保留 96 張 128x128 獨立 PNG（`images/avatars/avatar_*.png`）備用。
+     - 於 `#studentNameModal` 提供 96 款頭像挑選面板，分為「🐱 萌寵奇幻 (48)」與「🦁 森林海洋 (48)」兩大分頁，支援即時預覽外框、選中高亮、隨機抽籤換頭像（🎲 隨機換頭像）與一鍵隨機名稱連動。
+     - 頭像選擇儲存於本地 `localStorage`，並於學生上線時同步登記至 Firebase `quiz/students/${userId}` 與 `quiz/presence`。
+  3. **版本號嚴格遞增至 `ver 3.3.9` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=339`）、`app.js`（`this.APP_VERSION = '3.3.9'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.3.8 學生姓名設定即時查重、重複自動提示序號建議（_01）、全域名冊同步防呆
 - 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
