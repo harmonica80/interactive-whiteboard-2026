@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.4.2';
+    this.APP_VERSION = '3.4.3';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -5799,7 +5799,8 @@ class App {
 
     db.ref('.info/connected').on('value', (snapshot) => {
       if (snapshot.val()) {
-        statusEl.textContent = '已連線';
+        statusEl.textContent = '';
+        statusEl.title = '連線狀態：正常已連線';
         statusEl.className = 'connection-status connected';
         
         // Clean up previous reference if it exists
@@ -5817,7 +5818,8 @@ class App {
         });
         myPresenceRef.onDisconnect().remove();
       } else {
-        statusEl.textContent = '斷線中...';
+        statusEl.textContent = '';
+        statusEl.title = '連線狀態：已斷線或重新連線中';
         statusEl.className = 'connection-status disconnected';
       }
     });

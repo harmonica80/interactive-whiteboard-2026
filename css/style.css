@@ -188,22 +188,26 @@ body {
   white-space: nowrap;
 }
 
-/* 連線狀態 */
+/* 連線狀態指示燈（圓角矩形色塊） */
 .connection-status {
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: bold;
+  width: 26px;
+  height: 14px;
+  border-radius: 6px;
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  vertical-align: middle;
 }
 
 .connection-status.connected {
   background: var(--success-color);
-  color: white;
+  box-shadow: 0 0 6px rgba(40, 167, 69, 0.35);
 }
 
 .connection-status.disconnected {
   background: var(--danger-color);
-  color: white;
+  box-shadow: 0 0 6px rgba(220, 53, 69, 0.35);
 }
 
 /* 色系切換按鈕 */
@@ -1113,8 +1117,8 @@ body {
   .top-bar {
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 12px;
   }
   
   .header {
@@ -1161,17 +1165,22 @@ body {
   .header-buttons {
     display: flex;
     width: 100%;
-    gap: 10px;
+    gap: 8px;
     box-sizing: border-box;
   }
   
-  .header-buttons .menu-tab {
+  /* 手機端按鈕高度減少 1/3，釋放更多螢幕空間給手機使用者 */
+  .header-buttons .menu-tab,
+  .header-buttons .admin-top-btn,
+  .header-buttons .teacher-share-top-btn {
     flex: 1;
     justify-content: center;
-    padding: 10px 14px !important;
-    font-size: 13px !important;
-    border-radius: 20px !important;
+    padding: 5px 12px !important;
+    font-size: 12px !important;
+    border-radius: 14px !important;
     white-space: nowrap;
+    min-height: 28px !important;
+    line-height: 1.2 !important;
   }
   
   .theme-switcher {
@@ -2954,11 +2963,17 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  white-space: nowrap;
 }
 
 .user-display-tag:hover {
   border-color: var(--accent-color);
   background: rgba(0,122,255,0.08);
+}
+
+.user-display-tag:active {
+  transform: scale(0.96);
+  background: rgba(0,122,255,0.12);
 }
 
 .cute-avatar-icon {
