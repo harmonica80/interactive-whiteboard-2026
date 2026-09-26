@@ -174,9 +174,17 @@
       helpCount: this.focusHelpCount || 0,
       penaltySeconds: this.focusHelpPenaltySeconds || 0
     }
+    // 立即將本地成績加入 results，確保即時呈現在學生端排行榜上，不出現空白或「目前尚無人完成」
+    const currentResults = { ...(this.focusGame?.results || game?.results || {}), [userId]: result };
+    const updatedGame = { ...(this.focusGame || game || {}), results: currentResults };
+    this.focusGame = updatedGame;
+    this.renderClassicsQuizCompleted(updatedGame, result);
+
     db.ref(`quiz/focusGame/results/${userId}`).set(result).then(() => {
-      this.renderClassicsQuizCompleted(game, result)
-      this.showNotification('完成', `答對 ${state.correctCount}／${game.questions.length} 題！`)
+      this.showNotification('完成', `答對 ${state.correctCount}／${game.questions.length} 題！`);
+      if (document.getElementById('classicsQuizSelfRankList')) {
+        this.renderFocusGameLeaderboard('classicsQuizSelfRankList', this.focusGame?.results || currentResults);
+      }
     }).catch((error) => this.showNotification('錯誤', `送出成績失敗：${error.message}`))
   }
 
@@ -221,7 +229,10 @@
     `;
 
     if (this.renderFocusGameLeaderboard) {
-      this.renderFocusGameLeaderboard('classicsQuizSelfRankList', game.results);
+      const resultsToRender = (game && game.results && Object.keys(game.results).length > 0)
+        ? game.results
+        : (result ? { [localStorage.getItem('user_id') || 'guest']: result } : null);
+      this.renderFocusGameLeaderboard('classicsQuizSelfRankList', resultsToRender);
     }
   }
 })()

@@ -1291,7 +1291,65 @@ body {
   }
   
   #focusGameOverlayContent {
-    padding: 16px 12px !important;
+    padding: 12px 10px !important;
+    max-height: 98dvh !important;
+  }
+
+  /* 依序點選數字 (舒爾特方格) 手機端自適應縮放，確保單一畫面完整容納不捲動 */
+  #focusNumberGridContainer {
+    width: 100% !important;
+    max-height: 100% !important;
+  }
+
+  #focusNumberGridHeader {
+    margin-bottom: 6px !important;
+    padding: 0 4px !important;
+  }
+
+  #focusNumberGridHeader > div {
+    font-size: 13px !important;
+  }
+
+  #focusCurrentTarget {
+    font-size: 17px !important;
+  }
+
+  #focusTimer {
+    font-size: 15px !important;
+  }
+
+  #focusGameGrid {
+    max-width: min(92vw, calc(100dvh - 165px), 420px) !important;
+    max-height: min(92vw, calc(100dvh - 165px), 420px) !important;
+    min-height: unset !important;
+    margin: 4px auto !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  .schulte-btn {
+    min-height: unset !important;
+    height: 100% !important;
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  #focusHelpBtn {
+    margin-top: 6px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+  }
+
+  #focusHelpInfo {
+    margin-top: 2px !important;
+    font-size: 11px !important;
+    min-height: 14px !important;
+  }
+
+  #focusGameInstruction {
+    margin-top: 4px !important;
+    font-size: 11px !important;
   }
   
   .character-crossword-container {
