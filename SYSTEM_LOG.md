@@ -1,4 +1,28 @@
 # System Log
+## 2026-09-26 - ver 3.4.1 設定頭像隨機挑選純文字優化、使用者新上傳森林海洋48張圖完整重製零重疊、後台班級專屬頭像管理與ChatGPT透明提示詞生成
+- 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `images/avatars/avatar_48.png` ~ `avatar_95.png`, `images/avatars_sheet2.png`, `images/avatars_sheet.png`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **設定頭像選按「🎲 隨機挑選」名稱欄位純文字優化與即時預覽更新 (`js/app.js`)**：
+     - 修改 `generateRandomCuteName()` 與 `selectAvatar()`，在點擊「🎲 隨機挑選」或頭像時，學生姓名欄位（`#inputStudentModalName`）僅填入乾淨的角色文字名稱（如「圓滾熊貓」、「活潑小猛虎」），不再包含 emoji 圖示（如去除 `🐼`、`🐯` 等），防止名稱與系統頭像圖示重複顯示。
+     - 點擊「🎲 隨機挑選」時同步即時更新上方圓形頭像大預覽（`#studentModalAvatarPreview`）與當前選擇說明，達到一致直觀的使用者體驗。
+     - 透過正則表達式清除歷史遺留於姓名欄位開頭的 emoji。
+  2. **新上傳「森林海洋」48 款頭像完整重製，徹底消除重疊與溢出 (`images/avatars/avatar_48.png` ~ `avatar_95.png`, `images/avatars_sheet.png`, `images/avatars_sheet2.png`, `js/app.js`)**：
+     - 使用者上傳最新修正版圖檔（`media_1790390461988.jpg`，1024x682），徹底解決舊版圖片動物互相重疊與跨格溢出問題。
+     - 透過像素剖面精密計算出 8 欄 x 6 列黑隙分界線（水平 Y = 0, 120, 238, 351, 460, 568, 682；垂直 X = 0, 126, 259, 387, 509, 639, 773, 899, 1024）。
+     - 執行 BFS 邊界泛洪去背，保護動物黑眼睛與特徵細節，在保持長寬比下置中縮放於 128x128 畫布，四周留有 >= 8px 乾淨透明安全邊界，全部 48 款圖經邊界掃描不透明像素均為 0。
+     - 重新合成「森林海洋」專用雪碧圖（`avatars_sheet2.png`）與全系統合併雪碧圖（`avatars_sheet.png`），並更新 `js/app.js` 的 `CUTE_AVATARS` 48~95 號動物對照資料。
+  3. **後台班級專屬頭像管理與 ChatGPT 提示詞教學系統 (`index.html`, `js/app.js`)**：
+     - **ChatGPT 提示詞教學卡片**：在後台新增「🎭 班級專屬頭像管理中心」可折疊區塊，內建專業 8×6 (48格) 透明背景頭像圖鑑生成提示詞，附帶「📋 一鍵複製提示詞」按鈕，並特別標註建議使用 ChatGPT (GPT-4o) 才能穩定生成具有真實透明背景的 PNG 圖片。
+     - **班級自訂頭像管理與上傳**：支援老師切換欲管理的班級（`#adminAvatarClassSelect`），上傳自訂 8×6 圖鑑圖檔（`#adminAvatarSheetFileInput`）。前端 Canvas 自動進行 8x6 網格切分，並自動執行智慧邊緣泛洪透明化處理。
+     - **即時 48 格切分預覽**：上傳後立即在後台呈現 48 格獨立頭像圓形預覽網格，確認效果無誤後點擊「💾 儲存並套用班級頭像」，自動存入 Firebase `classes/${classCode}/quiz/customAvatars`。
+     - **學生端無縫支援班級頭像**：學生身處該班級時，頭像挑選彈窗自動解鎖「🏫 班級專屬 (48)」分頁；選擇班級專屬角色（`custom_0` ~ `custom_47`）後，全站提問區、圖片分享區、影片分享區、留言評論區及搶答/專注力排行榜皆能無縫套用該班專屬角色。
+     - **一鍵還原**：提供「🗑️ 還原系統預設頭像」按鈕，可隨時將該班級恢復為系統預設 96 款生物頭像。
+  4. **版本號嚴格遞增至 `ver 3.4.1` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=341`）、`app.js`（`this.APP_VERSION = '3.4.1'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.4.0 全系統可愛頭像深度同步套用、96 款頭像精準分界裁切零滲漏、搶答與專注力測驗時間與排行榜全面修正
 - 影響檔案：`index.html`, `js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`, `images/avatars_sheet.png`, `images/avatars/avatar_0.png` ~ `avatar_95.png`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：

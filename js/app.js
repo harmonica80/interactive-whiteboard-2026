@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.4.0';
+    this.APP_VERSION = '3.4.1';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -188,30 +188,36 @@ class App {
     ).trim();
   }
 
-  // ===== 可愛生物頭像管理 (96款透明背景雪碧圖) =====
-  getCurrentUserAvatar() {
-    const saved = localStorage.getItem('user_avatar');
-    if (saved !== null && saved !== undefined && saved !== '') {
-      const parsed = parseInt(saved, 10);
-      if (!isNaN(parsed) && parsed >= 0 && parsed < 96) {
-        return parsed;
-      }
-    }
-    // 預設依使用者 UID 分配或隨機
-    const uid = typeof this.getUserId === 'function' ? this.getUserId() : 'anon';
-    let hash = 0;
-    for (let i = 0; i < uid.length; i++) {
-      hash = (hash * 31 + uid.charCodeAt(i)) >>> 0;
-    }
-    const defaultId = hash % 96;
-    localStorage.setItem('user_avatar', String(defaultId));
-    return defaultId;
-  }
-
+  // ===== 可愛生物頭像管理 (96款透明背景雪碧圖與班級專屬頭像) =====
   setCurrentUserAvatar(avatarId) {
+    if (typeof avatarId === 'string' && avatarId.startsWith('custom_')) {
+      localStorage.setItem('user_avatar', avatarId);
+      return avatarId;
+    }
     const safeId = Math.max(0, Math.min(95, parseInt(avatarId, 10) || 0));
     localStorage.setItem('user_avatar', String(safeId));
     return safeId;
+  }
+
+  getCurrentUserAvatar() {
+    const saved = localStorage.getItem('user_avatar');
+    if (saved && typeof saved === 'string' && saved.startsWith('custom_')) {
+      return saved;
+    }
+    if (saved !== null && saved !== undefined && saved !== '') {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
+    }
+    // 預設給予一個基於 userId 的隨機穩定頭像
+    const uid = typeof this.getUserId === 'function' ? this.getUserId() : 'default';
+    let hash = 0;
+    for (let i = 0; i < uid.length; i++) {
+      hash = ((hash << 5) - hash) + uid.charCodeAt(i);
+      hash |= 0;
+    }
+    const defaultId = Math.abs(hash) % 96;
+    localStorage.setItem('user_avatar', String(defaultId));
+    return defaultId;
   }
 
   getAvatarPositionStyle(avatarId) {
@@ -224,6 +230,21 @@ class App {
   }
 
   renderAvatarHtml(avatarId, size = 20, extraClass = '') {
+    if (typeof avatarId === 'string' && avatarId.startsWith('custom_')) {
+      const idx = parseInt(avatarId.replace('custom_', ''), 10) || 0;
+      const customSheet = this.currentClassCustomAvatars;
+      if (customSheet && customSheet.url) {
+        const col = idx % 8;
+        const row = Math.floor(idx / 8);
+        const x = ((col / 7) * 100).toFixed(2);
+        const y = ((row / 5) * 100).toFixed(2);
+        return `<span class="${extraClass}" style="width: ${size}px; height: ${size}px; background-image: url('${customSheet.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; display: inline-block; border-radius: 50%; vertical-align: middle; flex-shrink: 0; background-repeat: no-repeat;" data-avatar-id="${avatarId}"></span>`;
+      }
+      const safeFallback = idx % 96;
+      const posStyle = this.getAvatarPositionStyle(safeFallback);
+      return `<span class="cute-avatar-icon ${extraClass}" style="width: ${size}px; height: ${size}px; ${posStyle}" data-avatar-id="${safeFallback}"></span>`;
+    }
+
     const safeId = Math.max(0, Math.min(95, parseInt(avatarId, 10) || 0));
     const posStyle = this.getAvatarPositionStyle(safeId);
     return `<span class="cute-avatar-icon ${extraClass}" style="width: ${size}px; height: ${size}px; ${posStyle}" data-avatar-id="${safeId}"></span>`;
@@ -231,6 +252,7 @@ class App {
 
   getUserAvatar(userId, userName, itemAvatar) {
     if (itemAvatar !== undefined && itemAvatar !== null && itemAvatar !== '') {
+      if (typeof itemAvatar === 'string' && itemAvatar.startsWith('custom_')) return itemAvatar;
       const parsed = parseInt(itemAvatar, 10);
       if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
     }
@@ -241,6 +263,7 @@ class App {
     if (userId && this.registeredStudents && this.registeredStudents[userId]) {
       const s = this.registeredStudents[userId];
       if (s.avatar !== undefined && s.avatar !== null && s.avatar !== '') {
+        if (typeof s.avatar === 'string' && s.avatar.startsWith('custom_')) return s.avatar;
         const parsed = parseInt(s.avatar, 10);
         if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
       }
@@ -249,6 +272,7 @@ class App {
       for (const p of Object.values(this.onlinePresence)) {
         if (p && ((userId && p.userId === userId) || (userName && p.userName === userName))) {
           if (p.avatar !== undefined && p.avatar !== null && p.avatar !== '') {
+            if (typeof p.avatar === 'string' && p.avatar.startsWith('custom_')) return p.avatar;
             const parsed = parseInt(p.avatar, 10);
             if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
           }
@@ -409,55 +433,55 @@ class App {
     { id: 45, name: '彩虹小鹿', emoji: '🦌' },
     { id: 46, name: '毛茸雪怪獸', emoji: '🐻‍❄️' },
     { id: 47, name: '守護小神獸', emoji: '🐾' },
-    // 森林海洋 (48~95)
-    { id: 48, name: '威風小獅', emoji: '🦁' },
-    { id: 49, name: '敏捷小猛虎', emoji: '🐯' },
-    { id: 50, name: '霸氣花豹', emoji: '🐆' },
-    { id: 51, name: '溫和長頸鹿', emoji: '🦒' },
+    // 森林海洋 (48~95) - 依新版圖檔完整配置
+    { id: 48, name: '圓滾熊貓', emoji: '🐼' },
+    { id: 49, name: '呆萌無尾熊', emoji: '🐨' },
+    { id: 50, name: '活力小猛虎', emoji: '🐯' },
+    { id: 51, name: '威風小獅', emoji: '🦁' },
     { id: 52, name: '暖心小象', emoji: '🐘' },
-    { id: 53, name: '力氣小河馬', emoji: '🦛' },
-    { id: 54, name: '踏實小犀牛', emoji: '🦏' },
-    { id: 55, name: '陽光海豚', emoji: '🐬' },
-    { id: 56, name: '悠游藍鯨', emoji: '🐳' },
-    { id: 57, name: '噴水虎鯨', emoji: '🐋' },
-    { id: 58, name: '療癒小海豹', emoji: '🦭' },
-    { id: 59, name: '呆萌海獅', emoji: '🦭' },
-    { id: 60, name: '穩健小海龜', emoji: '🐢' },
-    { id: 61, name: '萬能章魚', emoji: '🐙' },
-    { id: 62, name: '揮螯小螃蟹', emoji: '🦀' },
-    { id: 63, name: '微笑小海馬', emoji: '🦑' },
-    { id: 64, name: '發光水母', emoji: '🪼' },
-    { id: 65, name: '智慧貓頭鷹', emoji: '🦉' },
-    { id: 66, name: '敏銳雪狼', emoji: '🐺' },
-    { id: 67, name: '勤奮海狸', emoji: '🦫' },
-    { id: 68, name: '健步袋鼠', emoji: '🦘' },
-    { id: 69, name: '優雅紅鶴', emoji: '🦩' },
-    { id: 70, name: '華麗孔雀', emoji: '🦚' },
-    { id: 71, name: '展翅雄鷹', emoji: '🦅' },
-    { id: 72, name: '勤勞小蜜蜂', emoji: '🐝' },
-    { id: 73, name: '夢幻彩蝶', emoji: '🦋' },
-    { id: 74, name: '靈動瓢蟲', emoji: '🐞' },
-    { id: 75, name: '閃亮螢火蟲', emoji: '✨' },
-    { id: 76, name: '快樂小猴', emoji: '🐵' },
-    { id: 77, name: '沉穩大猩猩', emoji: '🦍' },
-    { id: 78, name: '金絲狨猴', emoji: '🐒' },
-    { id: 79, name: '草原斑馬', emoji: '🦓' },
-    { id: 80, name: '沙漠駱駝', emoji: '🐫' },
-    { id: 81, name: '高山羚羊', emoji: '🐐' },
-    { id: 82, name: '極地北極熊', emoji: '🐻‍❄️' },
-    { id: 83, name: '南極帝企鵝', emoji: '🐧' },
-    { id: 84, name: '深海小丑魚', emoji: '🐠' },
-    { id: 85, name: '彩紋熱帶魚', emoji: '🐟' },
-    { id: 86, name: '海洋小蝠魟', emoji: '🐡' },
-    { id: 87, name: '俏皮海獺仔', emoji: '🦦' },
-    { id: 88, name: '雨林大嘴鳥', emoji: '🦜' },
-    { id: 89, name: '七彩變色龍', emoji: '🦎' },
-    { id: 90, name: '好奇小浣熊', emoji: '🦝' },
-    { id: 91, name: '山林小山羊', emoji: '🐐' },
-    { id: 92, name: '昂首天鵝', emoji: '🦢' },
-    { id: 93, name: '勇敢小獵鷹', emoji: '🦅' },
-    { id: 94, name: '神秘夜行蝠', emoji: '🦇' },
-    { id: 95, name: '守護海洋星', emoji: '⭐' }
+    { id: 53, name: '溫和長頸鹿', emoji: '🦒' },
+    { id: 54, name: '奔馳斑馬', emoji: '🦓' },
+    { id: 55, name: '歡樂小河馬', emoji: '🦛' },
+    { id: 56, name: '粉嫩小豬', emoji: '🐷' },
+    { id: 57, name: '溫馴乳牛', emoji: '🐮' },
+    { id: 58, name: '天真小羊', emoji: '🐑' },
+    { id: 59, name: '活潑小山羊', emoji: '🐐' },
+    { id: 60, name: '快樂小猴', emoji: '🐵' },
+    { id: 61, name: '萌趣小熊貓', emoji: '🦝' },
+    { id: 62, name: '毛絨羊駝', emoji: '🦙' },
+    { id: 63, name: '幸運小青蛙', emoji: '🐸' },
+    { id: 64, name: '粉紅六角恐龍', emoji: '🦎' },
+    { id: 65, name: '七彩變色龍', emoji: '🦎' },
+    { id: 66, name: '微笑小鱷魚', emoji: '🐊' },
+    { id: 67, name: '可愛三角龍', emoji: '🦖' },
+    { id: 68, name: '神秘夜行蝠', emoji: '🦇' },
+    { id: 69, name: '華麗孔雀', emoji: '🦚' },
+    { id: 70, name: '優雅紅鶴', emoji: '🦩' },
+    { id: 71, name: '雨林大嘴鳥', emoji: '🦜' },
+    { id: 72, name: '純白天鵝', emoji: '🦢' },
+    { id: 73, name: '大嘴鵜鶘', emoji: '🪶' },
+    { id: 74, name: '幸福小藍鳥', emoji: '🐦' },
+    { id: 75, name: '圓滾知更鳥', emoji: '🐦' },
+    { id: 76, name: '陽光海豚', emoji: '🐬' },
+    { id: 77, name: '悠游小魟魚', emoji: '🐟' },
+    { id: 78, name: '微笑小海馬', emoji: '🦐' },
+    { id: 79, name: '揮螯小螃蟹', emoji: '🦀' },
+    { id: 80, name: '金黃小海星', emoji: '⭐' },
+    { id: 81, name: '極地獨角鯨', emoji: '🐳' },
+    { id: 82, name: '粉嫩小烏賊', emoji: '🦑' },
+    { id: 83, name: '七彩珍珠貝', emoji: '🦪' },
+    { id: 84, name: '烈焰小鳳凰', emoji: '🔥' },
+    { id: 85, name: '勇敢小獅鷲', emoji: '🦅' },
+    { id: 86, name: '花語小妖精', emoji: '🧚' },
+    { id: 87, name: '溫暖小太陽', emoji: '☀️' },
+    { id: 88, name: '智能小機器人', emoji: '🤖' },
+    { id: 89, name: '萌花仙人掌', emoji: '🌵' },
+    { id: 90, name: '粉瓣小蓮花', emoji: '🌸' },
+    { id: 91, name: '綠意葉精靈', emoji: '🍃' },
+    { id: 92, name: '圓滾小橡實', emoji: '🌰' },
+    { id: 93, name: '元氣紅草莓', emoji: '🍓' },
+    { id: 94, name: '粉甜水蜜桃', emoji: '🍑' },
+    { id: 95, name: '純真小幽靈', emoji: '👻' }
   ];
 
   generateRandomCuteName() {
@@ -470,7 +494,8 @@ class App {
     const avatar = this.CUTE_AVATARS[randomId];
     const input = document.getElementById('inputStudentModalName');
     if (input && avatar) {
-      input.value = `${avatar.emoji} ${avatar.name}`;
+      // 依使用者需求：姓名欄位僅填寫純文字名稱，不要加入頭像 emoji 圖示，而是更新上方的頭像預覽
+      input.value = avatar.name;
       input.style.borderColor = '';
       const err = document.getElementById('studentNameModalError');
       if (err) err.style.display = 'none';
@@ -485,7 +510,7 @@ class App {
     const err = document.getElementById('studentNameModalError');
     const dupAlert = document.getElementById('studentNameDuplicateAlert');
     if (input) {
-      input.value = name;
+      input.value = (name || '').replace(/^[\p{Emoji}\s]+/u, '').trim();
       input.style.borderColor = '';
       if (err) {
         err.style.display = 'none';
@@ -515,6 +540,20 @@ class App {
   }
 
   // ===== 學生姓名與頭像設定彈窗 =====
+  updateClassCustomAvatarUI() {
+    const tab0 = document.getElementById('btnAvatarTab0');
+    if (tab0) {
+      if (this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
+        tab0.style.display = 'inline-block';
+      } else {
+        tab0.style.display = 'none';
+        if (this.currentAvatarTab === 0) {
+          this.switchAvatarSheetTab(1);
+        }
+      }
+    }
+  }
+
   openStudentNameModal() {
     const modal = document.getElementById('studentNameModal');
     const input = document.getElementById('inputStudentModalName');
@@ -533,8 +572,14 @@ class App {
       dupAlert.style.display = 'none';
     }
 
+    this.updateClassCustomAvatarUI();
     this.selectedAvatarId = this.getCurrentUserAvatar();
-    this.currentAvatarTab = this.selectedAvatarId < 48 ? 1 : 2;
+    if (typeof this.selectedAvatarId === 'string' && this.selectedAvatarId.startsWith('custom_') && this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
+      this.currentAvatarTab = 0;
+    } else {
+      const parsedNum = parseInt(this.selectedAvatarId, 10);
+      this.currentAvatarTab = (!isNaN(parsedNum) && parsedNum >= 48) ? 2 : 1;
+    }
     this.switchAvatarSheetTab(this.currentAvatarTab, false);
     this.updateAvatarModalPreview();
 
@@ -551,46 +596,96 @@ class App {
     const preview = document.getElementById('studentModalAvatarPreview');
     const info = document.getElementById('txtSelectedAvatarInfo');
     const avatarId = this.selectedAvatarId !== undefined ? this.selectedAvatarId : this.getCurrentUserAvatar();
-    const avatar = this.CUTE_AVATARS[avatarId] || { name: `可愛生物 #${avatarId + 1}`, emoji: '🐾' };
+
+    let displayName = '可愛生物';
+    let displayEmoji = '🐾';
+    if (typeof avatarId === 'string' && avatarId.startsWith('custom_')) {
+      const idx = parseInt(avatarId.replace('custom_', ''), 10) || 0;
+      displayName = `班級角色 #${idx + 1}`;
+      displayEmoji = '🏫';
+    } else {
+      const avatar = this.CUTE_AVATARS[avatarId] || { name: `可愛生物 #${parseInt(avatarId, 10) + 1}`, emoji: '🐾' };
+      displayName = avatar.name;
+      displayEmoji = avatar.emoji;
+    }
 
     if (preview) {
       preview.innerHTML = this.renderAvatarHtml(avatarId, 62);
     }
     if (info) {
-      info.textContent = `目前選擇：${avatar.emoji} ${avatar.name}`;
+      info.textContent = `目前選擇：${displayEmoji} ${displayName}`;
     }
   }
 
   switchAvatarSheetTab(tabNumber, updateActive = true) {
     this.currentAvatarTab = tabNumber;
+    const btn0 = document.getElementById('btnAvatarTab0');
     const btn1 = document.getElementById('btnAvatarTab1');
     const btn2 = document.getElementById('btnAvatarTab2');
-    if (btn1 && btn2) {
-      if (tabNumber === 1) {
-        btn1.style.background = 'var(--accent-color)';
-        btn1.style.color = '#fff';
-        btn2.style.background = 'var(--bg-card)';
-        btn2.style.color = 'var(--text-secondary)';
+
+    const setTabStyle = (btn, isActive) => {
+      if (!btn) return;
+      if (isActive) {
+        btn.style.background = 'var(--accent-color)';
+        btn.style.color = '#fff';
       } else {
-        btn2.style.background = 'var(--accent-color)';
-        btn2.style.color = '#fff';
-        btn1.style.background = 'var(--bg-card)';
-        btn1.style.color = 'var(--text-secondary)';
+        btn.style.background = 'var(--bg-card)';
+        btn.style.color = 'var(--text-secondary)';
       }
-    }
+    };
+
+    setTabStyle(btn0, tabNumber === 0);
+    setTabStyle(btn1, tabNumber === 1);
+    setTabStyle(btn2, tabNumber === 2);
+
     this.renderAvatarPickerGrid(tabNumber);
   }
 
   renderAvatarPickerGrid(tabNumber) {
     const grid = document.getElementById('avatarPickerGrid');
     if (!grid) return;
+
+    if (tabNumber === 0) {
+      // 班級專屬頭像 (48 格)
+      const customSheet = this.currentClassCustomAvatars;
+      if (!customSheet || !customSheet.url) {
+        grid.innerHTML = `
+          <div style="grid-column: span 8; text-align: center; color: var(--text-secondary); font-size: 13px; padding: 24px 10px;">
+            🏫 本班級目前尚未上傳專屬頭像，請老師至管理後台設定！
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      for (let i = 0; i < 48; i++) {
+        const customId = `custom_${i}`;
+        const isActive = String(this.selectedAvatarId) === customId;
+        const activeClass = isActive ? 'active' : '';
+        const col = i % 8;
+        const row = Math.floor(i / 8);
+        const x = ((col / 7) * 100).toFixed(2);
+        const y = ((row / 5) * 100).toFixed(2);
+        html += `
+          <div class="avatar-grid-item ${activeClass}" 
+               onclick="window.app.selectAvatar('${customId}')" 
+               title="🏫 班級角色 #${i + 1}"
+               data-avatar-id="${customId}">
+            <span class="cute-avatar-icon" style="width: 100%; height: 100%; background-image: url('${customSheet.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
+          </div>
+        `;
+      }
+      grid.innerHTML = html;
+      return;
+    }
+
     const startId = tabNumber === 1 ? 0 : 48;
     const endId = tabNumber === 1 ? 48 : 96;
 
     let html = '';
     for (let i = startId; i < endId; i++) {
       const avatar = this.CUTE_AVATARS[i] || { name: `可愛生物 #${i + 1}`, emoji: '🐾' };
-      const isActive = i === this.selectedAvatarId;
+      const isActive = String(this.selectedAvatarId) === String(i);
       const activeClass = isActive ? 'active' : '';
       const pos = this.getAvatarPositionStyle(i);
       html += `
@@ -606,7 +701,13 @@ class App {
   }
 
   selectAvatar(id, updateName = false) {
-    this.selectedAvatarId = Math.max(0, Math.min(95, parseInt(id, 10) || 0));
+    if (typeof id === 'string' && id.startsWith('custom_')) {
+      this.selectedAvatarId = id;
+      this.setCurrentUserAvatar(id);
+    } else {
+      this.selectedAvatarId = Math.max(0, Math.min(95, parseInt(id, 10) || 0));
+      this.setCurrentUserAvatar(this.selectedAvatarId);
+    }
     this.updateAvatarModalPreview();
 
     // 更新網格高亮狀態
@@ -614,8 +715,8 @@ class App {
     if (grid) {
       const items = grid.querySelectorAll('.avatar-grid-item');
       items.forEach(el => {
-        const itemId = parseInt(el.getAttribute('data-avatar-id'), 10);
-        if (itemId === this.selectedAvatarId) {
+        const itemId = el.getAttribute('data-avatar-id');
+        if (itemId === String(this.selectedAvatarId)) {
           el.classList.add('active');
         } else {
           el.classList.remove('active');
@@ -626,15 +727,25 @@ class App {
     // 若點擊時希望同步更新名稱為頭像名稱
     if (updateName) {
       const input = document.getElementById('inputStudentModalName');
-      const avatar = this.CUTE_AVATARS[this.selectedAvatarId];
-      if (input && avatar) {
-        input.value = `${avatar.emoji} ${avatar.name}`;
+      if (input) {
+        if (typeof this.selectedAvatarId === 'string' && this.selectedAvatarId.startsWith('custom_')) {
+          const idx = parseInt(this.selectedAvatarId.replace('custom_', ''), 10) || 0;
+          input.value = `班級夥伴_${idx + 1}`;
+        } else {
+          const avatar = this.CUTE_AVATARS[this.selectedAvatarId];
+          if (avatar) input.value = avatar.name;
+        }
         input.focus();
       }
     }
   }
 
   randomPickAvatar() {
+    if (this.currentAvatarTab === 0 && this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
+      const randCustom = Math.floor(Math.random() * 48);
+      this.selectAvatar(`custom_${randCustom}`);
+      return;
+    }
     const randomId = Math.floor(Math.random() * 96);
     const targetTab = randomId < 48 ? 1 : 2;
     if (targetTab !== this.currentAvatarTab) {
@@ -1160,6 +1271,7 @@ class App {
         window.videoQuiz.setAdminState(true);
         window.videoQuiz.updateAdminBroadcastUI(window.videoQuiz.lastSession);
       }
+      this.populateAdminClassAvatarDropdown();
     } else {
       if (this.focusGame) this.handleFocusGameSync(this.focusGame);
       if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
@@ -1313,6 +1425,12 @@ class App {
 
     db.ref('quiz/buzzGame').on('value', (snapshot) => {
       this.handleBuzzGameSync(snapshot.val());
+    });
+
+    // 監聽班級專屬自訂頭像資料庫
+    db.ref('quiz/customAvatars').on('value', (snapshot) => {
+      this.currentClassCustomAvatars = snapshot.val();
+      this.updateClassCustomAvatarUI();
     });
 
     // 監聽提問與圖片群組資料庫
@@ -10981,7 +11099,317 @@ class App {
     window.ClassRoomManager.onClassesChange((classList) => {
       this.renderAdminClassList(classList);
       this.initCrossClassCopySection(classList);
+      this.populateAdminClassAvatarDropdown();
     });
+  }
+
+  // ===== 管理後台：班級專屬頭像管理業務 =====
+  copyChatGptAvatarPrompt() {
+    const textarea = document.getElementById('txtChatGptAvatarPrompt');
+    if (!textarea) return;
+    const text = textarea.value;
+    const btn = document.getElementById('btnCopyChatGptPrompt');
+    navigator.clipboard.writeText(text).then(() => {
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ 已複製提示詞！';
+        btn.style.background = '#28a745';
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          btn.style.background = '#007aff';
+        }, 2000);
+      }
+      this.showNotification('📋 提示詞已複製', 'ChatGPT 專用 8×6 透明頭像提示詞已複製至剪貼簿！');
+    }).catch(() => {
+      textarea.select();
+      document.execCommand('copy');
+      this.showNotification('📋 提示詞已複製', 'ChatGPT 專用 8×6 透明頭像提示詞已複製至剪貼簿！');
+    });
+  }
+
+  populateAdminClassAvatarDropdown() {
+    const select = document.getElementById('adminAvatarClassSelect');
+    if (!select) return;
+    const list = this.adminRegisteredClasses || [];
+    const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    let optionsHtml = '';
+    if (list.length === 0) {
+      optionsHtml = `<option value="${currentCode || 'default'}">${currentCode ? `班級【${currentCode}】` : '預設課堂'}</option>`;
+    } else {
+      list.forEach(cls => {
+        const isCurrent = (cls.code === currentCode);
+        optionsHtml += `<option value="${cls.code}" ${isCurrent ? 'selected' : ''}>${cls.code}（${cls.name || cls.code}）${isCurrent ? ' [目前所在]' : ''}</option>`;
+      });
+    }
+    select.innerHTML = optionsHtml;
+    const activeVal = select.value;
+    if (activeVal) {
+      this.onAdminAvatarClassChange(activeVal);
+    }
+  }
+
+  async onAdminAvatarClassChange(classCode) {
+    if (!classCode) return;
+    const badge = document.getElementById('badgeClassAvatarStatus');
+    const resetBtn = document.getElementById('btnResetClassAvatars');
+    const previewSection = document.getElementById('adminClassAvatarPreviewSection');
+    const previewGrid = document.getElementById('adminClassAvatarPreviewGrid');
+    const fileInput = document.getElementById('adminAvatarSheetFileInput');
+    if (fileInput) fileInput.value = '';
+    const saveBtn = document.getElementById('btnSaveClassAvatars');
+    if (saveBtn) saveBtn.style.display = 'none';
+
+    this._pendingCustomAvatarSheetData = null;
+
+    try {
+      const path = (classCode && classCode !== 'default') ? `classes/${classCode}/quiz/customAvatars` : 'quiz/customAvatars';
+      const snap = await (db.rawRef ? db.rawRef(path) : db.ref(path)).once('value');
+      const data = snap.val();
+
+      if (data && data.url) {
+        if (badge) {
+          badge.textContent = `已設定班級專屬頭像 (48款)`;
+          badge.style.background = 'rgba(0, 122, 255, 0.15)';
+          badge.style.color = '#007aff';
+        }
+        if (resetBtn) resetBtn.style.display = 'inline-block';
+
+        // 渲染目前已上傳的 48 格預覽
+        if (previewSection && previewGrid) {
+          previewSection.style.display = 'block';
+          let html = '';
+          for (let i = 0; i < 48; i++) {
+            const col = i % 8;
+            const row = Math.floor(i / 8);
+            const x = ((col / 7) * 100).toFixed(2);
+            const y = ((row / 5) * 100).toFixed(2);
+            html += `
+              <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="角色 #${i + 1}">
+                <span style="width: 100%; height: 100%; display: block; border-radius: 50%; background-image: url('${data.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
+              </div>
+            `;
+          }
+          previewGrid.innerHTML = html;
+        }
+      } else {
+        if (badge) {
+          badge.textContent = '使用系統預設 96 款可愛生物';
+          badge.style.background = 'rgba(52, 199, 89, 0.12)';
+          badge.style.color = '#28a745';
+        }
+        if (resetBtn) resetBtn.style.display = 'none';
+        if (previewSection) previewSection.style.display = 'none';
+      }
+    } catch (e) {
+      console.warn('檢查班級頭像狀態失敗:', e);
+    }
+  }
+
+  onAdminAvatarFileSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.showNotification('格式不符', '請選擇 PNG、JPG 或 WebP 圖片檔案！');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        this.processUploadedAvatarSheet(img);
+      };
+      img.onerror = () => {
+        this.showNotification('載入失敗', '圖片檔案無法讀取，請換一張圖片再試！');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  processUploadedAvatarSheet(img) {
+    const cols = 8;
+    const rows = 6;
+    const total = cols * rows;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 768;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // 檢查四個邊角的像素，若四角不透明且顏色接近，執行 BFS 泛洪邊界去背
+    const cR = data[0], cG = data[1], cB = data[2], cA = data[3];
+    if (cA > 200) {
+      const isWhite = cR > 230 && cG > 230 && cB > 230;
+      const isBlack = cR < 30 && cG < 30 && cB < 30;
+      if (isWhite || isBlack) {
+        const visited = new Uint8Array(w * h);
+        const queue = [];
+
+        const matchBg = (x, y) => {
+          const idx = (y * w + x) * 4;
+          const a = data[idx + 3];
+          if (a === 0) return false;
+          const dr = data[idx] - cR;
+          const dg = data[idx + 1] - cG;
+          const db = data[idx + 2] - cB;
+          return (dr * dr + dg * dg + db * db) < 1800;
+        };
+
+        for (let x = 0; x < w; x++) {
+          if (matchBg(x, 0)) { queue.push(x, 0); visited[0 * w + x] = 1; }
+          if (matchBg(x, h - 1)) { queue.push(x, h - 1); visited[(h - 1) * w + x] = 1; }
+        }
+        for (let y = 0; y < h; y++) {
+          if (matchBg(0, y) && !visited[y * w]) { queue.push(0, y); visited[y * w] = 1; }
+          if (matchBg(w - 1, y) && !visited[y * w + (w - 1)]) { queue.push(w - 1, y); visited[y * w + (w - 1)] = 1; }
+        }
+
+        let qHead = 0;
+        while (qHead < queue.length) {
+          const cx = queue[qHead++];
+          const cy = queue[qHead++];
+          const pIdx = (cy * w + cx) * 4;
+          data[pIdx + 3] = 0;
+
+          const neighbors = [
+            [cx + 1, cy], [cx - 1, cy],
+            [cx, cy + 1], [cx, cy - 1]
+          ];
+          for (let n = 0; n < neighbors.length; n++) {
+            const nx = neighbors[n][0];
+            const ny = neighbors[n][1];
+            if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+              const vIdx = ny * w + nx;
+              if (!visited[vIdx]) {
+                visited[vIdx] = 1;
+                if (matchBg(nx, ny)) {
+                  queue.push(nx, ny);
+                }
+              }
+            }
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+      }
+    }
+
+    const dataUrl = canvas.toDataURL('image/png', 0.92);
+    this._pendingCustomAvatarSheetData = {
+      url: dataUrl,
+      count: total,
+      cols: cols,
+      rows: rows,
+      updatedAt: Date.now()
+    };
+
+    const previewSection = document.getElementById('adminClassAvatarPreviewSection');
+    const previewGrid = document.getElementById('adminClassAvatarPreviewGrid');
+    const saveBtn = document.getElementById('btnSaveClassAvatars');
+
+    if (previewSection && previewGrid) {
+      previewSection.style.display = 'block';
+      let html = '';
+      for (let i = 0; i < total; i++) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = ((col / (cols - 1)) * 100).toFixed(2);
+        const y = ((row / (rows - 1)) * 100).toFixed(2);
+        html += `
+          <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="角色 #${i + 1}">
+            <span style="width: 100%; height: 100%; display: block; border-radius: 50%; background-image: url('${dataUrl}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
+          </div>
+        `;
+      }
+      previewGrid.innerHTML = html;
+    }
+
+    if (saveBtn) {
+      saveBtn.style.display = 'inline-block';
+      saveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    this.showNotification('👀 圖鑑已切分', '48 格頭像已成功切分預覽！請檢視效果並點擊「儲存並套用班級頭像」。');
+  }
+
+  async saveAdminClassAvatars() {
+    if (!this._pendingCustomAvatarSheetData) {
+      this.showNotification('尚未選擇圖片', '請先選擇欲上傳的 8×6 (48格) 頭像圖鑑圖檔！');
+      return;
+    }
+
+    const select = document.getElementById('adminAvatarClassSelect');
+    const classCode = select ? select.value : '';
+    if (!classCode) {
+      this.showNotification('請選擇班級', '請選擇要套用頭像的班級！');
+      return;
+    }
+
+    const saveBtn = document.getElementById('btnSaveClassAvatars');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = '儲存中...';
+    }
+
+    try {
+      const path = (classCode && classCode !== 'default') ? `classes/${classCode}/quiz/customAvatars` : 'quiz/customAvatars';
+      const targetRef = db.rawRef ? db.rawRef(path) : db.ref(path);
+      await targetRef.set(this._pendingCustomAvatarSheetData);
+
+      if (classCode === window.currentClassCode || (!window.currentClassCode && classCode === 'default')) {
+        this.currentClassCustomAvatars = this._pendingCustomAvatarSheetData;
+        this.updateClassCustomAvatarUI();
+      }
+
+      this.showNotification('🎉 儲存成功', `班級【${classCode}】的 48 款專屬頭像已成功生效！`);
+      if (saveBtn) saveBtn.style.display = 'none';
+
+      this.onAdminAvatarClassChange(classCode);
+    } catch (err) {
+      this.showNotification('儲存失敗', err.message || '儲存班級頭像時發生錯誤');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 儲存並套用班級頭像';
+      }
+    }
+  }
+
+  async resetAdminClassAvatars() {
+    const select = document.getElementById('adminAvatarClassSelect');
+    const classCode = select ? select.value : '';
+    if (!classCode) return;
+
+    if (!confirm(`確定要清除班級【${classCode}】的專屬頭像，還原為系統預設 96 款生物頭像嗎？`)) {
+      return;
+    }
+
+    try {
+      const path = (classCode && classCode !== 'default') ? `classes/${classCode}/quiz/customAvatars` : 'quiz/customAvatars';
+      const targetRef = db.rawRef ? db.rawRef(path) : db.ref(path);
+      await targetRef.remove();
+
+      if (classCode === window.currentClassCode || (!window.currentClassCode && classCode === 'default')) {
+        this.currentClassCustomAvatars = null;
+        this.updateClassCustomAvatarUI();
+      }
+
+      this.showNotification('已還原', `班級【${classCode}】已還原為系統預設頭像！`);
+      this.onAdminAvatarClassChange(classCode);
+    } catch (err) {
+      this.showNotification('還原失敗', err.message || '還原系統預設頭像時發生錯誤');
+    }
   }
 
   async adminCreateNewClass() {
