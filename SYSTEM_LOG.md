@@ -1,4 +1,19 @@
 # System Log
+## 2026-09-26 - ver 3.5.3 字力測驗倒數題數動態化、聽歌搶答答錯狀態新增「揭曉答案」按鈕
+- 影響檔案：`index.html`, `package.json`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **字力測驗倒數畫面題數動態反映後台設定 (`js/app.js`)**：
+     - **成因排查**：在 `updateFocusCountdownCopy` 專注力測驗倒數畫面中，字力測驗（`characterTest`）之提示說明原固定寫死「共有 3 題喔！」，未跟隨老師於後台設定的每局題數下拉選單（`#focusCharacterTestCount`）變動。
+     - **優化設計**：在 `startFocusGame()` 中發起遊戲時將 `characterTestCount` 同步寫入 Firebase `quiz/focusGame`；倒數提示文案則動態依據 `game.questions.length` 或 `game.characterTestCount` 顯示「共有 X 題喔！」，精準契合老師自訂的題數。
+  2. **聽歌搶答全班搶答模式在「同學答錯」狀態下新增「💡 揭曉答案」按鈕 (`js/song_quiz.js`)**：
+     - **需求背景**：在聽歌搶答全班同步搶答模式中，當有同學搶答但回答錯誤（狀態 `answered_wrong`）時，原主控台僅提供「▶️ 繼續播放音樂 (開放其餘同學繼續搶答)」、「⏮️ 從頭重播」與「⏭️ 跳至下一題」，老師若不想繼續播放讓同學搶，只能先按繼續播放後才能按揭曉答案。
+     - **優化設計**：在 `renderSongQuizBuzzerRound()` 的 `answered_wrong` 控制列中直接加入「💡 揭曉答案」按鈕（呼叫 `teacherBuzzerAction('reveal')`），讓老師在同學答錯當下能立刻揭曉歌名與歌手正解，並順暢進入下一題。
+  3. **版本號嚴格遞增至 `ver 3.5.3` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=353`）、`app.js`（`this.APP_VERSION = '3.5.3'`）。
+     - 更新自動化驗證腳本 `scripts/verify-video-quiz.mjs` 與 `scripts/verify-song-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.5.2 專注力測驗各單元完整保留頂部工具列、管理後台登入不受遮蔽
 - 影響檔案：`index.html`, `css/style.css`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
