@@ -1,4 +1,22 @@
 # System Log
+## 2026-09-26 - ver 3.4.3 手機端移除編輯筆圖示（點按頭像或名稱即可開啟）、連線狀態改為圓角矩形精簡色塊（刪除已連線文字）
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **手機端頭像與姓名膠囊移除編輯鉛筆圖示 (`index.html`, `css/style.css`)**：
+     - 依使用者需求，將手機頂部狀態列中的學生膠囊（`#displayUserNameTagMobile`）內多餘的鉛筆圖示（✏️）徹底移除，解決小螢幕換行與擁擠問題。
+     - 設定 `white-space: nowrap;` 與點擊微縮動效（`:active { transform: scale(0.96); }`），學生只需直接點按可愛頭像或名稱文字，即可直接開啟姓名與頭像設定彈窗。
+  2. **連線狀態指示刪除文字，改為圓角矩形色塊 (`index.html`, `css/style.css`, `js/app.js`)**：
+     - 依使用者需求，刪除「已連線」與「斷線中...」文字，避免長文字在手機狹窄狀態列產生斷字折行。
+     - 改以尺寸 26px × 14px、圓角 6px 的精緻圓角矩形色塊代表連線狀態（綠色代表連線正常、紅色代表中斷或重新連線），並內建 tooltip 提示文字，兼顧直觀美感與視覺輕量化。
+  3. **手機端「教師分享」與「管理後台」按鈕高度減少 1/3 (`css/style.css`)**：
+     - 依使用者需求，僅針對手機端（`@media (max-width: 768px)`）將頂部 `.header-buttons` 內的「教師分享」與「管理後台」按鈕 vertical padding 由 10px 縮減至 5px，按鈕整體高度降低約 1/3（min-height 設定為 28px），為手機同學騰出更多操作白板、提問與測驗的垂直空間。
+     - 平板（>768px）與電腦端維持原本寬敞高度，不受任何影響。
+  4. **版本號嚴格遞增至 `ver 3.4.3` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=343`）、`app.js`（`this.APP_VERSION = '3.4.3'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.4.2 手機畫面隱藏班級管制列與狀態區塊、釋放最大互動垂直空間、狀態列緊湊使用者膠囊
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
