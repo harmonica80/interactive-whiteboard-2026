@@ -1,4 +1,42 @@
 # System Log
+## 2026-09-26 - ver 3.4.8 聽歌搶答文字重疊修復與搶答按鈕置頂、影片出題手機端隱藏後台按鈕、抽人轉盤支援匯入線上學生名單
+- 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `js/video_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **聽歌搶答提示詞與題目重疊修復 (`js/app.js`)**：
+     - **成因排查**：在全班同步搶答模式下，外層 `#focusGameInstruction` 原先被賦予長段全班同步搶答提示文字，與黑膠唱片內部的狀態文字（「🎧 歌曲播放中，全班可按搶答！」與「聽出歌名了嗎？手速要快！」）產生重疊干擾。
+     - **優化方案**：在 `handleFocusGameSync` 中，將 `songQuiz` 納入隱藏 `#focusGameInstruction` 清單，直接利用唱片卡片內精準的狀態指引，杜絕畫面文字重疊。
+  2. **手機版聽歌搶答按鈕置頂最上方 (`js/song_quiz.js`)**：
+     - **UX 優化**：在手機端學生視角（`window.innerWidth <= 768 && !this.isAdmin`），將原先排在黑膠唱片下方的「⚡ 按我搶答！」巨大互動區塊自動調移至黑膠唱片**正上方**。學生在手機上作答時無需手動向下滾動頁面，視線與拇指即可第一時間直覺觸控搶答，大幅提升反應速度與競賽公平性。
+  3. **影片出題彈窗在手機版隱藏「⚙️ 後台登入」按鈕 (`js/video_quiz.js`)**：
+     - **排版優化**：影片出題彈窗右上角原對學生端提供「⚙️ 後台登入」按鈕，在窄螢幕手機直式瀏覽時容易擠壓標題導致「（10分）」折行換行。為此按鈕加上 `.desktop-only` 類別，在手機螢幕自動隱藏，使標題與時間點橫向排版保持整齊美觀。
+  4. **抽人轉盤功能支援一鍵匯入線上學生名單 (`index.html`, `js/app.js`)**：
+     - **功能擴充**：在「🎡 轉盤設定 (教師專屬)」名單列表上方，新增「👥 匯入線上名單」與「🗑️ 清空名單」快捷按鈕。
+     - **智慧名單讀取**：點選「👥 匯入線上名單」後，自動從目前即時連線的 presence 資料集中提取所有在線同學名稱（排除過期殘留 session 與重複名稱），按繁體中文注音比對排序後直接填入名單輸入框並同步更新轉盤 Canvas 與 Firebase，同時保留老師自行輸入/貼上自訂名單的彈性。
+  5. **版本號嚴格遞增至 `ver 3.4.8` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=348`）、`app.js`（`this.APP_VERSION = '3.4.8'`）。
+     - 更新自動化驗證腳本 `scripts/verify-video-quiz.mjs` 與 `scripts/verify-song-quiz.mjs`。
+
+---
+
+## 2026-09-26 - ver 3.4.7 修正題型說明文字重疊與層級、評分結果顯示標準正確答案、十字選字等待批改隱藏關鍵解答
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `js/classics_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **修正成語測驗、一字千金、字字珠璣、團結一詞說明文字重疊與層級問題 (`css/style.css`, `index.html`, `js/app.js`, `js/classics_quiz.js`)**：
+     - **成因排查**：手機版 CSS 中之前將 `#focusGameGrid` 強制套用了 `aspect-ratio: 1 / 1 !important` 與最大高度限制，導致非舒爾特方格的文字測驗題型（包含垂直排列的長選項、九宮格、田字格）高度溢出；而外層的 `#focusGameInstruction` 說明文字緊接在容器下方，位置剛好重疊在選項 C/D 與書寫格中。此外，全螢幕遊戲覆蓋層 `z-index` 為 2500，低於手機頂部列的 2600，導致頂部按鈕遮擋住題目頂部文字。
+     - **樣式作用域隔離**：將 1:1 正方形比例及特定 max-height 嚴格限定於 `.schulte-mode`（舒爾特方格數字與記憶方格）；成語測驗、字力測驗、字字珠璣、團結一詞在啟動與結算時皆動態移除 `.schulte-mode` 並保持 `aspect-ratio: auto` 與自然自適應高度。
+     - **覆蓋層層級提升**：將 `#focusGameOverlay` 之 `z-index` 提升至 `3500`（高於 `.top-bar` 之 2600），徹底解決頂部狀態膠囊（Test、綠色色塊、教師分享、齒輪）遮擋題目問題。
+     - **隱藏重複全域說明**：在 `handleFocusGameSync`、`startCharacterTestGame`、`startClassicsQuizGame` 及結算渲染中，針對自身卡片內已有引導說明的測驗類型，直接將外層 `#focusGameInstruction` 隱藏清空，杜絕重複文字重疊干擾。
+  2. **字力測驗、字字珠璣、團結一詞、十字選字評分結果顯示正確答案 (`js/app.js`)**：
+     - **學生端評分結果顯著標示**：在 `renderCharacterTestPlayCompleted` 中，當老師審查給分後（`status === 'correct'` 或 `status === 'incorrect'`，尤其答錯時），每題下方均以醒目的綠色圓角區塊完整標明「💡 正確答案：XXX」（字字珠璣標為「💡 關鍵正解：XXX」；團結一詞標為「💡 正確答案：XXX (提示詞)」）。
+     - **教師審查列表答錯紅框標註正解**：在 `renderAdminCharacterTestSubmissions` 中，若學生回答與正確字元不同（顯示紅框），字元旁即時附加 `(正解:XXX)` 綠色標籤，方便教師一目了然比對正確字與學生錯字。
+  3. **十字選字與字力測驗單元送出答案等待批改時隱藏關鍵解答 (`js/app.js`)**：
+     - **作答保護防洩題**：在 `renderCharacterTestPlayCompleted` 中嚴格區分 `status === 'pending'` 與評分完成狀態。當學生剛送出作答、畫面顯示「⏳ 等待老師評分中...」時，十字選字下方**絕不顯示**「關鍵解答：XXX」，團結一詞亦不曝光解答詞語，僅溫和提示「⏳ 答案已送出，請靜候老師評分」，直至老師完成評分後才正式公佈正解。
+  4. **版本號嚴格遞增至 `ver 3.4.7` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=347`）、`app.js`（`this.APP_VERSION = '3.4.7'`）。
+     - 同步更新自動化驗證腳本 `scripts/verify-video-quiz.mjs` 與 `scripts/verify-song-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.4.6 成語測驗學生端全班即時成績排行榜即時同步修復、依序點選數字手機自適應縮放至單一頁面
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：

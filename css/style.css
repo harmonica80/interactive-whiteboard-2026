@@ -1295,8 +1295,23 @@ body {
     max-height: 98dvh !important;
   }
 
-  /* 依序點選數字 (舒爾特方格) 手機端自適應縮放，確保單一畫面完整容納不捲動 */
+  #focusGameOverlay {
+    z-index: 3500 !important;
+  }
+
   #focusNumberGridContainer {
+    width: 100% !important;
+    max-height: none !important;
+  }
+
+  #focusGameGrid {
+    width: 100% !important;
+    max-width: 560px;
+    margin: 4px auto !important;
+  }
+
+  /* 依序點選數字 (舒爾特方格) 手機端自適應縮放，僅在 schulte-mode 套用正方形比例限制 */
+  #focusNumberGridContainer.schulte-mode {
     width: 100% !important;
     max-height: 100% !important;
   }
@@ -1318,7 +1333,7 @@ body {
     font-size: 15px !important;
   }
 
-  #focusGameGrid {
+  #focusGameGrid.schulte-mode {
     max-width: min(92vw, calc(100dvh - 165px), 420px) !important;
     max-height: min(92vw, calc(100dvh - 165px), 420px) !important;
     min-height: unset !important;
@@ -1326,7 +1341,7 @@ body {
     aspect-ratio: 1 / 1 !important;
   }
 
-  .schulte-btn {
+  #focusGameGrid.schulte-mode .schulte-btn {
     min-height: unset !important;
     height: 100% !important;
     width: 100% !important;

@@ -1655,7 +1655,7 @@
               <button type="button" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="立即停止全班測驗廣播">⏹️ 結束測驗</button>
               <button type="button" onclick="window.videoQuiz.returnToQuizVideo()" style="background: var(--accent-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="關閉題目彈窗，返回測驗影片播放介面">🎬 返回測驗影片</button>
             ` : `
-              <button type="button" onclick="window.app.switchToTab('panel-admin')" style="background: transparent; border: 1.5px solid var(--accent-color); color: var(--accent-color); padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="若您是老師，點此登入管理後台">⚙️ 後台登入</button>
+              <button type="button" class="desktop-only" onclick="window.app.switchToTab('panel-admin')" style="background: transparent; border: 1.5px solid var(--accent-color); color: var(--accent-color); padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="若您是老師，點此登入管理後台">⚙️ 後台登入</button>
             `}
             <button type="button" onclick="window.videoQuiz.hideQuestionOverlay()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="暫時收合題目視窗">✕</button>
           </div>

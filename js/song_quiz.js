@@ -931,10 +931,12 @@
       `;
     }
 
+    // 手機學生端：搶答按鈕優先顯示在最上方，讓學生無需捲動即可立刻按搶答
+    const isMobileStudent = (window.innerWidth <= 768) && !this.isAdmin;
     grid.innerHTML = `
       ${headerHtml}
-      ${vinylHtml}
-      ${interactiveAreaHtml}
+      ${isMobileStudent ? interactiveAreaHtml : vinylHtml}
+      ${isMobileStudent ? vinylHtml : interactiveAreaHtml}
       ${teacherControlHtml}
       ${scoreBoardHtml}
 
