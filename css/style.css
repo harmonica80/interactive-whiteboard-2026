@@ -1270,6 +1270,28 @@ body {
     display: none !important;
   }
 
+  /* 手機版班級切換對話框高度與邊距緊湊化，確保下方切換按鈕完整呈現 */
+  .class-modal-card {
+    padding: 16px 18px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    border-radius: 16px !important;
+  }
+  .class-modal-card .class-modal-header {
+    margin-bottom: 12px !important;
+  }
+  .class-modal-card .class-modal-icon {
+    font-size: 30px !important;
+    margin-bottom: 2px !important;
+  }
+  .class-modal-card .class-modal-title {
+    font-size: 18px !important;
+    margin-bottom: 0 !important;
+  }
+  .class-modal-card .class-modal-form {
+    gap: 12px !important;
+  }
+
   /* 功能選單水平滾動 */
   .function-menu {
     display: flex;
