@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=337">
+  <link rel="stylesheet" href="css/style.css?v=338">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.3.7</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.3.8</span>
         </p>
       </div>
       <div class="top-actions">
@@ -1592,7 +1592,7 @@
       <div style="text-align: center; margin-bottom: 18px;">
         <div style="font-size: 38px; margin-bottom: 6px;">👤</div>
         <h3 style="margin: 0 0 6px 0; font-size: 20px; color: var(--text-primary); font-weight: bold;">
-          設定您的姓名或匿稱
+          設定您的姓名或暱稱
         </h3>
         <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
           歡迎來到互動白板課堂！請設定您的姓名或暱稱，您所發表的內容都可以修改與刪除
@@ -1602,7 +1602,7 @@
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div>
           <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
-            📝 您的姓名或匿稱 <span style="color: #ff3b30;">*</span>
+            📝 您的姓名或暱稱 <span style="color: #ff3b30;">*</span>
           </label>
           <div style="display: flex; gap: 8px; align-items: center;">
             <input type="text" id="inputStudentModalName" class="question-input" placeholder="例如：05 王小明 或 點選右側隨機" style="margin: 0; flex: 1; font-size: 15px;" autocomplete="name" maxlength="20">
@@ -1611,6 +1611,19 @@
             </button>
           </div>
           <div id="studentNameModalError" style="display: none; margin-top: 6px; color: #ff3b30; font-size: 12px; font-weight: bold;"></div>
+          <!-- 重複名稱提醒與建議序號名稱區塊 -->
+          <div id="studentNameDuplicateAlert" style="display: none; margin-top: 10px; padding: 12px; border-radius: 12px; background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.35); text-align: left;">
+            <div style="font-size: 13px; font-weight: bold; color: #d46b08; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <span>⚠️ 課堂中已有相同名稱</span>
+            </div>
+            <div id="studentNameDuplicateDesc" style="font-size: 12px; line-height: 1.5; color: var(--text-primary); margin-bottom: 8px;"></div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button type="button" id="btnApplySuggestedStudentName" onclick="window.app.applySuggestedStudentName()" style="background: #fa8c16; color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(250,140,22,0.3); transition: all 0.2s;">
+                ✨ 使用建議「<span id="txtSuggestedStudentName"></span>」並儲存
+              </button>
+              <span style="font-size: 11px; color: var(--text-secondary);">或直接修改上方名稱</span>
+            </div>
+          </div>
         </div>
 
         <!-- 可愛動物/生物快速點選 -->
@@ -1693,17 +1706,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=337"></script>
+  <script src="js/firebase-config.js?v=338"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=337"></script>
-  <script src="js/focus_question_bank.js?v=337"></script>
+  <script src="js/song_quiz_pool.js?v=338"></script>
+  <script src="js/focus_question_bank.js?v=338"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=337"></script>
-  <script src="js/app.js?v=337"></script>
-  <script src="js/classics_quiz.js?v=337"></script>
-  <script src="js/song_quiz.js?v=337"></script>
-  <script src="js/video_quiz.js?v=337"></script>
+  <script src="js/quiz.js?v=338"></script>
+  <script src="js/app.js?v=338"></script>
+  <script src="js/classics_quiz.js?v=338"></script>
+  <script src="js/song_quiz.js?v=338"></script>
+  <script src="js/video_quiz.js?v=338"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
