@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.4.1';
+    this.APP_VERSION = '3.4.2';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -325,6 +325,16 @@ class App {
     if (displayUserAvatarOneOff) displayUserAvatarOneOff.innerHTML = avatarHtml;
     if (displayUserNameTagOneOff && !this.isClassMode()) {
       displayUserNameTagOneOff.style.display = 'inline-flex';
+    }
+
+    // 手機端狀態列緊湊標籤
+    const displayUserNameMobile = document.getElementById('displayUserNameMobile');
+    const displayUserNameTagMobile = document.getElementById('displayUserNameTagMobile');
+    const displayUserAvatarMobile = document.getElementById('displayUserAvatarMobile');
+    if (displayUserNameMobile) displayUserNameMobile.textContent = trimmed;
+    if (displayUserAvatarMobile) displayUserAvatarMobile.innerHTML = avatarHtml;
+    if (displayUserNameTagMobile) {
+      displayUserNameTagMobile.style.display = 'inline-flex';
     }
 
     // 同步記錄至當前課堂學生名冊，方便防範重名與跨裝置顯示
@@ -10889,6 +10899,18 @@ class App {
           }, 350);
         }
       }
+    }
+
+    // 更新手機端狀態列緊湊標籤
+    const displayUserNameMobile = document.getElementById('displayUserNameMobile');
+    const displayUserNameTagMobile = document.getElementById('displayUserNameTagMobile');
+    const displayUserAvatarMobile = document.getElementById('displayUserAvatarMobile');
+    const avatarId = this.getCurrentUserAvatar();
+    const avatarHtml = this.renderAvatarHtml(avatarId, 20);
+    if (displayUserNameMobile) displayUserNameMobile.textContent = userName || '同學';
+    if (displayUserAvatarMobile) displayUserAvatarMobile.innerHTML = avatarHtml;
+    if (displayUserNameTagMobile) {
+      displayUserNameTagMobile.style.display = userName ? 'inline-flex' : 'none';
     }
 
     // 更新管理員後台的空間提示標籤

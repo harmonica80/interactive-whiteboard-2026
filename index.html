@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=341">
+  <link rel="stylesheet" href="css/style.css?v=342">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,12 +18,17 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.4.1</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.4.2</span>
         </p>
       </div>
       <div class="top-actions">
         <div class="status-group">
           <div id="onlineCount" class="online-count">線上人數 0 人</div>
+          <span class="user-display-tag mobile-only" id="displayUserNameTagMobile" style="display: none; cursor: pointer; margin: 0 4px;" onclick="window.app && window.app.openStudentNameModal()" title="點擊修改您的姓名、暱稱與頭像">
+            <span class="display-user-avatar" id="displayUserAvatarMobile"></span>
+            <span class="display-user-name" id="displayUserNameMobile">訪客</span>
+            <span style="font-size: 11px; opacity: 0.7;">✏️</span>
+          </span>
           <div id="connectionStatus" class="connection-status disconnected">連線中...</div>
         </div>
         <div class="header-buttons">
@@ -1822,17 +1827,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=341"></script>
+  <script src="js/firebase-config.js?v=342"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=341"></script>
-  <script src="js/focus_question_bank.js?v=341"></script>
+  <script src="js/song_quiz_pool.js?v=342"></script>
+  <script src="js/focus_question_bank.js?v=342"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=341"></script>
-  <script src="js/app.js?v=341"></script>
-  <script src="js/classics_quiz.js?v=341"></script>
-  <script src="js/song_quiz.js?v=341"></script>
-  <script src="js/video_quiz.js?v=341"></script>
+  <script src="js/quiz.js?v=342"></script>
+  <script src="js/app.js?v=342"></script>
+  <script src="js/classics_quiz.js?v=342"></script>
+  <script src="js/song_quiz.js?v=342"></script>
+  <script src="js/video_quiz.js?v=342"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

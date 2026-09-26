@@ -1,4 +1,19 @@
 # System Log
+## 2026-09-26 - ver 3.4.2 手機畫面隱藏班級管制列與狀態區塊、釋放最大互動垂直空間、狀態列緊湊使用者膠囊
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **手機螢幕畫面隱藏班級狀態列與管制區塊 (`css/style.css`)**：
+     - 依使用者需求，在行動裝置螢幕（`@media (max-width: 768px)` 與 `@media (max-width: 600px)`）將整塊班級狀態列（`.class-mode-bar`，包含「班級：XXXX」、「複製班級連結」、「退出班級」、「切換班級」）設定為 `display: none !important;`。
+     - 完全消除手機畫面上原本佔用超過 120px~160px 的多行按鈕與卡片高度，為同學大幅釋放寶貴的垂直視覺與互動空間（提問、搶答、做測驗、畫板互動更開闊）。
+  2. **手機端狀態列緊湊使用者身分膠囊 (`index.html`, `js/app.js`)**：
+     - 在頂部原本的 `.status-group`（線上人數與連線狀態列）中整合極簡的 `#displayUserNameTagMobile` 標籤，不佔用任何額外高度。
+     - 手機端同學仍可隨時點擊此迷你膠囊檢視或修改自己的姓名、暱稱與頭像。
+  3. **版本號嚴格遞增至 `ver 3.4.2` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=342`）、`app.js`（`this.APP_VERSION = '3.4.2'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.4.1 設定頭像隨機挑選純文字優化、使用者新上傳森林海洋48張圖完整重製零重疊、後台班級專屬頭像管理與ChatGPT透明提示詞生成
 - 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `images/avatars/avatar_48.png` ~ `avatar_95.png`, `images/avatars_sheet2.png`, `images/avatars_sheet.png`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
