@@ -156,10 +156,14 @@
     const game = this.focusGame
     const userId = localStorage.getItem('user_id') || 'guest'
     const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名'
-    const timeSpent = (Date.now() - (game.startTime || this.focusStartTimeLocal)) / 1000 + (this.focusHelpPenaltySeconds || 0)
+    const now = Date.now();
+    const start = this.focusStartTimeLocal || (game && game.startTime) || now;
+    const rawElapsed = (now - start) / 1000 + (this.focusHelpPenaltySeconds || 0);
+    const timeSpent = Math.max(0.1, Number(rawElapsed.toFixed(2)) || 0.1);
     const result = {
       name: userName,
       userName,
+      avatar: this.getCurrentUserAvatar(),
       answers: state.answers,
       score: state.correctCount,
       totalQuestions: game.questions.length,
