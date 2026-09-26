@@ -1,4 +1,30 @@
 # System Log
+## 2026-09-26 - ver 3.4.0 全系統可愛頭像深度同步套用、96 款頭像精準分界裁切零滲漏、搶答與專注力測驗時間與排行榜全面修正
+- 影響檔案：`index.html`, `js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`, `images/avatars_sheet.png`, `images/avatars/avatar_0.png` ~ `avatar_95.png`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **全系統可愛生物頭像深度同步套用 (`js/app.js`, `index.html`)**：
+     - 新增全域使用者頭像解析方法 `getUserAvatar(userId, userName, itemAvatar)` 與使用者膠囊渲染方法 `renderUserBadge(userName, userId, itemAvatar, size)`。
+     - 整合支援四層級頭像回溯解析：`發布項目自帶頭像` ➔ `quiz/students 學生名冊頭像` ➔ `quiz/presence 在線記錄頭像` ➔ `依 userId/userName 穩定哈希 fallback 頭像`。
+     - **提問區**：提問卡片發布者資訊、提問詳情彈窗（`showQuestionModal`）同步展示可愛生物頭像與名稱膠囊；發布提問時寫入當前頭像（`avatar: this.getCurrentUserAvatar()`）。
+     - **圖片分享區**：圖片卡片作者資訊、圖片放大檢視彈窗（`showImageModal`）同步展示可愛生物頭像；圖片上傳時寫入當前頭像。
+     - **影片分享區**：影片卡片作者資訊、影片播放彈窗（`showVideoModal`）同步展示可愛生物頭像；影片上傳與連結分享時寫入當前頭像。
+     - **留言評論區**：提問留言與各項目留言評論清單（`renderComments`）同步展示可愛生物頭像；發表評論時寫入當前頭像。
+     - **排行榜**：搶答排行榜（`renderBuzzGameLeaderboard`）、專注力排行榜（`renderFocusGameLeaderboard`）、字力測驗老師端審查清單（`renderAdminCharacterTestSubmissions`）與學生端排行榜（`renderStudentCharacterTestLeaderboard`）全數加入參賽同學可愛頭像展示。
+     - **頭像即時連動**：當使用者更換可愛生物頭像時，全站提問列表、圖片列表、影片列表、當前開啟之各類彈窗及頂部膠囊即時刷新顯示最新頭像。
+  2. **96 款頭像真實黑隙分界精準裁切，周圍邊界 100% 零滲漏修復 (`images/avatars/`, `images/avatars_sheet.png`, `scripts/reprocess-avatars.ps1`, `scripts/check-avatars.ps1`)**：
+     - 徹底解決原圖（特別是圖 2 第 49~96 款）因行高不均（第 0 列延伸至 Y=139、第 1 列由 Y=155 起始）導致羊等動物頂部吃進前一動物下半身邊界的問題。
+     - 撰寫精確分割線演算法，提取兩組圖檔真實黑隙分界線（True Dividers），於各單元格實際邊界內精準擷取，執行 BFS 邊界背景泛洪透明化，保護黑眼珠與黑色特徵線。
+     - 每個動物在保持長寬比下縮放至最大 112px，置中安放於 128x128 透明畫布，四周預留至少 8 像素乾淨透明安全邊距，重新生成 96 張獨立 PNG 與合併 CSS 雪碧圖。
+     - 經自動化邊距檢查腳本（`check-avatars.ps1`）在四周 8px 範圍嚴格掃描，96 款頭像周圍不透明像素全數為 0，徹底杜絕任何鄰近圖像滲漏。
+  3. **搶答與專注力測驗時間計算防負數與排行榜排序全面修正 (`js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`)**：
+     - **杜絕負數秒數**：修復搶答（`buzzIn`）、舒爾特方格（`finishSchulteGrid`）、記憶翻牌（`finishMemoryMatchGame`）、字力測驗（`submitCharacterTest`）、國學成語（`finishClassicsQuizGame`）、聽歌搶答（`finishSongQuizGameSelf`）中，因客戶端時間與伺服器時間戳微幅偏差可能導致的負數秒數。全部改採優先以本地倒數結束為基準點，並加入 `Math.max(0.05, ...)` 與 `Math.max(0.1, ...)` 防呆，耗費秒數恆為正數。
+     - **修復排行榜排序錯亂**：原本使用 `typeof a.timeSpent === 'number' ? a.timeSpent : 999999`，當 Firebase 取回的成績時間為字串型態或曾有負數時，會被當成 `999999` 導致秒數少的排在秒數多的後面。現改以 `getTime(it)` 透過 `parseFloat` 嚴格轉換並驗證非負有限數值，確保由小至大嚴格正確排序，並在同分同秒時正確標示並列。
+  4. **版本號嚴格遞增至 `ver 3.4.0` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=340`）、`app.js`（`this.APP_VERSION = '3.4.0'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.3.9 一次性課堂姓名與頭像修改一致化、96 款可愛生物透明頭像系統（整合雪碧圖與獨立切圖）
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`, `images/avatars_sheet.png`, `images/avatars_sheet1.png`, `images/avatars_sheet2.png`, `images/avatars/avatar_0.png` ~ `avatar_95.png`。
 - 修改項目：

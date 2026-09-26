@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.3.9';
+    this.APP_VERSION = '3.4.0';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -227,6 +227,47 @@ class App {
     const safeId = Math.max(0, Math.min(95, parseInt(avatarId, 10) || 0));
     const posStyle = this.getAvatarPositionStyle(safeId);
     return `<span class="cute-avatar-icon ${extraClass}" style="width: ${size}px; height: ${size}px; ${posStyle}" data-avatar-id="${safeId}"></span>`;
+  }
+
+  getUserAvatar(userId, userName, itemAvatar) {
+    if (itemAvatar !== undefined && itemAvatar !== null && itemAvatar !== '') {
+      const parsed = parseInt(itemAvatar, 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
+    }
+    const myUid = typeof this.getUserId === 'function' ? this.getUserId() : 'anon';
+    if (userId && userId === myUid) {
+      return this.getCurrentUserAvatar();
+    }
+    if (userId && this.registeredStudents && this.registeredStudents[userId]) {
+      const s = this.registeredStudents[userId];
+      if (s.avatar !== undefined && s.avatar !== null && s.avatar !== '') {
+        const parsed = parseInt(s.avatar, 10);
+        if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
+      }
+    }
+    if (this.onlinePresence) {
+      for (const p of Object.values(this.onlinePresence)) {
+        if (p && ((userId && p.userId === userId) || (userName && p.userName === userName))) {
+          if (p.avatar !== undefined && p.avatar !== null && p.avatar !== '') {
+            const parsed = parseInt(p.avatar, 10);
+            if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
+          }
+        }
+      }
+    }
+    // 依 userId 或 userName Hash 分配穩定一致的可愛頭像
+    const key = String(userId || userName || 'anon');
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+    }
+    return hash % 96;
+  }
+
+  renderUserBadge(userName, userId, itemAvatar, size = 18) {
+    const avatarId = this.getUserAvatar(userId, userName, itemAvatar);
+    const avatarHtml = this.renderAvatarHtml(avatarId, size);
+    return `<span class="question-user-badge" style="display: inline-flex; align-items: center; gap: 5px; font-weight: bold; font-size: 13px; color: var(--accent-color); background: rgba(0, 122, 255, 0.08); padding: 2px 8px; border-radius: 12px; vertical-align: middle;">${avatarHtml}<span>${this.escapeHtml(userName || '同學')}</span></span>`;
   }
 
   setUserName(name) {
@@ -2641,7 +2682,7 @@ class App {
             <div class="comment-item" style="position: relative; margin-bottom: 8px;">
               <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 6px;">
-                  <span class="comment-user" style="font-weight: bold; color: var(--accent-color);">👤 ${this.escapeHtml(c.user || '同學')}</span>
+                  <span class="comment-user" style="font-weight: bold; color: var(--accent-color); display: inline-flex; align-items: center; gap: 4px;">${this.renderAvatarHtml(this.getUserAvatar(c.userId, c.user, c.avatar), 16)}<span>${this.escapeHtml(c.user || '同學')}</span></span>
                   <span class="comment-time">${timeStr}</span>
                 </div>
                 ${isOwner ? `
@@ -2699,6 +2740,7 @@ class App {
     db.ref('comments').child(type).child(itemId).push({
       user: nickname,
       userId: uid,
+      avatar: this.getCurrentUserAvatar(),
       text: text,
       timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
@@ -2904,7 +2946,7 @@ class App {
     if (userContainer) {
       userContainer.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
-          <span style="font-size: 15px; font-weight: bold; color: var(--accent-color);">👤 提問者：${this.escapeHtml(authorName)}</span>
+          <span style="font-size: 15px; font-weight: bold; color: var(--accent-color); display: inline-flex; align-items: center; gap: 6px;">${this.renderAvatarHtml(this.getUserAvatar(q.userId, authorName, q.avatar), 22)}<span>提問者：${this.escapeHtml(authorName)}</span></span>
           ${(isOwner || this.isAdmin) ? `
             <div style="display: inline-flex; gap: 6px;">
               <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('questions', '${q.id}')" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; cursor: pointer; color: var(--accent-color); border-color: var(--accent-color);">📤 複製到其他班</button>
@@ -2983,7 +3025,7 @@ class App {
     if (imgUserEl) {
       imgUserEl.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
-          <span style="font-size: 13px; color: #fff;">👤 上傳者：${this.escapeHtml(img.user || '同學')}</span>
+          <span style="font-size: 13px; color: #fff; display: inline-flex; align-items: center; gap: 6px;">${this.renderAvatarHtml(this.getUserAvatar(img.userId, img.user, img.avatar), 20)}<span>上傳者：${this.escapeHtml(img.user || '同學')}</span></span>
           ${(isOwnerImg || this.isAdmin) ? `
             <div style="display: inline-flex; gap: 6px;">
               <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('images', '${img.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(0,122,255,0.3); color: #fff; border: 1px solid var(--accent-color);">📤 複製到其他班</button>
@@ -3089,7 +3131,7 @@ class App {
     if (vidUserEl) {
       vidUserEl.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
-          <span style="font-size: 13px; color: #fff;">👤 分享者：${this.escapeHtml(vid.user || '同學')}</span>
+          <span style="font-size: 13px; color: #fff; display: inline-flex; align-items: center; gap: 6px;">${this.renderAvatarHtml(this.getUserAvatar(vid.userId, vid.user, vid.avatar), 20)}<span>分享者：${this.escapeHtml(vid.user || '同學')}</span></span>
           ${(isOwnerVid || this.isAdmin) ? `
             <div style="display: inline-flex; gap: 6px;">
               <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('videos', '${vid.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(0,122,255,0.3); color: #fff; border: 1px solid var(--accent-color);">📤 複製到其他班</button>
@@ -3330,6 +3372,7 @@ class App {
         text: text, 
         user: author,
         userId: uid,
+        avatar: this.getCurrentUserAvatar(),
         timestamp: Date.now() 
       }).then(() => {
         this.questionInput.value = '';
@@ -3380,7 +3423,7 @@ class App {
           <div class="question-card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div class="header-left" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <span class="question-badge">#${total - idx}</span>
-              <span class="question-user-badge" style="font-weight: bold; font-size: 13px; color: var(--accent-color); background: rgba(0, 122, 255, 0.08); padding: 2px 8px; border-radius: 10px;">👤 ${this.escapeHtml(authorName)}</span>
+              ${this.renderUserBadge(authorName, q.userId, q.avatar, 18)}
             </div>
             <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
               <span class="time">${this.formatTime(q.timestamp)}</span>
@@ -3631,6 +3674,7 @@ class App {
           url: dataUrl,
           user: author,
           userId: uid,
+          avatar: this.getCurrentUserAvatar(),
           filename: file.name,
           timestamp: Date.now()
         });
@@ -3650,6 +3694,7 @@ class App {
             url: downloadURL, 
             user: author,
             userId: uid,
+            avatar: this.getCurrentUserAvatar(),
             filename: file.name, 
             timestamp: Date.now() 
           });
@@ -4002,6 +4047,7 @@ class App {
             url: dataUrl,
             user: author,
             userId: uid,
+            avatar: this.getCurrentUserAvatar(),
             filename: file.name,
             timestamp: Date.now(),
             type: 'upload',
@@ -4023,6 +4069,7 @@ class App {
               url: downloadURL, 
               user: author,
               userId: uid,
+              avatar: this.getCurrentUserAvatar(),
               filename: file.name, 
               timestamp: Date.now(),
               type: 'upload',
@@ -4149,6 +4196,7 @@ class App {
       url: url,
       user: author,
       userId: uid,
+      avatar: this.getCurrentUserAvatar(),
       filename: filename,
       timestamp: Date.now(),
       type: type,
@@ -5176,8 +5224,9 @@ class App {
             ` : ''}
             <img src="${img.url}" alt="${img.filename}">
           </div>
-          <div style="font-size: 11px; color: var(--text-secondary); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
-            👤 ${this.escapeHtml(authorName)}
+          <div style="font-size: 11px; color: var(--text-secondary); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: 100%;">
+            ${this.renderAvatarHtml(this.getUserAvatar(img.userId, authorName, img.avatar), 16)}
+            <span>${this.escapeHtml(authorName)}</span>
           </div>
           ${(isOwner || this.isAdmin) ? `
             <div style="display: flex; gap: 6px;" onclick="event.stopPropagation();">
@@ -5293,8 +5342,9 @@ class App {
               ${this.escapeHtml(vid.filename)}
             </div>
           </div>
-          <div style="font-size: 11px; color: var(--text-secondary); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;">
-            👤 ${this.escapeHtml(authorName)}
+          <div style="font-size: 11px; color: var(--text-secondary); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: 100%;">
+            ${this.renderAvatarHtml(this.getUserAvatar(vid.userId, authorName, vid.avatar), 16)}
+            <span>${this.escapeHtml(authorName)}</span>
           </div>
           ${isOwner ? `
             <div style="display: flex; gap: 6px;" onclick="event.stopPropagation();">
@@ -7694,7 +7744,7 @@ class App {
             document.getElementById('focusPlayArea').style.display = 'none';
             document.getElementById('focusFinishArea').style.display = 'block';
             
-            document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+            document.getElementById('lblFinishTime').textContent = Number(result.timeSpent || 0).toFixed(2);
             document.getElementById('lblFinishRankAnimation').style.display = 'inline-block';
             
             const correctRank = this.calculateFocusUserCorrectRank(game.results, userId);
@@ -7722,7 +7772,7 @@ class App {
           document.getElementById('focusPlayArea').style.display = 'none';
           document.getElementById('focusFinishArea').style.display = 'block';
           
-          document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+          document.getElementById('lblFinishTime').textContent = Number(result.timeSpent || 0).toFixed(2);
           
           const rank = this.calculateFocusUserRank(game.results, userId);
           document.getElementById('lblFinishRank').textContent = rank;
@@ -7769,7 +7819,7 @@ class App {
         return;
       }
       if (result) {
-        document.getElementById('lblFinishTime').textContent = result.timeSpent.toFixed(2);
+        document.getElementById('lblFinishTime').textContent = Number(result.timeSpent || 0).toFixed(2);
         if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
           const correctRank = this.calculateFocusUserCorrectRank(game.results, userId);
           document.getElementById('lblFinishRank').textContent = correctRank;
@@ -7831,6 +7881,11 @@ class App {
       ...results[uid]
     }));
 
+    const getTime = (it) => {
+      const n = parseFloat(it?.timeSpent);
+      return (Number.isFinite(n) && n >= 0) ? n : 999999;
+    };
+
     const sorted = items.sort((a, b) => {
       const isQuiz = a.gameType === 'songQuiz' || a.gameType === 'classicsQuiz' || b.gameType === 'songQuiz' || b.gameType === 'classicsQuiz' || a.totalQuestions != null || b.totalQuestions != null;
       if (isQuiz) {
@@ -7838,10 +7893,10 @@ class App {
         const scoreB = Number(b.score != null ? b.score : ((b.answers || []).filter(ans => ans.correct).length));
         if (scoreB !== scoreA) return scoreB - scoreA;
       }
-      const timeA = typeof a.timeSpent === 'number' ? a.timeSpent : 999999;
-      const timeB = typeof b.timeSpent === 'number' ? b.timeSpent : 999999;
+      const timeA = getTime(a);
+      const timeB = getTime(b);
       if (timeA !== timeB) return timeA - timeB;
-      return (a.completedAt || 0) - (b.completedAt || 0);
+      return (Number(a.completedAt) || 0) - (Number(b.completedAt) || 0);
     });
 
     const index = sorted.findIndex(item => item.uid === targetUserId);
@@ -8172,7 +8227,7 @@ class App {
         document.getElementById('buzzFinishArea').style.display = 'block';
         
         const result = game.results[userId];
-        document.getElementById('lblBuzzTime').textContent = result.timeSpent.toFixed(2);
+        document.getElementById('lblBuzzTime').textContent = Number(result.timeSpent || 0).toFixed(2);
         
         const rank = this.calculateBuzzUserRank(game.results, userId);
         document.getElementById('lblBuzzRank').textContent = rank;
@@ -8198,7 +8253,7 @@ class App {
       const userId = localStorage.getItem('user_id') || 'guest';
       const result = game.results && game.results[userId];
       if (result) {
-        document.getElementById('lblBuzzTime').textContent = result.timeSpent.toFixed(2);
+        document.getElementById('lblBuzzTime').textContent = Number(result.timeSpent || 0).toFixed(2);
         const rank = this.calculateBuzzUserRank(game.results, userId);
         document.getElementById('lblBuzzRank').textContent = rank;
         document.getElementById('buzzFinishRankBlock').style.display = 'inline-block';
@@ -8408,12 +8463,16 @@ class App {
     const userId = localStorage.getItem('user_id') || 'guest';
     const userName = localStorage.getItem('user_name') || '匿名';
     const now = Date.now();
-    const start = this.buzzGame.startTime || this.buzzStartTimeLocal;
-    const reactionTime = (now - start) / 1000;
+    // 優先使用本地倒數完成時記錄的 buzzStartTimeLocal，若無則依序使用 buzzGame.startTime 或 now
+    const start = this.buzzStartTimeLocal || (this.buzzGame && this.buzzGame.startTime) || now;
+    const rawElapsed = (now - start) / 1000;
+    // 防呆：秒數強制大於等於 0.05 秒（人類極限反應時間），徹底杜絕負數
+    const reactionTime = Math.max(0.05, Number(rawElapsed.toFixed(2)) || 0.05);
 
     db.ref(`quiz/buzzGame/results/${userId}`).set({
       name: userName,
       timeSpent: reactionTime,
+      avatar: this.getCurrentUserAvatar(),
       completedAt: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
       console.log('Buzzed in successfully:', reactionTime);
@@ -8428,12 +8487,18 @@ class App {
 
   calculateBuzzUserRank(results, targetUserId) {
     if (!results) return '-';
+    const getTime = (it) => {
+      const n = parseFloat(it?.timeSpent);
+      return (Number.isFinite(n) && n >= 0) ? n : 999999;
+    };
     const sorted = Object.keys(results).map(uid => ({
       uid,
       ...results[uid]
     })).sort((a, b) => {
-      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
-      return a.completedAt - b.completedAt;
+      const tA = getTime(a);
+      const tB = getTime(b);
+      if (tA !== tB) return tA - tB;
+      return (Number(a.completedAt) || 0) - (Number(b.completedAt) || 0);
     });
     const index = sorted.findIndex(item => item.uid === targetUserId);
     return index !== -1 ? index + 1 : '-';
@@ -8448,12 +8513,19 @@ class App {
       return;
     }
 
+    const getTime = (it) => {
+      const n = parseFloat(it?.timeSpent);
+      return (Number.isFinite(n) && n >= 0) ? n : 999999;
+    };
+
     const sorted = Object.keys(results).map(uid => ({
       uid,
       ...results[uid]
     })).sort((a, b) => {
-      if (a.timeSpent !== b.timeSpent) return a.timeSpent - b.timeSpent;
-      return a.completedAt - b.completedAt;
+      const tA = getTime(a);
+      const tB = getTime(b);
+      if (tA !== tB) return tA - tB;
+      return (Number(a.completedAt) || 0) - (Number(b.completedAt) || 0);
     });
 
     list.innerHTML = sorted.map((res, index) => {
@@ -8461,11 +8533,15 @@ class App {
       const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
       const color = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-secondary)';
       const fontWeight = isTop3 ? 'bold' : 'normal';
+      const timeVal = getTime(res);
+      const timeStr = timeVal < 999999 ? timeVal.toFixed(2) : '-';
+      const userAvatar = this.renderAvatarHtml(this.getUserAvatar(res.uid, res.name || res.user, res.avatar), 18);
       
       return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
+            ${userAvatar}
             <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name || res.user || '匿名')}</span>
           </div>
           <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒</span>
@@ -8752,13 +8828,18 @@ class App {
 
   finishMemoryMatchGame() {
     this.stopFocusTimers();
-    const timeSpent = (Date.now() - this.focusStartTimeLocal) / 1000;
+    const now = Date.now();
+    const start = this.focusStartTimeLocal || now;
+    const rawElapsed = (now - start) / 1000;
+    const timeSpent = Math.max(0.1, Number(rawElapsed.toFixed(2)) || 0.1);
     const userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 5));
     const userName = localStorage.getItem('user_name') || '匿名學生';
 
     db.ref(`quiz/focusGame/results/${userId}`).set({
       userId,
       userName,
+      name: userName,
+      avatar: this.getCurrentUserAvatar(),
       timeSpent,
       flips: this.memoryMatchFlips,
       completedAt: firebase.database.ServerValue.TIMESTAMP
@@ -8857,15 +8938,19 @@ class App {
     this.stopFocusTimers();
     
     const now = Date.now();
-    const start = (this.focusGame && this.focusGame.startTime) || this.focusStartTimeLocal;
+    const start = this.focusStartTimeLocal || (this.focusGame && this.focusGame.startTime) || now;
     // OpenCode 修改：排行榜成績採計求救提示懲罰秒數
-    const timeSpent = (now - start) / 1000 + this.focusHelpPenaltySeconds;
+    const rawElapsed = (now - start) / 1000 + (this.focusHelpPenaltySeconds || 0);
+    const timeSpent = Math.max(0.1, Number(rawElapsed.toFixed(2)) || 0.1);
     
     const userId = localStorage.getItem('user_id') || 'guest';
     const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名';
 
     db.ref(`quiz/focusGame/results/${userId}`).set({
+      userId: userId,
+      userName: userName,
       name: userName,
+      avatar: this.getCurrentUserAvatar(),
       timeSpent: timeSpent,
       gameType: this.focusGame && this.focusGame.gameType ? this.focusGame.gameType : 'numberGrid',
       reverseMode: !!(this.focusGame && this.focusGame.reverseMode),
@@ -8910,6 +8995,11 @@ class App {
     // 判斷是否為題庫測驗型遊戲 (有題目、答對統計或選擇題)
     const isQuizGame = items.some(it => it.gameType === 'songQuiz' || it.gameType === 'classicsQuiz' || it.totalQuestions != null || it.answers != null);
 
+    const getTime = (it) => {
+      const n = parseFloat(it?.timeSpent);
+      return (Number.isFinite(n) && n >= 0) ? n : 999999;
+    };
+
     const sorted = items.sort((a, b) => {
       if (isQuizGame) {
         // 優先比答對題數 (多者在前)
@@ -8918,10 +9008,10 @@ class App {
         if (scoreB !== scoreA) return scoreB - scoreA;
       }
       // 答對題數相同或非題庫遊戲：耗時越少越靠前
-      const timeA = typeof a.timeSpent === 'number' ? a.timeSpent : 999999;
-      const timeB = typeof b.timeSpent === 'number' ? b.timeSpent : 999999;
+      const timeA = getTime(a);
+      const timeB = getTime(b);
       if (timeA !== timeB) return timeA - timeB;
-      return (a.completedAt || 0) - (b.completedAt || 0);
+      return (Number(a.completedAt) || 0) - (Number(b.completedAt) || 0);
     });
 
     // 計算名次 (支援同分同秒並列)
@@ -8929,9 +9019,11 @@ class App {
     const rankedItems = sorted.map((res, index) => {
       if (index > 0) {
         const prev = sorted[index - 1];
+        const prevTime = getTime(prev);
+        const resTime = getTime(res);
         const isPrevEqual = isQuizGame
-          ? (Number(prev.score || 0) === Number(res.score || 0) && Number(prev.timeSpent || 0).toFixed(2) === Number(res.timeSpent || 0).toFixed(2))
-          : (Number(prev.timeSpent || 0).toFixed(2) === Number(res.timeSpent || 0).toFixed(2));
+          ? (Number(prev.score || 0) === Number(res.score || 0) && prevTime.toFixed(2) === resTime.toFixed(2))
+          : (prevTime.toFixed(2) === resTime.toFixed(2));
         if (!isPrevEqual) {
           currentRank = index + 1;
         }
@@ -8970,8 +9062,11 @@ class App {
         medal = `#${rank} 並列`;
       }
 
-      const displayName = this.escapeHtml(res.userName || res.name || '匿名學生');
-      const timeStr = typeof res.timeSpent === 'number' ? res.timeSpent.toFixed(2) : '-';
+      const rawName = res.userName || res.name || '匿名學生';
+      const displayName = this.escapeHtml(rawName);
+      const userAvatar = this.renderAvatarHtml(this.getUserAvatar(res.uid, rawName, res.avatar), 20);
+      const timeVal = getTime(res);
+      const timeStr = timeVal < 999999 ? timeVal.toFixed(2) : '-';
       const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
       const memoryNote = res.gameType === 'memoryPosition' ? `（位置序列${res.reverseMode ? '・反向' : ''}${res.mistakes ? `，錯 ${res.mistakes} 次` : ''}）` : '';
 
@@ -9021,8 +9116,9 @@ class App {
 
       return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: ${bg}; border: ${border}; border-radius: 12px; font-size: 14px; margin-bottom: 8px; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 14px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; min-width: 60px; white-space: nowrap;">${medal}</span>
+            ${userAvatar}
             <span style="color: var(--text-primary); font-weight: 600; font-size: 15px;">${displayName}</span>
           </div>
           <div>${detailHtml}</div>
@@ -9320,7 +9416,10 @@ class App {
     if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
     this.focusTimerInterval = null;
     
-    const timeSpent = (Date.now() - (this.focusGame.startTime || this.focusStartTimeLocal)) / 1000;
+    const now = Date.now();
+    const start = this.focusStartTimeLocal || (this.focusGame && this.focusGame.startTime) || now;
+    const rawElapsed = (now - start) / 1000 + (this.focusHelpPenaltySeconds || 0);
+    const timeSpent = Math.max(0.1, Number(rawElapsed.toFixed(2)) || 0.1);
     const userName = localStorage.getItem('comment_nickname') || localStorage.getItem('user_name') || '匿名';
     const currentGameType = this.focusGame.gameType || 'characterTest';
     
@@ -9339,9 +9438,12 @@ class App {
     }
 
     db.ref(`quiz/focusGame/results/${userId}`).set({
+      userId: userId,
+      userName: userName,
       name: userName,
+      avatar: this.getCurrentUserAvatar(),
       answers: answers,
-      timeSpent: timeSpent + (this.focusHelpPenaltySeconds || 0),
+      timeSpent: timeSpent,
       completedAt: firebase.database.ServerValue.TIMESTAMP,
       status: autoStatus,
       gameType: currentGameType,
@@ -9643,10 +9745,11 @@ class App {
         <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 8px; box-sizing: border-box;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px;">
+              ${this.renderAvatarHtml(this.getUserAvatar(res.uid, res.name, res.avatar), 18)}
               <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">${this.escapeHtml(res.name)}</span>
               ${statusBadge}
             </div>
-            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">⏱️ ${res.timeSpent.toFixed(2)} 秒${helpNote}</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">⏱️ ${Number(res.timeSpent || 0).toFixed(2)} 秒${helpNote}</span>
           </div>
           
           <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
@@ -9670,10 +9773,23 @@ class App {
       return;
     }
     
+    const getTime = (it) => {
+      const n = parseFloat(it?.timeSpent);
+      return (Number.isFinite(n) && n >= 0) ? n : 999999;
+    };
+
     const sorted = Object.keys(results).map(uid => ({
       uid,
       ...results[uid]
-    })).sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
+    })).sort((a, b) => {
+      const aCorrect = a.status === 'correct' ? 1 : 0;
+      const bCorrect = b.status === 'correct' ? 1 : 0;
+      if (bCorrect !== aCorrect) return bCorrect - aCorrect;
+      const tA = getTime(a);
+      const tB = getTime(b);
+      if (tA !== tB) return tA - tB;
+      return (Number(a.completedAt) || 0) - (Number(b.completedAt) || 0);
+    });
     
     container.innerHTML = sorted.map((res, index) => {
       const status = res.status || 'pending';
@@ -9688,14 +9804,16 @@ class App {
       }
       
       const helpNote = res.helpCount ? `，提示 ${res.helpCount} 次` : '';
+      const userAvatar = this.renderAvatarHtml(this.getUserAvatar(res.uid, res.name, res.avatar), 18);
       
       return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">#${index + 1}</span>
+            ${userAvatar}
             <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
           </div>
-          <span style="color: ${color}; font-weight: bold; font-size: 14px;">${statusIcon} (${res.timeSpent.toFixed(2)} 秒${helpNote})</span>
+          <span style="color: ${color}; font-weight: bold; font-size: 14px;">${statusIcon} (${Number(res.timeSpent || 0).toFixed(2)} 秒${helpNote})</span>
         </div>
       `;
     }).join('');
