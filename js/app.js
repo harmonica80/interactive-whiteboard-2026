@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.3.7';
+    this.APP_VERSION = '3.3.8';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -205,6 +205,23 @@ class App {
       displayUserNameTag.style.display = 'inline-flex';
     }
 
+    // 同步記錄至當前課堂學生名冊，方便防範重名
+    const myUid = this.getUserId();
+    if (myUid && db) {
+      db.ref('quiz/students').child(myUid).set({
+        name: trimmed,
+        updatedAt: Date.now()
+      }).catch(() => {});
+    }
+
+    // 若連線中，同步更新 presence 中的使用者名稱
+    if (this.myPresenceRef) {
+      this.myPresenceRef.update({
+        userName: trimmed,
+        userId: myUid
+      }).catch(() => {});
+    }
+
     // 重新渲染當前畫面以更新作者標籤與操作按鈕
     this.renderQuestions();
     this.renderImages();
@@ -246,11 +263,16 @@ class App {
     const randomName = list[Math.floor(Math.random() * list.length)];
     const input = document.getElementById('inputStudentModalName');
     const err = document.getElementById('studentNameModalError');
+    const dupAlert = document.getElementById('studentNameDuplicateAlert');
     if (input) {
       input.value = randomName;
+      input.style.borderColor = '';
       if (err) {
         err.style.display = 'none';
         err.textContent = '';
+      }
+      if (dupAlert) {
+        dupAlert.style.display = 'none';
       }
       input.focus();
     }
@@ -259,11 +281,16 @@ class App {
   selectCuteAnimalName(name) {
     const input = document.getElementById('inputStudentModalName');
     const err = document.getElementById('studentNameModalError');
+    const dupAlert = document.getElementById('studentNameDuplicateAlert');
     if (input) {
       input.value = name;
+      input.style.borderColor = '';
       if (err) {
         err.style.display = 'none';
         err.textContent = '';
+      }
+      if (dupAlert) {
+        dupAlert.style.display = 'none';
       }
       input.focus();
     }
@@ -290,13 +317,18 @@ class App {
     const modal = document.getElementById('studentNameModal');
     const input = document.getElementById('inputStudentModalName');
     const err = document.getElementById('studentNameModalError');
+    const dupAlert = document.getElementById('studentNameDuplicateAlert');
     if (!modal || !input) return;
 
     const currentName = this.getCurrentUserName();
     input.value = currentName || '';
+    input.style.borderColor = '';
     if (err) {
       err.style.display = 'none';
       err.textContent = '';
+    }
+    if (dupAlert) {
+      dupAlert.style.display = 'none';
     }
 
     this.renderCuteAnimalChips();
@@ -311,11 +343,108 @@ class App {
   closeStudentNameModal() {
     const modal = document.getElementById('studentNameModal');
     if (modal) modal.classList.remove('active');
+    const dupAlert = document.getElementById('studentNameDuplicateAlert');
+    if (dupAlert) dupAlert.style.display = 'none';
+    const err = document.getElementById('studentNameModalError');
+    if (err) err.style.display = 'none';
   }
 
-  saveStudentNameFromModal() {
+  // 取得目前課堂中已被其他同學使用的姓名集合 (Set)
+  async getTakenStudentNames() {
+    const myUid = this.getUserId();
+    const takenNames = new Set();
+
+    let studentsMap = this.registeredStudents || {};
+    try {
+      const snap = await db.ref('quiz/students').once('value');
+      if (snap.exists()) {
+        studentsMap = snap.val() || {};
+        this.registeredStudents = studentsMap;
+      }
+    } catch (e) {}
+
+    for (const [uid, studentData] of Object.entries(studentsMap)) {
+      if (uid !== myUid && studentData && studentData.name) {
+        const n = String(studentData.name).trim();
+        if (n) takenNames.add(n);
+      }
+    }
+
+    const presenceData = this.onlinePresence || {};
+    for (const [key, p] of Object.entries(presenceData)) {
+      if (p && p.userId && p.userId !== myUid && p.userName) {
+        const n = String(p.userName).trim();
+        if (n && n !== '同學' && n !== '訪客' && n !== '匿名') {
+          takenNames.add(n);
+        }
+      }
+    }
+
+    const checkList = [
+      ...(this.questions || []),
+      ...(this.images || []),
+      ...(this.videos || [])
+    ];
+    for (const item of checkList) {
+      if (item && item.user) {
+        const n = String(item.user).trim();
+        if (n && n !== '同學' && n !== '訪客' && n !== '匿名') {
+          if (item.userId && item.userId !== myUid) {
+            takenNames.add(n);
+          }
+        }
+      }
+    }
+
+    return takenNames;
+  }
+
+  // 依據目前已被使用的名稱，為重複名稱產生「_01」、「_02」等序號建議
+  generateSuggestedStudentName(baseName, takenNames) {
+    if (!baseName) return '同學_01';
+    let cleanBase = String(baseName).trim();
+
+    // 如果名稱結尾已經有 _\d+，先解析出原始前綴，從下一個數字開始遞增
+    const match = cleanBase.match(/^(.*?)(?:_(\d+))$/);
+    let prefix = cleanBase;
+    let startNum = 1;
+    if (match) {
+      prefix = match[1];
+      startNum = parseInt(match[2], 10) + 1;
+    }
+
+    const lowerSet = new Set(Array.from(takenNames).map(n => n.toLowerCase()));
+
+    for (let i = startNum; i <= 999; i++) {
+      const suffix = i < 10 ? `_0${i}` : `_${i}`;
+      const candidate = `${prefix}${suffix}`;
+      if (!lowerSet.has(candidate.toLowerCase())) {
+        return candidate;
+      }
+    }
+    return `${prefix}_${Date.now().toString().slice(-4)}`;
+  }
+
+  // 點擊「改用建議名稱並儲存」按鈕
+  applySuggestedStudentName(suggested) {
+    const target = suggested || this.pendingSuggestedStudentName;
+    if (!target) return;
+    const input = document.getElementById('inputStudentModalName');
+    if (input) {
+      input.value = target;
+      input.style.borderColor = '';
+    }
+    const dupAlert = document.getElementById('studentNameDuplicateAlert');
+    if (dupAlert) dupAlert.style.display = 'none';
+    this.saveStudentNameFromModal();
+  }
+
+  async saveStudentNameFromModal() {
     const input = document.getElementById('inputStudentModalName');
     const err = document.getElementById('studentNameModalError');
+    const dupAlert = document.getElementById('studentNameDuplicateAlert');
+    const dupDesc = document.getElementById('studentNameDuplicateDesc');
+    const txtSuggested = document.getElementById('txtSuggestedStudentName');
     if (!input) return;
 
     const name = input.value.trim();
@@ -324,8 +453,43 @@ class App {
         err.textContent = '請輸入您的姓名或暱稱（不可為空）！';
         err.style.display = 'block';
       }
+      if (dupAlert) dupAlert.style.display = 'none';
+      input.style.borderColor = '#ff4d4f';
       input.focus();
       return;
+    }
+
+    // 檢查是否有同名學生 (重複名稱防呆與序號建議)
+    const takenNames = await this.getTakenStudentNames();
+    const lowerName = name.toLowerCase();
+    const isDuplicate = Array.from(takenNames).some(n => n.toLowerCase() === lowerName);
+
+    if (isDuplicate) {
+      const suggestedName = this.generateSuggestedStudentName(name, takenNames);
+      this.pendingSuggestedStudentName = suggestedName;
+
+      if (err) {
+        err.style.display = 'none';
+        err.textContent = '';
+      }
+      if (dupAlert && dupDesc && txtSuggested) {
+        dupDesc.innerHTML = `課堂中已有其他同學使用名稱「<strong style="color: #cf1322;">${this.escapeHtml(name)}</strong>」。<br>您可以直接更換其他名稱，或點選下方按鈕使用系統建議的序號名稱：`;
+        txtSuggested.textContent = suggestedName;
+        dupAlert.style.display = 'block';
+      }
+      input.style.borderColor = '#ff4d4f';
+      input.focus();
+      return;
+    }
+
+    // 驗證通過，儲存姓名
+    input.style.borderColor = '';
+    if (err) {
+      err.style.display = 'none';
+      err.textContent = '';
+    }
+    if (dupAlert) {
+      dupAlert.style.display = 'none';
     }
 
     this.setUserName(name);
@@ -929,6 +1093,12 @@ class App {
       this.renderTeacherShares();
       this.renderAdminShares();
     });
+
+    // 監聽課堂學生名冊 (用於檢查姓名是否重複與序號建議)
+    this.registeredStudents = {};
+    db.ref('quiz/students').on('value', (snapshot) => {
+      this.registeredStudents = snapshot.val() || {};
+    });
   }
   
   initModals() {
@@ -1097,6 +1267,16 @@ class App {
     }
     const inputStudentName = document.getElementById('inputStudentModalName');
     if (inputStudentName) {
+      inputStudentName.addEventListener('input', () => {
+        const err = document.getElementById('studentNameModalError');
+        const dupAlert = document.getElementById('studentNameDuplicateAlert');
+        if (err) {
+          err.style.display = 'none';
+          err.textContent = '';
+        }
+        if (dupAlert) dupAlert.style.display = 'none';
+        inputStudentName.style.borderColor = '';
+      });
       inputStudentName.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -5185,7 +5365,10 @@ class App {
         
         // Register connection session
         myPresenceRef = presenceRef.push();
+        this.myPresenceRef = myPresenceRef;
         myPresenceRef.set({
+          userId: this.getUserId(),
+          userName: this.getCurrentUserName() || '',
           timestamp: firebase.database.ServerValue.TIMESTAMP
         });
         myPresenceRef.onDisconnect().remove();
@@ -5197,6 +5380,7 @@ class App {
 
     // Listen for changes in the presence list and count active users with stale node cleanup
     presenceRef.on('value', (snapshot) => {
+      this.onlinePresence = snapshot.val() || {};
       let count = 0;
       const now = Date.now();
       if (snapshot.exists()) {
@@ -11497,6 +11681,7 @@ function resetAll() {
     db.ref('quiz/videoQuizSession').remove(),
     db.ref('quiz/videoQuizSettings').remove(),
     db.ref('quiz/videoQuizAnswers').remove(),
+    db.ref('quiz/students').remove(),
     db.ref('whiteboard').remove(),
     db.ref('whiteboard_room').remove()
   ];

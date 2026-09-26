@@ -1,4 +1,22 @@
 # System Log
+## 2026-09-26 - ver 3.3.8 學生姓名設定即時查重、重複自動提示序號建議（_01）、全域名冊同步防呆
+- 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **學生設定姓名即時查重與序號建議功能 (`index.html`, `js/app.js`)**：
+     - 在學生姓名／暱稱設定彈窗（`studentNameModal`）儲存時，新增全課堂重名檢驗機制（`getTakenStudentNames()`）。
+     - 整合檢查即時學生名冊（`quiz/students`）、在線 Presence（`quiz/presence`）與課堂各模組發布作者，嚴格排除自己當前使用的名稱，只鎖定其他同學已使用的名稱。
+     - 若名稱已存在，彈窗立即跳出高對比警示框（`#studentNameDuplicateAlert`），提醒名稱已被其他同學使用，並由系統自動計算並提供後綴序號建議（如「`王小明_01`」、「`溫柔雷龍_01`」；若已存在則依序遞增至 `_02`、`_03` 等）。
+     - 提供一鍵快捷動作按鈕「✨ 使用建議『名稱_01』並儲存」，點擊即可自動套用並直接儲存；同時學生亦可直接於輸入框更換其他名稱，輸入時即時消除警示。
+  2. **課堂學生名冊與在線 Presence 資料同步 (`js/app.js`)**：
+     - 於 `setupRealtimeSync()` 新增即時監聽 `quiz/students`。
+     - 學生每次設定或更改姓名（`setUserName`）時，將 `{ name, updatedAt }` 自動同步更新至 `quiz/students/${userId}` 與連線 session，確保全班跨裝置即時感知最新姓名名冊。
+     - 在一鍵重設課堂（`resetAll`）中加入同步清空 `quiz/students`。
+  3. **版本號嚴格遞增至 `ver 3.3.8` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=338`）、`app.js`（`this.APP_VERSION = '3.3.8'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-25 - ver 3.3.7 學生自主學習隱藏選單、專注力測驗提示開關控制、首頁載入防阻斷彈窗與分頁修復
 - 影響檔案：`index.html`, `js/video_quiz.js`, `js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：

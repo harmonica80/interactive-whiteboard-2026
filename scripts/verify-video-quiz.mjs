@@ -12,21 +12,21 @@ const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
 const fbJs = fs.readFileSync('js/firebase-config.js', 'utf8');
 
 const checks = [
-  ['package.json version 3.3.7', pkg.version === '3.3.7'],
-  ['app.js APP_VERSION 3.3.7', appJs.includes("this.APP_VERSION = '3.3.7';")],
-  ['index.html badge ver 3.3.7', html.includes('ver 3.3.7')],
+  ['package.json version 3.3.8', pkg.version === '3.3.8'],
+  ['app.js APP_VERSION 3.3.8', appJs.includes("this.APP_VERSION = '3.3.8';")],
+  ['index.html badge ver 3.3.8', html.includes('ver 3.3.8')],
   ['index.html adminNewClassName maxlength="50"', html.includes('id="adminNewClassName"') && html.includes('maxlength="50"')],
   ['index.html adminEditClassName maxlength="50"', html.includes('id="adminEditClassName"') && html.includes('maxlength="50"')],
   ['index.html studentNameModal exists', html.includes('id="studentNameModal"')],
   ['index.html itemEditModal exists', html.includes('id="itemEditModal"')],
   ['app.js openStudentNameModal method', appJs.includes('openStudentNameModal()')],
   ['app.js isItemOwner method', appJs.includes('isItemOwner(item)')],
-  ['index.html style.css?v=337', html.includes('css/style.css?v=337')],
-  ['index.html firebase-config.js?v=337', html.includes('js/firebase-config.js?v=337')],
-  ['index.html app.js?v=337', html.includes('js/app.js?v=337')],
-  ['index.html quiz.js?v=337', html.includes('js/quiz.js?v=337')],
-  ['index.html video_quiz.js?v=337', html.includes('js/video_quiz.js?v=337')],
-  ['index.html song_quiz.js?v=337', html.includes('js/song_quiz.js?v=337')],
+  ['index.html style.css?v=338', html.includes('css/style.css?v=338')],
+  ['index.html firebase-config.js?v=338', html.includes('js/firebase-config.js?v=338')],
+  ['index.html app.js?v=338', html.includes('js/app.js?v=338')],
+  ['index.html quiz.js?v=338', html.includes('js/quiz.js?v=338')],
+  ['index.html video_quiz.js?v=338', html.includes('js/video_quiz.js?v=338')],
+  ['index.html song_quiz.js?v=338', html.includes('js/song_quiz.js?v=338')],
   ['firebase-config.js updateClass method exists', fbJs.includes('async updateClass(oldCode, newCode, newName')],
   ['firebase-config.js updateClass checks duplicate code', fbJs.includes('checkClassExists(sanitizedNew)') && fbJs.includes('已存在，無法使用此代碼')],
   ['firebase-config.js getModuleCounts method exists', fbJs.includes('async getModuleCounts(')],
@@ -93,11 +93,16 @@ const checks = [
   ['index.html focusGameAllowHint checkbox toggle exists', html.includes('id="focusGameAllowHint"')],
   ['app.js startFocusGame supports allowHint parameter', appJs.includes('focusGameAllowHint') && appJs.includes('allowHint: allowHint')],
   ['app.js schulte grid respects allowHint toggle', appJs.includes('const allowHint = game.allowHint !== false;') && appJs.includes("helpBtn.style.display = allowHint ? 'inline-block' : 'none'")],
-  ['video_quiz.js no intrusive notification on player load', !vqJs.includes('自主學習測驗已準備就緒，請點擊播放開始觀看！')]
+  ['video_quiz.js no intrusive notification on player load', !vqJs.includes('自主學習測驗已準備就緒，請點擊播放開始觀看！')],
+  ['index.html studentNameDuplicateAlert exists', html.includes('id="studentNameDuplicateAlert"')],
+  ['index.html btnApplySuggestedStudentName exists', html.includes('id="btnApplySuggestedStudentName"')],
+  ['app.js getTakenStudentNames method', appJs.includes('getTakenStudentNames()')],
+  ['app.js generateSuggestedStudentName method', appJs.includes('generateSuggestedStudentName(')],
+  ['app.js applySuggestedStudentName method', appJs.includes('applySuggestedStudentName(')]
 ];
 
 let allPassed = true;
-console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.3.7) ---');
+console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.3.8) ---');
 for (const [name, passed] of checks) {
   if (passed) {
     console.log(`✅ ${name}`);
