@@ -1104,6 +1104,11 @@ body {
 }
 
 @media (max-width: 768px) {
+  /* 手機端隱藏班級狀態與管制列，讓同學有更多互動空間 */
+  .class-mode-bar {
+    display: none !important;
+  }
+
   /* top-bar layout */
   .top-bar {
     flex-direction: column;
@@ -3077,7 +3082,7 @@ body {
 
 @media (max-width: 600px) {
   .class-mode-bar {
-    padding: 8px 12px;
+    display: none !important;
   }
   .class-action-btn {
     padding: 5px 10px;
