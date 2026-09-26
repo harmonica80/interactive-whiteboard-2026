@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.3.8';
+    this.APP_VERSION = '3.3.9';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -188,6 +188,47 @@ class App {
     ).trim();
   }
 
+  // ===== 可愛生物頭像管理 (96款透明背景雪碧圖) =====
+  getCurrentUserAvatar() {
+    const saved = localStorage.getItem('user_avatar');
+    if (saved !== null && saved !== undefined && saved !== '') {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed < 96) {
+        return parsed;
+      }
+    }
+    // 預設依使用者 UID 分配或隨機
+    const uid = typeof this.getUserId === 'function' ? this.getUserId() : 'anon';
+    let hash = 0;
+    for (let i = 0; i < uid.length; i++) {
+      hash = (hash * 31 + uid.charCodeAt(i)) >>> 0;
+    }
+    const defaultId = hash % 96;
+    localStorage.setItem('user_avatar', String(defaultId));
+    return defaultId;
+  }
+
+  setCurrentUserAvatar(avatarId) {
+    const safeId = Math.max(0, Math.min(95, parseInt(avatarId, 10) || 0));
+    localStorage.setItem('user_avatar', String(safeId));
+    return safeId;
+  }
+
+  getAvatarPositionStyle(avatarId) {
+    const safeId = Math.max(0, Math.min(95, parseInt(avatarId, 10) || 0));
+    const col = safeId % 8;
+    const row = Math.floor(safeId / 8);
+    const x = ((col / 7) * 100).toFixed(2);
+    const y = ((row / 11) * 100).toFixed(2);
+    return `background-position: ${x}% ${y}%;`;
+  }
+
+  renderAvatarHtml(avatarId, size = 20, extraClass = '') {
+    const safeId = Math.max(0, Math.min(95, parseInt(avatarId, 10) || 0));
+    const posStyle = this.getAvatarPositionStyle(safeId);
+    return `<span class="cute-avatar-icon ${extraClass}" style="width: ${size}px; height: ${size}px; ${posStyle}" data-avatar-id="${safeId}"></span>`;
+  }
+
   setUserName(name) {
     if (!name) return;
     const trimmed = name.trim();
@@ -198,26 +239,44 @@ class App {
     localStorage.setItem('user_name', trimmed);
     localStorage.setItem('comment_nickname', trimmed);
 
+    const avatarId = this.getCurrentUserAvatar();
+    const avatarHtml = this.renderAvatarHtml(avatarId, 20);
+
+    // 班級模式頂部標籤
     const displayUserName = document.getElementById('displayUserName');
     const displayUserNameTag = document.getElementById('displayUserNameTag');
+    const displayUserAvatar = document.getElementById('displayUserAvatar');
     if (displayUserName) displayUserName.textContent = trimmed;
-    if (displayUserNameTag) {
+    if (displayUserAvatar) displayUserAvatar.innerHTML = avatarHtml;
+    if (displayUserNameTag && this.isClassMode()) {
       displayUserNameTag.style.display = 'inline-flex';
     }
 
-    // 同步記錄至當前課堂學生名冊，方便防範重名
+    // 一次性課堂模式頂部標籤
+    const displayUserNameOneOff = document.getElementById('displayUserNameOneOff');
+    const displayUserNameTagOneOff = document.getElementById('displayUserNameTagOneOff');
+    const displayUserAvatarOneOff = document.getElementById('displayUserAvatarOneOff');
+    if (displayUserNameOneOff) displayUserNameOneOff.textContent = trimmed;
+    if (displayUserAvatarOneOff) displayUserAvatarOneOff.innerHTML = avatarHtml;
+    if (displayUserNameTagOneOff && !this.isClassMode()) {
+      displayUserNameTagOneOff.style.display = 'inline-flex';
+    }
+
+    // 同步記錄至當前課堂學生名冊，方便防範重名與跨裝置顯示
     const myUid = this.getUserId();
     if (myUid && db) {
       db.ref('quiz/students').child(myUid).set({
         name: trimmed,
+        avatar: avatarId,
         updatedAt: Date.now()
       }).catch(() => {});
     }
 
-    // 若連線中，同步更新 presence 中的使用者名稱
+    // 若連線中，同步更新 presence 中的使用者名稱與頭像
     if (this.myPresenceRef) {
       this.myPresenceRef.update({
         userName: trimmed,
+        avatar: avatarId,
         userId: myUid
       }).catch(() => {});
     }
@@ -247,7 +306,7 @@ class App {
     return false;
   }
 
-  // ===== 可愛生物與動物暱稱庫 =====
+  // ===== 可愛生物與動物暱稱庫 (相容舊版快速推薦) =====
   CUTE_CREATURE_NAMES = [
     '🐱 溫暖小貓', '🐧 活力企鵝', '🦦 快樂水獺', '🐨 呆萌無尾熊', '🦊 機智小狐狸',
     '🐼 圓滾熊貓', '🐰 蹦跳小兔', '🐬 陽光海豚', '🦔 害羞小刺蝟', '🐿️ 靈巧松鼠',
@@ -258,22 +317,124 @@ class App {
     '🦌 靈動小鹿', '🐺 敏銳雪狼', '🦫 勤奮海狸', '🦘 健步袋鼠', '🦚 華麗孔雀'
   ];
 
+  // ===== 96 款可愛生物頭像中繼資料 (萌寵奇幻 48 款 + 森林海洋 48 款) =====
+  CUTE_AVATARS = [
+    // 萌寵奇幻 (0~47)
+    { id: 0, name: '溫暖小貓', emoji: '🐱' },
+    { id: 1, name: '軟萌柴犬', emoji: '🐕' },
+    { id: 2, name: '蹦跳小兔', emoji: '🐰' },
+    { id: 3, name: '淘氣倉鼠', emoji: '🐹' },
+    { id: 4, name: '機智小狐狸', emoji: '🦊' },
+    { id: 5, name: '圓滾熊貓', emoji: '🐼' },
+    { id: 6, name: '呆萌無尾熊', emoji: '🐨' },
+    { id: 7, name: '活力企鵝', emoji: '🐧' },
+    { id: 8, name: '快樂水獺', emoji: '🦦' },
+    { id: 9, name: '害羞小刺蝟', emoji: '🦔' },
+    { id: 10, name: '靈巧松鼠', emoji: '🐿️' },
+    { id: 11, name: '憨厚小熊', emoji: '🐻' },
+    { id: 12, name: '夢想獨角獸', emoji: '🦄' },
+    { id: 13, name: '元氣小雞', emoji: '🐥' },
+    { id: 14, name: '悠哉小鴨', emoji: '🦆' },
+    { id: 15, name: '天真小羊', emoji: '🐑' },
+    { id: 16, name: '粉嫩小豬', emoji: '🐷' },
+    { id: 17, name: '聰慧邊牧', emoji: '🐶' },
+    { id: 18, name: '傲嬌橘貓', emoji: '🐈' },
+    { id: 19, name: '優雅白貓', emoji: '🐱' },
+    { id: 20, name: '頑皮哈士奇', emoji: '🐺' },
+    { id: 21, name: '熱情柯基', emoji: '🐕' },
+    { id: 22, name: '毛絨羊駝', emoji: '🦙' },
+    { id: 23, name: '溫柔小鹿', emoji: '🦌' },
+    { id: 24, name: '慢活樹懶', emoji: '🦥' },
+    { id: 25, name: '歡樂小雪貂', emoji: '🦡' },
+    { id: 26, name: '巧嘴小鸚鵡', emoji: '🦜' },
+    { id: 27, name: '純白鴿子', emoji: '🕊️' },
+    { id: 28, name: '吉祥小麻雀', emoji: '🐦' },
+    { id: 29, name: '伶俐八哥', emoji: '🦅' },
+    { id: 30, name: '幸運小青蛙', emoji: '🐸' },
+    { id: 31, name: '萌萌小恐龍', emoji: '🦖' },
+    { id: 32, name: '溫柔雷龍', emoji: '🦕' },
+    { id: 33, name: '魔法小精靈', emoji: '🧚' },
+    { id: 34, name: '璀璨星辰兔', emoji: '🐇' },
+    { id: 35, name: '雪域赤狐', emoji: '🦊' },
+    { id: 36, name: '雲朵小綿羊', emoji: '🐑' },
+    { id: 37, name: '甜心蜜袋鼯', emoji: '🐿️' },
+    { id: 38, name: '元氣柴犬寶', emoji: '🐕' },
+    { id: 39, name: '毛球博美', emoji: '🐶' },
+    { id: 40, name: '英短藍貓', emoji: '🐱' },
+    { id: 41, name: '布偶仙子貓', emoji: '🐈' },
+    { id: 42, name: '跳躍花栗鼠', emoji: '🐿️' },
+    { id: 43, name: '森林穿山甲', emoji: '🦔' },
+    { id: 44, name: '夢境小飛馬', emoji: '🐎' },
+    { id: 45, name: '彩虹小鹿', emoji: '🦌' },
+    { id: 46, name: '毛茸雪怪獸', emoji: '🐻‍❄️' },
+    { id: 47, name: '守護小神獸', emoji: '🐾' },
+    // 森林海洋 (48~95)
+    { id: 48, name: '威風小獅', emoji: '🦁' },
+    { id: 49, name: '敏捷小猛虎', emoji: '🐯' },
+    { id: 50, name: '霸氣花豹', emoji: '🐆' },
+    { id: 51, name: '溫和長頸鹿', emoji: '🦒' },
+    { id: 52, name: '暖心小象', emoji: '🐘' },
+    { id: 53, name: '力氣小河馬', emoji: '🦛' },
+    { id: 54, name: '踏實小犀牛', emoji: '🦏' },
+    { id: 55, name: '陽光海豚', emoji: '🐬' },
+    { id: 56, name: '悠游藍鯨', emoji: '🐳' },
+    { id: 57, name: '噴水虎鯨', emoji: '🐋' },
+    { id: 58, name: '療癒小海豹', emoji: '🦭' },
+    { id: 59, name: '呆萌海獅', emoji: '🦭' },
+    { id: 60, name: '穩健小海龜', emoji: '🐢' },
+    { id: 61, name: '萬能章魚', emoji: '🐙' },
+    { id: 62, name: '揮螯小螃蟹', emoji: '🦀' },
+    { id: 63, name: '微笑小海馬', emoji: '🦑' },
+    { id: 64, name: '發光水母', emoji: '🪼' },
+    { id: 65, name: '智慧貓頭鷹', emoji: '🦉' },
+    { id: 66, name: '敏銳雪狼', emoji: '🐺' },
+    { id: 67, name: '勤奮海狸', emoji: '🦫' },
+    { id: 68, name: '健步袋鼠', emoji: '🦘' },
+    { id: 69, name: '優雅紅鶴', emoji: '🦩' },
+    { id: 70, name: '華麗孔雀', emoji: '🦚' },
+    { id: 71, name: '展翅雄鷹', emoji: '🦅' },
+    { id: 72, name: '勤勞小蜜蜂', emoji: '🐝' },
+    { id: 73, name: '夢幻彩蝶', emoji: '🦋' },
+    { id: 74, name: '靈動瓢蟲', emoji: '🐞' },
+    { id: 75, name: '閃亮螢火蟲', emoji: '✨' },
+    { id: 76, name: '快樂小猴', emoji: '🐵' },
+    { id: 77, name: '沉穩大猩猩', emoji: '🦍' },
+    { id: 78, name: '金絲狨猴', emoji: '🐒' },
+    { id: 79, name: '草原斑馬', emoji: '🦓' },
+    { id: 80, name: '沙漠駱駝', emoji: '🐫' },
+    { id: 81, name: '高山羚羊', emoji: '🐐' },
+    { id: 82, name: '極地北極熊', emoji: '🐻‍❄️' },
+    { id: 83, name: '南極帝企鵝', emoji: '🐧' },
+    { id: 84, name: '深海小丑魚', emoji: '🐠' },
+    { id: 85, name: '彩紋熱帶魚', emoji: '🐟' },
+    { id: 86, name: '海洋小蝠魟', emoji: '🐡' },
+    { id: 87, name: '俏皮海獺仔', emoji: '🦦' },
+    { id: 88, name: '雨林大嘴鳥', emoji: '🦜' },
+    { id: 89, name: '七彩變色龍', emoji: '🦎' },
+    { id: 90, name: '好奇小浣熊', emoji: '🦝' },
+    { id: 91, name: '山林小山羊', emoji: '🐐' },
+    { id: 92, name: '昂首天鵝', emoji: '🦢' },
+    { id: 93, name: '勇敢小獵鷹', emoji: '🦅' },
+    { id: 94, name: '神秘夜行蝠', emoji: '🦇' },
+    { id: 95, name: '守護海洋星', emoji: '⭐' }
+  ];
+
   generateRandomCuteName() {
-    const list = this.CUTE_CREATURE_NAMES;
-    const randomName = list[Math.floor(Math.random() * list.length)];
+    const randomId = Math.floor(Math.random() * 96);
+    const targetTab = randomId < 48 ? 1 : 2;
+    if (targetTab !== this.currentAvatarTab) {
+      this.switchAvatarSheetTab(targetTab);
+    }
+    this.selectAvatar(randomId);
+    const avatar = this.CUTE_AVATARS[randomId];
     const input = document.getElementById('inputStudentModalName');
-    const err = document.getElementById('studentNameModalError');
-    const dupAlert = document.getElementById('studentNameDuplicateAlert');
-    if (input) {
-      input.value = randomName;
+    if (input && avatar) {
+      input.value = `${avatar.emoji} ${avatar.name}`;
       input.style.borderColor = '';
-      if (err) {
-        err.style.display = 'none';
-        err.textContent = '';
-      }
-      if (dupAlert) {
-        dupAlert.style.display = 'none';
-      }
+      const err = document.getElementById('studentNameModalError');
+      if (err) err.style.display = 'none';
+      const dupAlert = document.getElementById('studentNameDuplicateAlert');
+      if (dupAlert) dupAlert.style.display = 'none';
       input.focus();
     }
   }
@@ -312,7 +473,7 @@ class App {
     `).join('');
   }
 
-  // ===== 學生姓名設定彈窗 =====
+  // ===== 學生姓名與頭像設定彈窗 =====
   openStudentNameModal() {
     const modal = document.getElementById('studentNameModal');
     const input = document.getElementById('inputStudentModalName');
@@ -331,6 +492,11 @@ class App {
       dupAlert.style.display = 'none';
     }
 
+    this.selectedAvatarId = this.getCurrentUserAvatar();
+    this.currentAvatarTab = this.selectedAvatarId < 48 ? 1 : 2;
+    this.switchAvatarSheetTab(this.currentAvatarTab, false);
+    this.updateAvatarModalPreview();
+
     this.renderCuteAnimalChips();
 
     modal.classList.add('active');
@@ -338,6 +504,102 @@ class App {
       input.focus();
       input.select();
     }, 150);
+  }
+
+  updateAvatarModalPreview() {
+    const preview = document.getElementById('studentModalAvatarPreview');
+    const info = document.getElementById('txtSelectedAvatarInfo');
+    const avatarId = this.selectedAvatarId !== undefined ? this.selectedAvatarId : this.getCurrentUserAvatar();
+    const avatar = this.CUTE_AVATARS[avatarId] || { name: `可愛生物 #${avatarId + 1}`, emoji: '🐾' };
+
+    if (preview) {
+      preview.innerHTML = this.renderAvatarHtml(avatarId, 62);
+    }
+    if (info) {
+      info.textContent = `目前選擇：${avatar.emoji} ${avatar.name}`;
+    }
+  }
+
+  switchAvatarSheetTab(tabNumber, updateActive = true) {
+    this.currentAvatarTab = tabNumber;
+    const btn1 = document.getElementById('btnAvatarTab1');
+    const btn2 = document.getElementById('btnAvatarTab2');
+    if (btn1 && btn2) {
+      if (tabNumber === 1) {
+        btn1.style.background = 'var(--accent-color)';
+        btn1.style.color = '#fff';
+        btn2.style.background = 'var(--bg-card)';
+        btn2.style.color = 'var(--text-secondary)';
+      } else {
+        btn2.style.background = 'var(--accent-color)';
+        btn2.style.color = '#fff';
+        btn1.style.background = 'var(--bg-card)';
+        btn1.style.color = 'var(--text-secondary)';
+      }
+    }
+    this.renderAvatarPickerGrid(tabNumber);
+  }
+
+  renderAvatarPickerGrid(tabNumber) {
+    const grid = document.getElementById('avatarPickerGrid');
+    if (!grid) return;
+    const startId = tabNumber === 1 ? 0 : 48;
+    const endId = tabNumber === 1 ? 48 : 96;
+
+    let html = '';
+    for (let i = startId; i < endId; i++) {
+      const avatar = this.CUTE_AVATARS[i] || { name: `可愛生物 #${i + 1}`, emoji: '🐾' };
+      const isActive = i === this.selectedAvatarId;
+      const activeClass = isActive ? 'active' : '';
+      const pos = this.getAvatarPositionStyle(i);
+      html += `
+        <div class="avatar-grid-item ${activeClass}" 
+             onclick="window.app.selectAvatar(${i})" 
+             title="${avatar.emoji} ${avatar.name}"
+             data-avatar-id="${i}">
+          <span class="cute-avatar-icon" style="width: 100%; height: 100%; ${pos}"></span>
+        </div>
+      `;
+    }
+    grid.innerHTML = html;
+  }
+
+  selectAvatar(id, updateName = false) {
+    this.selectedAvatarId = Math.max(0, Math.min(95, parseInt(id, 10) || 0));
+    this.updateAvatarModalPreview();
+
+    // 更新網格高亮狀態
+    const grid = document.getElementById('avatarPickerGrid');
+    if (grid) {
+      const items = grid.querySelectorAll('.avatar-grid-item');
+      items.forEach(el => {
+        const itemId = parseInt(el.getAttribute('data-avatar-id'), 10);
+        if (itemId === this.selectedAvatarId) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      });
+    }
+
+    // 若點擊時希望同步更新名稱為頭像名稱
+    if (updateName) {
+      const input = document.getElementById('inputStudentModalName');
+      const avatar = this.CUTE_AVATARS[this.selectedAvatarId];
+      if (input && avatar) {
+        input.value = `${avatar.emoji} ${avatar.name}`;
+        input.focus();
+      }
+    }
+  }
+
+  randomPickAvatar() {
+    const randomId = Math.floor(Math.random() * 96);
+    const targetTab = randomId < 48 ? 1 : 2;
+    if (targetTab !== this.currentAvatarTab) {
+      this.switchAvatarSheetTab(targetTab);
+    }
+    this.selectAvatar(randomId);
   }
 
   closeStudentNameModal() {
@@ -482,7 +744,7 @@ class App {
       return;
     }
 
-    // 驗證通過，儲存姓名
+    // 驗證通過，儲存姓名與頭像
     input.style.borderColor = '';
     if (err) {
       err.style.display = 'none';
@@ -492,9 +754,13 @@ class App {
       dupAlert.style.display = 'none';
     }
 
+    if (this.selectedAvatarId !== undefined) {
+      this.setCurrentUserAvatar(this.selectedAvatarId);
+    }
+
     this.setUserName(name);
     this.closeStudentNameModal();
-    this.showNotification('成功', `您好，${name}！已完成姓名設定。`);
+    this.showNotification('成功', `您好，${name}！已完成姓名與頭像設定。`);
   }
 
   // ===== 通用內容修改彈窗 (避免 prompt 被手機阻擋) =====
@@ -10341,8 +10607,15 @@ class App {
         if (btnExit) btnExit.style.display = 'inline-flex';
         if (btnActionText) btnActionText.textContent = '切換班級';
 
+        const avatarId = this.getCurrentUserAvatar();
+        const avatarHtml = this.renderAvatarHtml(avatarId, 20);
+        const displayUserAvatar = document.getElementById('displayUserAvatar');
+        const displayUserNameTagOneOff = document.getElementById('displayUserNameTagOneOff');
+        if (displayUserNameTagOneOff) displayUserNameTagOneOff.style.display = 'none';
+
         if (userName && displayUserNameTag && displayUserName) {
           displayUserName.textContent = userName;
+          if (displayUserAvatar) displayUserAvatar.innerHTML = avatarHtml;
           displayUserNameTag.style.display = 'inline-flex';
         } else {
           // 進入班級課堂但未設定姓名或暱稱，主動跳出提示彈窗要求同學設定
@@ -10360,12 +10633,20 @@ class App {
       if (btnExit) btnExit.style.display = 'none';
       if (btnActionText) btnActionText.textContent = '輸入班級代碼';
 
-      if (userName && displayUserNameTag && displayUserName) {
-        displayUserName.textContent = userName;
-        displayUserNameTag.style.display = 'inline-flex';
+      const avatarId = this.getCurrentUserAvatar();
+      const avatarHtml = this.renderAvatarHtml(avatarId, 20);
+      const displayUserNameTagOneOff = document.getElementById('displayUserNameTagOneOff');
+      const displayUserNameOneOff = document.getElementById('displayUserNameOneOff');
+      const displayUserAvatarOneOff = document.getElementById('displayUserAvatarOneOff');
+      if (displayUserNameTag) displayUserNameTag.style.display = 'none';
+
+      if (userName && displayUserNameTagOneOff && displayUserNameOneOff) {
+        displayUserNameOneOff.textContent = userName;
+        if (displayUserAvatarOneOff) displayUserAvatarOneOff.innerHTML = avatarHtml;
+        displayUserNameTagOneOff.style.display = 'inline-flex';
       } else {
         // 一次性課堂未設定姓名或暱稱，非管理員主動提示設定，以利互動與搶答辨識
-        if (displayUserNameTag) displayUserNameTag.style.display = 'none';
+        if (displayUserNameTagOneOff) displayUserNameTagOneOff.style.display = 'none';
         if (!this.isAdmin) {
           setTimeout(() => {
             this.openStudentNameModal();
