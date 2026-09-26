@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.4.5';
+    this.APP_VERSION = '3.4.6';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -7867,8 +7867,24 @@ class App {
       if (hasCompleted && game.gameType === 'classicsQuiz') {
         document.getElementById('focusPlayArea').style.display = 'flex';
         document.getElementById('focusFinishArea').style.display = 'none';
-        this.renderClassicsQuizCompleted(game, result);
-      } else       if (hasCompleted) {
+        if (document.getElementById('classicsQuizSelfRankList')) {
+          this.renderFocusGameLeaderboard('classicsQuizSelfRankList', game.results);
+        } else {
+          this.renderClassicsQuizCompleted(game, result);
+        }
+        return;
+      }
+      if (hasCompleted && game.gameType === 'songQuiz' && game.playMode === 'self') {
+        document.getElementById('focusPlayArea').style.display = 'flex';
+        document.getElementById('focusFinishArea').style.display = 'none';
+        if (document.getElementById('songQuizSelfRankList')) {
+          this.renderFocusGameLeaderboard('songQuizSelfRankList', game.results);
+        } else {
+          this.renderSongQuizCompleted(game, result);
+        }
+        return;
+      }
+      if (hasCompleted) {
         if (game.gameType === 'characterTest' || game.gameType === 'characterCrossword' || game.gameType === 'characterUnitedWords') {
           if (result.status === 'correct') {
             document.getElementById('focusPlayArea').style.display = 'none';
@@ -7939,13 +7955,21 @@ class App {
       if (game.gameType === 'classicsQuiz' && result) {
         document.getElementById('focusPlayArea').style.display = 'flex';
         document.getElementById('focusFinishArea').style.display = 'none';
-        this.renderClassicsQuizCompleted(game, result);
+        if (document.getElementById('classicsQuizSelfRankList')) {
+          this.renderFocusGameLeaderboard('classicsQuizSelfRankList', game.results);
+        } else {
+          this.renderClassicsQuizCompleted(game, result);
+        }
         return;
       }
       if (game.gameType === 'songQuiz' && game.playMode === 'self' && result) {
         document.getElementById('focusPlayArea').style.display = 'flex';
         document.getElementById('focusFinishArea').style.display = 'none';
-        this.renderSongQuizCompleted(game, result);
+        if (document.getElementById('songQuizSelfRankList')) {
+          this.renderFocusGameLeaderboard('songQuizSelfRankList', game.results);
+        } else {
+          this.renderSongQuizCompleted(game, result);
+        }
         return;
       }
       if (result) {
@@ -8205,20 +8229,26 @@ class App {
 
     const grid = document.getElementById('focusGameGrid');
     if (grid) {
-      const cols = Math.sqrt(this.focusGridSize);
+      const cols = Math.max(3, Math.round(Math.sqrt(this.focusGridSize)));
       grid.style.display = 'grid';
       grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-      grid.style.gap = '10px';
+      grid.style.gap = cols >= 6 ? '5px' : (cols >= 5 ? '6px' : (cols >= 4 ? '8px' : '10px'));
       grid.style.width = '100%';
-      grid.style.maxWidth = '450px';
-      grid.style.minHeight = '300px';
-      grid.style.margin = '12px auto';
+      grid.style.maxWidth = 'min(92vw, calc(100dvh - 165px), 440px)';
+      grid.style.maxHeight = 'min(92vw, calc(100dvh - 165px), 440px)';
+      grid.style.minHeight = '';
+      grid.style.margin = '6px auto';
       grid.style.boxSizing = 'border-box';
-      grid.style.aspectRatio = '';
+      grid.style.aspectRatio = '1 / 1';
+
+      // 依網格大小動態自適應字級與圓角，在手機上自動縮放呈現
+      const fontSize = cols >= 6 ? 'clamp(13px, 3.8vw, 19px)' : (cols >= 5 ? 'clamp(15px, 4.6vw, 21px)' : (cols >= 4 ? 'clamp(17px, 5.5vw, 24px)' : 'clamp(21px, 7vw, 28px)'));
+      const borderRadius = cols >= 6 ? '7px' : (cols >= 5 ? '9px' : '12px');
+      const borderWidth = cols >= 6 ? '1.5px' : '2px';
 
       const numbers = this.generateSchulteGrid(this.focusGridSize);
       grid.innerHTML = numbers.map(num => `
-        <button class="schulte-btn" data-number="${num}" onclick="window.app.clickSchulteGrid(${num}, this)" style="width: 100%; aspect-ratio: 1; min-height: 48px; border-radius: 12px; background: var(--bg-card, #ffffff); border: 2.5px solid var(--accent-color, #007aff); color: var(--accent-color, #007aff); font-size: 26px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.15s, background-color 0.15s; box-shadow: 0 4px 10px rgba(0,122,255,0.12); user-select: none; box-sizing: border-box;">${num}</button>
+        <button class="schulte-btn" data-number="${num}" onclick="window.app.clickSchulteGrid(${num}, this)" style="width: 100%; height: 100%; aspect-ratio: 1; border-radius: ${borderRadius}; background: var(--bg-card, #ffffff); border: ${borderWidth} solid var(--accent-color, #007aff); color: var(--accent-color, #007aff); font-size: ${fontSize}; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.15s, background-color 0.15s; box-shadow: 0 2px 6px rgba(0,122,255,0.12); user-select: none; box-sizing: border-box; padding: 0;">${num}</button>
       `).join('');
     }
 

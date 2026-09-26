@@ -1,4 +1,23 @@
 # System Log
+## 2026-09-26 - ver 3.4.6 成語測驗學生端全班即時成績排行榜即時同步修復、依序點選數字手機自適應縮放至單一頁面
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **成語測驗與聽歌搶答學生端全班即時成績排行榜同步修復 (`js/classics_quiz.js`, `js/song_quiz.js`, `js/app.js`)**：
+     - **成因排查**：在學生端送出最後一題成績時，`finishClassicsQuizGame` 非同步等待 Firebase `.then()` 回調並傳入舊的本地 `game` 參照（其 `results` 為 null），造成完成畫面先呈現「目前尚無人完成」，且 `handleFocusGameSync` 缺少平滑無覆蓋更新機制。
+     - **即時呈顯機制**：學生交卷時，立即在記憶體中將自身成果加入 `this.focusGame.results` 並即時渲染完成畫面與排行榜，徹底杜絕「目前尚無人完成」空白狀態。
+     - **平滑增量更新**：在 `handleFocusGameSync` 中，若畫面已處於成語測驗結算頁（`#classicsQuizSelfRankList` 已存在），後續收到其他同學交卷時，直接呼叫 `renderFocusGameLeaderboard` 增量更新排行榜清單，不再推翻重繪整個畫面與干擾使用者捲動瀏覽。
+     - **自動防呆退避**：在 `renderClassicsQuizCompleted` 與 `renderSongQuizCompleted` 中加入防呆，若 Firebase 尚未傳回全班集合，自動以當前登入者作答成果作為基本集合呈現在排行榜首位。
+  2. **依序點選數字 (舒爾特方格) 手機自適應縮放至單一頁面 (`js/app.js`, `css/style.css`, `index.html`)**：
+     - **成因排查**：原本按鈕帶有行內樣式 `min-height: 48px;`，在 5×5 或 6×6（36 格）格數較多時，加上覆蓋層 padding 與標頭高度，在手機螢幕高度（580px~667px）中會超出畫面垂直範圍，導致學生需上下捲動影響測驗速度。
+     - **自適應視窗縮放**：移除強制 `min-height: 48px`，將按鈕改為純比例方塊（`width: 100%; height: 100%; aspect-ratio: 1; padding: 0;`）。
+     - **智慧視窗高度限制**：網格設定 `max-width: min(92vw, calc(100dvh - 165px), 420px)` 與 `aspect-ratio: 1 / 1`，嚴格依據手機視窗可用高度（`100dvh - 165px`）動態縮小網格整體尺寸。
+     - **動態字級與間距**：6×6 格距緊湊化為 5px、字級改為 `clamp(13px, 3.8vw, 19px)`；覆蓋層 padding、標頭邊距、提示按鈕尺寸在 `@media (max-width: 768px)` 中適度微縮，確保 9、16、25、36 格在任何尺寸手機均能完整呈現在單一視窗內，完全零捲動。
+  3. **版本號嚴格遞增至 `ver 3.4.6` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=346`）、`app.js`（`this.APP_VERSION = '3.4.6'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.4.5 手機端「⚙️」管理後台按鈕移除藍色外框線、視覺純淨化
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
