@@ -1,4 +1,21 @@
 # System Log
+## 2026-09-26 - ver 3.5.2 專注力測驗各單元完整保留頂部工具列、管理後台登入不受遮蔽
+- 影響檔案：`index.html`, `css/style.css`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **頂部工具列層級提升至遊戲覆蓋層之上 (`css/style.css`)**：
+     - **成因排查**：專注力測驗與搶答測驗使用全螢幕覆蓋層（`#focusGameOverlay` 與 `#buzzGameOverlay`），先前將覆蓋層 z-index 調高至 3500，高於原本頂部列 `.top-bar`（z-index 2600），導致測驗進行中全螢幕遮罩將頂部白板標題、連線狀態與「⚙️ 管理後台」完全覆蓋遮蔽。若老師重新整理頁面或未登入時進入遊戲，無法在畫面上點選登入後台。
+     - **優化設計**：將頂部工具列 `.top-bar` 的 z-index 調整為 `3800 !important`，使電腦版與手機版在任何遊戲單元進行中，頂部的「📚 即時互動白板」、連線狀態正方形、教師分享與「⚙️ 管理後台」按鈕皆清晰浮現於覆蓋層之上（如圖 1 呈現）。
+  2. **遊戲覆蓋層預留頂部工具列避讓空間與安全高度 (`css/style.css`, `index.html`)**：
+     - 電腦版與手機版為 `#focusGameOverlay` 和 `#buzzGameOverlay` 加上適當的 `padding-top`（電腦版 80px、手機版安全區域 + 90px）以及限制內部卡片最大高度（`calc(100vh - 105px)`），徹底杜絕遊戲卡片向上穿入或被頂部工具列遮擋題目文字的情況。
+  3. **系統彈窗層級與後台切換聯動 (`css/style.css`, `js/app.js`)**：
+     - 將管理員密碼彈窗、班級切換等系統 Modal 的 z-index 提升至 `4500 !important`，確保在遊戲中點選「⚙️ 管理後台」時密碼輸入對話框正常浮現。
+     - 當老師切換至 `panel-admin` 或 `panel-teacher-shares` 分頁時，自動隱藏遊戲遮罩，使老師能專注管理後台。
+  4. **版本號嚴格遞增至 `ver 3.5.2` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=352`）、`app.js`（`this.APP_VERSION = '3.5.2'`）。
+     - 更新自動化驗證腳本 `scripts/verify-video-quiz.mjs` 與 `scripts/verify-song-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.5.1 手機版班級切換對話框說明文字隱藏、排版緊湊化確保按鈕完整呈現
 - 影響檔案：`index.html`, `css/style.css`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：

@@ -99,7 +99,7 @@ body {
   flex-wrap: wrap;
   gap: 16px;
   position: relative;
-  z-index: 2600;
+  z-index: 3800 !important;
 }
 
 .header {
@@ -774,6 +774,30 @@ body {
   transform: scale(1);
 }
 
+/* 專注力遊戲與搶答遊戲覆蓋層：頂部預留 top-bar 空間，讓頂部標題、管理後台與連線狀態永遠清晰可見可操作 */
+#focusGameOverlay,
+#buzzGameOverlay {
+  z-index: 3500 !important;
+  padding-top: 80px !important;
+  box-sizing: border-box !important;
+}
+
+#focusGameOverlayContent,
+#buzzGameOverlayContent {
+  max-height: calc(100vh - 105px) !important;
+  overflow-y: auto !important;
+}
+
+/* 確保管理後台密碼、班級切換等系統彈窗在遊戲層與頂部工具列之上 */
+#adminPasswordModal,
+#classSwitchModal,
+#studentNameModal,
+#itemEditModal,
+#notifyModal,
+#customConfirmModal {
+  z-index: 4500 !important;
+}
+
 .modal-header {
   padding: 14px 18px;
   background: var(--bg-header);
@@ -1347,13 +1371,20 @@ body {
     max-width: 95vw !important;
   }
   
-  #focusGameOverlayContent {
+  #focusGameOverlayContent,
+  #buzzGameOverlayContent {
     padding: 12px 10px !important;
-    max-height: 98dvh !important;
+    max-height: calc(100dvh - 110px) !important;
   }
 
-  #focusGameOverlay {
+  #focusGameOverlay,
+  #buzzGameOverlay {
     z-index: 3500 !important;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 90px) !important;
+    padding-bottom: 12px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    box-sizing: border-box !important;
   }
 
   #focusNumberGridContainer {

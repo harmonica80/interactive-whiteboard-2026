@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.5.1';
+    this.APP_VERSION = '3.5.2';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -1228,6 +1228,13 @@ class App {
     // 記錄目前選按的功能選單，供貼上事件判斷用
     this.previousTabId = this.activeTabId;
     this.activeTabId = targetId;
+
+    if (targetId === 'panel-admin' || targetId === 'panel-teacher-shares') {
+      const focusOverlay = document.getElementById('focusGameOverlay');
+      if (focusOverlay) focusOverlay.style.display = 'none';
+      const buzzOverlay = document.getElementById('buzzGameOverlay');
+      if (buzzOverlay) buzzOverlay.style.display = 'none';
+    }
 
     if (targetId !== 'panel-video-quiz') {
       if (window.videoQuiz && typeof window.videoQuiz.pauseVideo === 'function') {
