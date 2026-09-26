@@ -1201,17 +1201,30 @@ body {
     line-height: 1.2 !important;
   }
 
-  /* 手機端管理後台只留下齒輪圖示，大幅縮減佔用版面 */
+  /* 手機端管理後台只留下齒輪圖示，無外框線，大幅縮減佔用版面 */
   .header-buttons .admin-top-btn {
     flex: 0 0 auto !important;
     justify-content: center;
-    padding: 5px 8px !important;
-    font-size: 13px !important;
-    border-radius: 14px !important;
+    padding: 5px 6px !important;
+    font-size: 15px !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    border-radius: 12px !important;
     white-space: nowrap !important;
     min-height: 28px !important;
-    min-width: 30px !important;
+    min-width: 28px !important;
     line-height: 1.2 !important;
+    box-shadow: none !important;
+  }
+
+  .header-buttons .admin-top-btn:hover,
+  .header-buttons .admin-top-btn:focus,
+  .header-buttons .admin-top-btn:active,
+  .header-buttons .admin-top-btn.active {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   .admin-btn-text {

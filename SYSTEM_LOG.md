@@ -1,4 +1,17 @@
 # System Log
+## 2026-09-26 - ver 3.4.5 手機端「⚙️」管理後台按鈕移除藍色外框線、視覺純淨化
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **手機版管理後台按鈕移除外框線 (`css/style.css`)**：
+     - 依使用者需求，在手機裝置樣式（`@media (max-width: 768px)`）中，將 `.header-buttons .admin-top-btn` 以及 hover、focus、active 狀態的外框線徹底移除（`border: none !important; outline: none !important; box-shadow: none !important;`）。
+     - 齒輪圖示以乾淨清爽的無框極簡形式呈現，背景維持透明，保留原點擊響應與觸控範圍。
+     - 平板與電腦端（>768px）維持原本標準的藍色外框線樣式不變。
+  2. **版本號嚴格遞增至 `ver 3.4.5` 並刷新快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=345`）、`app.js`（`this.APP_VERSION = '3.4.5'`）。
+     - 更新自動化測試腳本 `scripts/verify-song-quiz.mjs` 與 `scripts/verify-video-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.4.4 手機版頂部功能列精簡單行排列、隱藏線上人數、管理後台簡化為齒輪圖示
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
