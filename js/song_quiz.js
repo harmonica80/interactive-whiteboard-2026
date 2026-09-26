@@ -880,6 +880,9 @@
               <button type="button" onclick="window.app.teacherBuzzerAction('restart')" style="padding:10px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer;">
                 ⏮️ 從頭重播
               </button>
+              <button type="button" onclick="window.app.teacherBuzzerAction('reveal')" style="padding:10px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer;">
+                💡 揭曉答案
+              </button>
               <button type="button" onclick="window.app.teacherBuzzerAction('next')" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff3b30; color:white; font-size:14px; font-weight:900; cursor:pointer;">
                 ⏭️ 跳至下一題
               </button>

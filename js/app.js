@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.5.2';
+    this.APP_VERSION = '3.5.3';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -7447,6 +7447,7 @@ class App {
       ) : null,
       songDuration: gameType === 'songQuiz' ? (parseInt(document.getElementById('focusSongQuizDuration')?.value) || 60) : null,
       classicsQuestionCount: gameType === 'classicsQuiz' ? classicsQuestionCount : null,
+      characterTestCount: gameType === 'characterTest' ? characterTestCount : null,
       countdownSeconds: countdownSecs,
       countdownStartTime: Date.now(),
       results: null
@@ -7685,8 +7686,11 @@ class App {
       return;
     }
     if (game.gameType === 'characterTest') {
+      const questionCount = (Array.isArray(game.questions) && game.questions.length > 0)
+        ? game.questions.length
+        : (game.characterTestCount || 3);
       if (titleEl) titleEl.textContent = '一字千金：字力測驗！';
-      if (descriptionEl) descriptionEl.textContent = '請注意看畫面上的注音與提示詞，並寫出正確的國字。共有 3 題喔！';
+      if (descriptionEl) descriptionEl.textContent = `請注意看畫面上的注音與提示詞，並寫出正確的國字。共有 ${questionCount} 題喔！`;
       if (hintEl) hintEl.textContent = '測驗即將開始，請準備好輸入...';
       return;
     }
