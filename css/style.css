@@ -1171,6 +1171,15 @@ body {
     display: none !important;
   }
 
+  /* 手機版代表連線狀態的圖示改為正方形顯示，讓畫面有更大空間 */
+  .status-group .connection-status,
+  .connection-status {
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
   #displayUserNameTagMobile.mobile-only {
     display: inline-flex !important;
     align-items: center;
@@ -1199,6 +1208,32 @@ body {
     white-space: nowrap !important;
     min-height: 28px !important;
     line-height: 1.2 !important;
+  }
+
+  /* 手機端切換班級/回一次性課堂圖示按鈕 */
+  .header-buttons .switch-class-mobile-btn {
+    flex: 0 0 auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 5px 6px !important;
+    font-size: 16px !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    border-radius: 12px !important;
+    white-space: nowrap !important;
+    min-height: 28px !important;
+    min-width: 28px !important;
+    line-height: 1.2 !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.2s ease;
+  }
+
+  .header-buttons .switch-class-mobile-btn:active {
+    transform: scale(0.9);
+    background: rgba(0, 0, 0, 0.05) !important;
   }
 
   /* 手機端管理後台只留下齒輪圖示，無外框線，大幅縮減佔用版面 */

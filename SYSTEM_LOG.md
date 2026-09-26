@@ -1,4 +1,20 @@
 # System Log
+## 2026-09-26 - ver 3.5.0 手機版切換班級/回一次性課堂按鈕、教師分享按鈕精簡文字、連線狀態正方形顯示
+- 影響檔案：`index.html`, `css/style.css`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **手機版本新增「切換班級/回一次性課堂」圖示按鈕 (`index.html`, `css/style.css`)**：
+     - **功能背景**：手機窄螢幕為求介面簡潔預設隱藏了 `.class-mode-bar` 狀態列，導致手機端學生與老師缺少切換班級或返回一次性課堂的入口。
+     - **新設計**：在手機版頂部列「教師分享」按鈕右側加入 `🏫` 圖示按鈕（`.switch-class-mobile-btn`），點擊即可呼叫 `window.app.openClassModal()` 彈出專屬班級切換對話框，供使用者自由選擇近期加入過的班級或點選「🌱 返回免代碼一次性課堂」。
+  2. **手機版「教師分享」按鈕精簡 (`index.html`)**：
+     - 移除手機版本按鈕前面的「📢」圖示，僅保留「教師分享」純文字，節省頂部水平寬度約 18px。
+  3. **手機版連線狀態圖示改為正方形 (`css/style.css`)**：
+     - 在手機版樣式（`@media (max-width: 768px)`）中，將 `.connection-status` 寬高改為精巧的 `14px * 14px` 正方形（圓角 3px），取代原本長條形色塊（26px * 14px），再為頂部列節省 12px 空間，使頭像、連線方塊、教師分享、切換班級與管理後台在任何手機螢幕上均能優雅並排呈現且不折行。
+  4. **版本號嚴格遞增至 `ver 3.5.0` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=350`）、`app.js`（`this.APP_VERSION = '3.5.0'`）。
+     - 更新自動化驗證腳本 `scripts/verify-video-quiz.mjs` 與 `scripts/verify-song-quiz.mjs`。
+
+---
+
 ## 2026-09-26 - ver 3.4.9 緊急修復 JS 重複宣告 SyntaxError 導致全站無法操作、刷新全域快取
 - 影響檔案：`index.html`, `js/app.js`, `package.json`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
