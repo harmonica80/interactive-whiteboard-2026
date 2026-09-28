@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.5.6';
+    this.APP_VERSION = '3.5.7';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -4830,14 +4830,9 @@ class App {
     let html = '';
 
     if (grouped[''] && grouped[''].length > 0) {
-      const unclassifiedTitle = currentTab === 'news' ? '📌 最新公告與消息' : '📁 未分類分享與教材';
-      html += `<div class="folder-card" style="border-left: 5px solid var(--accent-color) !important;">
-        <div class="folder-card-header">
-          <span>${unclassifiedTitle}</span>
-        </div>
-        <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px;">
-          ${grouped[''].map(item => this.buildShareItemHTML(item)).join('')}
-        </div>
+      // 未分類或最新消息：不顯示分組標題，直接以網格呈現分享卡片
+      html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px; margin-bottom: 16px;">
+        ${grouped[''].map(item => this.buildShareItemHTML(item)).join('')}
       </div>`;
     }
 
@@ -4913,8 +4908,7 @@ class App {
         ${commentCount > 0 ? `
           <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showShareModal ? window.app.showShareModal('${item.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
         ` : ''}
-        <div class="share-item-header" style="justify-content: ${item.category === 'news' ? 'space-between' : 'flex-end'}; margin-bottom: 8px;">
-          ${item.category === 'news' ? '<span style="font-size: 11px; font-weight: bold; color: #ff9500; background: rgba(255,149,0,0.12); padding: 1px 6px; border-radius: 4px;">📢 最新消息</span>' : ''}
+        <div class="share-item-header" style="justify-content: flex-end; margin-bottom: 8px;">
           <span>${timeStr}</span>
         </div>
         <div class="share-item-body" style="flex: 1; display: flex; flex-direction: column;">

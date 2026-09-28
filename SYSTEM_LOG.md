@@ -1,4 +1,18 @@
 # System Log
+## 2026-09-28 - ver 3.5.7 教師分享介面極簡優化：移除最新消息冗餘標題與標籤、移除未分類分享與教材多餘標題
+- 影響檔案：`index.html`, `package.json`, `js/app.js`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **最新消息子分頁介面極簡淨化 (`js/app.js`)**：
+     - **移除頂部冗餘標題**：最新消息分頁子標籤已明確標示「📢 最新消息」，移除原內容區上方重複出現的「📌 最新公告與消息」群組標題，避免視覺資訊重複堆疊。
+     - **移除卡片內部冗餘標籤**：最新消息卡片內部移除重複標註的「📢 最新消息」橘色徽章，時間標記靠右對齊（`justify-content: flex-end`），版面呈現更為清爽緊湊。
+     - **去除冗餘外框直出卡片網格**：最新消息內容直接以自適應響應網格呈現，不再嵌套多餘的外層邊框與藍色左飾線。
+  2. **課程進度與教材未分類項目標題優化 (`js/app.js`)**：
+     - **移除「未分類分享與教材」多餘標題**：在「課程進度與教材」子分頁中，若分享內容未歸類至自訂資料夾，不再額外顯示「📁 未分類分享與教材」標題與假資料夾框，直接以乾淨網格呈現教材卡片；既有自訂資料夾則持續完整保留資料夾名稱與折疊功能。
+  3. **版本號嚴格遞增至 `ver 3.5.7` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=357`）、`app.js`（`this.APP_VERSION = '3.5.7'`）。
+     - 更新自動化整合測試腳本 `verify-video-quiz.mjs`（94 項）與 `verify-song-quiz.mjs`（65+ 項）全數通過。
+
+---
 ## 2026-09-28 - ver 3.5.6 教師分享預設最新消息與狀態記憶、聽歌搶答擴充 320 首題庫並新增「台灣九年級」類別
 - 影響檔案：`index.html`, `package.json`, `js/app.js`, `js/focus_question_bank.js`, `js/song_quiz_pool.js`, `scripts/build-320-song-pool.mjs`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
 - 修改項目：
