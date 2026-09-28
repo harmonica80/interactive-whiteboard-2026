@@ -132,7 +132,7 @@ if (threeTagSongs.length !== 46) throw new Error(`三標籤歌曲數應為 46，
 const html = fs.readFileSync('index.html', 'utf8');
 const classicsQuizCode = fs.readFileSync('js/classics_quiz.js', 'utf8');
 const htmlChecks = [
-  ['index.html 包含 ver 3.5.3 版本標示', html.includes('ver 3.5.3')],
+  ['index.html 包含 ver 3.5.4 版本標示', html.includes('ver 3.5.4')],
   ['focusGameType 包含 songQuiz 選項', html.includes('value="songQuiz"')],
   ['包含 focusSongQuizSettings 設定區塊', html.includes('id="focusSongQuizSettings"')],
   ['包含玩法模式選擇單選按鈕 focusSongQuizPlayMode 且預設選中 buzzer (全班同步搶答)', html.includes('name="focusSongQuizPlayMode" value="buzzer" checked')],
@@ -149,14 +149,19 @@ const htmlChecks = [
   ['包含題庫徽章 focusQbBadge_songQuiz', html.includes('id="focusQbBadge_songQuiz"')],
   ['題庫彈窗包含 songQuiz 頁籤按鈕', html.includes('data-type="songQuiz"')],
   ['題庫彈窗包含標籤篩選下拉選單 focusQbTagFilterSelect', html.includes('id="focusQbTagFilterSelect"')],
-  ['引用 song_quiz_pool.js?v=353', html.includes('js/song_quiz_pool.js?v=353')],
-  ['引用 song_quiz.js?v=353', html.includes('js/song_quiz.js?v=353')],
-  ['引用 focus_question_bank.js?v=353', html.includes('js/focus_question_bank.js?v=353')],
-  ['引用 app.js?v=353', html.includes('js/app.js?v=353')],
+  ['引用 song_quiz_pool.js?v=354', html.includes('js/song_quiz_pool.js?v=354')],
+  ['引用 song_quiz.js?v=354', html.includes('js/song_quiz.js?v=354')],
+  ['引用 focus_question_bank.js?v=354', html.includes('js/focus_question_bank.js?v=354')],
+  ['引用 app.js?v=354', html.includes('js/app.js?v=354')],
   ['字力測驗包含出題數量下拉選單 focusCharacterTestCount', html.includes('id="focusCharacterTestCount"')],
   ['成語測驗出題數量包含 1 題與 2 題選項', html.includes('id="focusClassicsQuizCount"') && html.includes('<option value="1">1 題') && html.includes('<option value="2">2 題')],
   ['成語測驗答題說明改為 Google 查詢', classicsQuizCode.includes('google.com/search?q=') && classicsQuizCode.includes('透過 Google 查詢')],
-  ['成語測驗答題說明移除延伸介紹獨立連結', !classicsQuizCode.includes('🔎 延伸介紹')]
+  ['成語測驗答題說明移除延伸介紹獨立連結', !classicsQuizCode.includes('🔎 延伸介紹')],
+  ['教師分享區包含膠囊次級頁籤導覽列 teacherSharesSubNav', html.includes('id="teacherSharesSubNav"')],
+  ['教師分享包含最新消息徽章 badgeTeacherShareNews', html.includes('id="badgeTeacherShareNews"')],
+  ['教師分享包含課程進度與教材徽章 badgeTeacherShareMaterials', html.includes('id="badgeTeacherShareMaterials"')],
+  ['後台新增分享包含分頁選擇 shareInputCategory', html.includes('id="shareInputCategory"')],
+  ['後台批次歸類包含分頁選擇 batchShareCategorySelect', html.includes('id="batchShareCategorySelect"')]
 ];
 
 htmlChecks.forEach(([desc, cond]) => {
@@ -166,7 +171,9 @@ htmlChecks.forEach(([desc, cond]) => {
 // 4. 測試 app.js 邏輯
 const appCode = fs.readFileSync('js/app.js', 'utf8');
 const appChecks = [
-  ['app.js APP_VERSION 為 3.5.3', appCode.includes("this.APP_VERSION = '3.5.3';")],
+  ['app.js APP_VERSION 為 3.5.4', appCode.includes("this.APP_VERSION = '3.5.4';")],
+  ['app.js switchTeacherShareSubTab 方法存在', appCode.includes('switchTeacherShareSubTab(')],
+  ['app.js renderTeacherShares 支援子頁籤過濾', appCode.includes("item.category === 'news'") && appCode.includes("badgeTeacherShareNews")],
   ['app.js updateFocusCountdownCopy 支援字力測驗動態題數', appCode.includes('game.characterTestCount || 3') && appCode.includes('共有 ${questionCount} 題喔！')],
   ['startFocusGame 支援 songQuiz 抽題與標籤篩選', appCode.includes("gameType === 'songQuiz'")],
   ['startFocusGame 支援多標籤核選篩選與空標籤防呆', appCode.includes("getSelectedSongQuizTags") && appCode.includes("請先勾選歌單標籤")],

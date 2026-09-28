@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=353">
+  <link rel="stylesheet" href="css/style.css?v=354">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.5.3</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.5.4</span>
         </p>
       </div>
       <div class="top-actions">
@@ -155,6 +155,15 @@
       <!-- 教師分享區 -->
       <div class="panel-card" id="panel-teacher-shares">
         <div class="panel-body">
+          <!-- 教師分享次級頁籤膠囊導覽列 (最新消息、課程進度與教材，支援平滑橫向滾動與未來自訂擴充) -->
+          <div class="teacher-shares-sub-nav" id="teacherSharesSubNav">
+            <button type="button" class="teacher-share-sub-tab active" data-sub-tab="news" onclick="window.app.switchTeacherShareSubTab('news')">
+              📢 最新消息 <span class="tab-badge" id="badgeTeacherShareNews">0</span>
+            </button>
+            <button type="button" class="teacher-share-sub-tab" data-sub-tab="materials" onclick="window.app.switchTeacherShareSubTab('materials')">
+              📚 課程進度與教材 <span class="tab-badge" id="badgeTeacherShareMaterials">0</span>
+            </button>
+          </div>
           <div id="teacherSharesContainer" class="grouped-folders-container"></div>
         </div>
       </div>
@@ -1601,21 +1610,35 @@
                   </div>
                 </div>
 
-                <!-- 選擇要放入的資料夾 -->
-                <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
-                  <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary); white-space: nowrap;">歸類到資料夾：</label>
-                  <select id="shareFolderSelect" class="folder-select" style="flex: 1; margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);">
-                    <option value="">📁 未分類</option>
-                  </select>
+                <!-- 選擇所屬分頁與資料夾 -->
+                <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">所屬分頁：</label>
+                    <select id="shareInputCategory" style="margin: 0; padding: 7px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 13px;">
+                      <option value="news">📢 最新消息</option>
+                      <option value="materials" selected>📚 課程進度與教材</option>
+                    </select>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">歸類到資料夾：</label>
+                    <select id="shareFolderSelect" class="folder-select" style="margin: 0; padding: 7px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 13px;">
+                      <option value="">📁 未分類</option>
+                    </select>
+                  </div>
                 </div>
 
-                <button class="preset-btn" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 12px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
+                <button class="preset-btn" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 14px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
               </div>
 
               <!-- 分享內容批次管理與列表 -->
               <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
                 <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次歸類分享：</span>
                 <span style="font-size: 12px; color: var(--text-secondary);">已選 📢 <strong id="batchShareSelectCount">0</strong> 項</span>
+                <select id="batchShareCategorySelect" style="margin: 0; font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);">
+                  <option value="">🏷️ 變更分頁 (維持原樣)</option>
+                  <option value="news">📢 設為最新消息</option>
+                  <option value="materials">📚 設為課程進度與教材</option>
+                </select>
                 <select id="batchShareFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
                   <option value="">📁 移出資料夾 (未分類)</option>
                 </select>
@@ -1835,17 +1858,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=353"></script>
+  <script src="js/firebase-config.js?v=354"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=353"></script>
-  <script src="js/focus_question_bank.js?v=353"></script>
+  <script src="js/song_quiz_pool.js?v=354"></script>
+  <script src="js/focus_question_bank.js?v=354"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=353"></script>
-  <script src="js/app.js?v=353"></script>
-  <script src="js/classics_quiz.js?v=353"></script>
-  <script src="js/song_quiz.js?v=353"></script>
-  <script src="js/video_quiz.js?v=353"></script>
+  <script src="js/quiz.js?v=354"></script>
+  <script src="js/app.js?v=354"></script>
+  <script src="js/classics_quiz.js?v=354"></script>
+  <script src="js/song_quiz.js?v=354"></script>
+  <script src="js/video_quiz.js?v=354"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

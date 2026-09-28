@@ -1,4 +1,24 @@
 # System Log
+## 2026-09-28 - ver 3.5.4 教師分享新增「最新消息」與「課程進度與教材」次級膠囊頁籤，支援未來無限擴充
+- 影響檔案：`index.html`, `css/style.css`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **教師分享專區新增次級膠囊分頁列 (`index.html`, `css/style.css`, `js/app.js`)**：
+     - **架構設計**：在 `#panel-teacher-shares` 面板頂部內置專屬膠囊子頁籤導覽列（`#teacherSharesSubNav`），提供「📢 最新消息」與「📚 課程進度與教材」兩大分頁。
+     - **避免返回選單困擾**：完全保留最頂部工具列與主功能選單（💬 提問區、🖼️ 圖片分享、🎥 影片分享...），使用者可隨時單擊任一主選單離開，零學習成本、無返回迷航問題。
+     - **未來無限擴充與多端自適應**：頁籤列支援平滑橫向滾動（`overflow-x: auto`，隱藏捲軸），手機端單手拇指輕滑即可切換，未來擴充至 3~10 個頁籤亦不破版。
+     - **動態角標統計**：各分頁按鈕自帶即時項目計數徽章（`#badgeTeacherShareNews`、`#badgeTeacherShareMaterials`）。
+  2. **資料庫 category 欄位擴充與全域向下相容 (`js/app.js`)**：
+     - 每則分享項目新增 `category: 'news' | 'materials'` 欄位。舊有未標註 `category` 之資料自動平滑向下相容為「📚 課程進度與教材」，既有教材講義絕不遺失。
+     - 分享卡片標題自動為最新消息標示醒目的「📢 最新消息」徽章標籤。
+  3. **管理後台支援分頁選擇、行內編輯與批次歸類 (`index.html`, `js/app.js`)**：
+     - 後台發佈分享區新增「所屬分頁」下拉選單（`#shareInputCategory`），預設為教材進度。
+     - 列表管理每則分享行內編輯（`adminEditShare` / `adminSaveShare`）加入分頁切換下拉選單。
+     - 批次歸類工具列新增「🏷️ 變更分頁」下拉選單（`#batchShareCategorySelect`），支援勾選多筆項目一鍵批次切換分頁。
+  4. **版本號嚴格遞增至 `ver 3.5.4` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=354`）、`app.js`（`this.APP_VERSION = '3.5.4'`）。
+     - 自動化整合測試腳本 `verify-video-quiz.mjs`（94 項）與 `verify-song-quiz.mjs`（65+ 項）全數通過。
+
+---
 ## 2026-09-26 - ver 3.5.3 字力測驗倒數題數動態化、聽歌搶答答錯狀態新增「揭曉答案」按鈕
 - 影響檔案：`index.html`, `package.json`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
