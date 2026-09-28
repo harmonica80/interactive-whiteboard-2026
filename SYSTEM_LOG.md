@@ -1,4 +1,24 @@
 # System Log
+## 2026-09-28 - ver 3.5.8 修復聽歌搶答全班同步搶答模式下同學端偶發自動播放音樂之問題
+- 影響檔案：`index.html`, `package.json`, `js/app.js`, `js/song_quiz.js`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修復全班同步搶答學生端音訊播放問題 (`index.html`, `js/app.js`, `js/song_quiz.js`)**：
+     - **成因排查**：
+       1. 後台「音訊播放廣播」下拉選單（`#focusSongQuizAudioMode`）預設值為 `all`（全班同步發聲）。當老師以預設狀態發起全班搶答時，資料庫寫入 `audioMode: 'all'`，導致學生端接收到播放廣播並建立 YouTube iframe 播放。
+       2. 因瀏覽器自動播放政策（Autoplay Policy），曾與頁面互動過（點擊、輸入姓名等）之學生裝置會自動播放音樂，而未互動者則被瀏覽器靜音，形成「有時同學端會跟著播放出來」之偶發現象。
+     - **防呆與專屬播音架構調整**：
+       1. `index.html`：將 `#focusSongQuizAudioMode` 預設值調整為 `<option value="teacher" selected>📢 僅老師端發聲 (預設/現場搶答)</option>`，並標註遠距教學模式。
+       2. `js/app.js`：在 `startFocusGame()` 中安全處理預設值，全班同步搶答模式下若未特別選擇，一律預設為 `'teacher'`。
+       3. `js/song_quiz.js`：
+          - 在 `handleBuzzerAudioSync` 中強化嚴格阻擋邏輯：非管理員學生端，除非老師在後台明確指定 `audioMode === 'all'`，否則一律強制靜音（`stopSongQuizAudio()`）並直接返回，絕不播放音訊。
+          - 在 `playSongQuizAudio` 中加入雙重防護阻擋，若當前為全班搶答且為學生端，直接阻斷播放。
+          - 在 `initBuzzerSongQuiz` 中，學生進入搶答畫面時主動清理停止任何本地殘留音訊。
+          - 學生端提示文字預設顯示「請聆聽老師端播放音樂，按下搶答後老師端音樂將立即暫停」，且在僅老師端發聲模式下隱藏「🔊 聽不到音樂？點我發聲」按鈕，避免學生誤按自發聲。
+  2. **版本號嚴格遞增至 `ver 3.5.8` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=358`）、`app.js`（`this.APP_VERSION = '3.5.8'`）。
+     - 更新自動化整合測試腳本 `verify-video-quiz.mjs`（94 項）與 `verify-song-quiz.mjs`（65+ 項）全數通過。
+
+---
 ## 2026-09-28 - ver 3.5.7 教師分享介面極簡優化：移除最新消息冗餘標題與標籤、移除未分類分享與教材多餘標題
 - 影響檔案：`index.html`, `package.json`, `js/app.js`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
 - 修改項目：

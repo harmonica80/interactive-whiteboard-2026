@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.5.7';
+    this.APP_VERSION = '3.5.8';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -7504,7 +7504,7 @@ class App {
     const songQuizPlayModeInput = document.querySelector('input[name="focusSongQuizPlayMode"]:checked');
     const songQuizPlayMode = (songQuizPlayModeInput && songQuizPlayModeInput.value) || 'buzzer';
     const songQuizAudioModeInput = document.getElementById('focusSongQuizAudioMode');
-    const songQuizAudioMode = (songQuizAudioModeInput && songQuizAudioModeInput.value) || 'all';
+    const songQuizAudioMode = (songQuizAudioModeInput && songQuizAudioModeInput.value) || (songQuizPlayMode === 'buzzer' ? 'teacher' : 'all');
     const allowHintInput = document.getElementById('focusGameAllowHint');
     const allowHint = allowHintInput ? allowHintInput.checked : true;
     
@@ -7512,7 +7512,7 @@ class App {
       status: 'countdown',
       gameType: gameType,
       playMode: gameType === 'songQuiz' ? songQuizPlayMode : 'self',
-      audioMode: gameType === 'songQuiz' ? songQuizAudioMode : 'all',
+      audioMode: gameType === 'songQuiz' ? songQuizAudioMode : 'teacher',
       allowHint: allowHint,
       currentQuestionIndex: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? 0 : null,
       buzzerRound: gameType === 'songQuiz' && songQuizPlayMode === 'buzzer' ? {

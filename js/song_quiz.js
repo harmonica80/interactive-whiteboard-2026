@@ -249,9 +249,12 @@
     const state = this.songQuizState;
     if (!question) return;
 
-    // 全班同步搶答模式下：若設定為僅老師端發聲，且當前為學生端時阻擋
-    if (this.focusGame && this.focusGame.playMode === 'buzzer' && this.focusGame.audioMode === 'teacher' && !this.isAdmin) {
-      return;
+    // 全班同步搶答模式下：若當前為學生端，除非明確啟用全班發聲 'all'，否則嚴禁播放音訊
+    if (this.focusGame && this.focusGame.playMode === 'buzzer' && !this.isAdmin) {
+      if (this.focusGame.audioMode !== 'all') {
+        this.stopSongQuizAudio();
+        return;
+      }
     }
 
     this.stopSongQuizAudio();
@@ -547,6 +550,10 @@
   // 初始化全班同步搶答狀態
   App.prototype.initBuzzerSongQuiz = function initBuzzerSongQuiz(game) {
     this.focusGame = game;
+    // 若當前為學生端且非全班廣播模式，確保徹底停止任何殘留音訊
+    if (!this.isAdmin && game?.audioMode !== 'all') {
+      this.stopSongQuizAudio();
+    }
     const grid = document.getElementById('focusGameGrid');
     if (!grid) return;
 
@@ -744,7 +751,7 @@
             </div>
           `;
         } else {
-          const isTeacherOnly = game.audioMode === 'teacher';
+          const isTeacherOnly = (game.audioMode || 'teacher') !== 'all';
           const tipText = isTeacherOnly
             ? '請聆聽老師端播放音樂，按下搶答後老師端音樂將立即暫停，由您獲得 10 秒作答權！'
             : '仔細聆聽歌曲片段，聽出歌名請立刻按搶答！按下後音樂將全班暫停，由您獲得 10 秒作答權！';
@@ -959,8 +966,9 @@
 
   // 處理全班音訊同步播放 / 暫停
   App.prototype.handleBuzzerAudioSync = function handleBuzzerAudioSync(question, round) {
-    // 全班同步搶答模式下：若設定為僅老師端發聲，且當前為學生端時阻擋
-    if (this.focusGame && this.focusGame.audioMode === 'teacher' && !this.isAdmin) {
+    // 全班同步搶答模式下：除非設定明確為 'all' (全班同步發聲)，否則學生端嚴格禁止播放音樂
+    const isAllAudioBroadcast = this.focusGame && this.focusGame.audioMode === 'all';
+    if (!this.isAdmin && !isAllAudioBroadcast) {
       this.lastBuzzerAudioKey = null;
       this.stopSongQuizAudio();
       return;
