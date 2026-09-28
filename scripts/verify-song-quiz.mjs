@@ -132,11 +132,11 @@ if (threeTagSongs.length !== 120) throw new Error(`三標籤歌曲數應為 120�
 const html = fs.readFileSync('index.html', 'utf8');
 const classicsQuizCode = fs.readFileSync('js/classics_quiz.js', 'utf8');
 const htmlChecks = [
-  ['index.html 包含 ver 3.5.7 版本標示', html.includes('ver 3.5.7')],
+  ['index.html 包含 ver 3.5.8 版本標示', html.includes('ver 3.5.8')],
   ['focusGameType 包含 songQuiz 選項', html.includes('value="songQuiz"')],
   ['包含 focusSongQuizSettings 設定區塊', html.includes('id="focusSongQuizSettings"')],
   ['包含玩法模式選擇單選按鈕 focusSongQuizPlayMode 且預設選中 buzzer (全班同步搶答)', html.includes('name="focusSongQuizPlayMode" value="buzzer" checked')],
-  ['包含音訊廣播選擇選單 focusSongQuizAudioMode', html.includes('id="focusSongQuizAudioMode"')],
+  ['包含音訊廣播選擇選單 focusSongQuizAudioMode 且預設選中 teacher (僅老師端發聲)', html.includes('id="focusSongQuizAudioMode"') && html.includes('<option value="teacher" selected>')],
   ['包含歌單標籤核選容器 focusSongQuizTagContainer', html.includes('id="focusSongQuizTagContainer"')],
   ['包含出題歌單標籤統計與相容元素 focusSongQuizTag', html.includes('id="focusSongQuizTag"')],
   ['包含歌單標籤統計資訊摘要 focusSongQuizTagSummary', html.includes('id="focusSongQuizTagSummary"')],
@@ -149,10 +149,10 @@ const htmlChecks = [
   ['包含題庫徽章 focusQbBadge_songQuiz', html.includes('id="focusQbBadge_songQuiz"')],
   ['題庫彈窗包含 songQuiz 頁籤按鈕', html.includes('data-type="songQuiz"')],
   ['題庫彈窗包含標籤篩選下拉選單 focusQbTagFilterSelect', html.includes('id="focusQbTagFilterSelect"')],
-  ['引用 song_quiz_pool.js?v=357', html.includes('js/song_quiz_pool.js?v=357')],
-  ['引用 song_quiz.js?v=357', html.includes('js/song_quiz.js?v=357')],
-  ['引用 focus_question_bank.js?v=357', html.includes('js/focus_question_bank.js?v=357')],
-  ['引用 app.js?v=357', html.includes('js/app.js?v=357')],
+  ['引用 song_quiz_pool.js?v=358', html.includes('js/song_quiz_pool.js?v=358')],
+  ['引用 song_quiz.js?v=358', html.includes('js/song_quiz.js?v=358')],
+  ['引用 focus_question_bank.js?v=358', html.includes('js/focus_question_bank.js?v=358')],
+  ['引用 app.js?v=358', html.includes('js/app.js?v=358')],
   ['字力測驗包含出題數量下拉選單 focusCharacterTestCount', html.includes('id="focusCharacterTestCount"')],
   ['成語測驗出題數量包含 1 題與 2 題選項', html.includes('id="focusClassicsQuizCount"') && html.includes('<option value="1">1 題') && html.includes('<option value="2">2 題')],
   ['成語測驗答題說明改為 Google 查詢', classicsQuizCode.includes('google.com/search?q=') && classicsQuizCode.includes('透過 Google 查詢')],
@@ -173,7 +173,7 @@ htmlChecks.forEach(([desc, cond]) => {
 // 4. 測試 app.js 邏輯
 const appCode = fs.readFileSync('js/app.js', 'utf8');
 const appChecks = [
-  ['app.js APP_VERSION 為 3.5.7', appCode.includes("this.APP_VERSION = '3.5.7';")],
+  ['app.js APP_VERSION 為 3.5.8', appCode.includes("this.APP_VERSION = '3.5.8';")],
   ['app.js getSavedTeacherShareCategory 方法存在', appCode.includes('getSavedTeacherShareCategory()')],
   ['app.js saveTeacherShareCategory 方法存在', appCode.includes('saveTeacherShareCategory(')],
   ['app.js restoreTeacherShareCategory 方法存在', appCode.includes('restoreTeacherShareCategory()')],
@@ -240,10 +240,9 @@ const sqChecks = [
   ['song_quiz.js 定義 renderBuzzerFinalLeaderboard', songQuizCode.includes('renderBuzzerFinalLeaderboard')],
   ['renderBuzzerFinalLeaderboard 支援同分並列冠軍', songQuizCode.includes('並列冠軍')],
   ['renderBuzzerFinalLeaderboard 支援同分並列亞軍與季軍', songQuizCode.includes('並列亞軍') && songQuizCode.includes('並列季軍')],
-  ['頒獎典禮重置按鈕呼叫 endFocusGame', songQuizCode.includes('window.app.endFocusGame()')],
-  ['handleBuzzerAudioSync 依 audioMode 支援全班發聲與老師專屬模式', songQuizCode.includes("audioMode === 'teacher'")],
+  ['handleBuzzerAudioSync 依 audioMode 預設僅老師端發聲並阻擋學生端', songQuizCode.includes("audioMode === 'all'") && songQuizCode.includes("!this.isAdmin")],
   ['handleBuzzerAudioSync 動作鍵包含 audioSeekTime 變更監控', songQuizCode.includes("audioSeekTime || 0")],
-  ['playSongQuizAudio 包含 audioMode 廣播分流支援', songQuizCode.includes("audioMode === 'teacher'")],
+  ['playSongQuizAudio 全班搶答模式下預設阻擋學生端音訊', songQuizCode.includes("playMode === 'buzzer'") && songQuizCode.includes("!this.isAdmin")],
   ['song_quiz.js 包含旋轉黑膠唱片動畫 spinVinyl', songQuizCode.includes('spinVinyl')],
   ['song_quiz.js 包含搶答脈衝動畫 pulseBuzzer', songQuizCode.includes('pulseBuzzer')],
   ['song_quiz.js 自主模式結算包含排行榜容器 songQuizSelfRankList', songQuizCode.includes('songQuizSelfRankList')],
