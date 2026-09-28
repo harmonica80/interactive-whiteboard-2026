@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.5.5';
+    this.APP_VERSION = '3.5.6';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -4352,7 +4352,48 @@ class App {
   }
 
   // ===== 教師分享區功能 =====
+  getSavedTeacherShareCategory() {
+    try {
+      const saved = localStorage.getItem('last_teacher_share_category');
+      if (saved === 'news' || saved === 'materials') {
+        return saved;
+      }
+    } catch (e) {
+      console.warn('讀取 last_teacher_share_category 失敗:', e);
+    }
+    return 'news'; // 預設為最新消息
+  }
+
+  saveTeacherShareCategory(category) {
+    try {
+      if (category === 'news' || category === 'materials') {
+        localStorage.setItem('last_teacher_share_category', category);
+      }
+    } catch (e) {
+      console.warn('儲存 last_teacher_share_category 失敗:', e);
+    }
+  }
+
+  restoreTeacherShareCategory() {
+    const select = document.getElementById('shareInputCategory');
+    if (select) {
+      select.value = this.getSavedTeacherShareCategory();
+    }
+  }
+
+  onShareInputCategoryChange(val) {
+    this.saveTeacherShareCategory(val);
+  }
+
   bindTeacherShareEvents() {
+    this.restoreTeacherShareCategory();
+    const shareCatSelect = document.getElementById('shareInputCategory');
+    if (shareCatSelect) {
+      shareCatSelect.addEventListener('change', (e) => {
+        this.saveTeacherShareCategory(e.target.value);
+      });
+    }
+
     const uploadZone = document.getElementById('shareImageUploadZone');
     const fileInput = document.getElementById('shareImageFileInput');
     if (!uploadZone || !fileInput) return;
@@ -4496,7 +4537,8 @@ class App {
   submitTeacherShare() {
     const type = this.selectedShareFormType;
     const folderId = document.getElementById('shareFolderSelect')?.value || '';
-    const category = document.getElementById('shareInputCategory')?.value || 'materials';
+    const category = document.getElementById('shareInputCategory')?.value || this.getSavedTeacherShareCategory();
+    this.saveTeacherShareCategory(category);
     
     if (type === 'text') {
       const input = document.getElementById('shareInputText');

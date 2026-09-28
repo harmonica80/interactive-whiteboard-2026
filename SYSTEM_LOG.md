@@ -1,4 +1,32 @@
 # System Log
+## 2026-09-28 - ver 3.5.6 教師分享預設最新消息與狀態記憶、聽歌搶答擴充 320 首題庫並新增「台灣九年級」類別
+- 影響檔案：`index.html`, `package.json`, `js/app.js`, `js/focus_question_bank.js`, `js/song_quiz_pool.js`, `scripts/build-320-song-pool.mjs`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **教師分享新增預設為「最新消息」與使用者最近一次使用狀態記憶 (`index.html`, `js/app.js`)**：
+     - **預設分類更新**：後台發佈教師分享之所屬分頁下拉選單（`#shareInputCategory`）預設值調整為「📢 最新消息 (`news`)」。
+     - **狀態自動記憶與復原**：
+       - 透過 `localStorage`（鍵名：`last_teacher_share_category`）即時儲存使用者在發佈表單中手動切換的所屬分頁。
+       - 頁面載入或初始化教師分享事件（`bindTeacherShareEvents`）時，自動呼叫 `restoreTeacherShareCategory()` 復原使用者最近一次選擇之分頁。
+       - 發佈教師分享（`submitTeacherShare`）時若選單未選定，亦安全回退至記憶之分類，並持續刷新最近狀態。
+  2. **聽歌搶答歌曲庫擴充至 320 首並新增「台灣九年級」類別 (`js/song_quiz_pool.js`, `js/focus_question_bank.js`, `scripts/build-320-song-pool.mjs`)**：
+     - **新增「台灣九年級」類別 (40 首)**：涵蓋告五人、周興哲、高爾宣、八三夭、陳零九、邱鋒澤、Ozone、理想混蛋、持修、艾薇、婁峻碩、TRASH、Marz23、芒果醬、美秀集團、李友廷、盧廣仲、韋禮安、五堅情、J.Sheon、?te 壞特、宇宙人、理想混蛋、瘦子 E.SO、Leo王、9m88 等九年級（2000 年代出生世代）耳熟能詳的華語流行金曲。
+     - **全 8 大類別擴充至各 40 首（總計 320 首）**：
+       - 🎼 古典音樂名曲：40 首
+       - 📼 台灣五年級：40 首
+       - 📻 台灣六年級：40 首
+       - 💿 台灣七年級：40 首
+       - 📱 台灣八年級：40 首
+       - 🎧 台灣九年級：40 首
+       - ⚡ 動漫神曲：40 首
+       - 🎈 童謠兒歌：40 首
+     - **100% YouTube 官方 oEmbed 驗證**：所有 320 首歌曲之 YouTube ID 皆通過 YouTube oEmbed API 驗證存在且支援公開嵌入播放（HTTP 200 OK），無失效影片。
+     - **題庫管理後台九年級快捷按鈕**：在「題庫管理 (專注力與聽歌)」的標籤快捷輸入列中新增「🏷️ 台灣九年級」按鈕，方便老師快速建立與篩選九年級歌曲。
+     - **出題歌單動態相容**：聽歌搶答出題勾選清單動態解析標籤，自動呈現「台灣九年級 (40首)」多選核選方塊。
+  3. **版本號嚴格遞增至 `ver 3.5.6` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=356`）、`app.js`（`this.APP_VERSION = '3.5.6'`）。
+     - 更新自動化整合測試腳本 `verify-video-quiz.mjs`（94 項）與 `verify-song-quiz.mjs`（涵蓋 320 首全題庫驗證、8 大類別各 40 首檢驗、狀態記憶與標籤按鈕）全數通過。
+
+---
 ## 2026-09-28 - ver 3.5.5 修復開啟網頁/重新整理時持續彈出「隨機抽人轉盤」提示視窗之問題
 - 影響檔案：`index.html`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
