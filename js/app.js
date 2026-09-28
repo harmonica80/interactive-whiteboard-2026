@@ -18,8 +18,10 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.5.4';
+    this.APP_VERSION = '3.5.5';
     this.currentTeacherShareSubTab = 'news';
+    this.pageStartTime = Date.now();
+    this.lastWheelActiveTimestamp = Date.now();
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -1264,10 +1266,14 @@ class App {
       this.updateWheelControlPanelVisibility();
       this.drawWheelLocal();
       if (this.isAdmin) {
-        db.ref('quiz/luckyWheel/active').set({ active: true, timestamp: Date.now() });
+        const activeRef = db.ref('quiz/luckyWheel/active');
+        activeRef.set({ active: true, timestamp: Date.now() });
+        activeRef.onDisconnect().set({ active: false, timestamp: Date.now() });
       }
     } else if (this.isAdmin && this.previousTabId === 'panel-lucky-wheel') {
-      db.ref('quiz/luckyWheel/active').set({ active: false });
+      const activeRef = db.ref('quiz/luckyWheel/active');
+      activeRef.set({ active: false, timestamp: Date.now() });
+      activeRef.onDisconnect().cancel();
     }
     
     if (targetId === 'panel-admin') {
@@ -10276,9 +10282,25 @@ class App {
     // 監聽轉盤啟用狀態 (老師開啟轉盤時全班畫面自動切換呈現，無需手動點按)
     db.ref('quiz/luckyWheel/active').on('value', (snapshot) => {
       const val = snapshot.val();
-      if (val && val.active && !this.isAdmin && this.activeTabId !== 'panel-lucky-wheel') {
-        this.switchToTab('panel-lucky-wheel');
-        this.showNotification('隨機抽人轉盤', '老師已開啟隨機抽人轉盤！');
+      if (!val || !val.active) return;
+
+      const now = Date.now();
+      // 防呆：僅在收到「近期 (10秒內) 且在當前網頁載入後」由老師主動發起的即時廣播時才切換與提醒
+      // 徹底解決開啟網頁或重新整理時，被歷史殘留的 active: true 誤觸發彈窗與強制跳轉問題
+      const isRecent = val.timestamp && (now - val.timestamp < 10000);
+      const isNewBroadcast = val.timestamp && val.timestamp > (this.lastWheelActiveTimestamp || this.pageStartTime);
+
+      if (isRecent && isNewBroadcast && !this.isAdmin) {
+        this.lastWheelActiveTimestamp = val.timestamp;
+        if (this.activeTabId !== 'panel-lucky-wheel') {
+          this.switchToTab('panel-lucky-wheel');
+          this.showNotification('隨機抽人轉盤', '老師已開啟隨機抽人轉盤！');
+        }
+      } else if (!isRecent && this.isAdmin && val.active) {
+        // 若為管理員且發現資料庫中遺留超過 1 分鐘的陳舊 active 狀態，自動清除重置
+        if (!val.timestamp || (now - val.timestamp > 60000)) {
+          db.ref('quiz/luckyWheel/active').set({ active: false, timestamp: now }).catch(() => {});
+        }
       }
     });
 
@@ -10347,7 +10369,9 @@ class App {
   }
 
   broadcastWheelToClass() {
-    db.ref('quiz/luckyWheel/active').set({ active: true, timestamp: Date.now() });
+    const activeRef = db.ref('quiz/luckyWheel/active');
+    activeRef.set({ active: true, timestamp: Date.now() });
+    activeRef.onDisconnect().set({ active: false, timestamp: Date.now() });
     this.showNotification('提示', '已將轉盤畫面同步廣播至全班同學端！');
   }
 

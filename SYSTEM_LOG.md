@@ -1,4 +1,18 @@
 # System Log
+## 2026-09-28 - ver 3.5.5 修復開啟網頁/重新整理時持續彈出「隨機抽人轉盤」提示視窗之問題
+- 影響檔案：`index.html`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
+- 修改項目：
+  1. **修復隨機抽人轉盤過期廣播狀態在網頁載入時誤觸彈窗 (`js/app.js`)**：
+     - **成因排查**：在 Firebase `quiz/luckyWheel/active` 監聽器中，先前後台曾點擊轉盤時會寫入 `{ active: true, timestamp }`。若老師或管理員直接關閉瀏覽器或重新整理，Firebase 中持續殘留 `active: true`。當任何學生、訪客或重新整理的老師進入網頁時，監聽器初次觸發並無時效性檢查（Freshness Check）與歷史事件過濾，直接盲目執行 `switchToTab('panel-lucky-wheel')` 與 `showNotification('隨機抽人轉盤', '老師已開啟隨機抽人轉盤！')`，造成每次載入網頁都會重複跳出該彈窗。
+     - **防呆與時效機制**：
+       1. 加入頁面載入時間錨點（`pageStartTime`）與上次處理時間戳記（`lastWheelActiveTimestamp`），只有在「廣播時間戳記晚於網頁載入時間」且「發布時間在 10 秒內（`Date.now() - val.timestamp < 10000`）」之真實即時廣播時，才允許向非管理員學生觸發切換與通知。
+       2. 於管理員載入且檢測到殘留超過 60 秒之過期狀態時，自動將資料庫殘留狀態重設清空。
+       3. 在管理員切換離開轉盤分頁與 `broadcastWheelToClass()` 廣播時，註冊 `onDisconnect().set({ active: false, timestamp: Date.now() })`，確保關閉瀏覽器或斷線時資料庫狀態自動安全復原。
+  2. **版本號嚴格遞增至 `ver 3.5.5` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=355`）、`app.js`（`this.APP_VERSION = '3.5.5'`）。
+     - 更新自動化整合測試腳本 `verify-video-quiz.mjs`（94 項）與 `verify-song-quiz.mjs`（65+ 項）全數通過。
+
+---
 ## 2026-09-28 - ver 3.5.4 教師分享新增「最新消息」與「課程進度與教材」次級膠囊頁籤，支援未來無限擴充
 - 影響檔案：`index.html`, `css/style.css`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
