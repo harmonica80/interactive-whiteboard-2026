@@ -18,7 +18,8 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.5.3';
+    this.APP_VERSION = '3.5.4';
+    this.currentTeacherShareSubTab = 'news';
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -4488,7 +4489,8 @@ class App {
 
   submitTeacherShare() {
     const type = this.selectedShareFormType;
-    const folderId = document.getElementById('shareFolderSelect').value || '';
+    const folderId = document.getElementById('shareFolderSelect')?.value || '';
+    const category = document.getElementById('shareInputCategory')?.value || 'materials';
     
     if (type === 'text') {
       const input = document.getElementById('shareInputText');
@@ -4501,6 +4503,7 @@ class App {
         type: 'text',
         content: val,
         folderId: folderId,
+        category: category,
         timestamp: Date.now()
       }).then(() => {
         input.value = '';
@@ -4528,6 +4531,7 @@ class App {
           title: finalTitle || '',
           content: url,
           folderId: folderId,
+          category: category,
           timestamp: Date.now()
         }).then(() => {
           titleInput.value = '';
@@ -4594,6 +4598,7 @@ class App {
               title: file.name,
               content: finalUrl,
               folderId: folderId,
+              category: category,
               timestamp: Date.now()
             });
           };
@@ -4730,17 +4735,45 @@ class App {
     return Promise.race([fetchPromise, timeoutPromise]);
   }
 
+  switchTeacherShareSubTab(tabKey) {
+    this.currentTeacherShareSubTab = tabKey || 'news';
+    this.renderTeacherShares();
+  }
+
   renderTeacherShares() {
     const container = document.getElementById('teacherSharesContainer');
     if (!container) return;
     
-    if (this.shares.length === 0) {
-      container.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無分享內容</div>';
+    // 更新次級頁籤統計數字
+    const newsShares = this.shares.filter(item => item.category === 'news');
+    const materialsShares = this.shares.filter(item => item.category !== 'news'); // 舊資料與 materials 皆歸為教材進度
+
+    const badgeNews = document.getElementById('badgeTeacherShareNews');
+    if (badgeNews) badgeNews.textContent = newsShares.length;
+    const badgeMaterials = document.getElementById('badgeTeacherShareMaterials');
+    if (badgeMaterials) badgeMaterials.textContent = materialsShares.length;
+
+    // 同步子頁籤按鈕選取狀態
+    const currentTab = this.currentTeacherShareSubTab || 'news';
+    const subTabBtns = document.querySelectorAll('.teacher-share-sub-tab');
+    subTabBtns.forEach(btn => {
+      if (btn.dataset.subTab === currentTab) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    const currentShares = currentTab === 'news' ? newsShares : materialsShares;
+
+    if (currentShares.length === 0) {
+      const emptyMsg = currentTab === 'news' ? '暫無最新消息' : '暫無課程進度與教材';
+      container.innerHTML = `<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 36px 20px; font-size: 14px;">${emptyMsg}</div>`;
       return;
     }
 
     const grouped = {};
-    this.shares.forEach(item => {
+    currentShares.forEach(item => {
       const fid = item.folderId || '';
       if (!grouped[fid]) grouped[fid] = [];
       grouped[fid].push(item);
@@ -4749,9 +4782,10 @@ class App {
     let html = '';
 
     if (grouped[''] && grouped[''].length > 0) {
+      const unclassifiedTitle = currentTab === 'news' ? '📌 最新公告與消息' : '📁 未分類分享與教材';
       html += `<div class="folder-card" style="border-left: 5px solid var(--accent-color) !important;">
         <div class="folder-card-header">
-          <span>📁 未分類分享</span>
+          <span>${unclassifiedTitle}</span>
         </div>
         <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px;">
           ${grouped[''].map(item => this.buildShareItemHTML(item)).join('')}
@@ -4767,7 +4801,7 @@ class App {
       
       html += `<div class="folder-card">
         <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${folder.id}')" style="cursor: pointer;">
-          <span>📁 ${folder.name} (${fShares.length})</span>
+          <span>📁 ${this.escapeHtml(folder.name)} (${fShares.length})</span>
           <button class="folder-toggle-btn">${isCollapsed ? '展開 ▼' : '折疊 ▲'}</button>
         </div>
         <div style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 12px;">
@@ -4831,7 +4865,8 @@ class App {
         ${commentCount > 0 ? `
           <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showShareModal ? window.app.showShareModal('${item.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
         ` : ''}
-        <div class="share-item-header" style="justify-content: flex-end; margin-bottom: 8px;">
+        <div class="share-item-header" style="justify-content: ${item.category === 'news' ? 'space-between' : 'flex-end'}; margin-bottom: 8px;">
+          ${item.category === 'news' ? '<span style="font-size: 11px; font-weight: bold; color: #ff9500; background: rgba(255,149,0,0.12); padding: 1px 6px; border-radius: 4px;">📢 最新消息</span>' : ''}
           <span>${timeStr}</span>
         </div>
         <div class="share-item-body" style="flex: 1; display: flex; flex-direction: column;">
@@ -5041,8 +5076,13 @@ class App {
         <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
           <input type="checkbox" class="share-select-checkbox" data-id="${item.id}" onchange="window.app.updateBatchShareSelectCount()" style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
           <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
-              <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted);">
+              <div>
+                <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
+                <span style="margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; ${item.category === 'news' ? 'background: rgba(255,149,0,0.12); color: #ff9500;' : 'background: rgba(0,122,255,0.1); color: var(--accent-color);'}">
+                  ${item.category === 'news' ? '📢 最新消息' : '📚 課程教材'}
+                </span>
+              </div>
               <span>${timeStr}</span>
             </div>
             <div id="share-preview-${item.id}" style="word-break: break-all;">${preview}</div>
@@ -5068,9 +5108,18 @@ class App {
               <input type="text" id="share-edit-content-${item.id}" value="${this.escapeHtml(item.content)}" placeholder="圖片 URL (Base64 或遠端網址)" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
             </div>
           `}
-          <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
-            <button onclick="window.app.adminSaveShare('${item.id}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 儲存</button>
-            <button onclick="window.app.adminCancelEditShare('${item.id}')" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer;">取消</button>
+          <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label style="font-size: 12px; color: var(--text-secondary); font-weight: bold;">所屬分頁：</label>
+              <select id="share-edit-category-${item.id}" style="padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 12px;">
+                <option value="news" ${item.category === 'news' ? 'selected' : ''}>📢 最新消息</option>
+                <option value="materials" ${item.category !== 'news' ? 'selected' : ''}>📚 課程進度與教材</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button onclick="window.app.adminSaveShare('${item.id}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 儲存</button>
+              <button onclick="window.app.adminCancelEditShare('${item.id}')" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer;">取消</button>
+            </div>
           </div>
         </div>
       </div>
@@ -5266,11 +5315,15 @@ class App {
       this.showNotification('提示', '請先勾選要歸類的項目');
       return;
     }
-    const targetFolderId = document.getElementById('batchShareFolderSelect').value || '';
+    const targetFolderId = document.getElementById('batchShareFolderSelect')?.value || '';
+    const targetCategory = document.getElementById('batchShareCategorySelect')?.value || '';
     const updates = {};
     checkboxes.forEach(cb => {
       const id = cb.getAttribute('data-id');
       updates[`${id}/folderId`] = targetFolderId;
+      if (targetCategory) {
+        updates[`${id}/category`] = targetCategory;
+      }
     });
 
     this.showNotification('提示', '正在更新歸類...');
@@ -5280,6 +5333,8 @@ class App {
         checkboxes.forEach(cb => { cb.checked = false; });
         const selectAll = document.getElementById('selectAllShares');
         if (selectAll) selectAll.checked = false;
+        const catSelect = document.getElementById('batchShareCategorySelect');
+        if (catSelect) catSelect.value = '';
         this.updateBatchShareSelectCount();
       })
       .catch(err => {
@@ -12984,8 +13039,10 @@ function adminEditShare(id) {
       if (item) {
         const titleInput = document.getElementById('share-edit-title-' + id);
         const contentInput = document.getElementById('share-edit-content-' + id);
+        const catInput = document.getElementById('share-edit-category-' + id);
         if (contentInput) contentInput.value = item.content;
         if (titleInput && item.type === 'link') titleInput.value = item.title || '';
+        if (catInput) catInput.value = item.category || 'materials';
       }
     }
     editDiv.style.display = editDiv.style.display === 'none' ? 'block' : 'none';
@@ -13013,6 +13070,7 @@ function adminSaveShare(id) {
     
     const contentInput = document.getElementById('share-edit-content-' + id);
     const titleInput = document.getElementById('share-edit-title-' + id);
+    const catInput = document.getElementById('share-edit-category-' + id);
     
     if (!contentInput) {
       alert("錯誤: 找不到內容輸入欄位，ID: " + id);
@@ -13032,6 +13090,9 @@ function adminSaveShare(id) {
         return;
       }
       updates.title = titleInput.value.trim() || newContent;
+    }
+    if (catInput) {
+      updates.category = catInput.value || 'materials';
     }
     
     db.ref('teacherShares').child(id).update(updates)

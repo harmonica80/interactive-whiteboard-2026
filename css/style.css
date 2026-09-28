@@ -3314,6 +3314,81 @@ body {
   }
 }
 
+/* ===== 教師分享次級膠囊頁籤列 (最新消息、課程進度與教材，支援未來擴充) ===== */
+.teacher-shares-sub-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.teacher-shares-sub-nav::-webkit-scrollbar {
+  display: none;
+}
+.teacher-share-sub-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.teacher-share-sub-tab:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-primary);
+}
+.teacher-share-sub-tab.active {
+  background: var(--accent-color);
+  color: #ffffff;
+  border-color: var(--accent-color);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+}
+.teacher-share-sub-tab .tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 900;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+.teacher-share-sub-tab.active .tab-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .teacher-shares-sub-nav {
+    gap: 8px;
+    padding: 4px;
+    margin-bottom: 12px;
+  }
+  .teacher-share-sub-tab {
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+}
+
+
 
 
 
