@@ -1257,6 +1257,7 @@
               <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣六年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣六年級</button>
               <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣七年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣七年級</button>
               <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣八年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣八年級</button>
+              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣九年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣九年級</button>
               <button type="button" onclick="document.getElementById('qb_input_tag').value='動漫神曲'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 動漫神曲</button>
               <button type="button" onclick="document.getElementById('qb_input_tag').value='童謠兒歌'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 童謠兒歌</button>
             </div>

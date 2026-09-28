@@ -57,20 +57,20 @@ if (!qb) throw new Error('focusQB 初始化失敗！');
 
 // 測試取得預設題庫
 const pool = qb.getPool('songQuiz');
-if (pool.length !== defaultPool.length) {
-  throw new Error(`getPool('songQuiz') 題目數量不符：${pool.length} vs ${defaultPool.length}`);
+if (pool.length !== 320) {
+  throw new Error(`getPool('songQuiz') 題目數量應為 320 首：目前為 ${pool.length} vs ${defaultPool.length}`);
 }
 
 // 測試標籤獲取
 const tags = qb.getAllTags('songQuiz');
-const expectedTags = ['古典音樂', '台灣五年級', '台灣六年級', '台灣七年級', '台灣八年級'];
+const expectedTags = ['古典音樂', '台灣五年級', '台灣六年級', '台灣七年級', '台灣八年級', '台灣九年級', '動漫神曲', '童謠兒歌'];
 expectedTags.forEach(t => {
   if (!tags.includes(t)) {
     throw new Error(`缺少預期標籤 ${t}：${JSON.stringify(tags)}`);
   }
   const count = pool.filter(s => s.tag === t).length;
-  if (count < 20) {
-    throw new Error(`標籤 ${t} 歌曲不足 20 首（目前 ${count} 首）`);
+  if (count !== 40) {
+    throw new Error(`標籤 ${t} 歌曲應為 40 首（目前 ${count} 首）`);
   }
 });
 
@@ -120,19 +120,19 @@ if (qb.getPool('songQuiz').length !== defaultPool.length) {
 // 測試多標籤核選篩選邏輯 (單選/多選/全選)
 const rawSongPool = qb.getPool('songQuiz');
 const classicalOnly = rawSongPool.filter(s => ['古典音樂'].includes(s.tag));
-if (classicalOnly.length !== 20) throw new Error(`單一標籤古典音樂歌曲數應為 20，實際為：${classicalOnly.length}`);
+if (classicalOnly.length !== 40) throw new Error(`單一標籤古典音樂歌曲數應為 40，實際為：${classicalOnly.length}`);
 
 const twoTagSongs = rawSongPool.filter(s => ['古典音樂', '台灣五年級'].includes(s.tag));
-if (twoTagSongs.length !== 40) throw new Error(`雙標籤歌曲數應為 40，實際為：${twoTagSongs.length}`);
+if (twoTagSongs.length !== 80) throw new Error(`雙標籤歌曲數應為 80，實際為：${twoTagSongs.length}`);
 
 const threeTagSongs = rawSongPool.filter(s => ['古典音樂', '台灣五年級', '動漫神曲'].includes(s.tag));
-if (threeTagSongs.length !== 46) throw new Error(`三標籤歌曲數應為 46，實際為：${threeTagSongs.length}`);
+if (threeTagSongs.length !== 120) throw new Error(`三標籤歌曲數應為 120，實際為：${threeTagSongs.length}`);
 
 // 3. 測試 index.html 元素與配置
 const html = fs.readFileSync('index.html', 'utf8');
 const classicsQuizCode = fs.readFileSync('js/classics_quiz.js', 'utf8');
 const htmlChecks = [
-  ['index.html 包含 ver 3.5.5 版本標示', html.includes('ver 3.5.5')],
+  ['index.html 包含 ver 3.5.6 版本標示', html.includes('ver 3.5.6')],
   ['focusGameType 包含 songQuiz 選項', html.includes('value="songQuiz"')],
   ['包含 focusSongQuizSettings 設定區塊', html.includes('id="focusSongQuizSettings"')],
   ['包含玩法模式選擇單選按鈕 focusSongQuizPlayMode 且預設選中 buzzer (全班同步搶答)', html.includes('name="focusSongQuizPlayMode" value="buzzer" checked')],
@@ -149,10 +149,10 @@ const htmlChecks = [
   ['包含題庫徽章 focusQbBadge_songQuiz', html.includes('id="focusQbBadge_songQuiz"')],
   ['題庫彈窗包含 songQuiz 頁籤按鈕', html.includes('data-type="songQuiz"')],
   ['題庫彈窗包含標籤篩選下拉選單 focusQbTagFilterSelect', html.includes('id="focusQbTagFilterSelect"')],
-  ['引用 song_quiz_pool.js?v=355', html.includes('js/song_quiz_pool.js?v=355')],
-  ['引用 song_quiz.js?v=355', html.includes('js/song_quiz.js?v=355')],
-  ['引用 focus_question_bank.js?v=355', html.includes('js/focus_question_bank.js?v=355')],
-  ['引用 app.js?v=355', html.includes('js/app.js?v=355')],
+  ['引用 song_quiz_pool.js?v=356', html.includes('js/song_quiz_pool.js?v=356')],
+  ['引用 song_quiz.js?v=356', html.includes('js/song_quiz.js?v=356')],
+  ['引用 focus_question_bank.js?v=356', html.includes('js/focus_question_bank.js?v=356')],
+  ['引用 app.js?v=356', html.includes('js/app.js?v=356')],
   ['字力測驗包含出題數量下拉選單 focusCharacterTestCount', html.includes('id="focusCharacterTestCount"')],
   ['成語測驗出題數量包含 1 題與 2 題選項', html.includes('id="focusClassicsQuizCount"') && html.includes('<option value="1">1 題') && html.includes('<option value="2">2 題')],
   ['成語測驗答題說明改為 Google 查詢', classicsQuizCode.includes('google.com/search?q=') && classicsQuizCode.includes('透過 Google 查詢')],
@@ -160,7 +160,9 @@ const htmlChecks = [
   ['教師分享區包含膠囊次級頁籤導覽列 teacherSharesSubNav', html.includes('id="teacherSharesSubNav"')],
   ['教師分享包含最新消息徽章 badgeTeacherShareNews', html.includes('id="badgeTeacherShareNews"')],
   ['教師分享包含課程進度與教材徽章 badgeTeacherShareMaterials', html.includes('id="badgeTeacherShareMaterials"')],
-  ['後台新增分享包含分頁選擇 shareInputCategory', html.includes('id="shareInputCategory"')],
+  ['後台新增分享包含分頁選擇 shareInputCategory 且預設選中 news', html.includes('id="shareInputCategory"') && html.includes('<option value="news" selected>📢 最新消息</option>')],
+  ['後台新增分享分頁具備 onchange 狀態記住監聽', html.includes('onShareInputCategoryChange')],
+  ['題庫管理快捷標籤按鈕包含台灣九年級', qbCode.includes("qb_input_tag').value='台灣九年級'")],
   ['後台批次歸類包含分頁選擇 batchShareCategorySelect', html.includes('id="batchShareCategorySelect"')]
 ];
 
@@ -171,7 +173,11 @@ htmlChecks.forEach(([desc, cond]) => {
 // 4. 測試 app.js 邏輯
 const appCode = fs.readFileSync('js/app.js', 'utf8');
 const appChecks = [
-  ['app.js APP_VERSION 為 3.5.5', appCode.includes("this.APP_VERSION = '3.5.5';")],
+  ['app.js APP_VERSION 為 3.5.6', appCode.includes("this.APP_VERSION = '3.5.6';")],
+  ['app.js getSavedTeacherShareCategory 方法存在', appCode.includes('getSavedTeacherShareCategory()')],
+  ['app.js saveTeacherShareCategory 方法存在', appCode.includes('saveTeacherShareCategory(')],
+  ['app.js restoreTeacherShareCategory 方法存在', appCode.includes('restoreTeacherShareCategory()')],
+  ['app.js onShareInputCategoryChange 方法存在', appCode.includes('onShareInputCategoryChange(')],
   ['app.js switchTeacherShareSubTab 方法存在', appCode.includes('switchTeacherShareSubTab(')],
   ['app.js renderTeacherShares 支援子頁籤過濾', appCode.includes("item.category === 'news'") && appCode.includes("badgeTeacherShareNews")],
   ['app.js updateFocusCountdownCopy 支援字力測驗動態題數', appCode.includes('game.characterTestCount || 3') && appCode.includes('共有 ${questionCount} 題喔！')],

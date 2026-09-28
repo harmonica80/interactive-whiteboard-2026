@@ -43,17 +43,17 @@ export function checkYoutubeId(id) {
   });
 }
 
-export async function findValidYoutubeId(query, retries = 2) {
+export async function findValidYoutubeId(query, retries = 3) {
   for (let r = 0; r <= retries; r++) {
     const ids = await searchYoutube(query);
-    for (const id of ids.slice(0, 8)) {
+    for (const id of ids.slice(0, 25)) {
       const check = await checkYoutubeId(id);
       if (check.ok) {
         return { id, title: check.title, author: check.author };
       }
     }
     if (r < retries) {
-      await new Promise(res => setTimeout(res, 1000));
+      await new Promise(res => setTimeout(res, 800 * (r + 1)));
     }
   }
   return null;
