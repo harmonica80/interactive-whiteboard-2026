@@ -132,7 +132,8 @@ if (threeTagSongs.length !== 120) throw new Error(`三標籤歌曲數應為 120�
 const html = fs.readFileSync('index.html', 'utf8');
 const classicsQuizCode = fs.readFileSync('js/classics_quiz.js', 'utf8');
 const htmlChecks = [
-  ['index.html 包含 ver 3.5.8 版本標示', html.includes('ver 3.5.8')],
+  ['index.html 包含 ver 3.5.9 版本標示', html.includes('ver 3.5.9')],
+  ['包含學生重複名稱確認本人按鈕 btnConfirmSameStudentLogin', html.includes('id="btnConfirmSameStudentLogin"')],
   ['focusGameType 包含 songQuiz 選項', html.includes('value="songQuiz"')],
   ['包含 focusSongQuizSettings 設定區塊', html.includes('id="focusSongQuizSettings"')],
   ['包含玩法模式選擇單選按鈕 focusSongQuizPlayMode 且預設選中 buzzer (全班同步搶答)', html.includes('name="focusSongQuizPlayMode" value="buzzer" checked')],
@@ -149,10 +150,10 @@ const htmlChecks = [
   ['包含題庫徽章 focusQbBadge_songQuiz', html.includes('id="focusQbBadge_songQuiz"')],
   ['題庫彈窗包含 songQuiz 頁籤按鈕', html.includes('data-type="songQuiz"')],
   ['題庫彈窗包含標籤篩選下拉選單 focusQbTagFilterSelect', html.includes('id="focusQbTagFilterSelect"')],
-  ['引用 song_quiz_pool.js?v=358', html.includes('js/song_quiz_pool.js?v=358')],
-  ['引用 song_quiz.js?v=358', html.includes('js/song_quiz.js?v=358')],
-  ['引用 focus_question_bank.js?v=358', html.includes('js/focus_question_bank.js?v=358')],
-  ['引用 app.js?v=358', html.includes('js/app.js?v=358')],
+  ['引用 song_quiz_pool.js?v=359', html.includes('js/song_quiz_pool.js?v=359')],
+  ['引用 song_quiz.js?v=359', html.includes('js/song_quiz.js?v=359')],
+  ['引用 focus_question_bank.js?v=359', html.includes('js/focus_question_bank.js?v=359')],
+  ['引用 app.js?v=359', html.includes('js/app.js?v=359')],
   ['字力測驗包含出題數量下拉選單 focusCharacterTestCount', html.includes('id="focusCharacterTestCount"')],
   ['成語測驗出題數量包含 1 題與 2 題選項', html.includes('id="focusClassicsQuizCount"') && html.includes('<option value="1">1 題') && html.includes('<option value="2">2 題')],
   ['成語測驗答題說明改為 Google 查詢', classicsQuizCode.includes('google.com/search?q=') && classicsQuizCode.includes('透過 Google 查詢')],
@@ -173,7 +174,9 @@ htmlChecks.forEach(([desc, cond]) => {
 // 4. 測試 app.js 邏輯
 const appCode = fs.readFileSync('js/app.js', 'utf8');
 const appChecks = [
-  ['app.js APP_VERSION 為 3.5.8', appCode.includes("this.APP_VERSION = '3.5.8';")],
+  ['app.js APP_VERSION 為 3.5.9', appCode.includes("this.APP_VERSION = '3.5.9';")],
+  ['app.js findExistingStudentByName 方法存在', appCode.includes('findExistingStudentByName(')],
+  ['app.js confirmSameStudentLogin 方法存在', appCode.includes('confirmSameStudentLogin(')],
   ['app.js getSavedTeacherShareCategory 方法存在', appCode.includes('getSavedTeacherShareCategory()')],
   ['app.js saveTeacherShareCategory 方法存在', appCode.includes('saveTeacherShareCategory(')],
   ['app.js restoreTeacherShareCategory 方法存在', appCode.includes('restoreTeacherShareCategory()')],
@@ -253,4 +256,4 @@ sqChecks.forEach(([desc, cond]) => {
   if (!cond) throw new Error(`song_quiz.js 檢查失敗：${desc}`);
 });
 
-console.log('🎉 聽歌搶答 (songQuiz) ver 3.3.8 自主模式答對/答錯統計與成績顯示 60+ 項驗證均全數通過！');
+console.log('🎉 聽歌搶答 (songQuiz) ver 3.5.9 70+ 項驗證均全數通過！');

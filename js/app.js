@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.5.8';
+    this.APP_VERSION = '3.5.9';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -774,6 +774,44 @@ class App {
     if (dupAlert) dupAlert.style.display = 'none';
     const err = document.getElementById('studentNameModalError');
     if (err) err.style.display = 'none';
+    this.matchedExistingStudent = null;
+    this.pendingDuplicateName = null;
+  }
+
+  // 依姓名尋找課堂中已存在的學生記錄 (用以支援改天重新進入或多裝置同名身分綁定)
+  findExistingStudentByName(name) {
+    const target = String(name || '').trim().toLowerCase();
+    if (!target) return null;
+
+    // 1. 優先查詢已登錄學生名冊 (quiz/students)
+    const studentsMap = this.registeredStudents || {};
+    for (const [uid, data] of Object.entries(studentsMap)) {
+      if (data && data.name && String(data.name).trim().toLowerCase() === target) {
+        return { uid, name: data.name, avatar: data.avatar, ...data };
+      }
+    }
+
+    // 2. 查詢在線 presence 清單
+    const presenceData = this.onlinePresence || {};
+    for (const [key, p] of Object.entries(presenceData)) {
+      if (p && p.userId && p.userName && String(p.userName).trim().toLowerCase() === target) {
+        return { uid: p.userId, name: p.userName, avatar: p.avatar };
+      }
+    }
+
+    // 3. 查詢已發佈之歷史提問、圖片與影片
+    const checkList = [
+      ...(this.questions || []),
+      ...(this.images || []),
+      ...(this.videos || [])
+    ];
+    for (const item of checkList) {
+      if (item && item.user && item.userId && String(item.user).trim().toLowerCase() === target) {
+        return { uid: item.userId, name: item.user, avatar: item.avatar };
+      }
+    }
+
+    return null;
   }
 
   // 取得目前課堂中已被其他同學使用的姓名集合 (Set)
@@ -866,6 +904,48 @@ class App {
     this.saveStudentNameFromModal();
   }
 
+  // 確認為原使用者本人：以原帳號 UID 與頭像身分登入
+  async confirmSameStudentLogin() {
+    const input = document.getElementById('inputStudentModalName');
+    const name = (input ? input.value.trim() : '') || this.pendingDuplicateName || '';
+    if (!name) return;
+
+    const existingStudent = this.matchedExistingStudent || this.findExistingStudentByName(name);
+    // 若找到原帳號 UID 則採用，否則建立穩定關聯 UID
+    const targetUid = existingStudent?.uid || this.getUserId();
+
+    // 1. 同步更換本地身分 UID (使多裝置或重新進入繼承原有提問/作品所有權)
+    localStorage.setItem('user_id', targetUid);
+    localStorage.setItem('app_user_id', targetUid);
+    localStorage.setItem('quiz_user_id', targetUid);
+
+    // 2. 頭像同步：若彈窗中未手動更換新頭像，且原帳號已有頭像，自動繼承原頭像
+    let targetAvatar = this.selectedAvatarId;
+    if (targetAvatar === undefined && existingStudent && existingStudent.avatar !== undefined) {
+      targetAvatar = existingStudent.avatar;
+    }
+    if (targetAvatar !== undefined) {
+      this.setCurrentUserAvatar(targetAvatar);
+      this.selectedAvatarId = targetAvatar;
+    }
+
+    // 3. 設定姓名並同步至課堂名冊
+    this.setUserName(existingStudent?.name || name);
+
+    // 4. 更新在線狀態 presence
+    if (this.myPresenceRef) {
+      this.myPresenceRef.update({
+        userId: targetUid,
+        userName: existingStudent?.name || name,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      }).catch(() => {});
+    }
+
+    // 5. 關閉彈窗並顯示歡迎訊息
+    this.closeStudentNameModal();
+    this.showNotification('歡迎回來', `已確認身分！歡迎「${existingStudent?.name || name}」以原帳號登入。`);
+  }
+
   async saveStudentNameFromModal() {
     const input = document.getElementById('inputStudentModalName');
     const err = document.getElementById('studentNameModalError');
@@ -886,7 +966,7 @@ class App {
       return;
     }
 
-    // 檢查是否有同名學生 (重複名稱防呆與序號建議)
+    // 檢查是否有同名學生 (重複名稱防呆、原身分確認與序號建議)
     const takenNames = await this.getTakenStudentNames();
     const lowerName = name.toLowerCase();
     const isDuplicate = Array.from(takenNames).some(n => n.toLowerCase() === lowerName);
@@ -894,14 +974,37 @@ class App {
     if (isDuplicate) {
       const suggestedName = this.generateSuggestedStudentName(name, takenNames);
       this.pendingSuggestedStudentName = suggestedName;
+      this.pendingDuplicateName = name;
+
+      const existingStudent = this.findExistingStudentByName(name);
+      this.matchedExistingStudent = existingStudent;
 
       if (err) {
         err.style.display = 'none';
         err.textContent = '';
       }
-      if (dupAlert && dupDesc && txtSuggested) {
-        dupDesc.innerHTML = `課堂中已有其他同學使用名稱「<strong style="color: #cf1322;">${this.escapeHtml(name)}</strong>」。<br>您可以直接更換其他名稱，或點選下方按鈕使用系統建議的序號名稱：`;
-        txtSuggested.textContent = suggestedName;
+      if (dupAlert) {
+        const selfNameSpan = document.getElementById('txtDuplicateStudentSelfName');
+        if (selfNameSpan) selfNameSpan.textContent = name;
+
+        const avatarPreviewSpan = document.getElementById('txtDuplicateStudentAvatarPreview');
+        if (avatarPreviewSpan) {
+          if (existingStudent && existingStudent.avatar !== undefined && typeof this.renderAvatarHtml === 'function') {
+            avatarPreviewSpan.innerHTML = this.renderAvatarHtml(existingStudent.avatar, 20);
+            avatarPreviewSpan.style.display = 'inline-flex';
+          } else {
+            avatarPreviewSpan.innerHTML = '';
+            avatarPreviewSpan.style.display = 'none';
+          }
+        }
+
+        if (dupDesc) {
+          dupDesc.innerHTML = `課堂中已有其他同學使用名稱「<strong style="color: #cf1322;">${this.escapeHtml(name)}</strong>」。`;
+        }
+        if (txtSuggested) {
+          txtSuggested.textContent = suggestedName;
+        }
+
         dupAlert.style.display = 'block';
       }
       input.style.borderColor = '#ff4d4f';
