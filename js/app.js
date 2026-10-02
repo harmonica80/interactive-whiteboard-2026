@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.5.9';
+    this.APP_VERSION = '3.6.0';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -308,37 +308,9 @@ class App {
     localStorage.setItem('comment_nickname', trimmed);
 
     const avatarId = this.getCurrentUserAvatar();
-    const avatarHtml = this.renderAvatarHtml(avatarId, 20);
 
-    // 班級模式頂部標籤
-    const displayUserName = document.getElementById('displayUserName');
-    const displayUserNameTag = document.getElementById('displayUserNameTag');
-    const displayUserAvatar = document.getElementById('displayUserAvatar');
-    if (displayUserName) displayUserName.textContent = trimmed;
-    if (displayUserAvatar) displayUserAvatar.innerHTML = avatarHtml;
-    if (displayUserNameTag && this.isClassMode()) {
-      displayUserNameTag.style.display = 'inline-flex';
-    }
-
-    // 一次性課堂模式頂部標籤
-    const displayUserNameOneOff = document.getElementById('displayUserNameOneOff');
-    const displayUserNameTagOneOff = document.getElementById('displayUserNameTagOneOff');
-    const displayUserAvatarOneOff = document.getElementById('displayUserAvatarOneOff');
-    if (displayUserNameOneOff) displayUserNameOneOff.textContent = trimmed;
-    if (displayUserAvatarOneOff) displayUserAvatarOneOff.innerHTML = avatarHtml;
-    if (displayUserNameTagOneOff && !this.isClassMode()) {
-      displayUserNameTagOneOff.style.display = 'inline-flex';
-    }
-
-    // 手機端狀態列緊湊標籤
-    const displayUserNameMobile = document.getElementById('displayUserNameMobile');
-    const displayUserNameTagMobile = document.getElementById('displayUserNameTagMobile');
-    const displayUserAvatarMobile = document.getElementById('displayUserAvatarMobile');
-    if (displayUserNameMobile) displayUserNameMobile.textContent = trimmed;
-    if (displayUserAvatarMobile) displayUserAvatarMobile.innerHTML = avatarHtml;
-    if (displayUserNameTagMobile) {
-      displayUserNameTagMobile.style.display = 'inline-flex';
-    }
+    // 更新使用者名稱標籤與設定按鈕狀態
+    this.updateStudentNameUI();
 
     // 同步記錄至當前課堂學生名冊，方便防範重名與跨裝置顯示
     const myUid = this.getUserId();
@@ -363,6 +335,73 @@ class App {
     this.renderQuestions();
     this.renderImages();
     this.renderVideos();
+  }
+
+  // 統一更新頁面各處的學生名稱/頭像標籤與「設定名稱」提示按鈕
+  updateStudentNameUI() {
+    const rawName = this.getCurrentUserName();
+    const userName = (rawName || '').trim();
+    const avatarId = this.getCurrentUserAvatar();
+    const avatarHtml = this.renderAvatarHtml(avatarId, 20);
+    const isClass = this.isClassMode();
+
+    // 1. 專屬班級模式標籤與設定名稱按鈕
+    const displayUserNameTag = document.getElementById('displayUserNameTag');
+    const displayUserName = document.getElementById('displayUserName');
+    const displayUserAvatar = document.getElementById('displayUserAvatar');
+    const btnSetStudentNameClass = document.getElementById('btnSetStudentNameClass');
+
+    if (isClass) {
+      if (userName) {
+        if (displayUserName) displayUserName.textContent = userName;
+        if (displayUserAvatar) displayUserAvatar.innerHTML = avatarHtml;
+        if (displayUserNameTag) displayUserNameTag.style.display = 'inline-flex';
+        if (btnSetStudentNameClass) btnSetStudentNameClass.style.display = 'none';
+      } else {
+        if (displayUserNameTag) displayUserNameTag.style.display = 'none';
+        if (btnSetStudentNameClass) btnSetStudentNameClass.style.display = 'inline-flex';
+      }
+    } else {
+      if (displayUserNameTag) displayUserNameTag.style.display = 'none';
+      if (btnSetStudentNameClass) btnSetStudentNameClass.style.display = 'none';
+    }
+
+    // 2. 一次性課堂模式標籤與設定名稱按鈕 (若未輸入姓名或不小心關閉彈窗，顯示設定按鈕)
+    const displayUserNameTagOneOff = document.getElementById('displayUserNameTagOneOff');
+    const displayUserNameOneOff = document.getElementById('displayUserNameOneOff');
+    const displayUserAvatarOneOff = document.getElementById('displayUserAvatarOneOff');
+    const btnSetStudentNameOneOff = document.getElementById('btnSetStudentNameOneOff');
+
+    if (!isClass) {
+      if (userName) {
+        if (displayUserNameOneOff) displayUserNameOneOff.textContent = userName;
+        if (displayUserAvatarOneOff) displayUserAvatarOneOff.innerHTML = avatarHtml;
+        if (displayUserNameTagOneOff) displayUserNameTagOneOff.style.display = 'inline-flex';
+        if (btnSetStudentNameOneOff) btnSetStudentNameOneOff.style.display = 'none';
+      } else {
+        if (displayUserNameTagOneOff) displayUserNameTagOneOff.style.display = 'none';
+        if (btnSetStudentNameOneOff) btnSetStudentNameOneOff.style.display = 'inline-flex';
+      }
+    } else {
+      if (displayUserNameTagOneOff) displayUserNameTagOneOff.style.display = 'none';
+      if (btnSetStudentNameOneOff) btnSetStudentNameOneOff.style.display = 'none';
+    }
+
+    // 3. 手機端狀態列緊湊標籤與設定名稱按鈕
+    const displayUserNameMobile = document.getElementById('displayUserNameMobile');
+    const displayUserNameTagMobile = document.getElementById('displayUserNameTagMobile');
+    const displayUserAvatarMobile = document.getElementById('displayUserAvatarMobile');
+    const btnSetStudentNameMobile = document.getElementById('btnSetStudentNameMobile');
+
+    if (userName) {
+      if (displayUserNameMobile) displayUserNameMobile.textContent = userName;
+      if (displayUserAvatarMobile) displayUserAvatarMobile.innerHTML = avatarHtml;
+      if (displayUserNameTagMobile) displayUserNameTagMobile.style.display = 'inline-flex';
+      if (btnSetStudentNameMobile) btnSetStudentNameMobile.style.display = 'none';
+    } else {
+      if (displayUserNameTagMobile) displayUserNameTagMobile.style.display = 'none';
+      if (btnSetStudentNameMobile) btnSetStudentNameMobile.style.display = 'inline-flex';
+    }
   }
 
   isClassMode() {
@@ -776,6 +815,7 @@ class App {
     if (err) err.style.display = 'none';
     this.matchedExistingStudent = null;
     this.pendingDuplicateName = null;
+    this.updateStudentNameUI();
   }
 
   // 依姓名尋找課堂中已存在的學生記錄 (用以支援改天重新進入或多裝置同名身分綁定)
@@ -11216,19 +11256,10 @@ class App {
         if (btnExit) btnExit.style.display = 'inline-flex';
         if (btnActionText) btnActionText.textContent = '切換班級';
 
-        const avatarId = this.getCurrentUserAvatar();
-        const avatarHtml = this.renderAvatarHtml(avatarId, 20);
-        const displayUserAvatar = document.getElementById('displayUserAvatar');
-        const displayUserNameTagOneOff = document.getElementById('displayUserNameTagOneOff');
-        if (displayUserNameTagOneOff) displayUserNameTagOneOff.style.display = 'none';
+        this.updateStudentNameUI();
 
-        if (userName && displayUserNameTag && displayUserName) {
-          displayUserName.textContent = userName;
-          if (displayUserAvatar) displayUserAvatar.innerHTML = avatarHtml;
-          displayUserNameTag.style.display = 'inline-flex';
-        } else {
+        if (!userName) {
           // 進入班級課堂但未設定姓名或暱稱，主動跳出提示彈窗要求同學設定
-          if (displayUserNameTag) displayUserNameTag.style.display = 'none';
           setTimeout(() => {
             this.openStudentNameModal();
           }, 350);
@@ -11242,38 +11273,16 @@ class App {
       if (btnExit) btnExit.style.display = 'none';
       if (btnActionText) btnActionText.textContent = '輸入班級代碼';
 
-      const avatarId = this.getCurrentUserAvatar();
-      const avatarHtml = this.renderAvatarHtml(avatarId, 20);
-      const displayUserNameTagOneOff = document.getElementById('displayUserNameTagOneOff');
-      const displayUserNameOneOff = document.getElementById('displayUserNameOneOff');
-      const displayUserAvatarOneOff = document.getElementById('displayUserAvatarOneOff');
-      if (displayUserNameTag) displayUserNameTag.style.display = 'none';
+      this.updateStudentNameUI();
 
-      if (userName && displayUserNameTagOneOff && displayUserNameOneOff) {
-        displayUserNameOneOff.textContent = userName;
-        if (displayUserAvatarOneOff) displayUserAvatarOneOff.innerHTML = avatarHtml;
-        displayUserNameTagOneOff.style.display = 'inline-flex';
-      } else {
+      if (!userName) {
         // 一次性課堂未設定姓名或暱稱，非管理員主動提示設定，以利互動與搶答辨識
-        if (displayUserNameTagOneOff) displayUserNameTagOneOff.style.display = 'none';
         if (!this.isAdmin) {
           setTimeout(() => {
             this.openStudentNameModal();
           }, 350);
         }
       }
-    }
-
-    // 更新手機端狀態列緊湊標籤
-    const displayUserNameMobile = document.getElementById('displayUserNameMobile');
-    const displayUserNameTagMobile = document.getElementById('displayUserNameTagMobile');
-    const displayUserAvatarMobile = document.getElementById('displayUserAvatarMobile');
-    const avatarId = this.getCurrentUserAvatar();
-    const avatarHtml = this.renderAvatarHtml(avatarId, 20);
-    if (displayUserNameMobile) displayUserNameMobile.textContent = userName || '同學';
-    if (displayUserAvatarMobile) displayUserAvatarMobile.innerHTML = avatarHtml;
-    if (displayUserNameTagMobile) {
-      displayUserNameTagMobile.style.display = userName ? 'inline-flex' : 'none';
     }
 
     // 更新管理員後台的空間提示標籤

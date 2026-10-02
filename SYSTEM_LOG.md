@@ -1,4 +1,23 @@
 # System Log
+## 2026-10-02 - ver 3.6.0 一次性課堂未設定姓名或誤關輸入框時左上角常駐顯示設定名稱按鈕
+- 影響檔案：`index.html`, `package.json`, `css/style.css`, `js/app.js`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **一次性課堂左上角常駐「設定名稱」引導按鈕 (`index.html`, `css/style.css`, `js/app.js`)**：
+     - **背景成因**：在一次性課堂中，若同學首次進入時尚未輸入姓名、或不小心點選關閉（按右上角「✕」、遮罩或 ESC 鍵關閉輸入框），原系統因姓名為空而將左上角膠囊標籤（`#displayUserNameTagOneOff`）隱藏（`display: none`），導致使用者後續想要設定或更改名稱時，在網頁左上角找不到任何操作按鈕。
+     - **介面配置與樣式 (`index.html`, `css/style.css`)**：
+       - 在一次性課堂標籤旁新增按鈕 `#btnSetStudentNameOneOff`（外觀為 `👤 設定名稱 ✏️`）。
+       - 專屬班級模式同步補強 `#btnSetStudentNameClass`，手機頂部狀態列同步補強 `#btnSetStudentNameMobile`。
+       - 套用 `.btn-set-name-prompt` 樣式，採用精緻主題色虛線外框、柔和背景色（`rgba(0, 122, 255, 0.08)`）與浮動陰影，明確提示使用者此處可點選設定名稱。
+     - **全域同步管理機制 (`js/app.js`)**：
+       - 新增 `updateStudentNameUI()` 集中管理方法：
+         1. 當有姓名時，顯示使用者頭像與姓名膠囊標籤，隱藏提示按鈕。
+         2. 當無姓名時，隱藏使用者膠囊標籤，常駐顯示「👤 設定名稱 ✏️」提示按鈕。
+       - 在 `setUserName(name)`（儲存姓名）、`initClassRoomUI()`（頁面初始化與模式切換）、`closeStudentNameModal()`（關閉輸入彈窗）時皆自動觸發 `updateStudentNameUI()`，確保無論使用者何時關閉輸入框，左上角皆有明確按鈕可隨時重新開啟姓名設定彈窗。
+  2. **版本號嚴格遞增至 `ver 3.6.0` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=360`）、`app.js`（`this.APP_VERSION = '3.6.0'`）。
+     - 更新自動化整合測試腳本 `verify-video-quiz.mjs`（99 項）與 `verify-song-quiz.mjs`（70+ 項）全數通過。
+
+---
 ## 2026-10-02 - ver 3.5.9 同名學生登入自我確認機制：支援原帳號繼承與跨裝置無縫同步
 - 影響檔案：`index.html`, `package.json`, `js/app.js`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
 - 修改項目：

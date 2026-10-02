@@ -3185,6 +3185,30 @@ body {
   background: rgba(0,122,255,0.12);
 }
 
+.btn-set-name-prompt {
+  border: 1px dashed var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
+  background: rgba(0, 122, 255, 0.08);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  padding: 3px 10px;
+  line-height: normal;
+}
+
+.btn-set-name-prompt:hover {
+  background: rgba(0, 122, 255, 0.16);
+  border-style: solid;
+  border-color: var(--accent-color, #007aff);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2);
+}
+
+.btn-set-name-prompt:active {
+  transform: scale(0.96);
+  background: rgba(0, 122, 255, 0.22);
+}
+
 .cute-avatar-icon {
   display: inline-block;
   vertical-align: middle;
