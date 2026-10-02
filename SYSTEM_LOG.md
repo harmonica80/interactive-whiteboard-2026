@@ -1,4 +1,27 @@
 # System Log
+## 2026-10-02 - ver 3.5.9 同名學生登入自我確認機制：支援原帳號繼承與跨裝置無縫同步
+- 影響檔案：`index.html`, `package.json`, `js/app.js`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **同名登入自我身分確認機制 (`index.html`, `js/app.js`)**：
+     - **背景成因**：當同學改天重新進入白板（無痕視窗、清除 Cookie、或更換瀏覽器/新裝置），或同時使用兩台裝置（如筆電+手機）以相同名字登入時，原系統會直接判定「課堂中已有相同名稱」並建議加上序號，導致同學被迫以不同名字登入，無法累積同一個帳號的作答歷程或管理自己發布的作品。
+     - **介面優化 (`index.html`)**：
+       - 在重複名稱提示框（`#studentNameDuplicateAlert`）中新增自我確認區塊（`#studentNameConfirmSelfSection`）。
+       - 顯著呈現「💡 請問您是否為「XXX」本人？（例如改天重新進入、或正在使用第二台裝置/手機登入）」。
+       - 提供原帳號頭像預覽與快速登入按鈕「🙋 是的，我是本人（以原帳號登入）」（`#btnConfirmSameStudentLogin`），點擊即可一鍵繼承登入。
+       - 同時完整保留「不是本人（同名同姓同學）」的序號建議選項（如「林同學-2」），維持嚴謹防重複機制。
+     - **核心邏輯實作 (`js/app.js`)**：
+       - 新增 `findExistingStudentByName(name)` 方法：依序檢索 `registeredStudents`（Firebase 測驗學生註冊清單）、`onlinePresence`（目前在線 presence）、課堂提問與作品歷史（`questions`、`images`、`videos`），迅速尋獲既有同名使用者的 UID、姓名與既有頭像（Avatar ID）。
+       - 新增 `confirmSameStudentLogin()` 方法：
+         1. 將本地當前瀏覽器的 `user_id`、`app_user_id`、`quiz_user_id` 同步替換為原帳號 UID，並保存至 `localStorage`。
+         2. 自動繼承既有頭像（若在彈窗中已挑選新頭像，則同時將新頭像更新回原帳號）。
+         3. 呼叫 `setUserName(name)` 並更新在線 presence 狀態。
+         4. 顯示成功提示「🎉 歡迎回來，{name}！已為您登入原帳號並同步身分。」，順暢關閉設定彈窗。
+       - 修改 `saveStudentNameFromModal()`：偵測到同名時，抓取已有學生資料並動態填入自我確認區域（含原頭像徽章 HTML 與姓名）。
+  2. **版本號嚴格遞增至 `ver 3.5.9` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=359`）、`app.js`（`this.APP_VERSION = '3.5.9'`）。
+     - 更新自動化整合測試腳本 `verify-video-quiz.mjs`（97 項）與 `verify-song-quiz.mjs`（70+ 項）全數通過。
+
+---
 ## 2026-09-28 - ver 3.5.8 修復聽歌搶答全班同步搶答模式下同學端偶發自動播放音樂之問題
 - 影響檔案：`index.html`, `package.json`, `js/app.js`, `js/song_quiz.js`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
 - 修改項目：
