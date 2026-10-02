@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=359">
+  <link rel="stylesheet" href="css/style.css?v=360">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.5.9</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.6.0</span>
         </p>
       </div>
       <div class="top-actions">
@@ -28,6 +28,9 @@
             <span class="display-user-avatar" id="displayUserAvatarMobile"></span>
             <span class="display-user-name" id="displayUserNameMobile">訪客</span>
           </span>
+          <button type="button" class="user-display-tag mobile-only btn-set-name-prompt" id="btnSetStudentNameMobile" style="display: none; cursor: pointer; margin: 0 4px; white-space: nowrap; user-select: none;" onclick="window.app && window.app.openStudentNameModal()" title="尚未設定姓名，點擊設定名稱與頭像">
+            <span>👤 設定名稱</span>
+          </button>
           <div id="connectionStatus" class="connection-status disconnected" title="連線狀態：連線中..."></div>
         </div>
         <div class="header-buttons">
@@ -57,6 +60,11 @@
             <span class="display-user-name" id="displayUserNameOneOff">訪客</span>
             <span style="font-size: 11px; opacity: 0.7;">✏️</span>
           </span>
+          <button type="button" class="user-display-tag btn-set-name-prompt" id="btnSetStudentNameOneOff" style="display: none; cursor: pointer;" onclick="window.app && window.app.openStudentNameModal()" title="尚未設定姓名，點擊設定您的名稱與頭像">
+            <span class="set-name-icon">👤</span>
+            <span class="set-name-text">設定名稱</span>
+            <span style="font-size: 11px; opacity: 0.8;">✏️</span>
+          </button>
         </div>
         <!-- 專屬班級模式下顯示 -->
         <div id="modeClassDisplay" class="mode-display-pill classroom" style="display: none;">
@@ -67,6 +75,11 @@
             <span class="display-user-name" id="displayUserName">訪客</span>
             <span style="font-size: 11px; opacity: 0.7;">✏️</span>
           </span>
+          <button type="button" class="user-display-tag btn-set-name-prompt" id="btnSetStudentNameClass" style="display: none; cursor: pointer;" onclick="window.app && window.app.openStudentNameModal()" title="尚未設定姓名，點擊設定您的名稱與頭像">
+            <span class="set-name-icon">👤</span>
+            <span class="set-name-text">設定名稱</span>
+            <span style="font-size: 11px; opacity: 0.8;">✏️</span>
+          </button>
         </div>
       </div>
       <div class="class-mode-actions">
@@ -1874,17 +1887,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=359"></script>
+  <script src="js/firebase-config.js?v=360"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=359"></script>
-  <script src="js/focus_question_bank.js?v=359"></script>
+  <script src="js/song_quiz_pool.js?v=360"></script>
+  <script src="js/focus_question_bank.js?v=360"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=359"></script>
-  <script src="js/app.js?v=359"></script>
-  <script src="js/classics_quiz.js?v=359"></script>
-  <script src="js/song_quiz.js?v=359"></script>
-  <script src="js/video_quiz.js?v=359"></script>
+  <script src="js/quiz.js?v=360"></script>
+  <script src="js/app.js?v=360"></script>
+  <script src="js/classics_quiz.js?v=360"></script>
+  <script src="js/song_quiz.js?v=360"></script>
+  <script src="js/video_quiz.js?v=360"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
