@@ -59,10 +59,18 @@
     grid.style.aspectRatio = 'auto';
     grid.style.display = 'flex';
     grid.style.flexDirection = 'column';
-    grid.style.gap = '14px';
+    grid.style.gap = '12px';
     grid.style.width = '100%';
     grid.style.maxWidth = '600px';
+    grid.style.maxHeight = 'none';
+    grid.style.height = 'auto';
     grid.style.minHeight = 'auto';
+    grid.style.overflow = 'visible';
+    if (numberGridContainer) {
+      numberGridContainer.style.maxHeight = 'none';
+      numberGridContainer.style.height = 'auto';
+      numberGridContainer.style.flexShrink = '0';
+    }
 
     const questions = Array.isArray(game.questions) ? game.questions : [];
     if (questions.length === 0) {
@@ -103,6 +111,23 @@
     const game = this.focusGame;
     const grid = document.getElementById('focusGameGrid');
     if (!state || !game || !grid) return;
+
+    grid.style.aspectRatio = 'auto';
+    grid.style.display = 'flex';
+    grid.style.flexDirection = 'column';
+    grid.style.gap = '12px';
+    grid.style.width = '100%';
+    grid.style.maxWidth = '600px';
+    grid.style.maxHeight = 'none';
+    grid.style.height = 'auto';
+    grid.style.minHeight = 'auto';
+    grid.style.overflow = 'visible';
+    const numberGridContainer = document.getElementById('focusNumberGridContainer');
+    if (numberGridContainer) {
+      numberGridContainer.style.maxHeight = 'none';
+      numberGridContainer.style.height = 'auto';
+      numberGridContainer.style.flexShrink = '0';
+    }
 
     const question = (game.questions || [])[state.index];
     if (!question) return;
@@ -146,7 +171,7 @@
         : 'cursor:pointer;';
 
       return `
-        <button type="button" onclick="window.app.answerSongQuiz(${optIdx})" ${state.answered || isEliminated ? 'disabled' : ''} style="width:100%; text-align:left; padding:12px 14px; border-radius:10px; border:${border}; background:${background}; color:${color}; font-size:15px; font-weight:bold; transition:all 0.15s; ${eliminatedStyle}">
+        <button type="button" class="song-quiz-option-btn" onclick="window.app.answerSongQuiz(${optIdx})" ${state.answered || isEliminated ? 'disabled' : ''} style="border:${border}; background:${background}; color:${color}; ${eliminatedStyle}">
           ${isEliminated ? '✖ 已排除　' : `${String.fromCharCode(65 + optIdx)}．`}${escapeForSong(option)}
         </button>
       `;
@@ -157,40 +182,40 @@
     if (state.answered) {
       const isCorrect = state.isCorrect;
       actionAreaHtml = `
-        <div style="margin-top:14px; padding:16px; border-radius:12px; background:${isCorrect ? 'rgba(52,199,89,0.1)' : 'rgba(255,149,0,0.1)'}; border:1px solid ${isCorrect ? '#34c759' : '#ff9500'}; line-height:1.6;">
+        <div style="margin-top:10px; padding:14px; border-radius:12px; background:${isCorrect ? 'rgba(52,199,89,0.1)' : 'rgba(255,149,0,0.1)'}; border:1px solid ${isCorrect ? '#34c759' : '#ff9500'}; line-height:1.6;">
           <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-            <div style="font-weight:900; color:${isCorrect ? '#167a31' : '#b26a00'}; font-size:17px;">
+            <div style="font-weight:900; color:${isCorrect ? '#167a31' : '#b26a00'}; font-size:16px;">
               ${isCorrect ? '🎉 答對了！太厲害了！' : '❌ 答錯了！'}
             </div>
             <span style="font-size:13px; font-weight:bold; color:var(--text-secondary);">正解：【${escapeForSong(question.title)}】</span>
           </div>
-          <div style="font-size:14px; color:var(--text-primary); margin-top:8px; font-weight:bold;">
+          <div style="font-size:14px; color:var(--text-primary); margin-top:6px; font-weight:bold;">
             🎤 演唱者：<span style="color:var(--accent-color);">${escapeForSong(question.artist || '未知')}</span>
           </div>
           ${question.clue ? `<div style="font-size:13px; color:var(--text-secondary); margin-top:4px;">💡 歌曲提示：${escapeForSong(question.clue)}</div>` : ''}
           
-          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-            <a href="${escapeForSong(question.youtubeUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:6px; background:#ff0000; color:white; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none;">
+          <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="${escapeForSong(question.youtubeUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:6px; background:#ff0000; color:white; padding:5px 12px; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none;">
               ▶️ 在 YouTube 聆聽完整歌曲
             </a>
           </div>
         </div>
-        <button type="button" onclick="window.app.nextSongQuizQuestion()" style="margin-top:14px; width:100%; padding:13px; border:none; border-radius:10px; background:var(--accent-color); color:white; font-size:16px; font-weight:900; cursor:pointer; box-shadow:0 3px 10px rgba(0,122,255,0.3);">
+        <button type="button" onclick="window.app.nextSongQuizQuestion()" style="margin-top:10px; width:100%; padding:12px; border:none; border-radius:10px; background:var(--accent-color); color:white; font-size:16px; font-weight:900; cursor:pointer; box-shadow:0 3px 10px rgba(0,122,255,0.3);">
           ${state.index + 1 === game.questions.length ? '🏁 查看全部解答與本局成績' : '下一首 ➜'}
         </button>
       `;
     } else if (game.allowHint !== false) {
       actionAreaHtml = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">
-          <button type="button" onclick="window.app.useSongQuizSingerHint()" ${state.revealedSinger ? 'disabled' : ''} style="padding:10px; border:none; border-radius:8px; background:#6366f1; color:white; font-size:13px; font-weight:bold; cursor:pointer; opacity:${state.revealedSinger ? 0.45 : 1};">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+          <button type="button" onclick="window.app.useSongQuizSingerHint()" ${state.revealedSinger ? 'disabled' : ''} style="padding:9px; border:none; border-radius:8px; background:#6366f1; color:white; font-size:13px; font-weight:bold; cursor:pointer; opacity:${state.revealedSinger ? 0.45 : 1};">
             💡 提示歌手 (+5秒)
           </button>
-          <button type="button" onclick="window.app.useSongQuizEliminationHint()" ${remainingWrong.length === 0 ? 'disabled' : ''} style="padding:10px; border:none; border-radius:8px; background:#ff9500; color:white; font-size:13px; font-weight:bold; cursor:pointer; opacity:${remainingWrong.length === 0 ? 0.45 : 1};">
+          <button type="button" onclick="window.app.useSongQuizEliminationHint()" ${remainingWrong.length === 0 ? 'disabled' : ''} style="padding:9px; border:none; border-radius:8px; background:#ff9500; color:white; font-size:13px; font-weight:bold; cursor:pointer; opacity:${remainingWrong.length === 0 ? 0.45 : 1};">
             ✂️ 刪除1個錯誤 (+5秒)
           </button>
         </div>
-        ${state.revealedSinger ? `<div style="background:rgba(99,102,241,0.1); border:1px solid #6366f1; padding:8px 12px; border-radius:8px; font-size:13px; color:#4f46e5; font-weight:bold; margin-top:8px; text-align:center;">🎤 提示歌手：${escapeForSong(question.artist || '無提供歌手資訊')}</div>` : ''}
-        <div style="font-size:12px; color:var(--text-muted); text-align:center; margin-top:8px;">
+        ${state.revealedSinger ? `<div style="background:rgba(99,102,241,0.1); border:1px solid #6366f1; padding:6px 10px; border-radius:8px; font-size:12px; color:#4f46e5; font-weight:bold; margin-top:6px; text-align:center;">🎤 提示歌手：${escapeForSong(question.artist || '無提供歌手資訊')}</div>` : ''}
+        <div style="font-size:11px; color:var(--text-muted); text-align:center; margin-top:6px;">
           累計使用提示懲罰：+${this.focusHelpPenaltySeconds || 0} 秒（已算入總耗時）
         </div>
       `;
@@ -199,41 +224,43 @@
     }
 
     grid.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-        <span style="background:rgba(0,122,255,0.1); color:var(--accent-color); padding:4px 10px; border-radius:8px; font-size:13px; font-weight:bold;">
-          🎵 第 ${state.index + 1} / ${game.questions.length} 題
-        </span>
-        <span style="background:rgba(16,185,129,0.1); color:#10b981; padding:4px 10px; border-radius:8px; font-size:13px; font-weight:bold;">
-          🏷️ ${escapeForSong(tagBadge)}
-        </span>
-      </div>
+      <div class="song-quiz-wrapper ${state.answered ? '' : 'answering-mode'}">
+        <div class="song-quiz-header">
+          <span style="background:rgba(0,122,255,0.1); color:var(--accent-color); padding:4px 10px; border-radius:8px; font-size:13px; font-weight:bold;">
+            🎵 第 ${state.index + 1} / ${game.questions.length} 題
+          </span>
+          <span style="background:rgba(16,185,129,0.1); color:#10b981; padding:4px 10px; border-radius:8px; font-size:13px; font-weight:bold;">
+            🏷️ ${escapeForSong(tagBadge)}
+          </span>
+        </div>
 
-      <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:20px; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.03);">
-        <div style="position:relative; width:110px; height:110px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;">
-          <div style="width:100%; height:100%; border-radius:50%; background:radial-gradient(circle, #2a2a2a 20%, #111 60%, #000 100%); border:4px solid #333; box-shadow:0 6px 18px rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; ${isPlaying ? 'animation: spinVinyl 3s linear infinite;' : ''}">
-            <div style="width:36px; height:36px; border-radius:50%; background:var(--accent-color); border:3px solid #fff; display:flex; align-items:center; justify-content:center; color:white; font-size:16px;">
-              🎵
+        <div class="song-quiz-vinyl-card">
+          <div class="song-quiz-vinyl-disk">
+            <div style="width:100%; height:100%; border-radius:50%; background:radial-gradient(circle, #2a2a2a 20%, #111 60%, #000 100%); border:3px solid #333; box-shadow:0 6px 18px rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; ${isPlaying ? 'animation: spinVinyl 3s linear infinite;' : ''}">
+              <div style="width:36%; height:36%; border-radius:50%; background:var(--accent-color); border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">
+                🎵
+              </div>
             </div>
           </div>
+
+          <div class="song-quiz-vinyl-title" style="font-size:15px; font-weight:bold; color:var(--text-primary); margin-bottom:3px;">
+            ${isPlaying ? '🎧 歌曲片段播放中...' : (state.answered ? '✅ 歌曲已揭曉' : '⏸️ 試聽片段播放完畢')}
+          </div>
+          <div class="song-quiz-vinyl-subtitle" style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">
+            ${isPlaying ? `剩餘播放時間：<strong>${state.audioRemainingSeconds}</strong> 秒` : (state.answered ? '請瀏覽解析或進入下一題' : '沒聽清楚嗎？可點擊下方重新播放！')}
+          </div>
+
+          <button type="button" onclick="window.app.replaySongQuizAudio()" style="padding:6px 14px; border-radius:20px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            🔄 重新試聽歌曲片段
+          </button>
         </div>
 
-        <div style="font-size:16px; font-weight:bold; color:var(--text-primary); margin-bottom:4px;">
-          ${isPlaying ? '🎧 歌曲片段播放中...' : (state.answered ? '✅ 歌曲已揭曉' : '⏸️ 試聽片段播放完畢')}
-        </div>
-        <div style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
-          ${isPlaying ? `剩餘播放時間：<strong>${state.audioRemainingSeconds}</strong> 秒` : (state.answered ? '請瀏覽解析或進入下一題' : '沒聽清楚嗎？可點擊下方重新播放！')}
+        <div class="song-quiz-options-list">
+          ${optionsHtml}
         </div>
 
-        <button type="button" onclick="window.app.replaySongQuizAudio()" style="padding:7px 16px; border-radius:20px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
-          🔄 重新試聽歌曲片段
-        </button>
+        ${actionAreaHtml}
       </div>
-
-      <div style="display:flex; flex-direction:column; gap:10px;">
-        ${optionsHtml}
-      </div>
-
-      ${actionAreaHtml}
 
       <style>
         @keyframes spinVinyl {
@@ -601,10 +628,19 @@
     grid.style.aspectRatio = 'auto';
     grid.style.display = 'flex';
     grid.style.flexDirection = 'column';
-    grid.style.gap = '14px';
+    grid.style.gap = '12px';
     grid.style.width = '100%';
     grid.style.maxWidth = '600px';
+    grid.style.maxHeight = 'none';
+    grid.style.height = 'auto';
     grid.style.minHeight = 'auto';
+    grid.style.overflow = 'visible';
+    const numberGridContainer = document.getElementById('focusNumberGridContainer');
+    if (numberGridContainer) {
+      numberGridContainer.style.maxHeight = 'none';
+      numberGridContainer.style.height = 'auto';
+      numberGridContainer.style.flexShrink = '0';
+    }
 
     if (this.focusTimerInterval) {
       clearInterval(this.focusTimerInterval);
@@ -637,7 +673,7 @@
 
     // 頂部題號與資訊
     const headerHtml = `
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <div class="song-quiz-header">
         <span style="background:rgba(0,122,255,0.1); color:var(--accent-color); padding:4px 10px; border-radius:8px; font-size:13px; font-weight:bold;">
           ⚡ 全班搶答：第 ${qIndex + 1} / ${questions.length} 題
         </span>
@@ -656,18 +692,18 @@
     if (roundStatus === 'revealed') vinylStatusText = '💡 答案已揭曉';
 
     const vinylHtml = `
-      <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:20px; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.03);">
-        <div style="position:relative; width:110px; height:110px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;">
-          <div style="width:100%; height:100%; border-radius:50%; background:radial-gradient(circle, #2a2a2a 20%, #111 60%, #000 100%); border:4px solid #333; box-shadow:0 6px 18px rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; ${isPlaying ? 'animation: spinVinyl 3s linear infinite;' : ''}">
-            <div style="width:36px; height:36px; border-radius:50%; background:var(--accent-color); border:3px solid #fff; display:flex; align-items:center; justify-content:center; color:white; font-size:16px;">
+      <div class="song-quiz-vinyl-card">
+        <div class="song-quiz-vinyl-disk">
+          <div style="width:100%; height:100%; border-radius:50%; background:radial-gradient(circle, #2a2a2a 20%, #111 60%, #000 100%); border:3px solid #333; box-shadow:0 4px 14px rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; ${isPlaying ? 'animation: spinVinyl 3s linear infinite;' : ''}">
+            <div style="width:36%; height:36%; border-radius:50%; background:var(--accent-color); border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">
               ${isPlaying ? '🎵' : (roundStatus === 'buzzed' ? '⚡' : '⏸️')}
             </div>
           </div>
         </div>
-        <div style="font-size:16px; font-weight:900; color:var(--text-primary); margin-bottom:4px;">
+        <div class="song-quiz-vinyl-title" style="font-size:15px; font-weight:900; color:var(--text-primary); margin-bottom:3px;">
           ${vinylStatusText}
         </div>
-        <div style="font-size:13px; color:var(--text-secondary);">
+        <div class="song-quiz-vinyl-subtitle" style="font-size:12px; color:var(--text-secondary);">
           ${roundStatus === 'playing' ? '聽出歌名了嗎？手速要快！' : (roundStatus === 'buzzed' ? '歌曲暫停中，等待搶答同學回答' : '專注聆聽音樂辨識歌曲')}
         </div>
       </div>
@@ -775,18 +811,18 @@
         // 有人搶到了：搶到者作答，其餘同學等待
         if (isMeBuzzed) {
           const optionsButtons = (question.options || []).map((opt, optIdx) => `
-            <button type="button" onclick="window.app.submitBuzzerAnswer(${optIdx})" style="width:100%; text-align:left; padding:13px 16px; border-radius:10px; border:2px solid var(--accent-color); background:var(--bg-card); color:var(--text-primary); font-size:16px; font-weight:bold; cursor:pointer; transition:all 0.15s;">
+            <button type="button" class="song-quiz-option-btn" onclick="window.app.submitBuzzerAnswer(${optIdx})">
               ${String.fromCharCode(65 + optIdx)}．${escapeForSong(opt)}
             </button>
           `).join('');
 
           interactiveAreaHtml = `
-            <div style="padding:16px; border-radius:12px; background:rgba(0,122,255,0.08); border:2px solid var(--accent-color);">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <span style="font-size:16px; font-weight:900; color:var(--accent-color);">⚡ 您搶到了！請選擇答案：</span>
-                <span id="buzzerAnswerTimer" style="background:#ff3b30; color:white; padding:3px 10px; border-radius:12px; font-size:13px; font-weight:900;">限時 10 秒</span>
+            <div class="song-quiz-answer-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:15px; font-weight:900; color:var(--accent-color);">⚡ 您搶到了！請選擇答案：</span>
+                <span id="buzzerAnswerTimer" style="background:#ff3b30; color:white; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:900;">限時 10 秒</span>
               </div>
-              <div style="display:flex; flex-direction:column; gap:10px;">
+              <div class="song-quiz-options-list">
                 ${optionsButtons}
               </div>
             </div>
@@ -944,11 +980,13 @@
     // 手機學生端：搶答按鈕優先顯示在最上方，讓學生無需捲動即可立刻按搶答
     const isMobileStudent = (window.innerWidth <= 768) && !this.isAdmin;
     grid.innerHTML = `
-      ${headerHtml}
-      ${isMobileStudent ? interactiveAreaHtml : vinylHtml}
-      ${isMobileStudent ? vinylHtml : interactiveAreaHtml}
-      ${teacherControlHtml}
-      ${scoreBoardHtml}
+      <div class="song-quiz-wrapper ${isMeBuzzed ? 'answering-mode' : ''}">
+        ${headerHtml}
+        ${isMobileStudent ? interactiveAreaHtml : vinylHtml}
+        ${isMobileStudent ? vinylHtml : interactiveAreaHtml}
+        ${teacherControlHtml}
+        ${scoreBoardHtml}
+      </div>
 
       <style>
         @keyframes spinVinyl {

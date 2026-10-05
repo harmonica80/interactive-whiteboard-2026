@@ -778,14 +778,212 @@ body {
 #focusGameOverlay,
 #buzzGameOverlay {
   z-index: 3500 !important;
-  padding-top: 80px !important;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 64px) !important;
+  padding-bottom: 16px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
   box-sizing: border-box !important;
 }
 
 #focusGameOverlayContent,
 #buzzGameOverlayContent {
-  max-height: calc(100vh - 105px) !important;
+  max-height: min(94dvh, calc(100dvh - 76px)) !important;
+  padding: clamp(14px, 2.2vh, 22px) clamp(14px, 2.5vw, 24px) !important;
   overflow-y: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* 專注力遊戲非舒爾特模式：必須徹底解除高度與比例限制，避免內容溢出與下方元件重疊 */
+#focusGameGrid:not(.schulte-mode) {
+  max-height: none !important;
+  height: auto !important;
+  min-height: unset !important;
+  aspect-ratio: auto !important;
+  overflow: visible !important;
+}
+
+#focusNumberGridContainer:not(.schulte-mode) {
+  max-height: none !important;
+  height: auto !important;
+  min-height: unset !important;
+  flex-shrink: 0 !important;
+}
+
+/* 學生端進行中即時成績排行榜：置於作答表單下方，維持獨立流式間距，絕不與按鈕重疊 */
+#focusPlayingLeaderboardSection {
+  margin-top: 28px !important;
+  margin-bottom: 24px !important;
+  clear: both !important;
+  position: relative !important;
+  z-index: 1 !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ===== 聽歌搶答自適應螢幕高度與緊湊版面 ===== */
+.song-quiz-wrapper {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.4vh, 14px);
+  box-sizing: border-box;
+}
+
+.song-quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.song-quiz-vinyl-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: clamp(10px, 1.8vh, 18px);
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+.song-quiz-vinyl-disk {
+  position: relative;
+  width: clamp(64px, 11vh, 100px);
+  height: clamp(64px, 11vh, 100px);
+  margin: 0 auto clamp(6px, 1vh, 12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* 學生搶答作答中 (Answering) 時：唱片區自動縮小為精簡狀態，騰出全部垂直空間給四個選項 */
+.song-quiz-wrapper.answering-mode .song-quiz-vinyl-card {
+  padding: clamp(6px, 1.2vh, 10px) 14px !important;
+}
+
+.song-quiz-wrapper.answering-mode .song-quiz-vinyl-disk {
+  width: clamp(38px, 5.5vh, 56px) !important;
+  height: clamp(38px, 5.5vh, 56px) !important;
+  margin: 0 auto 4px !important;
+}
+
+.song-quiz-wrapper.answering-mode .song-quiz-vinyl-title {
+  font-size: clamp(13px, 1.7vh, 15px) !important;
+  margin-bottom: 2px !important;
+}
+
+.song-quiz-wrapper.answering-mode .song-quiz-vinyl-subtitle {
+  font-size: 11px !important;
+  display: none !important; /* 作答時隱藏次要副標題，避免擠壓空間 */
+}
+
+.song-quiz-answer-card {
+  padding: clamp(10px, 1.6vh, 16px);
+  border-radius: 12px;
+  background: rgba(0, 122, 255, 0.08);
+  border: 2px solid var(--accent-color);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.song-quiz-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1.1vh, 10px);
+  box-sizing: border-box;
+}
+
+.song-quiz-option-btn {
+  width: 100%;
+  text-align: left;
+  padding: clamp(8px, 1.4vh, 13px) clamp(10px, 2vw, 16px);
+  border-radius: 10px;
+  border: 2px solid var(--accent-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: clamp(13.5px, 1.8vh, 16px);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.35;
+  box-sizing: border-box;
+}
+
+.song-quiz-option-btn:hover {
+  background: rgba(0, 122, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+/* 螢幕高度受限時（如低於 720px 高度之筆電或手機橫向）深度自適應 */
+@media (max-height: 720px) {
+  #focusGameOverlay,
+  #buzzGameOverlay {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 52px) !important;
+    padding-bottom: 8px !important;
+  }
+  #focusGameOverlayContent,
+  #buzzGameOverlayContent {
+    max-height: calc(100dvh - 58px) !important;
+    padding: 10px 12px !important;
+  }
+  .song-quiz-vinyl-card {
+    padding: 8px 10px !important;
+  }
+  .song-quiz-vinyl-disk {
+    width: 52px !important;
+    height: 52px !important;
+    margin: 0 auto 4px !important;
+  }
+  .song-quiz-answer-card {
+    padding: 8px 10px !important;
+  }
+  .song-quiz-options-list {
+    gap: 5px !important;
+  }
+  .song-quiz-option-btn {
+    padding: 7px 10px !important;
+    font-size: 13.5px !important;
+  }
+}
+
+@media (max-height: 600px) {
+  #focusGameOverlay,
+  #buzzGameOverlay {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 44px) !important;
+    padding-bottom: 4px !important;
+  }
+  #focusGameOverlayContent,
+  #buzzGameOverlayContent {
+    max-height: calc(100dvh - 46px) !important;
+    padding: 6px 8px !important;
+  }
+  .song-quiz-wrapper {
+    gap: 6px !important;
+  }
+  .song-quiz-vinyl-card {
+    padding: 6px 8px !important;
+  }
+  .song-quiz-vinyl-disk {
+    width: 38px !important;
+    height: 38px !important;
+    margin: 0 auto 2px !important;
+  }
+  .song-quiz-answer-card {
+    padding: 6px 8px !important;
+  }
+  .song-quiz-options-list {
+    gap: 4px !important;
+  }
+  .song-quiz-option-btn {
+    padding: 6px 8px !important;
+    font-size: 12.5px !important;
+  }
 }
 
 /* 確保管理後台密碼、班級切換等系統彈窗在遊戲層與頂部工具列之上 */
@@ -1373,17 +1571,17 @@ body {
   
   #focusGameOverlayContent,
   #buzzGameOverlayContent {
-    padding: 12px 10px !important;
-    max-height: calc(100dvh - 110px) !important;
+    padding: 10px 8px !important;
+    max-height: calc(100dvh - 66px) !important;
   }
 
   #focusGameOverlay,
   #buzzGameOverlay {
     z-index: 3500 !important;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 90px) !important;
-    padding-bottom: 12px !important;
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 54px) !important;
+    padding-bottom: 8px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
     box-sizing: border-box !important;
   }
 
