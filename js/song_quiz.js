@@ -487,6 +487,8 @@
     const currentResults = { ...(this.focusGame?.results || game?.results || {}), [userId]: result };
     const updatedGame = { ...(this.focusGame || game || {}), results: currentResults };
     this.focusGame = updatedGame;
+    const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+    if (playingRankSection) playingRankSection.style.display = 'none';
     this.renderSongQuizCompleted(updatedGame, result);
 
     db.ref(`quiz/focusGame/results/${userId}`).set(result).then(() => {
@@ -503,6 +505,10 @@
   App.prototype.renderSongQuizCompleted = function renderSongQuizCompleted(game, result) {
     const grid = document.getElementById('focusGameGrid');
     if (!grid) return;
+
+    // 結算畫面已有 songQuizSelfRankList，必須確實隱藏作答中的 focusPlayingLeaderboardSection 避免重複出現
+    const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+    if (playingRankSection) playingRankSection.style.display = 'none';
 
     const answers = result.answers || [];
     const score = Number(result.score) || 0;
@@ -1283,6 +1289,9 @@
   App.prototype.renderBuzzerFinalLeaderboard = function renderBuzzerFinalLeaderboard(game) {
     const grid = document.getElementById('focusGameGrid');
     if (!grid) return;
+
+    const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+    if (playingRankSection) playingRankSection.style.display = 'none';
 
     this.stopSongQuizAudio();
 

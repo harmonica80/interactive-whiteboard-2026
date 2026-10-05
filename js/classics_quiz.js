@@ -195,6 +195,8 @@
     const currentResults = { ...(this.focusGame?.results || game?.results || {}), [userId]: result };
     const updatedGame = { ...(this.focusGame || game || {}), results: currentResults };
     this.focusGame = updatedGame;
+    const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+    if (playingRankSection) playingRankSection.style.display = 'none';
     this.renderClassicsQuizCompleted(updatedGame, result);
 
     db.ref(`quiz/focusGame/results/${userId}`).set(result).then(() => {
@@ -208,6 +210,10 @@
   App.prototype.renderClassicsQuizCompleted = function renderClassicsQuizCompleted(game, result) {
     const grid = document.getElementById('focusGameGrid')
     if (!grid) return
+
+    // 結算畫面已有 classicsQuizSelfRankList，必須確實隱藏作答中的 focusPlayingLeaderboardSection 避免重複出現
+    const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+    if (playingRankSection) playingRankSection.style.display = 'none';
 
     grid.classList.remove('schulte-mode')
     const numberGridContainer = document.getElementById('focusNumberGridContainer')
