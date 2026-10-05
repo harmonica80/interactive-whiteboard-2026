@@ -576,6 +576,81 @@
         saveQuizBtn.addEventListener('click', () => this.saveEditingQuiz());
       }
 
+      // 需求 3：指定播放起訖點雙滑桿與快速設定按鈕事件監聽
+      const rangeStartInput = document.getElementById('vqRangeStartInput');
+      const rangeEndInput = document.getElementById('vqRangeEndInput');
+      if (rangeStartInput && rangeEndInput) {
+        rangeStartInput.addEventListener('input', (e) => {
+          let s = parseInt(e.target.value, 10);
+          let eVal = parseInt(rangeEndInput.value, 10);
+          if (s > eVal) {
+            rangeEndInput.value = s;
+            eVal = s;
+          }
+          this.updateTimeRangeUI(s, eVal, parseInt(rangeStartInput.max, 10));
+          if (this.editingQuiz) {
+            this.editingQuiz.startTime = s;
+            this.editingQuiz.endTime = eVal;
+          }
+        });
+
+        rangeEndInput.addEventListener('input', (e) => {
+          let eVal = parseInt(e.target.value, 10);
+          let s = parseInt(rangeStartInput.value, 10);
+          if (eVal < s) {
+            rangeStartInput.value = eVal;
+            s = eVal;
+          }
+          this.updateTimeRangeUI(s, eVal, parseInt(rangeEndInput.max, 10));
+          if (this.editingQuiz) {
+            this.editingQuiz.startTime = s;
+            this.editingQuiz.endTime = eVal;
+          }
+        });
+      }
+
+      const setStartBtn = document.getElementById('vqSetStartCurrentBtn');
+      if (setStartBtn) {
+        setStartBtn.addEventListener('click', () => {
+          const cur = Math.round(this.currentTime || 0);
+          const max = parseInt(rangeStartInput?.max || 100, 10);
+          let curEnd = parseInt(rangeEndInput?.value || max, 10);
+          if (cur > curEnd) curEnd = cur;
+          this.updateTimeRangeUI(cur, curEnd, max);
+          if (this.editingQuiz) {
+            this.editingQuiz.startTime = cur;
+            this.editingQuiz.endTime = curEnd;
+          }
+        });
+      }
+
+      const setEndBtn = document.getElementById('vqSetEndCurrentBtn');
+      if (setEndBtn) {
+        setEndBtn.addEventListener('click', () => {
+          const cur = Math.round(this.currentTime || 0);
+          const max = parseInt(rangeEndInput?.max || 100, 10);
+          let curStart = parseInt(rangeStartInput?.value || 0, 10);
+          if (cur < curStart) curStart = cur;
+          this.updateTimeRangeUI(curStart, cur, max);
+          if (this.editingQuiz) {
+            this.editingQuiz.startTime = curStart;
+            this.editingQuiz.endTime = cur;
+          }
+        });
+      }
+
+      const resetRangeBtn = document.getElementById('vqResetRangeBtn');
+      if (resetRangeBtn) {
+        resetRangeBtn.addEventListener('click', () => {
+          const max = Math.round(this.duration || parseInt(rangeStartInput?.max || 100, 10));
+          this.updateTimeRangeUI(0, max, max);
+          if (this.editingQuiz) {
+            this.editingQuiz.startTime = 0;
+            this.editingQuiz.endTime = max;
+          }
+        });
+      }
+
       // 需求 5：點擊遮罩外側背景自動關閉彈窗
       const overlaysToDismiss = [
         { id: 'vqAnalyticsModal', close: () => this.closeClassAnalytics() },
@@ -836,6 +911,16 @@
                 onReady: (event) => {
                   this.isPlayerReady = true;
                   this.duration = this.ytPlayer.getDuration() || 0;
+                  if (containerId === 'vqEditorPlayerContainer') {
+                    const dur = Math.round(this.duration || 0);
+                    if (dur > 0) {
+                      const s = this.editingQuiz?.startTime || 0;
+                      const e = (this.editingQuiz?.endTime && this.editingQuiz.endTime <= dur) ? this.editingQuiz.endTime : dur;
+                      this.updateTimeRangeUI(s, e, dur);
+                    }
+                  } else if (this.activeQuiz && this.activeQuiz.startTime > 0) {
+                    this.seekTo(this.activeQuiz.startTime);
+                  }
                   if (typeof onReadyCallback === 'function') onReadyCallback(this);
                 },
                 onStateChange: (event) => {
@@ -873,6 +958,16 @@
         videoEl.onloadedmetadata = () => {
           this.isPlayerReady = true;
           this.duration = videoEl.duration || 0;
+          if (containerId === 'vqEditorPlayerContainer') {
+            const dur = Math.round(this.duration || 0);
+            if (dur > 0) {
+              const s = this.editingQuiz?.startTime || 0;
+              const e = (this.editingQuiz?.endTime && this.editingQuiz.endTime <= dur) ? this.editingQuiz.endTime : dur;
+              this.updateTimeRangeUI(s, e, dur);
+            }
+          } else if (this.activeQuiz && this.activeQuiz.startTime > 0) {
+            this.seekTo(this.activeQuiz.startTime);
+          }
           if (typeof onReadyCallback === 'function') onReadyCallback(this);
         };
         videoEl.onplay = () => { this.isPlaying = true; };
@@ -890,6 +985,16 @@
           t = this.html5Player.currentTime || 0;
         }
         this.currentTime = t;
+
+        // 需求 3：指定結束時間檢查，到達結束時間時自動暫停並觸發影片結束
+        if (this.activeQuiz && this.activeQuiz.endTime > 0 && this.activeQuiz.endTime > (this.activeQuiz.startTime || 0)) {
+          if (t >= this.activeQuiz.endTime) {
+            this.pauseVideo();
+            this.handleVideoEnded();
+            return;
+          }
+        }
+
         if (typeof onTimeUpdateCallback === 'function') {
           onTimeUpdateCallback(t);
         }
@@ -2592,6 +2697,10 @@
       document.getElementById('vqEditQuizDesc').value = this.editingQuiz.description || '';
       document.getElementById('vqEditQuizUrl').value = this.editingQuiz.videoUrl || '';
 
+      const s = this.editingQuiz.startTime || 0;
+      const e = this.editingQuiz.endTime || 0;
+      this.updateTimeRangeUI(s, e, 100);
+
       this.renderEditorTimelineList();
       this.loadEditorVideo();
 
@@ -2779,6 +2888,12 @@
       this.editingQuiz.youtubeId = this.extractYoutubeId(url);
       this.editingQuiz.videoType = this.editingQuiz.youtubeId ? 'youtube' : 'html5';
 
+      // 需求 3：儲存指定播放起訖時間
+      const startVal = parseInt(document.getElementById('vqRangeStartInput')?.value || 0, 10);
+      const endVal = parseInt(document.getElementById('vqRangeEndInput')?.value || 0, 10);
+      this.editingQuiz.startTime = isNaN(startVal) ? 0 : Math.max(0, startVal);
+      this.editingQuiz.endTime = isNaN(endVal) ? 0 : Math.max(0, endVal);
+
       const idx = this.quizzes.findIndex(q => q.id === this.editingQuiz.id);
       if (idx >= 0) {
         this.quizzes[idx] = this.editingQuiz;
@@ -2800,6 +2915,69 @@
       this.renderQuizSelector();
       this.renderEditorQuizList();
       if (window.app) window.app.showNotification('成功', '已刪除影片測驗。');
+    }
+
+    // 格式化時間 (秒數轉 mm:ss 或 hh:mm:ss)
+    formatTime(sec) {
+      const totalSec = Math.max(0, Math.floor(sec || 0));
+      const hrs = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+      if (hrs > 0) {
+        return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    // 需求 3：更新指定播放起訖點雙滑桿介面
+    updateTimeRangeUI(startVal, endVal, maxVal) {
+      const startInput = document.getElementById('vqRangeStartInput');
+      const endInput = document.getElementById('vqRangeEndInput');
+      const startLabel = document.getElementById('vqRangeStartTimeLabel');
+      const endLabel = document.getElementById('vqRangeEndTimeLabel');
+      const totalLabel = document.getElementById('vqRangeTotalTimeLabel');
+      const durLabel = document.getElementById('vqRangeDurationLabel');
+      const highlight = document.getElementById('vqSliderTrackHighlight');
+
+      if (!startInput || !endInput) return;
+
+      const max = Math.max(1, Math.round(maxVal || 100));
+      startInput.max = max;
+      endInput.max = max;
+
+      let s = Math.max(0, Math.min(max, Math.round(startVal || 0)));
+      let e = Math.max(0, Math.min(max, Math.round(endVal !== undefined && endVal !== null ? endVal : max)));
+
+      if (s > e) s = e;
+
+      startInput.value = s;
+      endInput.value = e;
+
+      const sPct = Math.min(100, Math.max(0, (s / max) * 100));
+      const ePct = Math.min(100, Math.max(0, (e / max) * 100));
+
+      if (highlight) {
+        highlight.style.left = `${sPct}%`;
+        highlight.style.width = `${Math.max(0, ePct - sPct)}%`;
+      }
+
+      if (startLabel) {
+        startLabel.textContent = this.formatTime(s);
+        startLabel.style.left = `${sPct}%`;
+      }
+
+      if (endLabel) {
+        endLabel.textContent = this.formatTime(e);
+        endLabel.style.left = `${ePct}%`;
+      }
+
+      if (totalLabel) {
+        totalLabel.textContent = this.formatTime(max);
+      }
+
+      if (durLabel) {
+        durLabel.textContent = this.formatTime(Math.max(0, e - s));
+      }
     }
 
     // ==========================================

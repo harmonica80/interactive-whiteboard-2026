@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.6.0';
+    this.APP_VERSION = '3.6.1';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -8086,6 +8086,8 @@ class App {
     }
     
     if (game.status === 'countdown') {
+      const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+      if (playingRankSection) playingRankSection.style.display = 'none';
       document.getElementById('focusCountdownArea').style.display = 'block';
       document.getElementById('focusPlayArea').style.display = 'none';
       document.getElementById('focusFinishArea').style.display = 'none';
@@ -8193,8 +8195,26 @@ class App {
         
         this.startLocalPlay(game);
       }
+
+      // 學生端進行中即時成績排行榜 (一字千金各種題型、成語典故、位置序列、記憶翻牌、點選數字未送出答案或等待評分時顯示)
+      const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+      const supportedPlayingTypes = ['numberGrid', 'schulte', 'memoryPosition', 'memoryMatch', 'classicsQuiz', 'characterTest', 'characterCrossword', 'characterUnitedWords'];
+      const curType = game.gameType || 'numberGrid';
+      const isCharWaiting = result && result.status !== 'correct' && (curType === 'characterTest' || curType === 'characterCrossword' || curType === 'characterUnitedWords');
+      const showPlayingRank = !this.isAdmin && supportedPlayingTypes.includes(curType) && (!hasCompleted || isCharWaiting);
+
+      if (playingRankSection) {
+        if (showPlayingRank) {
+          playingRankSection.style.display = 'block';
+          this.renderFocusGameLeaderboard('focusPlayingLeaderboardList', game.results);
+        } else {
+          playingRankSection.style.display = 'none';
+        }
+      }
     }
     else if (game.status === 'ended') {
+      const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+      if (playingRankSection) playingRankSection.style.display = 'none';
       document.getElementById('focusCountdownArea').style.display = 'none';
       document.getElementById('focusPlayArea').style.display = 'none';
       document.getElementById('focusFinishArea').style.display = 'block';
