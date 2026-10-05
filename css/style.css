@@ -3106,6 +3106,69 @@ body {
   color: var(--accent-color);
 }
 
+/* ===== 影片測驗：指定播放起訖點雙滑桿 (Dual Range Slider) ===== */
+.vq-dual-slider-container {
+  position: relative;
+  width: 100%;
+  height: 24px;
+}
+
+.vq-range-slider-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+}
+
+.vq-range-slider-input::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 5px solid #00b4d8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: grab;
+  position: relative;
+  z-index: 5;
+  transition: transform 0.1s ease;
+}
+
+.vq-range-slider-input::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.18);
+}
+
+.vq-range-slider-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 5px solid #00b4d8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: grab;
+  position: relative;
+  z-index: 5;
+  transition: transform 0.1s ease;
+}
+
+.vq-range-slider-input::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.18);
+}
+
 /* ===== 課堂模式與班級狀態列 (Class Mode Bar) ===== */
 .class-mode-bar {
   display: flex;

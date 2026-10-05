@@ -1,4 +1,31 @@
 # System Log
+## 2026-10-05 - ver 3.6.1 學生端答題中即時成績排行榜、聽歌搶答擴充480首大題庫、影片測驗指定播放起訖時間區間
+- 影響檔案：`index.html`, `package.json`, `css/style.css`, `js/app.js`, `js/video_quiz.js`, `js/song_quiz_pool.js`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **學生端作答未送出答案時即時顯示成績排行榜 (`index.html`, `js/app.js`)**：
+     - **背景成因**：原先學生端在進行專注力與語文遊戲（如一字千金、成語典故、位置序列、記憶翻牌、點選數字）時，必須等到自身完成題目並送出答案後才會看見成績排行榜，作答進行中無法即時得知其他同學的答題進度與狀態。
+     - **介面配置 (`index.html`)**：在 `#focusPlayArea` 答題畫面的最下方新增常駐即時排行榜區塊 `#focusPlayingLeaderboardSection` 與清單容器 `#focusPlayingLeaderboardList`，並標註「🏆 即時成績排行榜」。
+     - **同步連動邏輯 (`js/app.js`)**：
+       - 在 `handleFocusGameSync` 的 `playing` 狀態分支中，當學生尚未完成（`!hasCompleted`）或一字千金處於等待評分階段（`isCharWaiting`）時，若遊戲類型為支援題型（`characterTest`、`classicsQuiz`、`memoryPosition`、`memoryMatch`、`schulteGrid`），主動將排行榜容器設為 `display: block`。
+       - 調用既有的 `renderFocusGameLeaderboard('focusPlayingLeaderboardList', game.results)`，自動依題型分流並呈現即時排行與並列名次。
+       - 在倒數計時（`countdown`）、閒置（`idle`）與結束（`ended`）狀態下安全隱藏該區塊，防止畫面雜亂。
+  2. **聽歌搶答 8 大分類各再擴充 20 首，總計 480 首完整題庫 (`js/song_quiz_pool.js`, `scripts/verify-song-quiz.mjs`)**：
+     - **題庫全面擴充**：聽歌搶答 8 大分類（古典音樂、台灣五年級、台灣六年級、台灣七年級、台灣八年級、台灣九年級、動漫神曲、童謠兒歌）各由 40 首擴充至 60 首，總題庫達 480 首歌曲。
+     - **官方品質保證**：所有新增歌曲皆精準定義官方正確歌名、演唱者/作曲家、4 個防混淆選項與精美引導線索，並經由 YouTube 官方 oEmbed API 驗證，確保 100% 可公開嵌入播放。
+  3. **影片測驗題單元新增「指定播放起訖點」雙滑桿控制項 (`index.html`, `css/style.css`, `js/video_quiz.js`)**：
+     - **雙滑桿視覺元件 (`index.html`, `css/style.css`)**：
+       - 於出題編輯器新增 `.vq-time-range-box`，支援標題「指定播放起訖點(?)」與詳細功能氣泡說明。
+       - 實作雙滑桿（Dual Range Slider）與動態發光高亮選取區間軌道，即時浮動標註起點時間（如 `00:45`）、訖點時間（如 `02:53`）、影片總時長（如 `04:40`）以及右側選取區間長度（如 `02:08`）。
+       - 支援「📍 起點=當前」、「📍 訖點=當前」、「↺ 重設」快捷操作按鈕，出題者在預覽播放影片時可一鍵快速將當前時間捕捉為起點或訖點。
+     - **播放器精準控制邏輯 (`js/video_quiz.js`)**：
+       - 在測驗出題資料中持久化儲存 `startTime` 與 `endTime`。
+       - 影片載入播放時（`setupPlayer` 的 YouTube `onReady` 與 HTML5 `onloadedmetadata`），若設定有 `startTime > 0`，播放器自動跳轉（`seekTo`）至起始時間開始播映。
+       - 播放時間輪詢器（`pollTimer`）中即時比對當前播放秒數，當達到或超過 `endTime` 時，自動調用 `pauseVideo()` 並觸發 `handleVideoEnded()` 結束影片或銜接測驗結算。
+  4. **版本號嚴格遞增至 `ver 3.6.1` 並刷新全域快取**：
+     - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=361`）、`app.js`（`this.APP_VERSION = '3.6.1'`）。
+     - 更新自動化整合測試腳本 `verify-video-quiz.mjs`（107 項）與 `verify-song-quiz.mjs` 全數通過。
+
+---
 ## 2026-10-02 - ver 3.6.0 一次性課堂未設定姓名或誤關輸入框時左上角常駐顯示設定名稱按鈕
 - 影響檔案：`index.html`, `package.json`, `css/style.css`, `js/app.js`, `scripts/verify-song-quiz.mjs`, `scripts/verify-video-quiz.mjs`, `SYSTEM_LOG.md`。
 - 修改項目：

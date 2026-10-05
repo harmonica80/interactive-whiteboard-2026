@@ -12,21 +12,21 @@ const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
 const fbJs = fs.readFileSync('js/firebase-config.js', 'utf8');
 
 const checks = [
-  ['package.json version 3.6.0', pkg.version === '3.6.0'],
-  ['app.js APP_VERSION 3.6.0', appJs.includes("this.APP_VERSION = '3.6.0';")],
-  ['index.html badge ver 3.6.0', html.includes('ver 3.6.0')],
+  ['package.json version 3.6.1', pkg.version === '3.6.1'],
+  ['app.js APP_VERSION 3.6.1', appJs.includes("this.APP_VERSION = '3.6.1';")],
+  ['index.html badge ver 3.6.1', html.includes('ver 3.6.1')],
   ['index.html adminNewClassName maxlength="50"', html.includes('id="adminNewClassName"') && html.includes('maxlength="50"')],
   ['index.html adminEditClassName maxlength="50"', html.includes('id="adminEditClassName"') && html.includes('maxlength="50"')],
   ['index.html studentNameModal exists', html.includes('id="studentNameModal"')],
   ['index.html itemEditModal exists', html.includes('id="itemEditModal"')],
   ['app.js openStudentNameModal method', appJs.includes('openStudentNameModal(')],
   ['app.js isItemOwner method', appJs.includes('isItemOwner(item)')],
-  ['index.html style.css?v=360', html.includes('css/style.css?v=360')],
-  ['index.html firebase-config.js?v=360', html.includes('js/firebase-config.js?v=360')],
-  ['index.html app.js?v=360', html.includes('js/app.js?v=360')],
-  ['index.html quiz.js?v=360', html.includes('js/quiz.js?v=360')],
-  ['index.html video_quiz.js?v=360', html.includes('js/video_quiz.js?v=360')],
-  ['index.html song_quiz.js?v=360', html.includes('js/song_quiz.js?v=360')],
+  ['index.html style.css?v=361', html.includes('css/style.css?v=361')],
+  ['index.html firebase-config.js?v=361', html.includes('js/firebase-config.js?v=361')],
+  ['index.html app.js?v=361', html.includes('js/app.js?v=361')],
+  ['index.html quiz.js?v=361', html.includes('js/quiz.js?v=361')],
+  ['index.html video_quiz.js?v=361', html.includes('js/video_quiz.js?v=361')],
+  ['index.html song_quiz.js?v=361', html.includes('js/song_quiz.js?v=361')],
   ['index.html displayUserNameTagOneOff exists', html.includes('id="displayUserNameTagOneOff"')],
   ['index.html btnSetStudentNameOneOff exists', html.includes('id="btnSetStudentNameOneOff"')],
   ['app.js updateStudentNameUI method exists', appJs.includes('updateStudentNameUI()')],
@@ -110,7 +110,15 @@ const checks = [
   ['app.js findExistingStudentByName method', appJs.includes('findExistingStudentByName(')],
   ['app.js confirmSameStudentLogin method', appJs.includes('confirmSameStudentLogin()')],
   ['app.js generateSuggestedStudentName method', appJs.includes('generateSuggestedStudentName(')],
-  ['app.js applySuggestedStudentName method', appJs.includes('applySuggestedStudentName(')]
+  ['app.js applySuggestedStudentName method', appJs.includes('applySuggestedStudentName(')],
+  ['index.html focusPlayingLeaderboardSection exists', html.includes('id="focusPlayingLeaderboardSection"')],
+  ['index.html focusPlayingLeaderboardList exists', html.includes('id="focusPlayingLeaderboardList"')],
+  ['app.js handleFocusGameSync displays leaderboard during play', appJs.includes('focusPlayingLeaderboardSection') && appJs.includes('focusPlayingLeaderboardList')],
+  ['index.html vqRangeStartInput and vqRangeEndInput dual sliders', html.includes('id="vqRangeStartInput"') && html.includes('id="vqRangeEndInput"')],
+  ['video_quiz.js formatTime method exists', vqJs.includes('formatTime(')],
+  ['video_quiz.js updateTimeRangeUI method exists', vqJs.includes('updateTimeRangeUI(')],
+  ['video_quiz.js startTime seekTo support', vqJs.includes('this.seekTo(this.activeQuiz.startTime)')],
+  ['video_quiz.js endTime pauseVideo support', vqJs.includes('this.activeQuiz.endTime') && vqJs.includes('this.pauseVideo()')]
 ];
 
 let allPassed = true;

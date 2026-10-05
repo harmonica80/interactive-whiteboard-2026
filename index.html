@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=360">
+  <link rel="stylesheet" href="css/style.css?v=361">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.6.0</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.6.1</span>
         </p>
       </div>
       <div class="top-actions">
@@ -1887,17 +1887,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=360"></script>
+  <script src="js/firebase-config.js?v=361"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=360"></script>
-  <script src="js/focus_question_bank.js?v=360"></script>
+  <script src="js/song_quiz_pool.js?v=361"></script>
+  <script src="js/focus_question_bank.js?v=361"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=360"></script>
-  <script src="js/app.js?v=360"></script>
-  <script src="js/classics_quiz.js?v=360"></script>
-  <script src="js/song_quiz.js?v=360"></script>
-  <script src="js/video_quiz.js?v=360"></script>
+  <script src="js/quiz.js?v=361"></script>
+  <script src="js/app.js?v=361"></script>
+  <script src="js/classics_quiz.js?v=361"></script>
+  <script src="js/song_quiz.js?v=361"></script>
+  <script src="js/video_quiz.js?v=361"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -2267,6 +2267,16 @@ Python</pre>
         <div id="focusGameInstruction" style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;">
           💡 點擊正確數字它將會消失，看誰能用最快的速度完成！
         </div>
+
+        <!-- 學生端進行中即時成績排行榜 (未送出答案時亦能掌握全班即時動態) -->
+        <div id="focusPlayingLeaderboardSection" style="display: none; width: 100%; max-width: 520px; margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px; text-align: left; box-sizing: border-box;">
+          <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">
+            🏆 即時成績排行榜
+          </h4>
+          <div id="focusPlayingLeaderboardList" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;">
+            <!-- 實時排名清單 -->
+          </div>
+        </div>
       </div>
 
       <!-- 3. 遊戲完成/結算畫面 -->
@@ -2586,6 +2596,43 @@ Python</pre>
           <div style="display: flex; gap: 8px; margin-bottom: 10px;">
             <input type="text" id="vqEditQuizUrl" class="question-input" placeholder="https://www.youtube.com/watch?v=..." style="flex: 1; margin: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
             <button id="vqEditorLoadVideoBtn" style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;">載入影片</button>
+          </div>
+
+          <!-- 指定播放起訖點 (雙滑桿區間控制項) -->
+          <div class="vq-time-range-box" style="margin: 12px 0 10px 0; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">指定播放起訖點</span>
+                <span class="vq-range-tooltip-trigger" title="指定影片播放的起訖時間區間。學生作答或同步播放時，將自動從起始時間播放，到達結束時間時自動停止並完成測驗。若起訖點設為 00:00 則依影片原始長度完整播放。" style="color: #0284c7; cursor: pointer; font-size: 13px; font-weight: bold;">(?)</span>
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <button type="button" id="vqSetStartCurrentBtn" class="vq-btn-sm" style="font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);" title="將目前影片播放時間設為起始點">📍 起點=當前</button>
+                <button type="button" id="vqSetEndCurrentBtn" class="vq-btn-sm" style="font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);" title="將目前影片播放時間設為結束點">📍 訖點=當前</button>
+                <button type="button" id="vqResetRangeBtn" class="vq-btn-sm" style="font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);" title="重設為全片播放">↺ 重設</button>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 14px; margin-top: 4px;">
+              <div style="flex: 1; position: relative; padding-top: 22px; padding-bottom: 6px;">
+                <!-- 浮動時間指示與總時長 -->
+                <span id="vqRangeStartTimeLabel" style="position: absolute; top: 0; font-size: 12px; font-weight: bold; color: #0096c7; transform: translateX(-50%); pointer-events: none; transition: left 0.05s ease;">00:00</span>
+                <span id="vqRangeEndTimeLabel" style="position: absolute; top: 0; font-size: 12px; font-weight: bold; color: #0096c7; transform: translateX(-50%); pointer-events: none; transition: left 0.05s ease;">00:00</span>
+                <span id="vqRangeTotalTimeLabel" style="position: absolute; top: 0; right: 0; font-size: 12px; font-weight: normal; color: var(--text-secondary);" title="影片總長度">00:00</span>
+
+                <!-- 雙滑桿軌道容器 -->
+                <div class="vq-dual-slider-container" style="position: relative; height: 20px; display: flex; align-items: center;">
+                  <div class="vq-slider-track-bg" style="position: absolute; width: 100%; height: 6px; background: #cbd5e1; border-radius: 3px;"></div>
+                  <div id="vqSliderTrackHighlight" style="position: absolute; height: 6px; background: #00b4d8; border-radius: 3px; left: 0%; width: 100%;"></div>
+                  <input type="range" id="vqRangeStartInput" min="0" max="100" value="0" step="1" class="vq-range-slider-input vq-range-start">
+                  <input type="range" id="vqRangeEndInput" min="0" max="100" value="100" step="1" class="vq-range-slider-input vq-range-end">
+                </div>
+              </div>
+
+              <!-- 右側區間時長 -->
+              <div id="vqRangeDurationLabel" style="min-width: 50px; text-align: right; font-size: 14px; font-weight: bold; color: var(--text-primary); font-family: monospace;" title="選取播放區間總時長">
+                00:00
+              </div>
+            </div>
           </div>
         </div>
 

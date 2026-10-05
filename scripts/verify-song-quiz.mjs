@@ -57,8 +57,8 @@ if (!qb) throw new Error('focusQB 初始化失敗！');
 
 // 測試取得預設題庫
 const pool = qb.getPool('songQuiz');
-if (pool.length !== 320) {
-  throw new Error(`getPool('songQuiz') 題目數量應為 320 首：目前為 ${pool.length} vs ${defaultPool.length}`);
+if (pool.length !== 480) {
+  throw new Error(`getPool('songQuiz') 題目數量應為 480 首：目前為 ${pool.length} vs ${defaultPool.length}`);
 }
 
 // 測試標籤獲取
@@ -69,8 +69,8 @@ expectedTags.forEach(t => {
     throw new Error(`缺少預期標籤 ${t}：${JSON.stringify(tags)}`);
   }
   const count = pool.filter(s => s.tag === t).length;
-  if (count !== 40) {
-    throw new Error(`標籤 ${t} 歌曲應為 40 首（目前 ${count} 首）`);
+  if (count !== 60) {
+    throw new Error(`標籤 ${t} 歌曲應為 60 首（目前 ${count} 首）`);
   }
 });
 
@@ -120,19 +120,19 @@ if (qb.getPool('songQuiz').length !== defaultPool.length) {
 // 測試多標籤核選篩選邏輯 (單選/多選/全選)
 const rawSongPool = qb.getPool('songQuiz');
 const classicalOnly = rawSongPool.filter(s => ['古典音樂'].includes(s.tag));
-if (classicalOnly.length !== 40) throw new Error(`單一標籤古典音樂歌曲數應為 40，實際為：${classicalOnly.length}`);
+if (classicalOnly.length !== 60) throw new Error(`單一標籤古典音樂歌曲數應為 60，實際為：${classicalOnly.length}`);
 
 const twoTagSongs = rawSongPool.filter(s => ['古典音樂', '台灣五年級'].includes(s.tag));
-if (twoTagSongs.length !== 80) throw new Error(`雙標籤歌曲數應為 80，實際為：${twoTagSongs.length}`);
+if (twoTagSongs.length !== 120) throw new Error(`雙標籤歌曲數應為 120，實際為：${twoTagSongs.length}`);
 
 const threeTagSongs = rawSongPool.filter(s => ['古典音樂', '台灣五年級', '動漫神曲'].includes(s.tag));
-if (threeTagSongs.length !== 120) throw new Error(`三標籤歌曲數應為 120，實際為：${threeTagSongs.length}`);
+if (threeTagSongs.length !== 180) throw new Error(`三標籤歌曲數應為 180，實際為：${threeTagSongs.length}`);
 
 // 3. 測試 index.html 元素與配置
 const html = fs.readFileSync('index.html', 'utf8');
 const classicsQuizCode = fs.readFileSync('js/classics_quiz.js', 'utf8');
 const htmlChecks = [
-  ['index.html 包含 ver 3.6.0 版本標示', html.includes('ver 3.6.0')],
+  ['index.html 包含 ver 3.6.1 版本標示', html.includes('ver 3.6.1')],
   ['包含學生重複名稱確認本人按鈕 btnConfirmSameStudentLogin', html.includes('id="btnConfirmSameStudentLogin"')],
   ['包含一次性課堂設定名稱按鈕 btnSetStudentNameOneOff', html.includes('id="btnSetStudentNameOneOff"')],
   ['focusGameType 包含 songQuiz 選項', html.includes('value="songQuiz"')],
@@ -151,10 +151,10 @@ const htmlChecks = [
   ['包含題庫徽章 focusQbBadge_songQuiz', html.includes('id="focusQbBadge_songQuiz"')],
   ['題庫彈窗包含 songQuiz 頁籤按鈕', html.includes('data-type="songQuiz"')],
   ['題庫彈窗包含標籤篩選下拉選單 focusQbTagFilterSelect', html.includes('id="focusQbTagFilterSelect"')],
-  ['引用 song_quiz_pool.js?v=360', html.includes('js/song_quiz_pool.js?v=360')],
-  ['引用 song_quiz.js?v=360', html.includes('js/song_quiz.js?v=360')],
-  ['引用 focus_question_bank.js?v=360', html.includes('js/focus_question_bank.js?v=360')],
-  ['引用 app.js?v=360', html.includes('js/app.js?v=360')],
+  ['引用 song_quiz_pool.js?v=361', html.includes('js/song_quiz_pool.js?v=361')],
+  ['引用 song_quiz.js?v=361', html.includes('js/song_quiz.js?v=361')],
+  ['引用 focus_question_bank.js?v=361', html.includes('js/focus_question_bank.js?v=361')],
+  ['引用 app.js?v=361', html.includes('js/app.js?v=361')],
   ['字力測驗包含出題數量下拉選單 focusCharacterTestCount', html.includes('id="focusCharacterTestCount"')],
   ['成語測驗出題數量包含 1 題與 2 題選項', html.includes('id="focusClassicsQuizCount"') && html.includes('<option value="1">1 題') && html.includes('<option value="2">2 題')],
   ['成語測驗答題說明改為 Google 查詢', classicsQuizCode.includes('google.com/search?q=') && classicsQuizCode.includes('透過 Google 查詢')],
@@ -175,7 +175,7 @@ htmlChecks.forEach(([desc, cond]) => {
 // 4. 測試 app.js 邏輯
 const appCode = fs.readFileSync('js/app.js', 'utf8');
 const appChecks = [
-  ['app.js APP_VERSION 為 3.6.0', appCode.includes("this.APP_VERSION = '3.6.0';")],
+  ['app.js APP_VERSION 為 3.6.1', appCode.includes("this.APP_VERSION = '3.6.1';")],
   ['app.js updateStudentNameUI 方法存在', appCode.includes('updateStudentNameUI()')],
   ['app.js findExistingStudentByName 方法存在', appCode.includes('findExistingStudentByName(')],
   ['app.js confirmSameStudentLogin 方法存在', appCode.includes('confirmSameStudentLogin(')],
