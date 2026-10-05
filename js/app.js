@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.6.2';
+    this.APP_VERSION = '3.6.3';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -8116,6 +8116,8 @@ class App {
       const hasCompleted = !!result;
 
       if (hasCompleted && game.gameType === 'classicsQuiz') {
+        const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+        if (playingRankSection) playingRankSection.style.display = 'none';
         document.getElementById('focusPlayArea').style.display = 'flex';
         document.getElementById('focusFinishArea').style.display = 'none';
         if (document.getElementById('classicsQuizSelfRankList')) {
@@ -8126,6 +8128,8 @@ class App {
         return;
       }
       if (hasCompleted && game.gameType === 'songQuiz' && game.playMode === 'self') {
+        const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+        if (playingRankSection) playingRankSection.style.display = 'none';
         document.getElementById('focusPlayArea').style.display = 'flex';
         document.getElementById('focusFinishArea').style.display = 'none';
         if (document.getElementById('songQuizSelfRankList')) {
