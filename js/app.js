@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.6.1';
+    this.APP_VERSION = '3.6.2';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -9592,6 +9592,15 @@ class App {
     grid.style.gap = '16px';
     grid.style.width = '100%';
     grid.style.maxWidth = '500px';
+    grid.style.maxHeight = 'none';
+    grid.style.height = 'auto';
+    grid.style.minHeight = 'auto';
+    grid.style.overflow = 'visible';
+    if (numberGridContainer) {
+      numberGridContainer.style.maxHeight = 'none';
+      numberGridContainer.style.height = 'auto';
+      numberGridContainer.style.flexShrink = '0';
+    }
     
     const questions = game.questions || [];
     const isCrossword = game.gameType === 'characterCrossword';
@@ -9702,14 +9711,17 @@ class App {
     html += `
       </div>
       ${allowHint ? `
-      <button id="focusCharTestHintBtn" onclick="window.app.showGeneralCharacterHint()" style="margin-top: 12px; width: 100%; padding: 12px; background: #ff9500; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(255,149,0,0.25);">
+      <button id="focusCharTestHintBtn" onclick="window.app.showGeneralCharacterHint()" style="margin-top: 14px; width: 100%; padding: 12px; background: #ff9500; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(255,149,0,0.25); position: relative; z-index: 5; flex-shrink: 0;">
         💡 顯示提示字 (2秒/+${penaltyAmount}秒)
       </button>` : ''}
-      <button onclick="window.app.submitCharTestAnswers()" style="margin-top: 12px; width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,122,255,0.25);">
+      <button onclick="window.app.submitCharTestAnswers()" style="margin-top: 12px; margin-bottom: 12px; width: 100%; padding: 13px; background: var(--accent-color); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,122,255,0.25); position: relative; z-index: 5; flex-shrink: 0; touch-action: manipulation;">
         ✔️ 送出答案
       </button>
     `;
     
+    grid.style.maxHeight = 'none';
+    grid.style.height = 'auto';
+    grid.style.overflow = 'visible';
     grid.innerHTML = html;
     this.bindCharInputImeEvents(grid);
     
@@ -10028,6 +10040,15 @@ class App {
     grid.style.gap = '16px';
     grid.style.width = '100%';
     grid.style.maxWidth = '500px';
+    grid.style.maxHeight = 'none';
+    grid.style.height = 'auto';
+    grid.style.minHeight = 'auto';
+    grid.style.overflow = 'visible';
+    if (numberGridContainer) {
+      numberGridContainer.style.maxHeight = 'none';
+      numberGridContainer.style.height = 'auto';
+      numberGridContainer.style.flexShrink = '0';
+    }
     
     const answers = result.answers || ['', '', ''];
     const status = result.status || 'pending';

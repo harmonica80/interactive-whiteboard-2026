@@ -42,7 +42,15 @@
     grid.style.gap = '12px'
     grid.style.width = '100%'
     grid.style.maxWidth = '560px'
+    grid.style.maxHeight = 'none'
+    grid.style.height = 'auto'
     grid.style.minHeight = 'auto'
+    grid.style.overflow = 'visible'
+    if (numberGridContainer) {
+      numberGridContainer.style.maxHeight = 'none'
+      numberGridContainer.style.height = 'auto'
+      numberGridContainer.style.flexShrink = '0'
+    }
 
     const questions = Array.isArray(game.questions) ? game.questions : []
     if (questions.length === 0) {
@@ -220,6 +228,15 @@
     grid.style.gap = '12px'
     grid.style.width = '100%'
     grid.style.maxWidth = '560px'
+    grid.style.maxHeight = 'none'
+    grid.style.height = 'auto'
+    grid.style.minHeight = 'auto'
+    grid.style.overflow = 'visible'
+    if (numberGridContainer) {
+      numberGridContainer.style.maxHeight = 'none'
+      numberGridContainer.style.height = 'auto'
+      numberGridContainer.style.flexShrink = '0'
+    }
     grid.innerHTML = `
       <div style="padding:16px;border-radius:14px;background:rgba(52,199,89,.10);border:1px solid #34c759;width:100%;box-sizing:border-box;">
         <div style="font-size:21px;font-weight:900;color:#167a31;">🎉 本局完成：答對 ${score}／${total} 題</div>
