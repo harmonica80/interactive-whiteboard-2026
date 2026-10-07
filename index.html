@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=364">
+  <link rel="stylesheet" href="css/style.css?v=365">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -24,7 +24,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.6.4</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.6.5</span>
         </p>
       </div>
       <div class="top-actions">
@@ -905,10 +905,32 @@
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
-              <div id="quizForm" class="quiz-controls">
-                <!-- 1. 題目輸入框 (獨佔整行 100%) -->
-                <div style="margin-bottom: 10px;">
-                  <input type="text" id="quizQuestion" class="quiz-input" placeholder="輸入題目..." style="width: 100%; margin-bottom: 0; box-sizing: border-box;">
+                <!-- 1. 題目豐富線上編輯器 (文字樣式、圖片、影片插入/嵌入) -->
+                <div class="quiz-editor-wrapper">
+                  <div class="quiz-editor-toolbar">
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('bold')" title="粗體"><strong>B</strong></button>
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('italic')" title="斜體"><em>I</em></button>
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('underline')" title="底線"><u>U</u></button>
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('strikeThrough')" title="刪除線"><s>S</s></button>
+                    <span style="color: var(--border-color); margin: 0 2px;">|</span>
+                    <!-- 顏色選擇器 -->
+                    <label class="quiz-editor-btn" title="文字顏色" style="cursor: pointer;">
+                      <span>🎨</span>
+                      <input type="color" onchange="window.quiz && window.quiz.execEditorCmd('foreColor', this.value)" style="opacity: 0; width: 0; height: 0; position: absolute;">
+                    </label>
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('hiliteColor', '#fff3cd')" title="黃色螢光標示">🖍️ 螢光</button>
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('fontSize', '5')" title="大字體">🔤 放大</button>
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('fontSize', '3')" title="正常字體">標準</button>
+                    <span style="color: var(--border-color); margin: 0 2px;">|</span>
+                    <!-- 插入圖片按鈕 -->
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.promptInsertEditorImage()" title="插入圖片 (支援本機上傳/URL/貼上)">🖼️ 圖片</button>
+                    <!-- 插入影片按鈕 -->
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.promptInsertEditorVideo()" title="插入/嵌入影片 (YouTube、Google Drive、MP4)">🎥 影片</button>
+                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.clearEditor()" title="清空題目" style="color: var(--danger-color); margin-left: auto;">🗑️ 清空</button>
+                  </div>
+                  <div id="quizQuestionEditor" class="quiz-editor-content" contenteditable="true" data-placeholder="輸入題目內容... (支援直接 Ctrl+V 貼上圖片、文字或排版)"></div>
+                  <input type="hidden" id="quizQuestion" value="">
+                  <input type="file" id="quizEditorImgFileInput" accept="image/*" style="display: none;" onchange="window.quiz && window.quiz.handleEditorImgUpload(event)">
                 </div>
 
                 <!-- 2. 題型選擇器 (移動至題目下方) -->
@@ -947,15 +969,26 @@
                 </div>
                 
                 <div id="optionsContainer" class="options-container">
-                  <div class="option-input">
-                    <input type="text" class="option-field" placeholder="選項 1">
+                  <div class="option-input" data-type="text">
+                    <span class="option-label">1</span>
+                    <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+                    <input type="text" class="option-field" placeholder="選項 1 文字內容">
+                    <input type="hidden" class="option-img-data" value="">
+                    <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+                    <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
                     <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
                   </div>
-                  <div class="option-input">
-                    <input type="text" class="option-field" placeholder="選項 2">
+                  <div class="option-input" data-type="text">
+                    <span class="option-label">2</span>
+                    <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+                    <input type="text" class="option-field" placeholder="選項 2 文字內容">
+                    <input type="hidden" class="option-img-data" value="">
+                    <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+                    <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
                     <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
                   </div>
                 </div>
+                <input type="file" id="quizOptionImgFileInput" accept="image/*" style="display: none;">
                 <button class="add-option-btn" onclick="addOption()">+ 新增選項</button>
                 <button id="startQuizBtn" class="start-quiz-btn" onclick="startQuiz()">🚀 開始測驗</button>
               </div>
@@ -1893,17 +1926,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=364"></script>
+  <script src="js/firebase-config.js?v=365"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=364"></script>
-  <script src="js/focus_question_bank.js?v=364"></script>
+  <script src="js/song_quiz_pool.js?v=365"></script>
+  <script src="js/focus_question_bank.js?v=365"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=364"></script>
-  <script src="js/app.js?v=364"></script>
-  <script src="js/classics_quiz.js?v=364"></script>
-  <script src="js/song_quiz.js?v=364"></script>
-  <script src="js/video_quiz.js?v=364"></script>
+  <script src="js/quiz.js?v=365"></script>
+  <script src="js/app.js?v=365"></script>
+  <script src="js/classics_quiz.js?v=365"></script>
+  <script src="js/song_quiz.js?v=365"></script>
+  <script src="js/video_quiz.js?v=365"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

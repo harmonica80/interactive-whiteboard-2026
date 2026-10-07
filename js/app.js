@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.6.4';
+    this.APP_VERSION = '3.6.5';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -12897,18 +12897,83 @@ class WheelSoundEffects {
 
 // 開始測驗
 function startQuiz() {
-  const question = document.getElementById('quizQuestion').value.trim();
-  const optionFields = document.querySelectorAll('.option-field');
-  const options = Array.from(optionFields).map(input => input.value.trim()).filter(v => v);
+  const editorEl = document.getElementById('quizQuestionEditor');
+  let questionHtml = editorEl ? editorEl.innerHTML.trim() : '';
+  const questionText = editorEl ? (editorEl.innerText || editorEl.textContent || '').trim() : '';
+  const fallbackVal = document.getElementById('quizQuestion')?.value.trim() || '';
+
+  // 判斷題目是否有實質內容（純文字、img 圖片或 iframe/video 影片）
+  const hasContent = (editorEl && (editorEl.querySelector('img, iframe, video') !== null || questionText.length > 0)) || fallbackVal.length > 0;
+  
+  if (!hasContent) {
+    window.app.showNotification('提示', '請填寫題目或插入圖片/影片');
+    return;
+  }
+
+  // 取得題目最終內容（若僅為純文字且無標籤，維持文字；若包含標籤則傳遞 HTML）
+  const finalQuestion = (editorEl && editorEl.querySelector('img, iframe, video, b, i, u, s, span, div, p, font') !== null) 
+    ? questionHtml 
+    : (questionText || fallbackVal);
+
+  // 收集選項內容 (支援文字與圖片類型)
+  const optionContainers = document.querySelectorAll('#optionsContainer .option-input');
+  const options = [];
+
+  optionContainers.forEach(container => {
+    const type = container.getAttribute('data-type') || 'text';
+    const textVal = container.querySelector('.option-field')?.value.trim() || '';
+    const imgData = container.querySelector('.option-img-data')?.value.trim() || '';
+
+    if (type === 'image') {
+      if (imgData) {
+        options.push({ type: 'image', text: textVal, image: imgData });
+      } else if (textVal) {
+        options.push({ type: 'text', text: textVal });
+      }
+    } else {
+      if (textVal) {
+        options.push(textVal);
+      }
+    }
+  });
+
   const quizType = document.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
   
-  if (!question) { window.app.showNotification('提示', '請填寫題目'); return; }
-  if (options.length < 2) { window.app.showNotification('提示', '請填寫至少兩個選項'); return; }
+  if (options.length < 2) {
+    window.app.showNotification('提示', '請填寫至少兩個有效選項');
+    return;
+  }
   
   if (window.quiz) {
-    window.quiz.startQuiz(question, options, quizType);
-    document.getElementById('quizQuestion').value = '';
-    optionFields.forEach(input => input.value = '');
+    window.quiz.startQuiz(finalQuestion, options, quizType);
+    if (editorEl) editorEl.innerHTML = '';
+    const legacyInput = document.getElementById('quizQuestion');
+    if (legacyInput) legacyInput.value = '';
+    
+    // 重設選項為初始 2 個文字選項
+    const optsContainer = document.getElementById('optionsContainer');
+    if (optsContainer) {
+      optsContainer.innerHTML = `
+        <div class="option-input" data-type="text">
+          <span class="option-label">1</span>
+          <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+          <input type="text" class="option-field" placeholder="選項 1 文字內容">
+          <input type="hidden" class="option-img-data" value="">
+          <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+          <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+        </div>
+        <div class="option-input" data-type="text">
+          <span class="option-label">2</span>
+          <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+          <input type="text" class="option-field" placeholder="選項 2 文字內容">
+          <input type="hidden" class="option-img-data" value="">
+          <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+          <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+        </div>
+      `;
+    }
   }
 }
 
@@ -12925,10 +12990,15 @@ function loadPreset(type) {
   };
   
   const options = presets[type];
-  if (options) {
-    container.innerHTML = options.map(opt => `
-      <div class="option-input">
+  if (options && container) {
+    container.innerHTML = options.map((opt, idx) => `
+      <div class="option-input" data-type="text">
+        <span class="option-label">${idx + 1}</span>
+        <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
         <input type="text" class="option-field" value="${opt}" placeholder="選項">
+        <input type="hidden" class="option-img-data" value="">
+        <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+        <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
         <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
       </div>
     `).join('');
@@ -12953,8 +13023,14 @@ function addOption() {
   
   const div = document.createElement('div');
   div.className = 'option-input';
+  div.setAttribute('data-type', 'text');
   div.innerHTML = `
-    <input type="text" class="option-field" placeholder="選項 ${count}">
+    <span class="option-label">${count}</span>
+    <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+    <input type="text" class="option-field" placeholder="選項 ${count} 文字內容">
+    <input type="hidden" class="option-img-data" value="">
+    <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+    <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
     <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
   `;
   container.appendChild(div);
