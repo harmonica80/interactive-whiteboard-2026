@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.6.5';
+    this.APP_VERSION = '3.6.6';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -12959,7 +12959,7 @@ function startQuiz() {
           <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
           <input type="text" class="option-field" placeholder="選項 1 文字內容">
           <input type="hidden" class="option-img-data" value="">
-          <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+          <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
           <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
           <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
         </div>
@@ -12968,7 +12968,7 @@ function startQuiz() {
           <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
           <input type="text" class="option-field" placeholder="選項 2 文字內容">
           <input type="hidden" class="option-img-data" value="">
-          <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+          <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
           <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
           <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
         </div>
@@ -12997,7 +12997,7 @@ function loadPreset(type) {
         <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
         <input type="text" class="option-field" value="${opt}" placeholder="選項">
         <input type="hidden" class="option-img-data" value="">
-        <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+        <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
         <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
         <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
       </div>
@@ -13029,7 +13029,7 @@ function addOption() {
     <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
     <input type="text" class="option-field" placeholder="選項 ${count} 文字內容">
     <input type="hidden" class="option-img-data" value="">
-    <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+    <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
     <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
     <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
   `;
