@@ -7,6 +7,7 @@ class Quiz {
     this.answersRef = db.ref('quiz/answers');
     this.historyRef = db.ref('quiz/history');
     this.setupFirebaseSync();
+    this.initEditorEvents();
   }
   
   setupFirebaseSync() {
@@ -24,7 +25,9 @@ class Quiz {
             }
           }
           if (!prevActive && window.app) {
-            window.app.showNotification('測驗進行中', `老師已發起測驗：${this.currentQuiz.question}`);
+            const cleanSummary = (this.currentQuiz.question || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+            const displayQuestion = cleanSummary.length > 50 ? cleanSummary.substring(0, 50) + '...' : (cleanSummary || '新題目');
+            window.app.showNotification('測驗進行中', `老師已發起測驗：${displayQuestion}`);
           }
         }
       }
@@ -498,22 +501,177 @@ class Quiz {
     if (editor) editor.innerHTML = '';
   }
 
-  // 彈出插入圖片提示
-  promptInsertEditorImage() {
-    const choice = prompt('請選擇插入圖片方式：\n1. 輸入遠端圖片網址 (URL)\n2. 輸入 "upload" 或直接點確定來選取電腦圖檔', '');
-    if (choice === null) return;
-    const trimmed = choice.trim();
-    if (!trimmed || trimmed.toLowerCase() === 'upload' || trimmed === '2') {
-      const fileInput = document.getElementById('quizEditorImgFileInput');
-      if (fileInput) fileInput.click();
-    } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
-      this.insertEditorImageHtml(trimmed);
+  // 初始化編輯器事件（貼上圖片監聽與點擊外部關閉選單）
+  initEditorEvents() {
+    const bindEvents = () => {
+      const editor = document.getElementById('quizQuestionEditor');
+      if (editor && !editor.__eventsBound) {
+        editor.__eventsBound = true;
+        editor.addEventListener('paste', (e) => {
+          const clipboardData = e.clipboardData || window.clipboardData;
+          if (!clipboardData) return;
+          const items = clipboardData.items;
+          if (!items) return;
+          for (let i = 0; i < items.length; i++) {
+            if (items[i].type && items[i].type.indexOf('image') !== -1) {
+              e.preventDefault();
+              const file = items[i].getAsFile();
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  this.compressAndInsertImage(ev.target.result);
+                };
+                reader.readAsDataURL(file);
+                return;
+              }
+            }
+          }
+        });
+      }
+
+      // 選項欄位也支援直接貼上剪貼簿圖片
+      const optionsContainer = document.getElementById('optionsContainer');
+      if (optionsContainer && !optionsContainer.__eventsBound) {
+        optionsContainer.__eventsBound = true;
+        optionsContainer.addEventListener('paste', (e) => {
+          const row = e.target.closest('.option-input');
+          if (!row) return;
+          const clipboardData = e.clipboardData || window.clipboardData;
+          if (!clipboardData) return;
+          const items = clipboardData.items;
+          if (!items) return;
+          for (let i = 0; i < items.length; i++) {
+            if (items[i].type && items[i].type.indexOf('image') !== -1) {
+              e.preventDefault();
+              const file = items[i].getAsFile();
+              if (file) {
+                this.currentEditingOptionRow = row;
+                const toggleBtn = row.querySelector('.option-type-toggle-btn');
+                if (row.getAttribute('data-type') !== 'image' && toggleBtn) {
+                  this.toggleOptionType(toggleBtn);
+                }
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  this.compressOptionImage(ev.target.result);
+                };
+                reader.readAsDataURL(file);
+                return;
+              }
+            }
+          }
+        });
+      }
+
+      if (!window.__quizDropdownClickBound) {
+        window.__quizDropdownClickBound = true;
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.quiz-editor-dropdown-wrapper')) {
+            this.closeAllDropdowns();
+          }
+          const optMenu = document.getElementById('quizOptionImgActionMenu');
+          if (optMenu && !e.target.closest('#quizOptionImgActionMenu') && !e.target.closest('.option-img-btn')) {
+            optMenu.style.display = 'none';
+          }
+        });
+      }
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bindEvents);
     } else {
-      if (window.app) window.app.showNotification('提示', '請輸入有效的圖片網址，或選取圖檔上傳');
+      bindEvents();
     }
   }
 
-  // 處理題目編輯器圖檔上傳 (自動壓縮並轉為 Base64 Data URL)
+  // 切換工具列下拉選單
+  toggleDropdown(dropdownId, event) {
+    if (event) event.stopPropagation();
+    const target = document.getElementById(dropdownId);
+    const wasOpen = target && target.style.display === 'block';
+    this.closeAllDropdowns();
+    if (target && !wasOpen) {
+      target.style.display = 'block';
+    }
+  }
+
+  // 關閉所有編輯器下拉選單
+  closeAllDropdowns() {
+    document.querySelectorAll('.quiz-editor-dropdown-menu').forEach(m => {
+      m.style.display = 'none';
+    });
+  }
+
+  // 設定段落區塊樣式 (h1, h2, h3, p, blockquote, pre)
+  handleFormatBlock(tag) {
+    if (!tag) return;
+    const editor = document.getElementById('quizQuestionEditor');
+    if (!editor) return;
+    editor.focus();
+    document.execCommand('formatBlock', false, `<${tag.toUpperCase()}>`);
+  }
+
+  // 設定字體大小 (1~7)
+  handleFontSize(size) {
+    if (!size) return;
+    const editor = document.getElementById('quizQuestionEditor');
+    if (!editor) return;
+    editor.focus();
+    document.execCommand('fontSize', false, size);
+  }
+
+  // 設定文字色彩
+  setTextColor(color) {
+    this.closeAllDropdowns();
+    this.execEditorCmd('foreColor', color);
+  }
+
+  // 設定螢光筆標記色彩
+  setHighlightColor(color) {
+    this.closeAllDropdowns();
+    const editor = document.getElementById('quizQuestionEditor');
+    if (!editor) return;
+    editor.focus();
+    if (color === 'transparent') {
+      document.execCommand('removeFormat', false, null);
+    } else {
+      try {
+        document.execCommand('hiliteColor', false, color);
+      } catch (e) {
+        document.execCommand('backColor', false, color);
+      }
+    }
+  }
+
+  // 觸發本機圖檔上傳
+  triggerImageUpload() {
+    this.closeAllDropdowns();
+    const fileInput = document.getElementById('quizEditorImgFileInput');
+    if (fileInput) fileInput.click();
+  }
+
+  // 壓縮圖檔並插入編輯器
+  compressAndInsertImage(src) {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        const ratio = Math.min(MAX / w, MAX / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      this.insertEditorImageHtml(dataUrl);
+    };
+    img.src = src;
+  }
+
+  // 處理題目編輯器圖檔上傳
   handleEditorImgUpload(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
@@ -523,27 +681,60 @@ class Quiz {
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const MAX = 800;
-        let w = img.width, h = img.height;
-        if (w > MAX || h > MAX) {
-          const ratio = Math.min(MAX / w, MAX / h);
-          w = Math.round(w * ratio);
-          h = Math.round(h * ratio);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        this.insertEditorImageHtml(dataUrl);
-      };
-      img.src = e.target.result;
+      this.compressAndInsertImage(e.target.result);
     };
     reader.readAsDataURL(file);
     event.target.value = '';
+  }
+
+  // 從網址插入圖片
+  insertImageFromUrl() {
+    const input = document.getElementById('quizEditorImgUrlInput');
+    const url = input ? input.value.trim() : '';
+    if (!url) {
+      if (window.app) window.app.showNotification('提示', '請輸入圖片網址');
+      return;
+    }
+    this.closeAllDropdowns();
+    if (input) input.value = '';
+    this.insertEditorImageHtml(url);
+  }
+
+  // 從剪貼簿讀取圖片並貼上
+  async pasteFromClipboard() {
+    this.closeAllDropdowns();
+    if (navigator.clipboard && navigator.clipboard.read) {
+      try {
+        const items = await navigator.clipboard.read();
+        let found = false;
+        for (const item of items) {
+          for (const type of item.types) {
+            if (type.startsWith('image/')) {
+              const blob = await item.getType(type);
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                this.compressAndInsertImage(e.target.result);
+              };
+              reader.readAsDataURL(blob);
+              found = true;
+              break;
+            }
+          }
+          if (found) break;
+        }
+        if (found) {
+          if (window.app) window.app.showNotification('成功', '已從剪貼簿插入圖片！');
+          return;
+        }
+      } catch (err) {
+        console.warn('Clipboard read failed:', err);
+      }
+    }
+    const editor = document.getElementById('quizQuestionEditor');
+    if (editor) editor.focus();
+    if (window.app) {
+      window.app.showNotification('提示', '請在題目編輯框中直接按下 Ctrl+V (或 ⌘+V) 即可貼上剪貼簿圖片！');
+    }
   }
 
   // 在編輯器光標處或尾端插入圖片
@@ -551,13 +742,25 @@ class Quiz {
     const editor = document.getElementById('quizQuestionEditor');
     if (!editor) return;
     editor.focus();
-    const imgHtml = `<p><img src="${src}" alt="題目圖片" style="max-width: 100%; max-height: 240px; border-radius: 8px; margin: 6px 0; display: block;"></p><p><br></p>`;
+    const imgHtml = `<p><img src="${src}" alt="題目圖片" style="max-width: 100%; max-height: 260px; border-radius: 8px; margin: 6px 0; display: block;"></p><p><br></p>`;
     document.execCommand('insertHTML', false, imgHtml);
   }
 
-  // 彈出插入影片提示 (YouTube / Google Drive / 影片網址)
-  promptInsertEditorVideo() {
-    const url = prompt('請輸入 YouTube 影片網址、Google Drive 影片預覽連結或 MP4 網址：\n(例如：https://www.youtube.com/watch?v=...)');
+  // 從影片選單插入影片
+  insertVideoFromUrl() {
+    const input = document.getElementById('quizEditorVideoUrlInput');
+    const url = input ? input.value.trim() : '';
+    if (!url) {
+      if (window.app) window.app.showNotification('提示', '請輸入影片網址');
+      return;
+    }
+    this.closeAllDropdowns();
+    if (input) input.value = '';
+    this.embedVideoToEditor(url);
+  }
+
+  // 嵌入影片至編輯器
+  embedVideoToEditor(url) {
     if (!url || !url.trim()) return;
     const cleanUrl = url.trim();
 
@@ -580,6 +783,15 @@ class Quiz {
       editor.focus();
       document.execCommand('insertHTML', false, embedHtml);
     }
+  }
+
+  // 相容保留舊方法
+  promptInsertEditorImage() {
+    this.toggleDropdown('quizImageDropdown');
+  }
+
+  promptInsertEditorVideo() {
+    this.toggleDropdown('quizVideoDropdown');
   }
 
   // 切換選項類型（文字 / 圖片）
@@ -614,11 +826,42 @@ class Quiz {
     }
   }
 
-  // 選取選項圖片
-  selectOptionImage(btn) {
+  // 選取選項圖片（彈出選單：上傳圖檔 / 從剪貼簿貼上）
+  selectOptionImage(btn, event) {
+    const ev = event || window.event;
+    if (ev) ev.stopPropagation();
     const row = btn.closest('.option-input');
     if (!row) return;
     this.currentEditingOptionRow = row;
+
+    let menu = document.getElementById('quizOptionImgActionMenu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'quizOptionImgActionMenu';
+      menu.className = 'quiz-editor-dropdown-menu';
+      menu.style.position = 'fixed';
+      menu.style.zIndex = '9999';
+      menu.innerHTML = `
+        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.triggerOptionFileUpload()">
+          📁 上傳電腦圖檔...
+        </div>
+        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.pasteOptionFromClipboard()">
+          📋 從剪貼簿貼上圖片
+        </div>
+      `;
+      document.body.appendChild(menu);
+    }
+
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = `${rect.bottom + 4}px`;
+    menu.style.left = `${Math.max(10, rect.left - 40)}px`;
+    menu.style.display = 'block';
+  }
+
+  // 觸發選項電腦圖檔上傳
+  triggerOptionFileUpload() {
+    const menu = document.getElementById('quizOptionImgActionMenu');
+    if (menu) menu.style.display = 'none';
 
     const fileInput = document.getElementById('quizOptionImgFileInput');
     if (fileInput) {
@@ -627,40 +870,89 @@ class Quiz {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (ev) => {
-          const img = new Image();
-          img.onload = () => {
-            const MAX = 400;
-            let w = img.width, h = img.height;
-            if (w > MAX || h > MAX) {
-              const ratio = Math.min(MAX / w, MAX / h);
-              w = Math.round(w * ratio);
-              h = Math.round(h * ratio);
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            
-            if (this.currentEditingOptionRow) {
-              const dataInput = this.currentEditingOptionRow.querySelector('.option-img-data');
-              const thumb = this.currentEditingOptionRow.querySelector('.option-img-preview-thumb');
-              if (dataInput) dataInput.value = dataUrl;
-              if (thumb) {
-                thumb.src = dataUrl;
-                thumb.style.display = 'inline-block';
-              }
-              btn.textContent = '🔄 更換圖片';
-            }
-          };
-          img.src = ev.target.result;
+          this.compressOptionImage(ev.target.result);
         };
         reader.readAsDataURL(file);
         e.target.value = '';
       };
       fileInput.click();
     }
+  }
+
+  // 從剪貼簿為選項貼上圖片
+  async pasteOptionFromClipboard() {
+    const menu = document.getElementById('quizOptionImgActionMenu');
+    if (menu) menu.style.display = 'none';
+
+    if (navigator.clipboard && navigator.clipboard.read) {
+      try {
+        const items = await navigator.clipboard.read();
+        let found = false;
+        for (const item of items) {
+          for (const type of item.types) {
+            if (type.startsWith('image/')) {
+              const blob = await item.getType(type);
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                this.compressOptionImage(e.target.result);
+              };
+              reader.readAsDataURL(blob);
+              found = true;
+              break;
+            }
+          }
+          if (found) break;
+        }
+        if (found) return;
+      } catch (err) {
+        console.warn('Clipboard read error for option:', err);
+      }
+    }
+
+    if (this.currentEditingOptionRow) {
+      const field = this.currentEditingOptionRow.querySelector('.option-field');
+      if (field) field.focus();
+    }
+    if (window.app) {
+      window.app.showNotification('提示', '未能直接讀取剪貼簿，請點「上傳電腦圖檔」或在此選項輸入框中直接按 Ctrl+V 貼上圖片！');
+    }
+  }
+
+  // 壓縮選項圖檔並設定
+  compressOptionImage(src) {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 400;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        const ratio = Math.min(MAX / w, MAX / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      this.setOptionImage(dataUrl);
+      if (window.app) window.app.showNotification('成功', '已成功設定選項圖片！');
+    };
+    img.src = src;
+  }
+
+  // 設定選項列圖片
+  setOptionImage(dataUrl) {
+    if (!this.currentEditingOptionRow) return;
+    const dataInput = this.currentEditingOptionRow.querySelector('.option-img-data');
+    const thumb = this.currentEditingOptionRow.querySelector('.option-img-preview-thumb');
+    const btn = this.currentEditingOptionRow.querySelector('.option-img-btn');
+    if (dataInput) dataInput.value = dataUrl;
+    if (thumb) {
+      thumb.src = dataUrl;
+      thumb.style.display = 'inline-block';
+    }
+    if (btn) btn.textContent = '🔄 更換圖片';
   }
 
   // 預覽選項大圖
@@ -715,7 +1007,7 @@ class Quiz {
             </button>
             <input type="text" class="option-field" value="${this.escapeHtml(optText)}" placeholder="${isImg ? '說明文字或留空' : '選項文字內容'}">
             <input type="hidden" class="option-img-data" value="${this.escapeHtml(imgSrc)}">
-            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">
               ${isImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
             </button>
             <img class="option-img-preview-thumb" src="${this.escapeHtml(imgSrc)}" style="${isImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
@@ -882,7 +1174,7 @@ Python
                   </button>
                   <input type="text" class="option-field" value="${this.escapeHtml(optText)}" placeholder="${isImg ? '說明文字或留空' : '選項文字內容'}">
                   <input type="hidden" class="option-img-data" value="${this.escapeHtml(imgSrc)}">
-                  <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">
+                  <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">
                     ${isImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
                   </button>
                   <img class="option-img-preview-thumb" src="${this.escapeHtml(imgSrc)}" style="${isImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
