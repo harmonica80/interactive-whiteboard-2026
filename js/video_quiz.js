@@ -652,6 +652,19 @@
         });
       }
 
+      // 題目秒數手動輸入即時連動格式化時間
+      const qTimeInput = document.getElementById('vqQuestionTimeInput');
+      if (qTimeInput) {
+        qTimeInput.addEventListener('input', (e) => {
+          const sec = Math.max(0, parseInt(e.target.value || 0, 10));
+          const m = Math.floor(sec / 60);
+          const s = sec % 60;
+          const formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          const formattedEl = document.getElementById('vqQuestionTimeFormatted');
+          if (formattedEl) formattedEl.value = formatted;
+        });
+      }
+
       // 需求 5：點擊遮罩外側背景自動關閉彈窗
       const overlaysToDismiss = [
         { id: 'vqAnalyticsModal', close: () => this.closeClassAnalytics() },
@@ -919,6 +932,8 @@
       this.isPlayerReady = false;
 
       const ytId = this.extractYoutubeId(videoUrl);
+      const driveId = this.extractDriveFileId(videoUrl);
+
       if (ytId) {
         this.playerType = 'youtube';
         const playerDivId = containerId + '_yt_frame';
@@ -973,12 +988,26 @@
         } else {
           this.loadYoutubeAPI(initYT);
         }
+      } else if (driveId) {
+        // Google 雲端硬碟：採用官方預覽播放器（100% 正常播放，不受 Google 2024 防外鏈 403 阻擋）
+        this.playerType = 'drive_iframe';
+        const iframeDivId = containerId + '_drive_frame';
+        container.innerHTML = `
+          <div style="width: 100%; height: 100%; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b1329; border-radius: 10px; overflow: hidden; position: relative; border: 1px solid var(--border-color);">
+            <iframe id="${iframeDivId}" src="https://drive.google.com/file/d/${driveId}/preview" allow="autoplay" style="width: 100%; height: 100%; min-height: 180px; border: none; display: block;"></iframe>
+          </div>
+          <div style="font-size: 11px; color: #38bdf8; margin-top: 6px; text-align: center; line-height: 1.4;">
+            🎵 <strong>Google 雲端硬碟音訊已就緒</strong>：請直接點按上方 Google 官方播放器播放與聆聽。
+          </div>
+        `;
+        this.isPlayerReady = true;
+        this.duration = 0;
+        if (typeof onReadyCallback === 'function') onReadyCallback(this);
       } else {
-        // HTML5 本地、直連或 Google Drive 音訊/影片
+        // 標準 HTML5 本地或直連音檔/影片 (MP3, WAV, MP4)
         this.playerType = 'html5';
         const isAudio = this.isAudioSource(videoUrl);
         const streamUrl = this.resolveMediaUrl(videoUrl);
-        const isDrive = videoUrl.includes('drive.google.com');
 
         let mediaEl;
         if (isAudio) {
@@ -991,40 +1020,15 @@
             <div style="font-size: 34px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); user-select: none;">🎵</div>
             <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 2px;">音訊 / 錄音檔測驗播放</div>
             <div id="${containerId}_audio_status" style="font-size: 11px; color: #94a3b8; margin-bottom: 8px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              ${isDrive ? '⏳ 正在連線 Google 雲端硬碟音訊串流...' : '音訊檔案'}
+              音訊檔案
             </div>
-            <audio controls playsinline style="width: 95%; max-width: 480px; z-index: 2; outline: none;"></audio>
+            <audio src="${streamUrl}" controls playsinline style="width: 95%; max-width: 480px; z-index: 2; outline: none;"></audio>
             <div id="${containerId}_audio_error" style="display: none; color: #f87171; font-size: 11px; margin-top: 6px; background: rgba(239, 68, 68, 0.15); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3);">
-              ⚠️ 載入失敗！請確認檔案權限為「知道連結皆可檢視」且檔案小於 100MB。
+              ⚠️ 音檔載入失敗，請確認網址格式正確。
             </div>
           `;
           container.appendChild(wrapper);
           mediaEl = wrapper.querySelector('audio');
-
-          // Google Drive 來源：透過 CORS fetch 下載二進制 Blob 轉為本機同源 URL，徹底解決瀏覽器 CORP 阻擋問題
-          if (isDrive) {
-            const statusEl = document.getElementById(`${containerId}_audio_status`);
-            fetch(streamUrl)
-              .then(resp => {
-                if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                return resp.blob();
-              })
-              .then(blob => {
-                if (this.currentBlobUrl) {
-                  try { URL.revokeObjectURL(this.currentBlobUrl); } catch(e){}
-                }
-                const blobUrl = URL.createObjectURL(blob);
-                this.currentBlobUrl = blobUrl;
-                mediaEl.src = blobUrl;
-                if (statusEl) statusEl.textContent = '✅ Google 雲端硬碟音訊已就緒，可正常播放';
-              })
-              .catch(err => {
-                console.warn('Google Drive fetch blob fallback to streamUrl:', err);
-                mediaEl.src = streamUrl;
-              });
-          } else {
-            mediaEl.src = streamUrl;
-          }
         } else {
           // 一般 HTML5 Video
           const videoEl = document.createElement('video');
