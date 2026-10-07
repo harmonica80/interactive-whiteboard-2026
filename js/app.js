@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.6.3';
+    this.APP_VERSION = '3.6.4';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -6040,49 +6040,124 @@ class App {
   setupConnectionStatus() {
     const statusEl = document.getElementById('connectionStatus');
     const onlineEl = document.getElementById('onlineCount');
+    const bannerEl = document.getElementById('connectionToastBanner');
     
     const presenceRef = db.ref('quiz/presence');
     let myPresenceRef = null;
+    let heartbeatTimer = null;
+    let isConnected = false;
+
+    // 校園網路連線逾時監測機制 (預設 8 秒未連線即觸發智慧提示與切換備用通道)
+    let fallbackTimeout = setTimeout(() => {
+      if (!isConnected) {
+        console.warn('⚠️ 偵測到連線耗時較長，校園防火牆可能正在檢驗 WebSocket，嘗試啟動備用通道 (Long-Polling)...');
+        if (bannerEl) {
+          bannerEl.style.display = 'flex';
+        }
+        if (statusEl) {
+          statusEl.className = 'connection-status connecting';
+          statusEl.title = '連線狀態：校園網路檢測中，正在切換備用通道...';
+        }
+        try {
+          const rawInstance = window.rawDb || (typeof firebase !== 'undefined' && firebase.database && firebase.database());
+          if (rawInstance) {
+            if (rawInstance.INTERNAL && typeof rawInstance.INTERNAL.forceLongPolling === 'function') {
+              rawInstance.INTERNAL.forceLongPolling();
+              localStorage.setItem('fb_prefer_long_polling', 'true');
+            }
+            if (typeof rawInstance.goOffline === 'function' && typeof rawInstance.goOnline === 'function') {
+              rawInstance.goOffline();
+              setTimeout(() => {
+                rawInstance.goOnline();
+              }, 300);
+            }
+          }
+        } catch (e) {
+          console.warn('切換 Long-Polling 備用通道錯誤:', e);
+        }
+      }
+    }, 8000);
+
+    // 啟動心跳發送函式 (每 45 秒定時更新 timestamp，保持 NAT 連線活絡並確保線上狀態精準)
+    const sendHeartbeat = () => {
+      if (myPresenceRef && isConnected) {
+        myPresenceRef.update({
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).catch(() => {});
+      }
+    };
 
     db.ref('.info/connected').on('value', (snapshot) => {
       if (snapshot.val()) {
-        statusEl.textContent = '';
-        statusEl.title = '連線狀態：正常已連線';
-        statusEl.className = 'connection-status connected';
+        isConnected = true;
+        if (fallbackTimeout) {
+          clearTimeout(fallbackTimeout);
+          fallbackTimeout = null;
+        }
+        if (bannerEl) {
+          bannerEl.style.display = 'none';
+        }
+        if (statusEl) {
+          statusEl.textContent = '';
+          statusEl.title = '連線狀態：正常已連線';
+          statusEl.className = 'connection-status connected';
+        }
         
         // Clean up previous reference if it exists
         if (myPresenceRef) {
-          myPresenceRef.remove();
+          try { myPresenceRef.remove(); } catch (e) {}
         }
         
-        // Register connection session
+        // 註冊個人連線 Session（輕量化只寫入必要欄位）
         myPresenceRef = presenceRef.push();
         this.myPresenceRef = myPresenceRef;
         myPresenceRef.set({
           userId: this.getUserId(),
-          userName: this.getCurrentUserName() || '',
+          userName: (this.getCurrentUserName() || '').slice(0, 20),
           timestamp: firebase.database.ServerValue.TIMESTAMP
         });
         myPresenceRef.onDisconnect().remove();
+
+        // 啟動定時心跳（45 秒一次）
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        heartbeatTimer = setInterval(sendHeartbeat, 45000);
       } else {
-        statusEl.textContent = '';
-        statusEl.title = '連線狀態：已斷線或重新連線中';
-        statusEl.className = 'connection-status disconnected';
+        isConnected = false;
+        if (heartbeatTimer) {
+          clearInterval(heartbeatTimer);
+          heartbeatTimer = null;
+        }
+        if (statusEl) {
+          statusEl.textContent = '';
+          statusEl.title = '連線狀態：已斷線或重新連線中';
+          statusEl.className = 'connection-status disconnected';
+        }
       }
     });
 
-    // Listen for changes in the presence list and count active users with stale node cleanup
+    // 監聽線上人數列表（輕量化計算與即時心跳過期清除）
     presenceRef.on('value', (snapshot) => {
       this.onlinePresence = snapshot.val() || {};
       let count = 0;
       const now = Date.now();
+      const currentUserId = this.getUserId();
+      let isFirstClient = false;
+
       if (snapshot.exists()) {
         const data = snapshot.val();
-        Object.keys(data).forEach(key => {
+        const keys = Object.keys(data);
+        // 由列表中的第一位用戶負責打掃過期幽靈節點，避免所有學生同時送出 remove 請求
+        if (keys.length > 0 && data[keys[0]] && data[keys[0]].userId === currentUserId) {
+          isFirstClient = true;
+        }
+
+        keys.forEach(key => {
           const session = data[key];
-          // Filter out stale sessions older than 5 minutes if timestamp exists
-          if (session && session.timestamp && (now - session.timestamp > 300000)) {
-            presenceRef.child(key).remove();
+          // 心跳過期判定縮短至 2 分鐘（120 秒無心跳即視為離線）
+          if (session && session.timestamp && (now - session.timestamp > 120000)) {
+            if (isFirstClient) {
+              presenceRef.child(key).remove().catch(() => {});
+            }
           } else {
             count++;
           }
