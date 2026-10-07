@@ -627,7 +627,8 @@ body {
   background: var(--bg-card);
   border: 2px solid var(--border-color);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible !important;
+  position: relative;
   transition: border-color 0.2s, box-shadow 0.2s;
   margin-bottom: 12px;
 }
@@ -643,6 +644,11 @@ body {
   background: var(--bg-input);
   border-bottom: 1px solid var(--border-color);
   align-items: center;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  position: relative;
+  z-index: 100;
+  overflow: visible !important;
 }
 .quiz-toolbar-sep {
   color: var(--border-color);
@@ -3014,6 +3020,10 @@ body {
   margin-bottom: 16px !important;
   overflow: hidden;
   transition: box-shadow 0.3s ease;
+}
+
+.admin-section-collapsible:not(.collapsed) {
+  overflow: visible !important;
 }
 
 .admin-section-collapsible:hover {

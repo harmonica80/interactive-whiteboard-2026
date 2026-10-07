@@ -591,6 +591,13 @@ class Quiz {
     this.closeAllDropdowns();
     if (target && !wasOpen) {
       target.style.display = 'block';
+      target.style.left = '0';
+      target.style.right = 'auto';
+      const rect = target.getBoundingClientRect();
+      if (rect.right > (window.innerWidth - 12)) {
+        target.style.left = 'auto';
+        target.style.right = '0';
+      }
     }
   }
 
