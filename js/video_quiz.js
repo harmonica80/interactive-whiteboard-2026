@@ -142,6 +142,7 @@
       this.duration = 0;
       this.isPlaying = false;
       this.isPlayerReady = false;
+      this.currentBlobUrl = null;
 
       // 測驗進度狀態 (自主學習 & 同步模式)
       this.triggeredQuestions = new Set();
@@ -890,7 +891,8 @@
       const clean = url.trim();
       const driveId = this.extractDriveFileId(clean);
       if (driveId) {
-        return `https://drive.google.com/uc?export=download&id=${driveId}`;
+        // 直接使用 Google 終端下載伺服器，自帶 Access-Control-Allow-Origin: * 且無 303 重定向干擾
+        return `https://drive.usercontent.google.com/download?id=${driveId}&export=download`;
       }
       return clean;
     }
@@ -976,26 +978,53 @@
         this.playerType = 'html5';
         const isAudio = this.isAudioSource(videoUrl);
         const streamUrl = this.resolveMediaUrl(videoUrl);
+        const isDrive = videoUrl.includes('drive.google.com');
 
         let mediaEl;
         if (isAudio) {
-          // 方案 B：專屬音訊視覺化卡片播放器
+          // 專屬音訊視覺化卡片播放器
           const wrapper = document.createElement('div');
           wrapper.className = 'vq-audio-player-card';
           wrapper.style.cssText = 'width: 100%; height: 100%; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border-radius: 10px; position: relative; overflow: hidden; padding: 14px; box-sizing: border-box; text-align: center;';
           
-          const isDrive = videoUrl.includes('drive.google.com');
           wrapper.innerHTML = `
             <div style="font-size: 34px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); user-select: none;">🎵</div>
             <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 2px;">音訊 / 錄音檔測驗播放</div>
-            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${isDrive ? 'Google 雲端硬碟串流音訊' : '音訊檔案'}</div>
-            <audio src="${streamUrl}" controls playsinline style="width: 95%; max-width: 480px; z-index: 2; outline: none;"></audio>
+            <div id="${containerId}_audio_status" style="font-size: 11px; color: #94a3b8; margin-bottom: 8px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${isDrive ? '⏳ 正在連線 Google 雲端硬碟音訊串流...' : '音訊檔案'}
+            </div>
+            <audio controls playsinline style="width: 95%; max-width: 480px; z-index: 2; outline: none;"></audio>
             <div id="${containerId}_audio_error" style="display: none; color: #f87171; font-size: 11px; margin-top: 6px; background: rgba(239, 68, 68, 0.15); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3);">
               ⚠️ 載入失敗！請確認檔案權限為「知道連結皆可檢視」且檔案小於 100MB。
             </div>
           `;
           container.appendChild(wrapper);
           mediaEl = wrapper.querySelector('audio');
+
+          // Google Drive 來源：透過 CORS fetch 下載二進制 Blob 轉為本機同源 URL，徹底解決瀏覽器 CORP 阻擋問題
+          if (isDrive) {
+            const statusEl = document.getElementById(`${containerId}_audio_status`);
+            fetch(streamUrl)
+              .then(resp => {
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                return resp.blob();
+              })
+              .then(blob => {
+                if (this.currentBlobUrl) {
+                  try { URL.revokeObjectURL(this.currentBlobUrl); } catch(e){}
+                }
+                const blobUrl = URL.createObjectURL(blob);
+                this.currentBlobUrl = blobUrl;
+                mediaEl.src = blobUrl;
+                if (statusEl) statusEl.textContent = '✅ Google 雲端硬碟音訊已就緒，可正常播放';
+              })
+              .catch(err => {
+                console.warn('Google Drive fetch blob fallback to streamUrl:', err);
+                mediaEl.src = streamUrl;
+              });
+          } else {
+            mediaEl.src = streamUrl;
+          }
         } else {
           // 一般 HTML5 Video
           const videoEl = document.createElement('video');
@@ -1012,11 +1041,13 @@
 
         this.html5Player = mediaEl;
 
-        mediaEl.onerror = () => {
-          console.warn('Media load error:', streamUrl);
+        mediaEl.onerror = (e) => {
+          // 若已經有 duration 且已就緒，不視為阻斷性錯誤
+          if (this.isPlayerReady && mediaEl.duration > 0) return;
+          console.warn('Media load error:', streamUrl, e);
           const errBox = document.getElementById(`${containerId}_audio_error`);
           if (errBox) errBox.style.display = 'block';
-          if (videoUrl.includes('drive.google.com') && window.app) {
+          if (videoUrl.includes('drive.google.com') && window.app && !this.isPlayerReady) {
             window.app.showNotification('雲端硬碟載入提醒', '音檔無法播放，請確認 Google Drive 檔案共用權限已設為「知道連結的任何人皆可檢視」！');
           }
         };
@@ -1024,6 +1055,9 @@
         mediaEl.onloadedmetadata = () => {
           this.isPlayerReady = true;
           this.duration = mediaEl.duration || 0;
+          const errBox = document.getElementById(`${containerId}_audio_error`);
+          if (errBox) errBox.style.display = 'none';
+
           if (containerId === 'vqEditorPlayerContainer') {
             const dur = Math.round(this.duration || 0);
             if (dur > 0) {
@@ -1075,6 +1109,10 @@
       if (this.ytPlayer && typeof this.ytPlayer.destroy === 'function') {
         try { this.ytPlayer.destroy(); } catch (e) {}
         this.ytPlayer = null;
+      }
+      if (this.currentBlobUrl) {
+        try { URL.revokeObjectURL(this.currentBlobUrl); } catch (e) {}
+        this.currentBlobUrl = null;
       }
       this.html5Player = null;
       this.isPlaying = false;
