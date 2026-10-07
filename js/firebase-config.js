@@ -1006,6 +1006,14 @@ try {
     rawRef = rawDb.ref.bind(rawDb);
     rawDb.rawRef = rawRef;
 
+    // 若先前記錄此網路環境需走備用通道 (Long-Polling)，可直接調用加快連線
+    try {
+      if (localStorage.getItem('fb_prefer_long_polling') === 'true' && rawDb.INTERNAL && typeof rawDb.INTERNAL.forceLongPolling === 'function') {
+        console.log('偵測到先前校園網路偏好，直接啟用備用通訊協定 (Long-Polling)');
+        rawDb.INTERNAL.forceLongPolling();
+      }
+    } catch (e) {}
+
     // 透過透明代理 (Transparent Routing)，支援「一次性課堂」與「專屬班級」雙軌自動分流
     rawDb.ref = function(path) {
       if (!path || path === '/') {
