@@ -638,17 +638,30 @@ body {
 }
 .quiz-editor-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-direction: column;
+  gap: 6px;
   padding: 6px 8px;
   background: var(--bg-input);
   border-bottom: 1px solid var(--border-color);
-  align-items: center;
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
   position: relative;
   z-index: 100;
   overflow: visible !important;
+}
+.quiz-editor-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+}
+.quiz-editor-toolbar-row-sub {
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  padding-top: 5px;
+}
+[data-theme="dark"] .quiz-editor-toolbar-row-sub {
+  border-top-color: rgba(255, 255, 255, 0.08);
 }
 .quiz-toolbar-sep {
   color: var(--border-color);
