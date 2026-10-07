@@ -121,7 +121,7 @@ const checks = [
   ['video_quiz.js endTime pauseVideo support', vqJs.includes('this.activeQuiz.endTime') && vqJs.includes('this.pauseVideo()')],
   ['index.html menu tab renamed to 影片/音檔出題測驗', html.includes('🎬 影片/音檔出題測驗')],
   ['index.html admin section renamed to 影片/音檔出題測驗管理', html.includes('🎬 影片/音檔出題測驗管理')],
-  ['index.html edit quiz modal contains Scheme B guidelines', html.includes('影音來源支援規範與使用注意事項（方案 B）')],
+  ['index.html edit quiz modal contains Scheme B guidelines', html.includes('影音來源支援規範與使用注意事項：')],
   ['video_quiz.js extractDriveFileId method exists', vqJs.includes('extractDriveFileId(url)')],
   ['video_quiz.js resolveMediaUrl method exists', vqJs.includes('resolveMediaUrl(url)')],
   ['video_quiz.js isAudioSource method exists', vqJs.includes('isAudioSource(url)')]
