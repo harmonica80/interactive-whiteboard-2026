@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=366">
+  <link rel="stylesheet" href="css/style.css?v=367">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -24,7 +24,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.6.6</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.6.7</span>
         </p>
       </div>
       <div class="top-actions">
@@ -909,151 +909,157 @@
                 <!-- 1. 題目豐富線上編輯器 (文字樣式、圖片、影片插入/嵌入) -->
                 <div class="quiz-editor-wrapper">
                   <div class="quiz-editor-toolbar">
-                    <!-- 1. 段落格式與標題選擇器 -->
-                    <select class="quiz-editor-select" onchange="window.quiz && window.quiz.handleFormatBlock(this.value); this.selectedIndex=0;" title="段落樣式與標題">
-                      <option value="">¶ 樣式與標題...</option>
-                      <option value="p">¶ 標準本文 (16px)</option>
-                      <option value="h1">H1 超大標題 (28px)</option>
-                      <option value="h2">H2 大標題 (22px)</option>
-                      <option value="h3">H3 次標題 (18px)</option>
-                      <option value="blockquote">❝ 引用區塊</option>
-                      <option value="pre">💻 程式碼區塊</option>
-                    </select>
+                    <!-- 第一行：文字格式、標題、字級、樣式、色彩、對齊與清單 -->
+                    <div class="quiz-editor-toolbar-row">
+                      <!-- 1. 段落格式與標題選擇器 -->
+                      <select class="quiz-editor-select" onchange="window.quiz && window.quiz.handleFormatBlock(this.value); this.selectedIndex=0;" title="段落樣式與標題">
+                        <option value="">¶ 樣式與標題...</option>
+                        <option value="p">¶ 標準本文 (16px)</option>
+                        <option value="h1">H1 超大標題 (28px)</option>
+                        <option value="h2">H2 大標題 (22px)</option>
+                        <option value="h3">H3 次標題 (18px)</option>
+                        <option value="blockquote">❝ 引用區塊</option>
+                        <option value="pre">💻 程式碼區塊</option>
+                      </select>
 
-                    <!-- 2. 精細字體大小選擇 -->
-                    <select class="quiz-editor-select" onchange="window.quiz && window.quiz.handleFontSize(this.value); this.selectedIndex=0;" title="字體大小">
-                      <option value="">🔤 字級大小...</option>
-                      <option value="1">12px (極小)</option>
-                      <option value="2">14px (較小)</option>
-                      <option value="3">16px (標準)</option>
-                      <option value="4">18px (中大)</option>
-                      <option value="5">22px (大字)</option>
-                      <option value="6">28px (特大)</option>
-                      <option value="7">36px (超大)</option>
-                    </select>
+                      <!-- 2. 精細字體大小選擇 -->
+                      <select class="quiz-editor-select" onchange="window.quiz && window.quiz.handleFontSize(this.value); this.selectedIndex=0;" title="字體大小">
+                        <option value="">🔤 字級大小...</option>
+                        <option value="1">12px (極小)</option>
+                        <option value="2">14px (較小)</option>
+                        <option value="3">16px (標準)</option>
+                        <option value="4">18px (中大)</option>
+                        <option value="5">22px (大字)</option>
+                        <option value="6">28px (特大)</option>
+                        <option value="7">36px (超大)</option>
+                      </select>
 
-                    <span class="quiz-toolbar-sep">|</span>
+                      <span class="quiz-toolbar-sep">|</span>
 
-                    <!-- 3. 文字基本樣式與上下標 -->
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('bold')" title="粗體 (Ctrl+B)"><strong>B</strong></button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('italic')" title="斜體 (Ctrl+I)"><em>I</em></button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('underline')" title="底線 (Ctrl+U)"><u>U</u></button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('strikeThrough')" title="刪除線"><s>S</s></button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('superscript')" title="上標 (數學次方如 x²)">x²</button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('subscript')" title="下標 (化學式如 H₂O)">x₂</button>
+                      <!-- 3. 文字基本樣式與上下標 -->
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('bold')" title="粗體 (Ctrl+B)"><strong>B</strong></button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('italic')" title="斜體 (Ctrl+I)"><em>I</em></button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('underline')" title="底線 (Ctrl+U)"><u>U</u></button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('strikeThrough')" title="刪除線"><s>S</s></button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('superscript')" title="上標 (數學次方如 x²)">x²</button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('subscript')" title="下標 (化學式如 H₂O)">x₂</button>
 
-                    <span class="quiz-toolbar-sep">|</span>
+                      <span class="quiz-toolbar-sep">|</span>
 
-                    <!-- 4. 文字色彩下拉調色盤 -->
-                    <div class="quiz-editor-dropdown-wrapper">
-                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.toggleDropdown('quizColorDropdown', event)" title="文字色彩">
-                        🎨 文字色 ▾
-                      </button>
-                      <div id="quizColorDropdown" class="quiz-editor-dropdown-menu" style="min-width: 170px;">
-                        <div style="font-size: 11px; color: var(--text-secondary); padding: 4px 10px; font-weight: bold;">常用文字色彩：</div>
-                        <div class="quiz-color-palette">
-                          <div class="quiz-color-swatch" style="background: #1f2937;" onclick="window.quiz && window.quiz.setTextColor('#1f2937')" title="深黑"></div>
-                          <div class="quiz-color-swatch" style="background: #e02424;" onclick="window.quiz && window.quiz.setTextColor('#e02424')" title="紅色"></div>
-                          <div class="quiz-color-swatch" style="background: #e37400;" onclick="window.quiz && window.quiz.setTextColor('#e37400')" title="橘色"></div>
-                          <div class="quiz-color-swatch" style="background: #057a55;" onclick="window.quiz && window.quiz.setTextColor('#057a55')" title="綠色"></div>
-                          <div class="quiz-color-swatch" style="background: #1a56db;" onclick="window.quiz && window.quiz.setTextColor('#1a56db')" title="藍色"></div>
-                          <div class="quiz-color-swatch" style="background: #7e22ce;" onclick="window.quiz && window.quiz.setTextColor('#7e22ce')" title="紫色"></div>
-                          <div class="quiz-color-swatch" style="background: #e11d48;" onclick="window.quiz && window.quiz.setTextColor('#e11d48')" title="桃紅"></div>
-                          <label class="quiz-color-swatch" style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;" title="自訂任意色彩">
-                            <input type="color" onchange="window.quiz && window.quiz.setTextColor(this.value)" style="opacity: 0; width: 0; height: 0; position: absolute;">
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 5. 螢光筆背景標記下拉選單 -->
-                    <div class="quiz-editor-dropdown-wrapper">
-                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.toggleDropdown('quizHighlightDropdown', event)" title="螢光筆標記">
-                        🖍️ 螢光 ▾
-                      </button>
-                      <div id="quizHighlightDropdown" class="quiz-editor-dropdown-menu" style="min-width: 170px;">
-                        <div style="font-size: 11px; color: var(--text-secondary); padding: 4px 10px; font-weight: bold;">螢光標記顏色：</div>
-                        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#fef08a')">
-                          <span style="display: inline-block; width: 14px; height: 14px; background: #fef08a; border: 1px solid #eab308; border-radius: 3px;"></span> 經典亮黃螢光
-                        </div>
-                        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#bbf7d0')">
-                          <span style="display: inline-block; width: 14px; height: 14px; background: #bbf7d0; border: 1px solid #22c55e; border-radius: 3px;"></span> 清爽薄荷綠
-                        </div>
-                        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#bae6fd')">
-                          <span style="display: inline-block; width: 14px; height: 14px; background: #bae6fd; border: 1px solid #0284c7; border-radius: 3px;"></span> 天空淡粉藍
-                        </div>
-                        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#fecdd3')">
-                          <span style="display: inline-block; width: 14px; height: 14px; background: #fecdd3; border: 1px solid #f43f5e; border-radius: 3px;"></span> 柔和淡粉紅
-                        </div>
-                        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#fed7aa')">
-                          <span style="display: inline-block; width: 14px; height: 14px; background: #fed7aa; border: 1px solid #f97316; border-radius: 3px;"></span> 暖杏橘黃色
-                        </div>
-                        <div class="quiz-dropdown-divider"></div>
-                        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('transparent')" style="color: var(--text-secondary);">
-                          ⚪ 清除螢光標記
-                        </div>
-                      </div>
-                    </div>
-
-                    <span class="quiz-toolbar-sep">|</span>
-
-                    <!-- 6. 排版對齊與清單 -->
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('justifyLeft')" title="靠左對齊">⇠</button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('justifyCenter')" title="置中對齊">≡</button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('justifyRight')" title="靠右對齊">⇢</button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('insertUnorderedList')" title="項目符號清單 (•)">• 清單</button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('insertOrderedList')" title="編號清單 (1. 2. 3.)">1. 清單</button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('insertHorizontalRule')" title="插入水平分隔線">― 分隔線</button>
-
-                    <span class="quiz-toolbar-sep">|</span>
-
-                    <!-- 7. 圖片下拉選單 (支援上傳、剪貼簿貼上、輸入網址) -->
-                    <div class="quiz-editor-dropdown-wrapper">
-                      <button type="button" class="quiz-editor-btn quiz-btn-media" onclick="window.quiz && window.quiz.toggleDropdown('quizImageDropdown', event)" title="插入圖片">
-                        🖼️ 圖片 ▾
-                      </button>
-                      <div id="quizImageDropdown" class="quiz-editor-dropdown-menu" style="min-width: 260px;">
-                        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.triggerImageUpload()">
-                          📁 上傳電腦圖片...
-                        </div>
-                        <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.pasteFromClipboard()">
-                          📋 從剪貼簿貼上圖片
-                        </div>
-                        <div class="quiz-dropdown-divider"></div>
-                        <div style="padding: 6px 12px;" onclick="event.stopPropagation()">
-                          <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; font-weight: bold;">🔗 輸入圖片網址 (URL)：</div>
-                          <div style="display: flex; gap: 4px;">
-                            <input type="text" id="quizEditorImgUrlInput" placeholder="https://... 圖片網址" style="flex: 1; padding: 4px 6px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; outline: none;">
-                            <button type="button" class="btn btn-secondary" onclick="window.quiz && window.quiz.insertImageFromUrl()" style="padding: 3px 8px; font-size: 11px; font-weight: bold; white-space: nowrap;">插入</button>
+                      <!-- 4. 文字色彩下拉調色盤 -->
+                      <div class="quiz-editor-dropdown-wrapper">
+                        <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.toggleDropdown('quizColorDropdown', event)" title="文字色彩">
+                          🎨 文字色 ▾
+                        </button>
+                        <div id="quizColorDropdown" class="quiz-editor-dropdown-menu" style="min-width: 170px;">
+                          <div style="font-size: 11px; color: var(--text-secondary); padding: 4px 10px; font-weight: bold;">常用文字色彩：</div>
+                          <div class="quiz-color-palette">
+                            <div class="quiz-color-swatch" style="background: #1f2937;" onclick="window.quiz && window.quiz.setTextColor('#1f2937')" title="深黑"></div>
+                            <div class="quiz-color-swatch" style="background: #e02424;" onclick="window.quiz && window.quiz.setTextColor('#e02424')" title="紅色"></div>
+                            <div class="quiz-color-swatch" style="background: #e37400;" onclick="window.quiz && window.quiz.setTextColor('#e37400')" title="橘色"></div>
+                            <div class="quiz-color-swatch" style="background: #057a55;" onclick="window.quiz && window.quiz.setTextColor('#057a55')" title="綠色"></div>
+                            <div class="quiz-color-swatch" style="background: #1a56db;" onclick="window.quiz && window.quiz.setTextColor('#1a56db')" title="藍色"></div>
+                            <div class="quiz-color-swatch" style="background: #7e22ce;" onclick="window.quiz && window.quiz.setTextColor('#7e22ce')" title="紫色"></div>
+                            <div class="quiz-color-swatch" style="background: #e11d48;" onclick="window.quiz && window.quiz.setTextColor('#e11d48')" title="桃紅"></div>
+                            <label class="quiz-color-swatch" style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;" title="自訂任意色彩">
+                              <input type="color" onchange="window.quiz && window.quiz.setTextColor(this.value)" style="opacity: 0; width: 0; height: 0; position: absolute;">
+                            </label>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <!-- 8. 影片下拉選單 (支援貼上網址與嵌入) -->
-                    <div class="quiz-editor-dropdown-wrapper">
-                      <button type="button" class="quiz-editor-btn quiz-btn-media" onclick="window.quiz && window.quiz.toggleDropdown('quizVideoDropdown', event)" title="插入/嵌入影片">
-                        🎥 影片 ▾
-                      </button>
-                      <div id="quizVideoDropdown" class="quiz-editor-dropdown-menu" style="min-width: 270px;">
-                        <div style="padding: 8px 12px;" onclick="event.stopPropagation()">
-                          <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; font-weight: bold;">🎥 貼上影片網址：</div>
-                          <input type="text" id="quizEditorVideoUrlInput" placeholder="YouTube / Google Drive / MP4..." style="width: 100%; box-sizing: border-box; padding: 4px 6px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 6px; outline: none;">
-                          <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 10px; color: var(--text-muted);">支援 YouTube、雲端硬碟、MP4</span>
-                            <button type="button" class="btn btn-secondary" onclick="window.quiz && window.quiz.insertVideoFromUrl()" style="padding: 3px 8px; font-size: 11px; font-weight: bold;">嵌入</button>
+                      <!-- 5. 螢光筆背景標記下拉選單 -->
+                      <div class="quiz-editor-dropdown-wrapper">
+                        <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.toggleDropdown('quizHighlightDropdown', event)" title="螢光筆標記">
+                          🖍️ 螢光 ▾
+                        </button>
+                        <div id="quizHighlightDropdown" class="quiz-editor-dropdown-menu" style="min-width: 170px;">
+                          <div style="font-size: 11px; color: var(--text-secondary); padding: 4px 10px; font-weight: bold;">螢光標記顏色：</div>
+                          <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#fef08a')">
+                            <span style="display: inline-block; width: 14px; height: 14px; background: #fef08a; border: 1px solid #eab308; border-radius: 3px;"></span> 經典亮黃螢光
+                          </div>
+                          <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#bbf7d0')">
+                            <span style="display: inline-block; width: 14px; height: 14px; background: #bbf7d0; border: 1px solid #22c55e; border-radius: 3px;"></span> 清爽薄荷綠
+                          </div>
+                          <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#bae6fd')">
+                            <span style="display: inline-block; width: 14px; height: 14px; background: #bae6fd; border: 1px solid #0284c7; border-radius: 3px;"></span> 天空淡粉藍
+                          </div>
+                          <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#fecdd3')">
+                            <span style="display: inline-block; width: 14px; height: 14px; background: #fecdd3; border: 1px solid #f43f5e; border-radius: 3px;"></span> 柔和淡粉紅
+                          </div>
+                          <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('#fed7aa')">
+                            <span style="display: inline-block; width: 14px; height: 14px; background: #fed7aa; border: 1px solid #f97316; border-radius: 3px;"></span> 暖杏橘黃色
+                          </div>
+                          <div class="quiz-dropdown-divider"></div>
+                          <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.setHighlightColor('transparent')" style="color: var(--text-secondary);">
+                            ⚪ 清除螢光標記
                           </div>
                         </div>
                       </div>
+
+                      <span class="quiz-toolbar-sep">|</span>
+
+                      <!-- 6. 排版對齊與清單 -->
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('justifyLeft')" title="靠左對齊">⇠</button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('justifyCenter')" title="置中對齊">≡</button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('justifyRight')" title="靠右對齊">⇢</button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('insertUnorderedList')" title="項目符號清單 (•)">• 清單</button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('insertOrderedList')" title="編號清單 (1. 2. 3.)">1. 清單</button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('insertHorizontalRule')" title="插入水平分隔線">― 分隔線</button>
                     </div>
 
-                    <span class="quiz-toolbar-sep">|</span>
+                    <!-- 第二行：多媒體插入（圖片、影片與音樂，遠離右邊界）與操作工具 -->
+                    <div class="quiz-editor-toolbar-row quiz-editor-toolbar-row-sub">
+                      <!-- 7. 圖片下拉選單 (支援上傳、剪貼簿貼上、輸入網址) -->
+                      <div class="quiz-editor-dropdown-wrapper">
+                        <button type="button" class="quiz-editor-btn quiz-btn-media" onclick="window.quiz && window.quiz.toggleDropdown('quizImageDropdown', event)" title="插入圖片">
+                          🖼️ 圖片 ▾
+                        </button>
+                        <div id="quizImageDropdown" class="quiz-editor-dropdown-menu" style="min-width: 260px;">
+                          <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.triggerImageUpload()">
+                            📁 上傳電腦圖片...
+                          </div>
+                          <div class="quiz-dropdown-item" onclick="window.quiz && window.quiz.pasteFromClipboard()">
+                            📋 從剪貼簿貼上圖片
+                          </div>
+                          <div class="quiz-dropdown-divider"></div>
+                          <div style="padding: 6px 12px;" onclick="event.stopPropagation()">
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; font-weight: bold;">🔗 輸入圖片網址 (URL)：</div>
+                            <div style="display: flex; gap: 4px;">
+                              <input type="text" id="quizEditorImgUrlInput" placeholder="https://... 圖片網址" style="flex: 1; padding: 4px 6px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; outline: none;">
+                              <button type="button" class="btn btn-secondary" onclick="window.quiz && window.quiz.insertImageFromUrl()" style="padding: 3px 8px; font-size: 11px; font-weight: bold; white-space: nowrap;">插入</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
-                    <!-- 9. 復原、重做、清除樣式與清空 -->
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('undo')" title="復原 (Ctrl+Z)">↩️</button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('redo')" title="重做 (Ctrl+Y)">↪️</button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('removeFormat')" title="清除選取範圍格式">🧹 清除格式</button>
-                    <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.clearEditor()" title="清空全部題目內容" style="color: var(--danger-color); margin-left: auto;">🗑️ 清空</button>
+                      <!-- 8. 影片與音樂下拉選單 (支援貼上網址與嵌入) -->
+                      <div class="quiz-editor-dropdown-wrapper">
+                        <button type="button" class="quiz-editor-btn quiz-btn-media" onclick="window.quiz && window.quiz.toggleDropdown('quizVideoDropdown', event)" title="插入/嵌入影片或音樂">
+                          🎬 影片與音樂 ▾
+                        </button>
+                        <div id="quizVideoDropdown" class="quiz-editor-dropdown-menu" style="min-width: 290px;">
+                          <div style="padding: 8px 12px;" onclick="event.stopPropagation()">
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; font-weight: bold;">🎬 貼上影片或音樂網址：</div>
+                            <input type="text" id="quizEditorVideoUrlInput" placeholder="YouTube / Google Drive 影音 / MP3 / MP4..." style="width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 6px; outline: none;">
+                            <div style="background: rgba(102, 126, 234, 0.08); border-radius: 6px; padding: 6px 8px; margin-bottom: 8px; font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
+                              💡 <strong>支援說明：</strong>支援 YouTube、Google 雲端硬碟（影片與音樂錄音檔皆可直接播放）及 MP4/MP3 直連網址。
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; align-items: center;">
+                              <button type="button" class="btn btn-secondary" onclick="window.quiz && window.quiz.insertVideoFromUrl()" style="padding: 4px 10px; font-size: 11px; font-weight: bold;">嵌入</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <span class="quiz-toolbar-sep">|</span>
+
+                      <!-- 9. 復原、重做、清除樣式與清空 -->
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('undo')" title="復原 (Ctrl+Z)">↩️ 復原</button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('redo')" title="重做 (Ctrl+Y)">↪️ 重做</button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.execEditorCmd('removeFormat')" title="清除選取範圍格式">🧹 清除格式</button>
+                      <button type="button" class="quiz-editor-btn" onclick="window.quiz && window.quiz.clearEditor()" title="清空全部題目內容" style="color: var(--danger-color); margin-left: auto;">🗑️ 清空</button>
+                    </div>
                   </div>
                   <div id="quizQuestionEditor" class="quiz-editor-content" contenteditable="true" data-placeholder="輸入題目內容... (支援直接 Ctrl+V 貼上圖片、文字或排版)"></div>
                   <input type="hidden" id="quizQuestion" value="">
@@ -1237,6 +1243,9 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
                   <h4 style="margin: 0; font-size: 15px; color: var(--text-primary);">📁 題庫管理與出題工具</h4>
                   <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal()" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="建立新的影片測驗">
+                      ➕ 建立新測驗
+                    </button>
                     <button class="action-btn" onclick="window.videoQuiz.openFormatGuideModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看 JSON 與 CSV 題庫格式規範">
                       📋 範例格式說明
                     </button>
@@ -1254,9 +1263,6 @@
                     </button>
                     <button class="action-btn" onclick="window.videoQuiz.openImportModal()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON 或 CSV 題庫檔案">
                       📥 匯入題庫
-                    </button>
-                    <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal()" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">
-                      ➕ 建立新測驗
                     </button>
                   </div>
                 </div>
@@ -2053,17 +2059,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=366"></script>
+  <script src="js/firebase-config.js?v=367"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=366"></script>
-  <script src="js/focus_question_bank.js?v=366"></script>
+  <script src="js/song_quiz_pool.js?v=367"></script>
+  <script src="js/focus_question_bank.js?v=367"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=366"></script>
-  <script src="js/app.js?v=366"></script>
-  <script src="js/classics_quiz.js?v=366"></script>
-  <script src="js/song_quiz.js?v=366"></script>
-  <script src="js/video_quiz.js?v=366"></script>
+  <script src="js/quiz.js?v=367"></script>
+  <script src="js/app.js?v=367"></script>
+  <script src="js/classics_quiz.js?v=367"></script>
+  <script src="js/song_quiz.js?v=367"></script>
+  <script src="js/video_quiz.js?v=367"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

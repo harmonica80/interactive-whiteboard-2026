@@ -753,12 +753,12 @@ class Quiz {
     document.execCommand('insertHTML', false, imgHtml);
   }
 
-  // 從影片選單插入影片
+  // 從影片與音樂選單插入
   insertVideoFromUrl() {
     const input = document.getElementById('quizEditorVideoUrlInput');
     const url = input ? input.value.trim() : '';
     if (!url) {
-      if (window.app) window.app.showNotification('提示', '請輸入影片網址');
+      if (window.app) window.app.showNotification('提示', '請輸入影片或音樂網址');
       return;
     }
     this.closeAllDropdowns();
@@ -766,7 +766,7 @@ class Quiz {
     this.embedVideoToEditor(url);
   }
 
-  // 嵌入影片至編輯器
+  // 嵌入影片或音樂至編輯器
   embedVideoToEditor(url) {
     if (!url || !url.trim()) return;
     const cleanUrl = url.trim();
@@ -779,6 +779,8 @@ class Quiz {
     } else if (cleanUrl.includes('drive.google.com')) {
       const driveEmbed = cleanUrl.replace(/\/view(\?.*)?$/, '/preview');
       embedHtml = `<p><iframe src="${driveEmbed}" allow="autoplay" allowfullscreen style="width: 100%; max-width: 500px; aspect-ratio: 16/9; border: none; border-radius: 8px; margin: 6px 0; display: block;"></iframe></p><p><br></p>`;
+    } else if (cleanUrl.match(/\.(mp3|wav|m4a|aac|flac|oga)($|\?)/i)) {
+      embedHtml = `<p><audio src="${cleanUrl}" controls style="width: 100%; max-width: 500px; margin: 6px 0; display: block;"></audio></p><p><br></p>`;
     } else if (cleanUrl.match(/\.(mp4|webm|ogg)($|\?)/i)) {
       embedHtml = `<p><video src="${cleanUrl}" controls style="width: 100%; max-width: 500px; max-height: 280px; border-radius: 8px; margin: 6px 0; display: block;"></video></p><p><br></p>`;
     } else {
