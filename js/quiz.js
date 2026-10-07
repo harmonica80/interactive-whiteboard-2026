@@ -122,6 +122,42 @@ class Quiz {
     }
   }
   
+  // 題目內容渲染器 (支援純文字或豐富 HTML，並確保圖片/影片安全居中展示)
+  renderQuestionContent(question) {
+    if (!question) return '';
+    const hasTags = /<[a-z][\s\S]*>/i.test(question);
+    if (!hasTags) {
+      return `<div class="quiz-question-rendered">${this.escapeHtml(question)}</div>`;
+    }
+    // 簡單清理潛在危險的 script 標籤
+    const cleaned = String(question).replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    return `<div class="quiz-question-rendered">${cleaned}</div>`;
+  }
+
+  // 選項文字/圖片標籤渲染
+  getOptionLabel(opt, defaultText = '') {
+    if (!opt) return defaultText;
+    if (typeof opt === 'string') return opt;
+    if (typeof opt === 'object') {
+      return opt.text || (opt.image ? '【圖片選項】' : defaultText);
+    }
+    return String(opt);
+  }
+
+  // 學生端選項按鈕內容渲染 (包含圖片與文字)
+  renderOptionButtonHtml(opt, index) {
+    if (typeof opt === 'object' && opt !== null && opt.image) {
+      return `
+        <div class="answer-option-img-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <img src="${opt.image}" class="answer-option-img" alt="選項 ${index + 1}">
+          ${opt.text ? `<span style="font-size: 14px; font-weight: bold;">${this.escapeHtml(opt.text)}</span>` : ''}
+        </div>
+      `;
+    }
+    const text = typeof opt === 'object' ? (opt.text || '') : String(opt);
+    return `<span>${this.escapeHtml(text)}</span>`;
+  }
+
   updateUI() {
     const quizStatus = document.getElementById('quizStatus');
     const quizForm = document.getElementById('quizForm');
@@ -139,7 +175,7 @@ class Quiz {
               <span style="font-size: 14px; font-weight: bold; color: var(--accent-color);">📝 測驗進行中</span>
               <span class="quiz-type-badge" style="background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">${badgeText}</span>
             </div>
-            <div style="font-size: 18px; font-weight: bold; color: var(--text-primary); text-align: center;">${this.escapeHtml(this.currentQuiz.question)}</div>
+            ${this.renderQuestionContent(this.currentQuiz.question)}
           </div>
         `;
       }
@@ -153,12 +189,17 @@ class Quiz {
         if (isMultiple) {
           answerOptions.innerHTML = `
             <div class="answer-options-container multiple-choice-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
-              ${quizOpts.map((opt, i) => `
-                <label class="answer-option-multiple" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; user-select: none; transition: all 0.2s ease;">
-                  <input type="checkbox" class="quiz-multiple-checkbox" value="${i}" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-color);">
-                  <span class="option-text" style="font-size: 15px; font-weight: bold; color: var(--text-primary);">${this.escapeHtml(opt)}</span>
-                </label>
-              `).join('')}
+              ${quizOpts.map((opt, i) => {
+                const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+                return `
+                  <label class="answer-option-multiple ${isImg ? 'option-has-img' : ''}" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; user-select: none; transition: all 0.2s ease;">
+                    <input type="checkbox" class="quiz-multiple-checkbox" value="${i}" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-color); flex-shrink: 0;">
+                    <div style="flex: 1; text-align: ${isImg ? 'center' : 'left'};">
+                      ${this.renderOptionButtonHtml(opt, i)}
+                    </div>
+                  </label>
+                `;
+              }).join('')}
               <button class="submit-multiple-btn" onclick="window.quiz.submitMultipleAnswers()" style="margin-top: 10px; width: 100%; padding: 12px; background: var(--accent-color); color: white; font-size: 16px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,122,255,0.3);">
                 ☑️ 提交答案
               </button>
@@ -167,11 +208,14 @@ class Quiz {
         } else {
           answerOptions.innerHTML = `
             <div class="answer-options-container">
-              ${quizOpts.map((opt, i) => `
-                <button class="answer-option" onclick="window.quiz.submitAnswer(${i})">
-                  ${this.escapeHtml(opt)}
-                </button>
-              `).join('')}
+              ${quizOpts.map((opt, i) => {
+                const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+                return `
+                  <button class="answer-option ${isImg ? 'option-has-img' : ''}" onclick="window.quiz.submitAnswer(${i})">
+                    ${this.renderOptionButtonHtml(opt, i)}
+                  </button>
+                `;
+              }).join('')}
             </div>
           `;
         }
@@ -186,7 +230,7 @@ class Quiz {
               <span style="font-size: 14px; font-weight: bold; color: var(--text-muted);">⏹️ 測驗已結束</span>
               <span class="quiz-type-badge" style="background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">${badgeText}</span>
             </div>
-            <div style="font-size: 18px; font-weight: bold; color: var(--text-primary); text-align: center;">${this.escapeHtml(this.currentQuiz.question || '')}</div>
+            ${this.renderQuestionContent(this.currentQuiz.question || '')}
           </div>
         `;
       }
@@ -251,16 +295,23 @@ class Quiz {
       <div style="margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">
         已回答: ${totalVoters} 人 ${this.currentQuiz.quizType === 'multiple' ? '(複選計票)' : ''}
       </div>
-      ${quizOpts.map((opt, i) => `
-        <div class="result-bar">
-          <span class="result-label" style="white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(opt)}">${this.escapeHtml(opt)}</span>
-          <div class="result-progress">
-            <div class="result-fill" style="width: ${totalVoters > 0 ? (counts[i] / totalVoters * 100) : 0}%">
-              ${counts[i]}
+      ${quizOpts.map((opt, i) => {
+        const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+        const optText = this.getOptionLabel(opt, `選項 ${i + 1}`);
+        return `
+          <div class="result-bar" style="align-items: center;">
+            <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(optText)}">
+              ${isImg ? `<img src="${opt.image}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">` : ''}
+              <span>${this.escapeHtml(optText)}</span>
+            </div>
+            <div class="result-progress">
+              <div class="result-fill" style="width: ${totalVoters > 0 ? (counts[i] / totalVoters * 100) : 0}%">
+                ${counts[i]}
+              </div>
             </div>
           </div>
-        </div>
-      `).join('')}
+        `;
+      }).join('')}
     `;
   }
   
@@ -307,16 +358,23 @@ class Quiz {
           <div style="font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">📊 最終結果</div>
           <div style="font-size: 12px; color: var(--text-secondary);">總計 ${totalVoters} 人作答 ${this.currentQuiz.quizType === 'multiple' ? '(複選題)' : ''}</div>
         </div>
-        ${quizOpts.map((opt, i) => `
-          <div class="result-bar">
-            <span class="result-label" style="white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(opt)}">${this.escapeHtml(opt)}</span>
-            <div class="result-progress">
-              <div class="result-fill" style="width: ${totalVoters > 0 ? (counts[i] / totalVoters * 100) : 0}%">
-                ${counts[i]} (${totalVoters > 0 ? Math.round(counts[i] / totalVoters * 100) : 0}%)
+        ${quizOpts.map((opt, i) => {
+          const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+          const optText = this.getOptionLabel(opt, `選項 ${i + 1}`);
+          return `
+            <div class="result-bar" style="align-items: center;">
+              <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(optText)}">
+                ${isImg ? `<img src="${opt.image}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">` : ''}
+                <span>${this.escapeHtml(optText)}</span>
+              </div>
+              <div class="result-progress">
+                <div class="result-fill" style="width: ${totalVoters > 0 ? (counts[i] / totalVoters * 100) : 0}%">
+                  ${counts[i]} (${totalVoters > 0 ? Math.round(counts[i] / totalVoters * 100) : 0}%)
+                </div>
               </div>
             </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       `;
     });
   }
@@ -342,7 +400,8 @@ class Quiz {
       const q = this.historyBank[key];
       const isMultiple = q.quizType === 'multiple';
       const badgeText = isMultiple ? '☑️ 複選' : '🔘 單選';
-      const optionsStr = (q.options || []).join(' | ');
+      const optionsStr = (q.options || []).map((opt, i) => this.getOptionLabel(opt, `選項 ${i + 1}`)).join(' | ');
+      const questionText = (q.question || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() || (q.question || '');
 
       return `
         <div class="quiz-history-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; gap: 10px;">
@@ -351,7 +410,7 @@ class Quiz {
             <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden;">
               <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="background: rgba(0,122,255,0.1); color: var(--accent-color); font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
-                <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(q.question)}</span>
+                <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(questionText)}</span>
               </div>
               <div style="font-size: 11px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                 選項：${this.escapeHtml(optionsStr)}
@@ -406,7 +465,12 @@ class Quiz {
   downloadQuizBankTxt(questions, filename) {
     const txtBlocks = questions.map(q => {
       const typeStr = q.quizType === 'multiple' ? '複選' : '單選';
-      const optionsText = (q.options || []).join('\n');
+      const optionsText = (q.options || []).map(opt => {
+        if (typeof opt === 'object' && opt !== null) {
+          return opt.text ? `${opt.text} [圖片選項]` : '[圖片選項]';
+        }
+        return String(opt);
+      }).join('\n');
       return `${q.question}\n${typeStr}\n${optionsText}`;
     });
 
@@ -420,13 +484,213 @@ class Quiz {
     downloadAnchor.remove();
   }
 
+  // 執行編輯器指令
+  execEditorCmd(cmd, value = null) {
+    const editor = document.getElementById('quizQuestionEditor');
+    if (!editor) return;
+    editor.focus();
+    document.execCommand(cmd, false, value);
+  }
+
+  // 清空題目編輯器
+  clearEditor() {
+    const editor = document.getElementById('quizQuestionEditor');
+    if (editor) editor.innerHTML = '';
+  }
+
+  // 彈出插入圖片提示
+  promptInsertEditorImage() {
+    const choice = prompt('請選擇插入圖片方式：\n1. 輸入遠端圖片網址 (URL)\n2. 輸入 "upload" 或直接點確定來選取電腦圖檔', '');
+    if (choice === null) return;
+    const trimmed = choice.trim();
+    if (!trimmed || trimmed.toLowerCase() === 'upload' || trimmed === '2') {
+      const fileInput = document.getElementById('quizEditorImgFileInput');
+      if (fileInput) fileInput.click();
+    } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+      this.insertEditorImageHtml(trimmed);
+    } else {
+      if (window.app) window.app.showNotification('提示', '請輸入有效的圖片網址，或選取圖檔上傳');
+    }
+  }
+
+  // 處理題目編輯器圖檔上傳 (自動壓縮並轉為 Base64 Data URL)
+  handleEditorImgUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      if (window.app) window.app.showNotification('提示', '請選擇圖片檔案');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          const ratio = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        this.insertEditorImageHtml(dataUrl);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  }
+
+  // 在編輯器光標處或尾端插入圖片
+  insertEditorImageHtml(src) {
+    const editor = document.getElementById('quizQuestionEditor');
+    if (!editor) return;
+    editor.focus();
+    const imgHtml = `<p><img src="${src}" alt="題目圖片" style="max-width: 100%; max-height: 240px; border-radius: 8px; margin: 6px 0; display: block;"></p><p><br></p>`;
+    document.execCommand('insertHTML', false, imgHtml);
+  }
+
+  // 彈出插入影片提示 (YouTube / Google Drive / 影片網址)
+  promptInsertEditorVideo() {
+    const url = prompt('請輸入 YouTube 影片網址、Google Drive 影片預覽連結或 MP4 網址：\n(例如：https://www.youtube.com/watch?v=...)');
+    if (!url || !url.trim()) return;
+    const cleanUrl = url.trim();
+
+    let embedHtml = '';
+    const ytMatch = cleanUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      const ytId = ytMatch[1];
+      embedHtml = `<p><iframe src="https://www.youtube.com/embed/${ytId}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="width: 100%; max-width: 500px; aspect-ratio: 16/9; border: none; border-radius: 8px; margin: 6px 0; display: block;"></iframe></p><p><br></p>`;
+    } else if (cleanUrl.includes('drive.google.com')) {
+      const driveEmbed = cleanUrl.replace(/\/view(\?.*)?$/, '/preview');
+      embedHtml = `<p><iframe src="${driveEmbed}" allow="autoplay" allowfullscreen style="width: 100%; max-width: 500px; aspect-ratio: 16/9; border: none; border-radius: 8px; margin: 6px 0; display: block;"></iframe></p><p><br></p>`;
+    } else if (cleanUrl.match(/\.(mp4|webm|ogg)($|\?)/i)) {
+      embedHtml = `<p><video src="${cleanUrl}" controls style="width: 100%; max-width: 500px; max-height: 280px; border-radius: 8px; margin: 6px 0; display: block;"></video></p><p><br></p>`;
+    } else {
+      embedHtml = `<p><iframe src="${cleanUrl}" allowfullscreen style="width: 100%; max-width: 500px; aspect-ratio: 16/9; border: none; border-radius: 8px; margin: 6px 0; display: block;"></iframe></p><p><br></p>`;
+    }
+
+    const editor = document.getElementById('quizQuestionEditor');
+    if (editor) {
+      editor.focus();
+      document.execCommand('insertHTML', false, embedHtml);
+    }
+  }
+
+  // 切換選項類型（文字 / 圖片）
+  toggleOptionType(btn) {
+    const row = btn.closest('.option-input');
+    if (!row) return;
+    const curType = row.getAttribute('data-type') || 'text';
+    const textField = row.querySelector('.option-field');
+    const imgBtn = row.querySelector('.option-img-btn');
+    const imgThumb = row.querySelector('.option-img-preview-thumb');
+    const imgData = row.querySelector('.option-img-data');
+
+    if (curType === 'text') {
+      row.setAttribute('data-type', 'image');
+      btn.innerHTML = '🖼️ 圖片';
+      btn.style.color = '#ff9500';
+      btn.style.borderColor = '#ff9500';
+      if (textField) textField.placeholder = '說明文字或留空';
+      if (imgBtn) imgBtn.style.display = 'inline-flex';
+      if (imgData && imgData.value && imgThumb) {
+        imgThumb.src = imgData.value;
+        imgThumb.style.display = 'inline-block';
+      }
+    } else {
+      row.setAttribute('data-type', 'text');
+      btn.innerHTML = '📝 文字';
+      btn.style.color = 'var(--text-secondary)';
+      btn.style.borderColor = 'var(--border-color)';
+      if (textField) textField.placeholder = '選項文字內容';
+      if (imgBtn) imgBtn.style.display = 'none';
+      if (imgThumb) imgThumb.style.display = 'none';
+    }
+  }
+
+  // 選取選項圖片
+  selectOptionImage(btn) {
+    const row = btn.closest('.option-input');
+    if (!row) return;
+    this.currentEditingOptionRow = row;
+
+    const fileInput = document.getElementById('quizOptionImgFileInput');
+    if (fileInput) {
+      fileInput.onchange = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX = 400;
+            let w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+              const ratio = Math.min(MAX / w, MAX / h);
+              w = Math.round(w * ratio);
+              h = Math.round(h * ratio);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            
+            if (this.currentEditingOptionRow) {
+              const dataInput = this.currentEditingOptionRow.querySelector('.option-img-data');
+              const thumb = this.currentEditingOptionRow.querySelector('.option-img-preview-thumb');
+              if (dataInput) dataInput.value = dataUrl;
+              if (thumb) {
+                thumb.src = dataUrl;
+                thumb.style.display = 'inline-block';
+              }
+              btn.textContent = '🔄 更換圖片';
+            }
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+      };
+      fileInput.click();
+    }
+  }
+
+  // 預覽選項大圖
+  previewOptionImg(src) {
+    if (!src) return;
+    if (window.app && typeof window.app.showNotification === 'function') {
+      const modal = document.getElementById('notifyModal');
+      const textEl = document.getElementById('notifyModalText');
+      if (modal && textEl) {
+        document.getElementById('notifyModalTitle').textContent = '🖼️ 圖片預覽';
+        textEl.innerHTML = `<img src="${src}" style="max-width: 100%; max-height: 70vh; border-radius: 8px; display: block; margin: 0 auto;">`;
+        modal.classList.add('active');
+        return;
+      }
+    }
+    window.open(src, '_blank');
+  }
+
   // 載入歷史題目至出題框
   loadQuizFromHistory(key) {
     const item = this.historyBank[key];
     if (!item) return;
 
+    // 將題目文字/HTML 載入編輯器
+    const editor = document.getElementById('quizQuestionEditor');
+    if (editor) {
+      editor.innerHTML = item.question || '';
+    }
     const qInput = document.getElementById('quizQuestion');
-    if (qInput) qInput.value = item.question;
+    if (qInput) qInput.value = item.question || '';
 
     if (item.quizType === 'multiple') {
       const radMulti = document.querySelector('input[name="quizTypeRadio"][value="multiple"]');
@@ -438,12 +702,27 @@ class Quiz {
 
     const container = document.getElementById('optionsContainer');
     if (container && Array.isArray(item.options)) {
-      container.innerHTML = item.options.map(opt => `
-        <div class="option-input">
-          <input type="text" class="option-field" value="${this.escapeHtml(opt)}">
-          <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
-        </div>
-      `).join('');
+      container.innerHTML = item.options.map((opt, idx) => {
+        const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+        const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt));
+        const imgSrc = isImg ? opt.image : '';
+
+        return `
+          <div class="option-input" data-type="${isImg ? 'image' : 'text'}">
+            <span class="option-label">${idx + 1}</span>
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isImg ? 'color: #ff9500; border-color: #ff9500;' : ''}">
+              ${isImg ? '🖼️ 圖片' : '📝 文字'}
+            </button>
+            <input type="text" class="option-field" value="${this.escapeHtml(optText)}" placeholder="${isImg ? '說明文字或留空' : '選項文字內容'}">
+            <input type="hidden" class="option-img-data" value="${this.escapeHtml(imgSrc)}">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">
+              ${isImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
+            </button>
+            <img class="option-img-preview-thumb" src="${this.escapeHtml(imgSrc)}" style="${isImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+            <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+          </div>
+        `;
+      }).join('');
     }
 
     if (window.app) window.app.showNotification('成功', '已載入此題至出題框！');
@@ -574,6 +853,8 @@ Python
         // 帶入第一題
         const q0 = questions[0];
         if (q0 && q0.question && Array.isArray(q0.options)) {
+          const editor = document.getElementById('quizQuestionEditor');
+          if (editor) editor.innerHTML = q0.question;
           const qInput = document.getElementById('quizQuestion');
           if (qInput) qInput.value = q0.question;
           
@@ -588,12 +869,27 @@ Python
           // 重新填入選項
           const container = document.getElementById('optionsContainer');
           if (container) {
-            container.innerHTML = q0.options.map(opt => `
-              <div class="option-input">
-                <input type="text" class="option-field" value="${this.escapeHtml(opt)}">
-                <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
-              </div>
-            `).join('');
+            container.innerHTML = q0.options.map((opt, idx) => {
+              const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+              const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt));
+              const imgSrc = isImg ? opt.image : '';
+
+              return `
+                <div class="option-input" data-type="${isImg ? 'image' : 'text'}">
+                  <span class="option-label">${idx + 1}</span>
+                  <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isImg ? 'color: #ff9500; border-color: #ff9500;' : ''}">
+                    ${isImg ? '🖼️ 圖片' : '📝 文字'}
+                  </button>
+                  <input type="text" class="option-field" value="${this.escapeHtml(optText)}" placeholder="${isImg ? '說明文字或留空' : '選項文字內容'}">
+                  <input type="hidden" class="option-img-data" value="${this.escapeHtml(imgSrc)}">
+                  <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">
+                    ${isImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
+                  </button>
+                  <img class="option-img-preview-thumb" src="${this.escapeHtml(imgSrc)}" style="${isImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+                  <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+                </div>
+              `;
+            }).join('');
           }
         }
 

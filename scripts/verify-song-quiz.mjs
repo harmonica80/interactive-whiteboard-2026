@@ -132,7 +132,7 @@ if (threeTagSongs.length !== 180) throw new Error(`三標籤歌曲數應為 180�
 const html = fs.readFileSync('index.html', 'utf8');
 const classicsQuizCode = fs.readFileSync('js/classics_quiz.js', 'utf8');
 const htmlChecks = [
-  ['index.html 包含 ver 3.6.4 版本標示', html.includes('ver 3.6.4')],
+  ['index.html 包含 ver 3.6.5 版本標示', html.includes('ver 3.6.5')],
   ['包含學生重複名稱確認本人按鈕 btnConfirmSameStudentLogin', html.includes('id="btnConfirmSameStudentLogin"')],
   ['包含一次性課堂設定名稱按鈕 btnSetStudentNameOneOff', html.includes('id="btnSetStudentNameOneOff"')],
   ['focusGameType 包含 songQuiz 選項', html.includes('value="songQuiz"')],
@@ -151,10 +151,10 @@ const htmlChecks = [
   ['包含題庫徽章 focusQbBadge_songQuiz', html.includes('id="focusQbBadge_songQuiz"')],
   ['題庫彈窗包含 songQuiz 頁籤按鈕', html.includes('data-type="songQuiz"')],
   ['題庫彈窗包含標籤篩選下拉選單 focusQbTagFilterSelect', html.includes('id="focusQbTagFilterSelect"')],
-  ['引用 song_quiz_pool.js?v=364', html.includes('js/song_quiz_pool.js?v=364')],
-  ['引用 song_quiz.js?v=364', html.includes('js/song_quiz.js?v=364')],
-  ['引用 focus_question_bank.js?v=364', html.includes('js/focus_question_bank.js?v=364')],
-  ['引用 app.js?v=364', html.includes('js/app.js?v=364')],
+  ['引用 song_quiz_pool.js?v=365', html.includes('js/song_quiz_pool.js?v=365')],
+  ['引用 song_quiz.js?v=365', html.includes('js/song_quiz.js?v=365')],
+  ['引用 focus_question_bank.js?v=365', html.includes('js/focus_question_bank.js?v=365')],
+  ['引用 app.js?v=365', html.includes('js/app.js?v=365')],
   ['字力測驗包含出題數量下拉選單 focusCharacterTestCount', html.includes('id="focusCharacterTestCount"')],
   ['成語測驗出題數量包含 1 題與 2 題選項', html.includes('id="focusClassicsQuizCount"') && html.includes('<option value="1">1 題') && html.includes('<option value="2">2 題')],
   ['成語測驗答題說明改為 Google 查詢', classicsQuizCode.includes('google.com/search?q=') && classicsQuizCode.includes('透過 Google 查詢')],
@@ -175,7 +175,7 @@ htmlChecks.forEach(([desc, cond]) => {
 // 4. 測試 app.js 邏輯
 const appCode = fs.readFileSync('js/app.js', 'utf8');
 const appChecks = [
-  ['app.js APP_VERSION 為 3.6.4', appCode.includes("this.APP_VERSION = '3.6.4';")],
+  ['app.js APP_VERSION 為 3.6.5', appCode.includes("this.APP_VERSION = '3.6.5';")],
   ['app.js updateStudentNameUI 方法存在', appCode.includes('updateStudentNameUI()')],
   ['app.js findExistingStudentByName 方法存在', appCode.includes('findExistingStudentByName(')],
   ['app.js confirmSameStudentLogin 方法存在', appCode.includes('confirmSameStudentLogin(')],
