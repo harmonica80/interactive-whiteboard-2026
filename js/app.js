@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.6.8';
+    this.APP_VERSION = '3.6.9';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -865,6 +865,9 @@ class App {
       if (snap.exists()) {
         studentsMap = snap.val() || {};
         this.registeredStudents = studentsMap;
+      } else {
+        studentsMap = {};
+        this.registeredStudents = {};
       }
     } catch (e) {}
 
@@ -876,7 +879,10 @@ class App {
     }
 
     const presenceData = this.onlinePresence || {};
+    const now = Date.now();
     for (const [key, p] of Object.entries(presenceData)) {
+      // 僅採計 120 秒內真正活躍在線的 session，避免過期幽靈連線佔用學生姓名
+      if (p && p.timestamp && (now - p.timestamp > 120000)) continue;
       if (p && p.userId && p.userId !== myUid && p.userName) {
         const n = String(p.userName).trim();
         if (n && n !== '同學' && n !== '訪客' && n !== '匿名') {
@@ -1690,6 +1696,36 @@ class App {
     this.registeredStudents = {};
     db.ref('quiz/students').on('value', (snapshot) => {
       this.registeredStudents = snapshot.val() || {};
+    });
+
+    // 監聽課堂重設廣播信號 (一次性課堂清除資料時連帶清除學生端已登入姓名，避免舊名稱累積佔用)
+    let lastHandledResetTime = Date.now();
+    db.ref('quiz/resetTimestamp').on('value', (snapshot) => {
+      const resetTime = snapshot.val();
+      if (!resetTime || resetTime <= lastHandledResetTime) return;
+      lastHandledResetTime = resetTime;
+
+      const isOneOff = (window.ClassRoomManager && typeof window.ClassRoomManager.isOneOffClass === 'function')
+        ? window.ClassRoomManager.isOneOffClass()
+        : !window.currentClassCode;
+
+      // 若當前處於一次性課堂且非管理員，自動清理本機儲存之學生姓名與快取
+      if (isOneOff && !this.isAdmin) {
+        localStorage.removeItem('user_nickname');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('comment_nickname');
+        this.currentUserName = '';
+        this.updateStudentNameUI();
+        if (this.myPresenceRef) {
+          this.myPresenceRef.update({
+            userName: '',
+            avatar: 0
+          }).catch(() => {});
+        }
+        if (typeof this.showNotification === 'function') {
+          this.showNotification('課堂通知', '老師已清除課堂資料，已為您清除名稱紀錄！');
+        }
+      }
     });
   }
   
@@ -13082,6 +13118,10 @@ function resetAll() {
     window.quiz.clearQuizResults();
   }
 
+  const isOneOff = (window.ClassRoomManager && typeof window.ClassRoomManager.isOneOffClass === 'function')
+    ? window.ClassRoomManager.isOneOffClass()
+    : !window.currentClassCode;
+
   const promises = [
     db.ref('questions').remove(),
     db.ref('quiz/questionFolders').remove(),
@@ -13099,12 +13139,26 @@ function resetAll() {
     db.ref('quiz/videoQuizSettings').remove(),
     db.ref('quiz/videoQuizAnswers').remove(),
     db.ref('quiz/students').remove(),
+    db.ref('quiz/presence').remove(), // 徹底清除在線與快取紀錄，避免舊名稱殘留
     db.ref('whiteboard').remove(),
-    db.ref('whiteboard_room').remove()
+    db.ref('whiteboard_room').remove(),
+    db.ref('quiz/resetTimestamp').set(Date.now()) // 廣播重設事件至所有在線學生客戶端
   ];
 
+  if (isOneOff) {
+    // 一次性課堂清除資料時，一併清除本機學生名稱紀錄
+    localStorage.removeItem('user_nickname');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('comment_nickname');
+  }
+
+  if (window.app) {
+    window.app.registeredStudents = {};
+    window.app.onlinePresence = {};
+  }
+
   Promise.all(promises).then(() => {
-    if (window.app) window.app.showNotification('成功', '所有資料已成功重設！');
+    if (window.app) window.app.showNotification('成功', '所有資料與學生登入名稱已成功清除重設！');
     setTimeout(() => {
       location.reload();
     }, 500);
