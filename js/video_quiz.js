@@ -143,6 +143,8 @@
       this.isPlaying = false;
       this.isPlayerReady = false;
       this.currentBlobUrl = null;
+      this.driveTimerRunning = false;
+      this.editingQuizLocalFile = null;
 
       // 測驗進度狀態 (自主學習 & 同步模式)
       this.triggeredQuestions = new Set();
@@ -563,6 +565,31 @@
       const loadBtn = document.getElementById('vqEditorLoadVideoBtn');
       if (loadBtn) {
         loadBtn.addEventListener('click', () => this.loadEditorVideo());
+      }
+
+      // 選擇本機音檔按鈕與檔案選擇事件
+      const localFileInput = document.getElementById('vqEditorLocalFileInput');
+      const chooseLocalBtn = document.getElementById('vqEditorChooseLocalFileBtn');
+      if (chooseLocalBtn && localFileInput) {
+        chooseLocalBtn.addEventListener('click', () => localFileInput.click());
+      }
+      if (localFileInput) {
+        localFileInput.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          this.editingQuizLocalFile = file;
+          if (this.currentBlobUrl) {
+            try { URL.revokeObjectURL(this.currentBlobUrl); } catch (err) {}
+          }
+          this.currentBlobUrl = URL.createObjectURL(file);
+          const urlInput = document.getElementById('vqEditQuizUrl');
+          if (urlInput) urlInput.value = `[本機音檔] ${file.name}`;
+          const titleInput = document.getElementById('vqEditQuizTitle');
+          if (titleInput && (!titleInput.value.trim() || titleInput.value === '新建影片測驗')) {
+            titleInput.value = file.name.replace(/\.[^/.]+$/, "");
+          }
+          this.setupPlayer('vqEditorPlayerContainer', this.currentBlobUrl);
+        });
       }
 
       // 編輯器時間點新增按鈕
@@ -1012,40 +1039,70 @@
           this.loadYoutubeAPI(initYT);
         }
       } else if (driveId) {
-        // Google 雲端硬碟：採用官方預覽播放器（100% 正常播放，不受 Google 2024 防外鏈 403 阻擋）
+        // Google 雲端硬碟：採用官方預覽播放器，搭配專屬同步碼表與測驗自動跳題計時系統
         this.playerType = 'drive_iframe';
+        this.driveTimerRunning = false;
         const iframeDivId = containerId + '_drive_frame';
         const isEditor = (containerId === 'vqEditorPlayerContainer');
+        const isSync = (containerId === 'vqSyncPlayerContainer');
+        const isSelf = (containerId === 'vqSelfPlayerContainer');
 
         container.innerHTML = `
           <div style="width: 100%; height: 100%; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b1329; border-radius: 10px; overflow: hidden; position: relative; border: 1px solid var(--border-color);">
             <iframe id="${iframeDivId}" src="https://drive.google.com/file/d/${driveId}/preview" allow="autoplay" style="width: 100%; height: 100%; min-height: 180px; border: none; display: block;"></iframe>
           </div>
           ${isEditor ? `
-          <div style="margin-top: 8px; padding: 8px 12px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.35); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <span style="font-size: 12px; font-weight: bold; color: #38bdf8;">⏱️ 目前聽到的播放時間點：</span>
-              <input type="text" id="vqDriveEditorTimeInput" placeholder="00:00" value="00:00" style="width: 75px; text-align: center; font-size: 13px; font-weight: bold; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: monospace;" title="請輸入在上方 Google 播放器看到的時間 (分:秒 或 秒數)">
-              <span style="font-size: 11px; color: var(--text-muted);">(可直接填分:秒，如 01:25 或秒數)</span>
+          <div style="margin-top: 8px; padding: 10px 12px; background: rgba(56, 189, 248, 0.08); border: 1.5px dashed rgba(56, 189, 248, 0.4); border-radius: 10px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 13px; font-weight: bold; color: #38bdf8;">⏱️ 目前出題時間點：</span>
+                <input type="text" id="vqDriveEditorTimeInput" placeholder="00:00" value="00:00" style="width: 80px; text-align: center; font-size: 14px; font-weight: bold; padding: 4px 8px; border-radius: 6px; border: 1.5px solid #38bdf8; background: var(--bg-input); color: var(--text-primary); font-family: monospace;" title="請輸入或使用碼表同步時間 (分:秒 或 秒數)">
+                <button type="button" class="action-btn" id="vqDriveEditorToggleTimerBtn" style="padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 6px; background: #0284c7; color: white; border: none; cursor: pointer;">▶ 啟動同步碼表</button>
+                <button type="button" class="action-btn" id="vqDriveEditorResetTimerBtn" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;" title="時間歸零">↺ 歸零</button>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <span style="font-size: 11px; color: var(--text-muted);">快調：</span>
+                <button type="button" class="vq-btn-sm" id="vqDriveTimeMinus10" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">-10s</button>
+                <button type="button" class="vq-btn-sm" id="vqDriveTimeMinus5" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">-5s</button>
+                <button type="button" class="vq-btn-sm" id="vqDriveTimePlus5" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">+5s</button>
+                <button type="button" class="vq-btn-sm" id="vqDriveTimePlus10" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">+10s</button>
+                <button type="button" class="vq-btn-sm" id="vqDriveTimePlus30" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">+30s</button>
+              </div>
             </div>
-            <div style="display: flex; gap: 4px;">
-              <button type="button" class="vq-btn-sm" id="vqDriveTimeMinus5" style="padding: 2px 7px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">-5s</button>
-              <button type="button" class="vq-btn-sm" id="vqDriveTimePlus5" style="padding: 2px 7px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">+5s</button>
-              <button type="button" class="vq-btn-sm" id="vqDriveTimePlus15" style="padding: 2px 7px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">+15s</button>
+            <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; background: rgba(0,0,0,0.03); padding: 6px 10px; border-radius: 6px;">
+              💡 <strong>Google 雲端硬碟出題小訣竅</strong>：Google 預覽播放器受瀏覽器跨域防護限制無法由外部自動偵測進度條，您可以：<br>
+              ① 播放時點擊<strong>「▶ 啟動同步碼表」</strong>，碼表與音檔同步跑秒，聽至關鍵處直接點按「📌 在當前播放時間插入題目」即自動帶入當前秒數！<br>
+              ② 或直接在時間框輸入您聽到的時間（如 <code>01:25</code>），再點擊「插入題目」即可精準出題！
             </div>
-          </div>
-          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; text-align: center; line-height: 1.4;">
-            💡 <strong>Google 雲端硬碟出題說明</strong>：因 Google 跨域安全性保護無法由外部自動讀取進度，請依上方播放器顯示的時間在此輸入，按「📌 在當前播放時間插入題目」將自動帶入！
           </div>
           ` : `
-          <div style="font-size: 11px; color: #38bdf8; margin-top: 6px; text-align: center; line-height: 1.4;">
-            🎵 <strong>Google 雲端硬碟音訊已就緒</strong>：請直接點按上方 Google 官方播放器播放與聆聽。
+          <div style="margin-top: 10px; padding: 12px 14px; background: rgba(56, 189, 248, 0.08); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 10px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" id="vqDriveQuizToggleBtn" class="action-btn" style="padding: 6px 14px; font-size: 13px; font-weight: bold; border-radius: 8px; background: #0284c7; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                  <span id="vqDriveQuizToggleIcon">▶</span> <span id="vqDriveQuizToggleText">啟動測驗播放與跳題計時</span>
+                </button>
+                <span id="vqDriveQuizTimerDisplay" style="font-size: 15px; font-weight: bold; color: var(--accent-color); font-family: monospace;">⏱️ 00:00</span>
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" id="vqDriveQuizMinus5" class="vq-btn-sm" style="padding: 3px 7px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">-5s</button>
+                  <button type="button" id="vqDriveQuizPlus5" class="vq-btn-sm" style="padding: 3px 7px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">+5s</button>
+                </div>
+              </div>
+              <div id="vqDriveQuizNextHint" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">
+              </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
+              🎵 <strong>Google 雲端硬碟測驗跳題說明</strong>：點擊上方 Google 播放器播放，並點擊<strong>「▶ 啟動測驗播放與跳題計時」</strong>。當秒數到達題目設定時間點時，系統將<strong>自動暫停並跳出題目作答視窗</strong>！
+            </div>
           </div>
           `}
         `;
 
         if (isEditor) {
           const driveInput = document.getElementById('vqDriveEditorTimeInput');
+          const toggleBtn = document.getElementById('vqDriveEditorToggleTimerBtn');
+          const resetBtn = document.getElementById('vqDriveEditorResetTimerBtn');
+
           const syncDriveTime = (sec) => {
             this.currentTime = Math.max(0, sec);
             if (driveInput) driveInput.value = this.formatTime(this.currentTime);
@@ -1066,14 +1123,49 @@
               this.currentTime = sec;
             });
           }
-
-          const btnM5 = document.getElementById('vqDriveTimeMinus5');
-          const btnP5 = document.getElementById('vqDriveTimePlus5');
-          const btnP15 = document.getElementById('vqDriveTimePlus15');
-
-          if (btnM5) btnM5.addEventListener('click', () => syncDriveTime((this.currentTime || 0) - 5));
-          if (btnP5) btnP5.addEventListener('click', () => syncDriveTime((this.currentTime || 0) + 5));
-          if (btnP15) btnP15.addEventListener('click', () => syncDriveTime((this.currentTime || 0) + 15));
+          if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+              this.driveTimerRunning = !this.driveTimerRunning;
+              this.updateDriveTimerDisplay();
+            });
+          }
+          if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+              this.driveTimerRunning = false;
+              syncDriveTime(0);
+              this.updateDriveTimerDisplay();
+            });
+          }
+          ['10', '5'].forEach(s => {
+            const bM = document.getElementById(`vqDriveTimeMinus${s}`);
+            if (bM) bM.addEventListener('click', () => syncDriveTime((this.currentTime || 0) - parseInt(s, 10)));
+          });
+          ['5', '10', '30'].forEach(s => {
+            const bP = document.getElementById(`vqDriveTimePlus${s}`);
+            if (bP) bP.addEventListener('click', () => syncDriveTime((this.currentTime || 0) + parseInt(s, 10)));
+          });
+        } else if (isSync || isSelf) {
+          const quizToggleBtn = document.getElementById('vqDriveQuizToggleBtn');
+          if (quizToggleBtn) {
+            quizToggleBtn.addEventListener('click', () => {
+              if (this.driveTimerRunning) {
+                this.pauseVideo();
+              } else {
+                this.playVideo();
+              }
+            });
+          }
+          const qM5 = document.getElementById('vqDriveQuizMinus5');
+          const qP5 = document.getElementById('vqDriveQuizPlus5');
+          if (qM5) qM5.addEventListener('click', () => {
+            this.currentTime = Math.max(0, (this.currentTime || 0) - 5);
+            this.updateDriveTimerDisplay();
+          });
+          if (qP5) qP5.addEventListener('click', () => {
+            this.currentTime = (this.currentTime || 0) + 5;
+            this.updateDriveTimerDisplay();
+          });
+          this.updateDriveTimerDisplay();
         }
 
         this.isPlayerReady = true;
@@ -1161,10 +1253,17 @@
         let t = 0;
         if (this.playerType === 'youtube' && this.ytPlayer && typeof this.ytPlayer.getCurrentTime === 'function') {
           t = this.ytPlayer.getCurrentTime() || 0;
+          this.currentTime = t;
         } else if (this.playerType === 'html5' && this.html5Player) {
           t = this.html5Player.currentTime || 0;
+          this.currentTime = t;
+        } else if (this.playerType === 'drive_iframe') {
+          if (this.driveTimerRunning) {
+            this.currentTime = (this.currentTime || 0) + 0.25;
+            this.updateDriveTimerDisplay();
+          }
+          t = this.currentTime || 0;
         }
-        this.currentTime = t;
 
         // 需求 3：指定結束時間檢查，到達結束時間時自動暫停並觸發影片結束
         if (this.activeQuiz && this.activeQuiz.endTime > 0 && this.activeQuiz.endTime > (this.activeQuiz.startTime || 0)) {
@@ -1182,6 +1281,7 @@
     }
 
     destroyPlayer() {
+      this.driveTimerRunning = false;
       if (this.pollTimer) {
         clearInterval(this.pollTimer);
         this.pollTimer = null;
@@ -1205,6 +1305,9 @@
         this.ytPlayer.playVideo();
       } else if (this.playerType === 'html5' && this.html5Player) {
         this.html5Player.play();
+      } else if (this.playerType === 'drive_iframe') {
+        this.driveTimerRunning = true;
+        this.updateDriveTimerDisplay();
       }
       this.isPlaying = true;
     }
@@ -1215,6 +1318,9 @@
         this.ytPlayer.pauseVideo();
       } else if (this.playerType === 'html5' && this.html5Player) {
         this.html5Player.pause();
+      } else if (this.playerType === 'drive_iframe') {
+        this.driveTimerRunning = false;
+        this.updateDriveTimerDisplay();
       }
       this.isPlaying = false;
     }
@@ -1225,6 +1331,59 @@
         this.ytPlayer.seekTo(seconds, true);
       } else if (this.playerType === 'html5' && this.html5Player) {
         this.html5Player.currentTime = seconds;
+      } else if (this.playerType === 'drive_iframe') {
+        this.currentTime = Math.max(0, seconds);
+        this.updateDriveTimerDisplay();
+      }
+    }
+
+    // Google 雲端硬碟動態計時器與出題提示更新
+    updateDriveTimerDisplay() {
+      const curSec = Math.floor(this.currentTime || 0);
+      const formatted = this.formatTime(curSec);
+
+      // 1. 編輯器時間框與碼表按鈕
+      const editorInput = document.getElementById('vqDriveEditorTimeInput');
+      if (editorInput && this.driveTimerRunning) {
+        editorInput.value = formatted;
+      }
+      const editorToggleBtn = document.getElementById('vqDriveEditorToggleTimerBtn');
+      if (editorToggleBtn) {
+        editorToggleBtn.textContent = this.driveTimerRunning ? '⏸ 暫停碼表' : '▶ 啟動同步碼表';
+        editorToggleBtn.style.background = this.driveTimerRunning ? '#f59e0b' : '#0284c7';
+      }
+
+      // 2. 測驗播放器計時顯示 (全班同步或自主學習)
+      const timerDisplay = document.getElementById('vqDriveQuizTimerDisplay');
+      if (timerDisplay) {
+        timerDisplay.textContent = `⏱️ ${formatted}`;
+      }
+      const quizToggleIcon = document.getElementById('vqDriveQuizToggleIcon');
+      const quizToggleText = document.getElementById('vqDriveQuizToggleText');
+      const quizToggleBtn = document.getElementById('vqDriveQuizToggleBtn');
+      if (quizToggleBtn) {
+        if (this.driveTimerRunning) {
+          if (quizToggleIcon) quizToggleIcon.textContent = '⏸';
+          if (quizToggleText) quizToggleText.textContent = '暫停計時';
+          quizToggleBtn.style.background = '#f59e0b';
+        } else {
+          if (quizToggleIcon) quizToggleIcon.textContent = '▶';
+          if (quizToggleText) quizToggleText.textContent = (curSec > 0) ? '繼續播放計時' : '啟動測驗播放與跳題計時';
+          quizToggleBtn.style.background = '#0284c7';
+        }
+      }
+
+      // 3. 下一題提示
+      const nextHint = document.getElementById('vqDriveQuizNextHint');
+      if (nextHint && this.activeQuiz && this.activeQuiz.questions) {
+        const upcoming = this.activeQuiz.questions
+          .filter(q => q.enabled !== false && q.time > curSec)
+          .sort((a, b) => a.time - b.time)[0];
+        if (upcoming) {
+          nextHint.innerHTML = `<span style="color: #0284c7; font-weight: bold;">📌 下一題將於 ${upcoming.timeFormatted || this.formatTime(upcoming.time)} 自動跳出</span>`;
+        } else {
+          nextHint.innerHTML = `<span style="color: var(--success-color); font-weight: bold;">🎉 所有題目時間已達</span>`;
+        }
       }
     }
 
@@ -2879,7 +3038,7 @@
 
       document.getElementById('vqEditQuizTitle').value = this.editingQuiz.title || '';
       document.getElementById('vqEditQuizDesc').value = this.editingQuiz.description || '';
-      document.getElementById('vqEditQuizUrl').value = this.editingQuiz.videoUrl || '';
+      document.getElementById('vqEditQuizUrl').value = this.editingQuiz.originalUrlText || this.editingQuiz.videoUrl || '';
 
       const s = this.editingQuiz.startTime || 0;
       const e = this.editingQuiz.endTime || 0;
@@ -2901,7 +3060,11 @@
     loadEditorVideo() {
       const url = document.getElementById('vqEditQuizUrl')?.value?.trim();
       if (!url) return;
-      this.setupPlayer('vqEditorPlayerContainer', url);
+      if (url.startsWith('[本機音檔]') && this.currentBlobUrl) {
+        this.setupPlayer('vqEditorPlayerContainer', this.currentBlobUrl);
+      } else {
+        this.setupPlayer('vqEditorPlayerContainer', url);
+      }
     }
 
     // 渲染時間節點題目清單
@@ -2935,8 +3098,12 @@
     openAddQuestionModal() {
       let curTime = Math.round(this.currentTime || 0);
       const driveInput = document.getElementById('vqDriveEditorTimeInput');
-      if (curTime === 0 && driveInput && driveInput.value) {
-        curTime = this.parseTimeString(driveInput.value);
+      if (driveInput && driveInput.value) {
+        const parsed = this.parseTimeString(driveInput.value);
+        if (parsed > 0 && (curTime === 0 || Math.abs(curTime - parsed) > 2)) {
+          curTime = parsed;
+          this.currentTime = parsed;
+        }
       }
       const formatted = this.formatTime(curTime);
 
@@ -2951,6 +3118,16 @@
       document.getElementById('vqQuestionPointsInput').value = '10';
 
       this.updateQuestionEditorTypeFields();
+
+      const hintEl = document.getElementById('vqQuestionTimeHint');
+      if (hintEl) {
+        if (this.playerType === 'drive_iframe') {
+          hintEl.innerHTML = `💡 <strong>Google 雲端硬碟出題提示</strong>：因瀏覽器安全性防護無法由外部直接偵測進度條，請在此直接輸入欲出題的時間（如 <code>01:25</code> 或 <code>85</code> 秒），系統會自動換算！`;
+        } else {
+          hintEl.innerHTML = `💡 時間設定支援「格式化時間」（如 <code>01:25</code>）或「秒數」（如 <code>85</code>），兩欄位輸入時將即時雙向自動換算。`;
+        }
+      }
+
       const modal = document.getElementById('vqQuestionEditModal');
       if (modal) modal.style.display = 'flex';
 
@@ -3083,9 +3260,14 @@
 
       this.editingQuiz.title = title;
       this.editingQuiz.description = desc;
-      this.editingQuiz.videoUrl = url;
-      this.editingQuiz.youtubeId = this.extractYoutubeId(url);
-      this.editingQuiz.videoType = this.editingQuiz.youtubeId ? 'youtube' : 'html5';
+      let finalUrl = url;
+      if (url.startsWith('[本機音檔]') && this.currentBlobUrl) {
+        finalUrl = this.currentBlobUrl;
+      }
+      this.editingQuiz.videoUrl = finalUrl;
+      this.editingQuiz.originalUrlText = url;
+      this.editingQuiz.youtubeId = this.extractYoutubeId(finalUrl);
+      this.editingQuiz.videoType = this.editingQuiz.youtubeId ? 'youtube' : (this.extractDriveFileId(finalUrl) ? 'drive' : 'html5');
 
       // 需求 3：儲存指定播放起訖時間
       const startVal = parseInt(document.getElementById('vqRangeStartInput')?.value || 0, 10);
