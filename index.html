@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=368">
+  <link rel="stylesheet" href="css/style.css?v=369">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -24,7 +24,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.6.8</span>
+          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.6.9</span>
         </p>
       </div>
       <div class="top-actions">
@@ -2059,17 +2059,17 @@ Python</pre>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
-  <script src="js/firebase-config.js?v=368"></script>
+  <script src="js/firebase-config.js?v=369"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=368"></script>
-  <script src="js/focus_question_bank.js?v=368"></script>
+  <script src="js/song_quiz_pool.js?v=369"></script>
+  <script src="js/focus_question_bank.js?v=369"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
-  <script src="js/quiz.js?v=368"></script>
-  <script src="js/app.js?v=368"></script>
-  <script src="js/classics_quiz.js?v=368"></script>
-  <script src="js/song_quiz.js?v=368"></script>
-  <script src="js/video_quiz.js?v=368"></script>
+  <script src="js/quiz.js?v=369"></script>
+  <script src="js/app.js?v=369"></script>
+  <script src="js/classics_quiz.js?v=369"></script>
+  <script src="js/song_quiz.js?v=369"></script>
+  <script src="js/video_quiz.js?v=369"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -2853,14 +2853,18 @@ Python</pre>
         <button onclick="window.videoQuiz.closeQuestionEditModal()" style="background: transparent; border: none; font-size: 16px; cursor: pointer;">✕</button>
       </div>
 
+      <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;">
+        💡 時間設定支援「格式化時間」（如 <code>01:25</code>）或「秒數」（如 <code>85</code>），兩欄位輸入時將即時雙向自動換算。
+      </div>
+
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;">
         <div>
           <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px;">時間 (秒)</label>
-          <input type="number" id="vqQuestionTimeInput" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
+          <input type="number" id="vqQuestionTimeInput" min="0" placeholder="0" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
         </div>
         <div>
-          <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px;">格式化時間</label>
-          <input type="text" id="vqQuestionTimeFormatted" readonly style="width: 100%; box-sizing: border-box; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-secondary);">
+          <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px;">格式化時間 (分:秒)</label>
+          <input type="text" id="vqQuestionTimeFormatted" placeholder="00:00 (可輸入分:秒)" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: monospace; font-weight: bold;">
         </div>
         <div>
           <label style="display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px;">題型</label>

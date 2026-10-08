@@ -613,8 +613,17 @@
       const setStartBtn = document.getElementById('vqSetStartCurrentBtn');
       if (setStartBtn) {
         setStartBtn.addEventListener('click', () => {
-          const cur = Math.round(this.currentTime || 0);
-          const max = parseInt(rangeStartInput?.max || 100, 10);
+          let cur = Math.round(this.currentTime || 0);
+          const driveInput = document.getElementById('vqDriveEditorTimeInput');
+          if (cur === 0 && driveInput && driveInput.value) {
+            cur = this.parseTimeString(driveInput.value);
+          }
+          let max = parseInt(rangeStartInput?.max || 100, 10);
+          if (cur > max) {
+            max = cur + 30;
+            if (rangeStartInput) rangeStartInput.max = max;
+            if (rangeEndInput) rangeEndInput.max = max;
+          }
           let curEnd = parseInt(rangeEndInput?.value || max, 10);
           if (cur > curEnd) curEnd = cur;
           this.updateTimeRangeUI(cur, curEnd, max);
@@ -628,8 +637,17 @@
       const setEndBtn = document.getElementById('vqSetEndCurrentBtn');
       if (setEndBtn) {
         setEndBtn.addEventListener('click', () => {
-          const cur = Math.round(this.currentTime || 0);
-          const max = parseInt(rangeEndInput?.max || 100, 10);
+          let cur = Math.round(this.currentTime || 0);
+          const driveInput = document.getElementById('vqDriveEditorTimeInput');
+          if (cur === 0 && driveInput && driveInput.value) {
+            cur = this.parseTimeString(driveInput.value);
+          }
+          let max = parseInt(rangeEndInput?.max || 100, 10);
+          if (cur > max) {
+            max = cur + 30;
+            if (rangeStartInput) rangeStartInput.max = max;
+            if (rangeEndInput) rangeEndInput.max = max;
+          }
           let curStart = parseInt(rangeStartInput?.value || 0, 10);
           if (cur < curStart) curStart = cur;
           this.updateTimeRangeUI(curStart, cur, max);
@@ -652,16 +670,21 @@
         });
       }
 
-      // 題目秒數手動輸入即時連動格式化時間
+      // 題目秒數手動輸入與格式化時間 (分:秒) 即時雙向互通連動
       const qTimeInput = document.getElementById('vqQuestionTimeInput');
+      const qTimeFormattedEl = document.getElementById('vqQuestionTimeFormatted');
+
       if (qTimeInput) {
         qTimeInput.addEventListener('input', (e) => {
           const sec = Math.max(0, parseInt(e.target.value || 0, 10));
-          const m = Math.floor(sec / 60);
-          const s = sec % 60;
-          const formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-          const formattedEl = document.getElementById('vqQuestionTimeFormatted');
-          if (formattedEl) formattedEl.value = formatted;
+          if (qTimeFormattedEl) qTimeFormattedEl.value = this.formatTime(sec);
+        });
+      }
+
+      if (qTimeFormattedEl) {
+        qTimeFormattedEl.addEventListener('input', (e) => {
+          const sec = this.parseTimeString(e.target.value);
+          if (qTimeInput) qTimeInput.value = sec;
         });
       }
 
@@ -992,14 +1015,67 @@
         // Google 雲端硬碟：採用官方預覽播放器（100% 正常播放，不受 Google 2024 防外鏈 403 阻擋）
         this.playerType = 'drive_iframe';
         const iframeDivId = containerId + '_drive_frame';
+        const isEditor = (containerId === 'vqEditorPlayerContainer');
+
         container.innerHTML = `
           <div style="width: 100%; height: 100%; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b1329; border-radius: 10px; overflow: hidden; position: relative; border: 1px solid var(--border-color);">
             <iframe id="${iframeDivId}" src="https://drive.google.com/file/d/${driveId}/preview" allow="autoplay" style="width: 100%; height: 100%; min-height: 180px; border: none; display: block;"></iframe>
           </div>
+          ${isEditor ? `
+          <div style="margin-top: 8px; padding: 8px 12px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.35); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 12px; font-weight: bold; color: #38bdf8;">⏱️ 目前聽到的播放時間點：</span>
+              <input type="text" id="vqDriveEditorTimeInput" placeholder="00:00" value="00:00" style="width: 75px; text-align: center; font-size: 13px; font-weight: bold; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: monospace;" title="請輸入在上方 Google 播放器看到的時間 (分:秒 或 秒數)">
+              <span style="font-size: 11px; color: var(--text-muted);">(可直接填分:秒，如 01:25 或秒數)</span>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="vq-btn-sm" id="vqDriveTimeMinus5" style="padding: 2px 7px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">-5s</button>
+              <button type="button" class="vq-btn-sm" id="vqDriveTimePlus5" style="padding: 2px 7px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">+5s</button>
+              <button type="button" class="vq-btn-sm" id="vqDriveTimePlus15" style="padding: 2px 7px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);">+15s</button>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; text-align: center; line-height: 1.4;">
+            💡 <strong>Google 雲端硬碟出題說明</strong>：因 Google 跨域安全性保護無法由外部自動讀取進度，請依上方播放器顯示的時間在此輸入，按「📌 在當前播放時間插入題目」將自動帶入！
+          </div>
+          ` : `
           <div style="font-size: 11px; color: #38bdf8; margin-top: 6px; text-align: center; line-height: 1.4;">
             🎵 <strong>Google 雲端硬碟音訊已就緒</strong>：請直接點按上方 Google 官方播放器播放與聆聽。
           </div>
+          `}
         `;
+
+        if (isEditor) {
+          const driveInput = document.getElementById('vqDriveEditorTimeInput');
+          const syncDriveTime = (sec) => {
+            this.currentTime = Math.max(0, sec);
+            if (driveInput) driveInput.value = this.formatTime(this.currentTime);
+            const rStart = document.getElementById('vqRangeStartInput');
+            const rEnd = document.getElementById('vqRangeEndInput');
+            let max = parseInt(rStart?.max || 100, 10);
+            if (this.currentTime > max) {
+              max = this.currentTime + 30;
+              if (rStart) rStart.max = max;
+              if (rEnd) rEnd.max = max;
+              this.updateTimeRangeUI(parseInt(rStart?.value || 0, 10), parseInt(rEnd?.value || max, 10), max);
+            }
+          };
+
+          if (driveInput) {
+            driveInput.addEventListener('input', (e) => {
+              const sec = this.parseTimeString(e.target.value);
+              this.currentTime = sec;
+            });
+          }
+
+          const btnM5 = document.getElementById('vqDriveTimeMinus5');
+          const btnP5 = document.getElementById('vqDriveTimePlus5');
+          const btnP15 = document.getElementById('vqDriveTimePlus15');
+
+          if (btnM5) btnM5.addEventListener('click', () => syncDriveTime((this.currentTime || 0) - 5));
+          if (btnP5) btnP5.addEventListener('click', () => syncDriveTime((this.currentTime || 0) + 5));
+          if (btnP15) btnP15.addEventListener('click', () => syncDriveTime((this.currentTime || 0) + 15));
+        }
+
         this.isPlayerReady = true;
         this.duration = 0;
         if (typeof onReadyCallback === 'function') onReadyCallback(this);
@@ -2857,10 +2933,12 @@
 
     // 在當前播放時間開啟新增題目彈窗
     openAddQuestionModal() {
-      const curTime = Math.round(this.currentTime || 0);
-      const mins = Math.floor(curTime / 60);
-      const secs = curTime % 60;
-      const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      let curTime = Math.round(this.currentTime || 0);
+      const driveInput = document.getElementById('vqDriveEditorTimeInput');
+      if (curTime === 0 && driveInput && driveInput.value) {
+        curTime = this.parseTimeString(driveInput.value);
+      }
+      const formatted = this.formatTime(curTime);
 
       this.editingQuestionIndex = -1;
       document.getElementById('vqQuestionTimeInput').value = curTime;
@@ -2875,6 +2953,17 @@
       this.updateQuestionEditorTypeFields();
       const modal = document.getElementById('vqQuestionEditModal');
       if (modal) modal.style.display = 'flex';
+
+      // 若為 Google 雲端硬碟播放器或當前秒數為 0，自動將游標聚焦並選取「格式化時間」欄位，方便老師即時輸入分:秒
+      if (this.playerType === 'drive_iframe' || curTime === 0) {
+        setTimeout(() => {
+          const formattedEl = document.getElementById('vqQuestionTimeFormatted');
+          if (formattedEl) {
+            formattedEl.focus();
+            formattedEl.select();
+          }
+        }, 120);
+      }
     }
 
     openEditQuestionModal(index) {
@@ -2883,7 +2972,7 @@
       this.editingQuestionIndex = index;
 
       document.getElementById('vqQuestionTimeInput').value = q.time;
-      document.getElementById('vqQuestionTimeFormatted').value = q.timeFormatted || '00:00';
+      document.getElementById('vqQuestionTimeFormatted').value = q.timeFormatted || this.formatTime(q.time);
       document.getElementById('vqQuestionTypeSelect').value = q.type || 'single';
       document.getElementById('vqQuestionPromptInput').value = q.prompt || '';
       document.getElementById('vqQuestionOptionsInput').value = (q.options || []).join('\n');
@@ -2920,10 +3009,12 @@
 
     saveQuestionItem() {
       if (!this.editingQuiz) return;
-      const time = parseInt(document.getElementById('vqQuestionTimeInput').value, 10) || 0;
-      const mins = Math.floor(time / 60);
-      const secs = time % 60;
-      const timeFormatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      let time = parseInt(document.getElementById('vqQuestionTimeInput').value, 10) || 0;
+      const formattedInput = document.getElementById('vqQuestionTimeFormatted')?.value.trim() || '';
+      if (formattedInput && (time === 0 || formattedInput !== this.formatTime(time))) {
+        time = this.parseTimeString(formattedInput);
+      }
+      const timeFormatted = this.formatTime(time);
       const type = document.getElementById('vqQuestionTypeSelect').value;
       const prompt = document.getElementById('vqQuestionPromptInput').value.trim();
       const optsText = document.getElementById('vqQuestionOptionsInput').value.trim();
@@ -3035,6 +3126,22 @@
         return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
       }
       return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    // 解析時間字串 (支援 mm:ss、hh:mm:ss、或純秒數數字)
+    parseTimeString(val) {
+      if (typeof val === 'number') return Math.max(0, Math.floor(val));
+      if (!val) return 0;
+      const str = String(val).trim();
+      if (str.includes(':')) {
+        const parts = str.split(':').map(p => parseInt(p, 10) || 0);
+        if (parts.length === 3) {
+          return Math.max(0, parts[0] * 3600 + parts[1] * 60 + parts[2]);
+        } else if (parts.length === 2) {
+          return Math.max(0, parts[0] * 60 + parts[1]);
+        }
+      }
+      return Math.max(0, parseInt(str, 10) || 0);
     }
 
     // 需求 3：更新指定播放起訖點雙滑桿介面
