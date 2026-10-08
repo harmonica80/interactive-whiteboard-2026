@@ -12,21 +12,21 @@ const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
 const fbJs = fs.readFileSync('js/firebase-config.js', 'utf8');
 
 const checks = [
-  ['package.json version 3.6.9', pkg.version === '3.6.9'],
-  ['app.js APP_VERSION 3.6.9', appJs.includes("this.APP_VERSION = '3.6.9';")],
-  ['index.html badge ver 3.6.9', html.includes('ver 3.6.9')],
+  ['package.json version 3.7.0', pkg.version === '3.7.0'],
+  ['app.js APP_VERSION 3.7.0', appJs.includes("this.APP_VERSION = '3.7.0';")],
+  ['index.html badge ver 3.7.0', html.includes('ver 3.7.0')],
   ['index.html adminNewClassName maxlength="50"', html.includes('id="adminNewClassName"') && html.includes('maxlength="50"')],
   ['index.html adminEditClassName maxlength="50"', html.includes('id="adminEditClassName"') && html.includes('maxlength="50"')],
   ['index.html studentNameModal exists', html.includes('id="studentNameModal"')],
   ['index.html itemEditModal exists', html.includes('id="itemEditModal"')],
   ['app.js openStudentNameModal method', appJs.includes('openStudentNameModal(')],
   ['app.js isItemOwner method', appJs.includes('isItemOwner(item)')],
-  ['index.html style.css?v=369', html.includes('css/style.css?v=369')],
-  ['index.html firebase-config.js?v=369', html.includes('js/firebase-config.js?v=369')],
-  ['index.html app.js?v=369', html.includes('js/app.js?v=369')],
-  ['index.html quiz.js?v=369', html.includes('js/quiz.js?v=369')],
-  ['index.html video_quiz.js?v=369', html.includes('js/video_quiz.js?v=369')],
-  ['index.html song_quiz.js?v=369', html.includes('js/song_quiz.js?v=369')],
+  ['index.html style.css?v=370', html.includes('css/style.css?v=370')],
+  ['index.html firebase-config.js?v=370', html.includes('js/firebase-config.js?v=370')],
+  ['index.html app.js?v=370', html.includes('js/app.js?v=370')],
+  ['index.html quiz.js?v=370', html.includes('js/quiz.js?v=370')],
+  ['index.html video_quiz.js?v=370', html.includes('js/video_quiz.js?v=370')],
+  ['index.html song_quiz.js?v=370', html.includes('js/song_quiz.js?v=370')],
   ['index.html displayUserNameTagOneOff exists', html.includes('id="displayUserNameTagOneOff"')],
   ['index.html btnSetStudentNameOneOff exists', html.includes('id="btnSetStudentNameOneOff"')],
   ['app.js updateStudentNameUI method exists', appJs.includes('updateStudentNameUI()')],
@@ -124,7 +124,12 @@ const checks = [
   ['index.html edit quiz modal contains Scheme B guidelines', html.includes('影音來源支援規範與使用注意事項：')],
   ['video_quiz.js extractDriveFileId method exists', vqJs.includes('extractDriveFileId(url)')],
   ['video_quiz.js resolveMediaUrl method exists', vqJs.includes('resolveMediaUrl(url)')],
-  ['video_quiz.js isAudioSource method exists', vqJs.includes('isAudioSource(url)')]
+  ['video_quiz.js isAudioSource method exists', vqJs.includes('isAudioSource(url)')],
+  ['video_quiz.js updateDriveTimerDisplay exists', vqJs.includes('updateDriveTimerDisplay()')],
+  ['video_quiz.js driveTimerRunning support', vqJs.includes('this.driveTimerRunning')],
+  ['index.html vqEditorChooseLocalFileBtn exists', html.includes('id="vqEditorChooseLocalFileBtn"')],
+  ['index.html vqEditorLocalFileInput exists', html.includes('id="vqEditorLocalFileInput"')],
+  ['index.html vqQuestionTimeHint exists', html.includes('id="vqQuestionTimeHint"')]
 ];
 
 let allPassed = true;
