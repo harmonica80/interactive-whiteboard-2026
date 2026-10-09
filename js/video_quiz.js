@@ -2484,16 +2484,23 @@
           `;
         }
 
+        const isTeacherOrAdmin = (this.isTeacher || window.app?.isAdmin);
+
         (sq.questions || []).forEach((q, qIdx) => {
           let qStatsHtml = '';
+          const isAnsweredByMe = !!(this.userAnswers && this.userAnswers[q.id]);
+          const canShowAnswer = isTeacherOrAdmin || isAnsweredByMe;
+
           if (q.type === 'single' || q.type === 'multiple') {
             const counts = {};
             (q.options || []).forEach(opt => { counts[opt] = 0; });
             let correctTotal = 0;
+            let answeredRespondentCount = 0;
 
             userList.forEach(u => {
               const ans = u.answers?.[q.id];
               if (ans) {
+                answeredRespondentCount++;
                 if (Array.isArray(ans.answer)) {
                   ans.answer.forEach(opt => { counts[opt] = (counts[opt] || 0) + 1; });
                 } else if (ans.answer) {
@@ -2505,23 +2512,37 @@
 
             const accuracy = totalParticipants > 0 ? Math.round((correctTotal / totalParticipants) * 100) : 0;
 
-            qStatsHtml = `
-              <div style="margin-top: 10px;">
+            let qAccuracyHeader = '';
+            if (canShowAnswer) {
+              qAccuracyHeader = `
                 <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
                   全班答對率：<strong style="color: ${accuracy >= 60 ? 'var(--success-color)' : 'var(--danger-color)'};">${accuracy}%</strong> (${correctTotal}/${totalParticipants} 人答對)
                 </div>
+              `;
+            } else {
+              qAccuracyHeader = `
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px;">
+                  <span>各選項作答分佈統計（全班共 ${answeredRespondentCount} 人提交）</span>
+                  <span style="font-size: 12px; color: var(--accent-color); font-weight: 500;">🔒 作答本題後揭曉正確答案與答對率</span>
+                </div>
+              `;
+            }
+
+            qStatsHtml = `
+              <div style="margin-top: 10px;">
+                ${qAccuracyHeader}
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                   ${(q.options || []).map((opt, optIdx) => {
                     const cnt = counts[opt] || 0;
                     const pct = totalParticipants > 0 ? Math.round((cnt / totalParticipants) * 100) : 0;
-                    const isAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer.includes(opt) : (q.correctAnswer === opt);
+                    const isCorrectOpt = canShowAnswer && (Array.isArray(q.correctAnswer) ? q.correctAnswer.includes(opt) : (q.correctAnswer === opt));
                     return `
                       <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
-                        <span style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isAnswer ? 'bold' : 'normal'}; color: ${isAnswer ? 'var(--success-color)' : 'var(--text-primary)'};">
-                          ${isAnswer ? '✅ ' : ''}${String.fromCharCode(65 + optIdx)}. ${this.escapeHtml(opt)}
+                        <span style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isCorrectOpt ? 'bold' : 'normal'}; color: ${isCorrectOpt ? 'var(--success-color)' : 'var(--text-primary)'};">
+                          ${isCorrectOpt ? '✅ ' : ''}${String.fromCharCode(65 + optIdx)}. ${this.escapeHtml(opt)}
                         </span>
                         <div style="flex: 1; height: 16px; background: rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; position: relative;">
-                          <div style="width: ${pct}%; height: 100%; background: ${isAnswer ? 'var(--success-color)' : 'var(--accent-color)'}; border-radius: 8px; transition: width 0.3s;"></div>
+                          <div style="width: ${pct}%; height: 100%; background: ${isCorrectOpt ? 'var(--success-color)' : 'var(--accent-color)'}; border-radius: 8px; transition: width 0.3s;"></div>
                         </div>
                         <span style="width: 60px; text-align: right; font-size: 12px; color: var(--text-secondary);">${cnt}人 (${pct}%)</span>
                       </div>
@@ -2537,25 +2558,43 @@
               text: u.answers?.[q.id]?.answer || ''
             })).filter(item => item.text);
 
-            qStatsHtml = `
-              <div style="margin-top: 10px;">
-                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
-                  已提交回答：<strong>${textAnswers.length}</strong> 則回饋
+            if (canShowAnswer) {
+              qStatsHtml = `
+                <div style="margin-top: 10px;">
+                  <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+                    已提交回答：<strong>${textAnswers.length}</strong> 則回饋
+                  </div>
+                  <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-color);">
+                    ${textAnswers.length > 0 ? textAnswers.map(item => `
+                      <div style="padding: 8px 12px; background: var(--bg-card); border-radius: 6px; border-left: 3px solid var(--accent-color); font-size: 13px; line-height: 1.4;">
+                        <strong style="color: var(--accent-color);">${this.escapeHtml(item.name)}：</strong>
+                        <span>${this.escapeHtml(item.text)}</span>
+                      </div>
+                    `).join('') : '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 12px;">尚無學生提交問答</div>'}
+                  </div>
                 </div>
-                <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-color);">
-                  ${textAnswers.length > 0 ? textAnswers.map(item => `
-                    <div style="padding: 8px 12px; background: var(--bg-card); border-radius: 6px; border-left: 3px solid var(--accent-color); font-size: 13px; line-height: 1.4;">
-                      <strong style="color: var(--accent-color);">${this.escapeHtml(item.name)}：</strong>
-                      <span>${this.escapeHtml(item.text)}</span>
-                    </div>
-                  `).join('') : '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 12px;">尚無學生提交問答</div>'}
+              `;
+            } else {
+              qStatsHtml = `
+                <div style="margin-top: 10px;">
+                  <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px;">
+                    <span>已提交回答：<strong>${textAnswers.length}</strong> 則回饋</span>
+                    <span style="font-size: 12px; color: var(--accent-color); font-weight: 500;">🔒 完成作答後揭曉同學回饋</span>
+                  </div>
+                  <div style="padding: 16px; background: var(--bg-input); border-radius: 8px; border: 1px dashed var(--border-color); text-align: center; color: var(--text-muted); font-size: 13px;">
+                    🔒 您尚未回答本題，請於作答本題後再來檢視全班同學的精采想法！
+                  </div>
                 </div>
-              </div>
-            `;
+              `;
+            }
           }
 
           const isCurrentQ = !!(this.currentActiveQuestion && this.currentActiveQuestion.id === q.id);
           const currentBadge = isCurrentQ ? `<span class="badge" style="background: #5856d6; color: white; padding: 2px 8px; border-radius: 6px; font-size: 11px; margin-left: 6px;">🎯 本題</span>` : '';
+          const answeredBadge = isTeacherOrAdmin ? '' : (isAnsweredByMe
+            ? `<span class="badge" style="background: rgba(52,199,89,0.12); color: var(--success-color); border: 1px solid rgba(52,199,89,0.3); padding: 1px 6px; border-radius: 6px; font-size: 11px; margin-left: 4px;">✓ 已作答</span>`
+            : `<span class="badge" style="background: rgba(142,142,147,0.15); color: var(--text-secondary); border: 1px solid rgba(142,142,147,0.3); padding: 1px 6px; border-radius: 6px; font-size: 11px; margin-left: 4px;">⏳ 尚未作答</span>`
+          );
           const cardBorder = isCurrentQ ? 'border: 2px solid #5856d6; box-shadow: 0 4px 16px rgba(88,86,214,0.18);' : 'border: 1px solid var(--border-color);';
 
           questionsHtml += `
@@ -2564,6 +2603,7 @@
                 <div style="display: flex; align-items: center; gap: 4px;">
                   <span style="font-weight: bold; color: var(--accent-color); font-size: 14px;">第 ${qIdx + 1} 題（${q.timeFormatted || this.formatSeconds(q.time)}）</span>
                   ${currentBadge}
+                  ${answeredBadge}
                 </div>
                 <span style="font-size: 12px; color: var(--text-secondary);">${q.type === 'single' ? '單選題' : (q.type === 'multiple' ? '複選題' : '問答題')}</span>
               </div>
@@ -2629,8 +2669,11 @@
           </table>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
-          <button class="action-btn" onclick="window.videoQuiz.exportAnalyticsCSV()" style="background: var(--accent-color); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; align-items: center;">
+          <button type="button" class="action-btn" id="vqAnalyticsBottomCloseBtn" onclick="window.videoQuiz.closeClassAnalytics()" style="background: var(--bg-card); border: 1.5px solid var(--border-color); color: var(--text-primary); padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px;" title="關閉統計視窗">
+            ✕ 關閉視窗
+          </button>
+          <button type="button" class="action-btn" onclick="window.videoQuiz.exportAnalyticsCSV()" style="background: var(--accent-color); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px;">
             📥 匯出全班成績 CSV
           </button>
         </div>
@@ -2643,6 +2686,7 @@
       if (!quiz) return;
       const targetQuestions = (quiz.allQuestions && quiz.allQuestions.length > 0) ? quiz.allQuestions : (quiz.questions || []);
       const userList = Object.values(this.cachedRemoteAnswers || {});
+      const isTeacherOrAdmin = (this.isTeacher || window.app?.isAdmin);
       let csv = '\uFEFF學生暱稱,總得分,答對題數';
       targetQuestions.forEach((q, idx) => {
         const vPrefix = q.videoIndex ? `[影片${q.videoIndex}]` : '';
@@ -2659,6 +2703,11 @@
           if (a && a.isCorrect) {
             totalScore += (a.score || 10);
             correctCount++;
+          }
+          const isAnsweredByMe = !!(this.userAnswers && this.userAnswers[q.id]);
+          const canShowQ = isTeacherOrAdmin || isAnsweredByMe;
+          if (!canShowQ) {
+            return '"🔒 作答後揭曉"';
           }
           const ansVal = a ? (Array.isArray(a.answer) ? a.answer.join(';') : a.answer) : '未作答';
           return `"${String(ansVal).replace(/"/g, '""')}"`;

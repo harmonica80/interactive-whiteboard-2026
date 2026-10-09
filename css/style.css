@@ -3653,6 +3653,8 @@ body {
 
 #vqAnalyticsModal {
   z-index: 1600;
+  padding-top: 52px;
+  box-sizing: border-box;
 }
 
 .video-quiz-card {
