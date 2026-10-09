@@ -58,6 +58,7 @@ const checks = [
   ['video_quiz.js handleVideoEnded exists', vqJs.includes('handleVideoEnded()')],
   ['video_quiz.js stopSyncQuiz returns to admin tab', vqJs.includes("switchToTab('panel-admin')")],
   ['video_quiz.js returnToQuizVideo method', vqJs.includes('returnToQuizVideo()')],
+  ['video_quiz.js quiz card has 發起全班同步測驗 button', vqJs.includes('startSyncQuizAsTeacher') && vqJs.includes('🚀 發起全班同步測驗')],
   ['video_quiz.js question overlay has 返回測驗影片 button', vqJs.includes('🎬 返回測驗影片')],
   ['video_quiz.js DEFAULT_CUSTOM_SETS two default custom sets', vqJs.includes('綜合影音複習測驗組') && vqJs.includes('跨學科精選測驗組')],
   ['index.html vqSelfTeacherControls exists', html.includes('id="vqSelfTeacherControls"')],

@@ -2934,6 +2934,9 @@
 
                 <!-- 影片出題開關 (需求 a) 與 編輯/刪除按鈕 -->
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <button class="action-btn" onclick="window.videoQuiz.startSyncQuizAsTeacher('${quiz.id}')" style="background: linear-gradient(135deg, #5856d6, #4a6cf7); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(88,86,214,0.25); display: inline-flex; align-items: center; gap: 4px;" title="以此題目立即發起全班同步連線測驗">
+                    🚀 發起全班同步測驗
+                  </button>
                   <button class="action-btn" onclick="window.videoQuiz.toggleQuizEnabled('${quiz.id}')" style="background: ${isEnabled ? 'rgba(52,199,89,0.12)' : 'rgba(142,142,147,0.15)'}; color: ${isEnabled ? '#28a745' : 'var(--text-muted)'}; border: 1px solid ${isEnabled ? 'rgba(52,199,89,0.3)' : 'var(--border-color)'}; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="${isEnabled ? '點擊設為隱藏（前台學生選單不顯示此影片）' : '點擊設為開放（前台學生可見並能測驗此影片）'}">
                     ${isEnabled ? '🟢 前台開放測驗' : '⚪ 前台隱藏 (不顯示)'}
                   </button>
