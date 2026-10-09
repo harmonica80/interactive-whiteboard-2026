@@ -1,39 +1,49 @@
 import fs from 'fs';
 import path from 'path';
+import vm from 'vm';
 
 const html = fs.readFileSync('index.html', 'utf8');
 const vqJs = fs.readFileSync('js/video_quiz.js', 'utf8');
 const appJs = fs.readFileSync('js/app.js', 'utf8');
 const css = fs.readFileSync('css/style.css', 'utf8');
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
-const fbJs = fs.readFileSync('js/firebase-config.js', 'utf8');
+
+// 載入題庫
+const classicsJs = fs.readFileSync('js/classics_quiz_pool.js', 'utf8');
+const charJs = fs.readFileSync('js/character_pool.js', 'utf8');
+
+const sandbox = { window: {} };
+vm.createContext(sandbox);
+vm.runInContext(classicsJs, sandbox);
+vm.runInContext(charJs, sandbox);
+
+const classicsPool = sandbox.window.CLASSICS_QUIZ_POOL || [];
+const idiomQuestions = classicsPool.filter(q => q.category === '成語典故');
+const crosswordPool = sandbox.window.CHARACTER_CROSSWORD_POOL || [];
+const unitedWordsPool = sandbox.window.CHARACTER_UNITED_WORDS_POOL || [];
 
 // 靜態程式碼與版本標籤檢查項目
 const checks = [
   ['package.json version 3.8.0', pkg.version === '3.8.0'],
   ['app.js APP_VERSION 3.8.0', appJs.includes("this.APP_VERSION = '3.8.0';")],
   ['index.html badge ver 3.8.0', html.includes('ver 3.8.0')],
-  ['index.html Google Identity Services script', html.includes('accounts.google.com/gsi/client')],
-  ['index.html Google API Client (gapi) script', html.includes('apis.google.com/js/api.js')],
+  ['index.html Google Identity Services script removed', !html.includes('accounts.google.com/gsi/client')],
+  ['index.html Google API Client (gapi) script removed', !html.includes('apis.google.com/js/api.js')],
   ['index.html style.css?v=380', html.includes('css/style.css?v=380')],
   ['index.html firebase-config.js?v=380', html.includes('js/firebase-config.js?v=380')],
   ['index.html app.js?v=380', html.includes('js/app.js?v=380')],
   ['index.html quiz.js?v=380', html.includes('js/quiz.js?v=380')],
   ['index.html video_quiz.js?v=380', html.includes('js/video_quiz.js?v=380')],
   ['index.html song_quiz.js?v=380', html.includes('js/song_quiz.js?v=380')],
-  ['index.html vqEditorChooseDriveBtn exists', html.includes('id="vqEditorChooseDriveBtn"')],
-  ['index.html vqEditorDriveConfigBtn exists', html.includes('id="vqEditorDriveConfigBtn"')],
-  ['index.html vqEditorPlayerStatus exists', html.includes('id="vqEditorPlayerStatus"')],
-  ['index.html vqDriveConfigModal exists', html.includes('id="vqDriveConfigModal"')],
-  ['index.html vqDriveClientIdInput exists', html.includes('id="vqDriveClientIdInput"')],
-  ['index.html vqDriveApiKeyInput exists', html.includes('id="vqDriveApiKeyInput"')],
-  ['index.html vqEditorChooseLocalFileBtn exists', html.includes('id="vqEditorChooseLocalFileBtn"')],
-  ['index.html vqEditorLocalFileInput exists', html.includes('id="vqEditorLocalFileInput"')],
-  ['index.html vqQuestionTimeHint exists', html.includes('id="vqQuestionTimeHint"')],
-  ['video_quiz.js Google OAuth GIS tokenClient integration', vqJs.includes('google.accounts.oauth2.initTokenClient')],
-  ['video_quiz.js Google Picker Builder integration', vqJs.includes('google.picker.PickerBuilder')],
-  ['video_quiz.js downloadDriveFileAsBlob files.get?alt=media', vqJs.includes('files/${fileId}?alt=media')],
+  ['index.html vqEditorChooseDriveBtn removed', !html.includes('id="vqEditorChooseDriveBtn"')],
+  ['index.html vqEditorDriveConfigBtn removed', !html.includes('id="vqEditorDriveConfigBtn"')],
+  ['index.html vqDriveConfigModal removed', !html.includes('id="vqDriveConfigModal"')],
+  ['index.html vqEditorChooseLocalFileBtn removed', !html.includes('id="vqEditorChooseLocalFileBtn"')],
+  ['index.html vqEditorLocalFileInput removed', !html.includes('id="vqEditorLocalFileInput"')],
+  ['index.html menu tab is 🎬 影片出題測驗', html.includes('🎬 影片出題測驗') && !html.includes('🎬 影片/音檔出題測驗')],
+  ['index.html admin section is 🎬 影片出題測驗管理', html.includes('🎬 影片出題測驗管理') && !html.includes('🎬 影片/音檔出題測驗管理')],
+  ['video_quiz.js Drive API & OAuth removed', !vqJs.includes('google.accounts.oauth2.initTokenClient') && !vqJs.includes('google.picker.PickerBuilder')],
+  ['video_quiz.js Blob/Drive download removed', !vqJs.includes('downloadDriveFileAsBlob')],
   ['video_quiz.js getValidCurrentTime method exists', vqJs.includes('getValidCurrentTime()')],
   ['video_quiz.js updateEditorReadyState method exists', vqJs.includes('updateEditorReadyState(')],
   ['video_quiz.js processTimelineTick method exists', vqJs.includes('processTimelineTick(')],
@@ -43,10 +53,6 @@ const checks = [
   ['video_quiz.js handleRemoteSessionUpdate has handledEventIds deduplication', vqJs.includes('this.handledEventIds.has(eventId)')],
   ['video_quiz.js openAddQuestionModal checks getValidCurrentTime', vqJs.includes('openAddQuestionModal()') && vqJs.includes('this.getValidCurrentTime()')],
   ['video_quiz.js setStartCurrent and setEndCurrent check getValidCurrentTime', vqJs.includes('vqSetStartCurrentBtn') && vqJs.includes('this.getValidCurrentTime()')],
-  ['video_quiz.js saveEditingQuiz prevents persisting blob URL', vqJs.includes('driveFileId') && vqJs.includes('localFileName') && vqJs.includes('gdrive:')],
-  ['video_quiz.js HTTP status classification (401, 403, 404)', vqJs.includes('401') && vqJs.includes('403') && vqJs.includes('404')],
-  ['video_quiz.js showAutoplayBlockedNotice for browser restrictions', vqJs.includes('showAutoplayBlockedNotice()')],
-  ['video_quiz.js handleEditorLocalFile method exists', vqJs.includes('handleEditorLocalFile(')],
   ['video_quiz.js jumpToQuestion exists', vqJs.includes('jumpToQuestion(index)')],
   ['video_quiz.js toggleAllowStudentRepeat exists', vqJs.includes('toggleAllowStudentRepeat(checked)')],
   ['video_quiz.js handleVideoEnded exists', vqJs.includes('handleVideoEnded()')],
@@ -62,15 +68,18 @@ const checks = [
   ['video_quiz.js updateTimeRangeUI method exists', vqJs.includes('updateTimeRangeUI(')],
   ['video_quiz.js startTime seekTo support', vqJs.includes('this.seekTo(this.activeQuiz.startTime)')],
   ['video_quiz.js endTime pauseVideo support', vqJs.includes('this.activeQuiz.endTime') && vqJs.includes('this.pauseVideo()')],
-  ['index.html menu tab renamed to 影片/音檔出題測驗', html.includes('🎬 影片/音檔出題測驗')],
-  ['index.html admin section renamed to 影片/音檔出題測驗管理', html.includes('🎬 影片/音檔出題測驗管理')],
-  ['video_quiz.js extractDriveFileId method exists', vqJs.includes('extractDriveFileId(url)')],
-  ['video_quiz.js resolveMediaUrl method exists', vqJs.includes('resolveMediaUrl(url)')],
-  ['video_quiz.js isAudioSource method exists', vqJs.includes('isAudioSource(url)')]
+
+  // 三大題庫檢查
+  ['成語題庫 (CLASSICS_QUIZ_POOL) 成語典故題目數達到 300 題', idiomQuestions.length === 300],
+  ['名句與典故題庫 (CLASSICS_QUIZ_POOL) 總題目數達到 396 題', classicsPool.length === 396],
+  ['字字珠璣題庫 (CHARACTER_CROSSWORD_POOL) 達到 200 題', crosswordPool.length === 200],
+  ['字字珠璣題庫中心字 200 題皆不重複', new Set(crosswordPool.map(q => q.char)).size === 200],
+  ['團結一詞題庫 (CHARACTER_UNITED_WORDS_POOL) 達到 200 題', unitedWordsPool.length === 200],
+  ['團結一詞題庫目標詞 200 題皆不重複', new Set(unitedWordsPool.map(q => q.targetWord)).size === 200]
 ];
 
 let allPassed = true;
-console.log('\n--- 驗證互動式影片出題測驗系統項目 (ver 3.8.0) ---');
+console.log('\n--- 驗證純影片出題測驗與三大擴充題庫項目 (ver 3.8.0) ---');
 for (const [name, passed] of checks) {
   if (passed) {
     console.log(`✅ ${name}`);
@@ -274,31 +283,25 @@ class TimelineSimulator {
 
 // 測試向後拖曳重播規則 (allowStudentRepeat: false vs true)
 {
-  // 案例 1: 未勾選 (allowStudentRepeat: false)
   const simNoRepeat = new TimelineSimulator([{ id: 'q30', time: 30 }], false);
   simNoRepeat.tick(0);
   simNoRepeat.tick(10);
   simNoRepeat.tick(30.1); // 觸發 q30
   simNoRepeat.overlayShowing = false;
   simNoRepeat.tick(50);
-  // 向後拖曳回 10s
   simNoRepeat.tick(10);
-  // 再次前進至 30.1s
   simNoRepeat.tick(30.1);
-  const noRepeatPassed = simNoRepeat.triggeredOrder.length === 1; // 題目不再出
+  const noRepeatPassed = simNoRepeat.triggeredOrder.length === 1;
 
-  // 案例 2: 已勾選 (allowStudentRepeat: true)
   const simRepeat = new TimelineSimulator([{ id: 'q30', time: 30 }], true);
   simRepeat.tick(0);
   simRepeat.tick(10);
   simRepeat.tick(30.1); // 觸發 q30
   simRepeat.overlayShowing = false;
   simRepeat.tick(50);
-  // 向後拖曳回 10s (清除 >= 9.5s 的紀錄)
   simRepeat.tick(10);
-  // 再次前進至 30.1s
   simRepeat.tick(30.1);
-  const repeatPassed = simRepeat.triggeredOrder.length === 2; // 重新出題
+  const repeatPassed = simRepeat.triggeredOrder.length === 2;
 
   if (noRepeatPassed && repeatPassed) {
     console.log('✅ 向後拖曳重播規則符合設定 (未勾選不重複 / 已勾選可再次出題): 通過');
@@ -315,7 +318,7 @@ class TimelineSimulator {
   function handleSyncEvent(session) {
     const eventId = session.eventId || `${session.sessionId}_${session.questionId}`;
     if (handledEventIds.has(eventId)) {
-      return; // 去重
+      return;
     }
     handledEventIds.add(eventId);
     triggerCount++;
@@ -323,8 +326,8 @@ class TimelineSimulator {
 
   const evt = { sessionId: 'sess_123', questionId: 'q1', eventId: 'evt_123_q1_seq1' };
   handleSyncEvent(evt);
-  handleSyncEvent(evt); // 重送
-  handleSyncEvent(evt); // 再次重送
+  handleSyncEvent(evt);
+  handleSyncEvent(evt);
 
   if (triggerCount === 1) {
     console.log('✅ 全班同步廣播事件去重機制 (重複網路事件不重複彈題): 通過');

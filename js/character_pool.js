@@ -4213,24 +4213,24 @@ const CHARACTER_CROSSWORD_POOL = [
     ]
   },
   {
-    "char": "理",
-    "zhuyin": "ㄌㄧˇ",
-    "searchWord": "理髮",
+    "char": "神",
+    "zhuyin": "ㄕㄣˊ",
+    "searchWord": "神奇",
     "surrounding": [
       {
-        "char": "道",
+        "char": "留",
         "pos": "before"
       },
       {
-        "char": "合",
+        "char": "聚",
         "pos": "before"
       },
       {
-        "char": "事",
+        "char": "奇",
         "pos": "after"
       },
       {
-        "char": "髮",
+        "char": "仙",
         "pos": "after"
       }
     ]
@@ -4673,24 +4673,24 @@ const CHARACTER_CROSSWORD_POOL = [
     ]
   },
   {
-    "char": "笑",
-    "zhuyin": "ㄒㄧㄠˋ",
-    "searchWord": "笑柄",
+    "char": "夢",
+    "zhuyin": "ㄇㄥˋ",
+    "searchWord": "夢想",
     "surrounding": [
       {
-        "char": "苦",
+        "char": "美",
         "pos": "before"
       },
       {
-        "char": "微",
+        "char": "做",
         "pos": "before"
       },
       {
-        "char": "料",
+        "char": "境",
         "pos": "after"
       },
       {
-        "char": "柄",
+        "char": "話",
         "pos": "after"
       }
     ]
@@ -5225,47 +5225,47 @@ const CHARACTER_CROSSWORD_POOL = [
     ]
   },
   {
-    "char": "氣",
-    "zhuyin": "ㄑㄧˋ",
-    "searchWord": "氣味",
+    "char": "夜",
+    "zhuyin": "ㄧㄝˋ",
+    "searchWord": "夜晚",
     "surrounding": [
       {
-        "char": "客",
+        "char": "午",
         "pos": "before"
       },
       {
-        "char": "生",
+        "char": "黑",
         "pos": "before"
       },
       {
-        "char": "息",
+        "char": "晚",
         "pos": "after"
       },
       {
-        "char": "味",
+        "char": "空",
         "pos": "after"
       }
     ]
   },
   {
-    "char": "生",
-    "zhuyin": "ㄕㄥ",
-    "searchWord": "生效",
+    "char": "日",
+    "zhuyin": "ㄖˋ",
+    "searchWord": "日光",
     "surrounding": [
       {
-        "char": "發",
+        "char": "白",
         "pos": "before"
       },
       {
-        "char": "產",
+        "char": "昔",
         "pos": "before"
       },
       {
-        "char": "命",
+        "char": "光",
         "pos": "after"
       },
       {
-        "char": "效",
+        "char": "子",
         "pos": "after"
       }
     ]
@@ -5315,163 +5315,2523 @@ const CHARACTER_CROSSWORD_POOL = [
         "pos": "after"
       }
     ]
+  },
+  {
+    "char": "光",
+    "zhuyin": "ㄍㄨㄤ",
+    "searchWord": "光明",
+    "surrounding": [
+      {
+        "char": "陽",
+        "pos": "before"
+      },
+      {
+        "char": "月",
+        "pos": "before"
+      },
+      {
+        "char": "明",
+        "pos": "after"
+      },
+      {
+        "char": "輝",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "火",
+    "zhuyin": "ㄏㄨㄛˇ",
+    "searchWord": "火花",
+    "surrounding": [
+      {
+        "char": "烈",
+        "pos": "before"
+      },
+      {
+        "char": "營",
+        "pos": "before"
+      },
+      {
+        "char": "花",
+        "pos": "after"
+      },
+      {
+        "char": "焰",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "星",
+    "zhuyin": "ㄒㄧㄥ",
+    "searchWord": "星球",
+    "surrounding": [
+      {
+        "char": "行",
+        "pos": "before"
+      },
+      {
+        "char": "恆",
+        "pos": "before"
+      },
+      {
+        "char": "球",
+        "pos": "after"
+      },
+      {
+        "char": "光",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "石",
+    "zhuyin": "ㄕˊ",
+    "searchWord": "石頭",
+    "surrounding": [
+      {
+        "char": "岩",
+        "pos": "before"
+      },
+      {
+        "char": "寶",
+        "pos": "before"
+      },
+      {
+        "char": "頭",
+        "pos": "after"
+      },
+      {
+        "char": "油",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "木",
+    "zhuyin": "ㄇㄨˋ",
+    "searchWord": "木材",
+    "surrounding": [
+      {
+        "char": "樹",
+        "pos": "before"
+      },
+      {
+        "char": "草",
+        "pos": "before"
+      },
+      {
+        "char": "材",
+        "pos": "after"
+      },
+      {
+        "char": "頭",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "金",
+    "zhuyin": "ㄐㄧㄣ",
+    "searchWord": "金錢",
+    "surrounding": [
+      {
+        "char": "黃",
+        "pos": "before"
+      },
+      {
+        "char": "白",
+        "pos": "before"
+      },
+      {
+        "char": "錢",
+        "pos": "after"
+      },
+      {
+        "char": "牌",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "土",
+    "zhuyin": "ㄊㄨˇ",
+    "searchWord": "土地",
+    "surrounding": [
+      {
+        "char": "泥",
+        "pos": "before"
+      },
+      {
+        "char": "領",
+        "pos": "before"
+      },
+      {
+        "char": "地",
+        "pos": "after"
+      },
+      {
+        "char": "壤",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "雲",
+    "zhuyin": "ㄩㄣˊ",
+    "searchWord": "雲層",
+    "surrounding": [
+      {
+        "char": "白",
+        "pos": "before"
+      },
+      {
+        "char": "彩",
+        "pos": "before"
+      },
+      {
+        "char": "層",
+        "pos": "after"
+      },
+      {
+        "char": "朵",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "雨",
+    "zhuyin": "ㄩˇ",
+    "searchWord": "雨水",
+    "surrounding": [
+      {
+        "char": "暴",
+        "pos": "before"
+      },
+      {
+        "char": "春",
+        "pos": "before"
+      },
+      {
+        "char": "水",
+        "pos": "after"
+      },
+      {
+        "char": "滴",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "雪",
+    "zhuyin": "ㄒㄩㄝˇ",
+    "searchWord": "雪花",
+    "surrounding": [
+      {
+        "char": "白",
+        "pos": "before"
+      },
+      {
+        "char": "積",
+        "pos": "before"
+      },
+      {
+        "char": "花",
+        "pos": "after"
+      },
+      {
+        "char": "人",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "電",
+    "zhuyin": "ㄉㄧㄢˋ",
+    "searchWord": "電力",
+    "surrounding": [
+      {
+        "char": "雷",
+        "pos": "before"
+      },
+      {
+        "char": "閃",
+        "pos": "before"
+      },
+      {
+        "char": "力",
+        "pos": "after"
+      },
+      {
+        "char": "腦",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "春",
+    "zhuyin": "ㄔㄨㄣ",
+    "searchWord": "春節",
+    "surrounding": [
+      {
+        "char": "早",
+        "pos": "before"
+      },
+      {
+        "char": "初",
+        "pos": "before"
+      },
+      {
+        "char": "節",
+        "pos": "after"
+      },
+      {
+        "char": "季",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "夏",
+    "zhuyin": "ㄒㄧㄚˋ",
+    "searchWord": "夏季",
+    "surrounding": [
+      {
+        "char": "初",
+        "pos": "before"
+      },
+      {
+        "char": "盛",
+        "pos": "before"
+      },
+      {
+        "char": "季",
+        "pos": "after"
+      },
+      {
+        "char": "日",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "秋",
+    "zhuyin": "ㄑㄧㄡ",
+    "searchWord": "秋天",
+    "surrounding": [
+      {
+        "char": "初",
+        "pos": "before"
+      },
+      {
+        "char": "深",
+        "pos": "before"
+      },
+      {
+        "char": "天",
+        "pos": "after"
+      },
+      {
+        "char": "風",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "冬",
+    "zhuyin": "ㄉㄨㄥ",
+    "searchWord": "冬天",
+    "surrounding": [
+      {
+        "char": "初",
+        "pos": "before"
+      },
+      {
+        "char": "寒",
+        "pos": "before"
+      },
+      {
+        "char": "天",
+        "pos": "after"
+      },
+      {
+        "char": "季",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "江",
+    "zhuyin": "ㄐㄧㄤ",
+    "searchWord": "江水",
+    "surrounding": [
+      {
+        "char": "長",
+        "pos": "before"
+      },
+      {
+        "char": "大",
+        "pos": "before"
+      },
+      {
+        "char": "水",
+        "pos": "after"
+      },
+      {
+        "char": "河",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "湖",
+    "zhuyin": "ㄏㄨˊ",
+    "searchWord": "湖面",
+    "surrounding": [
+      {
+        "char": "西",
+        "pos": "before"
+      },
+      {
+        "char": "內",
+        "pos": "before"
+      },
+      {
+        "char": "面",
+        "pos": "after"
+      },
+      {
+        "char": "泊",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "河",
+    "zhuyin": "ㄏㄜˊ",
+    "searchWord": "河川",
+    "surrounding": [
+      {
+        "char": "銀",
+        "pos": "before"
+      },
+      {
+        "char": "運",
+        "pos": "before"
+      },
+      {
+        "char": "川",
+        "pos": "after"
+      },
+      {
+        "char": "流",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "城",
+    "zhuyin": "ㄔㄥˊ",
+    "searchWord": "城堡",
+    "surrounding": [
+      {
+        "char": "長",
+        "pos": "before"
+      },
+      {
+        "char": "京",
+        "pos": "before"
+      },
+      {
+        "char": "堡",
+        "pos": "after"
+      },
+      {
+        "char": "市",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "市",
+    "zhuyin": "ㄕˋ",
+    "searchWord": "市場",
+    "surrounding": [
+      {
+        "char": "都",
+        "pos": "before"
+      },
+      {
+        "char": "夜",
+        "pos": "before"
+      },
+      {
+        "char": "場",
+        "pos": "after"
+      },
+      {
+        "char": "區",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "路",
+    "zhuyin": "ㄌㄨˋ",
+    "searchWord": "路口",
+    "surrounding": [
+      {
+        "char": "道",
+        "pos": "before"
+      },
+      {
+        "char": "公",
+        "pos": "before"
+      },
+      {
+        "char": "口",
+        "pos": "after"
+      },
+      {
+        "char": "線",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "橋",
+    "zhuyin": "ㄑㄧㄠˊ",
+    "searchWord": "橋樑",
+    "surrounding": [
+      {
+        "char": "大",
+        "pos": "before"
+      },
+      {
+        "char": "天",
+        "pos": "before"
+      },
+      {
+        "char": "樑",
+        "pos": "after"
+      },
+      {
+        "char": "墩",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "門",
+    "zhuyin": "ㄇㄣˊ",
+    "searchWord": "門口",
+    "surrounding": [
+      {
+        "char": "大",
+        "pos": "before"
+      },
+      {
+        "char": "校",
+        "pos": "before"
+      },
+      {
+        "char": "口",
+        "pos": "after"
+      },
+      {
+        "char": "戶",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "窗",
+    "zhuyin": "ㄔㄨㄤ",
+    "searchWord": "窗戶",
+    "surrounding": [
+      {
+        "char": "門",
+        "pos": "before"
+      },
+      {
+        "char": "車",
+        "pos": "before"
+      },
+      {
+        "char": "戶",
+        "pos": "after"
+      },
+      {
+        "char": "簾",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "室",
+    "zhuyin": "ㄕˋ",
+    "searchWord": "室內",
+    "surrounding": [
+      {
+        "char": "教",
+        "pos": "before"
+      },
+      {
+        "char": "溫",
+        "pos": "before"
+      },
+      {
+        "char": "內",
+        "pos": "after"
+      },
+      {
+        "char": "友",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "房",
+    "zhuyin": "ㄈㄤˊ",
+    "searchWord": "房間",
+    "surrounding": [
+      {
+        "char": "書",
+        "pos": "before"
+      },
+      {
+        "char": "套",
+        "pos": "before"
+      },
+      {
+        "char": "間",
+        "pos": "after"
+      },
+      {
+        "char": "屋",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "店",
+    "zhuyin": "ㄉㄧㄢˋ",
+    "searchWord": "店鋪",
+    "surrounding": [
+      {
+        "char": "商",
+        "pos": "before"
+      },
+      {
+        "char": "飯",
+        "pos": "before"
+      },
+      {
+        "char": "鋪",
+        "pos": "after"
+      },
+      {
+        "char": "面",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "林",
+    "zhuyin": "ㄌㄧㄣˊ",
+    "searchWord": "林木",
+    "surrounding": [
+      {
+        "char": "森",
+        "pos": "before"
+      },
+      {
+        "char": "竹",
+        "pos": "before"
+      },
+      {
+        "char": "木",
+        "pos": "after"
+      },
+      {
+        "char": "地",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "森",
+    "zhuyin": "ㄙㄣ",
+    "searchWord": "森林",
+    "surrounding": [
+      {
+        "char": "黑",
+        "pos": "before"
+      },
+      {
+        "char": "陰",
+        "pos": "before"
+      },
+      {
+        "char": "林",
+        "pos": "after"
+      },
+      {
+        "char": "嚴",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "草",
+    "zhuyin": "ㄘㄠˇ",
+    "searchWord": "草原",
+    "surrounding": [
+      {
+        "char": "青",
+        "pos": "before"
+      },
+      {
+        "char": "野",
+        "pos": "before"
+      },
+      {
+        "char": "原",
+        "pos": "after"
+      },
+      {
+        "char": "坪",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "樹",
+    "zhuyin": "ㄕㄨˋ",
+    "searchWord": "樹木",
+    "surrounding": [
+      {
+        "char": "大",
+        "pos": "before"
+      },
+      {
+        "char": "果",
+        "pos": "before"
+      },
+      {
+        "char": "木",
+        "pos": "after"
+      },
+      {
+        "char": "枝",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "竹",
+    "zhuyin": "ㄓㄨˊ",
+    "searchWord": "竹子",
+    "surrounding": [
+      {
+        "char": "青",
+        "pos": "before"
+      },
+      {
+        "char": "綠",
+        "pos": "before"
+      },
+      {
+        "char": "子",
+        "pos": "after"
+      },
+      {
+        "char": "林",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "鳥",
+    "zhuyin": "ㄋㄧㄠˇ",
+    "searchWord": "鳥類",
+    "surrounding": [
+      {
+        "char": "小",
+        "pos": "before"
+      },
+      {
+        "char": "飛",
+        "pos": "before"
+      },
+      {
+        "char": "類",
+        "pos": "after"
+      },
+      {
+        "char": "巢",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "魚",
+    "zhuyin": "ㄩˊ",
+    "searchWord": "魚類",
+    "surrounding": [
+      {
+        "char": "小",
+        "pos": "before"
+      },
+      {
+        "char": "金",
+        "pos": "before"
+      },
+      {
+        "char": "類",
+        "pos": "after"
+      },
+      {
+        "char": "池",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "馬",
+    "zhuyin": "ㄇㄚˇ",
+    "searchWord": "馬路",
+    "surrounding": [
+      {
+        "char": "白",
+        "pos": "before"
+      },
+      {
+        "char": "野",
+        "pos": "before"
+      },
+      {
+        "char": "路",
+        "pos": "after"
+      },
+      {
+        "char": "車",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "牛",
+    "zhuyin": "ㄋㄧㄡˊ",
+    "searchWord": "牛肉",
+    "surrounding": [
+      {
+        "char": "黃",
+        "pos": "before"
+      },
+      {
+        "char": "乳",
+        "pos": "before"
+      },
+      {
+        "char": "肉",
+        "pos": "after"
+      },
+      {
+        "char": "奶",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "羊",
+    "zhuyin": "ㄧㄤˊ",
+    "searchWord": "羊毛",
+    "surrounding": [
+      {
+        "char": "綿",
+        "pos": "before"
+      },
+      {
+        "char": "山",
+        "pos": "before"
+      },
+      {
+        "char": "毛",
+        "pos": "after"
+      },
+      {
+        "char": "肉",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "犬",
+    "zhuyin": "ㄑㄩㄢˇ",
+    "searchWord": "犬齒",
+    "surrounding": [
+      {
+        "char": "獵",
+        "pos": "before"
+      },
+      {
+        "char": "警",
+        "pos": "before"
+      },
+      {
+        "char": "齒",
+        "pos": "after"
+      },
+      {
+        "char": "吠",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "貓",
+    "zhuyin": "ㄇㄠ",
+    "searchWord": "貓咪",
+    "surrounding": [
+      {
+        "char": "野",
+        "pos": "before"
+      },
+      {
+        "char": "小",
+        "pos": "before"
+      },
+      {
+        "char": "咪",
+        "pos": "after"
+      },
+      {
+        "char": "眼",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "羽",
+    "zhuyin": "ㄩˇ",
+    "searchWord": "羽毛",
+    "surrounding": [
+      {
+        "char": "鳥",
+        "pos": "before"
+      },
+      {
+        "char": "白",
+        "pos": "before"
+      },
+      {
+        "char": "毛",
+        "pos": "after"
+      },
+      {
+        "char": "翼",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "手",
+    "zhuyin": "ㄕㄡˇ",
+    "searchWord": "手冊",
+    "surrounding": [
+      {
+        "char": "雙",
+        "pos": "before"
+      },
+      {
+        "char": "牽",
+        "pos": "before"
+      },
+      {
+        "char": "冊",
+        "pos": "after"
+      },
+      {
+        "char": "指",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "足",
+    "zhuyin": "ㄗㄨˊ",
+    "searchWord": "足球",
+    "surrounding": [
+      {
+        "char": "雙",
+        "pos": "before"
+      },
+      {
+        "char": "知",
+        "pos": "before"
+      },
+      {
+        "char": "球",
+        "pos": "after"
+      },
+      {
+        "char": "跡",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "目",
+    "zhuyin": "ㄇㄨˋ",
+    "searchWord": "目前",
+    "surrounding": [
+      {
+        "char": "雙",
+        "pos": "before"
+      },
+      {
+        "char": "注",
+        "pos": "before"
+      },
+      {
+        "char": "前",
+        "pos": "after"
+      },
+      {
+        "char": "標",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "眼",
+    "zhuyin": "ㄧㄢˇ",
+    "searchWord": "眼睛",
+    "surrounding": [
+      {
+        "char": "雙",
+        "pos": "before"
+      },
+      {
+        "char": "眨",
+        "pos": "before"
+      },
+      {
+        "char": "睛",
+        "pos": "after"
+      },
+      {
+        "char": "淚",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "耳",
+    "zhuyin": "ㄦˇ",
+    "searchWord": "耳朵",
+    "surrounding": [
+      {
+        "char": "木",
+        "pos": "before"
+      },
+      {
+        "char": "順",
+        "pos": "before"
+      },
+      {
+        "char": "朵",
+        "pos": "after"
+      },
+      {
+        "char": "目",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "鼻",
+    "zhuyin": "ㄅㄧˊ",
+    "searchWord": "鼻子",
+    "surrounding": [
+      {
+        "char": "象",
+        "pos": "before"
+      },
+      {
+        "char": "隆",
+        "pos": "before"
+      },
+      {
+        "char": "子",
+        "pos": "after"
+      },
+      {
+        "char": "音",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "舌",
+    "zhuyin": "ㄕㄜˊ",
+    "searchWord": "舌頭",
+    "surrounding": [
+      {
+        "char": "長",
+        "pos": "before"
+      },
+      {
+        "char": "火",
+        "pos": "before"
+      },
+      {
+        "char": "頭",
+        "pos": "after"
+      },
+      {
+        "char": "尖",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "牙",
+    "zhuyin": "ㄧㄚˊ",
+    "searchWord": "牙齒",
+    "surrounding": [
+      {
+        "char": "蛀",
+        "pos": "before"
+      },
+      {
+        "char": "刷",
+        "pos": "before"
+      },
+      {
+        "char": "齒",
+        "pos": "after"
+      },
+      {
+        "char": "膏",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "身",
+    "zhuyin": "ㄕㄣ",
+    "searchWord": "身體",
+    "surrounding": [
+      {
+        "char": "自",
+        "pos": "before"
+      },
+      {
+        "char": "全",
+        "pos": "before"
+      },
+      {
+        "char": "體",
+        "pos": "after"
+      },
+      {
+        "char": "份",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "體",
+    "zhuyin": "ㄊㄧˇ",
+    "searchWord": "體力",
+    "surrounding": [
+      {
+        "char": "本",
+        "pos": "before"
+      },
+      {
+        "char": "人",
+        "pos": "before"
+      },
+      {
+        "char": "力",
+        "pos": "after"
+      },
+      {
+        "char": "育",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "言",
+    "zhuyin": "ㄧㄢˊ",
+    "searchWord": "言語",
+    "surrounding": [
+      {
+        "char": "留",
+        "pos": "before"
+      },
+      {
+        "char": "發",
+        "pos": "before"
+      },
+      {
+        "char": "語",
+        "pos": "after"
+      },
+      {
+        "char": "行",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "語",
+    "zhuyin": "ㄩˇ",
+    "searchWord": "語言",
+    "surrounding": [
+      {
+        "char": "國",
+        "pos": "before"
+      },
+      {
+        "char": "華",
+        "pos": "before"
+      },
+      {
+        "char": "言",
+        "pos": "after"
+      },
+      {
+        "char": "文",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "文",
+    "zhuyin": "ㄨㄣˊ",
+    "searchWord": "文章",
+    "surrounding": [
+      {
+        "char": "語",
+        "pos": "before"
+      },
+      {
+        "char": "中",
+        "pos": "before"
+      },
+      {
+        "char": "章",
+        "pos": "after"
+      },
+      {
+        "char": "化",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "字",
+    "zhuyin": "ㄗˋ",
+    "searchWord": "字典",
+    "surrounding": [
+      {
+        "char": "生",
+        "pos": "before"
+      },
+      {
+        "char": "寫",
+        "pos": "before"
+      },
+      {
+        "char": "典",
+        "pos": "after"
+      },
+      {
+        "char": "體",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "筆",
+    "zhuyin": "ㄅㄧˇ",
+    "searchWord": "筆記",
+    "surrounding": [
+      {
+        "char": "鉛",
+        "pos": "before"
+      },
+      {
+        "char": "毛",
+        "pos": "before"
+      },
+      {
+        "char": "記",
+        "pos": "after"
+      },
+      {
+        "char": "者",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "紙",
+    "zhuyin": "ㄓˇ",
+    "searchWord": "紙張",
+    "surrounding": [
+      {
+        "char": "報",
+        "pos": "before"
+      },
+      {
+        "char": "信",
+        "pos": "before"
+      },
+      {
+        "char": "張",
+        "pos": "after"
+      },
+      {
+        "char": "箱",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "墨",
+    "zhuyin": "ㄇㄛˋ",
+    "searchWord": "墨水",
+    "surrounding": [
+      {
+        "char": "筆",
+        "pos": "before"
+      },
+      {
+        "char": "油",
+        "pos": "before"
+      },
+      {
+        "char": "水",
+        "pos": "after"
+      },
+      {
+        "char": "汁",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "硯",
+    "zhuyin": "ㄧㄢˋ",
+    "searchWord": "硯池",
+    "surrounding": [
+      {
+        "char": "端",
+        "pos": "before"
+      },
+      {
+        "char": "石",
+        "pos": "before"
+      },
+      {
+        "char": "池",
+        "pos": "after"
+      },
+      {
+        "char": "臺",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "歌",
+    "zhuyin": "ㄍㄜ",
+    "searchWord": "歌曲",
+    "surrounding": [
+      {
+        "char": "民",
+        "pos": "before"
+      },
+      {
+        "char": "詩",
+        "pos": "before"
+      },
+      {
+        "char": "曲",
+        "pos": "after"
+      },
+      {
+        "char": "手",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "聲",
+    "zhuyin": "ㄕㄥ",
+    "searchWord": "聲音",
+    "surrounding": [
+      {
+        "char": "歌",
+        "pos": "before"
+      },
+      {
+        "char": "雨",
+        "pos": "before"
+      },
+      {
+        "char": "音",
+        "pos": "after"
+      },
+      {
+        "char": "響",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "音",
+    "zhuyin": "ㄧㄣ",
+    "searchWord": "音樂",
+    "surrounding": [
+      {
+        "char": "發",
+        "pos": "before"
+      },
+      {
+        "char": "知",
+        "pos": "before"
+      },
+      {
+        "char": "樂",
+        "pos": "after"
+      },
+      {
+        "char": "節",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "畫",
+    "zhuyin": "ㄏㄨㄚˋ",
+    "searchWord": "畫面",
+    "surrounding": [
+      {
+        "char": "圖",
+        "pos": "before"
+      },
+      {
+        "char": "插",
+        "pos": "before"
+      },
+      {
+        "char": "面",
+        "pos": "after"
+      },
+      {
+        "char": "布",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "圖",
+    "zhuyin": "ㄊㄨˊ",
+    "searchWord": "圖片",
+    "surrounding": [
+      {
+        "char": "地",
+        "pos": "before"
+      },
+      {
+        "char": "試",
+        "pos": "before"
+      },
+      {
+        "char": "片",
+        "pos": "after"
+      },
+      {
+        "char": "畫",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "影",
+    "zhuyin": "ㄧㄥˇ",
+    "searchWord": "影片",
+    "surrounding": [
+      {
+        "char": "電",
+        "pos": "before"
+      },
+      {
+        "char": "投",
+        "pos": "before"
+      },
+      {
+        "char": "片",
+        "pos": "after"
+      },
+      {
+        "char": "像",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "燈",
+    "zhuyin": "ㄉㄥ",
+    "searchWord": "燈光",
+    "surrounding": [
+      {
+        "char": "電",
+        "pos": "before"
+      },
+      {
+        "char": "路",
+        "pos": "before"
+      },
+      {
+        "char": "光",
+        "pos": "after"
+      },
+      {
+        "char": "火",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "鏡",
+    "zhuyin": "ㄐㄧㄥˋ",
+    "searchWord": "鏡頭",
+    "surrounding": [
+      {
+        "char": "眼",
+        "pos": "before"
+      },
+      {
+        "char": "透",
+        "pos": "before"
+      },
+      {
+        "char": "頭",
+        "pos": "after"
+      },
+      {
+        "char": "像",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "鐘",
+    "zhuyin": "ㄓㄨㄥ",
+    "searchWord": "鐘聲",
+    "surrounding": [
+      {
+        "char": "時",
+        "pos": "before"
+      },
+      {
+        "char": "警",
+        "pos": "before"
+      },
+      {
+        "char": "聲",
+        "pos": "after"
+      },
+      {
+        "char": "面",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "錶",
+    "zhuyin": "ㄅㄧㄠˇ",
+    "searchWord": "錶面",
+    "surrounding": [
+      {
+        "char": "手",
+        "pos": "before"
+      },
+      {
+        "char": "懷",
+        "pos": "before"
+      },
+      {
+        "char": "面",
+        "pos": "after"
+      },
+      {
+        "char": "帶",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "舟",
+    "zhuyin": "ㄓㄡ",
+    "searchWord": "舟楫",
+    "surrounding": [
+      {
+        "char": "扁",
+        "pos": "before"
+      },
+      {
+        "char": "輕",
+        "pos": "before"
+      },
+      {
+        "char": "楫",
+        "pos": "after"
+      },
+      {
+        "char": "子",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "船",
+    "zhuyin": "ㄔㄨㄢˊ",
+    "searchWord": "船隻",
+    "surrounding": [
+      {
+        "char": "輪",
+        "pos": "before"
+      },
+      {
+        "char": "木",
+        "pos": "before"
+      },
+      {
+        "char": "隻",
+        "pos": "after"
+      },
+      {
+        "char": "長",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "帆",
+    "zhuyin": "ㄈㄢˊ",
+    "searchWord": "帆船",
+    "surrounding": [
+      {
+        "char": "揚",
+        "pos": "before"
+      },
+      {
+        "char": "風",
+        "pos": "before"
+      },
+      {
+        "char": "船",
+        "pos": "after"
+      },
+      {
+        "char": "布",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "旗",
+    "zhuyin": "ㄑㄧˊ",
+    "searchWord": "旗幟",
+    "surrounding": [
+      {
+        "char": "彩",
+        "pos": "before"
+      },
+      {
+        "char": "升",
+        "pos": "before"
+      },
+      {
+        "char": "幟",
+        "pos": "after"
+      },
+      {
+        "char": "桿",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "鼓",
+    "zhuyin": "ㄍㄨˇ",
+    "searchWord": "鼓聲",
+    "surrounding": [
+      {
+        "char": "打",
+        "pos": "before"
+      },
+      {
+        "char": "鳴",
+        "pos": "before"
+      },
+      {
+        "char": "聲",
+        "pos": "after"
+      },
+      {
+        "char": "舞",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "琴",
+    "zhuyin": "ㄑㄧㄣˊ",
+    "searchWord": "琴鍵",
+    "surrounding": [
+      {
+        "char": "鋼",
+        "pos": "before"
+      },
+      {
+        "char": "古",
+        "pos": "before"
+      },
+      {
+        "char": "鍵",
+        "pos": "after"
+      },
+      {
+        "char": "弦",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "笛",
+    "zhuyin": "ㄉㄧˊ",
+    "searchWord": "笛聲",
+    "surrounding": [
+      {
+        "char": "長",
+        "pos": "before"
+      },
+      {
+        "char": "短",
+        "pos": "before"
+      },
+      {
+        "char": "聲",
+        "pos": "after"
+      },
+      {
+        "char": "子",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "棋",
+    "zhuyin": "ㄑㄧˊ",
+    "searchWord": "棋盤",
+    "surrounding": [
+      {
+        "char": "圍",
+        "pos": "before"
+      },
+      {
+        "char": "象",
+        "pos": "before"
+      },
+      {
+        "char": "盤",
+        "pos": "after"
+      },
+      {
+        "char": "子",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "牌",
+    "zhuyin": "ㄆㄞˊ",
+    "searchWord": "牌照",
+    "surrounding": [
+      {
+        "char": "金",
+        "pos": "before"
+      },
+      {
+        "char": "門",
+        "pos": "before"
+      },
+      {
+        "char": "照",
+        "pos": "after"
+      },
+      {
+        "char": "子",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "尺",
+    "zhuyin": "ㄔˇ",
+    "searchWord": "尺度",
+    "surrounding": [
+      {
+        "char": "皮",
+        "pos": "before"
+      },
+      {
+        "char": "直",
+        "pos": "before"
+      },
+      {
+        "char": "度",
+        "pos": "after"
+      },
+      {
+        "char": "寸",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "印",
+    "zhuyin": "ㄧㄣˋ",
+    "searchWord": "印象",
+    "surrounding": [
+      {
+        "char": "刻",
+        "pos": "before"
+      },
+      {
+        "char": "打",
+        "pos": "before"
+      },
+      {
+        "char": "象",
+        "pos": "after"
+      },
+      {
+        "char": "刷",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "章",
+    "zhuyin": "ㄓㄤ",
+    "searchWord": "章節",
+    "surrounding": [
+      {
+        "char": "篇",
+        "pos": "before"
+      },
+      {
+        "char": "樂",
+        "pos": "before"
+      },
+      {
+        "char": "節",
+        "pos": "after"
+      },
+      {
+        "char": "法",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "頁",
+    "zhuyin": "ㄧㄝˋ",
+    "searchWord": "頁碼",
+    "surrounding": [
+      {
+        "char": "首",
+        "pos": "before"
+      },
+      {
+        "char": "隔",
+        "pos": "before"
+      },
+      {
+        "char": "碼",
+        "pos": "after"
+      },
+      {
+        "char": "數",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "行",
+    "zhuyin": "ㄒㄧㄥˊ",
+    "searchWord": "行動",
+    "surrounding": [
+      {
+        "char": "進",
+        "pos": "before"
+      },
+      {
+        "char": "步",
+        "pos": "before"
+      },
+      {
+        "char": "動",
+        "pos": "after"
+      },
+      {
+        "char": "走",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "走",
+    "zhuyin": "ㄗㄡˇ",
+    "searchWord": "走向",
+    "surrounding": [
+      {
+        "char": "奔",
+        "pos": "before"
+      },
+      {
+        "char": "逃",
+        "pos": "before"
+      },
+      {
+        "char": "向",
+        "pos": "after"
+      },
+      {
+        "char": "廊",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "飛",
+    "zhuyin": "ㄈㄟ",
+    "searchWord": "飛翔",
+    "surrounding": [
+      {
+        "char": "起",
+        "pos": "before"
+      },
+      {
+        "char": "騰",
+        "pos": "before"
+      },
+      {
+        "char": "翔",
+        "pos": "after"
+      },
+      {
+        "char": "躍",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "游",
+    "zhuyin": "ㄧㄡˊ",
+    "searchWord": "游泳",
+    "surrounding": [
+      {
+        "char": "浮",
+        "pos": "before"
+      },
+      {
+        "char": "漫",
+        "pos": "before"
+      },
+      {
+        "char": "泳",
+        "pos": "after"
+      },
+      {
+        "char": "戲",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "登",
+    "zhuyin": "ㄉㄥ",
+    "searchWord": "登山",
+    "surrounding": [
+      {
+        "char": "攀",
+        "pos": "before"
+      },
+      {
+        "char": "刊",
+        "pos": "before"
+      },
+      {
+        "char": "山",
+        "pos": "after"
+      },
+      {
+        "char": "記",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "跳",
+    "zhuyin": "ㄊㄧㄠˋ",
+    "searchWord": "跳躍",
+    "surrounding": [
+      {
+        "char": "起",
+        "pos": "before"
+      },
+      {
+        "char": "心",
+        "pos": "before"
+      },
+      {
+        "char": "躍",
+        "pos": "after"
+      },
+      {
+        "char": "高",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "舞",
+    "zhuyin": "ㄨˇ",
+    "searchWord": "舞蹈",
+    "surrounding": [
+      {
+        "char": "跳",
+        "pos": "before"
+      },
+      {
+        "char": "編",
+        "pos": "before"
+      },
+      {
+        "char": "蹈",
+        "pos": "after"
+      },
+      {
+        "char": "臺",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "唱",
+    "zhuyin": "ㄔㄤˋ",
+    "searchWord": "唱片",
+    "surrounding": [
+      {
+        "char": "合",
+        "pos": "before"
+      },
+      {
+        "char": "獨",
+        "pos": "before"
+      },
+      {
+        "char": "片",
+        "pos": "after"
+      },
+      {
+        "char": "腔",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "讀",
+    "zhuyin": "ㄉㄨˊ",
+    "searchWord": "讀書",
+    "surrounding": [
+      {
+        "char": "朗",
+        "pos": "before"
+      },
+      {
+        "char": "閱",
+        "pos": "before"
+      },
+      {
+        "char": "書",
+        "pos": "after"
+      },
+      {
+        "char": "者",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "寫",
+    "zhuyin": "ㄒㄧㄝˇ",
+    "searchWord": "寫作",
+    "surrounding": [
+      {
+        "char": "描",
+        "pos": "before"
+      },
+      {
+        "char": "書",
+        "pos": "before"
+      },
+      {
+        "char": "作",
+        "pos": "after"
+      },
+      {
+        "char": "真",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "思",
+    "zhuyin": "ㄙ",
+    "searchWord": "思想",
+    "surrounding": [
+      {
+        "char": "深",
+        "pos": "before"
+      },
+      {
+        "char": "沉",
+        "pos": "before"
+      },
+      {
+        "char": "想",
+        "pos": "after"
+      },
+      {
+        "char": "念",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "想",
+    "zhuyin": "ㄒㄧㄤˇ",
+    "searchWord": "想像",
+    "surrounding": [
+      {
+        "char": "夢",
+        "pos": "before"
+      },
+      {
+        "char": "冥",
+        "pos": "before"
+      },
+      {
+        "char": "像",
+        "pos": "after"
+      },
+      {
+        "char": "法",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "愛",
+    "zhuyin": "ㄞˋ",
+    "searchWord": "愛心",
+    "surrounding": [
+      {
+        "char": "仁",
+        "pos": "before"
+      },
+      {
+        "char": "親",
+        "pos": "before"
+      },
+      {
+        "char": "心",
+        "pos": "after"
+      },
+      {
+        "char": "情",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "情",
+    "zhuyin": "ㄑㄧㄥˊ",
+    "searchWord": "情感",
+    "surrounding": [
+      {
+        "char": "友",
+        "pos": "before"
+      },
+      {
+        "char": "熱",
+        "pos": "before"
+      },
+      {
+        "char": "感",
+        "pos": "after"
+      },
+      {
+        "char": "操",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "信",
+    "zhuyin": "ㄒㄧㄣˋ",
+    "searchWord": "信任",
+    "surrounding": [
+      {
+        "char": "相",
+        "pos": "before"
+      },
+      {
+        "char": "誠",
+        "pos": "before"
+      },
+      {
+        "char": "任",
+        "pos": "after"
+      },
+      {
+        "char": "念",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "義",
+    "zhuyin": "ㄧˋ",
+    "searchWord": "義務",
+    "surrounding": [
+      {
+        "char": "正",
+        "pos": "before"
+      },
+      {
+        "char": "道",
+        "pos": "before"
+      },
+      {
+        "char": "務",
+        "pos": "after"
+      },
+      {
+        "char": "氣",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "和",
+    "zhuyin": "ㄏㄜˊ",
+    "searchWord": "和平",
+    "surrounding": [
+      {
+        "char": "溫",
+        "pos": "before"
+      },
+      {
+        "char": "柔",
+        "pos": "before"
+      },
+      {
+        "char": "平",
+        "pos": "after"
+      },
+      {
+        "char": "諧",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "平",
+    "zhuyin": "ㄆㄧㄥˊ",
+    "searchWord": "平安",
+    "surrounding": [
+      {
+        "char": "公",
+        "pos": "before"
+      },
+      {
+        "char": "水",
+        "pos": "before"
+      },
+      {
+        "char": "安",
+        "pos": "after"
+      },
+      {
+        "char": "靜",
+        "pos": "after"
+      }
+    ]
+  },
+  {
+    "char": "安",
+    "zhuyin": "ㄢ",
+    "searchWord": "安全",
+    "surrounding": [
+      {
+        "char": "平",
+        "pos": "before"
+      },
+      {
+        "char": "定",
+        "pos": "before"
+      },
+      {
+        "char": "全",
+        "pos": "after"
+      },
+      {
+        "char": "穩",
+        "pos": "after"
+      }
+    ]
   }
 ];
 
-// ===== 🧩 一字千金：團結一詞 150 題經典題庫 =====
+// ===== 🧩 一字千金：團結一詞 200 題經典題庫 =====
 const CHARACTER_UNITED_WORDS_POOL = [
-  { id: 1, targetWord: "明月", chars: ["明", "月"], components: ["日", "月", "月"], clue: "形容夜空中明亮的月亮" },
-  { id: 2, targetWord: "河海", chars: ["河", "海"], components: ["氵", "可", "氵", "每"], clue: "河流與大海的合稱" },
-  { id: 3, targetWord: "松樹", chars: ["松", "樹"], components: ["木", "公", "木", "壴", "寸"], clue: "四季常青的樹木" },
-  { id: 4, targetWord: "休假", chars: ["休", "假"], components: ["亻", "木", "亻", "夬"], clue: "停止工作進行休息" },
-  { id: 5, targetWord: "晴朗", chars: ["晴", "朗"], components: ["日", "青", "月", "良"], clue: "天氣清明無雲" },
-  { id: 6, targetWord: "和諧", chars: ["和", "諧"], components: ["禾", "口", "言", "皆"], clue: "配合適當且協調" },
-  { id: 7, targetWord: "休養", chars: ["休", "養"], components: ["亻", "木", "羊", "食"], clue: "休息保養身體" },
-  { id: 8, targetWord: "語言", chars: ["語", "言"], components: ["言", "吾", "言"], clue: "人類溝通表達的工具" },
-  { id: 9, targetWord: "思想", chars: ["思", "想"], components: ["田", "心", "木", "目", "心"], clue: "大腦的思考與想法" },
-  { id: 10, targetWord: "知識", chars: ["知", "識"], components: ["矢", "口", "言", "音", "戈"], clue: "透過學習獲得的學問" },
-  { id: 11, targetWord: "海洋", chars: ["海", "洋"], components: ["氵", "每", "氵", "羊"], clue: "廣闊的鹹水水域" },
-  { id: 12, targetWord: "快樂", chars: ["快", "樂"], components: ["忄", "夬", "白", "木"], clue: "心情愉快歡樂" },
-  { id: 13, targetWord: "清風", chars: ["清", "風"], components: ["氵", "青", "風"], clue: "清涼舒爽的風" },
-  { id: 14, targetWord: "合作", chars: ["合", "作"], components: ["人", "一", "口", "亻", "乍"], clue: "共同攜手完成工作" },
-  { id: 15, targetWord: "信件", chars: ["信", "件"], components: ["亻", "言", "亻", "牛"], clue: "郵寄傳遞的書信" },
-  { id: 16, targetWord: "教育", chars: ["教", "育"], components: ["孝", "攵", "亠", "厶", "月"], clue: "傳授知識與培養品德" },
-  { id: 17, targetWord: "朋友", chars: ["朋", "友"], components: ["月", "月", "𠂇", "又"], clue: "互相交好知心的同伴" },
-  { id: 18, targetWord: "洗澡", chars: ["洗", "澡"], components: ["氵", "先", "氵", "喿"], clue: "用水清潔身體" },
-  { id: 19, targetWord: "冰冷", chars: ["冰", "冷"], components: ["冫", "水", "冫", "令"], clue: "溫度極低冰涼" },
-  { id: 20, targetWord: "熱情", chars: ["熱", "情"], components: ["執", "灬", "忄", "青"], clue: "待人親切且充滿活力" },
-  { id: 21, targetWord: "照明", chars: ["照", "明"], components: ["昭", "灬", "日", "月"], clue: "發出光芒照亮環境" },
-  { id: 22, targetWord: "光明", chars: ["光", "明"], components: ["光", "日", "月"], clue: "光亮充滿希望" },
-  { id: 23, targetWord: "城牆", chars: ["城", "牆"], components: ["土", "成", "爿", "嗇"], clue: "古代用於防禦的高牆" },
-  { id: 24, targetWord: "玻璃", chars: ["玻", "璃"], components: ["王", "皮", "王", "離"], clue: "透明硬質的建築材料" },
-  { id: 25, targetWord: "玫瑰", chars: ["玫", "瑰"], components: ["王", "攵", "王", "鬼"], clue: "帶刺且美麗的花卉" },
-  { id: 26, targetWord: "理想", chars: ["理", "想"], components: ["王", "里", "木", "目", "心"], clue: "對未來的抱負與憧憬" },
-  { id: 27, targetWord: "智慧", chars: ["智", "慧"], components: ["知", "日", "彗", "心"], clue: "聰明睿智與分析能力" },
-  { id: 28, targetWord: "運動", chars: ["運", "動"], components: ["軍", "辶", "重", "力"], clue: "鍛鍊身體的體育活動" },
-  { id: 29, targetWord: "健康", chars: ["健", "康"], components: ["亻", "建", "廣", "隶"], clue: "身體無病強壯" },
-  { id: 30, targetWord: "平安", chars: ["平", "安"], components: ["平", "宀", "女"], clue: "平順安定無事故" },
-  { id: 31, targetWord: "吉祥", chars: ["吉", "祥"], components: ["士", "口", "礻", "羊"], clue: "幸運美好的徵兆" },
-  { id: 32, targetWord: "繁榮", chars: ["繁", "榮"], components: ["敏", "糸", "艹", "木"], clue: "蓬勃發展興旺" },
-  { id: 33, targetWord: "美麗", chars: ["美", "麗"], components: ["羊", "大", "麗"], clue: "好看動人讓人讚賞" },
-  { id: 34, targetWord: "幸福", chars: ["幸", "福"], components: ["土", "䒑", "礻", "一口田"], clue: "生活甜美滿足" },
-  { id: 35, targetWord: "勇氣", chars: ["勇", "氣"], components: ["甬", "力", "气", "米"], clue: "不畏懼困難的膽量" },
-  { id: 36, targetWord: "禮貌", chars: ["禮", "貌"], components: ["礻", "豐", "豸", "貌"], clue: "文明有教養的言行" },
-  { id: 37, targetWord: "精神", chars: ["精", "神"], components: ["米", "青", "礻", "申"], clue: "人的神采與意識狀態" },
-  { id: 38, targetWord: "創造", chars: ["創", "造"], components: ["倉", "刂", "告", "辶"], clue: "發明或建立新事物" },
-  { id: 39, targetWord: "學習", chars: ["學", "習"], components: ["𦥯", "子", "羽", "白"], clue: "獲得知識技能的過程" },
-  { id: 40, targetWord: "探索", chars: ["探", "索"], components: ["扌", "罙", "𦦙", "糸"], clue: "尋找並探究未知" },
-  { id: 41, targetWord: "永恆", chars: ["永", "恆"], components: ["永", "忄", "亘"], clue: "永遠長存不改變" },
-  { id: 42, targetWord: "溫暖", chars: ["溫", "暖"], components: ["氵", "𥁕", "日", "爰"], clue: "氣候暖和或內心感受親切" },
-  { id: 43, targetWord: "感動", chars: ["感", "動"], components: ["咸", "心", "重", "力"], clue: "內心受到觸動與震撼" },
-  { id: 44, targetWord: "希望", chars: ["希", "望"], components: ["巾", "爻", "亡", "月", "王"], clue: "對未來的期待與祈望" },
-  { id: 45, targetWord: "陪伴", chars: ["陪", "伴"], components: ["阝", "剖", "亻", "半"], clue: "隨同相伴在身旁" },
-  { id: 46, targetWord: "珍惜", chars: ["珍", "惜"], components: ["王", "㐱", "忄", "昔"], clue: "愛惜珍重不浪費" },
-  { id: 47, targetWord: "堅持", chars: ["堅", "持"], components: ["臤", "土", "扌", "寺"], clue: "意志堅定持續到底" },
-  { id: 48, targetWord: "誠實", chars: ["誠", "實"], components: ["言", "成", "宀", "貫"], clue: "言行真誠不虛假" },
-  { id: 49, targetWord: "謙虛", chars: ["謙", "虛"], components: ["言", "兼", "虍", "業"], clue: "虛心不自誇" },
-  { id: 50, targetWord: "溫柔", chars: ["溫", "柔"], components: ["氵", "𥁕", "矛", "木"], clue: "態度柔和體貼" },
-  { id: 51, targetWord: "優雅", chars: ["優", "雅"], components: ["亻", "憂", "牙", "隹"], clue: "舉止優美大方" },
-  { id: 52, targetWord: "善良", chars: ["善", "良"], components: ["羊", "𦍌", "良"], clue: "品質純正心地好" },
-  { id: 53, targetWord: "充實", chars: ["充", "實"], components: ["亠", "允", "宀", "貫"], clue: "內容豐富不空虛" },
-  { id: 54, targetWord: "燦爛", chars: ["燦", "爛"], components: ["火", "粲", "火", "闌"], clue: "光彩耀眼奪目" },
-  { id: 55, targetWord: "奇蹟", chars: ["奇", "蹟"], components: ["大", "可", "足", "責"], clue: "不可思議的神奇成就" },
-  { id: 56, targetWord: "團結", chars: ["團", "結"], components: ["囗", "專", "糸", "吉"], clue: "凝聚力量緊密合作" },
-  { id: 57, targetWord: "自由", chars: ["自", "由"], components: ["自", "由"], clue: "不受束縛隨心暢意" },
-  { id: 58, targetWord: "和平", chars: ["和", "平"], components: ["禾", "口", "平"], clue: "安定沒有戰爭紛爭" },
-  { id: 59, targetWord: "信任", chars: ["信", "任"], components: ["亻", "言", "亻", "壬"], clue: "相信並倚重對方" },
-  { id: 60, targetWord: "分享", chars: ["分", "享"], components: ["八", "刀", "亠", "子"], clue: "將好東西分給其他人" },
-  { id: 61, targetWord: "成功", chars: ["成", "功"], components: ["成", "工", "力"], clue: "達成預定的目標" },
-  { id: 62, targetWord: "精彩", chars: ["精", "彩"], components: ["米", "青", "采", "彡"], clue: "表現出色吸引人" },
-  { id: 63, targetWord: "奇妙", chars: ["奇", "妙"], components: ["大", "可", "女", "少"], clue: "新奇好玩不可思議" },
-  { id: 64, targetWord: "夢想", chars: ["夢", "想"], components: ["夕", "林", "木", "目", "心"], clue: "心中的遠大理想" },
-  { id: 65, targetWord: "歡樂", chars: ["歡", "樂"], components: ["雚", "欠", "白", "木"], clue: "高興歡愉的氣氛" },
-  { id: 66, targetWord: "神秘", chars: ["神", "秘"], components: ["礻", "申", "禾", "必"], clue: "難以捉摸充滿好奇" },
-  { id: 67, targetWord: "壯觀", chars: ["壯", "觀"], components: ["爿", "士", "雚", "見"], clue: "場面雄偉景象宏大" },
-  { id: 68, targetWord: "榮耀", chars: ["榮", "耀"], components: ["艹", "木", "光", "翟"], clue: "光榮與尊貴的名譽" },
-  { id: 69, targetWord: "真誠", chars: ["真", "誠"], components: ["目", "八", "言", "成"], clue: "真心實意不作假" },
-  { id: 70, targetWord: "充沛", chars: ["充", "沛"], components: ["亠", "允", "氵", "市"], clue: "精力或資源非常充足" },
-  { id: 71, targetWord: "熱愛", chars: ["熱", "愛"], components: ["執", "灬", "爫", "心", "友"], clue: "深切喜愛並投入" },
-  { id: 72, targetWord: "超越", chars: ["超", "越"], components: ["走", "召", "走", "戉"], clue: "勝過並打破原有限度" },
-  { id: 73, targetWord: "豐富", chars: ["豐", "富"], components: ["豐", "宀", "畐"], clue: "充裕繁多不匱乏" },
-  { id: 74, targetWord: "堅強", chars: ["堅", "強"], components: ["臤", "土", "弓", "厶", "虫"], clue: "堅韌剛強不怕打擊" },
-  { id: 75, targetWord: "熱烈", chars: ["熱", "烈"], components: ["執", "灬", "列", "灬"], clue: "氣氛興奮高昂" },
-  { id: 76, targetWord: "輝煌", chars: ["輝", "煌"], components: ["光", "軍", "火", "皇"], clue: "光彩耀眼成就非凡" },
-  { id: 77, targetWord: "溫馨", chars: ["溫", "馨"], components: ["氵", "𥁕", "殸", "香"], clue: "溫暖親切充滿愛意" },
-  { id: 78, targetWord: "美好", chars: ["美", "好"], components: ["羊", "大", "女", "子"], clue: "令人滿意讚嘆的事物" },
-  { id: 79, targetWord: "智慧", chars: ["智", "慧"], components: ["矢", "口", "日", "彗", "心"], clue: "靈敏的理解力與遠見" },
-  { id: 80, targetWord: "禮物", chars: ["禮", "物"], components: ["礻", "豐", "牛", "勿"], clue: "餽贈給他人的物品" },
-  { id: 81, targetWord: "歡喜", chars: ["歡", "喜"], components: ["雚", "欠", "壴", "口"], clue: "內心充滿歡樂喜悅" },
-  { id: 82, targetWord: "英雄", chars: ["英", "雄"], components: ["艹", "央", "隹", "肱"], clue: "本領超群令人敬佩的人" },
-  { id: 83, targetWord: "奇蹟", chars: ["奇", "蹟"], components: ["大", "可", "𧾷", "責"], clue: "創造不可能發生的奇事" },
-  { id: 84, targetWord: "和平", chars: ["和", "平"], components: ["禾", "口", "干"], clue: "沒有紛爭安定和諧" },
-  { id: 85, targetWord: "友情", chars: ["友", "情"], components: ["𠂇", "又", "忄", "青"], clue: "朋友之間深厚的感情" },
-  { id: 86, targetWord: "親情", chars: ["親", "情"], components: ["立", "木", "見", "忄", "青"], clue: "家人親人之間的溫情" },
-  { id: 87, targetWord: "愛情", chars: ["愛", "情"], components: ["爫", "心", "友", "忄", "青"], clue: "戀人之間摯愛的感情" },
-  { id: 88, targetWord: "勇士", chars: ["勇", "士"], components: ["甬", "力", "士"], clue: "英勇大膽的戰士" },
-  { id: 89, targetWord: "勝利", chars: ["勝", "利"], components: ["月", "券", "禾", "刂"], clue: "在競賽或戰鬥中獲勝" },
-  { id: 90, targetWord: "光明", chars: ["光", "明"], components: ["火", "兀", "日", "月"], clue: "燦爛明亮沒有黑暗" },
-  { id: 91, targetWord: "森林", chars: ["森", "林"], components: ["木", "木", "木", "木", "木"], clue: "樹木繁密的廣大區域" },
-  { id: 92, targetWord: "江湖", chars: ["江", "湖"], components: ["氵", "工", "氵", "胡"], clue: "江河與湖泊的統稱" },
-  { id: 93, targetWord: "山峰", chars: ["山", "峰"], components: ["山", "山", "夆"], clue: "高聳山脈的頂峰" },
-  { id: 94, targetWord: "花園", chars: ["花", "園"], components: ["艹", "化", "囗", "袁"], clue: "種植花草樹木的園地" },
-  { id: 95, targetWord: "城市", chars: ["城", "市"], components: ["土", "成", "亠", "巾"], clue: "人口人口人口人口密集繁華區" },
-  { id: 96, targetWord: "國家", chars: ["國", "家"], components: ["囗", "或", "宀", "豕"], clue: "擁有領土與主權的政權" },
-  { id: 97, targetWord: "世界", chars: ["世", "界"], components: ["世", "田", "介"], clue: "地球上所有的國家與人類" },
-  { id: 98, targetWord: "宇宙", chars: ["宇", "宙"], components: ["宀", "于", "宀", "由"], clue: "包含所有時間空間的天體" },
-  { id: 99, targetWord: "星星", chars: ["星", "星"], components: ["日", "生", "日", "生"], clue: "夜空中閃爍的天體" },
-  { id: 100, targetWord: "彩虹", chars: ["彩", "虹"], components: ["采", "彡", "虫", "工"], clue: "雨後天空中七彩的光弧" },
-  { id: 101, targetWord: "春天", chars: ["春", "天"], components: ["三", "人", "日", "大", "一"], clue: "萬物復甦的季節" },
-  { id: 102, targetWord: "夏天", chars: ["夏", "天"], components: ["𢦡", "夂", "大", "一"], clue: "氣溫炎熱的季節" },
-  { id: 103, targetWord: "秋天", chars: ["秋", "天"], components: ["禾", "火", "大", "一"], clue: "楓紅落葉涼爽的季節" },
-  { id: 104, targetWord: "冬天", chars: ["冬", "天"], components: ["夂", "冫", "大", "一"], clue: "下雪飄霜寒冷的季節" },
-  { id: 105, targetWord: "太陽", chars: ["太", "陽"], components: ["大", "丶", "阝", "昜"], clue: "白日照亮地球的恆星" },
-  { id: 106, targetWord: "月亮", chars: ["月", "亮"], components: ["月", "亠", "口", "冖", "儿"], clue: "夜空中圍繞地球的衛星" },
-  { id: 107, targetWord: "風雨", chars: ["風", "雨"], components: ["風", "雨"], clue: "颳風與下雨的天氣" },
-  { id: 108, targetWord: "雪花", chars: ["雪", "花"], components: ["雨", "彐", "艹", "化"], clue: "飄落的晶瑩冰雪" },
-  { id: 109, targetWord: "雲朵", chars: ["雲", "朵"], components: ["雨", "云", "几", "木"], clue: "天空中聚集的水氣" },
-  { id: 110, targetWord: "大海", chars: ["大", "海"], components: ["大", "氵", "每"], clue: "浩瀚無邊的洋流" },
-  { id: 111, targetWord: "河流", chars: ["河", "流"], components: ["氵", "可", "氵", "𠫓"], clue: "奔流不息的水道" },
-  { id: 112, targetWord: "湖泊", chars: ["湖", "泊"], components: ["氵", "胡", "氵", "白"], clue: "內陸積水成池的水域" },
-  { id: 113, targetWord: "高山", chars: ["高", "山"], components: ["高", "山"], clue: "地勢高聳的山嶽" },
-  { id: 114, targetWord: "草原", chars: ["草", "原"], components: ["艹", "早", "厂", "原"], clue: "青草遍佈的平原" },
-  { id: 115, targetWord: "沙漠", chars: ["沙", "漠"], components: ["氵", "少", "氵", "莫"], clue: "乾旱充滿黃沙的大地" },
-  { id: 116, targetWord: "綠洲", chars: ["綠", "洲"], components: ["糸", "彔", "氵", "州"], clue: "沙漠中長有樹木水源的寶地" },
-  { id: 117, targetWord: "島嶼", chars: ["島", "嶼"], components: ["鳥", "山", "山", "與"], clue: "四面環海的陸地" },
-  { id: 118, targetWord: "天空", chars: ["天", "空"], components: ["一大", "穴", "工"], clue: "頭頂上蔚藍的高空" },
-  { id: 119, targetWord: "大地", chars: ["大", "地"], components: ["大", "土", "乜"], clue: "腳下廣袤無垠的陸地" },
-  { id: 120, targetWord: "微風", chars: ["微", "風"], components: ["彳", "山", "一", "微", "風"], clue: "輕柔拂面的涼風" },
-  { id: 121, targetWord: "細雨", chars: ["細", "雨"], components: ["糸", "田", "雨"], clue: "綿綿飄落的小雨" },
-  { id: 122, targetWord: "閃電", chars: ["閃", "電"], components: ["門", "人", "雨", "電"], clue: "夜空中畫過的強烈光芒" },
-  { id: 123, targetWord: "雷鳴", chars: ["雷", "鳴"], components: ["雨", "田", "口", "鳥"], clue: "天空傳來的隆隆巨響" },
-  { id: 124, targetWord: "晨光", chars: ["晨", "光"], components: ["日", "辰", "火", "兀"], clue: "清晨第一道暖光" },
-  { id: 125, targetWord: "夕陽", chars: ["夕", "陽"], components: ["夕", "阝", "昜"], clue: "傍晚即將落下的太陽" },
-  { id: 126, targetWord: "晚霞", chars: ["晚", "霞"], components: ["日", "免", "雨", "假"], clue: "黃昏時天空絢麗彩雲" },
-  { id: 127, targetWord: "夜空", chars: ["夜", "空"], components: ["亠", "夜", "穴", "工"], clue: "漆黑寂靜的星空" },
-  { id: 128, targetWord: "露珠", chars: ["露", "珠"], components: ["雨", "路", "王", "朱"], clue: "清晨清澈透明的水滴" },
-  { id: 129, targetWord: "霜雪", chars: ["霜", "雪"], components: ["雨", "相", "雨", "彐"], clue: "寒冬結晶凝結之物" },
-  { id: 130, targetWord: "冰川", chars: ["冰", "川"], components: ["冫", "水", "川"], clue: "極地巨大的移動冰體" },
-  { id: 131, targetWord: "溫泉", chars: ["溫", "泉"], components: ["氵", "𥁕", "白", "水"], clue: "地下自然噴出的熱水" },
-  { id: 132, targetWord: "瀑布", chars: ["瀑", "布"], components: ["氵", "暴", "巾"], clue: "從懸崖飛瀉而下的水流" },
-  { id: 133, targetWord: "山谷", chars: ["山", "谷"], components: ["山", "八", "口"], clue: "兩山之間的低窪地帶" },
-  { id: 134, targetWord: "懸崖", chars: ["懸", "崖"], components: ["縣", "心", "山", "厓"], clue: "陡峭近乎垂直的山壁" },
-  { id: 135, targetWord: "洞穴", chars: ["洞", "穴"], components: ["氵", "同", "宀", "八"], clue: "天然形成的山洞" },
-  { id: 136, targetWord: "森林", chars: ["森", "林"], components: ["木", "木", "木", "木", "木"], clue: "綠意盎然的大自然林地" },
-  { id: 137, targetWord: "花海", chars: ["花", "海"], components: ["艹", "化", "氵", "每"], clue: "盛開如汪洋般的大片花田" },
-  { id: 138, targetWord: "楓葉", chars: ["楓", "葉"], components: ["木", "風", "艹", "葉"], clue: "秋天變紅的楓樹葉子" },
-  { id: 139, targetWord: "竹林", chars: ["竹", "林"], components: ["竹", "木", "木"], clue: "高聳青翠的竹子林" },
-  { id: 140, targetWord: "稻田", chars: ["稻", "田"], components: ["禾", "舀", "田"], clue: "種植金黃水稻的田地" },
-  { id: 141, targetWord: "果園", chars: ["果", "園"], components: ["田", "木", "囗", "袁"], clue: "結滿豐碩水果的園區" },
-  { id: 142, targetWord: "村莊", chars: ["村", "莊"], components: ["木", "寸", "艹", "壯"], clue: "寧靜古樸的小村落" },
-  { id: 143, targetWord: "小溪", chars: ["溪", "流"], components: ["氵", "奚", "氵", "𠫓"], clue: "山間清澈清涼的小溪流" },
-  { id: 144, targetWord: "海岸", chars: ["海", "岸"], components: ["氵", "每", "山", "干"], clue: "海洋與陸地交界的岸邊" },
-  { id: 145, targetWord: "港口", chars: ["港", "口"], components: ["氵", "巷", "口"], clue: "船隻停泊靠岸的地方" },
-  { id: 146, targetWord: "燈塔", chars: ["燈", "塔"], components: ["火", "登", "土", "荅"], clue: "指引船隻方向的高塔" },
-  { id: 147, targetWord: "城堡", chars: ["城", "堡"], components: ["土", "成", "亻", "保"], clue: "童話般堅固雄偉的建築" },
-  { id: 148, targetWord: "宮殿", chars: ["宮", "殿"], components: ["宀", "呂", "殿"], clue: "國王或帝王居住的華麗建築" },
-  { id: 149, targetWord: "神殿", chars: ["神", "殿"], components: ["礻", "申", "殿"], clue: "供奉神祇莊嚴的神聖場所" },
-  { id: 150, targetWord: "樂園", chars: ["樂", "園"], components: ["白", "木", "幺", "囗", "袁"], clue: "充滿歡聲笑語的遊樂園地" }
+  {"id":1,"targetWord":"明月","chars":["明","月"],"components":["日","月","月"],"clue":"形容夜空中明亮的月亮"},
+  {"id":2,"targetWord":"河海","chars":["河","海"],"components":["氵","可","氵","每"],"clue":"河流與大海的合稱"},
+  {"id":3,"targetWord":"松樹","chars":["松","樹"],"components":["木","公","木","壴","寸"],"clue":"四季常青的樹木"},
+  {"id":4,"targetWord":"休假","chars":["休","假"],"components":["亻","木","亻","夬"],"clue":"停止工作進行休息"},
+  {"id":5,"targetWord":"晴朗","chars":["晴","朗"],"components":["日","青","月","良"],"clue":"天氣清明無雲"},
+  {"id":6,"targetWord":"和諧","chars":["和","諧"],"components":["禾","口","言","皆"],"clue":"配合適當且協調"},
+  {"id":7,"targetWord":"休養","chars":["休","養"],"components":["亻","木","羊","食"],"clue":"休息保養身體"},
+  {"id":8,"targetWord":"語言","chars":["語","言"],"components":["言","吾","言"],"clue":"人類溝通表達的工具"},
+  {"id":9,"targetWord":"思想","chars":["思","想"],"components":["田","心","木","目","心"],"clue":"大腦的思考與想法"},
+  {"id":10,"targetWord":"知識","chars":["知","識"],"components":["矢","口","言","音","戈"],"clue":"透過學習獲得的學問"},
+  {"id":11,"targetWord":"海洋","chars":["海","洋"],"components":["氵","每","氵","羊"],"clue":"廣闊的鹹水水域"},
+  {"id":12,"targetWord":"快樂","chars":["快","樂"],"components":["忄","夬","白","木"],"clue":"心情愉快歡樂"},
+  {"id":13,"targetWord":"清風","chars":["清","風"],"components":["氵","青","風"],"clue":"清涼舒爽的風"},
+  {"id":14,"targetWord":"合作","chars":["合","作"],"components":["人","一","口","亻","乍"],"clue":"共同攜手完成工作"},
+  {"id":15,"targetWord":"信件","chars":["信","件"],"components":["亻","言","亻","牛"],"clue":"郵寄傳遞的書信"},
+  {"id":16,"targetWord":"教育","chars":["教","育"],"components":["孝","攵","亠","厶","月"],"clue":"傳授知識與培養品德"},
+  {"id":17,"targetWord":"朋友","chars":["朋","友"],"components":["月","月","𠂇","又"],"clue":"互相交好知心的同伴"},
+  {"id":18,"targetWord":"洗澡","chars":["洗","澡"],"components":["氵","先","氵","喿"],"clue":"用水清潔身體"},
+  {"id":19,"targetWord":"冰冷","chars":["冰","冷"],"components":["冫","水","冫","令"],"clue":"溫度極低冰涼"},
+  {"id":20,"targetWord":"熱情","chars":["熱","情"],"components":["執","灬","忄","青"],"clue":"待人親切且充滿活力"},
+  {"id":21,"targetWord":"照明","chars":["照","明"],"components":["昭","灬","日","月"],"clue":"發出光芒照亮環境"},
+  {"id":22,"targetWord":"光明","chars":["光","明"],"components":["光","日","月"],"clue":"光亮充滿希望"},
+  {"id":23,"targetWord":"城牆","chars":["城","牆"],"components":["土","成","爿","嗇"],"clue":"古代用於防禦的高牆"},
+  {"id":24,"targetWord":"玻璃","chars":["玻","璃"],"components":["王","皮","王","離"],"clue":"透明硬質的建築材料"},
+  {"id":25,"targetWord":"玫瑰","chars":["玫","瑰"],"components":["王","攵","王","鬼"],"clue":"帶刺且美麗的花卉"},
+  {"id":26,"targetWord":"理想","chars":["理","想"],"components":["王","里","木","目","心"],"clue":"對未來的抱負與憧憬"},
+  {"id":27,"targetWord":"智慧","chars":["智","慧"],"components":["知","日","彗","心"],"clue":"聰明睿智與分析能力"},
+  {"id":28,"targetWord":"運動","chars":["運","動"],"components":["軍","辶","重","力"],"clue":"鍛鍊身體的體育活動"},
+  {"id":29,"targetWord":"健康","chars":["健","康"],"components":["亻","建","廣","隶"],"clue":"身體無病強壯"},
+  {"id":30,"targetWord":"平安","chars":["平","安"],"components":["平","宀","女"],"clue":"平順安定無事故"},
+  {"id":31,"targetWord":"吉祥","chars":["吉","祥"],"components":["士","口","礻","羊"],"clue":"幸運美好的徵兆"},
+  {"id":32,"targetWord":"繁榮","chars":["繁","榮"],"components":["敏","糸","艹","木"],"clue":"蓬勃發展興旺"},
+  {"id":33,"targetWord":"美麗","chars":["美","麗"],"components":["羊","大","麗"],"clue":"好看動人讓人讚賞"},
+  {"id":34,"targetWord":"幸福","chars":["幸","福"],"components":["土","䒑","礻","一口田"],"clue":"生活甜美滿足"},
+  {"id":35,"targetWord":"勇氣","chars":["勇","氣"],"components":["甬","力","气","米"],"clue":"不畏懼困難的膽量"},
+  {"id":36,"targetWord":"禮貌","chars":["禮","貌"],"components":["礻","豐","豸","貌"],"clue":"文明有教養的言行"},
+  {"id":37,"targetWord":"精神","chars":["精","神"],"components":["米","青","礻","申"],"clue":"人的神采與意識狀態"},
+  {"id":38,"targetWord":"創造","chars":["創","造"],"components":["倉","刂","告","辶"],"clue":"發明或建立新事物"},
+  {"id":39,"targetWord":"學習","chars":["學","習"],"components":["𦥯","子","羽","白"],"clue":"獲得知識技能的過程"},
+  {"id":40,"targetWord":"探索","chars":["探","索"],"components":["扌","罙","𦦙","糸"],"clue":"尋找並探究未知"},
+  {"id":41,"targetWord":"永恆","chars":["永","恆"],"components":["永","忄","亘"],"clue":"永遠長存不改變"},
+  {"id":42,"targetWord":"溫暖","chars":["溫","暖"],"components":["氵","𥁕","日","爰"],"clue":"氣候暖和或內心感受親切"},
+  {"id":43,"targetWord":"感動","chars":["感","動"],"components":["咸","心","重","力"],"clue":"內心受到觸動與震撼"},
+  {"id":44,"targetWord":"希望","chars":["希","望"],"components":["巾","爻","亡","月","王"],"clue":"對未來的期待與祈望"},
+  {"id":45,"targetWord":"陪伴","chars":["陪","伴"],"components":["阝","剖","亻","半"],"clue":"隨同相伴在身旁"},
+  {"id":46,"targetWord":"珍惜","chars":["珍","惜"],"components":["王","㐱","忄","昔"],"clue":"愛惜珍重不浪費"},
+  {"id":47,"targetWord":"堅持","chars":["堅","持"],"components":["臤","土","扌","寺"],"clue":"意志堅定持續到底"},
+  {"id":48,"targetWord":"誠實","chars":["誠","實"],"components":["言","成","宀","貫"],"clue":"言行真誠不虛假"},
+  {"id":49,"targetWord":"謙虛","chars":["謙","虛"],"components":["言","兼","虍","業"],"clue":"虛心不自誇"},
+  {"id":50,"targetWord":"溫柔","chars":["溫","柔"],"components":["氵","𥁕","矛","木"],"clue":"態度柔和體貼"},
+  {"id":51,"targetWord":"優雅","chars":["優","雅"],"components":["亻","憂","牙","隹"],"clue":"舉止優美大方"},
+  {"id":52,"targetWord":"善良","chars":["善","良"],"components":["羊","𦍌","良"],"clue":"品質純正心地好"},
+  {"id":53,"targetWord":"充實","chars":["充","實"],"components":["亠","允","宀","貫"],"clue":"內容豐富不空虛"},
+  {"id":54,"targetWord":"燦爛","chars":["燦","爛"],"components":["火","粲","火","闌"],"clue":"光彩耀眼奪目"},
+  {"id":55,"targetWord":"奇蹟","chars":["奇","蹟"],"components":["大","可","足","責"],"clue":"不可思議的神奇成就"},
+  {"id":56,"targetWord":"團結","chars":["團","結"],"components":["囗","專","糸","吉"],"clue":"凝聚力量緊密合作"},
+  {"id":57,"targetWord":"自由","chars":["自","由"],"components":["自","由"],"clue":"不受束縛隨心暢意"},
+  {"id":58,"targetWord":"和平","chars":["和","平"],"components":["禾","口","平"],"clue":"安定沒有戰爭紛爭"},
+  {"id":59,"targetWord":"信任","chars":["信","任"],"components":["亻","言","亻","壬"],"clue":"相信並倚重對方"},
+  {"id":60,"targetWord":"分享","chars":["分","享"],"components":["八","刀","亠","子"],"clue":"將好東西分給其他人"},
+  {"id":61,"targetWord":"成功","chars":["成","功"],"components":["成","工","力"],"clue":"達成預定的目標"},
+  {"id":62,"targetWord":"精彩","chars":["精","彩"],"components":["米","青","采","彡"],"clue":"表現出色吸引人"},
+  {"id":63,"targetWord":"奇妙","chars":["奇","妙"],"components":["大","可","女","少"],"clue":"新奇好玩不可思議"},
+  {"id":64,"targetWord":"夢想","chars":["夢","想"],"components":["夕","林","木","目","心"],"clue":"心中的遠大理想"},
+  {"id":65,"targetWord":"歡樂","chars":["歡","樂"],"components":["雚","欠","白","木"],"clue":"高興歡愉的氣氛"},
+  {"id":66,"targetWord":"神秘","chars":["神","秘"],"components":["礻","申","禾","必"],"clue":"難以捉摸充滿好奇"},
+  {"id":67,"targetWord":"壯觀","chars":["壯","觀"],"components":["爿","士","雚","見"],"clue":"場面雄偉景象宏大"},
+  {"id":68,"targetWord":"榮耀","chars":["榮","耀"],"components":["艹","木","光","翟"],"clue":"光榮與尊貴的名譽"},
+  {"id":69,"targetWord":"真誠","chars":["真","誠"],"components":["目","八","言","成"],"clue":"真心實意不作假"},
+  {"id":70,"targetWord":"充沛","chars":["充","沛"],"components":["亠","允","氵","市"],"clue":"精力或資源非常充足"},
+  {"id":71,"targetWord":"熱愛","chars":["熱","愛"],"components":["執","灬","爫","心","友"],"clue":"深切喜愛並投入"},
+  {"id":72,"targetWord":"超越","chars":["超","越"],"components":["走","召","走","戉"],"clue":"勝過並打破原有限度"},
+  {"id":73,"targetWord":"豐富","chars":["豐","富"],"components":["豐","宀","畐"],"clue":"充裕繁多不匱乏"},
+  {"id":74,"targetWord":"堅強","chars":["堅","強"],"components":["臤","土","弓","厶","虫"],"clue":"堅韌剛強不怕打擊"},
+  {"id":75,"targetWord":"熱烈","chars":["熱","烈"],"components":["執","灬","列","灬"],"clue":"氣氛興奮高昂"},
+  {"id":76,"targetWord":"輝煌","chars":["輝","煌"],"components":["光","軍","火","皇"],"clue":"光彩耀眼成就非凡"},
+  {"id":77,"targetWord":"溫馨","chars":["溫","馨"],"components":["氵","𥁕","殸","香"],"clue":"溫暖親切充滿愛意"},
+  {"id":78,"targetWord":"美好","chars":["美","好"],"components":["羊","大","女","子"],"clue":"令人滿意讚嘆的事物"},
+  {"id":79,"targetWord":"聰穎","chars":["聰","穎"],"components":["耳","囪","心","禾","頁"],"clue":"天資聰敏記憶力強"},
+  {"id":80,"targetWord":"禮物","chars":["禮","物"],"components":["礻","豐","牛","勿"],"clue":"餽贈給他人的物品"},
+  {"id":81,"targetWord":"歡喜","chars":["歡","喜"],"components":["雚","欠","壴","口"],"clue":"內心充滿歡樂喜悅"},
+  {"id":82,"targetWord":"英雄","chars":["英","雄"],"components":["艹","央","隹","肱"],"clue":"本領超群令人敬佩的人"},
+  {"id":83,"targetWord":"驚喜","chars":["驚","喜"],"components":["敬","馬","吉","壴"],"clue":"遇到意料之外的喜事"},
+  {"id":84,"targetWord":"安寧","chars":["安","寧"],"components":["宀","女","宀","心","皿","丁"],"clue":"平靜安定沒有喧囂擾動"},
+  {"id":85,"targetWord":"友情","chars":["友","情"],"components":["𠂇","又","忄","青"],"clue":"朋友之間深厚的感情"},
+  {"id":86,"targetWord":"親情","chars":["親","情"],"components":["立","木","見","忄","青"],"clue":"家人親人之間的溫情"},
+  {"id":87,"targetWord":"愛情","chars":["愛","情"],"components":["爫","心","友","忄","青"],"clue":"戀人之間摯愛的感情"},
+  {"id":88,"targetWord":"勇士","chars":["勇","士"],"components":["甬","力","士"],"clue":"英勇大膽的戰士"},
+  {"id":89,"targetWord":"勝利","chars":["勝","利"],"components":["月","券","禾","刂"],"clue":"在競賽或戰鬥中獲勝"},
+  {"id":90,"targetWord":"耀眼","chars":["耀","眼"],"components":["光","翟","目","艮"],"clue":"光芒強烈奪目照人"},
+  {"id":91,"targetWord":"森林","chars":["森","林"],"components":["木","木","木","木","木"],"clue":"樹木繁密的廣大區域"},
+  {"id":92,"targetWord":"江湖","chars":["江","湖"],"components":["氵","工","氵","胡"],"clue":"江河與湖泊的統稱"},
+  {"id":93,"targetWord":"山峰","chars":["山","峰"],"components":["山","山","夆"],"clue":"高聳山脈的頂峰"},
+  {"id":94,"targetWord":"花園","chars":["花","園"],"components":["艹","化","囗","袁"],"clue":"種植花草樹木的園地"},
+  {"id":95,"targetWord":"城市","chars":["城","市"],"components":["土","成","亠","巾"],"clue":"人口人口人口人口密集繁華區"},
+  {"id":96,"targetWord":"國家","chars":["國","家"],"components":["囗","或","宀","豕"],"clue":"擁有領土與主權的政權"},
+  {"id":97,"targetWord":"世界","chars":["世","界"],"components":["世","田","介"],"clue":"地球上所有的國家與人類"},
+  {"id":98,"targetWord":"宇宙","chars":["宇","宙"],"components":["宀","于","宀","由"],"clue":"包含所有時間空間的天體"},
+  {"id":99,"targetWord":"星星","chars":["星","星"],"components":["日","生","日","生"],"clue":"夜空中閃爍的天體"},
+  {"id":100,"targetWord":"彩虹","chars":["彩","虹"],"components":["采","彡","虫","工"],"clue":"雨後天空中七彩的光弧"},
+  {"id":101,"targetWord":"春天","chars":["春","天"],"components":["三","人","日","大","一"],"clue":"萬物復甦的季節"},
+  {"id":102,"targetWord":"夏天","chars":["夏","天"],"components":["𢦡","夂","大","一"],"clue":"氣溫炎熱的季節"},
+  {"id":103,"targetWord":"秋天","chars":["秋","天"],"components":["禾","火","大","一"],"clue":"楓紅落葉涼爽的季節"},
+  {"id":104,"targetWord":"冬天","chars":["冬","天"],"components":["夂","冫","大","一"],"clue":"下雪飄霜寒冷的季節"},
+  {"id":105,"targetWord":"太陽","chars":["太","陽"],"components":["大","丶","阝","昜"],"clue":"白日照亮地球的恆星"},
+  {"id":106,"targetWord":"月亮","chars":["月","亮"],"components":["月","亠","口","冖","儿"],"clue":"夜空中圍繞地球的衛星"},
+  {"id":107,"targetWord":"風雨","chars":["風","雨"],"components":["風","雨"],"clue":"颳風與下雨的天氣"},
+  {"id":108,"targetWord":"雪花","chars":["雪","花"],"components":["雨","彐","艹","化"],"clue":"飄落的晶瑩冰雪"},
+  {"id":109,"targetWord":"雲朵","chars":["雲","朵"],"components":["雨","云","几","木"],"clue":"天空中聚集的水氣"},
+  {"id":110,"targetWord":"大海","chars":["大","海"],"components":["大","氵","每"],"clue":"浩瀚無邊的洋流"},
+  {"id":111,"targetWord":"河流","chars":["河","流"],"components":["氵","可","氵","𠫓"],"clue":"奔流不息的水道"},
+  {"id":112,"targetWord":"湖泊","chars":["湖","泊"],"components":["氵","胡","氵","白"],"clue":"內陸積水成池的水域"},
+  {"id":113,"targetWord":"高山","chars":["高","山"],"components":["高","山"],"clue":"地勢高聳的山嶽"},
+  {"id":114,"targetWord":"草原","chars":["草","原"],"components":["艹","早","厂","原"],"clue":"青草遍佈的平原"},
+  {"id":115,"targetWord":"沙漠","chars":["沙","漠"],"components":["氵","少","氵","莫"],"clue":"乾旱充滿黃沙的大地"},
+  {"id":116,"targetWord":"綠洲","chars":["綠","洲"],"components":["糸","彔","氵","州"],"clue":"沙漠中長有樹木水源的寶地"},
+  {"id":117,"targetWord":"島嶼","chars":["島","嶼"],"components":["鳥","山","山","與"],"clue":"四面環海的陸地"},
+  {"id":118,"targetWord":"天空","chars":["天","空"],"components":["一大","穴","工"],"clue":"頭頂上蔚藍的高空"},
+  {"id":119,"targetWord":"大地","chars":["大","地"],"components":["大","土","乜"],"clue":"腳下廣袤無垠的陸地"},
+  {"id":120,"targetWord":"微風","chars":["微","風"],"components":["彳","山","一","微","風"],"clue":"輕柔拂面的涼風"},
+  {"id":121,"targetWord":"細雨","chars":["細","雨"],"components":["糸","田","雨"],"clue":"綿綿飄落的小雨"},
+  {"id":122,"targetWord":"閃電","chars":["閃","電"],"components":["門","人","雨","電"],"clue":"夜空中畫過的強烈光芒"},
+  {"id":123,"targetWord":"雷鳴","chars":["雷","鳴"],"components":["雨","田","口","鳥"],"clue":"天空傳來的隆隆巨響"},
+  {"id":124,"targetWord":"晨光","chars":["晨","光"],"components":["日","辰","火","兀"],"clue":"清晨第一道暖光"},
+  {"id":125,"targetWord":"夕陽","chars":["夕","陽"],"components":["夕","阝","昜"],"clue":"傍晚即將落下的太陽"},
+  {"id":126,"targetWord":"晚霞","chars":["晚","霞"],"components":["日","免","雨","假"],"clue":"黃昏時天空絢麗彩雲"},
+  {"id":127,"targetWord":"夜空","chars":["夜","空"],"components":["亠","夜","穴","工"],"clue":"漆黑寂靜的星空"},
+  {"id":128,"targetWord":"露珠","chars":["露","珠"],"components":["雨","路","王","朱"],"clue":"清晨清澈透明的水滴"},
+  {"id":129,"targetWord":"霜雪","chars":["霜","雪"],"components":["雨","相","雨","彐"],"clue":"寒冬結晶凝結之物"},
+  {"id":130,"targetWord":"冰川","chars":["冰","川"],"components":["冫","水","川"],"clue":"極地巨大的移動冰體"},
+  {"id":131,"targetWord":"溫泉","chars":["溫","泉"],"components":["氵","𥁕","白","水"],"clue":"地下自然噴出的熱水"},
+  {"id":132,"targetWord":"瀑布","chars":["瀑","布"],"components":["氵","暴","巾"],"clue":"從懸崖飛瀉而下的水流"},
+  {"id":133,"targetWord":"山谷","chars":["山","谷"],"components":["山","八","口"],"clue":"兩山之間的低窪地帶"},
+  {"id":134,"targetWord":"懸崖","chars":["懸","崖"],"components":["縣","心","山","厓"],"clue":"陡峭近乎垂直的山壁"},
+  {"id":135,"targetWord":"洞穴","chars":["洞","穴"],"components":["氵","同","宀","八"],"clue":"天然形成的山洞"},
+  {"id":136,"targetWord":"叢林","chars":["叢","林"],"components":["業","丵","木","木"],"clue":"茂密叢生草木繁盛的熱帶林區"},
+  {"id":137,"targetWord":"花海","chars":["花","海"],"components":["艹","化","氵","每"],"clue":"盛開如汪洋般的大片花田"},
+  {"id":138,"targetWord":"楓葉","chars":["楓","葉"],"components":["木","風","艹","葉"],"clue":"秋天變紅的楓樹葉子"},
+  {"id":139,"targetWord":"竹林","chars":["竹","林"],"components":["竹","木","木"],"clue":"高聳青翠的竹子林"},
+  {"id":140,"targetWord":"稻田","chars":["稻","田"],"components":["禾","舀","田"],"clue":"種植金黃水稻的田地"},
+  {"id":141,"targetWord":"果園","chars":["果","園"],"components":["田","木","囗","袁"],"clue":"結滿豐碩水果的園區"},
+  {"id":142,"targetWord":"村莊","chars":["村","莊"],"components":["木","寸","艹","壯"],"clue":"寧靜古樸的小村落"},
+  {"id":143,"targetWord":"小溪","chars":["溪","流"],"components":["氵","奚","氵","𠫓"],"clue":"山間清澈清涼的小溪流"},
+  {"id":144,"targetWord":"海岸","chars":["海","岸"],"components":["氵","每","山","干"],"clue":"海洋與陸地交界的岸邊"},
+  {"id":145,"targetWord":"港口","chars":["港","口"],"components":["氵","巷","口"],"clue":"船隻停泊靠岸的地方"},
+  {"id":146,"targetWord":"燈塔","chars":["燈","塔"],"components":["火","登","土","荅"],"clue":"指引船隻方向的高塔"},
+  {"id":147,"targetWord":"城堡","chars":["城","堡"],"components":["土","成","亻","保"],"clue":"童話般堅固雄偉的建築"},
+  {"id":148,"targetWord":"宮殿","chars":["宮","殿"],"components":["宀","呂","殿"],"clue":"國王或帝王居住的華麗建築"},
+  {"id":149,"targetWord":"神殿","chars":["神","殿"],"components":["礻","申","殿"],"clue":"供奉神祇莊嚴的神聖場所"},
+  {"id":150,"targetWord":"樂園","chars":["樂","園"],"components":["白","木","幺","囗","袁"],"clue":"充滿歡聲笑語的遊樂園地"},
+  {"id":151,"targetWord":"晨曦","chars":["晨","曦"],"components":["日","辰","日","羲"],"clue":"清晨太陽升起時的微光"},
+  {"id":152,"targetWord":"朝陽","chars":["朝","陽"],"components":["十","日","月","阝","昜"],"clue":"早晨剛剛升起的太陽"},
+  {"id":153,"targetWord":"暮色","chars":["暮","色"],"components":["艹","日","大","勹","巴"],"clue":"傍晚黃昏微暗的天色"},
+  {"id":154,"targetWord":"晨霧","chars":["晨","霧"],"components":["日","辰","雨","務"],"clue":"清晨瀰漫在空中的水氣迷霧"},
+  {"id":155,"targetWord":"晴空","chars":["晴","空"],"components":["日","青","穴","工"],"clue":"萬里無雲清朗的天空"},
+  {"id":156,"targetWord":"碧海","chars":["碧","海"],"components":["珀","石","氵","每"],"clue":"翠綠碧藍浩瀚的大海"},
+  {"id":157,"targetWord":"青山","chars":["青","山"],"components":["青","山"],"clue":"草木蒼翠鬱鬱蔥蔥的山嶺"},
+  {"id":158,"targetWord":"綠葉","chars":["綠","葉"],"components":["糸","彔","艹","枼"],"clue":"樹木枝條上翠綠的葉片"},
+  {"id":159,"targetWord":"紅花","chars":["紅","花"],"components":["糸","工","艹","化"],"clue":"鮮豔亮麗盛開的紅色花朵"},
+  {"id":160,"targetWord":"白雲","chars":["白","雲"],"components":["白","雨","云"],"clue":"高空中飄浮潔白無瑕的雲朵"},
+  {"id":161,"targetWord":"溪流","chars":["溪","流"],"components":["氵","奚","氵","𠫓"],"clue":"山澗蜿蜒奔流的清涼水流"},
+  {"id":162,"targetWord":"泉水","chars":["泉","水"],"components":["白","水","水"],"clue":"地下自然湧出甘甜清澈的水"},
+  {"id":163,"targetWord":"池塘","chars":["池","塘"],"components":["氵","也","土","唐"],"clue":"蓄積水流生長水草的低窪水池"},
+  {"id":164,"targetWord":"沼澤","chars":["沼","澤"],"components":["氵","召","氵","睪"],"clue":"地勢低窪長期積水的泥濘濕地"},
+  {"id":165,"targetWord":"巨石","chars":["巨","石"],"components":["巨","石"],"clue":"體積龐大堅固聳立的大石頭"},
+  {"id":166,"targetWord":"岩壁","chars":["岩","壁"],"components":["山","石","土","辟"],"clue":"陡峭聳立堅硬的山石峭壁"},
+  {"id":167,"targetWord":"泥土","chars":["泥","土"],"components":["氵","尼","土"],"clue":"富含有機質能滋養萬物的鬆軟土壤"},
+  {"id":168,"targetWord":"沙灘","chars":["沙","灘"],"components":["氵","少","氵","難"],"clue":"海邊由細沙鋪積平緩的海岸陸地"},
+  {"id":169,"targetWord":"海浪","chars":["海","浪"],"components":["氵","每","氵","良"],"clue":"海洋中隨風翻騰起伏的白色波濤"},
+  {"id":170,"targetWord":"潮汐","chars":["潮","汐"],"components":["氵","朝","氵","夕"],"clue":"海水受到日月引力產生的週期漲落"},
+  {"id":171,"targetWord":"繁星","chars":["繁","星"],"components":["敏","糸","日","生"],"clue":"滿天密密麻麻閃耀的無數星星"},
+  {"id":172,"targetWord":"皓月","chars":["皓","月"],"components":["白","告","月"],"clue":"皎潔明亮清輝四灑的明月"},
+  {"id":173,"targetWord":"寒風","chars":["寒","風"],"components":["宀","井","冫","風"],"clue":"刺骨寒冷呼嘯而過的冬天冷風"},
+  {"id":174,"targetWord":"暖陽","chars":["暖","陽"],"components":["日","爰","阝","昜"],"clue":"冬日溫和溫暖照拂人心的陽光"},
+  {"id":175,"targetWord":"涼風","chars":["涼","風"],"components":["氵","京","風"],"clue":"吹拂過來令人心曠神怡的清涼微風"},
+  {"id":176,"targetWord":"春雨","chars":["春","雨"],"components":["三","人","日","雨"],"clue":"滋潤大地萬物生長細柔的春季雨水"},
+  {"id":177,"targetWord":"秋霜","chars":["秋","霜"],"components":["禾","火","雨","相"],"clue":"深秋清晨在草木上凝結的白霜"},
+  {"id":178,"targetWord":"冬雪","chars":["冬","雪"],"components":["夂","冫","雨","彐"],"clue":"隆冬時分從天空中紛紛飄落的白雪"},
+  {"id":179,"targetWord":"松柏","chars":["松","柏"],"components":["木","公","木","白"],"clue":"四季常青耐寒挺拔的松樹與柏樹"},
+  {"id":180,"targetWord":"楊柳","chars":["楊","柳"],"components":["木","昜","木","卯"],"clue":"河岸邊隨風輕柔搖曳擺動的綠柳"},
+  {"id":181,"targetWord":"牡丹","chars":["牡","丹"],"components":["牛","土","丹"],"clue":"花朵雍容華貴端莊國色天香的名花"},
+  {"id":182,"targetWord":"荷花","chars":["荷","花"],"components":["艹","何","艹","化"],"clue":"出淤泥而不染亭亭玉立的水生花卉"},
+  {"id":183,"targetWord":"菊花","chars":["菊","花"],"components":["艹","匊","艹","化"],"clue":"傲霜盛開芳香四溢的秋季花朵"},
+  {"id":184,"targetWord":"梅花","chars":["梅","花"],"components":["木","每","艹","化"],"clue":"凌寒獨自開堅毅高潔的初春名花"},
+  {"id":185,"targetWord":"翠竹","chars":["翠","竹"],"components":["羽","卒","竹"],"clue":"枝葉青翠挺拔節節高升的竹子"},
+  {"id":186,"targetWord":"稻穗","chars":["稻","穗"],"components":["禾","舀","禾","惠"],"clue":"秋收時沉甸甸金黃色成熟的水稻花穗"},
+  {"id":187,"targetWord":"果實","chars":["果","實"],"components":["田","木","宀","貫"],"clue":"植物成熟結出甜美多汁的果子"},
+  {"id":188,"targetWord":"原野","chars":["原","野"],"components":["厂","泉","里","予"],"clue":"廣大開闊一望無際的原野大地"},
+  {"id":189,"targetWord":"平原","chars":["平","原"],"components":["干","厂","泉"],"clue":"地勢平坦開闊平緩的廣大幅員"},
+  {"id":190,"targetWord":"盆地","chars":["盆","地"],"components":["分","皿","土","也"],"clue":"四周地勢高隆中間低平的地貌盆狀區域"},
+  {"id":191,"targetWord":"峽谷","chars":["峽","谷"],"components":["山","夾","八","口"],"clue":"兩側山壁陡峭狹長險峻的深谷"},
+  {"id":192,"targetWord":"丘陵","chars":["丘","陵"],"components":["丘","阝","夌"],"clue":"起伏平緩高低錯落起伏的矮山地帶"},
+  {"id":193,"targetWord":"湖畔","chars":["湖","畔"],"components":["氵","胡","田","半"],"clue":"風景優美依山傍水的湖泊邊界"},
+  {"id":194,"targetWord":"江畔","chars":["江","畔"],"components":["氵","工","田","半"],"clue":"奔騰江水兩旁綠意盎然的江邊"},
+  {"id":195,"targetWord":"庭院","chars":["庭","院"],"components":["广","廷","阝","完"],"clue":"住家前方設有花草盆栽的悠閒院落"},
+  {"id":196,"targetWord":"樓閣","chars":["樓","閣"],"components":["木","婁","門","各"],"clue":"古代高聳優美風景極佳的多層建築"},
+  {"id":197,"targetWord":"書齋","chars":["書","齋"],"components":["聿","曰","齊"],"clue":"讀書作畫安靜典雅充滿書香的書房"},
+  {"id":198,"targetWord":"畫廊","chars":["畫","廊"],"components":["聿","田","广","郎"],"clue":"陳列藝術名作與精美畫作的展覽長廊"},
+  {"id":199,"targetWord":"琴房","chars":["琴","房"],"components":["王","王","今","戶","方"],"clue":"專門用來彈奏樂器練琴的高雅房間"},
+  {"id":200,"targetWord":"樂章","chars":["樂","章"],"components":["白","木","幺","立","早"],"clue":"大型交響音樂或樂曲中的完整章節段落"}
 ];
 
 if (typeof window !== 'undefined') {
   window.CHARACTER_TEST_POOL = CHARACTER_TEST_POOL;
+  window.CHARACTER_CROSSWORD_POOL = CHARACTER_CROSSWORD_POOL;
+  window.CHARACTER_UNITED_WORDS_POOL = CHARACTER_UNITED_WORDS_POOL;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    CHARACTER_TEST_POOL,
+    CHARACTER_CROSSWORD_POOL,
+    CHARACTER_UNITED_WORDS_POOL
+  };
 }
