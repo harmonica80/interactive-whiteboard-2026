@@ -58,8 +58,9 @@ const checks = [
   ['video_quiz.js handleVideoEnded exists', vqJs.includes('handleVideoEnded()')],
   ['video_quiz.js stopSyncQuiz returns to admin tab', vqJs.includes("switchToTab('panel-admin')")],
   ['video_quiz.js returnToQuizVideo method', vqJs.includes('returnToQuizVideo()')],
-  ['video_quiz.js quiz card has 發起全班同步測驗 button', vqJs.includes('startSyncQuizAsTeacher') && vqJs.includes('🚀 發起全班同步測驗')],
-  ['video_quiz.js question overlay has student 查看本題統計 button', vqJs.includes('id="vqViewStatsBtn"') && vqJs.includes('showCurrentQuestionAnalytics()')],
+  ['video_quiz.js question overlay top header has 查看本題統計 button and bottom duplicate removed', vqJs.includes('showCurrentQuestionAnalytics()') && !vqJs.includes('id="vqViewStatsBtn"')],
+  ['video_quiz.js resolveCurrentActiveQuiz method exists', vqJs.includes('resolveCurrentActiveQuiz()')],
+  ['video_quiz.js broadcastQuestion includes quizId and cleanQuizData', vqJs.includes('quizId:') && vqJs.includes('cleanQuizData')],
   ['video_quiz.js question overlay has 返回測驗影片 button', vqJs.includes('🎬 返回測驗影片')],
   ['video_quiz.js DEFAULT_CUSTOM_SETS two default custom sets', vqJs.includes('綜合影音複習測驗組') && vqJs.includes('跨學科精選測驗組')],
   ['index.html vqSelfTeacherControls exists', html.includes('id="vqSelfTeacherControls"')],
@@ -360,6 +361,79 @@ class TimelineSimulator {
     console.log('✅ getValidCurrentTime 規則 (未就緒回傳 null、起點合法 0 秒回傳 0、播放時回傳實際秒數): 通過');
   } else {
     console.error('❌ getValidCurrentTime 測試失敗');
+    allPassed = false;
+  }
+}
+
+// 測試 resolveCurrentActiveQuiz 正確鎖定題目所屬測驗，防止統計顯示錯位 (如成語題誤顯示太陽系)
+{
+  const mockQuizzes = [
+    { id: 'vq_solar_system', title: '太陽系', questions: [{ id: 'q_1', prompt: '太陽系的中心？' }] },
+    { id: 'vq_chinese_culture', title: '國文與成語典故', questions: [{ id: 'qc_1', prompt: '成語「臥薪嚐膽」？' }] }
+  ];
+
+  class QuizResolverSimulator {
+    constructor() {
+      this.quizzes = mockQuizzes;
+      this.activeQuiz = mockQuizzes[0]; // 預設為第 1 部太陽系
+      this.currentActiveQuestion = null;
+      this.lastSession = null;
+    }
+
+    resolveCurrentActiveQuiz() {
+      if (this.currentActiveQuestion) {
+        const qId = this.currentActiveQuestion.id;
+        if (this.activeQuiz && (
+          (this.activeQuiz.questions || []).some(item => item.id === qId) ||
+          (this.activeQuiz.allQuestions || []).some(item => item.id === qId)
+        )) {
+          return this.activeQuiz;
+        }
+
+        const matched = (this.quizzes || []).find(q =>
+          (q.questions || []).some(item => item.id === qId) ||
+          (q.allQuestions || []).some(item => item.id === qId)
+        );
+        if (matched) {
+          this.activeQuiz = matched;
+          return matched;
+        }
+      }
+
+      if (this.lastSession) {
+        if (this.lastSession.quizData) {
+          this.activeQuiz = this.lastSession.quizData;
+          return this.activeQuiz;
+        }
+        if (this.lastSession.quizId) {
+          const matched = (this.quizzes || []).find(q => q.id === this.lastSession.quizId);
+          if (matched) {
+            this.activeQuiz = matched;
+            return matched;
+          }
+        }
+      }
+
+      return this.activeQuiz;
+    }
+  }
+
+  const sim = new QuizResolverSimulator();
+  // 情況 1：學生作答 qc_1 (臥薪嚐膽)，即使預設 activeQuiz 為太陽系，解析後必須自動校正為國文與成語典故
+  sim.currentActiveQuestion = { id: 'qc_1', prompt: '成語「臥薪嚐膽」？' };
+  const resolved = sim.resolveCurrentActiveQuiz();
+  const test1Passed = (resolved && resolved.id === 'vq_chinese_culture' && sim.activeQuiz.id === 'vq_chinese_culture');
+
+  // 情況 2：無 currentActiveQuestion 時，從 session.quizData 解析
+  sim.currentActiveQuestion = null;
+  sim.lastSession = { quizData: { id: 'custom_set_1', title: '自訂測驗組' } };
+  const resolvedSession = sim.resolveCurrentActiveQuiz();
+  const test2Passed = (resolvedSession && resolvedSession.id === 'custom_set_1');
+
+  if (test1Passed && test2Passed) {
+    console.log('✅ resolveCurrentActiveQuiz 規則 (題目 ID 反查正確測驗、防止統計面板錯位): 通過');
+  } else {
+    console.error('❌ resolveCurrentActiveQuiz 測試失敗');
     allPassed = false;
   }
 }

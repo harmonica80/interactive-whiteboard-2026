@@ -546,6 +546,14 @@
             this.setupPlayer('vqSyncPlayerContainer', this.lastSession.quizData.videoUrl, () => {
               if (this.lastSession.status === 'playing' && (this.isTeacher || window.app?.isAdmin)) this.playVideo();
             });
+          } else if (this.lastSession.quizId) {
+            const matched = (this.quizzes || []).find(q => q.id === this.lastSession.quizId);
+            if (matched) {
+              this.activeQuiz = matched;
+              this.setupPlayer('vqSyncPlayerContainer', matched.videoUrl, () => {
+                if (this.lastSession.status === 'playing' && (this.isTeacher || window.app?.isAdmin)) this.playVideo();
+              });
+            }
           }
         }
 
@@ -1538,9 +1546,19 @@
       if (this.sessionRef) {
         // 安全原則：絕對不將 Google 授權憑證或 Blob URL 透過廣播外傳
         const cleanQuestion = JSON.parse(JSON.stringify(question));
+        let cleanQuizData = null;
+        if (this.activeQuiz) {
+          try {
+            cleanQuizData = JSON.parse(JSON.stringify(this.activeQuiz));
+          } catch (e) {
+            cleanQuizData = null;
+          }
+        }
         this.sessionRef.update({
           status: 'question',
           sessionId: sessionId,
+          quizId: this.activeQuiz?.id || null,
+          quizData: cleanQuizData,
           questionId: question.id,
           eventId: eventId,
           seq: this.syncEventSeq,
@@ -1778,11 +1796,21 @@
         }
 
         if (session.status === 'waiting' || session.status === 'playing' || session.status === 'question') {
-          if (!this.activeQuiz || this.activeQuiz.id !== session.quizId || this.activeQuiz.currentSubQuizIndex !== session.currentSubQuizIndex) {
-            this.activeQuiz = session.quizData;
-            // 學生端只接收題目，不需本地播放；若為影音影片亦不自動搶播
-            if (isVideoQuizActive && session.quizData?.videoUrl) {
-              this.setupPlayer('vqSyncPlayerContainer', session.quizData.videoUrl);
+          if (session.quizData) {
+            if (!this.activeQuiz || this.activeQuiz.id !== session.quizData.id || this.activeQuiz.currentSubQuizIndex !== session.currentSubQuizIndex) {
+              this.activeQuiz = session.quizData;
+              // 學生端只接收題目，不需本地播放；若為影音影片亦不自動搶播
+              if (isVideoQuizActive && session.quizData?.videoUrl) {
+                this.setupPlayer('vqSyncPlayerContainer', session.quizData.videoUrl);
+              }
+            }
+          } else if (session.quizId) {
+            const matched = (this.quizzes || []).find(q => q.id === session.quizId);
+            if (matched && (!this.activeQuiz || this.activeQuiz.id !== matched.id)) {
+              this.activeQuiz = matched;
+              if (isVideoQuizActive && matched.videoUrl) {
+                this.setupPlayer('vqSyncPlayerContainer', matched.videoUrl);
+              }
             }
           }
         }
@@ -1823,7 +1851,8 @@
         } else if (session.status === 'completed') {
           this.hideQuestionOverlay();
           if (isVideoQuizActive) {
-            this.showClassAnalytics(this.activeQuiz, this.cachedRemoteAnswers || {});
+            const quiz = this.resolveCurrentActiveQuiz();
+            this.showClassAnalytics(quiz, this.cachedRemoteAnswers || {});
           }
         }
       }
@@ -2029,8 +2058,26 @@
     // ==========================================
 
     showQuestionOverlay(question, isTeacherView = false) {
+      if (!question) return;
       this.currentActiveQuestion = question;
       this.isQuestionOverlayShowing = true;
+
+      // 自動校正當前 activeQuiz，確保統計與作答所屬題目一致
+      if (!this.activeQuiz || !(
+        (this.activeQuiz.questions || []).some(item => item.id === question.id) ||
+        (this.activeQuiz.allQuestions || []).some(item => item.id === question.id)
+      )) {
+        const matched = (this.quizzes || []).find(q =>
+          (q.questions || []).some(item => item.id === question.id) ||
+          (q.allQuestions || []).some(item => item.id === question.id)
+        );
+        if (matched) {
+          this.activeQuiz = matched;
+        } else if (this.lastSession && this.lastSession.quizData) {
+          this.activeQuiz = this.lastSession.quizData;
+        }
+      }
+
       const overlay = document.getElementById('vqQuestionOverlay');
       const content = document.getElementById('vqQuestionOverlayContent');
       if (!overlay || !content) return;
@@ -2079,6 +2126,7 @@
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             ${isTeacherOrAdmin ? `
+              <button type="button" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" title="查看全班答題分佈與排行榜">📊 查看本題統計</button>
               <button type="button" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="立即停止全班測驗廣播">⏹️ 結束測驗</button>
               <button type="button" onclick="window.videoQuiz.returnToQuizVideo()" style="background: var(--accent-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="關閉題目彈窗，返回測驗影片播放介面">🎬 返回測驗影片</button>
             ` : `
@@ -2092,9 +2140,6 @@
         ${formHtml}
         <div id="vqQuestionFeedbackArea" style="display: none; margin: 14px 0; padding: 12px; border-radius: 8px;"></div>
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center;">
-          <button id="vqViewStatsBtn" type="button" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" class="action-btn" style="display: none; background: #5856d6; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(88,86,214,0.25);" title="查看全班答題分佈與排行榜">
-            📊 查看本題統計
-          </button>
           <button id="vqSubmitAnswerBtn" onclick="window.videoQuiz.submitCurrentAnswer()" class="action-btn" style="background: var(--accent-color); color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;">
             📤 確認提交答案
           </button>
@@ -2105,12 +2150,6 @@
       `;
 
       overlay.style.display = 'flex';
-
-      // 若該題已作答過，直接顯示「查看本題統計」按鈕
-      if (this.userAnswers && this.userAnswers[question.id]) {
-        const statsBtn = document.getElementById('vqViewStatsBtn');
-        if (statsBtn) statsBtn.style.display = 'inline-flex';
-      }
     }
 
     // 返回測驗影片播放介面並關閉題目彈窗 (教師端)
@@ -2209,8 +2248,6 @@
 
       if (submitBtn) submitBtn.style.display = 'none';
       if (continueBtn) continueBtn.style.display = 'inline-block';
-      const viewStatsBtn = document.getElementById('vqViewStatsBtn');
-      if (viewStatsBtn) viewStatsBtn.style.display = 'inline-flex';
 
       // 若在同步模式且為學生端，顯示等待老師廣播
       if (this.currentMode === 'sync' && !this.isTeacher) {
@@ -2280,8 +2317,11 @@
 
       // 若當前開啟統計面板，即時重繪
       const analyticsModal = document.getElementById('vqAnalyticsModal');
-      if (analyticsModal && analyticsModal.style.display === 'flex' && this.activeQuiz) {
-        this.renderAnalyticsDashboard(this.activeQuiz, answers);
+      if (analyticsModal && analyticsModal.style.display === 'flex') {
+        const quiz = this.resolveCurrentActiveQuiz();
+        if (quiz) {
+          this.renderAnalyticsDashboard(quiz, answers);
+        }
       }
     }
 
@@ -2289,9 +2329,67 @@
     // 全班答題統計與分析儀表板 (Class Analytics)
     // ==========================================
 
+    // 解析當前題目或場次真正所屬的測驗物件，防止統計面板顯示錯位
+    resolveCurrentActiveQuiz() {
+      // 1. 若當前有作用中題目，優先根據題目 ID 尋找所屬測驗
+      if (this.currentActiveQuestion) {
+        const qId = this.currentActiveQuestion.id;
+        if (this.activeQuiz && (
+          (this.activeQuiz.questions || []).some(item => item.id === qId) ||
+          (this.activeQuiz.allQuestions || []).some(item => item.id === qId)
+        )) {
+          return this.activeQuiz;
+        }
+
+        const matched = (this.quizzes || []).find(q =>
+          (q.questions || []).some(item => item.id === qId) ||
+          (q.allQuestions || []).some(item => item.id === qId)
+        );
+        if (matched) {
+          this.activeQuiz = matched;
+          return matched;
+        }
+
+        if (this.customSets && this.customSets.length > 0) {
+          for (const set of this.customSets) {
+            const subQuizIds = (set.quizIds && set.quizIds.length > 0) ? set.quizIds : [set.quizId];
+            const foundSub = (this.quizzes || []).find(q =>
+              subQuizIds.includes(q.id) && (q.questions || []).some(item => item.id === qId)
+            );
+            if (foundSub) {
+              this.activeQuiz = foundSub;
+              return foundSub;
+            }
+          }
+        }
+      }
+
+      // 2. 檢查最新 Firebase Session 中記錄的測驗
+      if (this.lastSession) {
+        if (this.lastSession.quizData) {
+          this.activeQuiz = this.lastSession.quizData;
+          return this.activeQuiz;
+        }
+        if (this.lastSession.quizId) {
+          const matched = (this.quizzes || []).find(q => q.id === this.lastSession.quizId);
+          if (matched) {
+            this.activeQuiz = matched;
+            return matched;
+          }
+        }
+      }
+
+      // 3. 回傳當前 activeQuiz 或預設第 1 個測驗
+      if (!this.activeQuiz && this.quizzes && this.quizzes.length > 0) {
+        this.activeQuiz = this.quizzes[0];
+      }
+      return this.activeQuiz;
+    }
+
     showCurrentQuestionAnalytics() {
-      if (!this.activeQuiz) return;
-      this.showClassAnalytics(this.activeQuiz, this.cachedRemoteAnswers || {});
+      const quiz = this.resolveCurrentActiveQuiz();
+      if (!quiz) return;
+      this.showClassAnalytics(quiz, this.cachedRemoteAnswers || {});
     }
 
     showClassAnalytics(quiz, answersMap) {
@@ -2319,6 +2417,11 @@
     renderAnalyticsDashboard(quiz, answersMap) {
       const container = document.getElementById('vqAnalyticsContent');
       if (!container) return;
+
+      const titleEl = document.getElementById('vqAnalyticsTitle');
+      if (titleEl && quiz && quiz.title) {
+        titleEl.textContent = `📊 全班答題統計與分析：《${quiz.title}》`;
+      }
 
       let userList = Object.values(answersMap || {});
 
@@ -2536,8 +2639,9 @@
 
     // 匯出全班成績 CSV (多影片測驗組合彙整全體題目)
     exportAnalyticsCSV() {
-      if (!this.activeQuiz) return;
-      const targetQuestions = (this.activeQuiz.allQuestions && this.activeQuiz.allQuestions.length > 0) ? this.activeQuiz.allQuestions : (this.activeQuiz.questions || []);
+      const quiz = this.resolveCurrentActiveQuiz();
+      if (!quiz) return;
+      const targetQuestions = (quiz.allQuestions && quiz.allQuestions.length > 0) ? quiz.allQuestions : (quiz.questions || []);
       const userList = Object.values(this.cachedRemoteAnswers || {});
       let csv = '\uFEFF學生暱稱,總得分,答對題數';
       targetQuestions.forEach((q, idx) => {
@@ -2567,7 +2671,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${this.activeQuiz.title}_全班答題統計_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `${quiz.title}_全班答題統計_${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
