@@ -2082,6 +2082,7 @@
               <button type="button" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="立即停止全班測驗廣播">⏹️ 結束測驗</button>
               <button type="button" onclick="window.videoQuiz.returnToQuizVideo()" style="background: var(--accent-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="關閉題目彈窗，返回測驗影片播放介面">🎬 返回測驗影片</button>
             ` : `
+              <button type="button" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: rgba(88,86,214,0.12); border: 1.5px solid #5856d6; color: #5856d6; padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" title="查看全班答題分佈與排行榜">📊 查看本題統計</button>
               <button type="button" class="desktop-only" onclick="window.app.switchToTab('panel-admin')" style="background: transparent; border: 1.5px solid var(--accent-color); color: var(--accent-color); padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="若您是老師，點此登入管理後台">⚙️ 後台登入</button>
             `}
             <button type="button" onclick="window.videoQuiz.hideQuestionOverlay()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="暫時收合題目視窗">✕</button>
@@ -2090,7 +2091,10 @@
         <h3 style="font-size: 18px; line-height: 1.5; margin: 0 0 12px 0; color: var(--text-primary);">${this.escapeHtml(question.prompt)}</h3>
         ${formHtml}
         <div id="vqQuestionFeedbackArea" style="display: none; margin: 14px 0; padding: 12px; border-radius: 8px;"></div>
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center;">
+          <button id="vqViewStatsBtn" type="button" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" class="action-btn" style="display: none; background: #5856d6; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(88,86,214,0.25);" title="查看全班答題分佈與排行榜">
+            📊 查看本題統計
+          </button>
           <button id="vqSubmitAnswerBtn" onclick="window.videoQuiz.submitCurrentAnswer()" class="action-btn" style="background: var(--accent-color); color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;">
             📤 確認提交答案
           </button>
@@ -2101,6 +2105,12 @@
       `;
 
       overlay.style.display = 'flex';
+
+      // 若該題已作答過，直接顯示「查看本題統計」按鈕
+      if (this.userAnswers && this.userAnswers[question.id]) {
+        const statsBtn = document.getElementById('vqViewStatsBtn');
+        if (statsBtn) statsBtn.style.display = 'inline-flex';
+      }
     }
 
     // 返回測驗影片播放介面並關閉題目彈窗 (教師端)
@@ -2199,6 +2209,8 @@
 
       if (submitBtn) submitBtn.style.display = 'none';
       if (continueBtn) continueBtn.style.display = 'inline-block';
+      const viewStatsBtn = document.getElementById('vqViewStatsBtn');
+      if (viewStatsBtn) viewStatsBtn.style.display = 'inline-flex';
 
       // 若在同步模式且為學生端，顯示等待老師廣播
       if (this.currentMode === 'sync' && !this.isTeacher) {
@@ -2287,6 +2299,16 @@
       if (!modal) return;
       this.renderAnalyticsDashboard(quiz, answersMap);
       modal.style.display = 'flex';
+
+      // 若有當前作用題目，平滑捲動至本題卡片
+      setTimeout(() => {
+        if (this.currentActiveQuestion) {
+          const el = document.getElementById(`vq-stats-q-${this.currentActiveQuestion.id}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      }, 120);
     }
 
     closeClassAnalytics() {
@@ -2298,7 +2320,21 @@
       const container = document.getElementById('vqAnalyticsContent');
       if (!container) return;
 
-      const userList = Object.values(answersMap || {});
+      let userList = Object.values(answersMap || {});
+
+      // 學生端容錯：若遠端作答中尚未涵蓋自己的回答，即時整合以顯示個人得分與名次
+      const myUserId = window.app?.currentStudentId || window.app?.currentUserId || '';
+      const myUserName = window.app?.currentStudentName || window.app?.userName || '';
+      if (myUserName && Object.keys(this.userAnswers || {}).length > 0) {
+        const found = userList.some(u => (myUserId && u.userId === myUserId) || (u.userName && u.userName === myUserName));
+        if (!found) {
+          userList.push({
+            userId: myUserId || 'me',
+            userName: myUserName,
+            answers: this.userAnswers
+          });
+        }
+      }
       const totalParticipants = userList.length;
 
       // 需求 6：多影片測驗組合彙整所有影片題目進行統計
@@ -2415,10 +2451,17 @@
             `;
           }
 
+          const isCurrentQ = !!(this.currentActiveQuestion && this.currentActiveQuestion.id === q.id);
+          const currentBadge = isCurrentQ ? `<span class="badge" style="background: #5856d6; color: white; padding: 2px 8px; border-radius: 6px; font-size: 11px; margin-left: 6px;">🎯 本題</span>` : '';
+          const cardBorder = isCurrentQ ? 'border: 2px solid #5856d6; box-shadow: 0 4px 16px rgba(88,86,214,0.18);' : 'border: 1px solid var(--border-color);';
+
           questionsHtml += `
-            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 12px;">
+            <div id="vq-stats-q-${q.id}" style="background: var(--bg-card); ${cardBorder} border-radius: 12px; padding: 14px; margin-bottom: 12px; transition: all 0.3s;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: bold; color: var(--accent-color); font-size: 14px;">第 ${qIdx + 1} 題（${q.timeFormatted || this.formatSeconds(q.time)}）</span>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span style="font-weight: bold; color: var(--accent-color); font-size: 14px;">第 ${qIdx + 1} 題（${q.timeFormatted || this.formatSeconds(q.time)}）</span>
+                  ${currentBadge}
+                </div>
                 <span style="font-size: 12px; color: var(--text-secondary);">${q.type === 'single' ? '單選題' : (q.type === 'multiple' ? '複選題' : '問答題')}</span>
               </div>
               <div style="font-size: 15px; font-weight: bold; margin: 6px 0; color: var(--text-primary);">${this.escapeHtml(q.prompt)}</div>
@@ -2462,16 +2505,23 @@
               </tr>
             </thead>
             <tbody>
-              ${leaderboard.length > 0 ? leaderboard.map((item, idx) => `
-                <tr style="border-bottom: 1px solid rgba(0,0,0,0.04);">
+              ${leaderboard.length > 0 ? leaderboard.map((item, idx) => {
+                const isMe = !!((myUserName && item.userName === myUserName) || (myUserId && item.userId === myUserId));
+                const rowBg = isMe ? 'background: rgba(88,86,214,0.08); font-weight: bold;' : '';
+                const meBadge = isMe ? `<span class="badge" style="background: #5856d6; color: white; padding: 1px 6px; border-radius: 6px; font-size: 10px; margin-left: 6px;">我</span>` : '';
+                return `
+                <tr style="border-bottom: 1px solid rgba(0,0,0,0.04); ${rowBg}">
                   <td style="padding: 8px; font-weight: bold; color: ${idx === 0 ? '#ffcc00' : (idx === 1 ? '#8e8e93' : (idx === 2 ? '#cd7f32' : 'var(--text-primary)'))};">
                     ${idx === 0 ? '🥇 1' : (idx === 1 ? '🥈 2' : (idx === 2 ? '🥉 3' : `${idx + 1}`))}
                   </td>
-                  <td style="padding: 8px; font-weight: 500;">${this.escapeHtml(item.userName)}</td>
+                  <td style="padding: 8px; font-weight: 500;">
+                    ${this.escapeHtml(item.userName)}
+                    ${meBadge}
+                  </td>
                   <td style="padding: 8px; text-align: center;">${item.correctCount} / ${targetQuestions.length}</td>
                   <td style="padding: 8px; text-align: right; font-weight: bold; color: var(--success-color);">${item.score} 分</td>
                 </tr>
-              `).join('') : '<tr><td colspan="4" style="text-align: center; padding: 16px; color: var(--text-muted);">尚無作答數據</td></tr>'}
+              `;}).join('') : '<tr><td colspan="4" style="text-align: center; padding: 16px; color: var(--text-muted);">尚無作答數據</td></tr>'}
             </tbody>
           </table>
         </div>

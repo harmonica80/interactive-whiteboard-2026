@@ -3651,6 +3651,10 @@ body {
   box-sizing: border-box;
 }
 
+#vqAnalyticsModal {
+  z-index: 1600;
+}
+
 .video-quiz-card {
   background: var(--bg-card);
   border-radius: 16px;
