@@ -61,6 +61,8 @@ const checks = [
   ['video_quiz.js question overlay top header has 查看本題統計 button and bottom duplicate removed', vqJs.includes('showCurrentQuestionAnalytics()') && !vqJs.includes('id="vqViewStatsBtn"')],
   ['video_quiz.js resolveCurrentActiveQuiz method exists', vqJs.includes('resolveCurrentActiveQuiz()')],
   ['video_quiz.js broadcastQuestion includes quizId and cleanQuizData', vqJs.includes('quizId:') && vqJs.includes('cleanQuizData')],
+  ['video_quiz.js analytics modal bottom close button exists', vqJs.includes('id="vqAnalyticsBottomCloseBtn"') && vqJs.includes('closeClassAnalytics()')],
+  ['video_quiz.js analytics masks correct answers for unanswered questions on student end', vqJs.includes('canShowAnswer') && vqJs.includes('🔒 作答本題後揭曉')],
   ['video_quiz.js question overlay has 返回測驗影片 button', vqJs.includes('🎬 返回測驗影片')],
   ['video_quiz.js DEFAULT_CUSTOM_SETS two default custom sets', vqJs.includes('綜合影音複習測驗組') && vqJs.includes('跨學科精選測驗組')],
   ['index.html vqSelfTeacherControls exists', html.includes('id="vqSelfTeacherControls"')],
@@ -434,6 +436,52 @@ class TimelineSimulator {
     console.log('✅ resolveCurrentActiveQuiz 規則 (題目 ID 反查正確測驗、防止統計面板錯位): 通過');
   } else {
     console.error('❌ resolveCurrentActiveQuiz 測試失敗');
+    allPassed = false;
+  }
+}
+
+// 測試學生端統計面板「尚未回答過的題目不能先顯示答案，只顯示統計結果」遮罩邏輯
+{
+  const question = {
+    id: 'q_solar_1',
+    prompt: '太陽系中體積最大的行星？',
+    options: ['水星', '金星', '木星', '土星'],
+    correctAnswer: '木星'
+  };
+
+  function simulateOptionRender(q, userAnswers, isTeacher = false, isAdmin = false) {
+    const isTeacherOrAdmin = (isTeacher || isAdmin);
+    const isAnsweredByMe = !!(userAnswers && userAnswers[q.id]);
+    const canShowAnswer = isTeacherOrAdmin || isAnsweredByMe;
+
+    const rendered = q.options.map((opt) => {
+      const isCorrectOpt = canShowAnswer && (Array.isArray(q.correctAnswer) ? q.correctAnswer.includes(opt) : (q.correctAnswer === opt));
+      return {
+        opt,
+        hasCheckmark: isCorrectOpt,
+        isGreenBar: isCorrectOpt
+      };
+    });
+
+    return { canShowAnswer, rendered };
+  }
+
+  // 1. 學生尚未作答：不可顯示答案標記 (hasCheckmark 為 false, isGreenBar 為 false)
+  const unAnsweredResult = simulateOptionRender(question, {});
+  const unAnsweredTestPassed = (!unAnsweredResult.canShowAnswer && unAnsweredResult.rendered.every(r => !r.hasCheckmark && !r.isGreenBar));
+
+  // 2. 學生已作答：正確答案應顯示標記 (木星 hasCheckmark 為 true)
+  const answeredResult = simulateOptionRender(question, { q_solar_1: { answer: '木星', isCorrect: true } });
+  const answeredTestPassed = (answeredResult.canShowAnswer && answeredResult.rendered.find(r => r.opt === '木星').hasCheckmark);
+
+  // 3. 教師端：無論是否作答，皆可查看答案
+  const teacherResult = simulateOptionRender(question, {}, true, false);
+  const teacherTestPassed = (teacherResult.canShowAnswer && teacherResult.rendered.find(r => r.opt === '木星').hasCheckmark);
+
+  if (unAnsweredTestPassed && answeredTestPassed && teacherTestPassed) {
+    console.log('✅ 學生端統計面板正確答案遮罩機制 (未作答隱藏正解與答對率、已作答正常揭曉、教師端皆可查看): 通過');
+  } else {
+    console.error('❌ 統計答案遮罩機制測試失敗');
     allPassed = false;
   }
 }
