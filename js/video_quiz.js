@@ -134,7 +134,7 @@
       this.selectedQuizIds = new Set();
 
       // 播放器狀態
-      this.playerType = null; // 'youtube' | 'html5' | 'drive_preview'
+      this.playerType = null; // 'youtube' | 'html5'
       this.ytPlayer = null;
       this.html5Player = null;
       this.pollTimer = null;
@@ -142,16 +142,6 @@
       this.duration = 0;
       this.isPlaying = false;
       this.isPlayerReady = false;
-      this.currentBlobUrl = null;
-      this.driveTimerRunning = false;
-      this.editingQuizLocalFile = null;
-
-      // Google 雲端硬碟 OAuth 2.0 與 API 設定
-      this.gdriveClientId = localStorage.getItem('gdrive_client_id') || '';
-      this.gdriveApiKey = localStorage.getItem('gdrive_api_key') || '';
-      this.gdriveToken = null;
-      this.gdriveTokenExpires = 0;
-      this.currentDriveInfo = null; // { fileId, fileName, mimeType }
 
       // 播放器真實時間狀態
       this.lastMediaTime = null; // 上一次時間軸真實時間 (用於區間跨越、快轉、回溯重播偵測)
@@ -581,25 +571,7 @@
         loadBtn.addEventListener('click', () => this.loadEditorVideo());
       }
 
-      // 選擇本機音檔按鈕與檔案選擇事件
-      const localFileInput = document.getElementById('vqEditorLocalFileInput');
-      const chooseLocalBtn = document.getElementById('vqEditorChooseLocalFileBtn');
-      if (chooseLocalBtn && localFileInput) {
-        chooseLocalBtn.addEventListener('click', () => localFileInput.click());
-      }
-      if (localFileInput) {
-        localFileInput.addEventListener('change', (e) => this.handleEditorLocalFile(e));
-      }
 
-      // 從 Google Drive 選擇音檔按鈕與設定按鈕
-      const chooseDriveBtn = document.getElementById('vqEditorChooseDriveBtn');
-      if (chooseDriveBtn) {
-        chooseDriveBtn.addEventListener('click', () => this.openDrivePicker());
-      }
-      const driveConfigBtn = document.getElementById('vqEditorDriveConfigBtn');
-      if (driveConfigBtn) {
-        driveConfigBtn.addEventListener('click', () => this.openDriveConfigModal());
-      }
 
       // 編輯器時間點新增按鈕
       const addQBtn = document.getElementById('vqEditorAddQuestionBtn');
@@ -733,8 +705,7 @@
         { id: 'vqEditCustomSetNameModal', close: () => this.closeEditCustomSetNameModal() },
         { id: 'vqEditQuizModal', close: () => this.closeEditQuizModal() },
         { id: 'vqFormatGuideModal', close: () => this.closeFormatGuideModal() },
-        { id: 'vqImportModal', close: () => this.closeImportModal() },
-        { id: 'vqDriveConfigModal', close: () => this.closeDriveConfigModal() }
+        { id: 'vqImportModal', close: () => this.closeImportModal() }
       ];
       overlaysToDismiss.forEach(({ id, close }) => {
         const el = document.getElementById(id);
@@ -950,260 +921,7 @@
       return match ? match[1] : null;
     }
 
-    // 解析 Google 雲端硬碟檔案 ID
-    extractDriveFileId(url) {
-      if (!url) return null;
-      const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-      if (m1) return m1[1];
-      const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      if (m2) return m2[1];
-      return null;
-    }
 
-    // 取得實際可串流播放的網址（Google Drive 自動轉直連串流）
-    resolveMediaUrl(url) {
-      if (!url) return '';
-      const clean = url.trim();
-      const driveId = this.extractDriveFileId(clean);
-      if (driveId) {
-        // 直接使用 Google 終端下載伺服器，自帶 Access-Control-Allow-Origin: * 且無 303 重定向干擾
-        return `https://drive.usercontent.google.com/download?id=${driveId}&export=download`;
-      }
-      return clean;
-    }
-
-    // 判斷是否為音訊類型（音檔副檔名或 Google 雲端硬碟）
-    isAudioSource(url) {
-      if (!url) return false;
-      const clean = url.trim().toLowerCase().split('?')[0];
-      if (/\.(mp3|wav|m4a|aac|flac|oga|ogg)$/i.test(clean)) return true;
-      if (url.includes('drive.google.com')) return true;
-      return false;
-    }
-
-    // ==========================================
-    // Google 雲端硬碟 OAuth 2.0 與 Google Picker 模組
-    // ==========================================
-
-    openDriveConfigModal() {
-      const modal = document.getElementById('vqDriveConfigModal');
-      const clientInput = document.getElementById('vqDriveClientIdInput');
-      const apiInput = document.getElementById('vqDriveApiKeyInput');
-      const originHint = document.getElementById('vqDriveOriginHint');
-
-      if (clientInput) clientInput.value = this.gdriveClientId || '';
-      if (apiInput) apiInput.value = this.gdriveApiKey || '';
-      if (originHint) originHint.textContent = window.location.origin;
-
-      if (modal) modal.style.display = 'flex';
-    }
-
-    closeDriveConfigModal() {
-      const modal = document.getElementById('vqDriveConfigModal');
-      if (modal) modal.style.display = 'none';
-    }
-
-    saveDriveConfig() {
-      const clientInput = document.getElementById('vqDriveClientIdInput');
-      const apiInput = document.getElementById('vqDriveApiKeyInput');
-
-      const clientId = clientInput?.value?.trim() || '';
-      const apiKey = apiInput?.value?.trim() || '';
-
-      this.gdriveClientId = clientId;
-      this.gdriveApiKey = apiKey;
-
-      localStorage.setItem('gdrive_client_id', clientId);
-      localStorage.setItem('gdrive_api_key', apiKey);
-
-      this.closeDriveConfigModal();
-      if (window.app) {
-        window.app.showNotification('成功', 'Google 雲端硬碟 API 與 OAuth 設定已儲存！');
-      }
-    }
-
-    // 取得 Google Access Token (採用 GIS: Google Identity Services)
-    getDriveAccessToken() {
-      return new Promise((resolve, reject) => {
-        if (!this.gdriveClientId) {
-          this.openDriveConfigModal();
-          reject(new Error('尚未設定 Google OAuth Client ID，請先在設定彈窗中填寫！'));
-          return;
-        }
-
-        if (this.gdriveToken && Date.now() < (this.gdriveTokenExpires - 60000)) {
-          resolve(this.gdriveToken);
-          return;
-        }
-
-        if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
-          reject(new Error('Google Identity Services (GIS) 腳本尚未載入，請確認網路連線！'));
-          return;
-        }
-
-        try {
-          const tokenClient = window.google.accounts.oauth2.initTokenClient({
-            client_id: this.gdriveClientId,
-            scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly',
-            callback: (response) => {
-              if (response.error !== undefined) {
-                console.error('Google OAuth error:', response);
-                reject(new Error(response.error_description || response.error || 'Google 授權失敗'));
-                return;
-              }
-              this.gdriveToken = response.access_token;
-              const expiresIn = parseInt(response.expires_in, 10) || 3600;
-              this.gdriveTokenExpires = Date.now() + (expiresIn * 1000);
-              resolve(this.gdriveToken);
-            }
-          });
-          tokenClient.requestAccessToken({ prompt: '' });
-        } catch (err) {
-          reject(err);
-        }
-      });
-    }
-
-    // 測試 Google 授權連線
-    async testDriveAuth() {
-      try {
-        const token = await this.getDriveAccessToken();
-        if (token) {
-          if (window.app) window.app.showNotification('成功', '🎉 Google 授權成功！已成功取得存取權杖。');
-        }
-      } catch (err) {
-        if (window.app) window.app.showNotification('錯誤', `Google 授權失敗：${err.message || err}`);
-      }
-    }
-
-    // 開啟 Google Picker 檔案選擇器
-    async openDrivePicker() {
-      if (!this.gdriveClientId || !this.gdriveApiKey) {
-        if (window.app) {
-          window.app.showNotification('提示', '使用「從 Google Drive 選擇音檔」需先設定 Client ID 與 API Key！');
-        }
-        this.openDriveConfigModal();
-        return;
-      }
-
-      try {
-        const token = await this.getDriveAccessToken();
-
-        if (!window.gapi) {
-          throw new Error('Google API Client (gapi) 尚未載入，請檢查網路連線！');
-        }
-
-        window.gapi.load('picker', () => {
-          if (!window.google || !window.google.picker) {
-            if (window.app) window.app.showNotification('錯誤', 'Google Picker 元件載入失敗');
-            return;
-          }
-
-          const docsView = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS)
-            .setMimeTypes('audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/aac,audio/ogg,video/mp4')
-            .setMode(window.google.picker.DocsViewMode.LIST);
-
-          const picker = new window.google.picker.PickerBuilder()
-            .addView(docsView)
-            .setOAuthToken(token)
-            .setDeveloperKey(this.gdriveApiKey)
-            .setAppId(this.gdriveClientId.split('-')[0])
-            .setTitle('請選擇要出題的音訊或影片檔案')
-            .setCallback((data) => {
-              if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.PICKED) {
-                const doc = data[window.google.picker.Response.DOCUMENTS][0];
-                const fileId = doc[window.google.picker.Document.ID];
-                const fileName = doc[window.google.picker.Document.NAME];
-                const mimeType = doc[window.google.picker.Document.MIME_TYPE];
-                this.loadDriveFileIntoEditor(fileId, fileName, mimeType);
-              }
-            })
-            .build();
-          picker.setVisible(true);
-        });
-      } catch (err) {
-        console.error('Failed to open Drive Picker:', err);
-        if (window.app) window.app.showNotification('錯誤', `開啟雲端硬碟檔案選擇器失敗：${err.message || err}`);
-      }
-    }
-
-    // 將所選的 Google Drive 檔案下載為 Blob 並載入播放器
-    async loadDriveFileIntoEditor(fileId, fileName, mimeType) {
-      const urlInput = document.getElementById('vqEditQuizUrl');
-      const titleInput = document.getElementById('vqEditQuizTitle');
-      const statusEl = document.getElementById('vqEditorPlayerStatus');
-
-      if (urlInput) urlInput.value = `[Google Drive] ${fileName}`;
-      if (titleInput && (!titleInput.value.trim() || titleInput.value === '新建影片測驗')) {
-        titleInput.value = fileName.replace(/\.[^/.]+$/, "");
-      }
-
-      if (statusEl) {
-        statusEl.innerHTML = `<span style="color: #0284c7;">⏳ 正在從 Google 雲端硬碟安全下載音檔中，請稍候...</span>`;
-      }
-
-      try {
-        const objectUrl = await this.downloadDriveFileAsBlob(fileId, fileName, mimeType);
-        this.currentBlobUrl = objectUrl;
-        this.currentDriveInfo = { fileId, fileName, mimeType };
-
-        this.setupPlayer('vqEditorPlayerContainer', objectUrl);
-
-        if (window.app) {
-          window.app.showNotification('成功', `音檔《${fileName}》已成功下載並載入播放器！`);
-        }
-      } catch (err) {
-        console.error('Failed to download Drive file:', err);
-        if (statusEl) {
-          statusEl.innerHTML = `<span style="color: #ef4444;">⚠️ 下載失敗：${this.escapeHtml(err.message || '無法下載檔案')}</span>`;
-        }
-        if (window.app) {
-          window.app.showNotification('下載錯誤', err.message || '無法從 Google 雲端硬碟下載音檔');
-        }
-      }
-    }
-
-    // 透過 Drive API files.get?alt=media 下載檔案並轉換為 Blob Object URL
-    async downloadDriveFileAsBlob(fileId, fileName = '', mimeType = '') {
-      const token = await this.getDriveAccessToken();
-      const apiUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-
-      let response;
-      try {
-        response = await fetch(apiUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      } catch (networkErr) {
-        throw new Error('網路連線失敗，請檢查網際網路連線！');
-      }
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          this.gdriveToken = null;
-          throw new Error('Google 授權已過期或無效，請重新授權！');
-        } else if (response.status === 403) {
-          throw new Error('存取被拒（HTTP 403）：您沒有此檔案的下載權限，或該檔案已被作者限制下載！');
-        } else if (response.status === 404) {
-          throw new Error('檔案不存在（HTTP 404）：此雲端硬碟檔案可能已被刪除或權限變更！');
-        } else {
-          throw new Error(`Google API 回傳錯誤（HTTP ${response.status}）：無法下載檔案內容`);
-        }
-      }
-
-      const blob = await response.blob();
-      if (!blob || blob.size === 0) {
-        throw new Error('下載的檔案大小為 0 位元組，可能並非有效的音訊或影片檔案！');
-      }
-
-      if (this.currentBlobUrl) {
-        try { URL.revokeObjectURL(this.currentBlobUrl); } catch (e) {}
-      }
-
-      const objectUrl = URL.createObjectURL(blob);
-      return objectUrl;
-    }
 
     // 取得播放器目前的有效時間 (若尚未就緒回傳 null，絕不可轉為 0；合法 0 秒仍回傳 0)
     getValidCurrentTime() {
@@ -1290,7 +1008,7 @@
     }
 
     // ==========================================
-    // 播放器封裝 (YouTube IFrame & HTML5 Video/Audio)
+    // 播放器封裝 (YouTube IFrame & HTML5 Video)
     // ==========================================
 
     setupPlayer(containerId, videoUrl, onReadyCallback, onTimeUpdateCallback) {
@@ -1303,9 +1021,6 @@
       this.updateEditorReadyState(false);
 
       const ytId = this.extractYoutubeId(videoUrl);
-      const isBlob = videoUrl && videoUrl.startsWith('blob:');
-      const driveId = !isBlob ? this.extractDriveFileId(videoUrl) : null;
-      const isLocalPlaceholder = !isBlob && (typeof videoUrl === 'string' && (videoUrl.startsWith('local:') || videoUrl.startsWith('[本機音檔]')));
 
       if (ytId) {
         this.playerType = 'youtube';
@@ -1363,123 +1078,31 @@
         } else {
           this.loadYoutubeAPI(initYT);
         }
-      } else if (driveId && !isBlob) {
-        // Google 雲端硬碟未授權直連模式：
-        // 外部網頁無法透過 preview iframe 取得進度與時間控制。
-        // 提供明確引導卡片，若已有設定 Client ID 則提供一鍵下載，否則可展開預覽備援。
-        this.playerType = 'drive_preview';
-
-        container.innerHTML = `
-          <div style="width: 100%; height: 100%; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b1329; border-radius: 10px; overflow: hidden; position: relative; border: 1px solid var(--border-color); padding: 14px; box-sizing: border-box; text-align: center; color: white;">
-            <div style="font-size: 32px; margin-bottom: 6px;">☁️</div>
-            <div style="font-size: 14px; font-weight: bold; color: #38bdf8; margin-bottom: 4px;">Google 雲端硬碟音檔</div>
-            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 12px; max-width: 90%; line-height: 1.5;">
-              因瀏覽器同源安全性隔離，Google 預覽播放器無法由外部取得播放進度與暫停出題。<br>請透過 Google 官方授權下載至自有播放器，即可享有 100% 精準時間點與自動跳題！
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
-              <button type="button" class="action-btn" onclick="window.videoQuiz.loadDriveFileIntoEditor('${driveId}', '雲端硬碟音檔', 'audio/mpeg')" style="background: #0284c7; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">
-                🔑 Google 授權下載至自有播放器
-              </button>
-              <button type="button" class="action-btn" onclick="window.videoQuiz.openDrivePreviewFallback('${containerId}', '${driveId}')" style="background: rgba(255,255,255,0.1); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">
-                備援：官方預覽試聽
-              </button>
-            </div>
-          </div>
-        `;
-        this.isPlayerReady = false;
-        this.updateEditorReadyState(false);
-      } else if (isLocalPlaceholder) {
-        this.playerType = 'local_placeholder';
-        const fileName = (this.editingQuiz?.localFileName || (videoUrl.replace('local:', '').replace('[本機音檔]', '').trim())) || '原音檔';
-        container.innerHTML = `
-          <div style="width: 100%; height: 100%; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b1329; border-radius: 10px; overflow: hidden; position: relative; border: 1px solid var(--border-color); padding: 14px; box-sizing: border-box; text-align: center; color: white;">
-            <div style="font-size: 32px; margin-bottom: 6px;">📁</div>
-            <div style="font-size: 14px; font-weight: bold; color: #38bdf8; margin-bottom: 4px;">本機音檔測驗</div>
-            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 12px; max-width: 90%; line-height: 1.5;">
-              原檔案：<strong>${this.escapeHtml(fileName)}</strong><br>瀏覽器重啟後需重新選取原音檔（既有題目與設定已完整保留）。
-            </div>
-            <label class="action-btn" style="background: #0284c7; color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-              📂 重新選取音檔
-              <input type="file" accept="audio/*,video/*" style="display: none;" onchange="window.videoQuiz.handleEditorLocalFile(event)">
-            </label>
-          </div>
-        `;
-        this.isPlayerReady = false;
-        this.updateEditorReadyState(false);
       } else {
-        // 標準 HTML5 自有播放器 (MP3 / WAV / M4A / MP4 / Google Drive 下載之 Blob)
+        // HTML5 本地或直連影片 (例如 MP4)
         this.playerType = 'html5';
-        const isAudio = this.isAudioSource(videoUrl) || (this.currentDriveInfo && this.currentDriveInfo.mimeType?.startsWith('audio')) || isBlob;
-        const streamUrl = isBlob ? videoUrl : this.resolveMediaUrl(videoUrl);
+        const videoEl = document.createElement('video');
+        videoEl.src = videoUrl;
+        videoEl.controls = true;
+        videoEl.playsInline = true;
+        videoEl.style.width = '100%';
+        videoEl.style.height = '100%';
+        videoEl.style.objectFit = 'contain';
+        videoEl.style.background = '#000';
+        container.appendChild(videoEl);
+        this.html5Player = videoEl;
 
-        let mediaEl;
-        if (isAudio) {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'vq-audio-player-card';
-          wrapper.style.cssText = 'width: 100%; height: 100%; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border-radius: 10px; position: relative; overflow: hidden; padding: 14px; box-sizing: border-box; text-align: center;';
-          
-          let displayName = '音訊檔案';
-          if (this.currentDriveInfo?.fileName) displayName = `☁️ ${this.currentDriveInfo.fileName}`;
-          else if (this.editingQuizLocalFile?.name) displayName = `📁 ${this.editingQuizLocalFile.name}`;
-          else if (this.activeQuiz?.title) displayName = this.activeQuiz.title;
-
-          wrapper.innerHTML = `
-            <div style="font-size: 34px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); user-select: none;">🎵</div>
-            <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 2px;">音訊 / 錄音檔測驗播放</div>
-            <div id="${containerId}_audio_status" style="font-size: 11px; color: #94a3b8; margin-bottom: 8px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              ${this.escapeHtml(displayName)}
-            </div>
-            <audio src="${streamUrl}" controls playsinline style="width: 95%; max-width: 480px; z-index: 2; outline: none;"></audio>
-            <div id="${containerId}_audio_error" style="display: none; color: #f87171; font-size: 11px; margin-top: 6px; background: rgba(239, 68, 68, 0.15); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3);">
-            </div>
-          `;
-          container.appendChild(wrapper);
-          mediaEl = wrapper.querySelector('audio');
-        } else {
-          // 一般 HTML5 Video
-          const videoEl = document.createElement('video');
-          videoEl.src = streamUrl;
-          videoEl.controls = true;
-          videoEl.playsInline = true;
-          videoEl.style.width = '100%';
-          videoEl.style.height = '100%';
-          videoEl.style.objectFit = 'contain';
-          videoEl.style.background = '#000';
-          container.appendChild(videoEl);
-          mediaEl = videoEl;
-        }
-
-        this.html5Player = mediaEl;
-
-        mediaEl.onerror = (e) => {
-          if (this.isPlayerReady && mediaEl.duration > 0) return;
-          console.warn('Media load error:', streamUrl, e);
-          const errBox = document.getElementById(`${containerId}_audio_error`);
-          let errMsg = '⚠️ 影音載入失敗，請確認格式正確或重新選取！';
-          if (mediaEl.error) {
-            switch (mediaEl.error.code) {
-              case 1: errMsg = '⚠️ 影音播放已中止。'; break;
-              case 2: errMsg = '⚠️ 網路連線錯誤，無法下載音訊資料！'; break;
-              case 3: errMsg = '⚠️ 影音解碼失敗，可能格式不受瀏覽器支援！'; break;
-              case 4: errMsg = '⚠️ 來源網址失效或格式不支援。請確認檔案存在！'; break;
-            }
-          }
-          if (errBox) {
-            errBox.textContent = errMsg;
-            errBox.style.display = 'block';
-          }
+        videoEl.onerror = () => {
+          if (this.isPlayerReady && videoEl.duration > 0) return;
+          console.warn('Video load error:', videoUrl);
           this.isPlayerReady = false;
           this.updateEditorReadyState(false);
         };
 
-        mediaEl.onloadedmetadata = () => {
+        videoEl.onloadedmetadata = () => {
           this.isPlayerReady = true;
-          this.duration = mediaEl.duration || 0;
-          const errBox = document.getElementById(`${containerId}_audio_error`);
-          if (errBox) errBox.style.display = 'none';
-
+          this.duration = videoEl.duration || 0;
           this.updateEditorReadyState(true);
-
           if (containerId === 'vqEditorPlayerContainer') {
             const dur = Math.round(this.duration || 0);
             if (dur > 0) {
@@ -1493,9 +1116,9 @@
           if (typeof onReadyCallback === 'function') onReadyCallback(this);
         };
 
-        mediaEl.ontimeupdate = () => {
+        videoEl.ontimeupdate = () => {
           if (!this.isPlayerReady) return;
-          const t = mediaEl.currentTime;
+          const t = videoEl.currentTime;
           this.currentTime = t;
           if (typeof onTimeUpdateCallback === 'function') {
             onTimeUpdateCallback(t);
@@ -1503,16 +1126,16 @@
           this.checkTimeline(t);
         };
 
-        mediaEl.onplay = () => {
+        videoEl.onplay = () => {
           this.isPlaying = true;
           this.hideAutoplayBlockedNotice();
         };
 
-        mediaEl.onpause = () => {
+        videoEl.onpause = () => {
           this.isPlaying = false;
         };
 
-        mediaEl.onended = () => {
+        videoEl.onended = () => {
           this.handleVideoEnded();
         };
       }
@@ -1533,23 +1156,6 @@
       }, 250);
     }
 
-    // 官方預覽備援 (清楚標註不支援自動暫停出題)
-    openDrivePreviewFallback(containerId, driveId) {
-      const container = document.getElementById(containerId);
-      if (!container) return;
-      this.playerType = 'drive_preview';
-      this.isPlayerReady = false;
-      this.updateEditorReadyState(false);
-      container.innerHTML = `
-        <div style="width: 100%; height: 100%; min-height: 180px; display: flex; flex-direction: column; background: #0b1329; border-radius: 10px; overflow: hidden; position: relative; border: 1px solid var(--border-color);">
-          <iframe src="https://drive.google.com/file/d/${driveId}/preview" allow="autoplay" style="width: 100%; height: 100%; min-height: 180px; border: none; display: block;"></iframe>
-        </div>
-        <div style="margin-top: 6px; padding: 6px 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; font-size: 11px; color: #f87171; line-height: 1.4;">
-          ⚠️ <strong>官方預覽備援限制說明</strong>：受 Google 跨域防護隔離，外部網頁無法自動獲取進度條或指令暫停。此模式不支援自動跳題與時間軸插題，建議點擊「從 Drive 選擇音檔」授權下載至自有播放器！
-        </div>
-      `;
-    }
-
     destroyPlayer() {
       if (this.pollTimer) {
         clearInterval(this.pollTimer);
@@ -1567,10 +1173,6 @@
         } catch (e) {}
         this.html5Player = null;
       }
-      if (this.currentBlobUrl) {
-        try { URL.revokeObjectURL(this.currentBlobUrl); } catch (e) {}
-        this.currentBlobUrl = null;
-      }
       this.playerType = null;
       this.isPlaying = false;
       this.isPlayerReady = false;
@@ -1580,23 +1182,6 @@
       this.isQuestionOverlayShowing = false;
       this.hideAutoplayBlockedNotice();
       this.updateEditorReadyState(false);
-    }
-
-    handleEditorLocalFile(event) {
-      const file = event.target.files && event.target.files[0];
-      if (!file) return;
-      this.editingQuizLocalFile = file;
-      if (this.currentBlobUrl) {
-        try { URL.revokeObjectURL(this.currentBlobUrl); } catch (err) {}
-      }
-      this.currentBlobUrl = URL.createObjectURL(file);
-      const urlInput = document.getElementById('vqEditQuizUrl');
-      if (urlInput) urlInput.value = `[本機音檔] ${file.name}`;
-      const titleInput = document.getElementById('vqEditQuizTitle');
-      if (titleInput && (!titleInput.value.trim() || titleInput.value === '新建影片測驗')) {
-        titleInput.value = file.name.replace(/\.[^/.]+$/, "");
-      }
-      this.setupPlayer('vqEditorPlayerContainer', this.currentBlobUrl);
     }
 
     playVideo() {
@@ -1663,10 +1248,7 @@
       }
     }
 
-    // 保留相容性顯示方法
-    updateDriveTimerDisplay() {
-      // 保持方法簽名以相容測試
-    }
+
 
     loadYoutubeAPI(callback) {
       if (window.YT && window.YT.Player) {
@@ -1752,12 +1334,8 @@
         this.answersRef.remove();
       }
 
-      // 確保同步資料乾淨，不包含敏感 token 或本地 Blob URL
+      // 確保同步資料乾淨
       const cleanQuiz = JSON.parse(JSON.stringify(quiz));
-      if (cleanQuiz.videoUrl && cleanQuiz.videoUrl.startsWith('blob:')) {
-        cleanQuiz.videoUrl = cleanQuiz.driveFileId ? `gdrive:${cleanQuiz.driveFileId}` : '';
-      }
-      cleanQuiz.gdriveToken = undefined;
 
       // 設定 Firebase 同步廣播狀態
       const sessionData = {
@@ -2203,7 +1781,7 @@
           if (!this.activeQuiz || this.activeQuiz.id !== session.quizId || this.activeQuiz.currentSubQuizIndex !== session.currentSubQuizIndex) {
             this.activeQuiz = session.quizData;
             // 學生端只接收題目，不需本地播放；若為影音影片亦不自動搶播
-            if (isVideoQuizActive && session.quizData?.videoUrl && !session.quizData.videoUrl.startsWith('gdrive:')) {
+            if (isVideoQuizActive && session.quizData?.videoUrl) {
               this.setupPlayer('vqSyncPlayerContainer', session.quizData.videoUrl);
             }
           }
@@ -3462,13 +3040,7 @@
     loadEditorVideo() {
       const url = document.getElementById('vqEditQuizUrl')?.value?.trim();
       if (!url) return;
-      if (url.startsWith('[本機音檔]') && this.currentBlobUrl) {
-        this.setupPlayer('vqEditorPlayerContainer', this.currentBlobUrl);
-      } else if (this.editingQuiz?.driveFileId && this.currentBlobUrl) {
-        this.setupPlayer('vqEditorPlayerContainer', this.currentBlobUrl);
-      } else {
-        this.setupPlayer('vqEditorPlayerContainer', url);
-      }
+      this.setupPlayer('vqEditorPlayerContainer', url);
     }
 
     // 渲染時間節點題目清單
@@ -3503,9 +3075,9 @@
       const validTime = this.getValidCurrentTime();
       if (validTime === null) {
         if (window.app) {
-          window.app.showNotification('提示', '播放器尚未就緒，無法取得有效播放時間！請先載入影音檔案。');
+          window.app.showNotification('提示', '播放器尚未就緒，無法取得有效播放時間！請先載入影片檔案。');
         } else {
-          alert('播放器尚未就緒，無法取得有效播放時間！請先載入影音檔案。');
+          alert('播放器尚未就緒，無法取得有效播放時間！請先載入影片檔案。');
         }
         return;
       }
@@ -3644,43 +3216,23 @@
       const url = document.getElementById('vqEditQuizUrl').value.trim();
 
       if (!title || !url) {
-        if (window.app) window.app.showNotification('提示', '請填寫測驗標題與影音網址！');
+        if (window.app) window.app.showNotification('提示', '請填寫測驗標題與影片網址！');
         return;
       }
 
       this.editingQuiz.title = title;
       this.editingQuiz.description = desc;
-      let finalUrl = url;
-      let driveId = this.currentDriveInfo?.fileId || this.extractDriveFileId(url);
-      let driveName = this.currentDriveInfo?.fileName || '';
-      let localFileName = this.editingQuizLocalFile?.name || (url.startsWith('[本機音檔]') ? url.replace('[本機音檔]', '').trim() : '');
+      this.editingQuiz.videoUrl = url;
 
-      if (driveId) {
-        this.editingQuiz.videoType = 'drive';
-        this.editingQuiz.driveFileId = driveId;
-        this.editingQuiz.driveFileName = driveName || this.editingQuiz.driveFileName || 'Google Drive 音檔';
-        this.editingQuiz.videoUrl = `gdrive:${driveId}`; // 不存 blob:
-        this.editingQuiz.originalUrlText = `https://drive.google.com/file/d/${driveId}/view`;
-      } else if (localFileName || url.startsWith('blob:') || url.startsWith('[本機音檔]') || url.startsWith('local:')) {
-        this.editingQuiz.videoType = 'local';
-        this.editingQuiz.localFileName = localFileName || this.editingQuiz.localFileName || '本機音檔.mp3';
-        this.editingQuiz.videoUrl = `local:${this.editingQuiz.localFileName}`; // 不存 blob:
-        this.editingQuiz.originalUrlText = `[本機音檔] ${this.editingQuiz.localFileName}`;
+      const ytId = this.extractYoutubeId(url);
+      if (ytId) {
+        this.editingQuiz.videoType = 'youtube';
+        this.editingQuiz.youtubeId = ytId;
       } else {
-        const ytId = this.extractYoutubeId(finalUrl);
-        if (ytId) {
-          this.editingQuiz.videoType = 'youtube';
-          this.editingQuiz.youtubeId = ytId;
-          this.editingQuiz.videoUrl = finalUrl;
-          this.editingQuiz.originalUrlText = finalUrl;
-        } else {
-          this.editingQuiz.videoType = 'html5';
-          this.editingQuiz.videoUrl = finalUrl;
-          this.editingQuiz.originalUrlText = finalUrl;
-        }
+        this.editingQuiz.videoType = 'html5';
       }
 
-      // 需求 3：儲存指定播放起訖時間
+      // 儲存指定播放起訖時間
       const startVal = parseInt(document.getElementById('vqRangeStartInput')?.value || 0, 10);
       const endVal = parseInt(document.getElementById('vqRangeEndInput')?.value || 0, 10);
       this.editingQuiz.startTime = isNaN(startVal) ? 0 : Math.max(0, startVal);
@@ -3697,7 +3249,7 @@
       this.renderQuizSelector();
       this.renderEditorQuizList();
       this.closeEditQuizModal();
-      if (window.app) window.app.showNotification('成功', '測驗已成功儲存！');
+      if (window.app) window.app.showNotification('成功', '影片測驗已成功儲存！');
     }
 
     deleteQuiz(quizId) {
