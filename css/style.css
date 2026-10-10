@@ -1800,6 +1800,13 @@ body {
     text-overflow: ellipsis;
   }
 
+  #btnSetStudentNameMobile.mobile-only {
+    display: inline-flex !important;
+    align-items: center;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
   .header-buttons {
     display: flex !important;
     align-items: center !important;

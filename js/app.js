@@ -3770,6 +3770,12 @@ class App {
         category: '教學互動管理',
         icon: 'images/admin_icons/game_focus.svg'
       },
+      gameWheel: {
+        id: 'adminWheelSection',
+        title: 'C. 抽人轉盤',
+        category: '教學互動管理',
+        icon: 'images/admin_icons/game_wheel.svg'
+      },
       qaMgmt: {
         id: 'adminQuestionSection',
         title: 'A. 提問管理',
@@ -3819,6 +3825,7 @@ class App {
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
       gameFocus: 'adminCatBlock3',
+      gameWheel: 'adminCatBlock3',
       qaMgmt: 'adminCatBlock4',
       imgMgmt: 'adminCatBlock4',
       vidMgmt: 'adminCatBlock4',
@@ -3890,6 +3897,11 @@ class App {
     // 影片出題清單更新
     if (featureKey === 'quizVideo' && window.videoQuiz && typeof window.videoQuiz.renderEditorQuizList === 'function') {
       window.videoQuiz.renderEditorQuizList();
+    }
+
+    // 抽人轉盤管理專屬資料同步
+    if (featureKey === 'gameWheel') {
+      this.syncAdminWheelUI();
     }
 
     // 滾動至後台頂部
@@ -5794,10 +5806,10 @@ class App {
     if (mobileBtn) {
       if (count > 0) {
         mobileBtn.style.display = 'inline-flex';
-        mobileBtn.innerHTML = `🔔 公告 (<span id="txtMobileLoginSharesNoticeCount">${count}</span>)`;
+        mobileBtn.innerHTML = `🔔 (<span id="txtMobileLoginSharesNoticeCount">${count}</span>)`;
       } else {
         mobileBtn.style.display = 'none';
-        mobileBtn.innerHTML = `🔔 公告 (<span id="txtMobileLoginSharesNoticeCount">0</span>)`;
+        mobileBtn.innerHTML = `🔔 (<span id="txtMobileLoginSharesNoticeCount">0</span>)`;
       }
     }
   }
@@ -11181,10 +11193,21 @@ class App {
           txt.value = namesStr;
         }
       }
+
+      const adminTxt = document.getElementById('adminWheelNamesInput');
+      if (adminTxt && this.isAdmin) {
+        if (document.activeElement !== adminTxt) {
+          adminTxt.value = namesStr;
+        }
+      }
       
       const lblCount = document.getElementById('lblWheelCount');
       if (lblCount) {
         lblCount.textContent = `${this.wheelNames.length} 人`;
+      }
+      const adminLblCount = document.getElementById('adminLblWheelCount');
+      if (adminLblCount) {
+        adminLblCount.textContent = `${this.wheelNames.length} 人`;
       }
       
       if (!this.wheelSpinning) {
@@ -11200,6 +11223,8 @@ class App {
       this.wheelRemoveWinner = snapshot.val() === true;
       const chk = document.getElementById('chkRemoveWinner');
       if (chk) chk.checked = this.wheelRemoveWinner;
+      const adminChk = document.getElementById('adminChkRemoveWinner');
+      if (adminChk) adminChk.checked = this.wheelRemoveWinner;
     });
     
     // 監聽色系樣式
@@ -11208,6 +11233,8 @@ class App {
       this.wheelColorTheme = (v !== null) ? v : 0;
       const sel = document.getElementById('selWheelColor');
       if (sel) sel.value = this.wheelColorTheme;
+      const adminSel = document.getElementById('adminSelWheelColor');
+      if (adminSel) adminSel.value = this.wheelColorTheme;
       if (!this.wheelSpinning) this.drawWheelLocal();
     });
 
@@ -11217,6 +11244,8 @@ class App {
       this.wheelSoundStyle = (v !== null) ? v : 0;
       const sel = document.getElementById('selWheelSound');
       if (sel) sel.value = this.wheelSoundStyle;
+      const adminSel = document.getElementById('adminSelWheelSound');
+      if (adminSel) adminSel.value = this.wheelSoundStyle;
     });
     
     // 監聽轉盤啟用狀態 (老師開啟轉盤時全班畫面自動切換呈現，無需手動點按)
@@ -11279,6 +11308,14 @@ class App {
         if (lblCount) {
           lblCount.textContent = `${this.wheelNames.length} 人`;
         }
+        const adminLblCount = document.getElementById('adminLblWheelCount');
+        if (adminLblCount) {
+          adminLblCount.textContent = `${this.wheelNames.length} 人`;
+        }
+        const adminTxt = document.getElementById('adminWheelNamesInput');
+        if (adminTxt && document.activeElement !== adminTxt) {
+          adminTxt.value = newNames;
+        }
         
         if (!this.wheelSpinning) {
           if (this.wheelNames.length === 0) {
@@ -11289,6 +11326,45 @@ class App {
         
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
+          db.ref('quiz/luckyWheel/originalNames').set(newNames);
+          db.ref('quiz/luckyWheel/names').set(newNames);
+        }, 600);
+      });
+    }
+
+    // 綁定後台名單輸入框
+    const adminTxtInput = document.getElementById('adminWheelNamesInput');
+    if (adminTxtInput) {
+      let adminDebounceTimer = null;
+      adminTxtInput.addEventListener('input', () => {
+        this.pendingRemoveWinner = null;
+        const newNames = adminTxtInput.value.trim();
+        const parsed = newNames.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+        this.wheelNames = [...parsed];
+        this.wheelOriginalNames = [...parsed];
+
+        const lblCount = document.getElementById('lblWheelCount');
+        if (lblCount) {
+          lblCount.textContent = `${this.wheelNames.length} 人`;
+        }
+        const adminLblCount = document.getElementById('adminLblWheelCount');
+        if (adminLblCount) {
+          adminLblCount.textContent = `${this.wheelNames.length} 人`;
+        }
+        const frontTxt = document.getElementById('wheelNamesInput');
+        if (frontTxt && document.activeElement !== frontTxt) {
+          frontTxt.value = newNames;
+        }
+
+        if (!this.wheelSpinning) {
+          if (this.wheelNames.length === 0) {
+            this.wheelAngle = 0;
+          }
+          this.drawWheelLocal();
+        }
+
+        clearTimeout(adminDebounceTimer);
+        adminDebounceTimer = setTimeout(() => {
           db.ref('quiz/luckyWheel/originalNames').set(newNames);
           db.ref('quiz/luckyWheel/names').set(newNames);
         }, 600);
@@ -11306,6 +11382,73 @@ class App {
     if (txt && this.isAdmin && this.wheelNames) {
       txt.value = this.wheelNames.join('\n');
     }
+    const adminTxt = document.getElementById('adminWheelNamesInput');
+    if (adminTxt && this.isAdmin && this.wheelNames) {
+      adminTxt.value = this.wheelNames.join('\n');
+    }
+    const adminLblCount = document.getElementById('adminLblWheelCount');
+    if (adminLblCount && this.wheelNames) {
+      adminLblCount.textContent = `${this.wheelNames.length} 人`;
+    }
+    const adminChk = document.getElementById('adminChkRemoveWinner');
+    if (adminChk) {
+      adminChk.checked = !!this.wheelRemoveWinner;
+    }
+    const adminColor = document.getElementById('adminSelWheelColor');
+    if (adminColor) {
+      adminColor.value = this.wheelColorTheme || 0;
+    }
+    const adminSound = document.getElementById('adminSelWheelSound');
+    if (adminSound) {
+      adminSound.value = this.wheelSoundStyle || 0;
+    }
+  }
+
+  syncAdminWheelUI() {
+    this.updateWheelControlPanelVisibility();
+    const adminList = document.getElementById('adminWheelHistoryList');
+    const frontList = document.getElementById('wheelHistoryList');
+    if (adminList && frontList) {
+      if (frontList.children.length === 0 || frontList.textContent.includes('尚無紀錄')) {
+        adminList.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</div>';
+      } else {
+        adminList.innerHTML = '';
+        Array.from(frontList.children).forEach(li => {
+          const spans = li.querySelectorAll('span');
+          const name = spans[0] ? spans[0].textContent : '';
+          const time = spans[1] ? spans[1].textContent : '';
+          const item = document.createElement('div');
+          item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border-color);';
+          item.innerHTML = `
+            <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">🎯 ${this.escapeHtml(name)}</span>
+            <span style="color: var(--text-muted); font-size: 12px;">${this.escapeHtml(time)}</span>
+          `;
+          adminList.appendChild(item);
+        });
+      }
+    }
+  }
+
+  clearWheelNamesAdmin() {
+    if (!this.isAdmin) return;
+    const adminTxt = document.getElementById('adminWheelNamesInput');
+    if (adminTxt) adminTxt.value = '';
+    const txt = document.getElementById('wheelNamesInput');
+    if (txt) txt.value = '';
+    this.wheelNames = [];
+    this.wheelOriginalNames = [];
+    this.pendingRemoveWinner = null;
+    const lblCount = document.getElementById('lblWheelCount');
+    if (lblCount) lblCount.textContent = '0 人';
+    const adminLblCount = document.getElementById('adminLblWheelCount');
+    if (adminLblCount) adminLblCount.textContent = '0 人';
+    if (!this.wheelSpinning) {
+      this.wheelAngle = 0;
+      this.drawWheelLocal();
+    }
+    db.ref('quiz/luckyWheel/originalNames').set('');
+    db.ref('quiz/luckyWheel/names').set('');
+    this.showNotification('提示', '已清空轉盤名單！');
   }
 
   broadcastWheelToClass() {
@@ -11376,6 +11519,8 @@ class App {
     // 更新輸入框與本地狀態
     const txt = document.getElementById('wheelNamesInput');
     if (txt) txt.value = namesStr;
+    const adminTxt = document.getElementById('adminWheelNamesInput');
+    if (adminTxt) adminTxt.value = namesStr;
 
     this.wheelNames = [...onlineNames];
     this.wheelOriginalNames = [...onlineNames];
@@ -11383,6 +11528,8 @@ class App {
 
     const lblCount = document.getElementById('lblWheelCount');
     if (lblCount) lblCount.textContent = `${onlineNames.length} 人`;
+    const adminLblCount = document.getElementById('adminLblWheelCount');
+    if (adminLblCount) adminLblCount.textContent = `${onlineNames.length} 人`;
 
     if (!this.wheelSpinning) {
       this.wheelAngle = 0;
@@ -11591,19 +11738,34 @@ class App {
 
   addWheelHistory(winnerName) {
     const list = document.getElementById('wheelHistoryList');
-    if (!list) return;
-    
-    if (list.children.length === 1 && list.children[0].textContent.includes('尚無紀錄')) {
-      list.innerHTML = '';
+    if (list) {
+      if (list.children.length === 1 && list.children[0].textContent.includes('尚無紀錄')) {
+        list.innerHTML = '';
+      }
+      
+      const li = document.createElement('li');
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      li.innerHTML = `
+        <span style="font-weight: bold; color: var(--text-primary);">${this.escapeHtml(winnerName)}</span>
+        <span style="color: var(--text-muted); font-size: 12px;">${time}</span>
+      `;
+      list.insertBefore(li, list.firstChild);
     }
-    
-    const li = document.createElement('li');
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    li.innerHTML = `
-      <span style="font-weight: bold; color: var(--text-primary);">${this.escapeHtml(winnerName)}</span>
-      <span style="color: var(--text-muted); font-size: 12px;">${time}</span>
-    `;
-    list.insertBefore(li, list.firstChild);
+
+    const adminList = document.getElementById('adminWheelHistoryList');
+    if (adminList) {
+      if (adminList.children.length === 1 && adminList.textContent.includes('尚無紀錄')) {
+        adminList.innerHTML = '';
+      }
+      const item = document.createElement('div');
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border-color);';
+      item.innerHTML = `
+        <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">🎯 ${this.escapeHtml(winnerName)}</span>
+        <span style="color: var(--text-muted); font-size: 12px;">${this.escapeHtml(time)}</span>
+      `;
+      adminList.insertBefore(item, adminList.firstChild);
+    }
   }
 
   clearWheelHistory() {
@@ -11633,12 +11795,22 @@ class App {
         db.ref('quiz/luckyWheel/originalNames').set(namesStr);
         const txt = document.getElementById('wheelNamesInput');
         if (txt) txt.value = namesStr;
+        const adminTxt = document.getElementById('adminWheelNamesInput');
+        if (adminTxt) adminTxt.value = namesStr;
+        const adminLblCount = document.getElementById('adminLblWheelCount');
+        if (adminLblCount) adminLblCount.textContent = `${restoredNames.length} 人`;
+        const lblCount = document.getElementById('lblWheelCount');
+        if (lblCount) lblCount.textContent = `${restoredNames.length} 人`;
       }
     }
 
     const list = document.getElementById('wheelHistoryList');
     if (list) {
       list.innerHTML = '<li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</li>';
+    }
+    const adminList = document.getElementById('adminWheelHistoryList');
+    if (adminList) {
+      adminList.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</div>';
     }
     const banner = document.getElementById('wheelWinnerDisplay');
     if (banner) {

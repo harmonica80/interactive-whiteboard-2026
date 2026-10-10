@@ -1,4 +1,26 @@
 # System Log
+## 2026-10-10 - 後台功能說明優化、教學互動新增抽人轉盤管理、行動端選單按鈕精簡化
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `images/admin_icons/game_wheel.svg`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **後台班級管理與測驗出題卡片說明精準修正 (`index.html`)**：
+     - 班級管理卡片 A 說明修正為：「建立開課班級代碼、編輯班級資訊。」
+     - 班級管理卡片 C 說明修正為：「多班級一鍵同步教材、影片與題庫，自動排除個人紀錄。」
+     - 測驗出題卡片 A 說明修正為：「建立單選、複選、圖文配對題，題目支援文字、圖片與 Youtube 影片、Google雲端硬碟音檔。」
+     - 測驗出題卡片 B 說明修正為：「支援一段影片出多個題目，題型包括單選、複選與圖文配對，且可將多段影片群組成「測驗組合」，一起進行測驗。」
+  2. **後台教學互動管理新增「C. 抽人轉盤」全功能區塊 (`index.html`, `js/app.js`, `images/admin_icons/game_wheel.svg`)**：
+     - 在「教學互動管理」（`#adminCatBlock3`）中新增「C. 抽人轉盤」卡片，分類徽章更新為「3 個功能」。
+     - 繪製專屬 128*128 轉盤主題向量圖示 `images/admin_icons/game_wheel.svg`，符合後台圖示視覺規範。
+     - 在後台快捷切換選單 `#adminQuickSwitchSelect` 中新增 `gameWheel` 選項。
+     - 在 `#adminFeaturesContainer` 中建立專屬手風琴工作區 `#adminWheelSection`，具備：
+       - 前往轉盤畫面、廣播全班同步轉盤、立即啟動旋轉三合一快捷操作列。
+       - 轉盤名單編輯、線上名單一鍵匯入、打亂、排序、清空與人數即時統計。
+       - 不重複抽人開關、轉盤色系風格下拉選單、旋轉音效風格下拉選單。
+       - 歷史抽中紀錄即時清單與一鍵清除復原名單功能。
+     - `js/app.js` 全面整合 Firebase 即時雙向同步與 `syncAdminWheelUI` 狀態綁定。
+  3. **行動裝置頂部選單按鈕名稱精簡化 (`index.html`, `css/style.css`, `js/app.js`)**：
+     - 行動端學生姓名與頭像設定引導按鈕名稱由「👤 設定名稱」精簡為「👤 設定」，並在 CSS 中配置 `flex-shrink: 0 !important;` 與 `white-space: nowrap !important;`，徹底解決窄螢幕下文字被擠壓截斷為「👤 設定名...」之問題。
+     - 行動端公告按鈕去除贅字，由「🔔 公告 (數字)」改為鈴鐺圖示+(數字)「🔔 (數字)」，釋放寶貴寬度，視覺乾淨俐落。
+
 ## 2026-10-10 - 後台功能名稱更名、教師分享最新消息與教材預設分流過濾、登入即顯重要公告彈窗與手風琴自動收合
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
