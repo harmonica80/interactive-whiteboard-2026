@@ -44,7 +44,7 @@ class Quiz {
     });
   }
   
-  startQuiz(question, options, quizType = 'single') {
+  startQuiz(question, options, quizType = 'single', extraData = {}) {
     if (!question || options.length < 2) {
       if (window.app) window.app.showNotification('提示', '請填寫題目及至少兩個選項');
       return;
@@ -57,20 +57,26 @@ class Quiz {
     const quizData = {
       question: question,
       options: options,
-      quizType: quizType, // 'single' 或 'multiple'
+      quizType: quizType, // 'single', 'multiple', 或 'matching'
       startTime: Date.now(),
       active: true
     };
+
+    if (quizType === 'matching') {
+      quizData.pairs = extraData.pairs || [];
+      quizData.matchOptions = extraData.matchOptions || (extraData.pairs ? extraData.pairs.map(p => p.right) : []);
+      quizData.correctAnswer = extraData.correctAnswer || (extraData.pairs ? extraData.pairs.reduce((acc, p) => { acc[p.left] = p.right; return acc; }, {}) : {});
+    }
     
     this.quizRef.set(quizData);
     this.answersRef.remove();
 
     // 備份至歷屆題目庫
-    this.saveToHistoryBank(question, options, quizType);
+    this.saveToHistoryBank(question, options, quizType, extraData);
   }
 
   // 儲存至歷屆題目庫 (防重覆)
-  saveToHistoryBank(question, options, quizType) {
+  saveToHistoryBank(question, options, quizType, extraData = {}) {
     const keys = Object.keys(this.historyBank);
     const exists = keys.some(k => {
       const item = this.historyBank[k];
@@ -78,12 +84,18 @@ class Quiz {
     });
 
     if (!exists) {
-      this.historyRef.push({
+      const historyItem = {
         question: question,
         options: options,
         quizType: quizType || 'single',
         createdAt: Date.now()
-      });
+      };
+      if (quizType === 'matching') {
+        historyItem.pairs = extraData.pairs || [];
+        historyItem.matchOptions = extraData.matchOptions || (extraData.pairs ? extraData.pairs.map(p => p.right) : []);
+        historyItem.correctAnswer = extraData.correctAnswer || {};
+      }
+      this.historyRef.push(historyItem);
     }
   }
   
@@ -117,6 +129,84 @@ class Quiz {
 
     const selectedIndices = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
     this.submitAnswer(selectedIndices);
+  }
+
+  // 學生端提交連連看配對答案
+  submitMatchingAnswer() {
+    if (!this.currentQuiz || !this.currentQuiz.active || this.currentQuiz.quizType !== 'matching') return;
+    const boardContainer = document.getElementById('quizMatchingBoardContainer');
+    if (!boardContainer || !window.MatchingQuizEngine) return;
+
+    const connections = window.MatchingQuizEngine.getConnections(boardContainer);
+    if (!connections || Object.keys(connections).length === 0) {
+      if (window.app) window.app.showNotification('提示', '請先進行連線配對再提交答案！');
+      return;
+    }
+
+    const submitBtn = document.querySelector('.submit-matching-btn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.6';
+      submitBtn.innerText = '✅ 已提交連線答案';
+    }
+
+    if (this.currentQuiz.correctAnswer && window.MatchingQuizEngine.renderResults) {
+      window.MatchingQuizEngine.renderResults(boardContainer, connections, this.currentQuiz.correctAnswer, { showAnswers: true });
+    }
+
+    this.submitAnswer(connections);
+  }
+
+  // 老師端題型 Radio 切換處理 (單選 / 複選 / 配對連連看)
+  handleQuizTypeChange(type) {
+    const container = document.getElementById('optionsContainer');
+    if (!container) return;
+
+    if (type === 'matching') {
+      container.innerHTML = `
+        <div class="option-matching-pair">
+          <input type="text" class="matching-left-field" placeholder="左側題目 1 (例如：守株待兔)">
+          <span class="matching-pair-link-icon">🔗</span>
+          <input type="text" class="matching-right-field" placeholder="右側答案 1 (例如：妄想不勞而獲)">
+          <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+        </div>
+        <div class="option-matching-pair">
+          <input type="text" class="matching-left-field" placeholder="左側題目 2 (例如：臥薪嚐膽)">
+          <span class="matching-pair-link-icon">🔗</span>
+          <input type="text" class="matching-right-field" placeholder="右側答案 2 (例如：刻苦自勵)">
+          <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+        </div>
+        <div class="option-matching-pair">
+          <input type="text" class="matching-left-field" placeholder="左側題目 3 (例如：水落石出)">
+          <span class="matching-pair-link-icon">🔗</span>
+          <input type="text" class="matching-right-field" placeholder="右側答案 3 (例如：真相大白)">
+          <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+        </div>
+      `;
+    } else {
+      if (container.querySelector('.option-matching-pair')) {
+        container.innerHTML = `
+          <div class="option-input" data-type="text">
+            <span class="option-label">1</span>
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+            <input type="text" class="option-field" placeholder="選項 1 文字內容">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+            <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+          </div>
+          <div class="option-input" data-type="text">
+            <span class="option-label">2</span>
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+            <input type="text" class="option-field" placeholder="選項 2 文字內容">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+            <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+          </div>
+        `;
+      }
+    }
   }
   
   endQuiz() {
@@ -169,14 +259,17 @@ class Quiz {
     
     if (this.currentQuiz && this.currentQuiz.active) {
       const isMultiple = this.currentQuiz.quizType === 'multiple';
-      const badgeText = isMultiple ? '☑️ 複選題' : '🔘 單選題';
+      const isMatching = this.currentQuiz.quizType === 'matching';
+      const badgeText = isMatching ? '🔗 配對題 (連連看)' : (isMultiple ? '☑️ 複選題' : '🔘 單選題');
+      const badgeColor = isMatching ? '#5856d6' : 'var(--accent-color)';
+      const badgeBg = isMatching ? 'rgba(88,86,214,0.1)' : 'rgba(0,122,255,0.1)';
 
       if (quizStatus) {
         quizStatus.innerHTML = `
           <div class="quiz-status">
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px;">
-              <span style="font-size: 14px; font-weight: bold; color: var(--accent-color);">📝 測驗進行中</span>
-              <span class="quiz-type-badge" style="background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">${badgeText}</span>
+              <span style="font-size: 14px; font-weight: bold; color: ${badgeColor};">📝 測驗進行中</span>
+              <span class="quiz-type-badge" style="background: ${badgeBg}; color: ${badgeColor}; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">${badgeText}</span>
             </div>
             ${this.renderQuestionContent(this.currentQuiz.question)}
           </div>
@@ -189,7 +282,29 @@ class Quiz {
       if (answerOptions) {
         answerOptions.style.display = 'block';
         const quizOpts = Array.isArray(this.currentQuiz.options) ? this.currentQuiz.options : [];
-        if (isMultiple) {
+        if (isMatching) {
+          answerOptions.innerHTML = `
+            <div id="quizMatchingBoardContainer" style="margin-top: 14px;"></div>
+            <button class="submit-matching-btn" onclick="window.quiz.submitMatchingAnswer()" style="margin-top: 12px; width: 100%; padding: 12px; background: #5856d6; color: white; font-size: 16px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(88,86,214,0.3);">
+              🔗 提交連線答案
+            </button>
+          `;
+          if (window.MatchingQuizEngine) {
+            const pairs = this.currentQuiz.pairs || (this.currentQuiz.options || []).map((opt, i) => ({
+              left: typeof opt === 'object' ? opt.text : opt,
+              right: this.currentQuiz.matchOptions?.[i] || ''
+            }));
+            const leftItems = (this.currentQuiz.options || []).map(opt => typeof opt === 'object' ? opt.text : opt);
+            const rightItems = this.currentQuiz.matchOptions || pairs.map(p => p.right);
+            window.MatchingQuizEngine.createBoard(document.getElementById('quizMatchingBoardContainer'), {
+              id: 'quiz_matching_live',
+              pairs,
+              leftItems,
+              rightItems,
+              solution: this.currentQuiz.correctAnswer || null
+            });
+          }
+        } else if (isMultiple) {
           answerOptions.innerHTML = `
             <div class="answer-options-container multiple-choice-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
               ${quizOpts.map((opt, i) => {
@@ -225,13 +340,17 @@ class Quiz {
       }
     } else if (this.currentQuiz && !this.currentQuiz.active) {
       const isMultiple = this.currentQuiz.quizType === 'multiple';
-      const badgeText = isMultiple ? '☑️ 複選題' : '🔘 單選題';
+      const isMatching = this.currentQuiz.quizType === 'matching';
+      const badgeText = isMatching ? '🔗 配對題 (連連看)' : (isMultiple ? '☑️ 複選題' : '🔘 單選題');
+      const badgeColor = isMatching ? '#5856d6' : 'var(--accent-color)';
+      const badgeBg = isMatching ? 'rgba(88,86,214,0.1)' : 'rgba(0,122,255,0.1)';
+
       if (quizStatus) {
         quizStatus.innerHTML = `
           <div class="quiz-status">
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px;">
               <span style="font-size: 14px; font-weight: bold; color: var(--text-muted);">⏹️ 測驗已結束</span>
-              <span class="quiz-type-badge" style="background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">${badgeText}</span>
+              <span class="quiz-type-badge" style="background: ${badgeBg}; color: ${badgeColor}; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">${badgeText}</span>
             </div>
             ${this.renderQuestionContent(this.currentQuiz.question || '')}
           </div>
@@ -277,9 +396,50 @@ class Quiz {
       return;
     }
     if (!this.currentQuiz.active) return;
+
+    const totalVoters = Object.keys(answers).length;
+
+    if (this.currentQuiz.quizType === 'matching') {
+      const pairs = this.currentQuiz.pairs || (this.currentQuiz.options || []).map((opt, i) => ({
+        left: typeof opt === 'object' ? opt.text : opt,
+        right: this.currentQuiz.matchOptions?.[i] || ''
+      }));
+
+      const pairCorrectCounts = pairs.map(p => {
+        let count = 0;
+        Object.values(answers).forEach(ans => {
+          if (ans && typeof ans === 'object' && ans[p.left] === p.right) {
+            count++;
+          }
+        });
+        return count;
+      });
+
+      resultsContainer.innerHTML = `
+        <div style="margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">
+          已回答: ${totalVoters} 人 (配對連連看計票)
+        </div>
+        ${pairs.map((p, i) => {
+          const cnt = pairCorrectCounts[i];
+          const pct = totalVoters > 0 ? Math.round((cnt / totalVoters) * 100) : 0;
+          return `
+            <div class="result-bar" style="align-items: center; margin-bottom: 8px;">
+              <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto; font-size: 13px;" title="${this.escapeHtml(p.left)} 🔗 ${this.escapeHtml(p.right)}">
+                <span>${this.escapeHtml(p.left)} 🔗 ${this.escapeHtml(p.right)}</span>
+              </div>
+              <div class="result-progress">
+                <div class="result-fill" style="width: ${pct}%; background: #5856d6;">
+                  ${cnt}人 (${pct}%)
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      `;
+      return;
+    }
     
     const quizOpts = Array.isArray(this.currentQuiz.options) ? this.currentQuiz.options : [];
-    const totalVoters = Object.keys(answers).length;
     const optionCount = quizOpts.length;
     if (optionCount === 0) return;
     const counts = new Array(optionCount).fill(0);
@@ -333,6 +493,47 @@ class Quiz {
       }
       const answers = snapshot.val() || {};
       const totalVoters = Object.keys(answers).length;
+
+      if (this.currentQuiz.quizType === 'matching') {
+        const pairs = this.currentQuiz.pairs || (this.currentQuiz.options || []).map((opt, i) => ({
+          left: typeof opt === 'object' ? opt.text : opt,
+          right: this.currentQuiz.matchOptions?.[i] || ''
+        }));
+        const pairCorrectCounts = pairs.map(p => {
+          let count = 0;
+          Object.values(answers).forEach(ans => {
+            if (ans && typeof ans === 'object' && ans[p.left] === p.right) {
+              count++;
+            }
+          });
+          return count;
+        });
+
+        resultsContainer.innerHTML = `
+          <div style="padding: 10px; background: var(--bg-input); border-radius: 10px; margin-bottom: 10px;">
+            <div style="font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">📊 最終結果 (配對題連連看)</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">總計 ${totalVoters} 人作答</div>
+          </div>
+          ${pairs.map((p, i) => {
+            const cnt = pairCorrectCounts[i];
+            const pct = totalVoters > 0 ? Math.round((cnt / totalVoters) * 100) : 0;
+            return `
+              <div class="result-bar" style="align-items: center; margin-bottom: 8px;">
+                <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto; font-size: 13px;">
+                  <span style="color: var(--success-color); font-weight: bold;">✅ ${this.escapeHtml(p.left)} 🔗 ${this.escapeHtml(p.right)}</span>
+                </div>
+                <div class="result-progress">
+                  <div class="result-fill" style="width: ${pct}%; background: #5856d6;">
+                    ${cnt} (${pct}%)
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        `;
+        return;
+      }
+
       const quizOpts = (this.currentQuiz && Array.isArray(this.currentQuiz.options)) ? this.currentQuiz.options : [];
       const optionCount = quizOpts.length;
       if (optionCount === 0) {
@@ -402,8 +603,17 @@ class Quiz {
     listContainer.innerHTML = sortedKeys.map(key => {
       const q = this.historyBank[key];
       const isMultiple = q.quizType === 'multiple';
-      const badgeText = isMultiple ? '☑️ 複選' : '🔘 單選';
-      const optionsStr = (q.options || []).map((opt, i) => this.getOptionLabel(opt, `選項 ${i + 1}`)).join(' | ');
+      const isMatching = q.quizType === 'matching';
+      const badgeText = isMatching ? '🔗 配對' : (isMultiple ? '☑️ 複選' : '🔘 單選');
+      const badgeBg = isMatching ? 'rgba(88,86,214,0.1)' : 'rgba(0,122,255,0.1)';
+      const badgeColor = isMatching ? '#5856d6' : 'var(--accent-color)';
+
+      let optionsStr = '';
+      if (isMatching && q.pairs && q.pairs.length > 0) {
+        optionsStr = q.pairs.map(p => `${p.left} = ${p.right}`).join(' | ');
+      } else {
+        optionsStr = (q.options || []).map((opt, i) => this.getOptionLabel(opt, `選項 ${i + 1}`)).join(' | ');
+      }
       const questionText = (q.question || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() || (q.question || '');
 
       return `
@@ -412,7 +622,7 @@ class Quiz {
             <input type="checkbox" class="quiz-history-checkbox" value="${key}" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-color);">
             <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden;">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="background: rgba(0,122,255,0.1); color: var(--accent-color); font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
+                <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
                 <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(questionText)}</span>
               </div>
               <div style="font-size: 11px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
@@ -467,13 +677,21 @@ class Quiz {
   // 下載 TXT 工具方法
   downloadQuizBankTxt(questions, filename) {
     const txtBlocks = questions.map(q => {
-      const typeStr = q.quizType === 'multiple' ? '複選' : '單選';
-      const optionsText = (q.options || []).map(opt => {
-        if (typeof opt === 'object' && opt !== null) {
-          return opt.text ? `${opt.text} [圖片選項]` : '[圖片選項]';
-        }
-        return String(opt);
-      }).join('\n');
+      let typeStr = '單選';
+      if (q.quizType === 'matching') typeStr = '配對';
+      else if (q.quizType === 'multiple') typeStr = '複選';
+
+      let optionsText = '';
+      if (q.quizType === 'matching' && q.pairs && q.pairs.length > 0) {
+        optionsText = q.pairs.map(p => `${p.left} = ${p.right}`).join('\n');
+      } else {
+        optionsText = (q.options || []).map(opt => {
+          if (typeof opt === 'object' && opt !== null) {
+            return opt.text ? `${opt.text} [圖片選項]` : '[圖片選項]';
+          }
+          return String(opt);
+        }).join('\n');
+      }
       return `${q.question}\n${typeStr}\n${optionsText}`;
     });
 
@@ -993,6 +1211,28 @@ class Quiz {
     const qInput = document.getElementById('quizQuestion');
     if (qInput) qInput.value = item.question || '';
 
+    if (item.quizType === 'matching') {
+      const radMatching = document.querySelector('input[name="quizTypeRadio"][value="matching"]');
+      if (radMatching) radMatching.checked = true;
+      const pairs = item.pairs || (item.options || []).map((opt, i) => ({
+        left: typeof opt === 'object' ? opt.text : opt,
+        right: item.matchOptions?.[i] || ''
+      }));
+      const container = document.getElementById('optionsContainer');
+      if (container && pairs.length > 0) {
+        container.innerHTML = pairs.map((p, idx) => `
+          <div class="option-matching-pair">
+            <input type="text" class="matching-left-field" value="${this.escapeHtml(p.left)}" placeholder="左側題目 ${idx + 1}">
+            <span class="matching-pair-link-icon">🔗</span>
+            <input type="text" class="matching-right-field" value="${this.escapeHtml(p.right)}" placeholder="右側答案 ${idx + 1}">
+            <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+          </div>
+        `).join('');
+      }
+      if (window.app) window.app.showNotification('成功', '已載入此題至出題框！');
+      return;
+    }
+
     if (item.quizType === 'multiple') {
       const radMulti = document.querySelector('input[name="quizTypeRadio"][value="multiple"]');
       if (radMulti) radMulti.checked = true;
@@ -1132,10 +1372,36 @@ Python
             if (lines.length >= 3) {
               const question = lines[0];
               const typeStr = lines[1];
-              const quizType = (typeStr.includes('複') || typeStr.toLowerCase().includes('multi')) ? 'multiple' : 'single';
-              const options = lines.slice(2);
-              if (options.length >= 2) {
-                questions.push({ question, quizType, options });
+              let quizType = 'single';
+              if (typeStr.includes('配對') || typeStr.includes('連') || typeStr.toLowerCase().includes('match')) {
+                quizType = 'matching';
+              } else if (typeStr.includes('複') || typeStr.toLowerCase().includes('multi')) {
+                quizType = 'multiple';
+              }
+
+              const rawOptions = lines.slice(2);
+              if (quizType === 'matching') {
+                const pairs = [];
+                rawOptions.forEach(optLine => {
+                  const parts = optLine.split(/[=＝]/);
+                  if (parts.length >= 2) {
+                    const left = parts[0].trim();
+                    const right = parts.slice(1).join('=').trim();
+                    if (left && right) pairs.push({ left, right });
+                  }
+                });
+                if (pairs.length >= 2) {
+                  questions.push({
+                    question,
+                    quizType,
+                    options: pairs.map(p => p.left),
+                    matchOptions: pairs.map(p => p.right),
+                    pairs,
+                    correctAnswer: pairs.reduce((acc, p) => { acc[p.left] = p.right; return acc; }, {})
+                  });
+                }
+              } else if (rawOptions.length >= 2) {
+                questions.push({ question, quizType, options: rawOptions });
               }
             }
           });
@@ -1148,7 +1414,7 @@ Python
 
         // 自動寫入歷屆題目庫
         questions.forEach(q => {
-          this.saveToHistoryBank(q.question, q.options, q.quizType);
+          this.saveToHistoryBank(q.question, q.options, q.quizType, q);
         });
 
         // 帶入第一題
@@ -1159,7 +1425,21 @@ Python
           const qInput = document.getElementById('quizQuestion');
           if (qInput) qInput.value = q0.question;
           
-          if (q0.quizType === 'multiple') {
+          if (q0.quizType === 'matching') {
+            const radMatching = document.querySelector('input[name="quizTypeRadio"][value="matching"]');
+            if (radMatching) radMatching.checked = true;
+            const container = document.getElementById('optionsContainer');
+            if (container && q0.pairs && q0.pairs.length > 0) {
+              container.innerHTML = q0.pairs.map((p, idx) => `
+                <div class="option-matching-pair">
+                  <input type="text" class="matching-left-field" value="${this.escapeHtml(p.left)}" placeholder="左側題目 ${idx + 1}">
+                  <span class="matching-pair-link-icon">🔗</span>
+                  <input type="text" class="matching-right-field" value="${this.escapeHtml(p.right)}" placeholder="右側答案 ${idx + 1}">
+                  <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+                </div>
+              `).join('');
+            }
+          } else if (q0.quizType === 'multiple') {
             const radMulti = document.querySelector('input[name="quizTypeRadio"][value="multiple"]');
             if (radMulti) radMulti.checked = true;
           } else {
@@ -1167,32 +1447,35 @@ Python
             if (radSingle) radSingle.checked = true;
           }
 
-          // 重新填入選項
-          const container = document.getElementById('optionsContainer');
-          if (container) {
-            container.innerHTML = q0.options.map((opt, idx) => {
-              const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
-              const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt));
-              const imgSrc = isImg ? opt.image : '';
+          // 重新填入非配對選項
+          if (q0.quizType !== 'matching') {
+            const container = document.getElementById('optionsContainer');
+            if (container) {
+              container.innerHTML = q0.options.map((opt, idx) => {
+                const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+                const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt));
+                const imgSrc = isImg ? opt.image : '';
 
-              return `
-                <div class="option-input" data-type="${isImg ? 'image' : 'text'}">
-                  <span class="option-label">${idx + 1}</span>
-                  <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isImg ? 'color: #ff9500; border-color: #ff9500;' : ''}">
-                    ${isImg ? '🖼️ 圖片' : '📝 文字'}
-                  </button>
-                  <input type="text" class="option-field" value="${this.escapeHtml(optText)}" placeholder="${isImg ? '說明文字或留空' : '選項文字內容'}">
-                  <input type="hidden" class="option-img-data" value="${this.escapeHtml(imgSrc)}">
-                  <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">
-                    ${isImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
-                  </button>
-                  <img class="option-img-preview-thumb" src="${this.escapeHtml(imgSrc)}" style="${isImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
-                  <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
-                </div>
-              `;
-            }).join('');
+                return `
+                  <div class="option-input" data-type="${isImg ? 'image' : 'text'}">
+                    <span class="option-label">${idx + 1}</span>
+                    <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isImg ? 'color: #ff9500; border-color: #ff9500;' : ''}">
+                      ${isImg ? '🖼️ 圖片' : '📝 文字'}
+                    </button>
+                    <input type="text" class="option-field" value="${this.escapeHtml(optText)}" placeholder="${isImg ? '說明文字或留空' : '選項文字內容'}">
+                    <input type="hidden" class="option-img-data" value="${this.escapeHtml(imgSrc)}">
+                    <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">
+                      ${isImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
+                    </button>
+                    <img class="option-img-preview-thumb" src="${this.escapeHtml(imgSrc)}" style="${isImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+                    <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+                  </div>
+                `;
+              }).join('');
+            }
           }
         }
+
 
         if (window.app) window.app.showNotification('成功', `已成功解析並儲存 ${questions.length} 個題目至歷屆題目庫！第一題已自動帶入出題框`);
       } catch (err) {
