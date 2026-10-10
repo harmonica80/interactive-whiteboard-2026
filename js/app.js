@@ -1008,6 +1008,9 @@ class App {
     // 5. 關閉彈窗並顯示歡迎訊息
     this.closeStudentNameModal();
     this.showNotification('歡迎回來', `已確認身分！歡迎「${existingStudent?.name || name}」以原帳號登入。`);
+    setTimeout(() => {
+      this.checkAndShowLoginSharesModal();
+    }, 450);
   }
 
   async saveStudentNameFromModal() {
@@ -1093,6 +1096,9 @@ class App {
     this.setUserName(name);
     this.closeStudentNameModal();
     this.showNotification('成功', `您好，${name}！已完成姓名與頭像設定。`);
+    setTimeout(() => {
+      this.checkAndShowLoginSharesModal();
+    }, 450);
   }
 
   // ===== 通用內容修改彈窗 (避免 prompt 被手機阻擋) =====
@@ -1700,6 +1706,12 @@ class App {
       this.shares = shares;
       this.renderTeacherShares();
       this.renderAdminShares();
+      this.updateLoginSharesBadge();
+      if (!this.hasShownLoginSharesOnEntry && !this.isAdmin && this.getUserName()) {
+        setTimeout(() => {
+          this.checkAndShowLoginSharesModal();
+        }, 500);
+      }
     });
 
     // 監聽教師分享資料庫資料夾
@@ -3679,9 +3691,20 @@ class App {
   }
   
   toggleAdminCategory(blockId) {
-    const block = document.getElementById(blockId);
-    if (block) {
-      block.classList.toggle('cat-collapsed');
+    const targetBlock = document.getElementById(blockId);
+    if (!targetBlock) return;
+    const isCurrentlyCollapsed = targetBlock.classList.contains('cat-collapsed');
+    if (isCurrentlyCollapsed) {
+      // 開啟此類別，並自動將其它類別收合 (手風琴效果)
+      document.querySelectorAll('.admin-cat-block').forEach(b => {
+        if (b !== targetBlock) {
+          b.classList.add('cat-collapsed');
+        }
+      });
+      targetBlock.classList.remove('cat-collapsed');
+    } else {
+      // 點擊已展開的類別則直接收合
+      targetBlock.classList.add('cat-collapsed');
     }
   }
 
@@ -3701,7 +3724,7 @@ class App {
     const adminFeatureConfig = {
       classReg: {
         id: 'adminClassSection',
-        title: 'A. 班級代碼管理與開課登記',
+        title: 'A. 班級開課管理與切換班級',
         category: '班級管理',
         icon: 'images/admin_icons/class_reg.svg'
       },
@@ -3786,6 +3809,33 @@ class App {
 
     this.currentAdminFeatureKey = featureKey;
 
+    // 開啟功能時，目錄區亦同步自動收合其他類別，僅保留該功能所屬類別展開
+    const catBlockMap = {
+      classReg: 'adminCatBlock1',
+      classAvatar: 'adminCatBlock1',
+      classCopy: 'adminCatBlock1',
+      systemReset: 'adminCatBlock1',
+      quizChoice: 'adminCatBlock2',
+      quizVideo: 'adminCatBlock2',
+      gameBuzz: 'adminCatBlock3',
+      gameFocus: 'adminCatBlock3',
+      qaMgmt: 'adminCatBlock4',
+      imgMgmt: 'adminCatBlock4',
+      vidMgmt: 'adminCatBlock4',
+      shareNews: 'adminCatBlock5',
+      shareMaterials: 'adminCatBlock5'
+    };
+    const targetCatBlockId = catBlockMap[featureKey];
+    if (targetCatBlockId) {
+      document.querySelectorAll('.admin-cat-block').forEach(b => {
+        if (b.id === targetCatBlockId) {
+          b.classList.remove('cat-collapsed');
+        } else {
+          b.classList.add('cat-collapsed');
+        }
+      });
+    }
+
     const dashboardView = document.getElementById('adminDashboardView');
     const workspaceView = document.getElementById('adminSingleFeatureWorkspace');
     if (dashboardView) dashboardView.style.display = 'none';
@@ -3819,8 +3869,9 @@ class App {
       });
     }
 
-    // 教師分享管理：若是最新消息或教材，自動切換分類
+    // 教師分享管理：若是最新消息或教材，自動切換分類並預設分流過濾顯示
     if (cfg.shareCategory) {
+      this.adminShareActiveCategory = cfg.shareCategory;
       const shareCatSelect = document.getElementById('shareInputCategory');
       if (shareCatSelect) {
         shareCatSelect.value = cfg.shareCategory;
@@ -3828,6 +3879,7 @@ class App {
           this.onShareInputCategoryChange(cfg.shareCategory);
         }
       }
+      this.renderAdminShares();
     }
 
     // 班級管理專屬資料初始化
@@ -4934,7 +4986,13 @@ class App {
     const type = this.selectedShareFormType;
     const folderId = document.getElementById('shareFolderSelect')?.value || '';
     const category = document.getElementById('shareInputCategory')?.value || this.getSavedTeacherShareCategory();
+    const showOnLogin = !!document.getElementById('shareInputShowOnLogin')?.checked;
     this.saveTeacherShareCategory(category);
+
+    const resetShowOnLoginCheckbox = () => {
+      const chk = document.getElementById('shareInputShowOnLogin');
+      if (chk) chk.checked = false;
+    };
     
     if (type === 'text') {
       const input = document.getElementById('shareInputText');
@@ -4948,9 +5006,11 @@ class App {
         content: val,
         folderId: folderId,
         category: category,
+        showOnLogin: showOnLogin,
         timestamp: Date.now()
       }).then(() => {
         input.value = '';
+        resetShowOnLoginCheckbox();
         this.showNotification('成功', '文字發佈成功！');
       }).catch(err => {
         this.showNotification('錯誤', '發佈失敗: ' + err.message);
@@ -4976,10 +5036,12 @@ class App {
           content: url,
           folderId: folderId,
           category: category,
+          showOnLogin: showOnLogin,
           timestamp: Date.now()
         }).then(() => {
           titleInput.value = '';
           urlInput.value = '';
+          resetShowOnLoginCheckbox();
           this.showNotification('成功', '連結發佈成功！');
         }).catch(err => {
           this.showNotification('錯誤', '發佈失敗: ' + err.message);
@@ -5043,6 +5105,7 @@ class App {
               content: finalUrl,
               folderId: folderId,
               category: category,
+              showOnLogin: showOnLogin,
               timestamp: Date.now()
             });
           };
@@ -5071,6 +5134,7 @@ class App {
               this.showNotification('成功', '圖片分享成功！');
               this.isUploadingShareImage = false;
               this.shareImageFile = null;
+              resetShowOnLoginCheckbox();
               const filenameDiv = document.getElementById('shareImageFilename');
               if (filenameDiv) filenameDiv.textContent = '';
               const fileInput = document.getElementById('shareImageFileInput');
@@ -5083,6 +5147,7 @@ class App {
                   this.showNotification('成功', '圖片分享成功 (Base64)！');
                   this.isUploadingShareImage = false;
                   this.shareImageFile = null;
+                  resetShowOnLoginCheckbox();
                   const filenameDiv = document.getElementById('shareImageFilename');
                   if (filenameDiv) filenameDiv.textContent = '';
                   const fileInput = document.getElementById('shareImageFileInput');
@@ -5304,7 +5369,12 @@ class App {
         ${commentCount > 0 ? `
           <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showShareModal ? window.app.showShareModal('${item.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
         ` : ''}
-        <div class="share-item-header" style="justify-content: flex-end; margin-bottom: 8px;">
+        <div class="share-item-header" style="justify-content: ${item.showOnLogin ? 'space-between' : 'flex-end'}; margin-bottom: 8px;">
+          ${item.showOnLogin ? `
+            <span class="badge" style="background: rgba(255, 45, 85, 0.12); color: #ff2d55; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;">
+              🔔 登入即顯
+            </span>
+          ` : ''}
           <span>${timeStr}</span>
         </div>
         <div class="share-item-body" style="flex: 1; display: flex; flex-direction: column;">
@@ -5447,26 +5517,93 @@ class App {
     return str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
   }
 
+  setAdminShareFilter(category) {
+    this.adminShareActiveCategory = category;
+    if (category === 'news' || category === 'materials') {
+      const shareCatSelect = document.getElementById('shareInputCategory');
+      if (shareCatSelect) {
+        shareCatSelect.value = category;
+        if (typeof this.onShareInputCategoryChange === 'function') {
+          this.onShareInputCategoryChange(category);
+        }
+      }
+    }
+    this.renderAdminShares();
+  }
+
   renderAdminShares() {
     const container = document.getElementById('adminSharesContainer');
     if (!container) return;
-    
-    if (this.shares.length === 0) {
-      container.innerHTML = '<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">暫無分享內容</div>';
+
+    let activeFilter = this.adminShareActiveCategory;
+    if (!activeFilter) {
+      if (this.currentAdminFeatureKey === 'shareNews') {
+        activeFilter = 'news';
+      } else if (this.currentAdminFeatureKey === 'shareMaterials') {
+        activeFilter = 'materials';
+      } else {
+        activeFilter = 'news'; // 預設以最新消息優先顯示
+      }
+      this.adminShareActiveCategory = activeFilter;
+    }
+
+    const allShares = this.shares || [];
+    const totalCount = allShares.length;
+    const newsShares = allShares.filter(item => item.category === 'news');
+    const materialsShares = allShares.filter(item => item.category !== 'news');
+    const newsCount = newsShares.length;
+    const materialsCount = materialsShares.length;
+
+    let filteredShares = allShares;
+    if (activeFilter === 'news') {
+      filteredShares = newsShares;
+    } else if (activeFilter === 'materials') {
+      filteredShares = materialsShares;
+    }
+
+    // 次級篩選膠囊工具列
+    let filterTabsHTML = `
+      <div class="admin-share-filter-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; padding: 6px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-size: 12px; font-weight: bold; color: var(--text-secondary);">顯示篩選：</span>
+          <button type="button" class="preset-btn ${activeFilter === 'news' ? 'active' : ''}" onclick="window.app.setAdminShareFilter('news')" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 16px; cursor: pointer; transition: all 0.2s ease; ${activeFilter === 'news' ? 'background: #ff9500; color: #fff; border: 1px solid #ff9500; box-shadow: 0 2px 6px rgba(255, 149, 0, 0.3);' : 'background: transparent; color: var(--text-primary); border: 1px solid var(--border-color);'}">
+            📢 最新消息 (${newsCount})
+          </button>
+          <button type="button" class="preset-btn ${activeFilter === 'materials' ? 'active' : ''}" onclick="window.app.setAdminShareFilter('materials')" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 16px; cursor: pointer; transition: all 0.2s ease; ${activeFilter === 'materials' ? 'background: var(--accent-color); color: #fff; border: 1px solid var(--accent-color); box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3);' : 'background: transparent; color: var(--text-primary); border: 1px solid var(--border-color);'}">
+            📚 課程進度與教材 (${materialsCount})
+          </button>
+          <button type="button" class="preset-btn ${activeFilter === 'all' ? 'active' : ''}" onclick="window.app.setAdminShareFilter('all')" style="padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 16px; cursor: pointer; transition: all 0.2s ease; ${activeFilter === 'all' ? 'background: var(--text-primary); color: var(--bg-main); border: 1px solid var(--text-primary);' : 'background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color);'}">
+            全部 (${totalCount})
+          </button>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted);">
+          目前項目：<strong style="color: ${activeFilter === 'news' ? '#ff9500' : activeFilter === 'materials' ? 'var(--accent-color)' : 'var(--text-primary)'};">${activeFilter === 'news' ? '最新消息' : activeFilter === 'materials' ? '課程進度與教材' : '全部'}</strong> (${filteredShares.length} 項)
+        </div>
+      </div>
+    `;
+
+    if (filteredShares.length === 0) {
+      const emptyMsg = activeFilter === 'news' 
+        ? '📢 目前暫無最新消息分享內容' 
+        : activeFilter === 'materials' 
+          ? '📚 目前暫無課程進度與教材內容' 
+          : '暫無分享內容';
+      container.innerHTML = filterTabsHTML + `<div style="width: 100%; text-align: center; color: var(--text-muted); padding: 32px 20px; font-size: 13.5px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">${emptyMsg}</div>`;
+      this.updateBatchShareSelectCount();
       return;
     }
 
     const grouped = {};
-    this.shares.forEach(item => {
+    filteredShares.forEach(item => {
       const fid = item.folderId || '';
       if (!grouped[fid]) grouped[fid] = [];
       grouped[fid].push(item);
     });
 
-    let html = '';
+    let html = filterTabsHTML;
 
     if (grouped[''] && grouped[''].length > 0) {
-      html += `<div class="folder-card" style="border-left: 5px solid var(--accent-color) !important;">
+      html += `<div class="folder-card" style="border-left: 5px solid ${activeFilter === 'news' ? '#ff9500' : 'var(--accent-color)'} !important;">
         <div class="folder-card-header">
           <span>📁 未分類分享 (${grouped[''].length})</span>
         </div>
@@ -5478,11 +5615,15 @@ class App {
 
     this.shareFolders.forEach(folder => {
       const fShares = grouped[folder.id] || [];
+      if (fShares.length === 0 && activeFilter !== 'all') {
+        // 分流過濾模式下，若資料夾無屬於該分類的項目則不展示空資料夾
+        return;
+      }
       const isCollapsed = this.isFolderCollapsed(folder.id);
       
       html += `<div class="folder-card">
         <div class="folder-card-header" onclick="window.app.toggleFolderCollapse('${folder.id}')" style="cursor: pointer;">
-          <span>📁 ${folder.name} (${fShares.length})</span>
+          <span>📁 ${this.escapeHtml(folder.name)} (${fShares.length})</span>
           <button class="folder-toggle-btn">${isCollapsed ? '展開 ▼' : '折疊 ▲'}</button>
         </div>
         <div style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 10px;">
@@ -5520,12 +5661,20 @@ class App {
                 <span style="margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; ${item.category === 'news' ? 'background: rgba(255,149,0,0.12); color: #ff9500;' : 'background: rgba(0,122,255,0.1); color: var(--accent-color);'}">
                   ${item.category === 'news' ? '📢 最新消息' : '📚 課程教材'}
                 </span>
+                ${item.showOnLogin ? `
+                  <span style="margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; background: rgba(255, 45, 85, 0.12); color: #ff2d55;">
+                    🔔 登入即顯
+                  </span>
+                ` : ''}
               </div>
               <span>${timeStr}</span>
             </div>
             <div id="share-preview-${item.id}" style="word-break: break-all;">${preview}</div>
           </div>
-          <div style="display: flex; gap: 4px; flex-shrink: 0;">
+          <div style="display: flex; gap: 4px; flex-shrink: 0; align-items: center;">
+            <button class="preset-btn" onclick="window.app.toggleShareShowOnLogin('${item.id}')" style="background: ${item.showOnLogin ? 'rgba(255, 45, 85, 0.1)' : 'transparent'}; color: ${item.showOnLogin ? '#ff2d55' : 'var(--text-secondary)'}; border: 1px solid ${item.showOnLogin ? '#ff2d55' : 'var(--border-color)'}; padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;" title="切換學生登入時是否彈窗顯示">
+              ${item.showOnLogin ? '🔔 登入顯示中' : '🔕 設為登入顯示'}
+            </button>
             <button class="preset-btn" onclick="window.app.openSingleItemCopyModal('teacherShares', '${item.id}')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;" title="複製此分享至其他班級">📤 複製</button>
             <button class="preset-btn" onclick="window.app.adminEditShare('${item.id}')" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">✏️ 編輯</button>
             <button class="preset-btn" onclick="window.app.deleteShareItem('${item.id}')" style="background: var(--danger-color); color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;">刪除</button>
@@ -5547,12 +5696,18 @@ class App {
             </div>
           `}
           <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <label style="font-size: 12px; color: var(--text-secondary); font-weight: bold;">所屬分頁：</label>
-              <select id="share-edit-category-${item.id}" style="padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 12px;">
-                <option value="news" ${item.category === 'news' ? 'selected' : ''}>📢 最新消息</option>
-                <option value="materials" ${item.category !== 'news' ? 'selected' : ''}>📚 課程進度與教材</option>
-              </select>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <label style="font-size: 12px; color: var(--text-secondary); font-weight: bold;">所屬分頁：</label>
+                <select id="share-edit-category-${item.id}" style="padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 12px;">
+                  <option value="news" ${item.category === 'news' ? 'selected' : ''}>📢 最新消息</option>
+                  <option value="materials" ${item.category !== 'news' ? 'selected' : ''}>📚 課程進度與教材</option>
+                </select>
+              </div>
+              <label style="font-size: 12px; color: #ff2d55; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <input type="checkbox" id="share-edit-show-on-login-${item.id}" ${item.showOnLogin ? 'checked' : ''} style="cursor: pointer; accent-color: #ff2d55;">
+                🔔 於登入時顯示
+              </label>
             </div>
             <div style="display: flex; gap: 6px;">
               <button onclick="window.app.adminSaveShare('${item.id}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 儲存</button>
@@ -5562,6 +5717,175 @@ class App {
         </div>
       </div>
     `;
+  }
+
+  // 切換特定分享項目的「於登入時顯示」開關
+  toggleShareShowOnLogin(id) {
+    const item = (this.shares || []).find(s => s.id === id);
+    if (!item) return;
+    const nextVal = !item.showOnLogin;
+    this.sharesRef.child(id).update({ showOnLogin: nextVal })
+      .then(() => {
+        this.showNotification('成功', nextVal ? '已設為學生登入時自動顯示！' : '已取消登入時自動顯示');
+      })
+      .catch(err => {
+        this.showNotification('錯誤', '更新失敗: ' + err.message);
+      });
+  }
+
+  // 更新頂部登入公告提示標籤與數量
+  updateLoginSharesBadge() {
+    const loginShares = (this.shares || []).filter(item => item.showOnLogin === true || item.showOnLogin === 'true');
+    const count = loginShares.length;
+
+    const desktopBtn = document.getElementById('btnLoginSharesNotice');
+    const mobileBtn = document.getElementById('mobileLoginSharesNoticeBtn');
+    const desktopTxt = document.getElementById('txtLoginSharesNoticeCount');
+    const mobileTxt = document.getElementById('txtMobileLoginSharesNoticeCount');
+
+    if (count > 0) {
+      if (desktopBtn) desktopBtn.style.display = 'inline-flex';
+      if (mobileBtn) mobileBtn.style.display = 'inline-flex';
+      if (desktopTxt) desktopTxt.textContent = count;
+      if (mobileTxt) mobileTxt.textContent = count;
+    } else {
+      if (desktopBtn) desktopBtn.style.display = 'none';
+      if (mobileBtn) mobileBtn.style.display = 'none';
+    }
+  }
+
+  // 檢查並在學生登入課堂時彈出重要公告
+  checkAndShowLoginSharesModal(force = false) {
+    const loginShares = (this.shares || []).filter(item => item.showOnLogin === true || item.showOnLogin === 'true');
+    if (loginShares.length === 0) {
+      if (force) {
+        this.showNotification('提示', '目前尚無設定「於登入時顯示」的最新消息或教材。');
+      }
+      return;
+    }
+
+    if (!force && this.isAdmin) {
+      // 管理員在後台出題操作時不強制打擾，可透過按鈕主動預覽
+      return;
+    }
+
+    this.openLoginSharesModal(force);
+  }
+
+  // 開啟登入公告彈跳視窗
+  openLoginSharesModal(isManual = false) {
+    const loginShares = (this.shares || []).filter(item => item.showOnLogin === true || item.showOnLogin === 'true');
+    const modal = document.getElementById('loginSharesModal');
+    const container = document.getElementById('loginSharesModalContentList');
+    if (!modal || !container) return;
+
+    if (loginShares.length === 0) {
+      if (isManual) {
+        this.showNotification('提示', '目前尚無設定「於登入時顯示」的最新消息或教材。');
+      }
+      return;
+    }
+
+    let html = '';
+    loginShares.forEach(item => {
+      const isNews = item.category === 'news';
+      const folder = (this.shareFolders || []).find(f => f.id === item.folderId);
+      const folderName = folder ? folder.name : '';
+      const timeStr = new Date(item.timestamp).toLocaleString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      let bodyHTML = '';
+      if (item.type === 'text') {
+        bodyHTML = `
+          <div style="font-size: 14.5px; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; word-break: break-word;">${this.linkify ? this.linkify(item.content) : this.escapeHtml(item.content)}</div>
+          <div style="margin-top: 8px; display: flex; justify-content: flex-end;">
+            <button class="preset-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)" style="font-size: 12px; padding: 4px 10px; background: rgba(0,122,255,0.1); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer;">📋 複製文字</button>
+          </div>
+        `;
+      } else if (item.type === 'link') {
+        bodyHTML = `
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <a href="${item.content}" target="_blank" rel="noopener noreferrer" style="font-size: 15px; font-weight: bold; color: var(--accent-color); text-decoration: underline; word-break: break-all; display: inline-flex; align-items: center; gap: 6px;">
+              🔗 ${this.escapeHtml(item.title || item.content)}
+            </a>
+            <div style="font-size: 12px; color: var(--text-secondary); word-break: break-all;">${this.escapeHtml(item.content)}</div>
+            <div style="margin-top: 6px; display: flex; justify-content: flex-end;">
+              <a href="${item.content}" target="_blank" rel="noopener noreferrer" class="preset-btn" style="text-decoration: none; font-size: 12px; padding: 5px 12px; background: var(--accent-color); color: #fff; border-radius: 6px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                🚀 開啟連結 ➔
+              </a>
+            </div>
+          </div>
+        `;
+      } else if (item.type === 'image') {
+        bodyHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <img src="${item.content}" alt="公告圖片" style="max-width: 100%; max-height: 280px; object-fit: contain; border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color);" onclick="window.app.zoomShareImage('${item.content}')" title="點擊放大圖片">
+            <span style="font-size: 11px; color: var(--text-muted);">（點擊圖片可放大檢視）</span>
+          </div>
+        `;
+      }
+
+      html += `
+        <div class="login-shares-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; ${isNews ? 'background: rgba(255, 149, 0, 0.14); color: #ff9500;' : 'background: rgba(0, 122, 255, 0.12); color: var(--accent-color);'}">
+                ${isNews ? '📢 最新消息' : '📚 課程教材'}
+              </span>
+              ${folderName ? `<span style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">📁 ${this.escapeHtml(folderName)}</span>` : ''}
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button class="preset-btn" onclick="window.app.goToTeacherSharesPanel('${isNews ? 'news' : 'materials'}')" style="font-size: 11px; padding: 2px 8px; background: transparent; color: ${isNews ? '#ff9500' : 'var(--accent-color)'}; border: 1px solid ${isNews ? '#ff9500' : 'var(--accent-color)'}; border-radius: 4px; cursor: pointer;">
+                前往${isNews ? '最新消息' : '教材'} ➔
+              </button>
+              <span style="font-size: 11px; color: var(--text-muted);">${timeStr}</span>
+            </div>
+          </div>
+          <div style="padding-top: 4px;">
+            ${bodyHTML}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    this.hasShownLoginSharesOnEntry = true;
+  }
+
+  // 關閉登入公告視窗
+  closeLoginSharesModal() {
+    const modal = document.getElementById('loginSharesModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+
+  // 導向至教師分享專區
+  goToTeacherSharesPanel(targetSubTab = null) {
+    this.closeLoginSharesModal();
+    if (targetSubTab) {
+      this.currentTeacherShareSubTab = targetSubTab;
+    }
+    const shareBtn = document.querySelector('.teacher-share-top-btn');
+    if (shareBtn) {
+      shareBtn.click();
+    } else {
+      const panel = document.getElementById('panel-teacher-shares');
+      if (panel) {
+        document.querySelectorAll('.panel-card').forEach(p => p.classList.remove('active'));
+        panel.classList.add('active');
+      }
+    }
+    if (targetSubTab) {
+      this.switchTeacherShareSubTab(targetSubTab);
+    }
+  }
+
+  // 管理後台預覽學生登入公告畫面
+  previewLoginSharesModal() {
+    this.openLoginSharesModal(true);
   }
 
   adminCreateShareFolder() {
@@ -11636,6 +11960,11 @@ class App {
           setTimeout(() => {
             this.openStudentNameModal();
           }, 350);
+        } else {
+          // 已登入學生，進教室後自動檢查並顯示重要公告
+          setTimeout(() => {
+            this.checkAndShowLoginSharesModal();
+          }, 600);
         }
       }
     } else {
@@ -11654,6 +11983,12 @@ class App {
           setTimeout(() => {
             this.openStudentNameModal();
           }, 350);
+        }
+      } else {
+        if (!this.isAdmin) {
+          setTimeout(() => {
+            this.checkAndShowLoginSharesModal();
+          }, 600);
         }
       }
     }
@@ -13919,8 +14254,13 @@ function adminSaveShare(id) {
     if (catInput) {
       updates.category = catInput.value || 'materials';
     }
+    const showOnLoginInput = document.getElementById('share-edit-show-on-login-' + id);
+    if (showOnLoginInput) {
+      updates.showOnLogin = !!showOnLoginInput.checked;
+    }
     
-    db.ref('teacherShares').child(id).update(updates)
+    const targetRef = (window.app && window.app.sharesRef) ? window.app.sharesRef.child(id) : db.ref('teacherShares').child(id);
+    targetRef.update(updates)
       .then(() => {
         window.app.showNotification('成功', '教師分享已更新！');
         adminCancelEditShare(id);
