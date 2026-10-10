@@ -31,18 +31,25 @@
       <div class="top-actions">
         <div class="status-group">
           <div id="onlineCount" class="online-count">線上人數 0 人</div>
-          <span class="user-display-tag mobile-only" id="displayUserNameTagMobile" style="display: none; cursor: pointer; margin: 0 4px; white-space: nowrap; user-select: none;" onclick="window.app && window.app.openStudentNameModal()" title="點按頭像或名稱修改姓名與頭像">
+          <!-- 手機版大頭圖示：獨立完整圓形按鈕，不被截斷、點擊可開啟姓名頭像設定 -->
+          <div class="mobile-avatar-btn mobile-only" id="mobileUserAvatarBtn" onclick="window.app && window.app.openStudentNameModal()" title="點按頭像或名稱修改姓名與頭像">
             <span class="display-user-avatar" id="displayUserAvatarMobile"></span>
+          </div>
+          <!-- 手機版已登入學生姓名標籤 -->
+          <span class="user-display-tag mobile-only" id="displayUserNameTagMobile" style="display: none; cursor: pointer; margin: 0 2px; white-space: nowrap; user-select: none;" onclick="window.app && window.app.openStudentNameModal()" title="點按頭像或名稱修改姓名與頭像">
             <span class="display-user-name" id="displayUserNameMobile">訪客</span>
+            <span style="font-size: 11px; opacity: 0.7; margin-left: 2px;">✏️</span>
           </span>
-          <button type="button" class="user-display-tag mobile-only btn-set-name-prompt" id="btnSetStudentNameMobile" style="display: none; cursor: pointer; margin: 0 4px; white-space: nowrap; user-select: none;" onclick="window.app && window.app.openStudentNameModal()" title="設定您的姓名與頭像">
+          <!-- 手機版未設定名稱時的設定按鈕 -->
+          <button type="button" class="user-display-tag mobile-only btn-set-name-prompt" id="btnSetStudentNameMobile" style="display: none; cursor: pointer; margin: 0 2px; white-space: nowrap; user-select: none;" onclick="window.app && window.app.openStudentNameModal()" title="設定您的姓名與頭像">
             <span>👤 設定</span>
           </button>
-          <div id="connectionStatus" class="connection-status disconnected" title="連線狀態：連線中..."></div>
         </div>
         <div class="header-buttons">
           <button class="menu-tab teacher-share-top-btn mobile-only" data-target="panel-teacher-shares" title="教師分享">教師分享</button>
           <button type="button" id="mobileLoginSharesNoticeBtn" class="mobile-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none;" title="查看最新課堂公告">🔔 (<span id="txtMobileLoginSharesNoticeCount">0</span>)</button>
+          <!-- 連線狀態指示圖示移至鈴鐺右側 -->
+          <div id="connectionStatus" class="connection-status disconnected" title="連線狀態：連線中..."></div>
           <button type="button" class="switch-class-mobile-btn mobile-only" id="mobileSwitchClassBtn" onclick="window.app && window.app.openClassModal()" title="切換班級/回一次性課堂">🏫</button>
           <!-- 管理後台按鈕移至右上角 -->
           <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️<span class="admin-btn-text"> 管理後台</span></button>

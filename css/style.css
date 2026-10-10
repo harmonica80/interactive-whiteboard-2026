@@ -1749,6 +1749,12 @@ body {
   .mobile-only {
     display: inline-block !important;
   }
+
+  /* 尊重 inline style 的 display: none，確保 JS 隱藏控制生效 */
+  .mobile-only[style*="display: none"],
+  .mobile-only[style*="display:none"] {
+    display: none !important;
+  }
   
   .header-title {
     font-size: 1.5rem;
@@ -1762,7 +1768,7 @@ body {
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 6px !important;
     width: 100% !important;
     flex-wrap: nowrap !important;
   }
@@ -1774,7 +1780,7 @@ body {
     width: auto !important;
     flex: 0 1 auto !important;
     padding: 0 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   /* 手機版本隱藏「線上人數」文字標籤，為互動釋放更多空間 */
@@ -1783,28 +1789,77 @@ body {
     display: none !important;
   }
 
-  /* 手機版代表連線狀態的圖示改為正方形顯示，讓畫面有更大空間 */
-  .status-group .connection-status,
+  /* 手機版大頭圖示：獨立完整圓形按鈕，確保頭像不被截斷且完整清晰露出 */
+  .mobile-avatar-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    background: var(--bg-card) !important;
+    border: 1.5px solid var(--border-color) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    transition: transform 0.2s ease, border-color 0.2s ease !important;
+  }
+  .mobile-avatar-btn:hover {
+    border-color: var(--accent-color) !important;
+    transform: scale(1.05) !important;
+  }
+  .mobile-avatar-btn:active {
+    transform: scale(0.95) !important;
+  }
+  .mobile-avatar-btn .display-user-avatar {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .mobile-avatar-btn .display-user-avatar span {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    box-shadow: none !important;
+    border: none !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 手機版代表連線狀態的圖示改為正方形顯示，移至鈴鐺右側 */
+  .header-buttons .connection-status,
   .connection-status {
     width: 14px !important;
     height: 14px !important;
     border-radius: 3px !important;
     flex-shrink: 0 !important;
+    margin: 0 1px !important;
   }
 
   #displayUserNameTagMobile.mobile-only {
-    display: inline-flex !important;
     align-items: center;
-    max-width: 120px;
+    max-width: 110px;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 3px 8px !important;
+    font-size: 12px !important;
+    border-radius: 14px !important;
+    flex-shrink: 0 !important;
   }
 
   #btnSetStudentNameMobile.mobile-only {
-    display: inline-flex !important;
     align-items: center;
     flex-shrink: 0 !important;
     white-space: nowrap !important;
+    padding: 3px 8px !important;
+    font-size: 12px !important;
+    border-radius: 14px !important;
   }
 
   .header-buttons {

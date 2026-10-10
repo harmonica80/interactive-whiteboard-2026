@@ -393,9 +393,13 @@ class App {
     const displayUserAvatarMobile = document.getElementById('displayUserAvatarMobile');
     const btnSetStudentNameMobile = document.getElementById('btnSetStudentNameMobile');
 
+    // 手機端獨立圓形大頭貼，始終即時渲染最新頭像 (包含未設定姓名時的預設頭像)
+    if (displayUserAvatarMobile) {
+      displayUserAvatarMobile.innerHTML = avatarHtml;
+    }
+
     if (userName) {
       if (displayUserNameMobile) displayUserNameMobile.textContent = userName;
-      if (displayUserAvatarMobile) displayUserAvatarMobile.innerHTML = avatarHtml;
       if (displayUserNameTagMobile) displayUserNameTagMobile.style.display = 'inline-flex';
       if (btnSetStudentNameMobile) btnSetStudentNameMobile.style.display = 'none';
     } else {
