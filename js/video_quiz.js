@@ -91,6 +91,27 @@
           correctAnswer: '在認清正確且善良的目標後，不隨波逐流，堅持努力到底。',
           explanation: '「擇善固執」出自《中庸》，指選擇合宜善道並堅定遵循實踐。',
           points: 10
+        },
+        {
+          id: 'qc_4',
+          time: 150,
+          timeFormatted: '02:30',
+          type: 'matching',
+          prompt: '【成語連連看】請將下列成語典故與其對應的關鍵主角配對：',
+          options: ['臥薪嚐膽', '完璧歸趙', '四面楚歌'],
+          matchOptions: ['勾踐', '藺相如', '項羽'],
+          pairs: [
+            { left: '臥薪嚐膽', right: '勾踐' },
+            { left: '完璧歸趙', right: '藺相如' },
+            { left: '四面楚歌', right: '項羽' }
+          ],
+          correctAnswer: {
+            '臥薪嚐膽': '勾踐',
+            '完璧歸趙': '藺相如',
+            '四面楚歌': '項羽'
+          },
+          explanation: '臥薪嚐膽為越王勾踐、完璧歸趙為趙國藺相如、四面楚歌為楚霸王項羽。',
+          points: 15
         }
       ]
     }
@@ -2082,7 +2103,9 @@
       const content = document.getElementById('vqQuestionOverlayContent');
       if (!overlay || !content) return;
 
-      const typeBadge = question.type === 'single' ? '🔘 單選題' : (question.type === 'multiple' ? '☑️ 複選題' : '✍️ 問答題');
+      const typeBadge = question.type === 'single' ? '🔘 單選題'
+        : (question.type === 'multiple' ? '☑️ 複選題'
+        : (question.type === 'matching' ? '🔗 配對題 (連連看)' : '✍️ 問答題'));
       const points = question.points || 10;
 
       let formHtml = '';
@@ -2107,6 +2130,10 @@
               </label>
             `).join('')}
           </div>
+        `;
+      } else if (question.type === 'matching') {
+        formHtml = `
+          <div id="vqMatchingContainer" style="margin: 14px 0;"></div>
         `;
       } else if (question.type === 'text') {
         formHtml = `
@@ -2150,6 +2177,26 @@
       `;
 
       overlay.style.display = 'flex';
+
+      // 若為連連看配對題，初始化連連看畫布
+      if (question.type === 'matching' && window.MatchingQuizEngine) {
+        const pairs = question.pairs || (question.options || []).map((opt, i) => ({
+          left: opt,
+          right: question.matchOptions?.[i] || ''
+        }));
+        const leftItems = (question.options || []).map(opt => typeof opt === 'object' ? opt.text : opt);
+        const rightItems = question.matchOptions || pairs.map(p => p.right);
+        const boardEl = document.getElementById('vqMatchingContainer');
+        if (boardEl) {
+          window.MatchingQuizEngine.createBoard(boardEl, {
+            id: 'vq_matching_board_' + question.id,
+            pairs,
+            leftItems,
+            rightItems,
+            solution: question.correctAnswer || null
+          });
+        }
+      }
     }
 
     // 返回測驗影片播放介面並關閉題目彈窗 (教師端)
@@ -2174,7 +2221,22 @@
       let userAnswer = null;
       let isCorrect = false;
 
-      if (q.type === 'single') {
+      if (q.type === 'matching') {
+        const matchingContainer = document.getElementById('vqMatchingContainer');
+        const userConnections = window.MatchingQuizEngine ? window.MatchingQuizEngine.getConnections(matchingContainer) : {};
+        if (Object.keys(userConnections).length === 0) {
+          if (window.app) window.app.showNotification('提示', '請先進行連線配對再提交答案！');
+          return;
+        }
+        userAnswer = userConnections;
+        const pairs = q.pairs || (q.options || []).map((opt, i) => ({ left: opt, right: q.matchOptions?.[i] || '' }));
+        let correctCount = 0;
+        const totalPairs = pairs.length;
+        pairs.forEach(p => {
+          if (userAnswer[p.left] === p.right) correctCount++;
+        });
+        isCorrect = (correctCount === totalPairs);
+      } else if (q.type === 'single') {
         const checked = document.querySelector('input[name="vqSingleOption"]:checked');
         if (!checked) {
           if (window.app) window.app.showNotification('提示', '請先選擇一個選項！');
@@ -2202,7 +2264,19 @@
         isCorrect = true; // 問答題只要提交即視為完成作答
       }
 
-      const score = isCorrect ? (q.points || 10) : 0;
+      let score = 0;
+      if (q.type === 'matching') {
+        const pairs = q.pairs || (q.options || []).map((opt, i) => ({ left: opt, right: q.matchOptions?.[i] || '' }));
+        let correctCount = 0;
+        const totalPairs = pairs.length;
+        pairs.forEach(p => {
+          if (userAnswer && userAnswer[p.left] === p.right) correctCount++;
+        });
+        score = totalPairs > 0 ? Math.round((correctCount / totalPairs) * (q.points || 10)) : 0;
+      } else {
+        score = isCorrect ? (q.points || 10) : 0;
+      }
+
       this.userAnswers[q.id] = {
         questionId: q.id,
         type: q.type,
@@ -2221,7 +2295,33 @@
 
       if (feedbackArea) {
         feedbackArea.style.display = 'block';
-        if (q.type === 'text') {
+        if (q.type === 'matching') {
+          const matchingContainer = document.getElementById('vqMatchingContainer');
+          const pairs = q.pairs || (q.options || []).map((opt, i) => ({ left: opt, right: q.matchOptions?.[i] || '' }));
+          let correctCount = 0;
+          const totalPairs = pairs.length;
+          pairs.forEach(p => {
+            if (userAnswer && userAnswer[p.left] === p.right) correctCount++;
+          });
+          if (window.MatchingQuizEngine && matchingContainer) {
+            window.MatchingQuizEngine.renderResults(matchingContainer, userAnswer, q.correctAnswer, { showAnswers: true });
+          }
+          if (isCorrect) {
+            feedbackArea.style.background = 'rgba(52, 199, 89, 0.1)';
+            feedbackArea.style.border = '1px solid var(--success-color)';
+            feedbackArea.innerHTML = `
+              <div style="font-weight: bold; color: var(--success-color); margin-bottom: 4px;">🎉 全部配對正確！（+${score} 分）</div>
+              <div style="font-size: 13px; color: var(--text-secondary);">💡 解析：${this.escapeHtml(q.explanation || '連線配對完全正確，非常厲害！')}</div>
+            `;
+          } else {
+            feedbackArea.style.background = 'rgba(255, 149, 0, 0.1)';
+            feedbackArea.style.border = '1px solid #ff9500';
+            feedbackArea.innerHTML = `
+              <div style="font-weight: bold; color: #ff9500; margin-bottom: 4px;">連線完成：答對 ${correctCount} / ${totalPairs} 組配對（+${score} 分）</div>
+              <div style="font-size: 13px; color: var(--text-secondary);">💡 綠色虛線為標準正確配對指引。解析：${this.escapeHtml(q.explanation || '請對照正確配對釐清觀念喔！')}</div>
+            `;
+          }
+        } else if (q.type === 'text') {
           feedbackArea.style.background = 'rgba(0, 122, 255, 0.1)';
           feedbackArea.style.border = '1px solid var(--accent-color)';
           feedbackArea.innerHTML = `
@@ -2551,6 +2651,72 @@
                 </div>
               </div>
             `;
+          } else if (q.type === 'matching') {
+            const pairs = q.pairs || (q.options || []).map((opt, i) => ({ left: opt, right: q.matchOptions?.[i] || '' }));
+            const pairCounts = pairs.map(p => {
+              let cnt = 0;
+              userList.forEach(u => {
+                const ans = u.answers?.[q.id]?.answer;
+                if (ans && typeof ans === 'object' && ans[p.left] === p.right) {
+                  cnt++;
+                }
+              });
+              return cnt;
+            });
+
+            let allCorrectTotal = 0;
+            let answeredRespondentCount = 0;
+            userList.forEach(u => {
+              const ans = u.answers?.[q.id];
+              if (ans) {
+                answeredRespondentCount++;
+                if (ans.isCorrect) allCorrectTotal++;
+              }
+            });
+
+            const accuracy = totalParticipants > 0 ? Math.round((allCorrectTotal / totalParticipants) * 100) : 0;
+
+            let qAccuracyHeader = '';
+            if (canShowAnswer) {
+              qAccuracyHeader = `
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+                  全班全對率：<strong style="color: ${accuracy >= 60 ? 'var(--success-color)' : 'var(--danger-color)'};">${accuracy}%</strong> (${allCorrectTotal}/${totalParticipants} 人全部配對正確)
+                </div>
+              `;
+            } else {
+              qAccuracyHeader = `
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px;">
+                  <span>各配對項目連線分佈統計（全班共 ${answeredRespondentCount} 人提交）</span>
+                  <span style="font-size: 12px; color: var(--accent-color); font-weight: 500;">🔒 作答本題後揭曉正確配對與答對率</span>
+                </div>
+              `;
+            }
+
+            qStatsHtml = `
+              <div style="margin-top: 10px;">
+                ${qAccuracyHeader}
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  ${pairs.map((p, pIdx) => {
+                    const cnt = pairCounts[pIdx];
+                    const pct = totalParticipants > 0 ? Math.round((cnt / totalParticipants) * 100) : 0;
+                    const label = canShowAnswer
+                      ? `✅ ${this.escapeHtml(p.left)} 🔗 ${this.escapeHtml(p.right)}`
+                      : `🔗 項目 ${pIdx + 1}：${this.escapeHtml(p.left)} ➔ ？？？`;
+                    return `
+                      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                        <span style="width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${canShowAnswer ? 'bold' : 'normal'}; color: ${canShowAnswer ? 'var(--success-color)' : 'var(--text-primary)'};">
+                          ${label}
+                        </span>
+                        <div style="flex: 1; height: 16px; background: rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; position: relative;">
+                          <div style="width: ${pct}%; height: 100%; background: ${canShowAnswer ? 'var(--success-color)' : '#5856d6'}; border-radius: 8px; transition: width 0.3s;"></div>
+                        </div>
+                        <span style="width: 60px; text-align: right; font-size: 12px; color: var(--text-secondary);">${cnt}人 (${pct}%)</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
           } else if (q.type === 'text') {
             // 問答題條列答案文字牆
             const textAnswers = userList.map(u => ({
@@ -2597,6 +2763,8 @@
           );
           const cardBorder = isCurrentQ ? 'border: 2px solid #5856d6; box-shadow: 0 4px 16px rgba(88,86,214,0.18);' : 'border: 1px solid var(--border-color);';
 
+          const qTypeLabel = q.type === 'single' ? '單選題' : (q.type === 'multiple' ? '複選題' : (q.type === 'matching' ? '配對題' : '問答題'));
+
           questionsHtml += `
             <div id="vq-stats-q-${q.id}" style="background: var(--bg-card); ${cardBorder} border-radius: 12px; padding: 14px; margin-bottom: 12px; transition: all 0.3s;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -2605,7 +2773,7 @@
                   ${currentBadge}
                   ${answeredBadge}
                 </div>
-                <span style="font-size: 12px; color: var(--text-secondary);">${q.type === 'single' ? '單選題' : (q.type === 'multiple' ? '複選題' : '問答題')}</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">${qTypeLabel}</span>
               </div>
               <div style="font-size: 15px; font-weight: bold; margin: 6px 0; color: var(--text-primary);">${this.escapeHtml(q.prompt)}</div>
               ${qStatsHtml}
@@ -3264,7 +3432,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px;">
           <div>
             <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; margin-right: 6px;">⏱️ ${q.timeFormatted || '00:00'}</span>
-            <span class="badge" style="background: rgba(0,0,0,0.06); color: var(--text-primary); padding: 2px 6px; border-radius: 6px; font-size: 11px; margin-right: 6px;">${q.type === 'single' ? '單選' : (q.type === 'multiple' ? '複選' : '問答')}</span>
+            <span class="badge" style="background: rgba(0,0,0,0.06); color: var(--text-primary); padding: 2px 6px; border-radius: 6px; font-size: 11px; margin-right: 6px;">${q.type === 'single' ? '單選' : (q.type === 'multiple' ? '複選' : (q.type === 'matching' ? '配對' : '問答'))}</span>
             <strong style="font-size: 14px;">${this.escapeHtml(q.prompt)}</strong>
           </div>
           <div style="display: flex; gap: 6px;">
@@ -3320,8 +3488,23 @@
       document.getElementById('vqQuestionTimeFormatted').value = q.timeFormatted || this.formatTime(q.time);
       document.getElementById('vqQuestionTypeSelect').value = q.type || 'single';
       document.getElementById('vqQuestionPromptInput').value = q.prompt || '';
-      document.getElementById('vqQuestionOptionsInput').value = (q.options || []).join('\n');
-      document.getElementById('vqQuestionAnswerInput').value = Array.isArray(q.correctAnswer) ? q.correctAnswer.join('\n') : (q.correctAnswer || '');
+
+      if (q.type === 'matching') {
+        if (Array.isArray(q.pairs) && q.pairs.length > 0) {
+          document.getElementById('vqQuestionOptionsInput').value = q.pairs.map(p => `${p.left} = ${p.right}`).join('\n');
+        } else if (Array.isArray(q.options) && Array.isArray(q.matchOptions)) {
+          document.getElementById('vqQuestionOptionsInput').value = q.options.map((opt, i) => `${opt} = ${q.matchOptions[i] || ''}`).join('\n');
+        } else {
+          document.getElementById('vqQuestionOptionsInput').value = (q.options || []).join('\n');
+        }
+        document.getElementById('vqQuestionAnswerInput').value = (typeof q.correctAnswer === 'object' && q.correctAnswer !== null)
+          ? Object.entries(q.correctAnswer).map(([k, v]) => `${k} = ${v}`).join('\n')
+          : (q.correctAnswer || '');
+      } else {
+        document.getElementById('vqQuestionOptionsInput').value = (q.options || []).join('\n');
+        document.getElementById('vqQuestionAnswerInput').value = Array.isArray(q.correctAnswer) ? q.correctAnswer.join('\n') : (q.correctAnswer || '');
+      }
+
       document.getElementById('vqQuestionExplanationInput').value = q.explanation || '';
       document.getElementById('vqQuestionPointsInput').value = q.points || 10;
 
@@ -3339,16 +3522,32 @@
       const type = document.getElementById('vqQuestionTypeSelect')?.value || 'single';
       const optGroup = document.getElementById('vqOptionsFieldGroup');
       const ansLabel = document.getElementById('vqAnswerFieldLabel');
+      const optLabel = optGroup?.querySelector('label');
+      const optInput = document.getElementById('vqQuestionOptionsInput');
+      const ansInput = document.getElementById('vqQuestionAnswerInput');
 
       if (type === 'text') {
         if (optGroup) optGroup.style.display = 'none';
         if (ansLabel) ansLabel.textContent = '參考正解或評分關鍵詞：';
+        if (ansInput) ansInput.placeholder = '請填寫問答參考標準答案...';
+      } else if (type === 'matching') {
+        if (optGroup) optGroup.style.display = 'block';
+        if (optLabel) optLabel.textContent = '配對列表（每行一組「左側 = 右側」，例如：臥薪嚐膽 = 句踐）：';
+        if (optInput) optInput.placeholder = '臥薪嚐膽 = 句踐\n完璧歸趙 = 藺相如\n四面楚歌 = 項羽';
+        if (ansLabel) ansLabel.textContent = '標準答案（自動依上方左側 = 右側建立）：';
+        if (ansInput) ansInput.placeholder = '正解將自動由上方配對列表產生，此處亦可補充備註說明';
       } else if (type === 'multiple') {
         if (optGroup) optGroup.style.display = 'block';
+        if (optLabel) optLabel.textContent = '選項列表 (每行一個選項)：';
+        if (optInput) optInput.placeholder = '選項A\n選項B\n選項C\n選項D';
         if (ansLabel) ansLabel.textContent = '標準答案（每行填寫一個正確選項）：';
+        if (ansInput) ansInput.placeholder = '每行填寫一個正確選項';
       } else {
         if (optGroup) optGroup.style.display = 'block';
+        if (optLabel) optLabel.textContent = '選項列表 (每行一個選項)：';
+        if (optInput) optInput.placeholder = '選項A\n選項B\n選項C\n選項D';
         if (ansLabel) ansLabel.textContent = '標準答案（請填寫完全相符的選項文字）：';
+        if (ansInput) ansInput.placeholder = '請填寫完全相符的選項文字';
       }
     }
 
@@ -3372,10 +3571,36 @@
         return;
       }
 
-      const options = type !== 'text' ? optsText.split('\n').map(s => s.trim()).filter(Boolean) : [];
+      let options = [];
+      let matchOptions = [];
+      let pairs = [];
       let correctAnswer = ansText;
-      if (type === 'multiple') {
-        correctAnswer = ansText.split('\n').map(s => s.trim()).filter(Boolean);
+
+      if (type === 'matching') {
+        const pairLines = optsText.split('\n').map(s => s.trim()).filter(Boolean);
+        pairLines.forEach(line => {
+          const parts = line.split(/[=＝]/);
+          if (parts.length >= 2) {
+            const left = parts[0].trim();
+            const right = parts.slice(1).join('=').trim();
+            if (left && right) {
+              pairs.push({ left, right });
+            }
+          }
+        });
+        if (pairs.length < 2) {
+          if (window.app) window.app.showNotification('提示', '配對題至少需要兩組「左側 = 右側」有效配對！');
+          return;
+        }
+        options = pairs.map(p => p.left);
+        matchOptions = pairs.map(p => p.right);
+        correctAnswer = {};
+        pairs.forEach(p => { correctAnswer[p.left] = p.right; });
+      } else if (type !== 'text') {
+        options = optsText.split('\n').map(s => s.trim()).filter(Boolean);
+        if (type === 'multiple') {
+          correctAnswer = ansText.split('\n').map(s => s.trim()).filter(Boolean);
+        }
       }
 
       const qItem = {
@@ -3385,6 +3610,8 @@
         type,
         prompt,
         options,
+        matchOptions,
+        pairs,
         correctAnswer,
         explanation,
         points

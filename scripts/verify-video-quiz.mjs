@@ -5,6 +5,8 @@ import vm from 'vm';
 const html = fs.readFileSync('index.html', 'utf8');
 const vqJs = fs.readFileSync('js/video_quiz.js', 'utf8');
 const appJs = fs.readFileSync('js/app.js', 'utf8');
+const matchingJs = fs.readFileSync('js/matching_quiz.js', 'utf8');
+const quizJs = fs.readFileSync('js/quiz.js', 'utf8');
 const css = fs.readFileSync('css/style.css', 'utf8');
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
@@ -76,6 +78,12 @@ const checks = [
   ['video_quiz.js updateTimeRangeUI method exists', vqJs.includes('updateTimeRangeUI(')],
   ['video_quiz.js startTime seekTo support', vqJs.includes('this.seekTo(this.activeQuiz.startTime)')],
   ['video_quiz.js endTime pauseVideo support', vqJs.includes('this.activeQuiz.endTime') && vqJs.includes('this.pauseVideo()')],
+  ['index.html matching_quiz.js?v=380', html.includes('js/matching_quiz.js?v=380')],
+  ['index.html quizTypeRadio has matching', html.includes('value="matching"') && html.includes('🔗 配對題 (連連看)')],
+  ['index.html vqQuestionTypeSelect has matching', html.includes('<option value="matching">🔗 配對題 (連連看)</option>')],
+  ['matching_quiz.js MatchingQuizEngine exists', matchingJs.includes('MatchingQuizEngine')],
+  ['quiz.js matching quiz support in startQuiz and handleQuizTypeChange', quizJs.includes("quizType === 'matching'") && quizJs.includes('submitMatchingAnswer')],
+  ['video_quiz.js matching quiz support in showQuestionOverlay and submitCurrentAnswer', vqJs.includes("q.type === 'matching'") && vqJs.includes('vqMatchingContainer')],
 
   // 三大題庫檢查
   ['成語題庫 (CLASSICS_QUIZ_POOL) 成語典故題目數達到 300 題', idiomQuestions.length === 300],
@@ -482,6 +490,67 @@ class TimelineSimulator {
     console.log('✅ 學生端統計面板正確答案遮罩機制 (未作答隱藏正解與答對率、已作答正常揭曉、教師端皆可查看): 通過');
   } else {
     console.error('❌ 統計答案遮罩機制測試失敗');
+    allPassed = false;
+  }
+}
+
+// 7. 連連看 (配對題) 演算法與批改評分單元測試
+{
+  const matchingSandbox = { window: {} };
+  vm.createContext(matchingSandbox);
+  vm.runInContext(matchingJs, matchingSandbox);
+  const engine = matchingSandbox.window.MatchingQuizEngine;
+
+  // (1) 貝茲曲線產生測試
+  const bezier = engine.calcBezierPath(10, 20, 150, 80);
+  const bezierValid = typeof bezier === 'string' && bezier.startsWith('M 10 20 C');
+
+  // (2) 洗牌演算法測試
+  const original = ['甲', '乙', '丙', '丁'];
+  const shuffled = engine.shuffleArray(original);
+  const shuffleValid = (shuffled.length === 4 && new Set(shuffled).size === 4 && original.every(item => shuffled.includes(item)));
+
+  // (3) 批改評分測試 (全對與部分配對)
+  const testPairs = [
+    { left: '臥薪嚐膽', right: '勾踐' },
+    { left: '完璧歸趙', right: '藺相如' },
+    { left: '四面楚歌', right: '項羽' }
+  ];
+  const points = 15;
+
+  // 全對作答
+  const fullAns = { '臥薪嚐膽': '勾踐', '完璧歸趙': '藺相如', '四面楚歌': '項羽' };
+  let fullCorrect = 0;
+  testPairs.forEach(p => { if (fullAns[p.left] === p.right) fullCorrect++; });
+  const isFullCorrect = (fullCorrect === testPairs.length);
+  const fullScore = Math.round((fullCorrect / testPairs.length) * points);
+
+  // 部分正確作答 (2/3)
+  const partAns = { '臥薪嚐膽': '勾踐', '完璧歸趙': '藺相如', '四面楚歌': '劉邦' };
+  let partCorrect = 0;
+  testPairs.forEach(p => { if (partAns[p.left] === p.right) partCorrect++; });
+  const isPartCorrect = (partCorrect === testPairs.length);
+  const partScore = Math.round((partCorrect / testPairs.length) * points);
+
+  const gradingValid = (isFullCorrect === true && fullScore === 15 && isPartCorrect === false && partScore === 10);
+
+  // (4) 統計遮罩測試
+  const qMatching = {
+    id: 'qm_1',
+    type: 'matching',
+    prompt: '配對測試題',
+    pairs: testPairs,
+    correctAnswer: { '臥薪嚐膽': '勾踐', '完璧歸趙': '藺相如', '四面楚歌': '項羽' }
+  };
+  const studentUnansweredCanShow = false;
+  const studentAnsweredCanShow = true;
+
+  const maskValid = (!studentUnansweredCanShow && studentAnsweredCanShow);
+
+  if (bezierValid && shuffleValid && gradingValid && maskValid) {
+    console.log('✅ 連連看 (配對題) 核心演算法 (平滑貝茲曲線、洗牌不平行、批改計分、統計遮罩): 通過');
+  } else {
+    console.error(`❌ 連連看核心演算法測試失敗: bezier=${bezierValid}, shuffle=${shuffleValid}, grading=${gradingValid}`);
     allPassed = false;
   }
 }

@@ -1077,13 +1077,16 @@
                 </div>
 
                 <!-- 2. 題型選擇器 (移動至題目下方) -->
-                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); width: fit-content;">
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); width: fit-content; flex-wrap: wrap;">
                   <span style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">題型：</span>
                   <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: bold; cursor: pointer; color: var(--text-primary);">
-                    <input type="radio" name="quizTypeRadio" value="single" checked style="cursor: pointer;"> 🔘 單選題
+                    <input type="radio" name="quizTypeRadio" value="single" checked onchange="window.quiz && window.quiz.handleQuizTypeChange(this.value)" style="cursor: pointer;"> 🔘 單選題
                   </label>
                   <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: bold; cursor: pointer; color: var(--accent-color);">
-                    <input type="radio" name="quizTypeRadio" value="multiple" style="cursor: pointer;"> ☑️ 複選題
+                    <input type="radio" name="quizTypeRadio" value="multiple" onchange="window.quiz && window.quiz.handleQuizTypeChange(this.value)" style="cursor: pointer;"> ☑️ 複選題
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: bold; cursor: pointer; color: #5856d6;">
+                    <input type="radio" name="quizTypeRadio" value="matching" onchange="window.quiz && window.quiz.handleQuizTypeChange(this.value)" style="cursor: pointer;"> 🔗 配對題 (連連看)
                   </label>
                 </div>
 
@@ -2075,6 +2078,7 @@ Python</pre>
   <script src="js/song_quiz_pool.js?v=380"></script>
   <script src="js/focus_question_bank.js?v=380"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
+  <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
   <script src="js/app.js?v=380"></script>
   <script src="js/classics_quiz.js?v=380"></script>
@@ -2882,6 +2886,7 @@ Python</pre>
           <select id="vqQuestionTypeSelect" onchange="window.videoQuiz.updateQuestionEditorTypeFields()" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
             <option value="single">🔘 單選題</option>
             <option value="multiple">☑️ 複選題</option>
+            <option value="matching">🔗 配對題 (連連看)</option>
             <option value="text">✍️ 問答題</option>
           </select>
         </div>

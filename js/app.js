@@ -12951,7 +12951,59 @@ function startQuiz() {
     ? questionHtml 
     : (questionText || fallbackVal);
 
-  // 收集選項內容 (支援文字與圖片類型)
+  const quizType = document.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
+
+  // 連連看 (配對題) 選項收集
+  if (quizType === 'matching') {
+    const pairRows = document.querySelectorAll('#optionsContainer .option-matching-pair');
+    const pairs = [];
+    pairRows.forEach(row => {
+      const leftVal = row.querySelector('.matching-left-field')?.value.trim() || '';
+      const rightVal = row.querySelector('.matching-right-field')?.value.trim() || '';
+      if (leftVal && rightVal) {
+        pairs.push({ left: leftVal, right: rightVal });
+      }
+    });
+
+    if (pairs.length < 2) {
+      window.app.showNotification('提示', '配對題至少需要填寫兩組完整的「左側題目 🔗 右側答案」！');
+      return;
+    }
+
+    const options = pairs.map(p => p.left);
+    const matchOptions = pairs.map(p => p.right);
+    const correctAnswer = {};
+    pairs.forEach(p => { correctAnswer[p.left] = p.right; });
+
+    if (window.quiz) {
+      window.quiz.startQuiz(finalQuestion, options, 'matching', { pairs, matchOptions, correctAnswer });
+      if (editorEl) editorEl.innerHTML = '';
+      const legacyInput = document.getElementById('quizQuestion');
+      if (legacyInput) legacyInput.value = '';
+
+      // 重設為初始 2 組配對選項
+      const optsContainer = document.getElementById('optionsContainer');
+      if (optsContainer) {
+        optsContainer.innerHTML = `
+          <div class="option-matching-pair">
+            <input type="text" class="matching-left-field" placeholder="左側題目 1">
+            <span class="matching-pair-link-icon">🔗</span>
+            <input type="text" class="matching-right-field" placeholder="右側答案 1">
+            <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+          </div>
+          <div class="option-matching-pair">
+            <input type="text" class="matching-left-field" placeholder="左側題目 2">
+            <span class="matching-pair-link-icon">🔗</span>
+            <input type="text" class="matching-right-field" placeholder="右側答案 2">
+            <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+          </div>
+        `;
+      }
+    }
+    return;
+  }
+
+  // 收集一般單選/複選選項內容 (支援文字與圖片類型)
   const optionContainers = document.querySelectorAll('#optionsContainer .option-input');
   const options = [];
 
@@ -12972,8 +13024,6 @@ function startQuiz() {
       }
     }
   });
-
-  const quizType = document.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
   
   if (options.length < 2) {
     window.app.showNotification('提示', '請填寫至少兩個有效選項');
@@ -13016,6 +13066,55 @@ function startQuiz() {
 // 載入預設選項
 function loadPreset(type) {
   const container = document.getElementById('optionsContainer');
+  const quizType = document.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
+
+  if (quizType === 'matching') {
+    const matchingPresets = {
+      yesno: [
+        { left: '太陽升起方位', right: '東方' },
+        { left: '月亮升起方位', right: '東方' }
+      ],
+      truefalse: [
+        { left: '光速傳播', right: '每秒約三十萬公里' },
+        { left: '音速傳播', right: '每秒約三百四十公尺' }
+      ],
+      abcd: [
+        { left: '春季', right: '萬物復甦' },
+        { left: '夏季', right: '綠意盎然' },
+        { left: '秋季', right: '碩果豐收' },
+        { left: '冬季', right: '白雪皚皚' }
+      ],
+      '1234': [
+        { left: '一言九鼎', right: '說話極有分量' },
+        { left: '二話不說', right: '非常爽快乾脆' },
+        { left: '三思後行', right: '做事謹慎周密' },
+        { left: '四平八穩', right: '行事穩當周全' }
+      ],
+      star: [
+        { left: '臥薪嚐膽', right: '越王勾踐' },
+        { left: '完璧歸趙', right: '藺相如' },
+        { left: '四面楚歌', right: '項羽' }
+      ],
+      emoji: [
+        { left: '守株待兔', right: '比喻妄想不勞而獲' },
+        { left: '刻舟求劍', right: '比喻拘泥不知變通' },
+        { left: '狐假虎威', right: '比喻藉他人權勢逞威' }
+      ]
+    };
+    const pairs = matchingPresets[type] || matchingPresets.abcd;
+    if (pairs && container) {
+      container.innerHTML = pairs.map((p, idx) => `
+        <div class="option-matching-pair">
+          <input type="text" class="matching-left-field" value="${p.left}" placeholder="左側題目 ${idx + 1}">
+          <span class="matching-pair-link-icon">🔗</span>
+          <input type="text" class="matching-right-field" value="${p.right}" placeholder="右側答案 ${idx + 1}">
+          <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+        </div>
+      `).join('');
+      return;
+    }
+  }
+
   const presets = {
     yesno: ['是', '否'],
     truefalse: ['正確', '錯誤'],
@@ -13055,8 +13154,23 @@ function closeQuizFormatModal() {
 // 新增選項
 function addOption() {
   const container = document.getElementById('optionsContainer');
+  const quizType = document.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
+
+  if (quizType === 'matching') {
+    const count = container.querySelectorAll('.option-matching-pair').length + 1;
+    const div = document.createElement('div');
+    div.className = 'option-matching-pair';
+    div.innerHTML = `
+      <input type="text" class="matching-left-field" placeholder="左側題目 ${count}">
+      <span class="matching-pair-link-icon">🔗</span>
+      <input type="text" class="matching-right-field" placeholder="右側答案 ${count}">
+      <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+    `;
+    container.appendChild(div);
+    return;
+  }
+
   const count = container.querySelectorAll('.option-input').length + 1;
-  
   const div = document.createElement('div');
   div.className = 'option-input';
   div.setAttribute('data-type', 'text');
@@ -13075,7 +13189,9 @@ function addOption() {
 // 移除選項
 function removeOption(btn) {
   const container = document.getElementById('optionsContainer');
-  if (container.querySelectorAll('.option-input').length > 2) {
+  const quizType = document.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
+  const selector = quizType === 'matching' ? '.option-matching-pair' : '.option-input';
+  if (container.querySelectorAll(selector).length > 2) {
     btn.parentElement.remove();
   } else {
     window.app.showNotification('提示', '至少需要兩個選項');
