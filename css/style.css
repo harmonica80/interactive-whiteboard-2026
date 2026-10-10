@@ -4535,6 +4535,346 @@ body {
   flex-shrink: 0;
 }
 
+/* ========================================================
+   後台功能五大分類總覽目錄與專屬全頁工作區樣式
+   ======================================================== */
+.admin-dashboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-cat-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.admin-cat-block:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+}
+
+.admin-cat-header {
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.admin-cat-header:hover {
+  background: var(--bg-input);
+}
+
+.admin-cat-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-cat-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(0, 122, 255, 0.1);
+  color: var(--accent-color);
+}
+
+.admin-cat-toggle-arrow {
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+}
+
+.admin-cat-block.cat-collapsed .admin-cat-toggle-arrow {
+  transform: rotate(-90deg);
+}
+
+.admin-cat-block.cat-collapsed .admin-cat-body {
+  display: none;
+}
+
+.admin-cat-body {
+  padding: 20px;
+  background: var(--bg-primary);
+}
+
+/* 類別內功能卡片網格 */
+.admin-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.admin-feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-feature-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent-color);
+  box-shadow: 0 10px 24px rgba(0, 122, 255, 0.16);
+}
+
+.admin-feature-icon-box {
+  width: 128px;
+  height: 128px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 26px;
+  transition: transform 0.25s ease;
+}
+
+.admin-feature-card:hover .admin-feature-icon-box {
+  transform: scale(1.05);
+}
+
+.admin-feature-icon-box img {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  display: block;
+}
+
+.admin-feature-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+
+.admin-feature-card-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-bottom: 14px;
+  flex: 1;
+}
+
+.admin-feature-btn-pill {
+  padding: 6px 16px;
+  font-size: 13.5px;
+  font-weight: 700;
+  border-radius: 20px;
+  background: rgba(0, 122, 255, 0.1);
+  color: var(--accent-color);
+  transition: background 0.2s, color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-feature-card:hover .admin-feature-btn-pill {
+  background: var(--accent-color);
+  color: #ffffff;
+}
+
+/* 全頁專屬工作區頂部導航 */
+.admin-workspace-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.admin-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.admin-back-btn:hover {
+  background: #0062cc;
+  transform: translateX(-2px);
+}
+
+.admin-workspace-title-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-workspace-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.admin-workspace-breadcrumb {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.admin-workspace-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* 全頁模式下的字級大一~二級與排版優化 */
+.admin-feature-fullpage {
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
+.admin-feature-fullpage .admin-section {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.admin-feature-fullpage .admin-section-header {
+  display: none !important;
+}
+
+.admin-feature-fullpage .admin-section-body {
+  display: block !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  padding: 0 !important;
+}
+
+.admin-feature-fullpage h3 {
+  font-size: 20px !important;
+}
+
+.admin-feature-fullpage h4 {
+  font-size: 17.5px !important;
+}
+
+.admin-feature-fullpage label {
+  font-size: 15px !important;
+}
+
+.admin-feature-fullpage input.question-input,
+.admin-feature-fullpage select,
+.admin-feature-fullpage textarea.question-input {
+  font-size: 15.5px !important;
+  padding: 10px 14px !important;
+}
+
+.admin-feature-fullpage .preset-btn,
+.admin-feature-fullpage .ask-btn,
+.admin-feature-fullpage .action-btn {
+  font-size: 15px !important;
+  padding: 8px 18px !important;
+}
+
+.admin-feature-fullpage p {
+  font-size: 15px !important;
+  line-height: 1.65;
+}
+
+.admin-feature-fullpage #adminClassListContainer {
+  max-height: 520px !important;
+}
+
+.admin-feature-fullpage #adminClassListContainer > div {
+  padding: 12px 18px !important;
+}
+
+.admin-feature-fullpage #adminClassListContainer span {
+  font-size: 15px !important;
+}
+
+.admin-feature-fullpage #adminClassListContainer button {
+  font-size: 14.5px !important;
+  padding: 6px 14px !important;
+}
+
+.admin-feature-fullpage .question-list li {
+  font-size: 15.5px !important;
+  padding: 14px 18px !important;
+  margin-bottom: 12px !important;
+}
+
+.admin-feature-fullpage .batch-archive-toolbar {
+  padding: 12px 16px !important;
+  font-size: 14.5px !important;
+  gap: 10px !important;
+}
+
+.admin-feature-fullpage .batch-archive-toolbar select,
+.admin-feature-fullpage .batch-archive-toolbar button {
+  font-size: 14px !important;
+}
+
+.admin-feature-fullpage .upload-zone {
+  min-height: 110px !important;
+  padding: 20px !important;
+  font-size: 15px !important;
+}
+
+.admin-feature-fullpage #adminSharesContainer .share-item-card,
+.admin-feature-fullpage #adminQuestionsGroupedContainer .grouped-item-card,
+.admin-feature-fullpage #adminImagesGroupedContainer .grouped-item-card,
+.admin-feature-fullpage #adminVideosGroupedContainer .grouped-item-card {
+  font-size: 15px !important;
+  padding: 14px 16px !important;
+}
+
+/* 針對行動裝置優化 */
+@media (max-width: 768px) {
+  .admin-features-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-feature-card {
+    padding: 16px 12px;
+  }
+  .admin-workspace-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 
 
 
