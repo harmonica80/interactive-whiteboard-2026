@@ -4994,6 +4994,16 @@ class App {
       if (chk) chk.checked = false;
     };
     
+    const onPublishSuccess = (key, shareObj) => {
+      if (key) {
+        const item = { id: key, ...shareObj };
+        this.shares = [item, ...(this.shares || []).filter(s => s.id !== key)];
+        this.updateLoginSharesBadge();
+        this.renderAdminShares();
+        this.renderTeacherShares();
+      }
+    };
+    
     if (type === 'text') {
       const input = document.getElementById('shareInputText');
       const val = input.value.trim();
@@ -5001,14 +5011,18 @@ class App {
         this.showNotification('提示', '請輸入分享文字內容');
         return;
       }
-      this.sharesRef.push({
+      const shareData = {
         type: 'text',
         content: val,
         folderId: folderId,
         category: category,
         showOnLogin: showOnLogin,
         timestamp: Date.now()
-      }).then(() => {
+      };
+      this.sharesRef.push(shareData).then((newRef) => {
+        if (newRef && newRef.key) {
+          onPublishSuccess(newRef.key, shareData);
+        }
         input.value = '';
         resetShowOnLoginCheckbox();
         this.showNotification('成功', '文字發佈成功！');
@@ -5030,7 +5044,7 @@ class App {
       }
 
       const publishLink = (finalTitle) => {
-        this.sharesRef.push({
+        const shareData = {
           type: 'link',
           title: finalTitle || '',
           content: url,
@@ -5038,7 +5052,11 @@ class App {
           category: category,
           showOnLogin: showOnLogin,
           timestamp: Date.now()
-        }).then(() => {
+        };
+        this.sharesRef.push(shareData).then((newRef) => {
+          if (newRef && newRef.key) {
+            onPublishSuccess(newRef.key, shareData);
+          }
           titleInput.value = '';
           urlInput.value = '';
           resetShowOnLoginCheckbox();
@@ -5099,7 +5117,7 @@ class App {
           const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           
           const uploadToDatabase = (finalUrl) => {
-            return this.sharesRef.push({
+            const shareData = {
               type: 'image',
               title: file.name,
               content: finalUrl,
@@ -5107,6 +5125,11 @@ class App {
               category: category,
               showOnLogin: showOnLogin,
               timestamp: Date.now()
+            };
+            return this.sharesRef.push(shareData).then((newRef) => {
+              if (newRef && newRef.key) {
+                onPublishSuccess(newRef.key, shareData);
+              }
             });
           };
           
@@ -5723,40 +5746,68 @@ class App {
   toggleShareShowOnLogin(id) {
     const item = (this.shares || []).find(s => s.id === id);
     if (!item) return;
-    const nextVal = !item.showOnLogin;
+    const isCurrentActive = Boolean(item.showOnLogin === true || item.showOnLogin === 'true' || item.showOnLogin === 1 || item.showOnLogin === '1');
+    const nextVal = !isCurrentActive;
+
+    // 1. 本地樂觀更新：立即更新物件屬性與介面，讓數字與按鈕狀態無延遲即時跳動
+    item.showOnLogin = nextVal;
+    this.updateLoginSharesBadge();
+    this.renderAdminShares();
+    this.renderTeacherShares();
+
+    // 2. 同步寫入 Firebase
     this.sharesRef.child(id).update({ showOnLogin: nextVal })
       .then(() => {
         this.showNotification('成功', nextVal ? '已設為學生登入時自動顯示！' : '已取消登入時自動顯示');
       })
       .catch(err => {
+        // 若寫入失敗，回滾狀態
+        item.showOnLogin = isCurrentActive;
+        this.updateLoginSharesBadge();
+        this.renderAdminShares();
+        this.renderTeacherShares();
         this.showNotification('錯誤', '更新失敗: ' + err.message);
       });
   }
 
-  // 更新頂部登入公告提示標籤與數量
+  // 更新頂部登入公告提示標籤與數量 (動態即時同步)
   updateLoginSharesBadge() {
-    const loginShares = (this.shares || []).filter(item => item.showOnLogin === true || item.showOnLogin === 'true');
+    const isShowOnLogin = (item) => Boolean(
+      item && (item.showOnLogin === true || item.showOnLogin === 'true' || item.showOnLogin === 1 || item.showOnLogin === '1')
+    );
+    const loginShares = (this.shares || []).filter(isShowOnLogin);
     const count = loginShares.length;
 
     const desktopBtn = document.getElementById('btnLoginSharesNotice');
     const mobileBtn = document.getElementById('mobileLoginSharesNoticeBtn');
-    const desktopTxt = document.getElementById('txtLoginSharesNoticeCount');
-    const mobileTxt = document.getElementById('txtMobileLoginSharesNoticeCount');
 
-    if (count > 0) {
-      if (desktopBtn) desktopBtn.style.display = 'inline-flex';
-      if (mobileBtn) mobileBtn.style.display = 'inline-flex';
-      if (desktopTxt) desktopTxt.textContent = count;
-      if (mobileTxt) mobileTxt.textContent = count;
-    } else {
-      if (desktopBtn) desktopBtn.style.display = 'none';
-      if (mobileBtn) mobileBtn.style.display = 'none';
+    if (desktopBtn) {
+      if (count > 0) {
+        desktopBtn.style.display = 'inline-flex';
+        desktopBtn.innerHTML = `🔔 公告 (<span id="txtLoginSharesNoticeCount">${count}</span>)`;
+      } else {
+        desktopBtn.style.display = 'none';
+        desktopBtn.innerHTML = `🔔 公告 (<span id="txtLoginSharesNoticeCount">0</span>)`;
+      }
+    }
+
+    if (mobileBtn) {
+      if (count > 0) {
+        mobileBtn.style.display = 'inline-flex';
+        mobileBtn.innerHTML = `🔔 公告 (<span id="txtMobileLoginSharesNoticeCount">${count}</span>)`;
+      } else {
+        mobileBtn.style.display = 'none';
+        mobileBtn.innerHTML = `🔔 公告 (<span id="txtMobileLoginSharesNoticeCount">0</span>)`;
+      }
     }
   }
 
   // 檢查並在學生登入課堂時彈出重要公告
   checkAndShowLoginSharesModal(force = false) {
-    const loginShares = (this.shares || []).filter(item => item.showOnLogin === true || item.showOnLogin === 'true');
+    const isShowOnLogin = (item) => Boolean(
+      item && (item.showOnLogin === true || item.showOnLogin === 'true' || item.showOnLogin === 1 || item.showOnLogin === '1')
+    );
+    const loginShares = (this.shares || []).filter(isShowOnLogin);
     if (loginShares.length === 0) {
       if (force) {
         this.showNotification('提示', '目前尚無設定「於登入時顯示」的最新消息或教材。');
@@ -5774,7 +5825,10 @@ class App {
 
   // 開啟登入公告彈跳視窗
   openLoginSharesModal(isManual = false) {
-    const loginShares = (this.shares || []).filter(item => item.showOnLogin === true || item.showOnLogin === 'true');
+    const isShowOnLogin = (item) => Boolean(
+      item && (item.showOnLogin === true || item.showOnLogin === 'true' || item.showOnLogin === 1 || item.showOnLogin === '1')
+    );
+    const loginShares = (this.shares || []).filter(isShowOnLogin);
     const modal = document.getElementById('loginSharesModal');
     const container = document.getElementById('loginSharesModalContentList');
     if (!modal || !container) return;
@@ -6110,6 +6164,12 @@ class App {
       '確定要刪除此分享項目嗎？',
       '此動作無法復原。',
       () => {
+        // 本地立即移除並即時更新公告數量與清單
+        this.shares = (this.shares || []).filter(s => s.id !== id);
+        this.updateLoginSharesBadge();
+        this.renderAdminShares();
+        this.renderTeacherShares();
+
         this.sharesRef.child(id).remove()
           .then(() => {
             this.showNotification('成功', '已刪除分享項目');
@@ -6134,10 +6194,14 @@ class App {
       '所選項目將被永久刪除且無法復原。',
       () => {
         this.showNotification('提示', '正在刪除項目...');
-        const promises = Array.from(checkboxes).map(cb => {
-          const id = cb.getAttribute('data-id');
-          return this.sharesRef.child(id).remove();
-        });
+        const deleteIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-id'));
+        // 本地立即移除並即時更新公告數量與清單
+        this.shares = (this.shares || []).filter(s => !deleteIds.includes(s.id));
+        this.updateLoginSharesBadge();
+        this.renderAdminShares();
+        this.renderTeacherShares();
+
+        const promises = deleteIds.map(id => this.sharesRef.child(id).remove());
 
         Promise.all(promises)
           .then(() => {
@@ -14262,6 +14326,15 @@ function adminSaveShare(id) {
     const targetRef = (window.app && window.app.sharesRef) ? window.app.sharesRef.child(id) : db.ref('teacherShares').child(id);
     targetRef.update(updates)
       .then(() => {
+        // 本地同步更新物件與介面 (公告數量與卡片立即響應)
+        item.content = newContent;
+        if (updates.title !== undefined) item.title = updates.title;
+        if (updates.category !== undefined) item.category = updates.category;
+        if (updates.showOnLogin !== undefined) item.showOnLogin = updates.showOnLogin;
+        if (window.app.updateLoginSharesBadge) window.app.updateLoginSharesBadge();
+        if (window.app.renderAdminShares) window.app.renderAdminShares();
+        if (window.app.renderTeacherShares) window.app.renderTeacherShares();
+
         window.app.showNotification('成功', '教師分享已更新！');
         adminCancelEditShare(id);
       })
