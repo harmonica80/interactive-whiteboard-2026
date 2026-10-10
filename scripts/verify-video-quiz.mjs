@@ -91,6 +91,9 @@ const checks = [
   ['video_quiz.js addOptionRow and removeOptionRow exist', vqJs.includes('addOptionRow()') && vqJs.includes('removeOptionRow(')],
   ['video_quiz.js toggleCorrectAnswer method exists', vqJs.includes('toggleCorrectAnswer(')],
   ['video_quiz.js analytics renders image thumbnails for options and pairs', vqJs.includes('isImg && imgSrc') && vqJs.includes('leftDisplay') && vqJs.includes('rightDisplay')],
+  ['index.html changelogModal exists', html.includes('id="changelogModal"')],
+  ['index.html appVersionBadge is link with openChangelogModal', html.includes('openChangelogModal')],
+  ['app.js openChangelogModal exists', appJs.includes('openChangelogModal(')],
 
   // 三大題庫檢查
   ['成語題庫 (CLASSICS_QUIZ_POOL) 成語典故題目數達到 300 題', idiomQuestions.length === 300],

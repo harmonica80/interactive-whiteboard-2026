@@ -24,7 +24,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <span id="appVersionBadge" class="app-version-badge" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);">ver 3.8.0</span>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.8.0</a>
         </p>
       </div>
       <div class="top-actions">
@@ -2023,6 +2023,188 @@
       <div style="display: flex; justify-content: flex-end; gap: 8px;">
         <button type="button" class="preset-btn" onclick="window.app.closeItemEditModal()" style="padding: 8px 16px; font-size: 13px; border-radius: 8px; cursor: pointer;">取消</button>
         <button type="button" class="ask-btn" id="itemEditModalSaveBtn" style="padding: 8px 18px; font-size: 13px; border-radius: 8px; cursor: pointer;">儲存修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 版本更新歷程 (Changelog) 彈跳視窗 -->
+  <div id="changelogModal" class="modal-overlay changelog-modal-overlay" onclick="if(event.target === this && window.app) window.app.closeChangelogModal()">
+    <div class="modal-content changelog-modal-content">
+      <!-- 視窗標題列 -->
+      <div class="changelog-header">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            🚀 即時互動白板版本更新歷程
+          </h3>
+          <span class="changelog-badge-latest">目前最新 ver 3.8.0</span>
+        </div>
+        <button type="button" onclick="window.app && window.app.closeChangelogModal()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="關閉視窗">✕</button>
+      </div>
+
+      <!-- 更新歷程內容區 (可滾動) -->
+      <div class="changelog-modal-body">
+        
+        <!-- ver 3.8.0 -->
+        <div class="changelog-version-card is-latest">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌟 ver 3.8.0</span>
+              <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">連連看配對題</span>
+              <span class="changelog-badge-tag">全面圖文選項</span>
+              <span class="changelog-badge-tag">三大擴充題庫</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🔗 配對題 (連連看) 題型全新上線：</strong>選擇題測驗與影片測驗新增互動連連看，支援滑鼠與觸控拖曳連線、即時平滑 SVG 貝茲曲線、自適應排列防抄襲與即時正誤批改。</li>
+            <li><strong>🖼️ 全面支援文字與圖片切換：</strong>選擇題配對題左右兩側（題目 🔗 答案）、影片出題（單選、複選、配對題）選項皆可自由切換「📝 文字」或「🖼️ 圖片」，支援電腦圖檔上傳、剪貼簿直接貼圖 (Ctrl+V) 與點擊放大預覽。</li>
+            <li><strong>🎬 影片出題細節視覺化編輯器：</strong>全新視覺化選項列表，點選「✓ 正解」按鈕即可直覺指定單選/複選標準答案，告別繁複手動輸入語法。</li>
+            <li><strong>📊 學生端答題統計防窺遮罩：</strong>學生未回答前僅顯示全班作答分佈長條圖，答題完成後才揭曉正確解答與全班答對率；下方增設關閉按鈕提升操作流暢度。</li>
+            <li><strong>📜 國語文三大題庫大幅擴充：</strong>「成語與名句典故」擴充至 396 題、「字字珠璣 (十字選字)」擴充至 200 題不重複中心字、「團結一詞」擴充至 200 題不重複目標詞。</li>
+          </ul>
+        </div>
+
+        <!-- ver 3.7.0 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>⏱️ ver 3.7.0</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">精準時間軸</span>
+              <span class="changelog-badge-tag">區間播放裁切</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>雙向時間換算與同步：</strong>出題彈窗支援「格式化時間 (分:秒 / 時:分:秒)」與「秒數」即時雙向自動換算，長影音長素材輸入零負擔。</li>
+            <li><strong>播放區間裁切控制：</strong>支援設定影片自訂播放起訖時間區間 (Start/End Time)，精準鎖定精華教學片段。</li>
+          </ul>
+        </div>
+
+        <!-- ver 3.6.0 ~ 3.6.9 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>📝 ver 3.6.0 ~ 3.6.9</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">題目富文本編輯器</span>
+              <span class="changelog-badge-tag">校園網路優化</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>選擇題線上富文本編輯器：</strong>題目編輯支援粗體、斜體、底線、字級、文字色彩、螢光筆標記，以及嵌入 YouTube / Google 雲端硬碟 / 影音與圖片。</li>
+            <li><strong>選項支援圖片模式：</strong>單選題與複選題選項支援文字與圖片切換、剪貼簿貼圖與縮圖預覽。</li>
+            <li><strong>校園網路連線優化：</strong>連線逾時自動切換 Long-Polling 備用通道，加強線上人數主動心跳維護機制。</li>
+            <li><strong>一次性課堂同名確認：</strong>同名學生登入自我確認機制，支援原帳號繼承與多裝置同步，左上角常駐「設定名稱」快捷按鈕。</li>
+          </ul>
+        </div>
+
+        <!-- ver 3.5.0 ~ 3.5.9 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>📢 ver 3.5.0 ~ 3.5.9</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">教師分享資源</span>
+              <span class="changelog-badge-tag">聽歌搶答擴充</span>
+              <span class="changelog-badge-tag">手機版介面優化</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>教師分享多層級管理：</strong>擴充「最新消息」與「教材資源」多層級分類目錄，支援狀態記憶與折疊收合。</li>
+            <li><strong>聽歌搶答擴充至 480 首：</strong>題庫擴增多個主題類別，新增台灣九年級等熱門專題。</li>
+            <li><strong>手機版響應式極致精簡：</strong>頂部工具列單行化、收合不必要欄位，極大化學生白板與答題可視空間。</li>
+          </ul>
+        </div>
+
+        <!-- ver 3.3.0 ~ 3.4.9 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🐾 ver 3.3.0 ~ 3.4.9</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">96款動物頭像</span>
+              <span class="changelog-badge-tag">跨班教材複製</span>
+              <span class="changelog-badge-tag">專注力測驗模組</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>96 款透明可愛動物頭像：</strong>內建森林與海洋主題可愛透明動物頭像庫，搭配趣味隨機動物暱稱產生器。</li>
+            <li><strong>跨班教材一鍵快捷複製：</strong>後台集中式面板支援將題目、提問、圖片、影片或教師分享快速複製至其他班級。</li>
+            <li><strong>專注力測驗經典單元：</strong>推出一字千金「字字珠璣 (十字選字)」、「字力測驗 (易錯字)」與「舒爾特方格」。</li>
+          </ul>
+        </div>
+
+        <!-- ver 3.0.0 ~ 3.2.9 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🎧 ver 3.0.0 ~ 3.2.9</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">聽歌搶答雙模式</span>
+              <span class="changelog-badge-tag">幸運大轉盤</span>
+              <span class="changelog-badge-tag">多班級管理</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>聽歌搶答 (Song Quiz) 雙玩法：</strong>支援個人自主挑戰與全班同步搶答模式，防作弊音訊串流與排行榜。</li>
+            <li><strong>幸運大轉盤抽籤：</strong>內建流暢物理轉盤動畫與音效，支援自訂名單與線上在線同學一鍵匯入。</li>
+            <li><strong>雙軌班級架構：</strong>支援固定班級私有空間與免登入一次性課堂即時切換。</li>
+          </ul>
+        </div>
+
+        <!-- ver 2.0.0 ~ 2.9.0 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🔘 ver 2.0.0 ~ 2.9.0</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">即時選擇題測驗</span>
+              <span class="changelog-badge-tag">課堂搶答器</span>
+              <span class="changelog-badge-tag">畫布標記</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>即時選擇題測驗系統：</strong>單選、複選、問答題即時發布、全班作答分佈長條圖與得分排行榜。</li>
+            <li><strong>課堂搶答器 (Buzzer)：</strong>毫秒級搶答鎖定判定、得獎彩帶噴發頒獎典禮動畫。</li>
+            <li><strong>圖片分享與畫筆塗鴉：</strong>支援學生作品投屏共享、畫筆圈選與白板標註。</li>
+          </ul>
+        </div>
+
+        <!-- ver 1.0.0 ~ 1.9.0 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌱 ver 1.0.0 ~ 1.9.0</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">互動白板誕生</span>
+              <span class="changelog-badge-tag">課堂計時器</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>即時互動白板：</strong>課堂即時提問牆、留言互動與線上人數即時同步。</li>
+            <li><strong>課堂倒數計時器：</strong>支援翻頁鐘、LED、數位環形鐘，內建卡農背景音樂與西敏寺下課鐘聲。</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- 視窗底部操作列 -->
+      <div class="changelog-footer">
+        <span style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">
+          💡 持續更新中，歡迎師生提供建議回饋
+        </span>
+        <button type="button" class="btn btn-secondary" onclick="window.app && window.app.closeChangelogModal()" style="padding: 7px 18px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">
+          關閉視窗
+        </button>
       </div>
     </div>
   </div>
