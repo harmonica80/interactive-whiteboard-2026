@@ -606,6 +606,24 @@ class App {
     }
   }
 
+  // 開啟版本更新重點歷程彈跳視窗
+  openChangelogModal() {
+    const modal = document.getElementById('changelogModal');
+    if (!modal) return;
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    const body = modal.querySelector('.changelog-modal-body');
+    if (body) body.scrollTop = 0;
+  }
+
+  // 關閉版本更新重點歷程彈跳視窗
+  closeChangelogModal() {
+    const modal = document.getElementById('changelogModal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+  }
+
   openStudentNameModal() {
     const modal = document.getElementById('studentNameModal');
     const input = document.getElementById('inputStudentModalName');
@@ -13938,3 +13956,38 @@ window.addEventListener('pagehide', () => {
     window.app.stopTaikoBackgroundMusic();
   }
 });
+
+// 全域版本更新歷程對話框控制函式
+window.openChangelogModal = function() {
+  if (window.app && typeof window.app.openChangelogModal === 'function') {
+    window.app.openChangelogModal();
+  } else {
+    const modal = document.getElementById('changelogModal');
+    if (modal) {
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+    }
+  }
+};
+
+window.closeChangelogModal = function() {
+  if (window.app && typeof window.app.closeChangelogModal === 'function') {
+    window.app.closeChangelogModal();
+  } else {
+    const modal = document.getElementById('changelogModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+};
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' || e.keyCode === 27) {
+    const changelogModal = document.getElementById('changelogModal');
+    if (changelogModal && changelogModal.classList.contains('active')) {
+      window.closeChangelogModal();
+    }
+  }
+});
+
