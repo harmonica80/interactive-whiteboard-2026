@@ -1,4 +1,17 @@
 # System Log
+## 2026-10-10 - 行動端教師分享編輯訊息與按鈕分行、提問管理題目內容完整寬度優化
+- 影響檔案：`css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **行動端教師分享編輯：訊息顯示為獨立一行，操作按鈕換行至下一行 (`css/style.css`, `js/app.js`)**：
+     - 重構 `buildAdminShareItemHTML` 的 flex 排版結構，為其配置 `.admin-share-item-main`、`.admin-share-item-info`、`.admin-share-item-content`、`.admin-share-item-actions` 等語意化類別。
+     - 在行動版（`@media (max-width: 768px)`）下，將 `.admin-share-item-main` 設為 `flex-direction: column !important;`，使核取方塊、標籤、時間與內容預覽組成獨立一行滿版寬度，解決文字遭擠壓成單字直列垂直排版的問題。
+     - 將「🔕 設為登入顯示」、「📤 複製」、「✏️ 編輯」、「刪除」等操作按鈕群獨立換行至下一行靠右排列，配置 `flex-wrap: wrap` 與適當間距，操作順暢且不截斷。
+  2. **行動端提問管理：問題內容使用完整寬度區塊呈現 (`css/style.css`, `js/app.js`)**：
+     - 重構 `renderAdminQuestions` 中 `renderQuestionItemHtml` 的版面配置，將原本與按鈕群同列的 `.text` 獨立抽取為卡片內全寬度元素 `.admin-q-text`。
+     - 頂部第一行配置 `.admin-q-header-row`，左側整齊容納核取方塊、提問編號標籤、學生姓名與提問時間，右側容納「📤 複製」、「✏️ 編輯」、「✕ 刪除」快捷按鈕。
+     - 問題內文 `.text`（`#q-text-${q.id}`）使用 100% 完整寬度區塊，自由延伸覆蓋紅框完整範圍，徹底消除與按鈕爭搶水平空間所導致的內容窄化與垂直擠字現象。
+     - 內嵌編輯區塊 `#q-edit-${q.id}` 與下方回饋統計列同步享有 100% 滿版寬度，閱讀與操作體驗更加舒適寬敞。
+
 ## 2026-10-10 - 行動端大頭圖示完整獨立呈現、連線狀態指示圖示遷移至鈴鐺右側
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
