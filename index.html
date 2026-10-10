@@ -21,6 +21,7 @@
         <div class="header-title-container">
           <h1 class="header-title">📚 即時互動白板</h1>
           <button class="menu-tab teacher-share-top-btn desktop-only" data-target="panel-teacher-shares" title="教師分享">📢 教師分享</button>
+          <button type="button" id="btnLoginSharesNotice" class="menu-tab desktop-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none; background: rgba(255, 45, 85, 0.12); color: #ff2d55; border: 1px solid rgba(255, 45, 85, 0.3); font-weight: bold; align-items: center; gap: 4px;" title="查看最新課堂公告">🔔 登入公告 (<span id="txtLoginSharesNoticeCount">0</span>)</button>
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
@@ -41,6 +42,7 @@
         </div>
         <div class="header-buttons">
           <button class="menu-tab teacher-share-top-btn mobile-only" data-target="panel-teacher-shares" title="教師分享">教師分享</button>
+          <button type="button" id="mobileLoginSharesNoticeBtn" class="mobile-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none; background: rgba(255, 45, 85, 0.12); color: #ff2d55; border: 1px solid rgba(255, 45, 85, 0.3); border-radius: 8px; padding: 4px 8px; font-size: 13px; font-weight: bold; align-items: center; gap: 2px;" title="查看最新課堂公告">🔔 公告 (<span id="txtMobileLoginSharesNoticeCount">0</span>)</button>
           <button type="button" class="switch-class-mobile-btn mobile-only" id="mobileSwitchClassBtn" onclick="window.app && window.app.openClassModal()" title="切換班級/回一次性課堂">🏫</button>
           <!-- 管理後台按鈕移至右上角 -->
           <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️<span class="admin-btn-text"> 管理後台</span></button>
@@ -681,12 +683,12 @@
               </div>
               <div class="admin-cat-body">
                 <div class="admin-features-grid">
-                  <!-- A. 班級代碼管理與開課登記 -->
+                  <!-- A. 班級開課管理與切換班級 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classReg')">
                     <div class="admin-feature-icon-box">
-                      <img src="images/admin_icons/class_reg.svg" width="64" height="64" alt="班級代碼管理與開課登記">
+                      <img src="images/admin_icons/class_reg.svg" width="64" height="64" alt="班級開課管理與切換班級">
                     </div>
-                    <div class="admin-feature-card-title">A. 班級代碼管理與開課登記</div>
+                    <div class="admin-feature-card-title">A. 班級開課管理與切換班級</div>
                     <div class="admin-feature-card-desc">建立開課班級代碼、防亂入代碼審核、啟用/停用開課登記與名冊管理。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
@@ -884,14 +886,14 @@
                 </button>
                 <div class="admin-workspace-title-box">
                   <img id="adminWorkspaceIcon" class="admin-workspace-icon" src="images/admin_icons/class_reg.svg" alt="功能圖示">
-                  <h2 id="adminWorkspaceTitle" class="admin-workspace-heading">A. 班級代碼管理與開課登記</h2>
+                  <h2 id="adminWorkspaceTitle" class="admin-workspace-heading">A. 班級開課管理與切換班級</h2>
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <label for="adminQuickSwitchSelect" style="font-size: 14px; font-weight: 700; color: var(--text-secondary); white-space: nowrap;">快速切換：</label>
                 <select id="adminQuickSwitchSelect" onchange="window.app.openAdminFeature(this.value)" class="question-input" style="font-size: 14px; padding: 7px 12px; margin: 0; min-width: 220px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
                   <optgroup label="班級管理">
-                    <option value="classReg">A. 班級代碼管理與開課登記</option>
+                    <option value="classReg">A. 班級開課管理與切換班級</option>
                     <option value="classAvatar">B. 班級專屬頭像管理與圖鑑上傳</option>
                     <option value="classCopy">C. 跨班教材與測驗複製(多班級一鍵同步)</option>
                     <option value="systemReset">D. 系統重設與備份管理</option>
@@ -919,10 +921,10 @@
 
             <!-- 所有功能區塊容器 (各功能保留既有 ID，全頁模式下單一顯示且展開) -->
             <div id="adminFeaturesContainer">
-          <!-- 班級代碼管理與開課登記 (可折疊區塊) -->
+          <!-- 班級開課管理與切換班級 (可折疊區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminClassSection">
             <div class="admin-section-header">
-              <h3>🏫 班級代碼管理與開課登記</h3>
+              <h3>🏫 班級開課管理與切換班級</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -2121,6 +2123,17 @@
                   </div>
                 </div>
 
+                <!-- 於登入時顯示選項 -->
+                <div style="margin-top: 12px; padding: 10px 14px; background: rgba(255, 45, 85, 0.06); border: 1px dashed rgba(255, 45, 85, 0.3); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: bold; color: #ff2d55; margin: 0;">
+                    <input type="checkbox" id="shareInputShowOnLogin" style="width: 18px; height: 18px; cursor: pointer; accent-color: #ff2d55;">
+                    <span>🔔 於登入時顯示（同學一登入教室即自動彈出提示）</span>
+                  </label>
+                  <button type="button" class="preset-btn" onclick="window.app && window.app.previewLoginSharesModal()" style="font-size: 12px; padding: 4px 10px; background: transparent; color: #ff2d55; border: 1px solid #ff2d55; border-radius: 6px; cursor: pointer;" title="預覽學生登入時看到的彈出公告畫面">
+                    👁️ 預覽公告畫面
+                  </button>
+                </div>
+
                 <button class="preset-btn" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 14px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
               </div>
 
@@ -2322,6 +2335,44 @@
       <div style="display: flex; justify-content: flex-end; gap: 8px;">
         <button type="button" class="preset-btn" onclick="window.app.closeItemEditModal()" style="padding: 8px 16px; font-size: 13px; border-radius: 8px; cursor: pointer;">取消</button>
         <button type="button" class="ask-btn" id="itemEditModalSaveBtn" style="padding: 8px 18px; font-size: 13px; border-radius: 8px; cursor: pointer;">儲存修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 課堂重要通知 / 登入公告彈跳視窗 (於登入時顯示) -->
+  <div id="loginSharesModal" class="modal-overlay login-shares-modal-overlay" onclick="if(event.target === this && window.app) window.app.closeLoginSharesModal()">
+    <div class="modal-content login-shares-modal-content">
+      <!-- 視窗標題列 -->
+      <div class="login-shares-header">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            📢 課堂重要通知與教材公告
+          </h3>
+          <span style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(255, 45, 85, 0.12); color: #ff2d55; font-weight: bold;">
+            🔔 登入即顯
+          </span>
+        </div>
+        <button type="button" onclick="window.app && window.app.closeLoginSharesModal()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="關閉視窗">✕</button>
+      </div>
+
+      <!-- 說明文字 -->
+      <div style="padding: 12px 20px 0 20px; font-size: 13px; color: var(--text-secondary);">
+        歡迎進入課堂！老師有以下重要消息與教材提醒您查閱：
+      </div>
+
+      <!-- 內容列表區 (可垂直滾動) -->
+      <div id="loginSharesModalContentList" class="login-shares-body">
+        <!-- 動態渲染各項公告卡片 -->
+      </div>
+
+      <!-- 視窗底端操作列 -->
+      <div class="login-shares-footer">
+        <button type="button" class="preset-btn" onclick="window.app && window.app.goToTeacherSharesPanel()" style="padding: 7px 16px; font-size: 13px; font-weight: bold; background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 8px; cursor: pointer;">
+          📖 前往教師分享專區
+        </button>
+        <button type="button" class="preset-btn" onclick="window.app && window.app.closeLoginSharesModal()" style="padding: 7px 20px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">
+          👍 我知道了，進入課堂！
+        </button>
       </div>
     </div>
   </div>
