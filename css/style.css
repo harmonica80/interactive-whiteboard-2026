@@ -4985,7 +4985,37 @@ body {
 }
 
 .btn-login-shares-notice {
+  flex: none !important;
+  max-width: none !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  border-radius: 20px !important;
+  white-space: nowrap !important;
+  font-weight: 700 !important;
+  border: 1.5px solid rgba(255, 45, 85, 0.4) !important;
+  background: rgba(255, 45, 85, 0.1) !important;
+  color: #ff2d55 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.25s ease;
   animation: pulseNoticeBell 2.5s infinite;
+}
+
+.btn-login-shares-notice:hover {
+  background: #ff2d55 !important;
+  color: white !important;
+  box-shadow: 0 3px 10px rgba(255, 45, 85, 0.35);
+}
+
+@media (max-width: 768px) {
+  .header-buttons .btn-login-shares-notice {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    border-radius: 16px !important;
+  }
 }
 
 

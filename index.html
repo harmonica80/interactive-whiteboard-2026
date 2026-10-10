@@ -21,7 +21,7 @@
         <div class="header-title-container">
           <h1 class="header-title">📚 即時互動白板</h1>
           <button class="menu-tab teacher-share-top-btn desktop-only" data-target="panel-teacher-shares" title="教師分享">📢 教師分享</button>
-          <button type="button" id="btnLoginSharesNotice" class="menu-tab desktop-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none; background: rgba(255, 45, 85, 0.12); color: #ff2d55; border: 1px solid rgba(255, 45, 85, 0.3); font-weight: bold; align-items: center; gap: 4px;" title="查看最新課堂公告">🔔 登入公告 (<span id="txtLoginSharesNoticeCount">0</span>)</button>
+          <button type="button" id="btnLoginSharesNotice" class="desktop-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none;" title="查看最新課堂公告">🔔 公告 (<span id="txtLoginSharesNoticeCount">0</span>)</button>
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
@@ -42,7 +42,7 @@
         </div>
         <div class="header-buttons">
           <button class="menu-tab teacher-share-top-btn mobile-only" data-target="panel-teacher-shares" title="教師分享">教師分享</button>
-          <button type="button" id="mobileLoginSharesNoticeBtn" class="mobile-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none; background: rgba(255, 45, 85, 0.12); color: #ff2d55; border: 1px solid rgba(255, 45, 85, 0.3); border-radius: 8px; padding: 4px 8px; font-size: 13px; font-weight: bold; align-items: center; gap: 2px;" title="查看最新課堂公告">🔔 公告 (<span id="txtMobileLoginSharesNoticeCount">0</span>)</button>
+          <button type="button" id="mobileLoginSharesNoticeBtn" class="mobile-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none;" title="查看最新課堂公告">🔔 公告 (<span id="txtMobileLoginSharesNoticeCount">0</span>)</button>
           <button type="button" class="switch-class-mobile-btn mobile-only" id="mobileSwitchClassBtn" onclick="window.app && window.app.openClassModal()" title="切換班級/回一次性課堂">🏫</button>
           <!-- 管理後台按鈕移至右上角 -->
           <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️<span class="admin-btn-text"> 管理後台</span></button>
@@ -2403,17 +2403,29 @@
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">連連看配對題</span>
-              <span class="changelog-badge-tag">全面圖文選項</span>
+              <span class="changelog-badge-tag">後台全頁與手風琴</span>
+              <span class="changelog-badge-tag">教師分享分流與公告</span>
               <span class="changelog-badge-tag">三大擴充題庫</span>
             </div>
           </div>
           <ul class="changelog-item-list">
             <li><strong>🔗 配對題 (連連看) 題型全新上線：</strong>選擇題測驗與影片測驗新增互動連連看，支援滑鼠與觸控拖曳連線、即時平滑 SVG 貝茲曲線、自適應排列防抄襲與即時正誤批改。</li>
             <li><strong>🖼️ 全面支援文字與圖片切換：</strong>選擇題配對題左右兩側（題目 🔗 答案）、影片出題（單選、複選、配對題）選項皆可自由切換「📝 文字」或「🖼️ 圖片」，支援電腦圖檔上傳、剪貼簿直接貼圖 (Ctrl+V) 與點擊放大預覽。</li>
-            <li><strong>🎬 影片出題細節視覺化編輯器：</strong>全新視覺化選項列表，點選「✓ 正解」按鈕即可直覺指定單選/複選標準答案，告別繁複手動輸入語法。</li>
+            <li><strong>📢 教師分享分流與登入即顯公告：</strong>
+              <ul>
+                <li><strong>進入分流過濾：</strong>點入「最新消息」或「課程進度與教材」預設僅顯示該分頁項目，發布表單自動切換分類，搭配頂部膠囊按鈕一鍵切換與即時動態統計。</li>
+                <li><strong>於登入時顯示：</strong>分享內容支援「🔔 於登入時顯示」開關，同學登入或進入課堂時自動彈出重要公告視窗；頂部導航列常駐「🔔 公告」按鈕與呼吸燈，數字隨資料變更即時動態同步。</li>
+              </ul>
+            </li>
+            <li><strong>🎛️ 管理後台五大類別手風琴收闔與全頁工作區：</strong>
+              <ul>
+                <li>後台依「班級管理（含班級開課與切換、系統重設）、測驗出題、教學互動、提問分享、教師分享」重整，支援點擊展開時自動收合其他類別的手風琴效果。</li>
+                <li>獨立全頁工作區、64*64 精緻向量圖示、倒數計時功能置頂常駐、管理按鈕字級微調優化。</li>
+              </ul>
+            </li>
+            <li><strong>🎬 影片出題視覺化編輯與選單橫排：</strong>選項列表全新視覺化，點選「✓ 正解」按鈕即可直覺指定單選/複選標準答案；測驗組合選單改以橫式單行小字呈現，版面簡潔流暢。</li>
             <li><strong>📊 學生端答題統計防窺遮罩：</strong>學生未回答前僅顯示全班作答分佈長條圖，答題完成後才揭曉正確解答與全班答對率；下方增設關閉按鈕提升操作流暢度。</li>
             <li><strong>📜 國語文三大題庫大幅擴充：</strong>「成語與名句典故」擴充至 396 題、「字字珠璣 (十字選字)」擴充至 200 題不重複中心字、「團結一詞」擴充至 200 題不重複目標詞。</li>
-            <li><strong>🎛️ 管理後台五大分類開闔與獨立全頁模式：</strong>後台功能依「1.班級管理、2.測驗出題管理、3.教學互動管理、4.同學提問與資料分享管理、5.教師分享管理」全新重整，具備分類開闔切換、專屬 128*128 向量圖示、全頁工作區視圖與調大一～二級字級排版，讓教師與管理員使用體驗大幅升級！</li>
           </ul>
         </div>
 
