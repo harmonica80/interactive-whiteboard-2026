@@ -1463,6 +1463,12 @@ class App {
         window.videoQuiz.updateAdminBroadcastUI(window.videoQuiz.lastSession);
       }
       this.populateAdminClassAvatarDropdown();
+      const vqSection = document.getElementById('adminVideoQuizSection');
+      if (vqSection && !vqSection.classList.contains('collapsed') && !this.currentAdminFeatureKey) {
+        this.openAdminFeature('quizVideo');
+      } else if (!this.currentAdminFeatureKey) {
+        this.backToAdminDashboard();
+      }
     } else {
       if (this.focusGame) this.handleFocusGameSync(this.focusGame);
       if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
@@ -3670,6 +3676,193 @@ class App {
         }
       });
     });
+  }
+  
+  toggleAdminCategory(blockId) {
+    const block = document.getElementById(blockId);
+    if (block) {
+      block.classList.toggle('cat-collapsed');
+    }
+  }
+
+  expandAllAdminCategories() {
+    document.querySelectorAll('.admin-cat-block').forEach(block => {
+      block.classList.remove('cat-collapsed');
+    });
+  }
+
+  collapseAllAdminCategories() {
+    document.querySelectorAll('.admin-cat-block').forEach(block => {
+      block.classList.add('cat-collapsed');
+    });
+  }
+
+  openAdminFeature(featureKey) {
+    const adminFeatureConfig = {
+      classReg: {
+        id: 'adminClassSection',
+        title: 'A. 班級代碼管理與開課登記',
+        category: '1. 班級管理',
+        icon: 'images/admin_icons/class_reg.svg'
+      },
+      classAvatar: {
+        id: 'adminClassAvatarSection',
+        title: 'B. 班級專屬頭像管理與圖鑑上傳',
+        category: '1. 班級管理',
+        icon: 'images/admin_icons/class_avatar.svg'
+      },
+      classCopy: {
+        id: 'adminCrossClassCopySection',
+        title: 'C. 跨班教材與測驗複製(多班級一鍵同步)',
+        category: '1. 班級管理',
+        icon: 'images/admin_icons/class_copy.svg'
+      },
+      quizChoice: {
+        id: 'adminChoiceQuizSection',
+        title: 'A. 選擇題測驗',
+        category: '2. 測驗出題管理',
+        icon: 'images/admin_icons/quiz_choice.svg'
+      },
+      quizVideo: {
+        id: 'adminVideoQuizSection',
+        title: 'B. 影片出題測驗',
+        category: '2. 測驗出題管理',
+        icon: 'images/admin_icons/quiz_video.svg'
+      },
+      gameBuzz: {
+        id: 'adminBuzzGameSection',
+        title: 'A. 搶答',
+        category: '3. 教學互動管理',
+        icon: 'images/admin_icons/game_buzz.svg'
+      },
+      gameFocus: {
+        id: 'adminFocusGameSection',
+        title: 'B. 專注力測驗',
+        category: '3. 教學互動管理',
+        icon: 'images/admin_icons/game_focus.svg'
+      },
+      qaMgmt: {
+        id: 'adminQuestionSection',
+        title: 'A. 提問管理',
+        category: '4. 同學提問與資料分享管理',
+        icon: 'images/admin_icons/qa_mgmt.svg'
+      },
+      imgMgmt: {
+        id: 'adminImageSection',
+        title: 'B. 圖片管理',
+        category: '4. 同學提問與資料分享管理',
+        icon: 'images/admin_icons/img_mgmt.svg'
+      },
+      vidMgmt: {
+        id: 'adminVideoSection',
+        title: 'C. 影片管理',
+        category: '4. 同學提問與資料分享管理',
+        icon: 'images/admin_icons/vid_mgmt.svg'
+      },
+      shareNews: {
+        id: 'adminTeacherShareSection',
+        title: 'A. 最新消息',
+        category: '5. 教師分享管理',
+        icon: 'images/admin_icons/share_news.svg',
+        shareCategory: 'news'
+      },
+      shareMaterials: {
+        id: 'adminTeacherShareSection',
+        title: 'B. 課程進度與教材',
+        category: '5. 教師分享管理',
+        icon: 'images/admin_icons/share_materials.svg',
+        shareCategory: 'materials'
+      }
+    };
+
+    const cfg = adminFeatureConfig[featureKey];
+    if (!cfg) return;
+
+    this.currentAdminFeatureKey = featureKey;
+
+    const dashboardView = document.getElementById('adminDashboardView');
+    const workspaceView = document.getElementById('adminSingleFeatureWorkspace');
+    if (dashboardView) dashboardView.style.display = 'none';
+    if (workspaceView) workspaceView.style.display = 'block';
+
+    const iconEl = document.getElementById('adminWorkspaceIcon');
+    const breadcrumbEl = document.getElementById('adminWorkspaceBreadcrumb');
+    const titleEl = document.getElementById('adminWorkspaceTitle');
+    const quickSelect = document.getElementById('adminQuickSwitchSelect');
+
+    if (iconEl) {
+      iconEl.src = cfg.icon;
+      iconEl.alt = cfg.title;
+    }
+    if (breadcrumbEl) breadcrumbEl.textContent = `${cfg.category} / ${cfg.title}`;
+    if (titleEl) titleEl.textContent = cfg.title;
+    if (quickSelect && quickSelect.value !== featureKey) quickSelect.value = featureKey;
+
+    // 顯示指定功能區塊，其他全部隱藏並標記收合
+    const featuresContainer = document.getElementById('adminFeaturesContainer');
+    if (featuresContainer) {
+      const allSections = featuresContainer.querySelectorAll('.admin-section-collapsible');
+      allSections.forEach(sec => {
+        if (sec.id === cfg.id) {
+          sec.style.display = 'block';
+          sec.classList.remove('collapsed');
+        } else {
+          sec.style.display = 'none';
+          sec.classList.add('collapsed');
+        }
+      });
+    }
+
+    // 教師分享管理：若是最新消息或教材，自動切換分類
+    if (cfg.shareCategory) {
+      const shareCatSelect = document.getElementById('shareInputCategory');
+      if (shareCatSelect) {
+        shareCatSelect.value = cfg.shareCategory;
+        if (typeof this.onShareInputCategoryChange === 'function') {
+          this.onShareInputCategoryChange(cfg.shareCategory);
+        }
+      }
+    }
+
+    // 班級管理專屬資料初始化
+    if (featureKey === 'classReg' && Array.isArray(this.adminRegisteredClasses)) {
+      this.renderAdminClassList(this.adminRegisteredClasses);
+    }
+
+    // 影片出題清單更新
+    if (featureKey === 'quizVideo' && window.videoQuiz && typeof window.videoQuiz.renderEditorQuizList === 'function') {
+      window.videoQuiz.renderEditorQuizList();
+    }
+
+    // 滾動至後台頂部
+    const panelAdmin = document.getElementById('panel-admin');
+    if (panelAdmin) {
+      panelAdmin.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  backToAdminDashboard() {
+    this.currentAdminFeatureKey = null;
+
+    const dashboardView = document.getElementById('adminDashboardView');
+    const workspaceView = document.getElementById('adminSingleFeatureWorkspace');
+    if (workspaceView) workspaceView.style.display = 'none';
+    if (dashboardView) dashboardView.style.display = 'flex';
+
+    // 隱藏所有功能區塊
+    const featuresContainer = document.getElementById('adminFeaturesContainer');
+    if (featuresContainer) {
+      const allSections = featuresContainer.querySelectorAll('.admin-section-collapsible');
+      allSections.forEach(sec => {
+        sec.style.display = 'none';
+        sec.classList.add('collapsed');
+      });
+    }
+
+    const panelAdmin = document.getElementById('panel-admin');
+    if (panelAdmin) {
+      panelAdmin.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
   
   bindQuestionEvents() {
