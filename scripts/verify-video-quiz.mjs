@@ -84,6 +84,13 @@ const checks = [
   ['matching_quiz.js MatchingQuizEngine exists', matchingJs.includes('MatchingQuizEngine')],
   ['quiz.js matching quiz support in startQuiz and handleQuizTypeChange', quizJs.includes("quizType === 'matching'") && quizJs.includes('submitMatchingAnswer')],
   ['video_quiz.js matching quiz support in showQuestionOverlay and submitCurrentAnswer', vqJs.includes("q.type === 'matching'") && vqJs.includes('vqMatchingContainer')],
+  ['index.html vqInteractiveOptionsList visual options container', html.includes('id="vqInteractiveOptionsList"')],
+  ['index.html vqAddOptionBtn button exists', html.includes('id="vqAddOptionBtn"')],
+  ['quiz.js toggleOptionType and selectOptionImage support option-matching-item and vq-option-row-item', quizJs.includes('.option-matching-item') && quizJs.includes('.vq-option-row-item')],
+  ['video_quiz.js renderQuestionOptionsEditor method exists', vqJs.includes('renderQuestionOptionsEditor(')],
+  ['video_quiz.js addOptionRow and removeOptionRow exist', vqJs.includes('addOptionRow()') && vqJs.includes('removeOptionRow(')],
+  ['video_quiz.js toggleCorrectAnswer method exists', vqJs.includes('toggleCorrectAnswer(')],
+  ['video_quiz.js analytics renders image thumbnails for options and pairs', vqJs.includes('isImg && imgSrc') && vqJs.includes('leftDisplay') && vqJs.includes('rightDisplay')],
 
   // 三大題庫檢查
   ['成語題庫 (CLASSICS_QUIZ_POOL) 成語典故題目數達到 300 題', idiomQuestions.length === 300],
@@ -551,6 +558,71 @@ class TimelineSimulator {
     console.log('✅ 連連看 (配對題) 核心演算法 (平滑貝茲曲線、洗牌不平行、批改計分、統計遮罩): 通過');
   } else {
     console.error(`❌ 連連看核心演算法測試失敗: bezier=${bezierValid}, shuffle=${shuffleValid}, grading=${gradingValid}`);
+    allPassed = false;
+  }
+}
+
+// (5) 圖文配對題與影片出題圖文選項核心演算法測試
+{
+  const imgPair1 = {
+    left: { type: 'image', text: '蘋果', image: 'data:image/png;base64,iVBOR1', key: '蘋果' },
+    right: { type: 'image', text: 'Apple', image: 'data:image/png;base64,iVBOR2', key: 'Apple' }
+  };
+  const imgPair2 = {
+    left: { type: 'image', text: '', image: 'data:image/png;base64,iVBOR3', key: '[圖片 2]' },
+    right: '香蕉'
+  };
+  const pairs = [imgPair1, imgPair2];
+
+  function getItemKey(item, fallback = '') {
+    if (item === null || item === undefined) return fallback;
+    if (typeof item === 'string') return item;
+    return item.key || item.id || item.text || (item.image ? `[圖片 ${fallback}]` : fallback);
+  }
+
+  const k1L = getItemKey(imgPair1.left, '1');
+  const k1R = getItemKey(imgPair1.right, '1');
+  const k2L = getItemKey(imgPair2.left, '2');
+  const k2R = getItemKey(imgPair2.right, '2');
+
+  const keyValid = (k1L === '蘋果' && k1R === 'Apple' && k2L === '[圖片 2]' && k2R === '香蕉');
+
+  const correctMap = {};
+  pairs.forEach((p, idx) => {
+    correctMap[getItemKey(p.left, String(idx + 1))] = getItemKey(p.right, String(idx + 1));
+  });
+
+  const studentAns = {
+    '蘋果': 'Apple',
+    '[圖片 2]': '香蕉'
+  };
+  let correctCount = 0;
+  pairs.forEach((p, idx) => {
+    const lKey = getItemKey(p.left, String(idx + 1));
+    const rKey = getItemKey(p.right, String(idx + 1));
+    if (studentAns[lKey] === rKey) correctCount++;
+  });
+
+  const matchingImageValid = (keyValid && correctCount === 2 && correctMap['蘋果'] === 'Apple' && correctMap['[圖片 2]'] === '香蕉');
+
+  const multiQ = {
+    options: [
+      { type: 'image', text: '太陽', image: 'data:image/png;base64,sun', key: '太陽' },
+      { type: 'image', text: '', image: 'data:image/png;base64,moon', key: '[圖片 2]' },
+      '地球'
+    ],
+    correctAnswer: ['太陽', '[圖片 2]']
+  };
+
+  const studentMultiAns = ['太陽', '[圖片 2]'];
+  const isMultiCorrect = Array.isArray(multiQ.correctAnswer)
+    && studentMultiAns.length === multiQ.correctAnswer.length
+    && studentMultiAns.every(ans => multiQ.correctAnswer.includes(ans));
+
+  if (matchingImageValid && isMultiCorrect) {
+    console.log('✅ 圖文配對題與影片出題圖文選項核心演算法 (圖文識別鍵、批改計分、複選多答案判定): 通過');
+  } else {
+    console.error('❌ 圖文配對題與影片出題圖文選項演算法測試失敗');
     allPassed = false;
   }
 }

@@ -165,21 +165,57 @@ class Quiz {
     if (type === 'matching') {
       container.innerHTML = `
         <div class="option-matching-pair">
-          <input type="text" class="matching-left-field" placeholder="左側題目 1 (例如：守株待兔)">
+          <div class="option-matching-item matching-left-item" data-type="text">
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+            <input type="text" class="option-field matching-left-field" placeholder="左側題目 1 (例如：守株待兔)">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
           <span class="matching-pair-link-icon">🔗</span>
-          <input type="text" class="matching-right-field" placeholder="右側答案 1 (例如：妄想不勞而獲)">
+          <div class="option-matching-item matching-right-item" data-type="text">
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+            <input type="text" class="option-field matching-right-field" placeholder="右側答案 1 (例如：妄想不勞而獲)">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
           <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
         </div>
         <div class="option-matching-pair">
-          <input type="text" class="matching-left-field" placeholder="左側題目 2 (例如：臥薪嚐膽)">
+          <div class="option-matching-item matching-left-item" data-type="text">
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+            <input type="text" class="option-field matching-left-field" placeholder="左側題目 2 (例如：臥薪嚐膽)">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
           <span class="matching-pair-link-icon">🔗</span>
-          <input type="text" class="matching-right-field" placeholder="右側答案 2 (例如：刻苦自勵)">
+          <div class="option-matching-item matching-right-item" data-type="text">
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+            <input type="text" class="option-field matching-right-field" placeholder="右側答案 2 (例如：刻苦自勵)">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
           <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
         </div>
         <div class="option-matching-pair">
-          <input type="text" class="matching-left-field" placeholder="左側題目 3 (例如：水落石出)">
+          <div class="option-matching-item matching-left-item" data-type="text">
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+            <input type="text" class="option-field matching-left-field" placeholder="左側題目 3 (例如：水落石出)">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
           <span class="matching-pair-link-icon">🔗</span>
-          <input type="text" class="matching-right-field" placeholder="右側答案 3 (例如：真相大白)">
+          <div class="option-matching-item matching-right-item" data-type="text">
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+            <input type="text" class="option-field matching-right-field" placeholder="右側答案 3 (例如：真相大白)">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
           <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
         </div>
       `;
@@ -1023,10 +1059,10 @@ class Quiz {
 
   // 切換選項類型（文字 / 圖片）
   toggleOptionType(btn) {
-    const row = btn.closest('.option-input');
+    const row = btn.closest('.option-input, .option-matching-item, .vq-option-row-item');
     if (!row) return;
     const curType = row.getAttribute('data-type') || 'text';
-    const textField = row.querySelector('.option-field');
+    const textField = row.querySelector('.option-field, .matching-left-field, .matching-right-field, .vq-option-text-field');
     const imgBtn = row.querySelector('.option-img-btn');
     const imgThumb = row.querySelector('.option-img-preview-thumb');
     const imgData = row.querySelector('.option-img-data');
@@ -1036,7 +1072,12 @@ class Quiz {
       btn.innerHTML = '🖼️ 圖片';
       btn.style.color = '#ff9500';
       btn.style.borderColor = '#ff9500';
-      if (textField) textField.placeholder = '說明文字或留空';
+      if (textField) {
+        if (!textField.hasAttribute('data-original-placeholder')) {
+          textField.setAttribute('data-original-placeholder', textField.placeholder || '選項文字內容');
+        }
+        textField.placeholder = '說明文字或留空';
+      }
       if (imgBtn) imgBtn.style.display = 'inline-flex';
       if (imgData && imgData.value && imgThumb) {
         imgThumb.src = imgData.value;
@@ -1047,7 +1088,9 @@ class Quiz {
       btn.innerHTML = '📝 文字';
       btn.style.color = 'var(--text-secondary)';
       btn.style.borderColor = 'var(--border-color)';
-      if (textField) textField.placeholder = '選項文字內容';
+      if (textField) {
+        textField.placeholder = textField.getAttribute('data-original-placeholder') || '選項文字內容';
+      }
       if (imgBtn) imgBtn.style.display = 'none';
       if (imgThumb) imgThumb.style.display = 'none';
     }
@@ -1057,7 +1100,7 @@ class Quiz {
   selectOptionImage(btn, event) {
     const ev = event || window.event;
     if (ev) ev.stopPropagation();
-    const row = btn.closest('.option-input');
+    const row = btn.closest('.option-input, .option-matching-item, .vq-option-row-item');
     if (!row) return;
     this.currentEditingOptionRow = row;
 
@@ -1220,14 +1263,44 @@ class Quiz {
       }));
       const container = document.getElementById('optionsContainer');
       if (container && pairs.length > 0) {
-        container.innerHTML = pairs.map((p, idx) => `
-          <div class="option-matching-pair">
-            <input type="text" class="matching-left-field" value="${this.escapeHtml(p.left)}" placeholder="左側題目 ${idx + 1}">
-            <span class="matching-pair-link-icon">🔗</span>
-            <input type="text" class="matching-right-field" value="${this.escapeHtml(p.right)}" placeholder="右側答案 ${idx + 1}">
-            <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
-          </div>
-        `).join('');
+        container.innerHTML = pairs.map((p, idx) => {
+          const isLeftImg = typeof p.left === 'object' && p.left !== null && !!p.left.image;
+          const leftText = isLeftImg ? (p.left.text || '') : (typeof p.left === 'object' ? (p.left.text || '') : String(p.left || ''));
+          const leftImg = isLeftImg ? p.left.image : '';
+
+          const isRightImg = typeof p.right === 'object' && p.right !== null && !!p.right.image;
+          const rightText = isRightImg ? (p.right.text || '') : (typeof p.right === 'object' ? (p.right.text || '') : String(p.right || ''));
+          const rightImg = isRightImg ? p.right.image : '';
+
+          return `
+            <div class="option-matching-pair">
+              <div class="option-matching-item matching-left-item" data-type="${isLeftImg ? 'image' : 'text'}">
+                <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isLeftImg ? 'color: #ff9500; border-color: #ff9500;' : ''}" title="切換文字或圖片">
+                  ${isLeftImg ? '🖼️ 圖片' : '📝 文字'}
+                </button>
+                <input type="text" class="option-field matching-left-field" value="${this.escapeHtml(leftText)}" placeholder="${isLeftImg ? '說明文字或留空' : '左側題目 ' + (idx + 1)}">
+                <input type="hidden" class="option-img-data" value="${this.escapeHtml(leftImg)}">
+                <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isLeftImg ? 'display: inline-flex;' : 'display: none;'}" title="上傳或貼上圖片">
+                  ${isLeftImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
+                </button>
+                <img class="option-img-preview-thumb" src="${this.escapeHtml(leftImg)}" style="${isLeftImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+              </div>
+              <span class="matching-pair-link-icon">🔗</span>
+              <div class="option-matching-item matching-right-item" data-type="${isRightImg ? 'image' : 'text'}">
+                <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isRightImg ? 'color: #ff9500; border-color: #ff9500;' : ''}" title="切換文字或圖片">
+                  ${isRightImg ? '🖼️ 圖片' : '📝 文字'}
+                </button>
+                <input type="text" class="option-field matching-right-field" value="${this.escapeHtml(rightText)}" placeholder="${isRightImg ? '說明文字或留空' : '右側答案 ' + (idx + 1)}">
+                <input type="hidden" class="option-img-data" value="${this.escapeHtml(rightImg)}">
+                <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isRightImg ? 'display: inline-flex;' : 'display: none;'}" title="上傳或貼上圖片">
+                  ${isRightImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
+                </button>
+                <img class="option-img-preview-thumb" src="${this.escapeHtml(rightImg)}" style="${isRightImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+              </div>
+              <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+            </div>
+          `;
+        }).join('');
       }
       if (window.app) window.app.showNotification('成功', '已載入此題至出題框！');
       return;
@@ -1430,14 +1503,44 @@ Python
             if (radMatching) radMatching.checked = true;
             const container = document.getElementById('optionsContainer');
             if (container && q0.pairs && q0.pairs.length > 0) {
-              container.innerHTML = q0.pairs.map((p, idx) => `
-                <div class="option-matching-pair">
-                  <input type="text" class="matching-left-field" value="${this.escapeHtml(p.left)}" placeholder="左側題目 ${idx + 1}">
-                  <span class="matching-pair-link-icon">🔗</span>
-                  <input type="text" class="matching-right-field" value="${this.escapeHtml(p.right)}" placeholder="右側答案 ${idx + 1}">
-                  <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
-                </div>
-              `).join('');
+              container.innerHTML = q0.pairs.map((p, idx) => {
+                const isLeftImg = typeof p.left === 'object' && p.left !== null && !!p.left.image;
+                const leftText = isLeftImg ? (p.left.text || '') : (typeof p.left === 'object' ? (p.left.text || '') : String(p.left || ''));
+                const leftImg = isLeftImg ? p.left.image : '';
+
+                const isRightImg = typeof p.right === 'object' && p.right !== null && !!p.right.image;
+                const rightText = isRightImg ? (p.right.text || '') : (typeof p.right === 'object' ? (p.right.text || '') : String(p.right || ''));
+                const rightImg = isRightImg ? p.right.image : '';
+
+                return `
+                  <div class="option-matching-pair">
+                    <div class="option-matching-item matching-left-item" data-type="${isLeftImg ? 'image' : 'text'}">
+                      <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isLeftImg ? 'color: #ff9500; border-color: #ff9500;' : ''}" title="切換文字或圖片">
+                        ${isLeftImg ? '🖼️ 圖片' : '📝 文字'}
+                      </button>
+                      <input type="text" class="option-field matching-left-field" value="${this.escapeHtml(leftText)}" placeholder="${isLeftImg ? '說明文字或留空' : '左側題目 ' + (idx + 1)}">
+                      <input type="hidden" class="option-img-data" value="${this.escapeHtml(leftImg)}">
+                      <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isLeftImg ? 'display: inline-flex;' : 'display: none;'}" title="上傳或貼上圖片">
+                        ${isLeftImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
+                      </button>
+                      <img class="option-img-preview-thumb" src="${this.escapeHtml(leftImg)}" style="${isLeftImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+                    </div>
+                    <span class="matching-pair-link-icon">🔗</span>
+                    <div class="option-matching-item matching-right-item" data-type="${isRightImg ? 'image' : 'text'}">
+                      <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isRightImg ? 'color: #ff9500; border-color: #ff9500;' : ''}" title="切換文字或圖片">
+                        ${isRightImg ? '🖼️ 圖片' : '📝 文字'}
+                      </button>
+                      <input type="text" class="option-field matching-right-field" value="${this.escapeHtml(rightText)}" placeholder="${isRightImg ? '說明文字或留空' : '右側答案 ' + (idx + 1)}">
+                      <input type="hidden" class="option-img-data" value="${this.escapeHtml(rightImg)}">
+                      <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isRightImg ? 'display: inline-flex;' : 'display: none;'}" title="上傳或貼上圖片">
+                        ${isRightImg ? '🔄 更換圖片' : '🖼️ 選取圖片'}
+                      </button>
+                      <img class="option-img-preview-thumb" src="${this.escapeHtml(rightImg)}" style="${isRightImg ? 'display: inline-block;' : 'display: none;'}" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+                    </div>
+                    <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
+                  </div>
+                `;
+              }).join('');
             }
           } else if (q0.quizType === 'multiple') {
             const radMulti = document.querySelector('input[name="quizTypeRadio"][value="multiple"]');

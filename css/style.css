@@ -4247,6 +4247,31 @@ body {
   font-weight: 500;
 }
 
+.matching-card-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.matching-card-thumb {
+  max-height: 52px;
+  max-width: 76px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  flex-shrink: 0;
+  cursor: zoom-in;
+  transition: transform 0.2s;
+  pointer-events: auto;
+}
+
+.matching-card-thumb:hover {
+  transform: scale(1.06);
+}
+
 .matching-dot {
   position: absolute;
   width: 14px;
@@ -4287,7 +4312,7 @@ body {
   to { stroke-dashoffset: 0; }
 }
 
-/* 選擇題管理：連連看題目配對輸入列 */
+/* 選擇題管理：連連看題目配對輸入列 (支援文字與圖片切換) */
 .option-matching-pair {
   display: grid;
   grid-template-columns: 1fr auto 1fr auto;
@@ -4300,19 +4325,63 @@ body {
   border-radius: 8px;
 }
 
+.option-matching-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.option-matching-item .option-field {
+  flex: 1;
+  min-width: 60px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
 .option-matching-pair .matching-pair-link-icon {
   font-size: 14px;
   color: var(--accent-color);
   font-weight: bold;
 }
 
-.option-matching-pair input {
+/* 影片出題測驗：視覺化選項設定列 (單選、複選、配對) */
+.vq-option-row-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 10px;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--bg-input);
-  color: var(--text-primary);
-  font-size: 14px;
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.vq-option-row-item:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.vq-option-row-item.option-matching-pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+}
+
+@media (max-width: 768px) {
+  .option-matching-pair,
+  .vq-option-row-item.option-matching-pair {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .option-matching-pair .matching-pair-link-icon,
+  .vq-option-row-item.option-matching-pair .matching-pair-link-icon {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {
