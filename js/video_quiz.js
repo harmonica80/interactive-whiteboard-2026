@@ -2985,7 +2985,7 @@
       }
 
       container.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px;">
           ${this.customSets.map(set => {
             const count = set.quizIds ? set.quizIds.length : (set.quizCount || 1);
             const totalQ = set.totalQuestions || 0;
@@ -3010,17 +3010,17 @@
                     <div style="margin-top: 4px;">${titles}</div>
                   </div>
                 </div>
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px;">
-                  <button class="action-btn" onclick="window.videoQuiz.startSyncQuizFromCustomSet('${set.id}')" style="flex: 1; background: var(--accent-color); color: white; border: none; padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="以此組合直接發起全班同步測驗">
+                <div style="display: flex; gap: 4px; align-items: center; flex-wrap: nowrap; margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px; width: 100%; box-sizing: border-box;">
+                  <button class="custom-set-action-btn action-btn" onclick="window.videoQuiz.startSyncQuizFromCustomSet('${set.id}')" style="flex: 1; min-width: 0; background: var(--accent-color); color: white; border: none; padding: 5px 6px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; white-space: nowrap; text-align: center;" title="以此組合直接發起全班同步測驗">
                     ▶ 全班開測
                   </button>
-                  <button class="action-btn" onclick="window.videoQuiz.assignCustomSetToSelfPaced('${set.id}')" style="flex: 1; background: #34c759; color: white; border: none; padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="切換為學生自主學習此組合">
+                  <button class="custom-set-action-btn action-btn" onclick="window.videoQuiz.assignCustomSetToSelfPaced('${set.id}')" style="flex: 1; min-width: 0; background: #34c759; color: white; border: none; padding: 5px 6px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; white-space: nowrap; text-align: center;" title="切換為學生自主學習此組合">
                     🎧 自主學習
                   </button>
-                  <button class="action-btn" onclick="window.app.openQuickCopyCustomSetModal('${set.id}')" style="background: rgba(88, 86, 214, 0.12); color: #5856d6; border: 1px solid rgba(88, 86, 214, 0.3); padding: 6px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="複製此測驗組合到其他班級">
+                  <button class="custom-set-action-btn action-btn" onclick="window.app.openQuickCopyCustomSetModal('${set.id}')" style="flex: 1.2; min-width: 0; background: rgba(88, 86, 214, 0.12); color: #5856d6; border: 1px solid rgba(88, 86, 214, 0.3); padding: 5px 6px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; white-space: nowrap; text-align: center;" title="複製此測驗組合到其他班級">
                     📤 複製到其他班
                   </button>
-                  <button class="action-btn" onclick="window.videoQuiz.deleteCustomSet('${set.id}')" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--danger-color); padding: 6px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;" title="刪除此組合">
+                  <button class="custom-set-action-btn action-btn" onclick="window.videoQuiz.deleteCustomSet('${set.id}')" style="flex: 0 0 auto; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--danger-color); padding: 5px 8px; border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap;" title="刪除此組合">
                     🗑️
                   </button>
                 </div>
