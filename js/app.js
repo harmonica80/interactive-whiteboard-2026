@@ -4015,8 +4015,6 @@ class App {
       return;
     }
     
-    const total = this.questions.length;
-    
     const renderQuestionItemHtml = (q, idx) => {
       const commentCount = (this.allCommentCounts && this.allCommentCounts.questions && this.allCommentCounts.questions[q.id]) || (q.comments ? (Array.isArray(q.comments) ? q.comments.length : Object.keys(q.comments).length) : 0);
       const isOwner = this.isItemOwner(q);
@@ -4028,7 +4026,6 @@ class App {
           ` : ''}
           <div class="question-card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div class="header-left" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <span class="question-badge">#${total - idx}</span>
               ${this.renderUserBadge(authorName, q.userId, q.avatar, 18)}
             </div>
             <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
@@ -6467,15 +6464,12 @@ class App {
       return;
     }
     
-    const total = this.questions.length;
-    
     const renderQuestionItemHtml = (q, idx) => `
       <li class="question-item card-style admin-card" style="border-left-color: var(--danger-color); cursor: default; flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 8px;">
         <!-- 頂部資訊與操作列 -->
         <div class="admin-q-header-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
           <div class="admin-q-header-left" style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
             <input type="checkbox" class="admin-select-question" value="${q.id}" onchange="window.app.updateBatchSelectCount()" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; margin: 0;">
-            <span class="question-badge admin-badge" style="flex-shrink: 0;">#${total - idx}</span>
             ${q.user && q.user !== '匿名' ? `<span class="user" style="color: var(--danger-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;" title="${this.escapeHtml(q.user)}">${this.escapeHtml(q.user)}</span>` : ''}
             <span class="time" style="font-size: 11px; color: var(--text-muted); flex-shrink: 0; margin-left: 2px;">${this.formatTime(q.timestamp)}</span>
           </div>

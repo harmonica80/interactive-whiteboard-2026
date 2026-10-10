@@ -1,4 +1,14 @@
 # System Log
+## 2026-10-10 - 移除前台與後台提問編號（電腦版與行動版同步）
+- 影響檔案：`js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **前台提問卡片編號移除 (`js/app.js`)**：
+     - 在 `renderQuestions` 的 `renderQuestionItemHtml` 模板中，移除提問卡片頂部的提問編號標籤 `<span class="question-badge">#${total - idx}</span>` 及未使用的 `total` 變數。
+     - 提問者頭像與姓名徽章直接對齊頂部左側，電腦版與行動版同步生效，卡片視覺更加簡潔清爽。
+  2. **後台提問管理卡片編號移除 (`js/app.js`)**：
+     - 在 `renderAdminQuestions` 的 `renderQuestionItemHtml` 模板中，移除標題操作列的提問編號標籤 `<span class="question-badge admin-badge">#${total - idx}</span>` 及未使用的 `total` 變數。
+     - 核取方塊緊接學生姓名與提問時間，電腦版與行動版同步生效，資訊排版更加直觀整齊。
+
 ## 2026-10-10 - 行動端教師分享編輯訊息與按鈕分行、提問管理題目內容完整寬度優化
 - 影響檔案：`css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
