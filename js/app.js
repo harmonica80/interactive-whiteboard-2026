@@ -5690,27 +5690,29 @@ class App {
     }
 
     return `
-      <div style="display: flex; flex-direction: column; padding: 8px; border-bottom: 1px dashed var(--border-color); gap: 4px;">
-        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-          <input type="checkbox" class="share-select-checkbox" data-id="${item.id}" onchange="window.app.updateBatchShareSelectCount()" style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted);">
-              <div>
-                <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
-                <span style="margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; ${item.category === 'news' ? 'background: rgba(255,149,0,0.12); color: #ff9500;' : 'background: rgba(0,122,255,0.1); color: var(--accent-color);'}">
-                  ${item.category === 'news' ? '📢 最新消息' : '📚 課程教材'}
-                </span>
-                ${item.showOnLogin ? `
-                  <span style="margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; background: rgba(255, 45, 85, 0.12); color: #ff2d55;">
-                    🔔 登入即顯
+      <div class="admin-share-item-row" style="display: flex; flex-direction: column; padding: 8px; border-bottom: 1px dashed var(--border-color); gap: 6px;">
+        <div class="admin-share-item-main" style="width: 100%;">
+          <div class="admin-share-item-info" style="display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0;">
+            <input type="checkbox" class="share-select-checkbox" data-id="${item.id}" onchange="window.app.updateBatchShareSelectCount()" style="width: 16px; height: 16px; margin: 2px 0 0 0; cursor: pointer; flex-shrink: 0;">
+            <div class="admin-share-item-content" style="flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+              <div class="admin-share-item-meta" style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); gap: 8px;">
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                  <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
+                  <span style="padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; ${item.category === 'news' ? 'background: rgba(255,149,0,0.12); color: #ff9500;' : 'background: rgba(0,122,255,0.1); color: var(--accent-color);'}">
+                    ${item.category === 'news' ? '📢 最新消息' : '📚 課程教材'}
                   </span>
-                ` : ''}
+                  ${item.showOnLogin ? `
+                    <span style="padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; background: rgba(255, 45, 85, 0.12); color: #ff2d55;">
+                      🔔 登入即顯
+                    </span>
+                  ` : ''}
+                </div>
+                <span style="white-space: nowrap; flex-shrink: 0;">${timeStr}</span>
               </div>
-              <span>${timeStr}</span>
+              <div id="share-preview-${item.id}" class="admin-share-item-preview" style="word-break: break-all;">${preview}</div>
             </div>
-            <div id="share-preview-${item.id}" style="word-break: break-all;">${preview}</div>
           </div>
-          <div style="display: flex; gap: 4px; flex-shrink: 0; align-items: center;">
+          <div class="admin-share-item-actions" style="display: flex; gap: 4px; flex-shrink: 0; align-items: center;">
             <button class="preset-btn" onclick="window.app.toggleShareShowOnLogin('${item.id}')" style="background: ${item.showOnLogin ? 'rgba(255, 45, 85, 0.1)' : 'transparent'}; color: ${item.showOnLogin ? '#ff2d55' : 'var(--text-secondary)'}; border: 1px solid ${item.showOnLogin ? '#ff2d55' : 'var(--border-color)'}; padding: 4px 8px; font-size: 11px; border-radius: 4px; height: auto;" title="切換學生登入時是否彈窗顯示">
               ${item.showOnLogin ? '🔔 登入顯示中' : '🔕 設為登入顯示'}
             </button>
@@ -6469,35 +6471,35 @@ class App {
     
     const renderQuestionItemHtml = (q, idx) => `
       <li class="question-item card-style admin-card" style="border-left-color: var(--danger-color); cursor: default; flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-          <input type="checkbox" class="admin-select-question" value="${q.id}" onchange="window.app.updateBatchSelectCount()" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; margin-top: 4px; margin-right: 12px;">
-          
-          <div style="flex: 1; min-width: 0;">
-            <div class="question-card-header">
-              <div class="header-left">
-                <span class="question-badge admin-badge">#${total - idx}</span>
-                ${q.user && q.user !== '匿名' ? `<span class="user" style="color: var(--danger-color);">${this.escapeHtml(q.user)}</span>` : ''}
-              </div>
-              <span class="time">${this.formatTime(q.timestamp)}</span>
-            </div>
-            <div class="text" id="q-text-${q.id}">${this.linkify(q.text)}</div>
-            <!-- 內嵌編輯區 -->
-            <div id="q-edit-${q.id}" style="display:none; margin-top: 8px;">
-              <textarea id="q-textarea-${q.id}" style="width:100%; min-height:70px; padding:8px; border-radius:8px; border:1px solid var(--accent-color); background:var(--bg-input); color:var(--text-primary); font-size:14px; resize:vertical; box-sizing:border-box;">${this.escapeHtml(q.text)}</textarea>
-              <div style="display:flex; gap:8px; margin-top:6px; justify-content:flex-end;">
-                <button onclick="adminSaveQuestion('${q.id}')" style="background:var(--accent-color);color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">💾 儲存</button>
-                <button onclick="adminCancelEditQuestion('${q.id}')" style="background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border-color);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">取消</button>
-              </div>
-            </div>
+        <!-- 頂部資訊與操作列 -->
+        <div class="admin-q-header-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
+          <div class="admin-q-header-left" style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+            <input type="checkbox" class="admin-select-question" value="${q.id}" onchange="window.app.updateBatchSelectCount()" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; margin: 0;">
+            <span class="question-badge admin-badge" style="flex-shrink: 0;">#${total - idx}</span>
+            ${q.user && q.user !== '匿名' ? `<span class="user" style="color: var(--danger-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;" title="${this.escapeHtml(q.user)}">${this.escapeHtml(q.user)}</span>` : ''}
+            <span class="time" style="font-size: 11px; color: var(--text-muted); flex-shrink: 0; margin-left: 2px;">${this.formatTime(q.timestamp)}</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: 12px;">
+          <div class="admin-q-actions" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
             <button onclick="window.app.openSingleItemCopyModal('questions', '${q.id}')" title="複製此提問至其他班級" style="width:28px;height:28px;font-size:13px;background:transparent;border:1px solid var(--accent-color);border-radius:6px;cursor:pointer;color:var(--accent-color);">📤</button>
             <button onclick="adminEditQuestion('${q.id}')" title="編輯問題" style="width:28px;height:28px;font-size:13px;background:transparent;border:1px solid var(--accent-color);border-radius:6px;cursor:pointer;color:var(--accent-color);">✏️</button>
             <button class="remove-option-btn" onclick="deleteQuestion('${q.id}')" title="刪除問題" style="width: 28px; height: 28px; font-size: 13px;">✕</button>
           </div>
         </div>
+
+        <!-- 問題內容：使用完整寬度區塊 (紅框範圍) -->
+        <div class="text admin-q-text" id="q-text-${q.id}" style="width: 100%; box-sizing: border-box; word-break: break-all; margin: 2px 0; font-size: 14.5px; line-height: 1.55; color: var(--text-primary);">${this.linkify(q.text)}</div>
+
+        <!-- 內嵌編輯區：使用完整寬度區塊 -->
+        <div id="q-edit-${q.id}" style="display:none; margin-top: 4px; width: 100%; box-sizing: border-box;">
+          <textarea id="q-textarea-${q.id}" style="width:100%; min-height:70px; padding:8px; border-radius:8px; border:1px solid var(--accent-color); background:var(--bg-input); color:var(--text-primary); font-size:14px; resize:vertical; box-sizing:border-box;">${this.escapeHtml(q.text)}</textarea>
+          <div style="display:flex; gap:8px; margin-top:6px; justify-content:flex-end;">
+            <button onclick="adminSaveQuestion('${q.id}')" style="background:var(--accent-color);color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">💾 儲存</button>
+            <button onclick="adminCancelEditQuestion('${q.id}')" style="background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border-color);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">取消</button>
+          </div>
+        </div>
         
-        <div style="display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.02); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; width: 100%;">
+        <!-- 回饋統計列：完整寬度 -->
+        <div style="display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.02); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; width: 100%; box-sizing: border-box;">
           <span style="font-weight: bold; color: var(--text-secondary);">回饋統計:</span>
           <span>👍 ${q.reactions?.like || 0}</span>
           <span>❤️ ${q.reactions?.love || 0}</span>
