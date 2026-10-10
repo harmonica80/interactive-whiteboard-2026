@@ -1,4 +1,16 @@
 # System Log
+## 2026-10-10 - 行動端大頭圖示完整獨立呈現、連線狀態指示圖示遷移至鈴鐺右側
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **行動端大頭圖示（頭像）獨立完整呈現 (`index.html`, `css/style.css`, `js/app.js`)**：
+     - 在行動端頂部左側建構專屬圓形頭像按鈕（`.mobile-avatar-btn`，28x28px），具備 1.5px 邊框與柔和陰影，內部頭像居中呈現且設置 `flex-shrink: 0`，徹底防止窄螢幕下受 flex 壓縮或父層截斷。
+     - 解決父層 `.status-group` 原 `overflow: hidden` 與 inline-flex 規則擠壓造成大頭貼左緣切邊變形之問題，調整為 `overflow: visible`。
+     - 在 `css/style.css` 增加 `.mobile-only[style*="display: none"] { display: none !important; }`，解決 stylesheet `!important` 導致元素無法透過 JavaScript 正確隱藏之問題。
+     - 在 `js/app.js` 的 `updateStudentNameUI()` 中，確保不論學生是否已輸入姓名，行動端獨立大頭貼始終即時渲染最新頭像（包含未設定姓名時的預設隨機頭像），點按即可直接開啟姓名與頭像設定彈窗。
+  2. **連線狀態指示圖示移至鈴鐺右側 (`index.html`, `css/style.css`)**：
+     - 將 `#connectionStatus` 從左側 `.status-group` 移入右側 `.header-buttons` 內，精準放置於公告鈴鐺按鈕 `#mobileLoginSharesNoticeBtn` 的正右側（介於鈴鐺按鈕與切換班級按鈕 `#mobileSwitchClassBtn` 之間）。
+     - 行動端樣式維持緊湊正方形（14x14px），釋放左側寶貴空間給學生頭像與設定按鈕，完全符合使用者操作動線與介面佈局。
+
 ## 2026-10-10 - 後台功能說明優化、教學互動新增抽人轉盤管理、行動端選單按鈕精簡化
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `images/admin_icons/game_wheel.svg`, `SYSTEM_LOG.md`。
 - 修改項目：
