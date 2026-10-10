@@ -3702,74 +3702,80 @@ class App {
       classReg: {
         id: 'adminClassSection',
         title: 'A. 班級代碼管理與開課登記',
-        category: '1. 班級管理',
+        category: '班級管理',
         icon: 'images/admin_icons/class_reg.svg'
       },
       classAvatar: {
         id: 'adminClassAvatarSection',
         title: 'B. 班級專屬頭像管理與圖鑑上傳',
-        category: '1. 班級管理',
+        category: '班級管理',
         icon: 'images/admin_icons/class_avatar.svg'
       },
       classCopy: {
         id: 'adminCrossClassCopySection',
         title: 'C. 跨班教材與測驗複製(多班級一鍵同步)',
-        category: '1. 班級管理',
+        category: '班級管理',
         icon: 'images/admin_icons/class_copy.svg'
+      },
+      systemReset: {
+        id: 'adminResetSection',
+        title: 'D. 系統重設與備份管理',
+        category: '班級管理',
+        icon: 'images/admin_icons/system_reset.svg'
       },
       quizChoice: {
         id: 'adminChoiceQuizSection',
         title: 'A. 選擇題測驗',
-        category: '2. 測驗出題管理',
+        category: '測驗出題管理',
         icon: 'images/admin_icons/quiz_choice.svg'
       },
       quizVideo: {
         id: 'adminVideoQuizSection',
         title: 'B. 影片出題測驗',
-        category: '2. 測驗出題管理',
+        category: '測驗出題管理',
         icon: 'images/admin_icons/quiz_video.svg'
       },
       gameBuzz: {
         id: 'adminBuzzGameSection',
         title: 'A. 搶答',
-        category: '3. 教學互動管理',
+        category: '教學互動管理',
         icon: 'images/admin_icons/game_buzz.svg'
       },
       gameFocus: {
         id: 'adminFocusGameSection',
         title: 'B. 專注力測驗',
-        category: '3. 教學互動管理',
+        category: '教學互動管理',
         icon: 'images/admin_icons/game_focus.svg'
       },
       qaMgmt: {
         id: 'adminQuestionSection',
         title: 'A. 提問管理',
-        category: '4. 同學提問與資料分享管理',
+        category: '同學提問與資料分享管理',
         icon: 'images/admin_icons/qa_mgmt.svg'
       },
       imgMgmt: {
         id: 'adminImageSection',
         title: 'B. 圖片管理',
-        category: '4. 同學提問與資料分享管理',
+        category: '同學提問與資料分享管理',
         icon: 'images/admin_icons/img_mgmt.svg'
       },
       vidMgmt: {
         id: 'adminVideoSection',
         title: 'C. 影片管理',
-        category: '4. 同學提問與資料分享管理',
+        category: '同學提問與資料分享管理',
         icon: 'images/admin_icons/vid_mgmt.svg'
       },
       shareNews: {
         id: 'adminTeacherShareSection',
         title: 'A. 最新消息',
-        category: '5. 教師分享管理',
+        category: '教師分享管理',
         icon: 'images/admin_icons/share_news.svg',
         shareCategory: 'news'
       },
       shareMaterials: {
         id: 'adminTeacherShareSection',
         title: 'B. 課程進度與教材',
-        category: '5. 教師分享管理',
+        category: '教師分享管理',
         icon: 'images/admin_icons/share_materials.svg',
         shareCategory: 'materials'
       }

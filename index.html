@@ -578,6 +578,77 @@
           
           <!-- 後台功能總覽目錄 (Dashboard View) -->
           <div id="adminDashboardView" class="admin-dashboard-wrapper">
+            <!-- ⏱️ 倒數計時管理區 (置於最上方) -->
+            <div class="admin-section" style="padding: 16px 20px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); margin-bottom: 4px;">
+              <h3 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                <span>⏱️</span> 倒數計時管理
+              </h3>
+              <div class="timer-controls" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <label for="timerMinutes" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">時間：</label>
+                  <input type="number" id="timerMinutes" class="question-input" style="width: 70px; padding: 6px; text-align: center; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" min="1" max="180" value="10">
+                  <span style="font-size: 14px; color: var(--text-secondary);">分鐘</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <label for="timerStyle" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">預設風格：</label>
+                  <select id="timerStyle" class="question-input" style="width: 120px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                    <option value="flip">⏱️ 經典翻頁</option>
+                    <option value="digital">🚨 LED 數位</option>
+                    <option value="ring">⭕ 簡約圓環</option>
+                  </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="timerMusicSelect" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">背景音樂：</label>
+                  <select id="timerMusicSelect" class="question-input" onchange="window.app.onTimerMusicSelectChange(this.value)" style="width: 200px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                    <optgroup label="── 巴洛克 ──">
+                      <option value="https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1">🎵 帕海貝爾 - 卡農</option>
+                      <option value="https://www.youtube.com/watch?v=GUrkvBPXmDQ">🎵 英格蘭民謠 - 綠袖子</option>
+                      <option value="https://www.youtube.com/watch?v=1h4mAceHmrI">🎵 韓德爾 - 水上音樂</option>
+                      <option value="https://www.youtube.com/watch?v=Uum5rmPLVZw">🎵 海頓 - 降E大調小號協奏曲「快板」</option>
+                      <option value="https://www.youtube.com/watch?v=xVxwuirUX-M">🎵 巴哈 - 諧謔曲</option>
+                      <option value="https://www.youtube.com/watch?v=k3AWRUYV9ds">🎵 韋瓦第 - 四季（春）</option>
+                      <option value="https://www.youtube.com/watch?v=vG_FBIbGuvg">🎵 莫札特 - G大調第13號小夜曲 K.525</option>
+                    </optgroup>
+                    <optgroup label="── 古典鋼琴 ──">
+                      <option value="https://www.youtube.com/watch?v=HJDLHuixqG8">🎵 理查克萊德門 - 夢中的婚禮</option>
+                      <option value="https://www.youtube.com/watch?v=vDlqmTIw8y0">🎵 理查克萊德門 - 給愛麗絲</option>
+                    </optgroup>
+                    <optgroup label="── 台語經典 ──">
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA">🎵 經典台語 - 黃昏的故鄉</option>
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=224s">🎵 經典台語 - 望春風</option>
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=379s">🎵 經典台語 - 河邊春夢</option>
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=646s">🎵 經典台語 - 雨夜花</option>
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=783s">🎵 經典台語 - 一支小雨傘</option>
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=980s">🎵 經典台語 - 風醉雨也醉</option>
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1466s">🎵 經典台語 - 雪中紅</option>
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1687s">🎵 經典台語 - 舊情也綿綿</option>
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1994s">🎵 經典台語 - 無字的情批</option>
+                      <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=2479s">🎵 經典台語 - 繁華攏是夢</option>
+                    </optgroup>
+                    <optgroup label="── 輕音樂 ──">
+                      <option value="https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-study-112191.mp3">🎵 專注 Lofi</option>
+                      <option value="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=soft-relaxing-piano-jazz-11428.mp3">🎵 爵士鋼琴</option>
+                    </optgroup>
+                    <option value="custom">✍️ 自訂 YouTube 網址...</option>
+                  </select>
+                  <button type="button" onclick="window.timerMusicManager && window.timerMusicManager.openModal()" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="線上編輯曲目、匯入匯出 CSV 音樂清單">
+                    🎵 管理曲目清單
+                  </button>
+                </div>
+                <div id="customMusicInputWrapper" style="display: none; align-items: center; gap: 6px;">
+                  <label for="timerMusicCustomUrl" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">網址：</label>
+                  <input type="text" id="timerMusicCustomUrl" class="question-input" oninput="window.app.updateMusicSource(this.value)" onchange="window.app.updateMusicSource(this.value)" style="width: 260px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="貼上 YouTube 網址 (支援 &t= 秒數)...">
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button id="adminStartTimerBtn" class="preset-btn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminStartTimer()">啟動倒數</button>
+                  <button id="adminPauseTimerBtn" class="preset-btn" style="background: #ff9800; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminPauseTimer()">暫停</button>
+                  <button id="adminResumeTimerBtn" class="preset-btn" style="background: var(--success-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminResumeTimer()">繼續</button>
+                  <button id="adminResetTimerBtn" class="preset-btn" style="border-color: var(--text-muted); color: var(--text-secondary); padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminResetTimer()">重設/關閉</button>
+                  <button id="classBellBtn" class="preset-btn" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="playClassBell()">🔔 上/下課鐘聲</button>
+                </div>
+              </div>
+            </div>
+
             <!-- 總覽頂部操作列 -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;">
               <div>
@@ -598,13 +669,13 @@
               </div>
             </div>
 
-            <!-- 1. 班級管理 -->
-            <div class="admin-cat-block" id="adminCatBlock1">
+            <!-- 班級管理 (預設折疊) -->
+            <div class="admin-cat-block cat-collapsed" id="adminCatBlock1">
               <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlock1')">
                 <div class="admin-cat-title">
                   <span>🏫</span>
-                  <span>1. 班級管理</span>
-                  <span class="admin-cat-badge">3 個功能</span>
+                  <span>班級管理</span>
+                  <span class="admin-cat-badge">4 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -639,16 +710,26 @@
                     <div class="admin-feature-card-desc">多班級一鍵同步教材、影片與題庫，自動排除個人紀錄，乾淨安全。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
+
+                  <!-- D. 系統重設與備份管理 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('systemReset')">
+                    <div class="admin-feature-icon-box">
+                      <img src="images/admin_icons/system_reset.svg" width="128" height="128" alt="系統重設與備份管理">
+                    </div>
+                    <div class="admin-feature-card-title">D. 系統重設與備份管理</div>
+                    <div class="admin-feature-card-desc">清除所有課堂資料（提問、測驗、圖片及白板），或匯出/匯入 JSON 課堂備份記錄。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- 2. 測驗出題管理 -->
-            <div class="admin-cat-block" id="adminCatBlock2">
+            <!-- 測驗出題管理 (預設折疊) -->
+            <div class="admin-cat-block cat-collapsed" id="adminCatBlock2">
               <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlock2')">
                 <div class="admin-cat-title">
                   <span>📝</span>
-                  <span>2. 測驗出題管理</span>
+                  <span>測驗出題管理</span>
                   <span class="admin-cat-badge">2 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
@@ -678,12 +759,12 @@
               </div>
             </div>
 
-            <!-- 3. 教學互動管理 -->
-            <div class="admin-cat-block" id="adminCatBlock3">
+            <!-- 教學互動管理 (預設折疊) -->
+            <div class="admin-cat-block cat-collapsed" id="adminCatBlock3">
               <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlock3')">
                 <div class="admin-cat-title">
                   <span>⚡</span>
-                  <span>3. 教學互動管理</span>
+                  <span>教學互動管理</span>
                   <span class="admin-cat-badge">2 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
@@ -713,12 +794,12 @@
               </div>
             </div>
 
-            <!-- 4. 同學提問與資料分享管理 -->
-            <div class="admin-cat-block" id="adminCatBlock4">
+            <!-- 同學提問與資料分享管理 (預設折疊) -->
+            <div class="admin-cat-block cat-collapsed" id="adminCatBlock4">
               <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlock4')">
                 <div class="admin-cat-title">
                   <span>💬</span>
-                  <span>4. 同學提問與資料分享管理</span>
+                  <span>同學提問與資料分享管理</span>
                   <span class="admin-cat-badge">3 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
@@ -758,12 +839,12 @@
               </div>
             </div>
 
-            <!-- 5. 教師分享管理 -->
-            <div class="admin-cat-block" id="adminCatBlock5">
+            <!-- 教師分享管理 (預設折疊) -->
+            <div class="admin-cat-block cat-collapsed" id="adminCatBlock5">
               <div class="admin-cat-header" onclick="window.app.toggleAdminCategory('adminCatBlock5')">
                 <div class="admin-cat-title">
                   <span>📢</span>
-                  <span>5. 教師分享管理</span>
+                  <span>教師分享管理</span>
                   <span class="admin-cat-badge">2 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
@@ -792,103 +873,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- 常用輔助工具與系統維護 (倒數計時與系統重設) -->
-            <div style="margin-top: 10px; padding-top: 20px; border-top: 1px solid var(--border-color);">
-              <h4 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                <span>⚙️</span> 課堂常用輔助工具與系統維護
-              </h4>
-
-              <!-- 倒數計時管理區 -->
-              <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-                <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">⏱️ 倒數計時管理</h3>
-                <div class="timer-controls" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <label for="timerMinutes" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">時間：</label>
-                    <input type="number" id="timerMinutes" class="question-input" style="width: 70px; padding: 6px; text-align: center; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" min="1" max="180" value="10">
-                    <span style="font-size: 14px; color: var(--text-secondary);">分鐘</span>
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <label for="timerStyle" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">預設風格：</label>
-                    <select id="timerStyle" class="question-input" style="width: 120px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                      <option value="flip">⏱️ 經典翻頁</option>
-                      <option value="digital">🚨 LED 數位</option>
-                      <option value="ring">⭕ 簡約圓環</option>
-                    </select>
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    <label for="timerMusicSelect" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">背景音樂：</label>
-                    <select id="timerMusicSelect" class="question-input" onchange="window.app.onTimerMusicSelectChange(this.value)" style="width: 200px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                      <optgroup label="── 巴洛克 ──">
-                        <option value="https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1">🎵 帕海貝爾 - 卡農</option>
-                        <option value="https://www.youtube.com/watch?v=GUrkvBPXmDQ">🎵 英格蘭民謠 - 綠袖子</option>
-                        <option value="https://www.youtube.com/watch?v=1h4mAceHmrI">🎵 韓德爾 - 水上音樂</option>
-                        <option value="https://www.youtube.com/watch?v=Uum5rmPLVZw">🎵 海頓 - 降E大調小號協奏曲「快板」</option>
-                        <option value="https://www.youtube.com/watch?v=xVxwuirUX-M">🎵 巴哈 - 諧謔曲</option>
-                        <option value="https://www.youtube.com/watch?v=k3AWRUYV9ds">🎵 韋瓦第 - 四季（春）</option>
-                        <option value="https://www.youtube.com/watch?v=vG_FBIbGuvg">🎵 莫札特 - G大調第13號小夜曲 K.525</option>
-                      </optgroup>
-                      <optgroup label="── 古典鋼琴 ──">
-                        <option value="https://www.youtube.com/watch?v=HJDLHuixqG8">🎵 理查克萊德門 - 夢中的婚禮</option>
-                        <option value="https://www.youtube.com/watch?v=vDlqmTIw8y0">🎵 理查克萊德門 - 給愛麗絲</option>
-                      </optgroup>
-                      <optgroup label="── 台語經典 ──">
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA">🎵 經典台語 - 黃昏的故鄉</option>
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=224s">🎵 經典台語 - 望春風</option>
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=379s">🎵 經典台語 - 河邊春夢</option>
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=646s">🎵 經典台語 - 雨夜花</option>
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=783s">🎵 經典台語 - 一支小雨傘</option>
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=980s">🎵 經典台語 - 風醉雨也醉</option>
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1466s">🎵 經典台語 - 雪中紅</option>
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1687s">🎵 經典台語 - 舊情也綿綿</option>
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1994s">🎵 經典台語 - 無字的情批</option>
-                        <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=2479s">🎵 經典台語 - 繁華攏是夢</option>
-                      </optgroup>
-                      <optgroup label="── 輕音樂 ──">
-                        <option value="https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-study-112191.mp3">🎵 專注 Lofi</option>
-                        <option value="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=soft-relaxing-piano-jazz-11428.mp3">🎵 爵士鋼琴</option>
-                      </optgroup>
-                      <option value="custom">✍️ 自訂 YouTube 網址...</option>
-                    </select>
-                    <button type="button" onclick="window.timerMusicManager && window.timerMusicManager.openModal()" class="preset-btn" style="padding: 6px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="線上編輯曲目、匯入匯出 CSV 音樂清單">
-                      🎵 管理曲目清單
-                    </button>
-                  </div>
-                  <div id="customMusicInputWrapper" style="display: none; align-items: center; gap: 6px;">
-                    <label for="timerMusicCustomUrl" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">網址：</label>
-                    <input type="text" id="timerMusicCustomUrl" class="question-input" oninput="window.app.updateMusicSource(this.value)" onchange="window.app.updateMusicSource(this.value)" style="width: 260px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="貼上 YouTube 網址 (支援 &t= 秒數)...">
-                  </div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button id="adminStartTimerBtn" class="preset-btn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminStartTimer()">啟動倒數</button>
-                    <button id="adminPauseTimerBtn" class="preset-btn" style="background: #ff9800; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminPauseTimer()">暫停</button>
-                    <button id="adminResumeTimerBtn" class="preset-btn" style="background: var(--success-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: none;" onclick="adminResumeTimer()">繼續</button>
-                    <button id="adminResetTimerBtn" class="preset-btn" style="border-color: var(--text-muted); color: var(--text-secondary); padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0;" onclick="adminResetTimer()">重設/關閉</button>
-                    <button id="classBellBtn" class="preset-btn" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="playClassBell()">🔔 上/下課鐘聲</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 系統重設與備份管理區 (兩欄配置) -->
-              <div class="admin-section" style="margin-bottom: 24px; padding-bottom: 16px;">
-                <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-                  <!-- 系統重設欄 -->
-                  <div style="flex: 1; min-width: 250px;">
-                    <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">🔄 系統重設</h3>
-                    <button class="reset-btn" onclick="confirmReset()" style="width: 100%; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; box-sizing: border-box; margin: 0;">🔄 清除所有資料 (提問、測驗、圖片及白板)</button>
-                  </div>
-                  
-                  <!-- 課堂記錄備份管理欄 -->
-                  <div style="flex: 1; min-width: 280px;">
-                    <h3 style="margin-bottom: 12px; color: var(--text-primary); font-size: 15px;">💾 課堂記錄備份管理</h3>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                      <button class="preset-btn" onclick="adminExportRecord()" style="flex: 1; min-width: 120px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1; box-sizing: border-box; margin: 0;">📤 匯出 JSON 記錄</button>
-                      <button class="preset-btn" onclick="triggerImportInput()" style="flex: 1; min-width: 120px; justify-content: center; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; height: 38px; line-height: 1; box-sizing: border-box; margin: 0;">📥 匯入 JSON 記錄</button>
-                      <input type="file" id="importRecordInput" accept=".json" style="display: none;" onchange="adminImportRecord(event)">
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div> <!-- #adminDashboardView 結束 -->
 
           <!-- 獨立全頁工作區 (點選任一功能後顯示全頁模式) -->
@@ -901,7 +885,7 @@
                 <div class="admin-workspace-title-box">
                   <img id="adminWorkspaceIcon" class="admin-workspace-icon" src="images/admin_icons/class_reg.svg" alt="功能圖示">
                   <div>
-                    <div id="adminWorkspaceBreadcrumb" class="admin-workspace-breadcrumb">1. 班級管理 / A. 班級代碼管理與開課登記</div>
+                    <div id="adminWorkspaceBreadcrumb" class="admin-workspace-breadcrumb">班級管理 / A. 班級代碼管理與開課登記</div>
                     <h2 id="adminWorkspaceTitle" class="admin-workspace-heading">A. 班級代碼管理與開課登記</h2>
                   </div>
                 </div>
@@ -909,27 +893,28 @@
               <div style="display: flex; align-items: center; gap: 8px;">
                 <label for="adminQuickSwitchSelect" style="font-size: 14px; font-weight: 700; color: var(--text-secondary); white-space: nowrap;">快速切換：</label>
                 <select id="adminQuickSwitchSelect" onchange="window.app.openAdminFeature(this.value)" class="question-input" style="font-size: 14px; padding: 7px 12px; margin: 0; min-width: 220px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
-                  <optgroup label="1. 班級管理">
-                    <option value="classReg">1A. 班級代碼管理與開課登記</option>
-                    <option value="classAvatar">1B. 班級專屬頭像管理與圖鑑上傳</option>
-                    <option value="classCopy">1C. 跨班教材與測驗複製(多班級一鍵同步)</option>
+                  <optgroup label="班級管理">
+                    <option value="classReg">A. 班級代碼管理與開課登記</option>
+                    <option value="classAvatar">B. 班級專屬頭像管理與圖鑑上傳</option>
+                    <option value="classCopy">C. 跨班教材與測驗複製(多班級一鍵同步)</option>
+                    <option value="systemReset">D. 系統重設與備份管理</option>
                   </optgroup>
-                  <optgroup label="2. 測驗出題管理">
-                    <option value="quizChoice">2A. 選擇題測驗</option>
-                    <option value="quizVideo">2B. 影片出題測驗</option>
+                  <optgroup label="測驗出題管理">
+                    <option value="quizChoice">A. 選擇題測驗</option>
+                    <option value="quizVideo">B. 影片出題測驗</option>
                   </optgroup>
-                  <optgroup label="3. 教學互動管理">
-                    <option value="gameBuzz">3A. 搶答</option>
-                    <option value="gameFocus">3B. 專注力測驗</option>
+                  <optgroup label="教學互動管理">
+                    <option value="gameBuzz">A. 搶答</option>
+                    <option value="gameFocus">B. 專注力測驗</option>
                   </optgroup>
-                  <optgroup label="4. 同學提問與資料分享管理">
-                    <option value="qaMgmt">4A. 提問管理</option>
-                    <option value="imgMgmt">4B. 圖片管理</option>
-                    <option value="vidMgmt">4C. 影片管理</option>
+                  <optgroup label="同學提問與資料分享管理">
+                    <option value="qaMgmt">A. 提問管理</option>
+                    <option value="imgMgmt">B. 圖片管理</option>
+                    <option value="vidMgmt">C. 影片管理</option>
                   </optgroup>
-                  <optgroup label="5. 教師分享管理">
-                    <option value="shareNews">5A. 最新消息</option>
-                    <option value="shareMaterials">5B. 課程進度與教材</option>
+                  <optgroup label="教師分享管理">
+                    <option value="shareNews">A. 最新消息</option>
+                    <option value="shareMaterials">B. 課程進度與教材</option>
                   </optgroup>
                 </select>
               </div>
@@ -1175,6 +1160,49 @@
               <!-- 提示訊息 -->
               <div style="background: rgba(52,199,89,0.08); border-left: 3px solid #34c759; padding: 8px 12px; border-radius: 4px; font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
                 🛡️ <strong>安全保護機制</strong>：複製過程會自動排除學生的作答紀錄、成績與表情反應，確保每個目標班級皆為乾淨的測驗與學習環境。
+              </div>
+            </div>
+          </div>
+
+          <!-- 系統重設與備份管理 (全頁模式) -->
+          <div class="admin-section admin-section-collapsible collapsed" id="adminResetSection">
+            <div class="admin-section-header">
+              <h3>🔄 系統重設與備份管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                <!-- 系統重設欄 -->
+                <div style="flex: 1; min-width: 280px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
+                  <h3 style="margin-top: 0; margin-bottom: 12px; color: var(--danger-color); font-size: 19px; display: flex; align-items: center; gap: 8px;">
+                    <span>🔄</span> 系統重設
+                  </h3>
+                  <p style="font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px;">
+                    ⚠️ 注意：重設將清除目前課堂或公共空間的所有資料（提問、測驗、圖片、作品及白板），請謹慎操作！
+                  </p>
+                  <button class="reset-btn" onclick="confirmReset()" style="width: 100%; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 12px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-sizing: border-box; margin: 0;">
+                    🔄 清除所有資料 (提問、測驗、圖片及白板)
+                  </button>
+                </div>
+                
+                <!-- 課堂記錄備份管理欄 -->
+                <div style="flex: 1; min-width: 280px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
+                  <h3 style="margin-top: 0; margin-bottom: 12px; color: var(--accent-color); font-size: 19px; display: flex; align-items: center; gap: 8px;">
+                    <span>💾</span> 課堂記錄備份管理
+                  </h3>
+                  <p style="font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px;">
+                    📦 建議在清除資料前先匯出 JSON 備份檔，亦可隨時匯入先前的課堂記錄檔進行復原。
+                  </p>
+                  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button class="preset-btn" onclick="adminExportRecord()" style="flex: 1; min-width: 130px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 12px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-sizing: border-box; margin: 0;">
+                      📤 匯出 JSON 記錄
+                    </button>
+                    <button class="preset-btn" onclick="triggerImportInput()" style="flex: 1; min-width: 130px; justify-content: center; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 12px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-sizing: border-box; margin: 0;">
+                      📥 匯入 JSON 記錄
+                    </button>
+                    <input type="file" id="importRecordInput" accept=".json" style="display: none;" onchange="adminImportRecord(event)">
+                  </div>
+                </div>
               </div>
             </div>
           </div>
