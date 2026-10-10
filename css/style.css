@@ -4641,23 +4641,23 @@ body {
 }
 
 .admin-feature-icon-box {
-  width: 128px;
-  height: 128px;
-  margin-bottom: 14px;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 26px;
+  border-radius: 16px;
   transition: transform 0.25s ease;
 }
 
 .admin-feature-card:hover .admin-feature-icon-box {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
 .admin-feature-icon-box img {
-  width: 128px;
-  height: 128px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   display: block;
 }
@@ -4745,6 +4745,7 @@ body {
 }
 
 .admin-workspace-breadcrumb {
+  display: none !important;
   font-size: 13px;
   color: var(--text-secondary);
   font-weight: 600;
@@ -4801,11 +4802,54 @@ body {
   padding: 10px 14px !important;
 }
 
-.admin-feature-fullpage .preset-btn,
-.admin-feature-fullpage .ask-btn,
+/* 題目編輯器與工具列保護：避免被 fullpage select 強制撐大截斷文字 */
+.admin-feature-fullpage select.quiz-editor-select,
+.admin-feature-fullpage .quiz-editor-toolbar select {
+  height: 32px !important;
+  font-size: 13px !important;
+  padding: 4px 8px !important;
+  line-height: normal !important;
+  min-width: 140px !important;
+}
+
+.admin-feature-fullpage .quiz-editor-btn {
+  height: 32px !important;
+  font-size: 13px !important;
+  padding: 4px 8px !important;
+}
+
+/* 影片出題測驗組合按鈕橫排單行保護 */
+.admin-feature-fullpage .custom-set-action-btn,
+.custom-set-action-btn {
+  font-size: 11.5px !important;
+  padding: 5px 6px !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+}
+
+/* 管理介面按鈕字級小一級優化 */
+.admin-feature-fullpage .preset-btn {
+  font-size: 12.5px !important;
+  padding: 6px 12px !important;
+}
+
+.admin-feature-fullpage .ask-btn {
+  font-size: 13.5px !important;
+  padding: 7px 14px !important;
+}
+
 .admin-feature-fullpage .action-btn {
-  font-size: 15px !important;
-  padding: 8px 18px !important;
+  font-size: 13.5px !important;
+  padding: 7px 14px !important;
+}
+
+.admin-feature-fullpage button[onclick*="startFocusGame"],
+.admin-feature-fullpage button[onclick*="endFocusGame"],
+.admin-feature-fullpage button[onclick*="startBuzzGameAdmin"],
+.admin-feature-fullpage button[onclick*="endBuzzGameAdmin"] {
+  font-size: 14px !important;
+  height: 38px !important;
+  padding: 8px 14px !important;
 }
 
 .admin-feature-fullpage p {
