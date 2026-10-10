@@ -12957,10 +12957,28 @@ function startQuiz() {
   if (quizType === 'matching') {
     const pairRows = document.querySelectorAll('#optionsContainer .option-matching-pair');
     const pairs = [];
-    pairRows.forEach(row => {
-      const leftVal = row.querySelector('.matching-left-field')?.value.trim() || '';
-      const rightVal = row.querySelector('.matching-right-field')?.value.trim() || '';
-      if (leftVal && rightVal) {
+    pairRows.forEach((row, idx) => {
+      const leftItem = row.querySelector('.matching-left-item');
+      const rightItem = row.querySelector('.matching-right-item');
+
+      const leftType = leftItem?.getAttribute('data-type') || 'text';
+      const leftText = (leftItem?.querySelector('.matching-left-field') || row.querySelector('.matching-left-field'))?.value.trim() || '';
+      const leftImg = leftItem?.querySelector('.option-img-data')?.value.trim() || '';
+
+      const rightType = rightItem?.getAttribute('data-type') || 'text';
+      const rightText = (rightItem?.querySelector('.matching-right-field') || row.querySelector('.matching-right-field'))?.value.trim() || '';
+      const rightImg = rightItem?.querySelector('.option-img-data')?.value.trim() || '';
+
+      const hasLeft = (leftType === 'image' && leftImg) || leftText;
+      const hasRight = (rightType === 'image' && rightImg) || rightText;
+
+      if (hasLeft && hasRight) {
+        const leftVal = (leftType === 'image' && leftImg)
+          ? { type: 'image', text: leftText, image: leftImg, key: leftText || `[左圖 ${idx + 1}]` }
+          : leftText;
+        const rightVal = (rightType === 'image' && rightImg)
+          ? { type: 'image', text: rightText, image: rightImg, key: rightText || `[右圖 ${idx + 1}]` }
+          : rightText;
         pairs.push({ left: leftVal, right: rightVal });
       }
     });
@@ -12973,7 +12991,11 @@ function startQuiz() {
     const options = pairs.map(p => p.left);
     const matchOptions = pairs.map(p => p.right);
     const correctAnswer = {};
-    pairs.forEach(p => { correctAnswer[p.left] = p.right; });
+    pairs.forEach((p, idx) => {
+      const lKey = typeof p.left === 'object' ? (p.left.key || p.left.text || `[左圖 ${idx + 1}]`) : p.left;
+      const rKey = typeof p.right === 'object' ? (p.right.key || p.right.text || `[右圖 ${idx + 1}]`) : p.right;
+      correctAnswer[lKey] = rKey;
+    });
 
     if (window.quiz) {
       window.quiz.startQuiz(finalQuestion, options, 'matching', { pairs, matchOptions, correctAnswer });
@@ -12986,15 +13008,39 @@ function startQuiz() {
       if (optsContainer) {
         optsContainer.innerHTML = `
           <div class="option-matching-pair">
-            <input type="text" class="matching-left-field" placeholder="左側題目 1">
+            <div class="option-matching-item matching-left-item" data-type="text">
+              <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+              <input type="text" class="option-field matching-left-field" placeholder="左側題目 1">
+              <input type="hidden" class="option-img-data" value="">
+              <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+              <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+            </div>
             <span class="matching-pair-link-icon">🔗</span>
-            <input type="text" class="matching-right-field" placeholder="右側答案 1">
+            <div class="option-matching-item matching-right-item" data-type="text">
+              <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+              <input type="text" class="option-field matching-right-field" placeholder="右側答案 1">
+              <input type="hidden" class="option-img-data" value="">
+              <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+              <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+            </div>
             <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
           </div>
           <div class="option-matching-pair">
-            <input type="text" class="matching-left-field" placeholder="左側題目 2">
+            <div class="option-matching-item matching-left-item" data-type="text">
+              <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+              <input type="text" class="option-field matching-left-field" placeholder="左側題目 2">
+              <input type="hidden" class="option-img-data" value="">
+              <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+              <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+            </div>
             <span class="matching-pair-link-icon">🔗</span>
-            <input type="text" class="matching-right-field" placeholder="右側答案 2">
+            <div class="option-matching-item matching-right-item" data-type="text">
+              <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+              <input type="text" class="option-field matching-right-field" placeholder="右側答案 2">
+              <input type="hidden" class="option-img-data" value="">
+              <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+              <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+            </div>
             <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
           </div>
         `;
@@ -13105,9 +13151,21 @@ function loadPreset(type) {
     if (pairs && container) {
       container.innerHTML = pairs.map((p, idx) => `
         <div class="option-matching-pair">
-          <input type="text" class="matching-left-field" value="${p.left}" placeholder="左側題目 ${idx + 1}">
+          <div class="option-matching-item matching-left-item" data-type="text">
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+            <input type="text" class="option-field matching-left-field" value="${p.left}" placeholder="左側題目 ${idx + 1}">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
           <span class="matching-pair-link-icon">🔗</span>
-          <input type="text" class="matching-right-field" value="${p.right}" placeholder="右側答案 ${idx + 1}">
+          <div class="option-matching-item matching-right-item" data-type="text">
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+            <input type="text" class="option-field matching-right-field" value="${p.right}" placeholder="右側答案 ${idx + 1}">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+            <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
           <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
         </div>
       `).join('');
@@ -13161,9 +13219,21 @@ function addOption() {
     const div = document.createElement('div');
     div.className = 'option-matching-pair';
     div.innerHTML = `
-      <input type="text" class="matching-left-field" placeholder="左側題目 ${count}">
+      <div class="option-matching-item matching-left-item" data-type="text">
+        <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+        <input type="text" class="option-field matching-left-field" placeholder="左側題目 ${count}">
+        <input type="hidden" class="option-img-data" value="">
+        <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+        <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+      </div>
       <span class="matching-pair-link-icon">🔗</span>
-      <input type="text" class="matching-right-field" placeholder="右側答案 ${count}">
+      <div class="option-matching-item matching-right-item" data-type="text">
+        <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片">📝 文字</button>
+        <input type="text" class="option-field matching-right-field" placeholder="右側答案 ${count}">
+        <input type="hidden" class="option-img-data" value="">
+        <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
+        <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+      </div>
       <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
     `;
     container.appendChild(div);

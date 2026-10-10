@@ -2112,23 +2112,45 @@
       if (question.type === 'single') {
         formHtml = `
           <div class="vq-options-list" style="display: flex; flex-direction: column; gap: 10px; margin: 16px 0;">
-            ${(question.options || []).map((opt, idx) => `
-              <label class="vq-option-item" style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px;">
-                <input type="radio" name="vqSingleOption" value="${this.escapeHtml(opt)}" style="width: 18px; height: 18px; cursor: pointer;">
-                <span>${String.fromCharCode(65 + idx)}. ${this.escapeHtml(opt)}</span>
-              </label>
-            `).join('')}
+            ${(question.options || []).map((opt, idx) => {
+              const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+              const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt));
+              const optKey = typeof opt === 'object' ? (opt.key || opt.text || `[圖片 ${idx + 1}]`) : String(opt);
+              const imgSrc = isImg ? opt.image : '';
+
+              return `
+                <label class="vq-option-item ${isImg ? 'has-img' : ''}" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px;">
+                  <input type="radio" name="vqSingleOption" value="${this.escapeHtml(optKey)}" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; accent-color: var(--accent-color);">
+                  <span style="font-weight: bold; color: var(--accent-color); flex-shrink: 0;">${String.fromCharCode(65 + idx)}.</span>
+                  <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                    ${isImg ? `<img src="${this.escapeHtml(imgSrc)}" style="max-height: 60px; max-width: 90px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); cursor: pointer;" onclick="event.stopPropagation(); window.quiz && window.quiz.previewOptionImg ? window.quiz.previewOptionImg(this.src) : null" title="點擊放大預覽圖片">` : ''}
+                    ${optText ? `<span>${this.escapeHtml(optText)}</span>` : ''}
+                  </div>
+                </label>
+              `;
+            }).join('')}
           </div>
         `;
       } else if (question.type === 'multiple') {
         formHtml = `
           <div class="vq-options-list" style="display: flex; flex-direction: column; gap: 10px; margin: 16px 0;">
-            ${(question.options || []).map((opt, idx) => `
-              <label class="vq-option-item" style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px;">
-                <input type="checkbox" name="vqMultipleOption" value="${this.escapeHtml(opt)}" style="width: 18px; height: 18px; cursor: pointer;">
-                <span>${String.fromCharCode(65 + idx)}. ${this.escapeHtml(opt)}</span>
-              </label>
-            `).join('')}
+            ${(question.options || []).map((opt, idx) => {
+              const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+              const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt));
+              const optKey = typeof opt === 'object' ? (opt.key || opt.text || `[圖片 ${idx + 1}]`) : String(opt);
+              const imgSrc = isImg ? opt.image : '';
+
+              return `
+                <label class="vq-option-item ${isImg ? 'has-img' : ''}" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px;">
+                  <input type="checkbox" name="vqMultipleOption" value="${this.escapeHtml(optKey)}" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; accent-color: var(--accent-color);">
+                  <span style="font-weight: bold; color: var(--accent-color); flex-shrink: 0;">${String.fromCharCode(65 + idx)}.</span>
+                  <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                    ${isImg ? `<img src="${this.escapeHtml(imgSrc)}" style="max-height: 60px; max-width: 90px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); cursor: pointer;" onclick="event.stopPropagation(); window.quiz && window.quiz.previewOptionImg ? window.quiz.previewOptionImg(this.src) : null" title="點擊放大預覽圖片">` : ''}
+                    ${optText ? `<span>${this.escapeHtml(optText)}</span>` : ''}
+                  </div>
+                </label>
+              `;
+            }).join('')}
           </div>
         `;
       } else if (question.type === 'matching') {
@@ -2184,7 +2206,7 @@
           left: opt,
           right: question.matchOptions?.[i] || ''
         }));
-        const leftItems = (question.options || []).map(opt => typeof opt === 'object' ? opt.text : opt);
+        const leftItems = (question.options || []).map(opt => typeof opt === 'object' ? opt : opt);
         const rightItems = question.matchOptions || pairs.map(p => p.right);
         const boardEl = document.getElementById('vqMatchingContainer');
         if (boardEl) {
@@ -2232,8 +2254,10 @@
         const pairs = q.pairs || (q.options || []).map((opt, i) => ({ left: opt, right: q.matchOptions?.[i] || '' }));
         let correctCount = 0;
         const totalPairs = pairs.length;
-        pairs.forEach(p => {
-          if (userAnswer[p.left] === p.right) correctCount++;
+        pairs.forEach((p, idx) => {
+          const lKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.left, String(idx + 1)) : (typeof p.left === 'object' ? (p.left.key || p.left.text) : p.left);
+          const rKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.right, String(idx + 1)) : (typeof p.right === 'object' ? (p.right.key || p.right.text) : p.right);
+          if (userAnswer[lKey] === rKey) correctCount++;
         });
         isCorrect = (correctCount === totalPairs);
       } else if (q.type === 'single') {
@@ -2243,7 +2267,10 @@
           return;
         }
         userAnswer = checked.value;
-        isCorrect = (userAnswer === q.correctAnswer);
+        const correctStr = (typeof q.correctAnswer === 'object' && q.correctAnswer !== null)
+          ? (q.correctAnswer.key || q.correctAnswer.text)
+          : String(q.correctAnswer);
+        isCorrect = (userAnswer === correctStr);
       } else if (q.type === 'multiple') {
         const checkedList = Array.from(document.querySelectorAll('input[name="vqMultipleOption"]:checked')).map(el => el.value);
         if (checkedList.length === 0) {
@@ -2251,7 +2278,9 @@
           return;
         }
         userAnswer = checkedList;
-        const correctSet = new Set(Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer]);
+        const correctArr = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer];
+        const correctStrs = correctArr.map(c => (typeof c === 'object' && c !== null) ? (c.key || c.text) : String(c));
+        const correctSet = new Set(correctStrs);
         isCorrect = (checkedList.length === correctSet.size && checkedList.every(val => correctSet.has(val)));
       } else if (q.type === 'text') {
         const txtEl = document.getElementById('vqTextAnswerInput');
@@ -2269,8 +2298,10 @@
         const pairs = q.pairs || (q.options || []).map((opt, i) => ({ left: opt, right: q.matchOptions?.[i] || '' }));
         let correctCount = 0;
         const totalPairs = pairs.length;
-        pairs.forEach(p => {
-          if (userAnswer && userAnswer[p.left] === p.right) correctCount++;
+        pairs.forEach((p, idx) => {
+          const lKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.left, String(idx + 1)) : (typeof p.left === 'object' ? (p.left.key || p.left.text) : p.left);
+          const rKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.right, String(idx + 1)) : (typeof p.right === 'object' ? (p.right.key || p.right.text) : p.right);
+          if (userAnswer && userAnswer[lKey] === rKey) correctCount++;
         });
         score = totalPairs > 0 ? Math.round((correctCount / totalPairs) * (q.points || 10)) : 0;
       } else {
@@ -2300,8 +2331,10 @@
           const pairs = q.pairs || (q.options || []).map((opt, i) => ({ left: opt, right: q.matchOptions?.[i] || '' }));
           let correctCount = 0;
           const totalPairs = pairs.length;
-          pairs.forEach(p => {
-            if (userAnswer && userAnswer[p.left] === p.right) correctCount++;
+          pairs.forEach((p, idx) => {
+            const lKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.left, String(idx + 1)) : (typeof p.left === 'object' ? (p.left.key || p.left.text) : p.left);
+            const rKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.right, String(idx + 1)) : (typeof p.right === 'object' ? (p.right.key || p.right.text) : p.right);
+            if (userAnswer && userAnswer[lKey] === rKey) correctCount++;
           });
           if (window.MatchingQuizEngine && matchingContainer) {
             window.MatchingQuizEngine.renderResults(matchingContainer, userAnswer, q.correctAnswer, { showAnswers: true });
@@ -2593,7 +2626,10 @@
 
           if (q.type === 'single' || q.type === 'multiple') {
             const counts = {};
-            (q.options || []).forEach(opt => { counts[opt] = 0; });
+            (q.options || []).forEach((opt, idx) => {
+              const optKey = typeof opt === 'object' && opt !== null ? (opt.key || opt.text || `[圖片 ${idx + 1}]`) : String(opt);
+              counts[optKey] = 0;
+            });
             let correctTotal = 0;
             let answeredRespondentCount = 0;
 
@@ -2633,13 +2669,23 @@
                 ${qAccuracyHeader}
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                   ${(q.options || []).map((opt, optIdx) => {
-                    const cnt = counts[opt] || 0;
+                    const isImg = typeof opt === 'object' && opt !== null && (opt.type === 'image' || !!opt.image);
+                    const optKey = typeof opt === 'object' && opt !== null ? (opt.key || opt.text || `[圖片 ${optIdx + 1}]`) : String(opt);
+                    const optText = typeof opt === 'object' && opt !== null ? (opt.text || '') : String(opt);
+                    const imgSrc = isImg ? (opt.image || '') : '';
+
+                    const cnt = counts[optKey] || counts[optText] || 0;
                     const pct = totalParticipants > 0 ? Math.round((cnt / totalParticipants) * 100) : 0;
-                    const isCorrectOpt = canShowAnswer && (Array.isArray(q.correctAnswer) ? q.correctAnswer.includes(opt) : (q.correctAnswer === opt));
+                    const isCorrectOpt = canShowAnswer && (Array.isArray(q.correctAnswer)
+                      ? (q.correctAnswer.includes(optKey) || q.correctAnswer.includes(optText))
+                      : (q.correctAnswer === optKey || q.correctAnswer === optText));
+
                     return `
                       <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
-                        <span style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isCorrectOpt ? 'bold' : 'normal'}; color: ${isCorrectOpt ? 'var(--success-color)' : 'var(--text-primary)'};">
-                          ${isCorrectOpt ? '✅ ' : ''}${String.fromCharCode(65 + optIdx)}. ${this.escapeHtml(opt)}
+                        <span style="width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isCorrectOpt ? 'bold' : 'normal'}; color: ${isCorrectOpt ? 'var(--success-color)' : 'var(--text-primary)'}; display: inline-flex; align-items: center; gap: 4px;">
+                          ${isCorrectOpt ? '✅ ' : ''}${String.fromCharCode(65 + optIdx)}.
+                          ${isImg && imgSrc ? `<img src="${this.escapeHtml(imgSrc)}" style="max-height: 22px; max-width: 32px; object-fit: contain; border-radius: 3px; border: 1px solid var(--border-color); vertical-align: middle; cursor: pointer;" onclick="event.stopPropagation(); window.quiz && window.quiz.previewOptionImg ? window.quiz.previewOptionImg(this.src) : null" title="點擊放大預覽">` : ''}
+                          <span>${this.escapeHtml(optText || (isImg ? '[圖片]' : ''))}</span>
                         </span>
                         <div style="flex: 1; height: 16px; background: rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; position: relative;">
                           <div style="width: ${pct}%; height: 100%; background: ${isCorrectOpt ? 'var(--success-color)' : 'var(--accent-color)'}; border-radius: 8px; transition: width 0.3s;"></div>
@@ -2653,11 +2699,14 @@
             `;
           } else if (q.type === 'matching') {
             const pairs = q.pairs || (q.options || []).map((opt, i) => ({ left: opt, right: q.matchOptions?.[i] || '' }));
-            const pairCounts = pairs.map(p => {
+            const pairCounts = pairs.map((p, pIdx) => {
+              const lKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.left, String(pIdx + 1)) : (typeof p.left === 'object' ? (p.left.key || p.left.text) : p.left);
+              const rKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.right, String(pIdx + 1)) : (typeof p.right === 'object' ? (p.right.key || p.right.text) : p.right);
+
               let cnt = 0;
               userList.forEach(u => {
                 const ans = u.answers?.[q.id]?.answer;
-                if (ans && typeof ans === 'object' && ans[p.left] === p.right) {
+                if (ans && typeof ans === 'object' && ans[lKey] === rKey) {
                   cnt++;
                 }
               });
@@ -2699,12 +2748,30 @@
                   ${pairs.map((p, pIdx) => {
                     const cnt = pairCounts[pIdx];
                     const pct = totalParticipants > 0 ? Math.round((cnt / totalParticipants) * 100) : 0;
+
+                    const isLeftImg = typeof p.left === 'object' && p.left !== null && (p.left.type === 'image' || !!p.left.image);
+                    const leftText = typeof p.left === 'object' && p.left !== null ? (p.left.text || '') : String(p.left || '');
+                    const leftImg = isLeftImg ? (p.left.image || '') : '';
+
+                    const isRightImg = typeof p.right === 'object' && p.right !== null && (p.right.type === 'image' || !!p.right.image);
+                    const rightText = typeof p.right === 'object' && p.right !== null ? (p.right.text || '') : String(p.right || '');
+                    const rightImg = isRightImg ? (p.right.image || '') : '';
+
+                    const leftDisplay = isLeftImg && leftImg
+                      ? `<img src="${this.escapeHtml(leftImg)}" style="max-height: 20px; max-width: 28px; object-fit: contain; border-radius: 2px; vertical-align: middle;"> ${this.escapeHtml(leftText || '[圖]')}`
+                      : this.escapeHtml(leftText);
+
+                    const rightDisplay = isRightImg && rightImg
+                      ? `<img src="${this.escapeHtml(rightImg)}" style="max-height: 20px; max-width: 28px; object-fit: contain; border-radius: 2px; vertical-align: middle;"> ${this.escapeHtml(rightText || '[圖]')}`
+                      : this.escapeHtml(rightText);
+
                     const label = canShowAnswer
-                      ? `✅ ${this.escapeHtml(p.left)} 🔗 ${this.escapeHtml(p.right)}`
-                      : `🔗 項目 ${pIdx + 1}：${this.escapeHtml(p.left)} ➔ ？？？`;
+                      ? `✅ ${leftDisplay} 🔗 ${rightDisplay}`
+                      : `🔗 項目 ${pIdx + 1}：${leftDisplay} ➔ ？？？`;
+
                     return `
                       <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
-                        <span style="width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${canShowAnswer ? 'bold' : 'normal'}; color: ${canShowAnswer ? 'var(--success-color)' : 'var(--text-primary)'};">
+                        <span style="width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${canShowAnswer ? 'bold' : 'normal'}; color: ${canShowAnswer ? 'var(--success-color)' : 'var(--text-primary)'}; display: inline-flex; align-items: center; gap: 4px;">
                           ${label}
                         </span>
                         <div style="flex: 1; height: 16px; background: rgba(0,0,0,0.06); border-radius: 8px; overflow: hidden; position: relative;">
@@ -3463,12 +3530,10 @@
       document.getElementById('vqQuestionTimeFormatted').value = formatted;
       document.getElementById('vqQuestionTypeSelect').value = 'single';
       document.getElementById('vqQuestionPromptInput').value = '';
-      document.getElementById('vqQuestionOptionsInput').value = '選項A\n選項B\n選項C\n選項D';
-      document.getElementById('vqQuestionAnswerInput').value = '選項A';
       document.getElementById('vqQuestionExplanationInput').value = '';
       document.getElementById('vqQuestionPointsInput').value = '10';
 
-      this.updateQuestionEditorTypeFields();
+      this.renderQuestionOptionsEditor('single', ['選項A', '選項B', '選項C', '選項D'], '選項A');
 
       const hintEl = document.getElementById('vqQuestionTimeHint');
       if (hintEl) {
@@ -3488,27 +3553,11 @@
       document.getElementById('vqQuestionTimeFormatted').value = q.timeFormatted || this.formatTime(q.time);
       document.getElementById('vqQuestionTypeSelect').value = q.type || 'single';
       document.getElementById('vqQuestionPromptInput').value = q.prompt || '';
-
-      if (q.type === 'matching') {
-        if (Array.isArray(q.pairs) && q.pairs.length > 0) {
-          document.getElementById('vqQuestionOptionsInput').value = q.pairs.map(p => `${p.left} = ${p.right}`).join('\n');
-        } else if (Array.isArray(q.options) && Array.isArray(q.matchOptions)) {
-          document.getElementById('vqQuestionOptionsInput').value = q.options.map((opt, i) => `${opt} = ${q.matchOptions[i] || ''}`).join('\n');
-        } else {
-          document.getElementById('vqQuestionOptionsInput').value = (q.options || []).join('\n');
-        }
-        document.getElementById('vqQuestionAnswerInput').value = (typeof q.correctAnswer === 'object' && q.correctAnswer !== null)
-          ? Object.entries(q.correctAnswer).map(([k, v]) => `${k} = ${v}`).join('\n')
-          : (q.correctAnswer || '');
-      } else {
-        document.getElementById('vqQuestionOptionsInput').value = (q.options || []).join('\n');
-        document.getElementById('vqQuestionAnswerInput').value = Array.isArray(q.correctAnswer) ? q.correctAnswer.join('\n') : (q.correctAnswer || '');
-      }
-
       document.getElementById('vqQuestionExplanationInput').value = q.explanation || '';
       document.getElementById('vqQuestionPointsInput').value = q.points || 10;
 
-      this.updateQuestionEditorTypeFields();
+      this.renderQuestionOptionsEditor(q.type || 'single', q.options, q.correctAnswer, q.pairs, q.matchOptions);
+
       const modal = document.getElementById('vqQuestionEditModal');
       if (modal) modal.style.display = 'flex';
     }
@@ -3520,34 +3569,306 @@
 
     updateQuestionEditorTypeFields() {
       const type = document.getElementById('vqQuestionTypeSelect')?.value || 'single';
+      this.renderQuestionOptionsEditor(type);
+    }
+
+    // 渲染出題細節彈窗之視覺化選項編輯列表 (支援單選、複選、配對題的文字與圖片)
+    renderQuestionOptionsEditor(type, optionsData = [], correctAnswerData = '', pairsData = [], matchOptionsData = []) {
+      const container = document.getElementById('vqInteractiveOptionsList');
+      const addBtn = document.getElementById('vqAddOptionBtn');
       const optGroup = document.getElementById('vqOptionsFieldGroup');
+      const ansGroup = document.getElementById('vqAnswerFieldGroup');
+      const optLabel = document.getElementById('vqOptionsLabel');
+      const helpHint = document.getElementById('vqOptionsHelpHint');
       const ansLabel = document.getElementById('vqAnswerFieldLabel');
-      const optLabel = optGroup?.querySelector('label');
-      const optInput = document.getElementById('vqQuestionOptionsInput');
       const ansInput = document.getElementById('vqQuestionAnswerInput');
+      if (!container) return;
 
       if (type === 'text') {
         if (optGroup) optGroup.style.display = 'none';
-        if (ansLabel) ansLabel.textContent = '參考正解或評分關鍵詞：';
+        if (ansGroup) ansGroup.style.display = 'block';
+        if (ansLabel) ansLabel.textContent = '✍️ 參考正解或評分關鍵詞：';
         if (ansInput) ansInput.placeholder = '請填寫問答參考標準答案...';
-      } else if (type === 'matching') {
-        if (optGroup) optGroup.style.display = 'block';
-        if (optLabel) optLabel.textContent = '配對列表（每行一組「左側 = 右側」，例如：臥薪嚐膽 = 句踐）：';
-        if (optInput) optInput.placeholder = '臥薪嚐膽 = 句踐\n完璧歸趙 = 藺相如\n四面楚歌 = 項羽';
-        if (ansLabel) ansLabel.textContent = '標準答案（自動依上方左側 = 右側建立）：';
-        if (ansInput) ansInput.placeholder = '正解將自動由上方配對列表產生，此處亦可補充備註說明';
-      } else if (type === 'multiple') {
-        if (optGroup) optGroup.style.display = 'block';
-        if (optLabel) optLabel.textContent = '選項列表 (每行一個選項)：';
-        if (optInput) optInput.placeholder = '選項A\n選項B\n選項C\n選項D';
-        if (ansLabel) ansLabel.textContent = '標準答案（每行填寫一個正確選項）：';
-        if (ansInput) ansInput.placeholder = '每行填寫一個正確選項';
+        container.innerHTML = '';
+        return;
+      }
+
+      if (optGroup) optGroup.style.display = 'block';
+
+      if (type === 'matching') {
+        if (ansGroup) ansGroup.style.display = 'none'; // 配對題正解由各組左側與右側直接決定
+        if (optLabel) optLabel.textContent = '🔗 配對題設定（每組「左側 🔗 右側」，支援文字或圖片）：';
+        if (addBtn) {
+          addBtn.style.display = 'inline-flex';
+          addBtn.textContent = '➕ 新增配對';
+        }
+        if (helpHint) {
+          helpHint.innerHTML = '💡 每組配對兩側皆可獨立切換「📝 文字」或「🖼️ 圖片」；支援上傳電腦圖檔或剪貼簿貼上圖片。';
+        }
+
+        // 解析配對資料
+        let pairs = [];
+        if (Array.isArray(pairsData) && pairsData.length > 0) {
+          pairs = pairsData;
+        } else if (Array.isArray(optionsData) && Array.isArray(matchOptionsData) && matchOptionsData.length > 0) {
+          pairs = optionsData.map((opt, i) => ({ left: opt, right: matchOptionsData[i] || '' }));
+        } else if (Array.isArray(optionsData) && optionsData.length > 0) {
+          pairs = optionsData.map(opt => {
+            if (typeof opt === 'string' && opt.includes('=')) {
+              const p = opt.split(/[=＝]/);
+              return { left: p[0].trim(), right: p.slice(1).join('=').trim() };
+            }
+            return { left: opt, right: '' };
+          });
+        }
+
+        if (pairs.length === 0) {
+          pairs = [
+            { left: '題目項目 1', right: '配對解答 1' },
+            { left: '題目項目 2', right: '配對解答 2' },
+            { left: '題目項目 3', right: '配對解答 3' }
+          ];
+        }
+
+        container.innerHTML = pairs.map((pair, idx) => {
+          const isLeftImg = typeof pair.left === 'object' && pair.left !== null && (pair.left.type === 'image' || !!pair.left.image);
+          const leftText = typeof pair.left === 'object' ? (pair.left.text || '') : String(pair.left || '');
+          const leftImg = isLeftImg ? (pair.left.image || '') : '';
+
+          const isRightImg = typeof pair.right === 'object' && pair.right !== null && (pair.right.type === 'image' || !!pair.right.image);
+          const rightText = typeof pair.right === 'object' ? (pair.right.text || '') : String(pair.right || '');
+          const rightImg = isRightImg ? (pair.right.image || '') : '';
+
+          return `
+            <div class="vq-option-row-item option-matching-pair" style="display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+              <!-- 左側項目 -->
+              <div class="option-matching-item matching-left-item" data-type="${isLeftImg ? 'image' : 'text'}" style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                <span style="font-weight: bold; font-size: 12px; color: var(--accent-color); flex-shrink: 0;">左${idx + 1}</span>
+                <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="padding: 3px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; flex-shrink: 0; ${isLeftImg ? 'color: #ff9500; border-color: #ff9500;' : ''}">
+                  ${isLeftImg ? '🖼️ 圖片' : '📝 文字'}
+                </button>
+                <input type="text" class="option-field matching-left-field vq-option-text-field" value="${this.escapeHtml(leftText)}" placeholder="${isLeftImg ? '說明文字(選填)' : '題目 ' + (idx + 1)}" style="flex: 1; min-width: 60px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+                <input type="hidden" class="option-img-data" value="${this.escapeHtml(leftImg)}">
+                <button type="button" class="option-img-btn btn btn-secondary" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isLeftImg ? 'display: inline-flex;' : 'display: none;'} padding: 3px 6px; font-size: 11px; flex-shrink: 0;">
+                  ${leftImg ? '🔄 更換' : '📁 選圖'}
+                </button>
+                <img class="option-img-preview-thumb" src="${this.escapeHtml(leftImg)}" style="${isLeftImg && leftImg ? 'display: inline-block;' : 'display: none;'} width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; flex-shrink: 0;" title="點擊放大預覽" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+              </div>
+
+              <!-- 連結圖示 -->
+              <span class="matching-pair-link-icon" style="font-size: 14px; color: var(--text-muted); padding: 0 2px;">🔗</span>
+
+              <!-- 右側項目 -->
+              <div class="option-matching-item matching-right-item" data-type="${isRightImg ? 'image' : 'text'}" style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                <span style="font-weight: bold; font-size: 12px; color: #5856d6; flex-shrink: 0;">右${idx + 1}</span>
+                <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="padding: 3px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; flex-shrink: 0; ${isRightImg ? 'color: #ff9500; border-color: #ff9500;' : ''}">
+                  ${isRightImg ? '🖼️ 圖片' : '📝 文字'}
+                </button>
+                <input type="text" class="option-field matching-right-field vq-option-text-field" value="${this.escapeHtml(rightText)}" placeholder="${isRightImg ? '說明文字(選填)' : '答案 ' + (idx + 1)}" style="flex: 1; min-width: 60px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+                <input type="hidden" class="option-img-data" value="${this.escapeHtml(rightImg)}">
+                <button type="button" class="option-img-btn btn btn-secondary" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isRightImg ? 'display: inline-flex;' : 'display: none;'} padding: 3px 6px; font-size: 11px; flex-shrink: 0;">
+                  ${rightImg ? '🔄 更換' : '📁 選圖'}
+                </button>
+                <img class="option-img-preview-thumb" src="${this.escapeHtml(rightImg)}" style="${isRightImg && rightImg ? 'display: inline-block;' : 'display: none;'} width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; flex-shrink: 0;" title="點擊放大預覽" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+              </div>
+
+              <!-- 刪除按鈕 -->
+              <button type="button" onclick="window.videoQuiz.removeOptionRow(this)" style="background: transparent; border: none; color: var(--danger-color); font-size: 15px; cursor: pointer; padding: 4px 6px; border-radius: 4px;" title="刪除此配對">✕</button>
+            </div>
+          `;
+        }).join('');
+        return;
+      }
+
+      // 單選題 (single) 或 複選題 (multiple)
+      if (ansGroup) ansGroup.style.display = 'none'; // 正解直接透過各選項前方的按鈕點選
+      if (optLabel) optLabel.textContent = type === 'single' ? '🔘 單選題選項（點選「正解」按鈕設定標準答案）：' : '☑️ 複選題選項（點選「正解」按鈕可複選多個正確答案）：';
+      if (addBtn) {
+        addBtn.style.display = 'inline-flex';
+        addBtn.textContent = '➕ 新增選項';
+      }
+      if (helpHint) {
+        helpHint.innerHTML = '💡 點選綠色按鈕即可設定為正確答案；點選「🖼️ 圖片」即可上傳圖檔或從剪貼簿貼上圖片。';
+      }
+
+      let options = Array.isArray(optionsData) && optionsData.length > 0 ? optionsData : ['選項A', '選項B', '選項C', '選項D'];
+      const correctSet = new Set();
+      if (Array.isArray(correctAnswerData)) {
+        correctAnswerData.forEach(ans => correctSet.add(ans));
+      } else if (correctAnswerData) {
+        correctSet.add(correctAnswerData);
+      } else if (options.length > 0) {
+        // 預設第一個選項為正解
+        const first = options[0];
+        const key = typeof first === 'object' ? (first.key || first.text || '[圖片 1]') : first;
+        correctSet.add(key);
+      }
+
+      container.innerHTML = options.map((opt, idx) => {
+        const isImg = typeof opt === 'object' && opt !== null && (opt.type === 'image' || !!opt.image);
+        const optText = typeof opt === 'object' ? (opt.text || '') : String(opt);
+        const optKey = typeof opt === 'object' ? (opt.key || opt.text || `[圖片 ${idx + 1}]`) : String(opt);
+        const imgSrc = isImg ? (opt.image || '') : '';
+        const isCorrect = correctSet.has(optKey) || correctSet.has(optText);
+
+        return `
+          <div class="vq-option-row-item" data-type="${isImg ? 'image' : 'text'}" style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+            <!-- 正解切換按鈕 -->
+            <button type="button" class="vq-correct-toggle-btn" data-correct="${isCorrect ? 'true' : 'false'}" onclick="window.videoQuiz.toggleCorrectAnswer(this)" style="padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 6px; border: 1px solid ${isCorrect ? 'var(--success-color)' : 'var(--border-color)'}; background: ${isCorrect ? 'var(--success-color)' : 'var(--bg-input)'}; color: ${isCorrect ? '#ffffff' : 'var(--text-secondary)'}; cursor: pointer; flex-shrink: 0; min-width: 60px;">
+              ${isCorrect ? (type === 'multiple' ? '☑ 正解' : '✓ 正解') : '○ 設正解'}
+            </button>
+
+            <!-- 序號標籤 -->
+            <span class="vq-option-label" style="font-weight: bold; font-size: 13px; color: var(--accent-color); min-width: 18px; flex-shrink: 0;">${String.fromCharCode(65 + idx)}.</span>
+
+            <!-- 文字/圖片切換按鈕 -->
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="padding: 3px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; flex-shrink: 0; ${isImg ? 'color: #ff9500; border-color: #ff9500;' : ''}">
+              ${isImg ? '🖼️ 圖片' : '📝 文字'}
+            </button>
+
+            <!-- 文字輸入框 -->
+            <input type="text" class="option-field vq-option-text-field" value="${this.escapeHtml(optText)}" placeholder="${isImg ? '說明文字(選填)' : '選項文字內容'}" style="flex: 1; min-width: 80px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+
+            <!-- 隱藏圖片資料 -->
+            <input type="hidden" class="option-img-data" value="${this.escapeHtml(imgSrc)}">
+
+            <!-- 選取圖片按鈕 -->
+            <button type="button" class="option-img-btn btn btn-secondary" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isImg ? 'display: inline-flex;' : 'display: none;'} padding: 4px 8px; font-size: 11px; flex-shrink: 0;">
+              ${imgSrc ? '🔄 更換' : '📁 選圖'}
+            </button>
+
+            <!-- 圖片縮圖 -->
+            <img class="option-img-preview-thumb" src="${this.escapeHtml(imgSrc)}" style="${isImg && imgSrc ? 'display: inline-block;' : 'display: none;'} width: 30px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; flex-shrink: 0;" title="點擊放大預覽" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+
+            <!-- 刪除按鈕 -->
+            <button type="button" onclick="window.videoQuiz.removeOptionRow(this)" style="background: transparent; border: none; color: var(--danger-color); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 4px;" title="刪除此選項">✕</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    addOptionRow() {
+      const type = document.getElementById('vqQuestionTypeSelect')?.value || 'single';
+      const container = document.getElementById('vqInteractiveOptionsList');
+      if (!container) return;
+
+      if (type === 'matching') {
+        const count = container.querySelectorAll('.option-matching-pair').length;
+        const newIdx = count;
+        const div = document.createElement('div');
+        div.className = 'vq-option-row-item option-matching-pair';
+        div.style.cssText = 'display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;';
+        div.innerHTML = `
+          <div class="option-matching-item matching-left-item" data-type="text" style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+            <span style="font-weight: bold; font-size: 12px; color: var(--accent-color); flex-shrink: 0;">左${newIdx + 1}</span>
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="padding: 3px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; flex-shrink: 0;">📝 文字</button>
+            <input type="text" class="option-field matching-left-field vq-option-text-field" placeholder="題目 ${newIdx + 1}" style="flex: 1; min-width: 60px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn btn btn-secondary" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none; padding: 3px 6px; font-size: 11px; flex-shrink: 0;">📁 選圖</button>
+            <img class="option-img-preview-thumb" src="" style="display: none; width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; flex-shrink: 0;" title="點擊放大預覽" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
+          <span class="matching-pair-link-icon" style="font-size: 14px; color: var(--text-muted); padding: 0 2px;">🔗</span>
+          <div class="option-matching-item matching-right-item" data-type="text" style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+            <span style="font-weight: bold; font-size: 12px; color: #5856d6; flex-shrink: 0;">右${newIdx + 1}</span>
+            <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="padding: 3px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; flex-shrink: 0;">📝 文字</button>
+            <input type="text" class="option-field matching-right-field vq-option-text-field" placeholder="答案 ${newIdx + 1}" style="flex: 1; min-width: 60px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+            <input type="hidden" class="option-img-data" value="">
+            <button type="button" class="option-img-btn btn btn-secondary" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none; padding: 3px 6px; font-size: 11px; flex-shrink: 0;">📁 選圖</button>
+            <img class="option-img-preview-thumb" src="" style="display: none; width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; flex-shrink: 0;" title="點擊放大預覽" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          </div>
+          <button type="button" onclick="window.videoQuiz.removeOptionRow(this)" style="background: transparent; border: none; color: var(--danger-color); font-size: 15px; cursor: pointer; padding: 4px 6px; border-radius: 4px;" title="刪除此配對">✕</button>
+        `;
+        container.appendChild(div);
+      } else if (type === 'single' || type === 'multiple') {
+        const count = container.querySelectorAll('.vq-option-row-item').length;
+        const newIdx = count;
+        const div = document.createElement('div');
+        div.className = 'vq-option-row-item';
+        div.setAttribute('data-type', 'text');
+        div.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;';
+        div.innerHTML = `
+          <button type="button" class="vq-correct-toggle-btn" data-correct="false" onclick="window.videoQuiz.toggleCorrectAnswer(this)" style="padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-secondary); cursor: pointer; flex-shrink: 0; min-width: 60px;">
+            ○ 設正解
+          </button>
+          <span class="vq-option-label" style="font-weight: bold; font-size: 13px; color: var(--accent-color); min-width: 18px; flex-shrink: 0;">${String.fromCharCode(65 + newIdx)}.</span>
+          <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="padding: 3px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; flex-shrink: 0;">📝 文字</button>
+          <input type="text" class="option-field vq-option-text-field" placeholder="選項文字內容" style="flex: 1; min-width: 80px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+          <input type="hidden" class="option-img-data" value="">
+          <button type="button" class="option-img-btn btn btn-secondary" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none; padding: 4px 8px; font-size: 11px; flex-shrink: 0;">📁 選圖</button>
+          <img class="option-img-preview-thumb" src="" style="display: none; width: 30px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; flex-shrink: 0;" title="點擊放大預覽" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
+          <button type="button" onclick="window.videoQuiz.removeOptionRow(this)" style="background: transparent; border: none; color: var(--danger-color); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 4px;" title="刪除此選項">✕</button>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    removeOptionRow(btn) {
+      const row = btn.closest('.vq-option-row-item');
+      if (!row) return;
+      const container = document.getElementById('vqInteractiveOptionsList');
+      if (!container) return;
+      const rows = container.querySelectorAll('.vq-option-row-item');
+      if (rows.length <= 2) {
+        if (window.app) window.app.showNotification('提示', '至少需保留 2 個項目！');
+        return;
+      }
+      row.remove();
+      // 重新整理序號標籤
+      const type = document.getElementById('vqQuestionTypeSelect')?.value || 'single';
+      if (type === 'matching') {
+        const remaining = container.querySelectorAll('.option-matching-pair');
+        remaining.forEach((item, idx) => {
+          const leftSpan = item.querySelector('.matching-left-item > span');
+          if (leftSpan) leftSpan.textContent = `左${idx + 1}`;
+          const rightSpan = item.querySelector('.matching-right-item > span');
+          if (rightSpan) rightSpan.textContent = `右${idx + 1}`;
+        });
       } else {
-        if (optGroup) optGroup.style.display = 'block';
-        if (optLabel) optLabel.textContent = '選項列表 (每行一個選項)：';
-        if (optInput) optInput.placeholder = '選項A\n選項B\n選項C\n選項D';
-        if (ansLabel) ansLabel.textContent = '標準答案（請填寫完全相符的選項文字）：';
-        if (ansInput) ansInput.placeholder = '請填寫完全相符的選項文字';
+        const remaining = container.querySelectorAll('.vq-option-row-item');
+        remaining.forEach((item, idx) => {
+          const label = item.querySelector('.vq-option-label');
+          if (label) label.textContent = `${String.fromCharCode(65 + idx)}.`;
+        });
+      }
+    }
+
+    toggleCorrectAnswer(btn) {
+      const type = document.getElementById('vqQuestionTypeSelect')?.value || 'single';
+      const container = document.getElementById('vqInteractiveOptionsList');
+      if (!container) return;
+
+      const isCurrentlyCorrect = btn.getAttribute('data-correct') === 'true';
+
+      if (type === 'single') {
+        // 單選題：互斥
+        container.querySelectorAll('.vq-correct-toggle-btn').forEach(b => {
+          b.setAttribute('data-correct', 'false');
+          b.style.borderColor = 'var(--border-color)';
+          b.style.background = 'var(--bg-input)';
+          b.style.color = 'var(--text-secondary)';
+          b.textContent = '○ 設正解';
+        });
+
+        btn.setAttribute('data-correct', 'true');
+        btn.style.borderColor = 'var(--success-color)';
+        btn.style.background = 'var(--success-color)';
+        btn.style.color = '#ffffff';
+        btn.textContent = '✓ 正解';
+      } else if (type === 'multiple') {
+        // 複選題：切換
+        const nextCorrect = !isCurrentlyCorrect;
+        btn.setAttribute('data-correct', nextCorrect ? 'true' : 'false');
+        if (nextCorrect) {
+          btn.style.borderColor = 'var(--success-color)';
+          btn.style.background = 'var(--success-color)';
+          btn.style.color = '#ffffff';
+          btn.textContent = '☑ 正解';
+        } else {
+          btn.style.borderColor = 'var(--border-color)';
+          btn.style.background = 'var(--bg-input)';
+          btn.style.color = 'var(--text-secondary)';
+          btn.textContent = '○ 設正解';
+        }
       }
     }
 
@@ -3561,8 +3882,6 @@
       const timeFormatted = this.formatTime(time);
       const type = document.getElementById('vqQuestionTypeSelect').value;
       const prompt = document.getElementById('vqQuestionPromptInput').value.trim();
-      const optsText = document.getElementById('vqQuestionOptionsInput').value.trim();
-      const ansText = document.getElementById('vqQuestionAnswerInput').value.trim();
       const explanation = document.getElementById('vqQuestionExplanationInput').value.trim();
       const points = parseInt(document.getElementById('vqQuestionPointsInput').value, 10) || 10;
 
@@ -3574,33 +3893,144 @@
       let options = [];
       let matchOptions = [];
       let pairs = [];
-      let correctAnswer = ansText;
+      let correctAnswer = null;
+
+      const interactiveRows = document.querySelectorAll('#vqInteractiveOptionsList .vq-option-row-item');
 
       if (type === 'matching') {
-        const pairLines = optsText.split('\n').map(s => s.trim()).filter(Boolean);
-        pairLines.forEach(line => {
-          const parts = line.split(/[=＝]/);
-          if (parts.length >= 2) {
-            const left = parts[0].trim();
-            const right = parts.slice(1).join('=').trim();
-            if (left && right) {
-              pairs.push({ left, right });
+        if (interactiveRows.length > 0) {
+          const pairRows = document.querySelectorAll('#vqInteractiveOptionsList .option-matching-pair');
+          pairRows.forEach((row, idx) => {
+            const leftItem = row.querySelector('.matching-left-item');
+            const rightItem = row.querySelector('.matching-right-item');
+            if (!leftItem || !rightItem) return;
+
+            const leftType = leftItem.getAttribute('data-type') || 'text';
+            const leftText = leftItem.querySelector('.vq-option-text-field')?.value.trim() || '';
+            const leftImg = leftItem.querySelector('.option-img-data')?.value.trim() || '';
+
+            const rightType = rightItem.getAttribute('data-type') || 'text';
+            const rightText = rightItem.querySelector('.vq-option-text-field')?.value.trim() || '';
+            const rightImg = rightItem.querySelector('.option-img-data')?.value.trim() || '';
+
+            let leftObj, rightObj;
+            if (leftType === 'image' && leftImg) {
+              const key = leftText || `[左側圖片 ${idx + 1}]`;
+              leftObj = { type: 'image', text: leftText, image: leftImg, key };
+            } else {
+              leftObj = leftText || `項目 ${idx + 1}`;
             }
-          }
-        });
+
+            if (rightType === 'image' && rightImg) {
+              const key = rightText || `[右側圖片 ${idx + 1}]`;
+              rightObj = { type: 'image', text: rightText, image: rightImg, key };
+            } else {
+              rightObj = rightText || `解答 ${idx + 1}`;
+            }
+
+            pairs.push({ left: leftObj, right: rightObj });
+          });
+        } else {
+          // Fallback: 純文字相容模式 (例如自動測試直接寫入 textarea)
+          const optsText = document.getElementById('vqQuestionOptionsInput')?.value.trim() || '';
+          const pairLines = optsText.split('\n').map(s => s.trim()).filter(Boolean);
+          pairLines.forEach(line => {
+            const parts = line.split(/[=＝]/);
+            if (parts.length >= 2) {
+              const left = parts[0].trim();
+              const right = parts.slice(1).join('=').trim();
+              if (left && right) {
+                pairs.push({ left, right });
+              }
+            }
+          });
+        }
+
         if (pairs.length < 2) {
-          if (window.app) window.app.showNotification('提示', '配對題至少需要兩組「左側 = 右側」有效配對！');
+          if (window.app) window.app.showNotification('提示', '配對題至少需要兩組有效配對！');
           return;
         }
+
         options = pairs.map(p => p.left);
         matchOptions = pairs.map(p => p.right);
         correctAnswer = {};
-        pairs.forEach(p => { correctAnswer[p.left] = p.right; });
-      } else if (type !== 'text') {
-        options = optsText.split('\n').map(s => s.trim()).filter(Boolean);
-        if (type === 'multiple') {
-          correctAnswer = ansText.split('\n').map(s => s.trim()).filter(Boolean);
+        pairs.forEach((p, idx) => {
+          const lKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.left, String(idx + 1)) : (typeof p.left === 'object' ? p.left.key : p.left);
+          const rKey = window.MatchingQuizEngine ? window.MatchingQuizEngine.getItemKey(p.right, String(idx + 1)) : (typeof p.right === 'object' ? p.right.key : p.right);
+          correctAnswer[lKey] = rKey;
+        });
+
+        // 同步文字版至相容 textarea
+        const optsText = pairs.map(p => {
+          const l = typeof p.left === 'object' ? (p.left.text || p.left.key) : p.left;
+          const r = typeof p.right === 'object' ? (p.right.text || p.right.key) : p.right;
+          return `${l} = ${r}`;
+        }).join('\n');
+        const ansText = Object.entries(correctAnswer).map(([k, v]) => `${k} = ${v}`).join('\n');
+        if (document.getElementById('vqQuestionOptionsInput')) document.getElementById('vqQuestionOptionsInput').value = optsText;
+        if (document.getElementById('vqQuestionAnswerInput')) document.getElementById('vqQuestionAnswerInput').value = ansText;
+      } else if (type === 'single' || type === 'multiple') {
+        if (interactiveRows.length > 0) {
+          const correctList = [];
+          interactiveRows.forEach((row, idx) => {
+            const rowType = row.getAttribute('data-type') || 'text';
+            const text = row.querySelector('.vq-option-text-field')?.value.trim() || '';
+            const img = row.querySelector('.option-img-data')?.value.trim() || '';
+            const isCorrect = row.querySelector('.vq-correct-toggle-btn')?.getAttribute('data-correct') === 'true';
+
+            let optObj;
+            let optKey;
+            if (rowType === 'image' && img) {
+              optKey = text || `[圖片 ${idx + 1}]`;
+              optObj = { type: 'image', text, image: img, key: optKey };
+            } else {
+              optKey = text || `選項 ${String.fromCharCode(65 + idx)}`;
+              optObj = text ? text : optKey;
+            }
+
+            options.push(optObj);
+            if (isCorrect) {
+              correctList.push(optKey);
+            }
+          });
+
+          if (options.length < 2) {
+            if (window.app) window.app.showNotification('提示', '請至少提供 2 個選項！');
+            return;
+          }
+
+          if (correctList.length === 0) {
+            if (window.app) window.app.showNotification('提示', '請至少點選一個選項設為正確答案！');
+            return;
+          }
+
+          if (type === 'single') {
+            correctAnswer = correctList[0];
+          } else {
+            correctAnswer = correctList;
+          }
+        } else {
+          // Fallback: 純文字相容模式
+          const optsText = document.getElementById('vqQuestionOptionsInput')?.value.trim() || '';
+          const ansText = document.getElementById('vqQuestionAnswerInput')?.value.trim() || '';
+          options = optsText.split('\n').map(s => s.trim()).filter(Boolean);
+          if (type === 'multiple') {
+            correctAnswer = ansText.split('\n').map(s => s.trim()).filter(Boolean);
+          } else {
+            correctAnswer = ansText;
+          }
         }
+
+        // 同步文字版至相容 textarea
+        const optsText = options.map(o => typeof o === 'object' ? (o.text || o.key) : o).join('\n');
+        const ansText = Array.isArray(correctAnswer) ? correctAnswer.join('\n') : correctAnswer;
+        if (document.getElementById('vqQuestionOptionsInput')) document.getElementById('vqQuestionOptionsInput').value = optsText;
+        if (document.getElementById('vqQuestionAnswerInput')) document.getElementById('vqQuestionAnswerInput').value = ansText;
+      } else {
+        // text (問答題)
+        const ansText = document.getElementById('vqQuestionAnswerInput')?.value.trim() || '';
+        correctAnswer = ansText;
+        options = [];
       }
 
       const qItem = {

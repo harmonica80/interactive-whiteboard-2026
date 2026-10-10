@@ -52,6 +52,33 @@
     },
 
     /**
+     * 取得配對項目之識別唯一鍵
+     */
+    getItemKey(item, fallback = '') {
+      if (item === null || item === undefined) return fallback;
+      if (typeof item === 'string') return item;
+      return item.key || item.id || item.text || (item.image ? `[圖片 ${fallback}]` : fallback);
+    },
+
+    /**
+     * 取得配對項目之文字說明
+     */
+    getItemText(item) {
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      return item.text || '';
+    },
+
+    /**
+     * 取得配對項目之圖片網址或 Base64
+     */
+    getItemImage(item) {
+      if (!item) return '';
+      if (typeof item === 'object') return item.image || '';
+      return '';
+    },
+
+    /**
      * 建立連連看畫布
      * @param {HTMLElement} container 容器元素
      * @param {Object} options 配置參數
@@ -71,7 +98,12 @@
       const boardId = options.id || 'mq_' + Math.random().toString(36).substr(2, 9);
       const readOnly = !!options.readOnly;
       const initialConnections = options.initialConnections ? { ...options.initialConnections } : {};
-      const solution = options.solution || (pairs.length > 0 ? pairs.reduce((acc, p) => { acc[p.left] = p.right; return acc; }, {}) : null);
+      const solution = options.solution || (pairs.length > 0 ? pairs.reduce((acc, p) => {
+        const lKey = this.getItemKey(p.left);
+        const rKey = this.getItemKey(p.right);
+        acc[lKey] = rKey;
+        return acc;
+      }, {}) : null);
 
       // 建立內部狀態
       const state = {
@@ -114,12 +146,18 @@
 
             <!-- 左側欄位 -->
             <div class="matching-column matching-column-left" id="${boardId}_leftCol">
-              ${leftItems.map((leftText, idx) => {
+              ${leftItems.map((leftItem, idx) => {
                 const color = LINE_COLORS[idx % LINE_COLORS.length];
+                const key = this.getItemKey(leftItem, String(idx + 1));
+                const text = this.getItemText(leftItem);
+                const img = this.getItemImage(leftItem);
                 return `
-                  <div class="matching-card matching-card-left" data-left-text="${this.escapeHtml(leftText)}" data-index="${idx}" style="--item-color: ${color};">
+                  <div class="matching-card matching-card-left ${img ? 'has-img' : ''}" data-left-text="${this.escapeHtml(key)}" data-index="${idx}" style="--item-color: ${color};">
                     <span class="matching-card-badge" style="background: ${color};">${idx + 1}</span>
-                    <span class="matching-card-text">${this.escapeHtml(leftText)}</span>
+                    <div class="matching-card-body">
+                      ${img ? `<img src="${this.escapeHtml(img)}" class="matching-card-thumb" draggable="false" alt="題目圖片" onclick="event.stopPropagation(); window.quiz && window.quiz.previewOptionImg && window.quiz.previewOptionImg(this.src)" title="點擊放大預覽圖片">` : ''}
+                      ${text ? `<span class="matching-card-text">${this.escapeHtml(text)}</span>` : ''}
+                    </div>
                     <div class="matching-dot matching-dot-right" title="拖曳連線" style="background: ${color};"></div>
                   </div>
                 `;
@@ -128,12 +166,18 @@
 
             <!-- 右側欄位 (已隨機洗牌) -->
             <div class="matching-column matching-column-right" id="${boardId}_rightCol">
-              ${rightItems.map((rightText, idx) => {
+              ${rightItems.map((rightItem, idx) => {
+                const key = this.getItemKey(rightItem, String(idx + 1));
+                const text = this.getItemText(rightItem);
+                const img = this.getItemImage(rightItem);
                 return `
-                  <div class="matching-card matching-card-right" data-right-text="${this.escapeHtml(rightText)}" data-index="${idx}">
+                  <div class="matching-card matching-card-right ${img ? 'has-img' : ''}" data-right-text="${this.escapeHtml(key)}" data-index="${idx}">
                     <div class="matching-dot matching-dot-left" title="配對連接點"></div>
                     <span class="matching-card-badge">${String.fromCharCode(65 + idx)}</span>
-                    <span class="matching-card-text">${this.escapeHtml(rightText)}</span>
+                    <div class="matching-card-body">
+                      ${img ? `<img src="${this.escapeHtml(img)}" class="matching-card-thumb" draggable="false" alt="答案圖片" onclick="event.stopPropagation(); window.quiz && window.quiz.previewOptionImg && window.quiz.previewOptionImg(this.src)" title="點擊放大預覽圖片">` : ''}
+                      ${text ? `<span class="matching-card-text">${this.escapeHtml(text)}</span>` : ''}
+                    </div>
                   </div>
                 `;
               }).join('')}
@@ -545,13 +589,14 @@
       let correctCount = 0;
       const totalPairs = leftItems.length;
 
-      leftItems.forEach((leftText, idx) => {
-        const correctRight = solution[leftText];
-        const userRight = userConnections[leftText];
+      leftItems.forEach((leftItem, idx) => {
+        const leftKey = this.getItemKey(leftItem, String(idx + 1));
+        const correctRight = solution[leftKey];
+        const userRight = userConnections[leftKey];
         const isCorrect = (userRight && userRight === correctRight);
         if (isCorrect) correctCount++;
 
-        const leftCard = wrapper.querySelector(`.matching-card-left[data-left-text="${CSS.escape(leftText)}"]`);
+        const leftCard = wrapper.querySelector(`.matching-card-left[data-left-text="${CSS.escape(leftKey)}"]`);
         if (!leftCard) return;
 
         const leftDot = leftCard.querySelector('.matching-dot-right');
