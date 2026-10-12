@@ -152,7 +152,14 @@ class App {
     
     // Global user interaction listener to resume audio if blocked by autoplay
     const resumeAudioOnGesture = () => {
-      if (this.timerState && this.timerState.isActive && !this.timerState.isPaused) {
+      const isTimerRunning = this.isAdmin &&
+                             this.timerState && 
+                             this.timerState.isActive && 
+                             !this.timerState.isPaused && 
+                             this.timerState.endTime && 
+                             (this.timerState.endTime > Date.now()) &&
+                             !this.isTimerExpired(this.timerState);
+      if (isTimerRunning) {
         if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.playVideo === 'function') {
           this.playerCanon.playVideo();
           
@@ -4112,7 +4119,7 @@ class App {
       '確定停止倒數計時器？',
       '這會重設計時器並關閉背景音樂。',
       () => {
-        this.resetTimer();
+        this.adminResetTimer();
         this.showNotification('已停止', '計時器已重設並停止！');
         this.updateAdminActiveActivitiesUI();
       }
@@ -7058,7 +7065,8 @@ class App {
           this.updateAdminTimerUI(data);
         }
         
-        if (!data || !data.isActive) {
+        const isExpired = this.isTimerExpired(data);
+        if (!data || !data.isActive || isExpired) {
           // Hide timer
           if (floatingTimer) floatingTimer.style.display = 'none';
           if (this.timerInterval) {
@@ -7067,6 +7075,14 @@ class App {
           }
           // Stop music
           this.playAudio('none');
+
+          // 若為已過期的陳舊活動且當前為管理員，主動且靜默重置資料庫，避免殘留
+          if (data && data.isActive && isExpired && this.isAdmin) {
+            this.timerRef.update({
+              isActive: false,
+              updatedAt: Date.now()
+            }).catch(() => {});
+          }
           return;
         }
         
@@ -7203,6 +7219,15 @@ class App {
         // 時間到，停止播放
         if (this.currentAudioPlaying !== 'none') {
           this.playAudio('none');
+        }
+        // 如果是管理員且計時器時間到了，自動將 isActive 更新為 false，避免殘留
+        if (this.isAdmin && this.timerState && this.timerState.isActive) {
+          this.timerState.isActive = false;
+          this.timerRef.update({
+            isActive: false,
+            updatedAt: Date.now()
+          }).catch(() => {});
+          this.updateAdminActiveActivitiesUI();
         }
       }
     } else {
@@ -7439,9 +7464,12 @@ class App {
         }
       }
       
+      const now = Date.now();
       this.timerRef.set({
         duration: duration,
-        endTime: Date.now() + duration * 1000,
+        startTime: now,
+        endTime: now + duration * 1000,
+        updatedAt: now,
         isActive: true,
         isPaused: false,
         remainingTime: duration,
@@ -7466,7 +7494,8 @@ class App {
         const remaining = Math.max(0, Math.ceil((data.endTime - Date.now()) / 1000));
         this.timerRef.update({
           isPaused: true,
-          remainingTime: remaining
+          remainingTime: remaining,
+          updatedAt: Date.now()
         }).catch(err => {
           this.showNotification('資料庫錯誤', '無法暫停計時器: ' + err.message);
         });
@@ -7482,9 +7511,11 @@ class App {
         const data = snapshot.val();
         if (!data || !data.isActive || !data.isPaused) return;
         
+        const now = Date.now();
         this.timerRef.update({
           isPaused: false,
-          endTime: Date.now() + data.remainingTime * 1000
+          endTime: now + data.remainingTime * 1000,
+          updatedAt: now
         }).catch(err => {
           this.showNotification('資料庫錯誤', '無法繼續計時器: ' + err.message);
         });
@@ -7496,13 +7527,70 @@ class App {
 
   adminResetTimer() {
     try {
-      this.timerRef.update({
-        isActive: false
+      this.playAudio('none');
+      return this.timerRef.update({
+        isActive: false,
+        updatedAt: Date.now()
       }).catch(err => {
         this.showNotification('資料庫錯誤', '無法重設計時器: ' + err.message);
       });
     } catch (e) {
       this.showNotification('錯誤', '重設失敗: ' + e.message);
+    }
+  }
+
+  resetTimer() {
+    return this.adminResetTimer();
+  }
+
+  isTimerExpired(data) {
+    if (!data || !data.isActive) return false;
+    const now = Date.now();
+    if (!data.isPaused) {
+      // 倒數結束時間已過或時間無效
+      if (!data.endTime || now >= data.endTime) return true;
+      // 發起時間大幅超過設定時長 (防呆保護)
+      if (data.duration && data.startTime && (now - data.startTime > (data.duration + 300) * 1000)) return true;
+    } else {
+      // 暫停狀態：若剩餘時間歸零，或暫停時間距今已超過 30 分鐘，判定為舊課堂遺留之陳舊狀態
+      if (!data.remainingTime || data.remainingTime <= 0) return true;
+      if (data.updatedAt && (now - data.updatedAt > 30 * 60 * 1000)) return true;
+      if (!data.updatedAt && data.endTime && (now - data.endTime > 30 * 60 * 1000)) return true;
+    }
+    return false;
+  }
+
+  checkTimerExpiry() {
+    if (!this.timerState || !this.timerState.isActive) return false;
+    if (this.isTimerExpired(this.timerState)) {
+      this.timerState.isActive = false;
+      this.playAudio('none');
+      if (this.isAdmin && this.timerRef) {
+        this.timerRef.update({
+          isActive: false,
+          updatedAt: Date.now()
+        }).catch(() => {});
+      }
+      this.updateAdminActiveActivitiesUI();
+      return true;
+    }
+    return false;
+  }
+
+  async stopTimerBeforeClassSwitch() {
+    try {
+      this.playAudio('none');
+      if (this.isAdmin && this.timerState && this.timerState.isActive && this.timerRef) {
+        await Promise.race([
+          this.timerRef.update({
+            isActive: false,
+            updatedAt: Date.now()
+          }),
+          new Promise(resolve => setTimeout(resolve, 800))
+        ]);
+      }
+    } catch (e) {
+      console.warn('stopTimerBeforeClassSwitch warning:', e);
     }
   }
 
@@ -12797,6 +12885,9 @@ class App {
       window.ClassRoomManager.setActiveClassCode(sanitized);
     }
 
+    // 切換班級前，先檢查並主動停止當前班級的音樂播放與計時器
+    await this.stopTimerBeforeClassSwitch();
+
     // 更新網址並重新載入，確保所有 Firebase 監聽器乾淨切換到該班級空間
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set('class', sanitized);
@@ -12804,7 +12895,7 @@ class App {
     window.location.href = newUrl.toString();
   }
 
-  exitClassRoom() {
+  async exitClassRoom() {
     if (!window.currentClassCode) {
       this.closeClassModal();
       return;
@@ -12812,6 +12903,9 @@ class App {
 
     const confirmExit = confirm('確定要退出當前班級，返回免代碼的一次性課堂（公開空間）嗎？');
     if (!confirmExit) return;
+
+    // 退出班級前，先檢查並主動停止當前班級的音樂播放與計時器
+    await this.stopTimerBeforeClassSwitch();
 
     if (window.ClassRoomManager) {
       window.ClassRoomManager.setActiveClassCode('');
@@ -13253,8 +13347,11 @@ class App {
     });
   }
 
-  adminSwitchToClass(code) {
+  async adminSwitchToClass(code) {
     if (!code) return;
+    // 切換班級前，先檢查並主動停止當前班級的音樂播放與計時器
+    await this.stopTimerBeforeClassSwitch();
+
     if (window.ClassRoomManager) {
       window.ClassRoomManager.setActiveClassCode(code);
     }
@@ -13415,12 +13512,13 @@ class App {
     if (modal) modal.style.display = 'flex';
   }
 
-  adminCloseClassChangedReminder() {
+  async adminCloseClassChangedReminder() {
     const modal = document.getElementById('adminClassChangedReminderModal');
     if (modal) modal.style.display = 'none';
 
     // 若老師當前所在的班級代碼就是剛被修改的舊代碼，關閉提醒後自動切換至新代碼頁面
     if (this._pendingNewClassCode && window.currentClassCode === this._pendingNewClassCode) {
+      await this.stopTimerBeforeClassSwitch();
       const newUrl = new URL(window.location.href);
       if (newUrl.searchParams.get('class') !== this._pendingNewClassCode) {
         newUrl.searchParams.set('class', this._pendingNewClassCode);
@@ -14588,6 +14686,9 @@ function submitAdminPassword() {
     window.app.updateFocusGameAdminOptions();
     window.app.updateAdminActiveActivitiesUI();
     window.app.showNotification('成功', '已進入管理員模式！');
+    if (typeof window.app.checkTimerExpiry === 'function') {
+      window.app.checkTimerExpiry();
+    }
     if (window.app.timerState) {
       window.app.updateAdminTimerUI(window.app.timerState);
     }
@@ -15146,10 +15247,16 @@ window.addEventListener('beforeunload', () => {
   if (window.app && typeof window.app.stopTaikoBackgroundMusic === 'function') {
     window.app.stopTaikoBackgroundMusic();
   }
+  if (window.app && typeof window.app.playAudio === 'function') {
+    window.app.playAudio('none');
+  }
 });
 window.addEventListener('pagehide', () => {
   if (window.app && typeof window.app.stopTaikoBackgroundMusic === 'function') {
     window.app.stopTaikoBackgroundMusic();
+  }
+  if (window.app && typeof window.app.playAudio === 'function') {
+    window.app.playAudio('none');
   }
 });
 

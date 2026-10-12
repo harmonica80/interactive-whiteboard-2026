@@ -1,4 +1,20 @@
 # System Log
+## 2026-10-12 - 教師切換班級自動停止計時音樂與進入教室超時自動作廢過濾
+- 影響檔案：`js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **教師主動切換班級時自動停止音樂與計時器（方案 A） (`js/app.js`)**：
+     - 實作 `stopTimerBeforeClassSwitch()`：在教師離開當前教室前，若計時器或背景音樂處於活動狀態，立即中斷本機音訊播放，並透過 `Promise.race` 安全非同步將當前班級的計時器狀態重置為 `{ isActive: false, updatedAt: now }`。
+     - 全面串接班級切換途徑：輸入代碼切換 (`submitClassSwitch`)、退出班級回公開空間 (`exitClassRoom`)、後台班級清單直接切換 (`adminSwitchToClass`) 以及班級代碼更名提醒彈窗切換 (`adminCloseClassChangedReminder`)，確保離開班級時不遺留正在播放的音樂或計時狀態。
+  2. **進入教室超時自動作廢過濾與陳舊狀態自動清理（方案 B） (`js/app.js`)**：
+     - 新增 `isTimerExpired(data)` 與 `checkTimerExpiry()`：
+       - 嚴格判斷計時狀態時效：若未暫停且當前時間已超過 `endTime`（或大幅超出設定時長），或暫停狀態更新距今已超過 30 分鐘，判定為過期陳舊狀態。
+       - 在 `setupTimerSync()` 中接收資料時，若檢測到已過期，浮動計時器保持隱藏、音訊停止播放，絕不自動響起音樂。
+       - 教師登入管理員模式時主動執行過期清理，靜默將 Firebase 寫入重置為 `isActive: false`，杜絕任何下次登入誤播音樂問題。
+  3. **倒數時間歸零自動重置資料庫狀態與音訊點擊防呆 (`js/app.js`)**：
+     - 在 `tickTimer()` 倒數至 0 秒時，由教師端主動向 Firebase 發送 `isActive: false`，解決原先時間結束後資料庫仍永久保留 `isActive: true` 的問題。
+     - 改寫全域使用者互動監聽器 `resumeAudioOnGesture`，加入教師身分、活動狀態與超時檢驗，過期活動絕對不因點擊畫面而誤觸發 YouTube 播放。
+     - 修復 `quickStopTimer()` 調用不存在函式之問題，統一調用 `adminResetTimer()` 並建立相容別名。
+
 ## 2026-10-12 - 專注力測驗防呆與暫存清理、答對答錯音效提升、後台頂部進行中互動即時狀態列與快捷控制
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`, `js/video_quiz.js`, `SYSTEM_LOG.md`。
 - 修改項目：
