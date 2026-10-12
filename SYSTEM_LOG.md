@@ -1,4 +1,23 @@
 # System Log
+## 2026-10-12 - 專注力測驗防呆與暫存清理、答對答錯音效提升、後台頂部進行中互動即時狀態列與快捷控制
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`, `js/video_quiz.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **專注力測驗題型防呆檢查與暫存徹底清除 (`js/app.js`)**：
+     - 新增 `getFocusGameTypeName(type)` 題型中文字串識別輔助函式。
+     - 實作 `resetFocusGameLocalState()`，在啟動新測驗、接收同步 idle 或切換題目時，全面清除所有專注力題型計時器（`focusGameTimer`、`schulteTimerInterval`、`memorySequenceTimer`、`songQuizTimer`、`charTimer`）、停止音訊播放、重置所有題型內部狀態變數，並徹底重置 DOM 容器（清空內容、重設 grid 排版、還原隱藏/顯示狀態），避免題型間 DOM 樣式相互干擾殘留。
+     - 改寫 `startFocusGame(forceStart)`：在發起任一種測驗時，先檢查資料庫前次測驗是否仍在進行中。若尚未停止，彈出確認提示視窗（包含前次題型名稱），確認後自動重置 Firebase 為 idle、清除作答結果並呼叫 `resetFocusGameLocalState()` 清除網頁暫存與殘留 DOM，確保新測驗在乾淨環境下啟動。
+  2. **專注力測驗答對與答錯臨場感音效實作 (`js/app.js`, `js/classics_quiz.js`, `js/song_quiz.js`)**：
+     - 擴充 `playFocusSound(type)`：以純 Web Audio API 振盪器即時合成零延遲音效：
+       - `correct`：G5 (784Hz) -> C6 (1046.5Hz) 清脆上行亮麗雙音和弦。
+       - `wrong`：260Hz -> 160Hz 溫和低沉提示嘟聲。
+       - 修復 `mismatch` 翻牌配對失敗音效遺漏 `osc.start(t)` 之音訊問題。
+     - 全面串接各遊戲作答判定：舒爾特方格按對/按錯、位置記憶點對/點錯、翻牌配對成功/失敗、一字千金注音詞彙自動校對對/錯、成語典故測驗作答判定、聽歌搶答自主作答判定與搶答裁判揭曉判定。
+  3. **後台頂部紅框處即時顯示進行中活動與快捷控制 (`index.html`, `css/style.css`, `js/app.js`, `js/video_quiz.js`)**：
+     - 於後台頂部工具列（管理空間徽章右側、登出按鈕左側紅框位置）建立容器 `<div id="adminActiveActivitiesContainer">`。
+     - 新增 `@keyframes blinkPulse` 紅點呼吸燈動畫與醒目膠囊樣式標籤。
+     - 實作 `updateAdminActiveActivitiesUI()` 與一鍵快速停止系列方法（`quickStopFocusGame`、`quickStopQuiz`、`quickStopBuzzGame`、`quickStopVideoQuiz`、`quickStopTimer`、`quickStopWheelBroadcast`），並支援點擊「⚙️ 設定」直接跳轉至對應後台設定工作區。
+     - 全面接入 Firebase 即時資料庫監聽（專注力測驗、選擇題測驗、搶答活動、影片測驗、全班計時器、抽人轉盤廣播），活動進行中時後台即時動態呈現，隨時掌握與快速管理。
+
 ## 2026-10-10 - 移除前台與後台提問編號（電腦版與行動版同步）
 - 影響檔案：`js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

@@ -1479,6 +1479,7 @@ class App {
       } else if (!this.currentAdminFeatureKey) {
         this.backToAdminDashboard();
       }
+      this.updateAdminActiveActivitiesUI();
     } else {
       if (this.focusGame) this.handleFocusGameSync(this.focusGame);
       if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
@@ -1620,6 +1621,7 @@ class App {
     // 監聽測驗狀態
     db.ref('quiz/current').on('value', (snapshot) => {
       this.currentQuiz = snapshot.val();
+      this.updateAdminActiveActivitiesUI();
     });
 
     db.ref('quiz/answers').on('value', (snapshot) => {
@@ -3937,6 +3939,192 @@ class App {
     if (panelAdmin) {
       panelAdmin.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    this.updateAdminActiveActivitiesUI();
+  }
+
+  // 渲染管理後台頂部紅框區塊中正在進行中的測驗與教學互動
+  updateAdminActiveActivitiesUI() {
+    const container = document.getElementById('adminActiveActivitiesContainer');
+    if (!container) return;
+
+    const activeItems = [];
+
+    // 1. 專注力測驗 (Focus Game)
+    if (this.focusGame && (this.focusGame.status === 'playing' || this.focusGame.status === 'countdown')) {
+      const typeTitle = this.getFocusGameTypeName ? this.getFocusGameTypeName(this.focusGame.gameType) : (this.focusGame.gameType || '專注力');
+      const statusText = this.focusGame.status === 'countdown' ? '倒數中' : '進行中';
+      activeItems.push({
+        key: 'gameFocus',
+        icon: '🧠',
+        title: `專注力測驗 (${typeTitle})`,
+        status: statusText,
+        settingAction: "window.app.openAdminFeature('gameFocus')",
+        stopAction: "window.app.quickStopFocusGame()"
+      });
+    }
+
+    // 2. 選擇題 / 配對題測驗 (Quiz)
+    if (this.currentQuiz && this.currentQuiz.active) {
+      const qType = this.currentQuiz.quizType === 'matching' ? '圖文配對題' : (this.currentQuiz.quizType === 'multiple' ? '複選題' : '單選題');
+      activeItems.push({
+        key: 'quizChoice',
+        icon: '📝',
+        title: `${qType}測驗`,
+        status: '進行中',
+        settingAction: "window.app.openAdminFeature('quizChoice')",
+        stopAction: "window.app.quickStopQuiz()"
+      });
+    }
+
+    // 3. 搶答測驗 (Buzzer)
+    if (this.buzzGame && (this.buzzGame.status === 'playing' || this.buzzGame.status === 'countdown')) {
+      const statusText = this.buzzGame.status === 'countdown' ? '倒數中' : '進行中';
+      activeItems.push({
+        key: 'gameBuzz',
+        icon: '⚡',
+        title: '搶答遊戲',
+        status: statusText,
+        settingAction: "window.app.openAdminFeature('gameBuzz')",
+        stopAction: "window.app.quickStopBuzzGame()"
+      });
+    }
+
+    // 4. 影片出題測驗 (Video Quiz)
+    if (window.videoQuiz && (window.videoQuiz.isSyncPlaying || (window.videoQuiz.activeSession && window.videoQuiz.activeSession.status === 'playing'))) {
+      activeItems.push({
+        key: 'quizVideo',
+        icon: '🎬',
+        title: '影片出題測驗',
+        status: '同步中',
+        settingAction: "window.app.openAdminFeature('quizVideo')",
+        stopAction: "window.app.quickStopVideoQuiz()"
+      });
+    }
+
+    // 5. 倒數計時器 (Timer)
+    if (this.timerState && this.timerState.isActive) {
+      const isPaused = this.timerState.isPaused;
+      activeItems.push({
+        key: 'timer',
+        icon: '⏱️',
+        title: '倒數計時器',
+        status: isPaused ? '已暫停' : '運行中',
+        settingAction: "window.app.backToAdminDashboard(); const el = document.getElementById('adminTimerSection'); if (el) el.scrollIntoView({ behavior: 'smooth' });",
+        stopAction: "window.app.quickStopTimer()"
+      });
+    }
+
+    // 6. 抽人轉盤 (Lucky Wheel)
+    if (this.wheelActive) {
+      activeItems.push({
+        key: 'gameWheel',
+        icon: '🎡',
+        title: '抽人轉盤廣播',
+        status: '進行中',
+        settingAction: "window.app.openAdminFeature('gameWheel')",
+        stopAction: "window.app.quickStopWheelBroadcast()"
+      });
+    }
+
+    if (activeItems.length === 0) {
+      container.innerHTML = `
+        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; color: var(--text-muted); background: rgba(52, 199, 89, 0.08); border: 1px solid rgba(52, 199, 89, 0.25);">
+          <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #34c759;"></span>
+          <span>目前無進行中的測驗或互動</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = activeItems.map(item => `
+      <div class="admin-active-activity-pill" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(255, 59, 48, 0.08); border: 1.5px solid #ff3b30; border-radius: 20px; font-size: 12px; color: #d70015; font-weight: bold; box-shadow: 0 1px 6px rgba(255,59,48,0.15); flex-wrap: nowrap;">
+        <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ff3b30; animation: blinkPulse 1.2s infinite; flex-shrink: 0;"></span>
+        <span style="white-space: nowrap;">${item.icon} ${item.title} (${item.status})</span>
+        <button type="button" onclick="${item.settingAction}" title="進入此項目的設定頁面" style="background: white; border: 1px solid #ff3b30; color: #d70015; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⚙️ 設定</button>
+        <button type="button" onclick="${item.stopAction}" title="直接強制停止此活動" style="background: #ff3b30; border: none; color: white; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⏹️ 停止</button>
+      </div>
+    `).join('');
+  }
+
+  quickStopFocusGame() {
+    this.showConfirmModal(
+      '⏹️',
+      '確定停止專注力測驗？',
+      '這會立即停止全班目前的專注力測驗並清除暫存畫面。',
+      () => {
+        db.ref('quiz/focusGame/status').set('idle').then(() => {
+          this.resetFocusGameLocalState();
+          this.showNotification('已停止', '專注力測驗已停止！');
+          this.updateAdminActiveActivitiesUI();
+        });
+      }
+    );
+  }
+
+  quickStopQuiz() {
+    this.showConfirmModal(
+      '⏹️',
+      '確定停止選擇題測驗？',
+      '這會立即停止全班目前的選擇題/圖文測驗。',
+      () => {
+        db.ref('quiz/current').update({ active: false }).then(() => {
+          this.showNotification('已停止', '選擇題測驗已停止！');
+          this.updateAdminActiveActivitiesUI();
+        });
+      }
+    );
+  }
+
+  quickStopBuzzGame() {
+    this.showConfirmModal(
+      '⏹️',
+      '確定停止搶答遊戲？',
+      '這會立即停止全班目前的搶答活動。',
+      () => {
+        db.ref('quiz/buzzGame').set(null).then(() => {
+          this.showNotification('已停止', '搶答遊戲已停止！');
+          this.updateAdminActiveActivitiesUI();
+        });
+      }
+    );
+  }
+
+  quickStopVideoQuiz() {
+    this.showConfirmModal(
+      '⏹️',
+      '確定停止影片出題測驗？',
+      '這會立即結束全班同步播放與測驗。',
+      () => {
+        if (window.videoQuiz && typeof window.videoQuiz.stopSyncQuiz === 'function') {
+          window.videoQuiz.stopSyncQuiz();
+        } else {
+          db.ref('quiz/videoQuizSession').set(null);
+        }
+        this.showNotification('已停止', '影片出題測驗已停止！');
+        this.updateAdminActiveActivitiesUI();
+      }
+    );
+  }
+
+  quickStopTimer() {
+    this.showConfirmModal(
+      '⏹️',
+      '確定停止倒數計時器？',
+      '這會重設計時器並關閉背景音樂。',
+      () => {
+        this.resetTimer();
+        this.showNotification('已停止', '計時器已重設並停止！');
+        this.updateAdminActiveActivitiesUI();
+      }
+    );
+  }
+
+  quickStopWheelBroadcast() {
+    db.ref('quiz/luckyWheel/active').set({ active: false, timestamp: Date.now() }).then(() => {
+      this.wheelActive = false;
+      this.showNotification('已停止', '抽人轉盤廣播已結束！');
+      this.updateAdminActiveActivitiesUI();
+    });
   }
   
   bindQuestionEvents() {
@@ -6851,6 +7039,7 @@ class App {
         
         const wasActive = this.timerState ? this.timerState.isActive : false;
         this.timerState = data;
+        this.updateAdminActiveActivitiesUI();
         
         const isInitialLoad = this.isFirstTimerSync;
         this.isFirstTimerSync = false;
@@ -8265,15 +8454,216 @@ class App {
   // 🧠 專注力遊戲活動機制 (Schulte Grid)
   // ==========================================
 
-  startFocusGame() {
-    if (!this.isAdmin) return;
+  getFocusGameTypeName(type) {
+    const map = {
+      numberGrid: '舒爾特方格 (數字網格)',
+      memoryMatch: '記憶翻牌配對',
+      memoryPosition: '位置序列記憶',
+      characterTest: '一字千金：字音字形',
+      characterCrossword: '一字千金：字字珠璣',
+      characterUnitedWords: '一字千金：團結一詞',
+      classicsQuiz: '成語與佳句名言典故',
+      songQuiz: '聽歌搶答'
+    };
+    return map[type] || type || '專注力測驗';
+  }
+
+  // 清除專注力測驗所有網頁暫存、本機記憶體狀態、舊音訊、計時器與舊版面 DOM
+  resetFocusGameLocalState() {
+    // 1. 停止所有測驗音訊
+    if (this.songQuizAudio) {
+      try {
+        this.songQuizAudio.pause();
+        this.songQuizAudio.currentTime = 0;
+        this.songQuizAudio.src = '';
+      } catch (e) {}
+      this.songQuizAudio = null;
+    }
+    if (this.songQuizBuzzerAudio) {
+      try {
+        this.songQuizBuzzerAudio.pause();
+        this.songQuizBuzzerAudio.currentTime = 0;
+        this.songQuizBuzzerAudio.src = '';
+      } catch (e) {}
+      this.songQuizBuzzerAudio = null;
+    }
+
+    // 2. 清除所有計時器與 Interval / Timeout
+    if (this.focusTimerInterval) {
+      clearInterval(this.focusTimerInterval);
+      this.focusTimerInterval = null;
+    }
+    if (this.focusCountdownInterval) {
+      clearInterval(this.focusCountdownInterval);
+      this.focusCountdownInterval = null;
+    }
+    if (this.focusBuzzInterval) {
+      clearInterval(this.focusBuzzInterval);
+      this.focusBuzzInterval = null;
+    }
+    if (this.focusMemoryRevealInterval) {
+      clearInterval(this.focusMemoryRevealInterval);
+      this.focusMemoryRevealInterval = null;
+    }
+    if (Array.isArray(this.focusMemoryTimeouts)) {
+      this.focusMemoryTimeouts.forEach(t => clearTimeout(t));
+      this.focusMemoryTimeouts = [];
+    }
+    if (this.memoryMatchTimerInterval) {
+      clearInterval(this.memoryMatchTimerInterval);
+      this.memoryMatchTimerInterval = null;
+    }
+    if (this.charTestTimerInterval) {
+      clearInterval(this.charTestTimerInterval);
+      this.charTestTimerInterval = null;
+    }
+
+    // 3. 重置內部狀態變數
     this.focusLocalGameKey = null;
-    
-    // 自動停止搶答與選擇題測驗
+    this.focusStartSoundPlayed = false;
+    this.focusGameCompletedLocal = false;
+    this.focusCurrentExpected = 1;
+    this.focusHelpPenaltySeconds = 0;
+    this.focusHelpCount = 0;
+    this.focusMemorySequence = [];
+    this.focusMemoryAnswerOrder = [];
+    this.focusMemoryInputIndex = 0;
+    this.focusMemoryAcceptInput = false;
+    this.focusMemoryMistakes = 0;
+    this.focusMemoryRevealing = false;
+    this.memoryMatchDeck = [];
+    this.memoryMatchTotalPairs = 0;
+    this.memoryMatchMatchedPairs = 0;
+    this.memoryMatchFlips = 0;
+    this.memoryMatchFirstCard = null;
+    this.memoryMatchSecondCard = null;
+    this.memoryMatchIsLock = false;
+    this.classicsQuizState = null;
+    this.songQuizState = null;
+    this.songQuizBuzzerState = null;
+    this.lastBuzzerRoundStatus = null;
+    this.charTestAnswers = [];
+    this.charTestCurrentIdx = 0;
+
+    // 4. 重置 DOM 與版面樣式
+    const memBoard = document.getElementById('focusMemoryMatchBoard');
+    if (memBoard) {
+      memBoard.style.display = 'none';
+      const memGrid = document.getElementById('focusMemoryGrid');
+      if (memGrid) memGrid.innerHTML = '';
+      const matchedCount = document.getElementById('focusMemoryMatchedCount');
+      if (matchedCount) matchedCount.textContent = '0';
+      const flips = document.getElementById('focusMemoryFlips');
+      if (flips) flips.textContent = '0';
+      const memTimer = document.getElementById('focusMemoryTimer');
+      if (memTimer) memTimer.textContent = '0.00';
+    }
+
+    const numContainer = document.getElementById('focusNumberGridContainer');
+    if (numContainer) {
+      numContainer.style.display = 'flex';
+      numContainer.classList.remove('schulte-mode');
+      numContainer.style.maxHeight = '';
+      numContainer.style.height = '';
+      numContainer.style.flexShrink = '';
+    }
+
+    const numHeader = document.getElementById('focusNumberGridHeader');
+    if (numHeader) numHeader.style.display = 'flex';
+
+    const targetEl = document.getElementById('focusCurrentTarget');
+    if (targetEl) {
+      targetEl.textContent = '1';
+      if (targetEl.parentElement) targetEl.parentElement.style.display = '';
+    }
+
+    const timerEl = document.getElementById('focusTimer');
+    if (timerEl) timerEl.textContent = '0.00';
+
+    const helpBtn = document.getElementById('focusHelpBtn');
+    if (helpBtn) helpBtn.style.display = 'none';
+
+    const helpInfo = document.getElementById('focusHelpInfo');
+    if (helpInfo) {
+      helpInfo.textContent = '';
+      helpInfo.style.display = 'none';
+    }
+
+    const grid = document.getElementById('focusGameGrid');
+    if (grid) {
+      grid.innerHTML = '';
+      grid.classList.remove('schulte-mode');
+      grid.style.aspectRatio = '';
+      grid.style.display = '';
+      grid.style.gridTemplateColumns = '';
+      grid.style.gap = '';
+      grid.style.width = '';
+      grid.style.maxWidth = '';
+      grid.style.maxHeight = '';
+      grid.style.minHeight = '';
+      grid.style.height = '';
+      grid.style.overflow = '';
+      grid.style.margin = '';
+    }
+
+    const instEl = document.getElementById('focusGameInstruction');
+    if (instEl) {
+      instEl.textContent = '';
+      instEl.style.display = 'none';
+    }
+
+    const playingRankSection = document.getElementById('focusPlayingLeaderboardSection');
+    if (playingRankSection) {
+      playingRankSection.style.display = 'none';
+      const playingRankList = document.getElementById('focusPlayingLeaderboardList');
+      if (playingRankList) playingRankList.innerHTML = '';
+    }
+
+    const finishArea = document.getElementById('focusFinishArea');
+    if (finishArea) finishArea.style.display = 'none';
+
+    const canvas = document.getElementById('focusFireworkCanvas');
+    if (canvas) {
+      const cCtx = canvas.getContext('2d');
+      if (cCtx) cCtx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    this.fireworkParticles = [];
+  }
+
+  startFocusGame(forceStart = false) {
+    if (!this.isAdmin) return;
+
+    // 檢查先前的專注力測驗是否尚未停止（不論是否為同一個題型）
+    const prevGame = this.focusGame;
+    const isPreviousActive = prevGame && (prevGame.status === 'playing' || prevGame.status === 'countdown');
+    const gameType = document.getElementById('focusGameType').value || 'numberGrid';
+
+    if (isPreviousActive && !forceStart) {
+      const prevTypeName = this.getFocusGameTypeName(prevGame.gameType);
+      const nextTypeName = this.getFocusGameTypeName(gameType);
+      this.showConfirmModal(
+        '⚠️',
+        '先前的測驗尚未停止',
+        `目前系統中尚有進行中的【${prevTypeName}】測驗。發起新測驗將自動結束前次測驗並清除網頁暫存，是否確定開始【${nextTypeName}】？`,
+        () => {
+          this.startFocusGame(true);
+        }
+      );
+      return;
+    }
+
+    // 1. 若先前有測驗，先將其在 Firebase 完全停止並重置
+    if (isPreviousActive) {
+      db.ref('quiz/focusGame/status').set('idle').catch(() => {});
+    }
+    db.ref('quiz/focusGame/results').set(null).catch(() => {});
+
+    // 2. 清除所有網頁暫存、本機記憶體狀態、音訊、計時器與舊版面 DOM，避免不正確的類型出現
+    this.resetFocusGameLocalState();
+
+    // 3. 自動停止搶答與選擇題測驗
     db.ref('quiz/buzzGame').set(null);
     db.ref('quiz/current').update({ active: false }).catch(() => {});
-    
-    const gameType = document.getElementById('focusGameType').value || 'numberGrid';
     const numberGridSize = parseInt(document.getElementById('selectedFocusGridSize').value) || 36;
     const memoryGridSize = parseInt(document.getElementById('focusMemoryGridSize')?.value) || 16;
     const selectedSize = gameType === 'memoryPosition' ? memoryGridSize : numberGridSize;
@@ -8691,6 +9081,8 @@ class App {
       '這會關閉所有學生的遊戲 Overlay。',
       () => {
         db.ref('quiz/focusGame/status').set('idle').then(() => {
+          this.resetFocusGameLocalState();
+          this.updateAdminActiveActivitiesUI();
           this.showNotification('成功', '遊戲已結束！');
         });
       }
@@ -8713,6 +9105,7 @@ class App {
     }
 
     this.focusGame = game;
+    this.updateAdminActiveActivitiesUI();
     
     // 如果使用者正嘗試進入或在管理後台（且尚未登入管理員），一律不顯示覆蓋層
     const isAccessingAdmin = !this.isAdmin && (
@@ -8726,7 +9119,7 @@ class App {
         gameOverlay.style.display = 'none';
         gameOverlay.classList.remove('active');
       }
-      this.stopFocusTimers();
+      this.resetFocusGameLocalState();
       return;
     }
     
@@ -8758,8 +9151,8 @@ class App {
         gameOverlay.style.display = 'none';
         gameOverlay.classList.remove('active');
       }
-      this.stopFocusTimers();
-      this.focusLocalGameKey = null;
+      this.resetFocusGameLocalState();
+      this.updateAdminActiveActivitiesUI();
       
       const rankSection = document.getElementById('focusGameRankSection');
       if (game && game.results && rankSection) {
@@ -9181,8 +9574,9 @@ class App {
     if (this.focusLocalGameKey === localGameKey && hasRenderedContent) {
       return;
     }
-    this.stopFocusTimers();
+    this.resetFocusGameLocalState();
     this.focusLocalGameKey = localGameKey;
+    this.updateAdminActiveActivitiesUI();
 
     // 太鼓達人 (Taiko Master)
     // 記憶翻牌配對遊戲 (Memory Match)
@@ -9314,6 +9708,7 @@ class App {
     }
 
     this.buzzGame = game;
+    this.updateAdminActiveActivitiesUI();
     
     // 如果使用者正嘗試進入或在管理後台（且尚未登入管理員），一律不顯示覆蓋層
     const isAccessingAdmin = !this.isAdmin && (
@@ -9846,6 +10241,7 @@ class App {
       btn.classList.remove('memory-wrong');
       btn.classList.add('memory-correct');
       btn.style.pointerEvents = 'none';
+      this.playFocusSound('correct');
       this.focusMemoryInputIndex++;
       if (this.focusMemoryInputIndex >= this.focusMemoryAnswerOrder.length) {
         this.finishSchulteGrid();
@@ -9853,6 +10249,7 @@ class App {
       return;
     }
 
+    this.playFocusSound('wrong');
     this.focusMemoryMistakes++;
     this.focusHelpPenaltySeconds += 3;
     btn.classList.add('memory-wrong');
@@ -10036,6 +10433,7 @@ class App {
       btn.style.pointerEvents = 'none';
       btn.style.transform = 'scale(0.5)';
       
+      this.playFocusSound('correct');
       this.focusCurrentExpected++;
       
       if (this.focusCurrentExpected > this.focusGridSize) {
@@ -10044,6 +10442,7 @@ class App {
         document.getElementById('focusCurrentTarget').textContent = this.focusCurrentExpected;
       }
     } else {
+      this.playFocusSound('wrong');
       btn.style.borderColor = '#FF3B30';
       btn.style.background = 'rgba(255,59,48,0.1)';
       btn.style.transform = 'translateX(-5px)';
@@ -10639,7 +11038,11 @@ class App {
       penaltySeconds: this.focusHelpPenaltySeconds || 0
     }).then(() => {
       if (autoStatus === 'correct') {
+        this.playFocusSound('correct');
         this.showNotification('太棒了！', '恭喜答對！完成團結一詞！');
+      } else if (autoStatus === 'incorrect') {
+        this.playFocusSound('wrong');
+        this.showNotification('提示', '答案未完全吻合，可於上方查看並再次重試！');
       } else {
         this.showNotification('成功', '答案已送出！');
       }
@@ -11251,6 +11654,8 @@ class App {
     // 監聽轉盤啟用狀態 (老師開啟轉盤時全班畫面自動切換呈現，無需手動點按)
     db.ref('quiz/luckyWheel/active').on('value', (snapshot) => {
       const val = snapshot.val();
+      this.wheelActive = !!(val && val.active);
+      if (this.isAdmin) this.updateAdminActiveActivitiesUI();
       if (!val || !val.active) return;
 
       const now = Date.now();
@@ -12107,32 +12512,38 @@ class App {
         gain.connect(ctx.destination);
         osc.start(t);
         osc.stop(t + 0.06);
-      } else if (type === 'match') {
-        const notes = [523.25, 659.25, 783.99];
-        notes.forEach((freq, idx) => {
+      } else if (type === 'match' || type === 'correct') {
+        // 答對/配對音效：清脆雙音/三音上行叮咚和弦 (G5 784Hz -> C6 1046.5Hz 輕快明亮)
+        const notes = [
+          { f: 783.99, delay: 0.0, dur: 0.12, gain: 0.22 },  // G5
+          { f: 1046.50, delay: 0.08, dur: 0.24, gain: 0.26 } // C6
+        ];
+        notes.forEach(note => {
+          const noteTime = t + note.delay;
           const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          const noteT = t + idx * 0.08;
+          const g = ctx.createGain();
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, noteT);
-          gain.gain.setValueAtTime(0.25, noteT);
-          gain.gain.exponentialRampToValueAtTime(0.001, noteT + 0.2);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(noteT);
-          osc.stop(noteT + 0.2);
+          osc.frequency.setValueAtTime(note.f, noteTime);
+          g.gain.setValueAtTime(note.gain, noteTime);
+          g.gain.exponentialRampToValueAtTime(0.001, noteTime + note.dur);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(noteTime);
+          osc.stop(noteTime + note.dur);
         });
-      } else if (type === 'mismatch') {
+      } else if (type === 'mismatch' || type === 'wrong') {
+        // 答錯/未配對音效：低沉溫和的嘟聲 (下降音 260Hz -> 160Hz 溫和提示，不刺耳)
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(320, t);
-        osc.frequency.linearRampToValueAtTime(180, t + 0.15);
-        gain.gain.setValueAtTime(0.15, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.frequency.setValueAtTime(260, t);
+        osc.frequency.linearRampToValueAtTime(160, t + 0.18);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.stop(t + 0.15);
+        osc.start(t);
+        osc.stop(t + 0.18);
       }
     } catch (e) {
       console.warn("Focus sound play failed:", e);
@@ -14175,6 +14586,7 @@ function submitAdminPassword() {
     window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
     window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
     window.app.updateFocusGameAdminOptions();
+    window.app.updateAdminActiveActivitiesUI();
     window.app.showNotification('成功', '已進入管理員模式！');
     if (window.app.timerState) {
       window.app.updateAdminTimerUI(window.app.timerState);

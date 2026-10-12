@@ -2307,6 +2307,12 @@ body {
   background: #3a1c22;
 }
 
+@keyframes blinkPulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.25; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 .question-card-header .user {
   font-weight: bold;
   color: var(--text-secondary);
