@@ -1410,6 +1410,9 @@
       this.handledEventIds.clear();
       this.lastSession = { status: 'idle' };
       this.updateAdminBroadcastUI(this.lastSession);
+      if (window.app && typeof window.app.updateAdminActiveActivitiesUI === 'function') {
+        window.app.updateAdminActiveActivitiesUI();
+      }
 
       const ctrls = document.getElementById('vqSyncTeacherControls');
       if (ctrls) ctrls.style.display = 'none';
@@ -1758,6 +1761,9 @@
     handleRemoteSessionUpdate(session) {
       this.lastSession = session;
       this.updateAdminBroadcastUI(session);
+      if (window.app && typeof window.app.updateAdminActiveActivitiesUI === 'function') {
+        window.app.updateAdminActiveActivitiesUI();
+      }
 
       const studentNotice = document.getElementById('vqSyncStudentIdleNotice');
       const activeWrapper = document.getElementById('vqSyncActivePlayerWrapper');

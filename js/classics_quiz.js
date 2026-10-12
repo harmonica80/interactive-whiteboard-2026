@@ -133,6 +133,9 @@
     state.answered = true
     if (state.isCorrect) state.correctCount += 1
     state.answers[state.index] = { questionId: question.id, selectedOption, correct: state.isCorrect }
+    if (typeof this.playFocusSound === 'function') {
+      this.playFocusSound(state.isCorrect ? 'correct' : 'wrong')
+    }
     this.renderClassicsQuizQuestion()
   }
 

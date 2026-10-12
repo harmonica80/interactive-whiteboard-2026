@@ -384,6 +384,10 @@
       correct: isCorrect
     });
 
+    if (typeof this.playFocusSound === 'function') {
+      this.playFocusSound(isCorrect ? 'correct' : 'wrong');
+    }
+
     this.stopSongQuizAudio();
     this.renderSongQuizQuestion();
   };
@@ -673,6 +677,16 @@
 
     // 處理音訊播放同步
     this.handleBuzzerAudioSync(question, round);
+
+    const roundKey = `${qIndex}_${round?.timestamp || ''}_${roundStatus}`;
+    if (this.lastBuzzerSoundKey !== roundKey) {
+      this.lastBuzzerSoundKey = roundKey;
+      if (roundStatus === 'answered_correct' && typeof this.playFocusSound === 'function') {
+        this.playFocusSound('correct');
+      } else if (roundStatus === 'answered_wrong' && typeof this.playFocusSound === 'function') {
+        this.playFocusSound('wrong');
+      }
+    }
 
     const isPlaying = roundStatus === 'playing';
     const tagBadge = question.tag || game.selectedTag || '精選歌單';
@@ -1166,7 +1180,7 @@
         };
       });
 
-      if (this.playFocusSound) this.playFocusSound('finish');
+      if (this.playFocusSound) this.playFocusSound('correct');
     } else {
       // 答錯：將該學生加入 eliminatedUsers，狀態切換為 answered_wrong
       db.ref(`quiz/focusGame/buzzerRound/eliminatedUsers/${userId}`).set(true);
@@ -1176,7 +1190,7 @@
         isCorrect: false,
         timestamp: Date.now()
       });
-      if (this.playFocusSound) this.playFocusSound('click');
+      if (this.playFocusSound) this.playFocusSound('wrong');
     }
   };
 

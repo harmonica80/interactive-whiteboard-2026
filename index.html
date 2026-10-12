@@ -582,7 +582,10 @@
               <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">您已進入管理員模式</span>
               <span id="adminCurrentScopeBadge" class="mode-display-pill one-off" style="font-size: 12px;">🌱 目前管理空間：一次性課堂（公共空間）</span>
             </div>
-            <button class="preset-btn" onclick="logoutAdmin()" style="border-color: var(--danger-color); color: var(--danger-color); padding: 6px 12px; font-weight: bold;">登出管理員</button>
+            <!-- 目前進行中的測驗與教學互動顯示區塊（紅框處） -->
+            <div id="adminActiveActivitiesContainer" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: flex-end; margin: 0 8px;">
+            </div>
+            <button class="preset-btn" onclick="logoutAdmin()" style="border-color: var(--danger-color); color: var(--danger-color); padding: 6px 12px; font-weight: bold; flex-shrink: 0;">登出管理員</button>
           </div>
           
           <!-- 後台功能總覽目錄 (Dashboard View) -->
