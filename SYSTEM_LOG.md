@@ -1,4 +1,20 @@
 # System Log
+## 2026-10-13 - 修復活動進行狀態停止音樂無法停止問題、全面升級答錯音效為明亮風格並提供 4 款音效挑選
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修復頂部活動進行中（紅框處）停止計時器無法停止音樂之問題 (`js/app.js`)**：
+     - **根因修復**：原先 `adminResetTimer()` 在發送停止至資料庫期間，本機 `this.timerInterval`（每 250ms）仍在運行且 `this.timerState.isActive` 尚未變更，導致 `tickTimer()` 在數毫秒內重新判定為播放狀態並再次觸發 `playAudio('canon')`。
+     - **即時重置**：在 `adminResetTimer()` 內第一時間清除 `this.timerInterval`，並將本機 `this.timerState.isActive` 立即設為 `false`，徹底阻斷 250ms 循環的競態重啟。
+     - **多軌停播強化**：在 `playAudio('none')` 中，同時執行 HTML5 `<audio id="bgAudioPlayer">` 暫停與歸零、`playerCanon` 之 `pauseVideo()` 與 `stopVideo()`，並增加對 `#canonPlayer iframe` 直接發送 `postMessage` 雙重停播指令，確保點擊停止後音樂 100% 瞬間安靜。
+  2. **全面升級答錯音效為明亮悅耳風格，提供 4 款風格切換與後台即時試聽 (`index.html`, `js/app.js`)**：
+     - **剔除粗糙低頻**：移除原先 260Hz->160Hz 鋸齒波低頻嗡嗡嘟聲。
+     - **全新音效庫**：
+       - **風格 1（預設・強烈推薦）🎵 清脆木琴雙音**：E5 (659Hz) $\to$ C#5 (554Hz) 下行雙音，三角波疊加一倍高頻正弦波泛音，清亮爽朗、如敲擊鋼片琴/木琴，極具現代教育 App 質感。
+       - **風格 2 💧 輕快水滴雙音**：A5 (880Hz) $\to$ F#5 (740Hz) 純淨正弦波，活潑俏皮如水滴啵啵聲。
+       - **風格 3 🔔 輕柔音叉和弦**：D5 (587Hz) + F#5 (740Hz) 雙音高頻和弦短促響起，如微型銀鈴輕敲。
+       - **風格 4 🎮 遊戲微晶片跳音**：C5 (523Hz) $\to$ G4 (392Hz) 三角波雙彈音，街機輕快俐落。
+     - **後台即時試聽與設定**：在後台「專注力測驗設定」新增「4. 答錯提示音效風格」下拉選單與「🔊 試聽」按鈕，偏好設定自動儲存於 `localStorage`，隨選即用。
+
 ## 2026-10-12 - 教師切換班級自動停止計時音樂與進入教室超時自動作廢過濾
 - 影響檔案：`js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
