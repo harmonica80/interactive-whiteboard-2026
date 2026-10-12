@@ -7527,13 +7527,34 @@ class App {
 
   adminResetTimer() {
     try {
+      // 1. 立即清除倒數循環計時器，防止 250ms tickTimer 再次觸發播放
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+      // 2. 本機計時器狀態立即設為非活躍，避免競態重啟
+      if (this.timerState) {
+        this.timerState.isActive = false;
+        this.timerState.isPaused = false;
+      }
+      // 3. 立即強制停止所有背景音樂與音訊播放器
       this.playAudio('none');
-      return this.timerRef.update({
-        isActive: false,
-        updatedAt: Date.now()
-      }).catch(err => {
-        this.showNotification('資料庫錯誤', '無法重設計時器: ' + err.message);
-      });
+
+      // 4. 立即隱藏浮動計時器與更新按鈕狀態
+      const floatingTimer = document.getElementById('floatingTimer');
+      if (floatingTimer) floatingTimer.style.display = 'none';
+      this.updateAdminTimerUI({ isActive: false });
+      this.updateAdminActiveActivitiesUI();
+
+      // 5. 非同步寫入 Firebase
+      if (this.timerRef) {
+        return this.timerRef.update({
+          isActive: false,
+          updatedAt: Date.now()
+        }).catch(err => {
+          this.showNotification('資料庫錯誤', '無法重設計時器: ' + err.message);
+        });
+      }
     } catch (e) {
       this.showNotification('錯誤', '重設失敗: ' + e.message);
     }
@@ -7863,10 +7884,24 @@ class App {
         }
       } else {
         this.currentAudioPlaying = 'none';
-        if (bgAudio) bgAudio.pause();
-        if (this.ytPlayersReady && this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
-          this.playerCanon.pauseVideo();
+        this.pendingMusicUrl = null;
+        if (bgAudio) {
+          bgAudio.pause();
+          try { bgAudio.currentTime = 0; } catch (e) {}
         }
+        if (this.playerCanon) {
+          try {
+            if (typeof this.playerCanon.pauseVideo === 'function') this.playerCanon.pauseVideo();
+            if (typeof this.playerCanon.stopVideo === 'function') this.playerCanon.stopVideo();
+          } catch (e) {}
+        }
+        try {
+          const iframe = document.querySelector('#canonPlayer iframe');
+          if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+            iframe.contentWindow.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
+          }
+        } catch (e) {}
       }
     } catch (e) {
       console.error("Error playing audio track:", track, e);
@@ -8978,6 +9013,22 @@ class App {
     if (window.focusQB && typeof window.focusQB.updateAdminBadge === 'function') {
       window.focusQB.updateAdminBadge(gameType);
     }
+
+    const wrongSoundSel = document.getElementById('focusWrongSoundStyle');
+    if (wrongSoundSel) {
+      wrongSoundSel.value = this.focusWrongSoundStyle || localStorage.getItem('focus_wrong_sound_style') || 'marimba';
+    }
+  }
+
+  changeFocusWrongSoundStyle(style) {
+    this.focusWrongSoundStyle = style;
+    localStorage.setItem('focus_wrong_sound_style', style);
+    const sel = document.getElementById('focusWrongSoundStyle');
+    if (sel) sel.value = style;
+  }
+
+  previewFocusWrongSound() {
+    this.playFocusSound('wrong');
   }
 
   // 取得目前後台勾選的出題歌單標籤清單
@@ -12620,18 +12671,90 @@ class App {
           osc.stop(noteTime + note.dur);
         });
       } else if (type === 'mismatch' || type === 'wrong') {
-        // 答錯/未配對音效：低沉溫和的嘟聲 (下降音 260Hz -> 160Hz 溫和提示，不刺耳)
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(260, t);
-        osc.frequency.linearRampToValueAtTime(160, t + 0.18);
-        gain.gain.setValueAtTime(0.18, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + 0.18);
+        const style = this.focusWrongSoundStyle || localStorage.getItem('focus_wrong_sound_style') || 'marimba';
+        if (style === 'pop') {
+          // 風格 2：輕快水滴雙音 (A5 880Hz -> F#5 740Hz 純淨正弦波，柔和活潑像水滴啵啵聲)
+          const notes = [
+            { f: 880, delay: 0.0, dur: 0.08, gain: 0.20 },
+            { f: 739.99, delay: 0.06, dur: 0.14, gain: 0.22 }
+          ];
+          notes.forEach(n => {
+            const nt = t + n.delay;
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(n.f, nt);
+            g.gain.setValueAtTime(n.gain, nt);
+            g.gain.exponentialRampToValueAtTime(0.001, nt + n.dur);
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.start(nt);
+            osc.stop(nt + n.dur);
+          });
+        } else if (style === 'chime') {
+          // 風格 3：輕柔音叉和弦 (D5 587.33Hz + F#5 739.99Hz 正弦波雙音同時響起，如微型銀鈴輕敲)
+          const freqs = [587.33, 739.99];
+          freqs.forEach(f => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, t);
+            g.gain.setValueAtTime(0.18, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.18);
+          });
+        } else if (style === 'blip') {
+          // 風格 4：遊戲微晶片跳音 (C5 523.25Hz -> G4 392.00Hz 三角波快速雙彈音)
+          const notes = [
+            { f: 523.25, delay: 0.0, dur: 0.06, gain: 0.18 },
+            { f: 392.00, delay: 0.06, dur: 0.12, gain: 0.20 }
+          ];
+          notes.forEach(n => {
+            const nt = t + n.delay;
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(n.f, nt);
+            g.gain.setValueAtTime(n.gain, nt);
+            g.gain.exponentialRampToValueAtTime(0.001, nt + n.dur);
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.start(nt);
+            osc.stop(nt + n.dur);
+          });
+        } else {
+          // 風格 1（預設推薦）：清脆木琴雙音 (E5 659.25Hz -> C#5 554.37Hz，三角波+正弦波高頻泛音疊加，明亮清爽像敲擊鋼片琴/木琴)
+          const notes = [
+            { f: 659.25, delay: 0.0, dur: 0.10, gain: 0.22 },  // E5
+            { f: 554.37, delay: 0.08, dur: 0.18, gain: 0.24 }  // C#5
+          ];
+          notes.forEach(n => {
+            const nt = t + n.delay;
+            const osc1 = ctx.createOscillator();
+            const osc2 = ctx.createOscillator();
+            const g = ctx.createGain();
+            
+            osc1.type = 'triangle';
+            osc1.frequency.setValueAtTime(n.f, nt);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(n.f * 2, nt); // 一倍高頻泛音增加清脆感
+            
+            g.gain.setValueAtTime(n.gain, nt);
+            g.gain.exponentialRampToValueAtTime(0.001, nt + n.dur);
+            
+            osc1.connect(g);
+            osc2.connect(g);
+            g.connect(ctx.destination);
+            
+            osc1.start(nt);
+            osc2.start(nt);
+            osc1.stop(nt + n.dur);
+            osc2.stop(nt + n.dur);
+          });
+        }
       }
     } catch (e) {
       console.warn("Focus sound play failed:", e);

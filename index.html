@@ -1898,6 +1898,18 @@
                     <span>💡 開放學生使用「提示」功能</span>
                   </label>
                 </div>
+                <div>
+                  <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 8px;">4. 答錯提示音效風格：</label>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <select id="focusWrongSoundStyle" onchange="window.app && window.app.changeFocusWrongSoundStyle(this.value)" class="question-input" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 7px 12px; border-radius: 8px; height: 38px;">
+                      <option value="marimba" selected>🎵 清脆木琴雙音（明亮輕快・推薦）</option>
+                      <option value="pop">💧 輕快水滴雙音（俏皮柔和）</option>
+                      <option value="chime">🔔 輕柔音叉和弦（優雅清爽）</option>
+                      <option value="blip">🎮 遊戲微晶片音（復古跳音）</option>
+                    </select>
+                    <button type="button" onclick="window.app && window.app.previewFocusWrongSound()" class="preset-btn" style="padding: 6px 12px; height: 38px; font-size: 13px; font-weight: bold; background: rgba(0, 122, 255, 0.1); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 8px; cursor: pointer;" title="試聽目前選擇的答錯音效">🔊 試聽</button>
+                  </div>
+                </div>
               </div>
 
               <!-- OpenCode 修改：位置序列記憶第一版設定，可選序列長度與反向模式 -->
