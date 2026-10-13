@@ -86,6 +86,20 @@ class App {
     this.focusTimerInterval = null;
     this.focusCountdownInterval = null;
 
+    // 測驗與互動音效設定 (全班同步)
+    this.soundSettings = {
+      correctSound: 'correct_1',
+      wrongSound: 'wrong_1',
+      volume: 0.8
+    };
+    try {
+      const cachedSound = localStorage.getItem('app_sound_settings');
+      if (cachedSound) {
+        this.soundSettings = Object.assign(this.soundSettings, JSON.parse(cachedSound));
+      }
+    } catch (e) {}
+    this.initSoundSettingsListener();
+
     // 透過任一次使用者手勢預先解鎖 Web Audio Context，確保音效不被瀏覽器擋下
     ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
       window.addEventListener(evt, () => {
@@ -3753,9 +3767,15 @@ class App {
         category: '班級管理',
         icon: 'images/admin_icons/class_copy.svg'
       },
+      classSound: {
+        id: 'adminSoundSettingsSection',
+        title: 'D. 測驗與互動音效設定',
+        category: '班級管理',
+        icon: 'images/admin_icons/class_sound.svg'
+      },
       systemReset: {
         id: 'adminResetSection',
-        title: 'D. 系統重設與備份管理',
+        title: 'E. 系統重設與備份管理',
         category: '班級管理',
         icon: 'images/admin_icons/system_reset.svg'
       },
@@ -3833,6 +3853,7 @@ class App {
       classReg: 'adminCatBlock1',
       classAvatar: 'adminCatBlock1',
       classCopy: 'adminCatBlock1',
+      classSound: 'adminCatBlock1',
       systemReset: 'adminCatBlock1',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
@@ -3915,6 +3936,11 @@ class App {
     // 抽人轉盤管理專屬資料同步
     if (featureKey === 'gameWheel') {
       this.syncAdminWheelUI();
+    }
+
+    // 測驗與互動音效設定專屬 UI 同步
+    if (featureKey === 'classSound') {
+      this.updateSoundSettingsUI();
     }
 
     // 滾動至後台頂部
@@ -12652,10 +12678,181 @@ class App {
         osc.start(t);
         osc.stop(t + 0.06);
       } else if (type === 'match' || type === 'correct') {
-        // 答對/配對音效：清脆雙音/三音上行叮咚和弦 (G5 784Hz -> C6 1046.5Hz 輕快明亮)
+        const soundKey = this.soundSettings?.correctSound || 'correct_1';
+        if (soundKey && soundKey.startsWith('correct_')) {
+          const vol = this.soundSettings?.volume ?? 0.8;
+          const audio = this.playAudioFile(`audio/${soundKey}.mp3`, vol);
+          if (audio) return;
+        }
+        // Fallback to Web Audio synthesis if audio failed or soundKey is synth
+        this.playSynthSound('synth_bell');
+      } else if (type === 'mismatch' || type === 'wrong') {
+        const soundKey = this.soundSettings?.wrongSound || 'wrong_1';
+        if (soundKey && soundKey.startsWith('wrong_')) {
+          const vol = this.soundSettings?.volume ?? 0.8;
+          const audio = this.playAudioFile(`audio/${soundKey}.mp3`, vol);
+          if (audio) return;
+        }
+        const synthKey = soundKey.startsWith('synth_') ? soundKey : (this.focusWrongSoundStyle ? ('synth_' + this.focusWrongSoundStyle) : 'synth_marimba');
+        this.playSynthSound(synthKey);
+      }
+    } catch (e) {
+      console.warn("Focus sound play failed:", e);
+    }
+  }
+
+  // ===== 測驗與互動音效設定模組 (全班同步) =====
+  initSoundSettingsListener() {
+    if (this.soundSettingsRef) {
+      try { this.soundSettingsRef.off(); } catch (e) {}
+    }
+    this.soundSettingsRef = db.ref('settings/soundEffects');
+    this.soundSettingsRef.on('value', (snap) => {
+      const val = snap.val();
+      if (val && typeof val === 'object') {
+        this.soundSettings = {
+          correctSound: val.correctSound || 'correct_1',
+          wrongSound: val.wrongSound || 'wrong_1',
+          volume: typeof val.volume === 'number' ? val.volume : 0.8
+        };
+        try {
+          localStorage.setItem('app_sound_settings', JSON.stringify(this.soundSettings));
+        } catch (e) {}
+        this.updateSoundSettingsUI();
+      }
+    });
+  }
+
+  updateSoundSettingsUI() {
+    const s = this.soundSettings || { correctSound: 'correct_1', wrongSound: 'wrong_1', volume: 0.8 };
+
+    // 1. Correct radio
+    const correctRadios = document.querySelectorAll('input[name="adminCorrectSoundRadio"]');
+    correctRadios.forEach(r => {
+      r.checked = (r.value === s.correctSound);
+      const parentLabel = r.closest('.sound-option-row');
+      if (parentLabel) {
+        if (r.checked) {
+          parentLabel.style.borderColor = 'var(--success-color)';
+          parentLabel.style.background = 'rgba(52, 199, 89, 0.08)';
+        } else {
+          parentLabel.style.borderColor = 'var(--border-color)';
+          parentLabel.style.background = 'var(--bg-secondary, rgba(0,0,0,0.02))';
+        }
+      }
+    });
+
+    // 2. Wrong radio
+    const wrongRadios = document.querySelectorAll('input[name="adminWrongSoundRadio"]');
+    wrongRadios.forEach(r => {
+      r.checked = (r.value === s.wrongSound);
+      const parentLabel = r.closest('.sound-option-row');
+      if (parentLabel) {
+        if (r.checked) {
+          parentLabel.style.borderColor = '#ff9500';
+          parentLabel.style.background = 'rgba(255, 149, 0, 0.08)';
+        } else {
+          parentLabel.style.borderColor = 'var(--border-color)';
+          parentLabel.style.background = 'var(--bg-secondary, rgba(0,0,0,0.02))';
+        }
+      }
+    });
+
+    // 3. Badges
+    const correctNames = {
+      correct_1: '正確音效 1（明快叮咚）',
+      correct_2: '正確音效 2（金幣成就）',
+      correct_3: '正確音效 3（精靈魔法）',
+      correct_4: '正確音效 4（輕快通關）',
+      synth_bell: '原生合成音（清脆和弦）'
+    };
+    const wrongNames = {
+      wrong_1: '錯誤音效 1（柔和木敲）',
+      wrong_2: '錯誤音效 2（逗趣滑音）',
+      wrong_3: '錯誤音效 3（低調微晶片）',
+      wrong_4: '錯誤音效 4（圓潤短音）',
+      synth_marimba: '原生合成：清脆木琴',
+      synth_pop: '原生合成：輕快水滴',
+      synth_chime: '原生合成：輕柔音叉',
+      synth_blip: '原生合成：遊戲微晶片'
+    };
+    const badgeCorrect = document.getElementById('badgeCurrentCorrectSound');
+    if (badgeCorrect) {
+      badgeCorrect.textContent = `已選：${correctNames[s.correctSound] || s.correctSound}`;
+    }
+    const badgeWrong = document.getElementById('badgeCurrentWrongSound');
+    if (badgeWrong) {
+      badgeWrong.textContent = `已選：${wrongNames[s.wrongSound] || s.wrongSound}`;
+    }
+
+    // 4. Volume slider & label
+    const volRange = document.getElementById('adminSoundVolumeRange');
+    const volLabel = document.getElementById('adminSoundVolumeLabel');
+    const pct = Math.round((s.volume ?? 0.8) * 100);
+    if (volRange) volRange.value = pct;
+    if (volLabel) volLabel.textContent = `${pct}%`;
+
+    // 5. Class badge
+    const classBadge = document.getElementById('soundCurrentClassBadge');
+    if (classBadge) {
+      classBadge.textContent = window.currentClassCode
+        ? `🏫 專屬班級：【${window.currentClassCode}】`
+        : `🏫 一次性課堂（開放空間）`;
+    }
+  }
+
+  onSoundRadioChange(type, value) {
+    if (!this.soundSettings) {
+      this.soundSettings = { correctSound: 'correct_1', wrongSound: 'wrong_1', volume: 0.8 };
+    }
+    if (type === 'correct') {
+      this.soundSettings.correctSound = value;
+    } else if (type === 'wrong') {
+      this.soundSettings.wrongSound = value;
+    }
+    this.updateSoundSettingsUI();
+    this.previewSound(type, value);
+  }
+
+  onSoundVolumeChange(val) {
+    if (!this.soundSettings) {
+      this.soundSettings = { correctSound: 'correct_1', wrongSound: 'wrong_1', volume: 0.8 };
+    }
+    this.soundSettings.volume = parseFloat(val) / 100;
+    const volLabel = document.getElementById('adminSoundVolumeLabel');
+    if (volLabel) volLabel.textContent = `${val}%`;
+  }
+
+  playAudioFile(filePath, volume) {
+    try {
+      const vol = typeof volume === 'number' ? volume : (this.soundSettings?.volume ?? 0.8);
+      const audio = new Audio(filePath);
+      audio.volume = Math.max(0, Math.min(1, vol));
+      const p = audio.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(err => {
+          console.warn(`playAudioFile failed for ${filePath}:`, err);
+        });
+      }
+      return audio;
+    } catch (err) {
+      console.warn(`playAudioFile exception for ${filePath}:`, err);
+      return null;
+    }
+  }
+
+  playSynthSound(synthKey) {
+    try {
+      this.initFocusAudio();
+      const ctx = this.focusAudioCtx;
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const vol = this.soundSettings?.volume ?? 0.8;
+
+      if (synthKey === 'synth_bell' || synthKey === 'synth_chord') {
         const notes = [
-          { f: 783.99, delay: 0.0, dur: 0.12, gain: 0.22 },  // G5
-          { f: 1046.50, delay: 0.08, dur: 0.24, gain: 0.26 } // C6
+          { f: 783.99, delay: 0.0, dur: 0.12, gain: 0.22 * vol },
+          { f: 1046.50, delay: 0.08, dur: 0.24, gain: 0.26 * vol }
         ];
         notes.forEach(note => {
           const noteTime = t + note.delay;
@@ -12670,95 +12867,133 @@ class App {
           osc.start(noteTime);
           osc.stop(noteTime + note.dur);
         });
-      } else if (type === 'mismatch' || type === 'wrong') {
-        const style = this.focusWrongSoundStyle || localStorage.getItem('focus_wrong_sound_style') || 'marimba';
-        if (style === 'pop') {
-          // 風格 2：輕快水滴雙音 (A5 880Hz -> F#5 740Hz 純淨正弦波，柔和活潑像水滴啵啵聲)
-          const notes = [
-            { f: 880, delay: 0.0, dur: 0.08, gain: 0.20 },
-            { f: 739.99, delay: 0.06, dur: 0.14, gain: 0.22 }
-          ];
-          notes.forEach(n => {
-            const nt = t + n.delay;
-            const osc = ctx.createOscillator();
-            const g = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(n.f, nt);
-            g.gain.setValueAtTime(n.gain, nt);
-            g.gain.exponentialRampToValueAtTime(0.001, nt + n.dur);
-            osc.connect(g);
-            g.connect(ctx.destination);
-            osc.start(nt);
-            osc.stop(nt + n.dur);
-          });
-        } else if (style === 'chime') {
-          // 風格 3：輕柔音叉和弦 (D5 587.33Hz + F#5 739.99Hz 正弦波雙音同時響起，如微型銀鈴輕敲)
-          const freqs = [587.33, 739.99];
-          freqs.forEach(f => {
-            const osc = ctx.createOscillator();
-            const g = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(f, t);
-            g.gain.setValueAtTime(0.18, t);
-            g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-            osc.connect(g);
-            g.connect(ctx.destination);
-            osc.start(t);
-            osc.stop(t + 0.18);
-          });
-        } else if (style === 'blip') {
-          // 風格 4：遊戲微晶片跳音 (C5 523.25Hz -> G4 392.00Hz 三角波快速雙彈音)
-          const notes = [
-            { f: 523.25, delay: 0.0, dur: 0.06, gain: 0.18 },
-            { f: 392.00, delay: 0.06, dur: 0.12, gain: 0.20 }
-          ];
-          notes.forEach(n => {
-            const nt = t + n.delay;
-            const osc = ctx.createOscillator();
-            const g = ctx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(n.f, nt);
-            g.gain.setValueAtTime(n.gain, nt);
-            g.gain.exponentialRampToValueAtTime(0.001, nt + n.dur);
-            osc.connect(g);
-            g.connect(ctx.destination);
-            osc.start(nt);
-            osc.stop(nt + n.dur);
-          });
-        } else {
-          // 風格 1（預設推薦）：清脆木琴雙音 (E5 659.25Hz -> C#5 554.37Hz，三角波+正弦波高頻泛音疊加，明亮清爽像敲擊鋼片琴/木琴)
-          const notes = [
-            { f: 659.25, delay: 0.0, dur: 0.10, gain: 0.22 },  // E5
-            { f: 554.37, delay: 0.08, dur: 0.18, gain: 0.24 }  // C#5
-          ];
-          notes.forEach(n => {
-            const nt = t + n.delay;
-            const osc1 = ctx.createOscillator();
-            const osc2 = ctx.createOscillator();
-            const g = ctx.createGain();
-            
-            osc1.type = 'triangle';
-            osc1.frequency.setValueAtTime(n.f, nt);
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(n.f * 2, nt); // 一倍高頻泛音增加清脆感
-            
-            g.gain.setValueAtTime(n.gain, nt);
-            g.gain.exponentialRampToValueAtTime(0.001, nt + n.dur);
-            
-            osc1.connect(g);
-            osc2.connect(g);
-            g.connect(ctx.destination);
-            
-            osc1.start(nt);
-            osc2.start(nt);
-            osc1.stop(nt + n.dur);
-            osc2.stop(nt + n.dur);
-          });
-        }
+      } else if (synthKey === 'synth_pop') {
+        const notes = [
+          { f: 880, delay: 0.0, dur: 0.08, gain: 0.20 * vol },
+          { f: 739.99, delay: 0.06, dur: 0.14, gain: 0.22 * vol }
+        ];
+        notes.forEach(n => {
+          const nt = t + n.delay;
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(n.f, nt);
+          g.gain.setValueAtTime(n.gain, nt);
+          g.gain.exponentialRampToValueAtTime(0.001, nt + n.dur);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(nt);
+          osc.stop(nt + n.dur);
+        });
+      } else if (synthKey === 'synth_chime') {
+        const freqs = [587.33, 739.99];
+        freqs.forEach(f => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, t);
+          g.gain.setValueAtTime(0.18 * vol, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.18);
+        });
+      } else if (synthKey === 'synth_blip') {
+        const notes = [
+          { f: 523.25, delay: 0.0, dur: 0.06, gain: 0.18 * vol },
+          { f: 392.00, delay: 0.06, dur: 0.12, gain: 0.20 * vol }
+        ];
+        notes.forEach(n => {
+          const nt = t + n.delay;
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, nt);
+          g.gain.setValueAtTime(n.gain, nt);
+          g.gain.exponentialRampToValueAtTime(0.001, nt + n.dur);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(nt);
+          osc.stop(nt + n.dur);
+        });
+      } else {
+        // default marimba
+        const notes = [
+          { f: 659.25, delay: 0.0, dur: 0.10, gain: 0.22 * vol },
+          { f: 554.37, delay: 0.08, dur: 0.18, gain: 0.24 * vol }
+        ];
+        notes.forEach(n => {
+          const nt = t + n.delay;
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(n.f, nt);
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(n.f * 2, nt);
+          g.gain.setValueAtTime(n.gain, nt);
+          g.gain.exponentialRampToValueAtTime(0.001, nt + n.dur);
+          osc1.connect(g);
+          osc2.connect(g);
+          g.connect(ctx.destination);
+          osc1.start(nt);
+          osc2.start(nt);
+          osc1.stop(nt + n.dur);
+          osc2.stop(nt + n.dur);
+        });
       }
     } catch (e) {
-      console.warn("Focus sound play failed:", e);
+      console.warn('playSynthSound error:', e);
     }
+  }
+
+  previewSound(type, soundKey) {
+    const vol = this.soundSettings?.volume ?? 0.8;
+    if (soundKey && (soundKey.startsWith('correct_') || soundKey.startsWith('wrong_'))) {
+      this.playAudioFile(`audio/${soundKey}.mp3`, vol);
+    } else {
+      this.playSynthSound(soundKey || (type === 'correct' ? 'synth_bell' : 'synth_marimba'));
+    }
+  }
+
+  previewCurrentSelectedSounds() {
+    const correctKey = this.soundSettings?.correctSound || 'correct_1';
+    const wrongKey = this.soundSettings?.wrongSound || 'wrong_1';
+    this.previewSound('correct', correctKey);
+    setTimeout(() => {
+      this.previewSound('wrong', wrongKey);
+    }, 750);
+  }
+
+  async saveSoundSettings() {
+    const s = this.soundSettings || { correctSound: 'correct_1', wrongSound: 'wrong_1', volume: 0.8 };
+    const payload = {
+      correctSound: s.correctSound || 'correct_1',
+      wrongSound: s.wrongSound || 'wrong_1',
+      volume: typeof s.volume === 'number' ? s.volume : 0.8,
+      updatedAt: Date.now()
+    };
+    try {
+      await db.ref('settings/soundEffects').set(payload);
+      localStorage.setItem('app_sound_settings', JSON.stringify(payload));
+      const targetName = window.currentClassCode ? `班級【${window.currentClassCode}】` : '全域課堂';
+      this.showNotification('成功', `測驗與互動音效設定已成功儲存並同步至${targetName}！`);
+    } catch (err) {
+      console.error('saveSoundSettings error:', err);
+      this.showNotification('錯誤', `音效設定儲存失敗: ${err.message}`);
+    }
+  }
+
+  async resetSoundSettingsToDefault() {
+    this.soundSettings = {
+      correctSound: 'correct_1',
+      wrongSound: 'wrong_1',
+      volume: 0.8
+    };
+    this.updateSoundSettingsUI();
+    await this.saveSoundSettings();
+    this.previewCurrentSelectedSounds();
   }
 
   // ===== 班級代碼與智慧雙軌管理 (Classroom & Dual-track Management - 嚴格管制模式) =====

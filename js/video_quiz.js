@@ -2385,6 +2385,15 @@
         }
       }
 
+      // 播放自訂測驗互動音效回饋
+      if (window.app && typeof window.app.playFocusSound === 'function') {
+        if (q.type === 'text') {
+          window.app.playFocusSound('correct');
+        } else {
+          window.app.playFocusSound(isCorrect ? 'correct' : 'wrong');
+        }
+      }
+
       if (submitBtn) submitBtn.style.display = 'none';
       if (continueBtn) continueBtn.style.display = 'inline-block';
 
