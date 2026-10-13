@@ -9039,22 +9039,6 @@ class App {
     if (window.focusQB && typeof window.focusQB.updateAdminBadge === 'function') {
       window.focusQB.updateAdminBadge(gameType);
     }
-
-    const wrongSoundSel = document.getElementById('focusWrongSoundStyle');
-    if (wrongSoundSel) {
-      wrongSoundSel.value = this.focusWrongSoundStyle || localStorage.getItem('focus_wrong_sound_style') || 'marimba';
-    }
-  }
-
-  changeFocusWrongSoundStyle(style) {
-    this.focusWrongSoundStyle = style;
-    localStorage.setItem('focus_wrong_sound_style', style);
-    const sel = document.getElementById('focusWrongSoundStyle');
-    if (sel) sel.value = style;
-  }
-
-  previewFocusWrongSound() {
-    this.playFocusSound('wrong');
   }
 
   // 取得目前後台勾選的出題歌單標籤清單
@@ -12693,7 +12677,7 @@ class App {
           const audio = this.playAudioFile(`audio/${soundKey}.mp3`, vol);
           if (audio) return;
         }
-        const synthKey = soundKey.startsWith('synth_') ? soundKey : (this.focusWrongSoundStyle ? ('synth_' + this.focusWrongSoundStyle) : 'synth_marimba');
+        const synthKey = soundKey.startsWith('synth_') ? soundKey : 'synth_marimba';
         this.playSynthSound(synthKey);
       }
     } catch (e) {
