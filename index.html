@@ -687,7 +687,7 @@
                 <div class="admin-cat-title">
                   <span>🏫</span>
                   <span>班級管理</span>
-                  <span class="admin-cat-badge">4 個功能</span>
+                  <span class="admin-cat-badge">5 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -723,12 +723,22 @@
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- D. 系統重設與備份管理 -->
+                  <!-- D. 測驗與互動音效設定 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('classSound')">
+                    <div class="admin-feature-icon-box">
+                      <img src="images/admin_icons/class_sound.svg" width="64" height="64" alt="測驗與互動音效設定">
+                    </div>
+                    <div class="admin-feature-card-title">D. 測驗與互動音效設定</div>
+                    <div class="admin-feature-card-desc">自訂教學互動（專注力遊戲、隨堂測驗、影片出題等）的答對與答錯音效，支援即時試聽。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+
+                  <!-- E. 系統重設與備份管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('systemReset')">
                     <div class="admin-feature-icon-box">
                       <img src="images/admin_icons/system_reset.svg" width="64" height="64" alt="系統重設與備份管理">
                     </div>
-                    <div class="admin-feature-card-title">D. 系統重設與備份管理</div>
+                    <div class="admin-feature-card-title">E. 系統重設與備份管理</div>
                     <div class="admin-feature-card-desc">清除所有課堂資料（提問、測驗、圖片及白板），或匯出/匯入 JSON 課堂備份記錄。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
@@ -916,7 +926,8 @@
                     <option value="classReg">A. 班級開課管理與切換班級</option>
                     <option value="classAvatar">B. 班級專屬頭像管理與圖鑑上傳</option>
                     <option value="classCopy">C. 跨班教材與測驗複製(多班級一鍵同步)</option>
-                    <option value="systemReset">D. 系統重設與備份管理</option>
+                    <option value="classSound">D. 測驗與互動音效設定</option>
+                    <option value="systemReset">E. 系統重設與備份管理</option>
                   </optgroup>
                   <optgroup label="測驗出題管理">
                     <option value="quizChoice">A. 選擇題測驗</option>
@@ -1180,6 +1191,267 @@
               <!-- 提示訊息 -->
               <div style="background: rgba(52,199,89,0.08); border-left: 3px solid #34c759; padding: 8px 12px; border-radius: 4px; font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
                 🛡️ <strong>安全保護機制</strong>：複製過程會自動排除學生的作答紀錄、成績與表情反應，確保每個目標班級皆為乾淨的測驗與學習環境。
+              </div>
+            </div>
+          </div>
+
+          <!-- 測驗與互動音效設定 (可折疊區塊 / 全頁模式) -->
+          <div class="admin-section admin-section-collapsible collapsed" id="adminSoundSettingsSection">
+            <div class="admin-section-header">
+              <h3>🔊 測驗與互動音效設定</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <!-- 頂部導引與班級範圍提示 -->
+              <div style="background: rgba(0, 122, 255, 0.06); border-left: 4px solid var(--accent-color); padding: 14px 18px; border-radius: 10px; margin-bottom: 22px; font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    🎵 <strong>全班互動音效中心</strong>：自訂本班級在<strong>專注力測驗（舒爾特方格、記憶翻牌、位置記憶、一字千金、成語典故等）、聽歌搶答、影片出題測驗</strong>中的作答判定音效。所有學生端作答時將同步套用！
+                  </div>
+                  <div id="soundCurrentClassBadge" style="font-size: 13px; font-weight: bold; background: var(--bg-card); border: 1px solid var(--border-color); padding: 5px 12px; border-radius: 20px; color: var(--accent-color); white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.05);">
+                    🏫 正在讀取班級...
+                  </div>
+                </div>
+              </div>
+
+              <!-- 兩大音效分類卡片網格 -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 22px;">
+                
+                <!-- 【正確】音效設定卡片 -->
+                <div style="background: var(--bg-card); border: 1.5px solid rgba(52, 199, 89, 0.35); border-radius: 14px; padding: 18px; box-shadow: 0 2px 10px rgba(52,199,89,0.06);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 20px;">✅</span>
+                      <h4 style="margin: 0; font-size: 16px; font-weight: bold; color: var(--success-color);">答對／正確音效</h4>
+                    </div>
+                    <span id="badgeCurrentCorrectSound" style="font-size: 12px; font-weight: bold; color: var(--success-color); background: rgba(52, 199, 89, 0.12); padding: 3px 8px; border-radius: 12px;">
+                      已選：正確音效 1
+                    </span>
+                  </div>
+
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- 選項 1 -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminCorrectSoundRadio" value="correct_1" onchange="window.app.onSoundRadioChange('correct', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">✨ 正確音效 1（明快叮咚）</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">亮麗清脆的經典鈴響，反饋明確提振精神 (103 KB)</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('correct', 'correct_1')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #34c759; background: rgba(52,199,89,0.1); color: #34c759; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <!-- 選項 2 -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminCorrectSoundRadio" value="correct_2" onchange="window.app.onSoundRadioChange('correct', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🎉 正確音效 2（金幣成就）</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">如金幣落袋的歡樂反饋，富有遊戲過關成就感 (71 KB)</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('correct', 'correct_2')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #34c759; background: rgba(52,199,89,0.1); color: #34c759; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <!-- 選項 3 -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminCorrectSoundRadio" value="correct_3" onchange="window.app.onSoundRadioChange('correct', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🌟 正確音效 3（精靈魔法）</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">閃耀魔幻光芒的華麗音效，活潑夢幻 (125 KB)</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('correct', 'correct_3')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #34c759; background: rgba(52,199,89,0.1); color: #34c759; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <!-- 選項 4 -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminCorrectSoundRadio" value="correct_4" onchange="window.app.onSoundRadioChange('correct', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🔔 正確音效 4（輕快通關）</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">短促爽快通關提示，節奏快不干擾思考 (41 KB)</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('correct', 'correct_4')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #34c759; background: rgba(52,199,89,0.1); color: #34c759; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <!-- 選項 5 (原生合成) -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminCorrectSoundRadio" value="synth_bell" onchange="window.app.onSoundRadioChange('correct', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🎹 原生合成音（清脆和弦）</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">G5➔C6 上行三角波清脆和弦（Web Audio 零流量）</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('correct', 'synth_bell')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #34c759; background: rgba(52,199,89,0.1); color: #34c759; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 【錯誤】音效設定卡片 -->
+                <div style="background: var(--bg-card); border: 1.5px solid rgba(255, 149, 0, 0.35); border-radius: 14px; padding: 18px; box-shadow: 0 2px 10px rgba(255,149,0,0.06);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 20px;">❌</span>
+                      <h4 style="margin: 0; font-size: 16px; font-weight: bold; color: #ff9500;">答錯／錯誤音效</h4>
+                    </div>
+                    <span id="badgeCurrentWrongSound" style="font-size: 12px; font-weight: bold; color: #ff9500; background: rgba(255, 149, 0, 0.12); padding: 3px 8px; border-radius: 12px;">
+                      已選：錯誤音效 1
+                    </span>
+                  </div>
+
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- 選項 1 -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminWrongSoundRadio" value="wrong_1" onchange="window.app.onSoundRadioChange('wrong', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🌀 錯誤音效 1（柔和木敲）</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">溫和短促的木質敲擊，不刺耳有提示效果 (62 KB)</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('wrong', 'wrong_1')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ff9500; background: rgba(255,149,0,0.1); color: #ff9500; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <!-- 選項 2 -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminWrongSoundRadio" value="wrong_2" onchange="window.app.onSoundRadioChange('wrong', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">💡 錯誤音效 2（逗趣滑音）</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">卡通風可愛短滑音，詼諧幽默不挫折 (32 KB)</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('wrong', 'wrong_2')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ff9500; background: rgba(255,149,0,0.1); color: #ff9500; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <!-- 選項 3 -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminWrongSoundRadio" value="wrong_3" onchange="window.app.onSoundRadioChange('wrong', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">💧 錯誤音效 3（低調微晶片）</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">復古遊戲微晶片提示，極簡安靜溫和 (25 KB)</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('wrong', 'wrong_3')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ff9500; background: rgba(255,149,0,0.1); color: #ff9500; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <!-- 選項 4 -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminWrongSoundRadio" value="wrong_4" onchange="window.app.onSoundRadioChange('wrong', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🔔 錯誤音效 4（圓潤短音）</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">圓潤飽滿的氣泡警示音，溫暖自然 (63 KB)</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('wrong', 'wrong_4')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ff9500; background: rgba(255,149,0,0.1); color: #ff9500; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <!-- 原生合成選項 -->
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminWrongSoundRadio" value="synth_marimba" onchange="window.app.onSoundRadioChange('wrong', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🥢 原生合成：清脆木琴</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">E5➔C#5 雙音木琴下行，明亮清爽（Web Audio 零流量）</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('wrong', 'synth_marimba')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ff9500; background: rgba(255,149,0,0.1); color: #ff9500; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminWrongSoundRadio" value="synth_pop" onchange="window.app.onSoundRadioChange('wrong', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">💧 原生合成：輕快水滴</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">A5➔F#5 正弦波水滴啵啵聲（Web Audio 零流量）</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('wrong', 'synth_pop')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ff9500; background: rgba(255,149,0,0.1); color: #ff9500; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminWrongSoundRadio" value="synth_chime" onchange="window.app.onSoundRadioChange('wrong', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🔔 原生合成：輕柔音叉</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">D5+F#5 銀鈴雙音和弦（Web Audio 零流量）</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('wrong', 'synth_chime')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ff9500; background: rgba(255,149,0,0.1); color: #ff9500; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+
+                    <label class="sound-option-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-secondary, rgba(0,0,0,0.02)); border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="radio" name="adminWrongSoundRadio" value="synth_blip" onchange="window.app.onSoundRadioChange('wrong', this.value)" style="cursor: pointer; transform: scale(1.15);">
+                        <div>
+                          <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🕹️ 原生合成：遊戲微晶片</div>
+                          <div style="font-size: 12px; color: var(--text-muted);">C5➔G4 8-bit 微晶片跳音（Web Audio 零流量）</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="event.stopPropagation(); window.app.previewSound('wrong', 'synth_blip')" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ff9500; background: rgba(255,149,0,0.1); color: #ff9500; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        🔊 試聽
+                      </button>
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- 音量控制列與連續試聽 -->
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 20px; margin-bottom: 22px;">
+                <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                  <span style="font-weight: bold; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                    <span>🔊</span> 測驗互動播放音量：
+                  </span>
+                  <input type="range" id="adminSoundVolumeRange" min="0" max="100" value="80" step="5" style="width: 180px; cursor: pointer;" oninput="window.app.onSoundVolumeChange(this.value)">
+                  <span id="adminSoundVolumeLabel" style="font-size: 15px; font-weight: bold; color: var(--accent-color); min-width: 45px;">80%</span>
+                </div>
+                <button type="button" onclick="window.app.previewCurrentSelectedSounds()" style="background: rgba(0,122,255,0.08); color: var(--accent-color); border: 1px solid var(--accent-color); padding: 8px 18px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                  <span>▶️</span> 連續試聽目前組合 (正確 ➔ 錯誤)
+                </button>
+              </div>
+
+              <!-- 儲存與重設按鈕區 -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-top: 1px solid var(--border-color); padding-top: 18px;">
+                <button type="button" onclick="window.app.resetSoundSettingsToDefault()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                  🔄 恢復預設音效 (正確 1 + 錯誤 1)
+                </button>
+                <div style="display: flex; gap: 10px;">
+                  <button type="button" id="btnSaveSoundSettings" onclick="window.app.saveSoundSettings()" class="ask-btn" style="padding: 10px 28px; height: auto; font-size: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,122,255,0.3); display: flex; align-items: center; gap: 6px;">
+                    💾 儲存並套用至全班
+                  </button>
+                </div>
               </div>
             </div>
           </div>

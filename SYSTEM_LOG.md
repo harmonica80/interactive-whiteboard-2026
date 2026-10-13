@@ -1,4 +1,26 @@
 # System Log
+## 2026-10-13 - 班級管理新增「測驗與互動音效設定」功能（支援自選 4 款正確與 4 款錯誤 MP3 音效及原生合成音）
+- 影響檔案：`index.html`, `js/app.js`, `js/video_quiz.js`, `images/admin_icons/class_sound.svg`, `audio/*`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **班級管理新增「D. 測驗與互動音效設定」功能卡片與工作區 (`index.html`)**：
+     - 將「班級管理」徽章更新為「5 個功能」，並新增「D. 測驗與互動音效設定」功能卡片，原「D. 系統重設與備份管理」順移為「E. 系統重設與備份管理」。
+     - 繪製專屬 128x128 向量圖示 `images/admin_icons/class_sound.svg`（亮麗洋紅/亮橙漸層圓角底圖，搭配音箱揚聲器、活力音波、金色音符與設定齒輪徽章）。
+     - 後台快捷切換選單 `#adminQuickSwitchSelect` 新增 `<option value="classSound">D. 測驗與互動音效設定</option>`。
+     - 在 `#adminFeaturesContainer` 建立專屬全頁工作區 `#adminSoundSettingsSection`，視覺包含：
+       - 頂部導引列與當前套用班級提示徽章。
+       - **答對／正確音效清單**：自選正確音效 1（明快叮咚・103KB）、正確音效 2（金幣成就・71KB）、正確音效 3（精靈魔法・125KB）、正確音效 4（輕快通關・41KB）及原生 Web Audio 清脆和弦（零流量），每項皆有獨立「🔊 試聽」按鈕。
+       - **答錯／錯誤音效清單**：自選錯誤音效 1（柔和木敲・62KB）、錯誤音效 2（逗趣滑音・32KB）、錯誤音效 3（低調微晶片・25KB）、錯誤音效 4（圓潤短音・63KB）及 4 款原生 Web Audio 合成音（清脆木琴、輕快水滴、輕柔音叉、遊戲微晶片），每項皆有獨立「🔊 試聽」按鈕。
+       - **音量控制滑桿**：即時滑動調節 0%～100% 互動播放音量，並提供「▶️ 連續試聽目前組合 (正確 ➔ 錯誤)」按鈕。
+       - **儲存與重設**：「💾 儲存並套用至全班」即時同步至 Firebase 與 localStorage，「🔄 恢復預設音效」一鍵還原。
+  2. **音效設定同步核心與雙軌播放引擎實作 (`js/app.js`)**：
+     - 在 `constructor` 初始化 `soundSettings`（預設 correct_1、wrong_1、80% 音量），並接入本機快取與 Firebase 即時監聽 (`db.ref('settings/soundEffects')`)，支援班級透明分流。
+     - 實作 `initSoundSettingsListener`、`updateSoundSettingsUI`、`onSoundRadioChange`、`onSoundVolumeChange`、`previewSound`、`previewCurrentSelectedSounds`、`saveSoundSettings`、`resetSoundSettingsToDefault`。
+     - 升級 `playFocusSound` 支援雙軌播放：優先使用 `playAudioFile(filePath, volume)` 播放快取音訊，播放失敗或選擇合成音時自動 fallback 回 Web Audio API。
+  3. **影片出題測驗作答判定串接自訂音效回饋 (`js/video_quiz.js`)**：
+     - 在 `submitCurrentAnswer` 作答判定時，依題型與正確性即時調用 `window.app.playFocusSound(isCorrect ? 'correct' : 'wrong')`，使影片測驗各題型（單選、複選、配對、問答）與專注力遊戲享受一致的班級音效體驗。
+  4. **完整單元測試與功能驗證 (`scripts/verify-sound-settings.mjs`)**：
+     - 新增自動化驗證腳本，測試音訊檔案完整性、SVG 圖示結構、HTML 節點屬性、App 核心函式及影片測驗連動，100% 全數通過。
+
 ## 2026-10-13 - 修復活動進行狀態停止音樂無法停止問題、全面升級答錯音效為明亮風格並提供 4 款音效挑選
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
