@@ -612,8 +612,13 @@
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                   <label for="timerMusicSelect" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">背景音樂：</label>
                   <select id="timerMusicSelect" class="question-input" onchange="window.app.onTimerMusicSelectChange(this.value)" style="width: 200px; padding: 6px; margin: 0; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                    <optgroup label="── 本機推薦 ──">
+                      <option value="audio/canon.mp3" selected>🎵 帕海貝爾 - 卡農 (本機保證版)</option>
+                      <option value="audio/lofi.mp3">🎵 專注 Lofi (本機版)</option>
+                      <option value="audio/piano.mp3">🎵 放鬆鋼琴 (本機版)</option>
+                    </optgroup>
                     <optgroup label="── 巴洛克 ──">
-                      <option value="https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1">🎵 帕海貝爾 - 卡農</option>
+                      <option value="https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1">🎵 帕海貝爾 - 卡農 (YouTube)</option>
                       <option value="https://www.youtube.com/watch?v=GUrkvBPXmDQ">🎵 英格蘭民謠 - 綠袖子</option>
                       <option value="https://www.youtube.com/watch?v=1h4mAceHmrI">🎵 韓德爾 - 水上音樂</option>
                       <option value="https://www.youtube.com/watch?v=Uum5rmPLVZw">🎵 海頓 - 降E大調小號協奏曲「快板」</option>
@@ -636,10 +641,6 @@
                       <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1687s">🎵 經典台語 - 舊情也綿綿</option>
                       <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1994s">🎵 經典台語 - 無字的情批</option>
                       <option value="https://www.youtube.com/watch?v=lGbrMl8PAYA&t=2479s">🎵 經典台語 - 繁華攏是夢</option>
-                    </optgroup>
-                    <optgroup label="── 輕音樂 ──">
-                      <option value="https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-study-112191.mp3">🎵 專注 Lofi</option>
-                      <option value="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=soft-relaxing-piano-jazz-11428.mp3">🎵 爵士鋼琴</option>
                     </optgroup>
                     <option value="custom">✍️ 自訂 YouTube 網址...</option>
                   </select>
@@ -3250,8 +3251,8 @@ Python</pre>
 
   <!-- 原生 HTML5 音訊與 YouTube 播放器 -->
   <audio id="bgAudioPlayer" loop preload="auto" style="display: none;"></audio>
-  <audio id="bellAudioPlayer" preload="auto" style="display: none;" src="https://actions.google.com/sounds/v1/alarms/school_bell.ogg"></audio>
-  <div id="ytPlayerContainer" style="position: fixed; left: -9999px; top: -9999px; width: 300px; height: 200px; opacity: 0.001; pointer-events: none; overflow: hidden; z-index: -1000;">
+  <audio id="bellAudioPlayer" preload="auto" style="display: none;" src="audio/bell.mp3"></audio>
+  <div id="ytPlayerContainer" style="position: fixed; bottom: 0; right: 0; width: 200px; height: 120px; opacity: 0.01; pointer-events: none; overflow: hidden; z-index: -1000;">
     <div id="canonPlayer"></div>
     <div id="bellPlayer"></div>
   </div>

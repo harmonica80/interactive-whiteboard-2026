@@ -7133,7 +7133,7 @@ class App {
         }
         
         // 同步音樂來源
-        this.updateMusicSource(data.musicUrl || 'https://www.youtube.com/watch?v=MnhXZRw_ATU');
+        this.updateMusicSource(data.musicUrl || 'audio/canon.mp3');
         
         // Sync inputs in admin if not active focus
         const minsInput = document.getElementById('timerMinutes');
@@ -7478,7 +7478,7 @@ class App {
       const duration = mins * 60;
       
       const musicSelect = document.getElementById('timerMusicSelect');
-      let musicUrl = 'https://www.youtube.com/watch?v=MnhXZRw_ATU'; // Default Canon
+      let musicUrl = 'audio/canon.mp3'; // Default Canon (Local)
       if (musicSelect) {
         if (musicSelect.value === 'custom') {
           const customInput = document.getElementById('timerMusicCustomUrl');
@@ -7667,6 +7667,7 @@ class App {
 
   initYoutubePlayers() {
     try {
+      const validOrigin = (window.location.origin && window.location.origin !== 'null') ? window.location.origin : undefined;
       this.playerCanon = new YT.Player('canonPlayer', {
         height: '200',
         width: '200',
@@ -7680,11 +7681,19 @@ class App {
           rel: 0,
           showinfo: 0,
           enablejsapi: 1,
-          origin: window.location.origin
+          origin: validOrigin
         },
         events: {
-          onReady: () => {
+          onReady: (event) => {
             this.ytPlayersReady = true;
+            try {
+              if (event && event.target && typeof event.target.getIframe === 'function') {
+                const iframe = event.target.getIframe();
+                if (iframe) {
+                  iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                }
+              }
+            } catch (e) {}
             if (this.playerCanon && typeof this.playerCanon.pauseVideo === 'function') {
               this.playerCanon.pauseVideo();
             }
@@ -7705,6 +7714,21 @@ class App {
           },
           onError: (event) => {
             console.warn("YouTube player error code:", event.data);
+            // 若自訂 YouTube 影片受版權保護無法嵌入 (代碼 101/150) 或載入失敗，自動備援切換為本機保證版卡農
+            if (this.currentAudioPlaying === 'canon') {
+              console.warn("Falling back to local canon.mp3 due to YouTube error");
+              this.isHtml5Audio = true;
+              const bgAudio = document.getElementById('bgAudioPlayer');
+              if (bgAudio) {
+                if (!bgAudio.src.endsWith('audio/canon.mp3')) {
+                  bgAudio.src = 'audio/canon.mp3';
+                  bgAudio.load();
+                }
+                bgAudio.muted = this.timerMuted;
+                if (!this.timerMuted) bgAudio.volume = 1.0;
+                bgAudio.play().catch(e => console.warn(e));
+              }
+            }
           }
         }
       });
@@ -7724,11 +7748,19 @@ class App {
             rel: 0,
             showinfo: 0,
             enablejsapi: 1,
-            origin: window.location.origin
+            origin: validOrigin
           },
           events: {
-            onReady: () => {
+            onReady: (event) => {
               this.ytBellReady = true;
+              try {
+                if (event && event.target && typeof event.target.getIframe === 'function') {
+                  const iframe = event.target.getIframe();
+                  if (iframe) {
+                    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                  }
+                }
+              } catch (e) {}
               if (this.playerBell && typeof this.playerBell.pauseVideo === 'function') {
                 this.playerBell.pauseVideo();
               }
@@ -7789,11 +7821,21 @@ class App {
     this.currentMusicUrl = url;
     const bgAudio = document.getElementById('bgAudioPlayer');
     
-    // 若為直連音訊 (MP3 或非 YouTube 網址)
-    if (url && (url.includes('.mp3') || url.includes('pixabay') || !url.includes('youtu'))) {
+    // 若為直連音訊 (MP3, OGG, WAV, 本機 audio/ 或非 YouTube 網址)
+    const isAudioFile = url && (
+      url.endsWith('.mp3') ||
+      url.includes('.mp3?') ||
+      url.endsWith('.ogg') ||
+      url.endsWith('.wav') ||
+      url.startsWith('audio/') ||
+      url.includes('/audio/') ||
+      !url.includes('youtu')
+    );
+
+    if (isAudioFile) {
       this.isHtml5Audio = true;
       if (bgAudio) {
-        if (bgAudio.src !== url) {
+        if (!bgAudio.src.endsWith(url)) {
           bgAudio.src = url;
           bgAudio.load();
         }
@@ -7875,9 +7917,14 @@ class App {
 
         this.currentAudioPlaying = 'canon';
 
+        const musicSrc = this.currentMusicUrl || 'audio/canon.mp3';
         // 優先使用原生 HTML5 音訊引擎 (100% 必定響起)
-        if (this.isHtml5Audio || !this.currentMusicUrl || this.currentMusicUrl.includes('.mp3')) {
+        if (this.isHtml5Audio || musicSrc.includes('.mp3') || musicSrc.startsWith('audio/') || !musicSrc.includes('youtu')) {
           if (bgAudio) {
+            if (!bgAudio.src.endsWith(musicSrc)) {
+              bgAudio.src = musicSrc;
+              bgAudio.load();
+            }
             bgAudio.muted = this.timerMuted;
             if (!this.timerMuted) bgAudio.volume = 1.0;
             const playPromise = bgAudio.play();
@@ -7983,7 +8030,12 @@ class App {
     }
 
     const bellAudio = document.getElementById('bellAudioPlayer');
+    let playedHtml5 = false;
     if (bellAudio) {
+      if (!bellAudio.src.endsWith('audio/bell.mp3')) {
+        bellAudio.src = 'audio/bell.mp3';
+        bellAudio.load();
+      }
       bellAudio.currentTime = 0;
       bellAudio.muted = false;
       bellAudio.volume = 1.0;
@@ -7992,12 +8044,20 @@ class App {
       };
       const playPromise = bellAudio.play();
       if (playPromise !== undefined) {
+        playedHtml5 = true;
         playPromise.catch(err => {
-          console.warn("HTML5 bellAudioPlayer play catch:", err);
+          console.warn("HTML5 bellAudioPlayer play catch, fallback to YouTube:", err);
+          this.playYoutubeClassBell();
         });
       }
     }
 
+    if (!playedHtml5) {
+      this.playYoutubeClassBell();
+    }
+  }
+
+  playYoutubeClassBell() {
     if (this.ytBellReady && this.playerBell) {
       try {
         if (typeof this.playerBell.loadVideoById === 'function') {
