@@ -95,10 +95,8 @@
   }
 
   const DEFAULT_TIMER_MUSIC = [
-    { category: '本機推薦', title: '🎵 帕海貝爾 - 卡農 (本機保證版)', url: 'audio/canon.mp3' },
-    { category: '本機推薦', title: '🎵 專注 Lofi (本機版)', url: 'audio/lofi.mp3' },
-    { category: '本機推薦', title: '🎵 放鬆鋼琴 (本機版)', url: 'audio/piano.mp3' },
     { category: '巴洛克', title: '🎵 帕海貝爾 - 卡農 (YouTube)', url: 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1' },
+    { category: '巴洛克', title: '🎵 帕海貝爾 - 卡農 (本機版)', url: 'audio/canon.mp3' },
     { category: '巴洛克', title: '🎵 英格蘭民謠 - 綠袖子', url: 'https://www.youtube.com/watch?v=GUrkvBPXmDQ' },
     { category: '巴洛克', title: '🎵 韓德爾 - 水上音樂', url: 'https://www.youtube.com/watch?v=1h4mAceHmrI' },
     { category: '巴洛克', title: '🎵 海頓 - 降E大調小號協奏曲「快板」', url: 'https://www.youtube.com/watch?v=Uum5rmPLVZw' },
@@ -121,7 +119,7 @@
 
   class TimerMusicManager {
     constructor() {
-      this.STORAGE_KEY = 'timer_music_playlist_v3';
+      this.STORAGE_KEY = 'timer_music_playlist_v4';
       this.searchKeyword = '';
       this.editingIndex = -1;
     }
@@ -139,20 +137,33 @@
             return parsed;
           }
         }
-        // 自動遷移舊版 v2 清單
-        const oldV2 = localStorage.getItem('timer_music_playlist_v2');
-        if (oldV2) {
-          const parsedOld = JSON.parse(oldV2);
+        // 自動遷移舊版 v3 / v2 清單
+        const oldStored = localStorage.getItem('timer_music_playlist_v3') || localStorage.getItem('timer_music_playlist_v2');
+        if (oldStored) {
+          const parsedOld = JSON.parse(oldStored);
           if (Array.isArray(parsedOld) && parsedOld.length > 0) {
-            // 過濾掉失效的 pixabay 連結，並確保有本機保證版音軌
-            const filtered = parsedOld.filter(item => !item.url.includes('pixabay'));
-            const hasCanon = filtered.some(item => item.url === 'audio/canon.mp3');
-            if (!hasCanon) {
-              filtered.unshift(
-                { category: '本機推薦', title: '🎵 帕海貝爾 - 卡農 (本機保證版)', url: 'audio/canon.mp3' },
-                { category: '本機推薦', title: '🎵 專注 Lofi (本機版)', url: 'audio/lofi.mp3' },
-                { category: '本機推薦', title: '🎵 放鬆鋼琴 (本機版)', url: 'audio/piano.mp3' }
-              );
+            // 移除失效的 pixabay 連結以及移除 lofi / piano 本機曲目
+            let filtered = parsedOld.filter(item => 
+              !item.url.includes('pixabay') && 
+              !item.url.includes('lofi.mp3') && 
+              !item.url.includes('piano.mp3')
+            );
+            // 將本機卡農移至巴洛克分類，緊接在 YouTube 卡農下方
+            const canonLocalIndex = filtered.findIndex(item => item.url === 'audio/canon.mp3');
+            let canonLocalItem = null;
+            if (canonLocalIndex !== -1) {
+              canonLocalItem = filtered.splice(canonLocalIndex, 1)[0];
+            } else {
+              canonLocalItem = { category: '巴洛克', title: '🎵 帕海貝爾 - 卡農 (本機版)', url: 'audio/canon.mp3' };
+            }
+            canonLocalItem.category = '巴洛克';
+            canonLocalItem.title = '🎵 帕海貝爾 - 卡農 (本機版)';
+
+            const ytCanonIndex = filtered.findIndex(item => item.url.includes('MnhXZRw_ATU'));
+            if (ytCanonIndex !== -1) {
+              filtered.splice(ytCanonIndex + 1, 0, canonLocalItem);
+            } else {
+              filtered.unshift(canonLocalItem);
             }
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filtered));
             return filtered;
@@ -254,9 +265,8 @@
     downloadTemplate() {
       let csv = '\uFEFF';
       csv += '曲目分類,曲目名稱,音樂網址\r\n';
-      csv += '"本機推薦","🎵 帕海貝爾 - 卡農 (本機保證版)","audio/canon.mp3"\r\n';
-      csv += '"本機推薦","🎵 專注 Lofi (本機版)","audio/lofi.mp3"\r\n';
       csv += '"巴洛克","🎵 帕海貝爾 - 卡農 (YouTube)","https://www.youtube.com/watch?v=MnhXZRw_ATU"\r\n';
+      csv += '"巴洛克","🎵 帕海貝爾 - 卡農 (本機版)","audio/canon.mp3"\r\n';
       csv += '"古典鋼琴","🎵 理查克萊德門 - 夢中的婚禮","https://www.youtube.com/watch?v=HJDLHuixqG8"\r\n';
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -345,7 +355,7 @@
       const select = document.getElementById('timerMusicSelect');
       if (!select) return;
 
-      const currentVal = selectedUrl || select.value || 'audio/canon.mp3';
+      const currentVal = selectedUrl || select.value || 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1';
       const playlist = this.getPlaylist();
 
       // 依分類分組
