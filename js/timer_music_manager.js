@@ -95,7 +95,10 @@
   }
 
   const DEFAULT_TIMER_MUSIC = [
-    { category: '巴洛克', title: '🎵 帕海貝爾 - 卡農', url: 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1' },
+    { category: '本機推薦', title: '🎵 帕海貝爾 - 卡農 (本機保證版)', url: 'audio/canon.mp3' },
+    { category: '本機推薦', title: '🎵 專注 Lofi (本機版)', url: 'audio/lofi.mp3' },
+    { category: '本機推薦', title: '🎵 放鬆鋼琴 (本機版)', url: 'audio/piano.mp3' },
+    { category: '巴洛克', title: '🎵 帕海貝爾 - 卡農 (YouTube)', url: 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1' },
     { category: '巴洛克', title: '🎵 英格蘭民謠 - 綠袖子', url: 'https://www.youtube.com/watch?v=GUrkvBPXmDQ' },
     { category: '巴洛克', title: '🎵 韓德爾 - 水上音樂', url: 'https://www.youtube.com/watch?v=1h4mAceHmrI' },
     { category: '巴洛克', title: '🎵 海頓 - 降E大調小號協奏曲「快板」', url: 'https://www.youtube.com/watch?v=Uum5rmPLVZw' },
@@ -113,14 +116,12 @@
     { category: '台語經典', title: '🎵 經典台語 - 雪中紅', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1466s' },
     { category: '台語經典', title: '🎵 經典台語 - 舊情也綿綿', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1687s' },
     { category: '台語經典', title: '🎵 經典台語 - 無字的情批', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=1994s' },
-    { category: '台語經典', title: '🎵 經典台語 - 繁華攏是夢', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=2479s' },
-    { category: '輕音樂', title: '🎵 專注 Lofi', url: 'https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-study-112191.mp3' },
-    { category: '輕音樂', title: '🎵 爵士鋼琴', url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=soft-relaxing-piano-jazz-11428.mp3' }
+    { category: '台語經典', title: '🎵 經典台語 - 繁華攏是夢', url: 'https://www.youtube.com/watch?v=lGbrMl8PAYA&t=2479s' }
   ];
 
   class TimerMusicManager {
     constructor() {
-      this.STORAGE_KEY = 'timer_music_playlist_v2';
+      this.STORAGE_KEY = 'timer_music_playlist_v3';
       this.searchKeyword = '';
       this.editingIndex = -1;
     }
@@ -136,6 +137,25 @@
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
             return parsed;
+          }
+        }
+        // 自動遷移舊版 v2 清單
+        const oldV2 = localStorage.getItem('timer_music_playlist_v2');
+        if (oldV2) {
+          const parsedOld = JSON.parse(oldV2);
+          if (Array.isArray(parsedOld) && parsedOld.length > 0) {
+            // 過濾掉失效的 pixabay 連結，並確保有本機保證版音軌
+            const filtered = parsedOld.filter(item => !item.url.includes('pixabay'));
+            const hasCanon = filtered.some(item => item.url === 'audio/canon.mp3');
+            if (!hasCanon) {
+              filtered.unshift(
+                { category: '本機推薦', title: '🎵 帕海貝爾 - 卡農 (本機保證版)', url: 'audio/canon.mp3' },
+                { category: '本機推薦', title: '🎵 專注 Lofi (本機版)', url: 'audio/lofi.mp3' },
+                { category: '本機推薦', title: '🎵 放鬆鋼琴 (本機版)', url: 'audio/piano.mp3' }
+              );
+            }
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filtered));
+            return filtered;
           }
         }
       } catch (e) {
@@ -234,9 +254,10 @@
     downloadTemplate() {
       let csv = '\uFEFF';
       csv += '曲目分類,曲目名稱,音樂網址\r\n';
-      csv += '"巴洛克","🎵 帕海貝爾 - 卡農","https://www.youtube.com/watch?v=MnhXZRw_ATU"\r\n';
+      csv += '"本機推薦","🎵 帕海貝爾 - 卡農 (本機保證版)","audio/canon.mp3"\r\n';
+      csv += '"本機推薦","🎵 專注 Lofi (本機版)","audio/lofi.mp3"\r\n';
+      csv += '"巴洛克","🎵 帕海貝爾 - 卡農 (YouTube)","https://www.youtube.com/watch?v=MnhXZRw_ATU"\r\n';
       csv += '"古典鋼琴","🎵 理查克萊德門 - 夢中的婚禮","https://www.youtube.com/watch?v=HJDLHuixqG8"\r\n';
-      csv += '"輕音樂","🎵 專注 Lofi (MP3)","https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3"\r\n';
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -324,7 +345,7 @@
       const select = document.getElementById('timerMusicSelect');
       if (!select) return;
 
-      const currentVal = selectedUrl || select.value || 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1';
+      const currentVal = selectedUrl || select.value || 'audio/canon.mp3';
       const playlist = this.getPlaylist();
 
       // 依分類分組
