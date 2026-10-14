@@ -7133,7 +7133,7 @@ class App {
         }
         
         // 同步音樂來源
-        this.updateMusicSource(data.musicUrl || 'audio/canon.mp3');
+        this.updateMusicSource(data.musicUrl || 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1');
         
         // Sync inputs in admin if not active focus
         const minsInput = document.getElementById('timerMinutes');
@@ -7478,7 +7478,7 @@ class App {
       const duration = mins * 60;
       
       const musicSelect = document.getElementById('timerMusicSelect');
-      let musicUrl = 'audio/canon.mp3'; // Default Canon (Local)
+      let musicUrl = 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1'; // Default Canon (YouTube)
       if (musicSelect) {
         if (musicSelect.value === 'custom') {
           const customInput = document.getElementById('timerMusicCustomUrl');
