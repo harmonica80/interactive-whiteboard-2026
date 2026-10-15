@@ -684,7 +684,7 @@
                 <div class="admin-cat-title">
                   <span>🏫</span>
                   <span>班級管理</span>
-                  <span class="admin-cat-badge">5 個功能</span>
+                  <span class="admin-cat-badge">6 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -737,6 +737,16 @@
                     </div>
                     <div class="admin-feature-card-title">E. 系統重設與備份管理</div>
                     <div class="admin-feature-card-desc">清除所有課堂資料（提問、測驗、圖片及白板），或匯出/匯入 JSON 課堂備份記錄。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+
+                  <!-- F. 教師身分與密碼安全設定 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('classSecurity')">
+                    <div class="admin-feature-icon-box">
+                      <img src="images/admin_icons/class_security.svg" width="64" height="64" alt="教師身分與密碼安全設定">
+                    </div>
+                    <div class="admin-feature-card-title">F. 教師身分與密碼安全設定</div>
+                    <div class="admin-feature-card-desc">自訂教師專屬密碼（多班級通用）、密碼提示、安全提問自救與防暴力破解保護。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
                 </div>
@@ -925,6 +935,7 @@
                     <option value="classCopy">C. 跨班教材與測驗複製(多班級一鍵同步)</option>
                     <option value="classSound">D. 測驗與互動音效設定</option>
                     <option value="systemReset">E. 系統重設與備份管理</option>
+                    <option value="classSecurity">F. 教師身分與密碼安全設定</option>
                   </optgroup>
                   <optgroup label="測驗出題管理">
                     <option value="quizChoice">A. 選擇題測驗</option>
@@ -1492,6 +1503,156 @@
                     <input type="file" id="importRecordInput" accept=".json" style="display: none;" onchange="adminImportRecord(event)">
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- F. 教師身分與密碼安全設定 (全頁模式) -->
+          <div class="admin-section admin-section-collapsible collapsed" id="adminSecuritySection">
+            <div class="admin-section-header">
+              <h3>🛡️ 教師身分與管理員密碼安全設定</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.6;">
+                🛡️ <strong>認老師架構</strong>：每位老師只需設定一組專屬管理員密碼，由您所建立登記的所有班級白板將自動套用此密碼！支援 SHA-256 加密存儲、防暴力破解保護與雙重自救救援機制。
+              </p>
+
+              <!-- 目前身分狀態與保護資訊卡片 -->
+              <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 14px; padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 24px;">👨‍🏫</span>
+                    <div>
+                      <h4 style="margin: 0; font-size: 16px; font-weight: bold; color: var(--text-primary);">教師身分與保護狀態</h4>
+                      <div style="font-size: 12px; color: var(--text-secondary);">雲端白板管理員設定</div>
+                    </div>
+                  </div>
+                  <div id="secPasswordStatusBadge">
+                    <span style="background: rgba(255, 149, 0, 0.15); color: #d97706; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(255, 149, 0, 0.4); display: inline-flex; align-items: center; gap: 4px;">
+                      載入狀態中...
+                    </span>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 14px;">
+                  <div>
+                    <label for="secTeacherNameInput" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+                      🏷️ 教師稱呼 / 暱稱：
+                    </label>
+                    <input type="text" id="secTeacherNameInput" class="question-input" placeholder="例：林老師 或 陳主任" style="margin: 0; width: 100%; font-size: 14px; font-weight: bold;" maxlength="30">
+                  </div>
+                  <div>
+                    <label for="secTeacherIdDisplay" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-secondary);">
+                      🔑 教師系統代碼 (唯讀識別碼)：
+                    </label>
+                    <input type="text" id="secTeacherIdDisplay" class="question-input" readonly style="margin: 0; width: 100%; font-size: 13px; font-family: monospace; background: var(--bg-input); opacity: 0.85; color: var(--text-secondary);">
+                  </div>
+                </div>
+
+                <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span>🏫 <strong>此密碼涵蓋班級：</strong></span>
+                  <div id="secBoundClassesInfo" style="display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                    載入班級中...
+                  </div>
+                </div>
+              </div>
+
+              <!-- 兩欄式設定網格：自訂密碼 vs 安全提問自救 -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 22px;">
+                <!-- 左欄：修改管理員專屬密碼 -->
+                <div style="background: var(--bg-card); border: 1.5px solid rgba(0, 122, 255, 0.25); border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,122,255,0.04);">
+                  <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: var(--accent-color); display: flex; align-items: center; gap: 8px;">
+                    <span>🔐</span> 設定新管理員密碼
+                  </h4>
+                  <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 14px 0; line-height: 1.5;">
+                    若不修改請保持空白。新密碼將以 SHA-256 雜湊存儲，不可逆、不存明文。
+                  </p>
+
+                  <div style="margin-bottom: 12px;">
+                    <label for="secNewPasswordInput" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+                      新管理員密碼：
+                    </label>
+                    <div style="position: relative;">
+                      <input type="password" id="secNewPasswordInput" class="question-input" placeholder="至少 4 碼 (例: 自訂英數)" style="margin: 0; width: 100%; padding-right: 40px; font-size: 14px;">
+                      <button type="button" onclick="window.app.togglePasswordVisibility('secNewPasswordInput', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1;" title="切換顯示/隱藏密碼">👁️</button>
+                    </div>
+                  </div>
+
+                  <div style="margin-bottom: 12px;">
+                    <label for="secNewPasswordConfirmInput" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+                      再次確認新密碼：
+                    </label>
+                    <div style="position: relative;">
+                      <input type="password" id="secNewPasswordConfirmInput" class="question-input" placeholder="請再次輸入相同密碼" style="margin: 0; width: 100%; padding-right: 40px; font-size: 14px;">
+                      <button type="button" onclick="window.app.togglePasswordVisibility('secNewPasswordConfirmInput', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1;" title="切換顯示/隱藏密碼">👁️</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="secPasswordHintInput" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+                      💡 密碼自訂提示 (選填，忘記時可提示自己)：
+                    </label>
+                    <input type="text" id="secPasswordHintInput" class="question-input" placeholder="例：學校代碼加生日末碼" style="margin: 0; width: 100%; font-size: 13px;" maxlength="60">
+                  </div>
+                </div>
+
+                <!-- 右欄：忘記密碼安全提問自救設定 -->
+                <div style="background: var(--bg-card); border: 1.5px solid rgba(52, 199, 89, 0.25); border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(52,199,89,0.04);">
+                  <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #16a34a; display: flex; align-items: center; gap: 8px;">
+                    <span>🛡️</span> 忘記密碼自救提問 (安全問題)
+                  </h4>
+                  <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 14px 0; line-height: 1.5;">
+                    當您不慎忘記密碼時，無需外部郵件，只要正確回答此問題即可立即重設密碼！
+                  </p>
+
+                  <div style="margin-bottom: 12px;">
+                    <label for="secSecurityQuestionSelect" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+                      選擇安全問題：
+                    </label>
+                    <select id="secSecurityQuestionSelect" onchange="window.app.onSecurityQuestionSelectChange(this.value)" style="width: 100%; padding: 8px 10px; font-size: 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-weight: 500;">
+                      <option value="我的第一所任教學校名稱？">🏫 我的第一所任教學校名稱？</option>
+                      <option value="我的第一隻寵物叫什麼名字？">🐾 我的第一隻寵物叫什麼名字？</option>
+                      <option value="我最崇拜的一位歷史人物？">📜 我最崇拜的一位歷史人物？</option>
+                      <option value="我就讀的國小學校名稱？">🎒 我就讀的國小學校名稱？</option>
+                      <option value="我人生中購買的第一本書名？">📖 我人生中購買的第一本書名？</option>
+                      <option value="custom">✏️ 自訂其他題目...</option>
+                    </select>
+                    <input type="text" id="secCustomQuestionInput" class="question-input" placeholder="請輸入您的自訂安全問題題目" style="display: none; margin-top: 8px; width: 100%; font-size: 13px;">
+                  </div>
+
+                  <div>
+                    <label for="secSecurityAnswerInput" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+                      安全問題解答：
+                    </label>
+                    <input type="text" id="secSecurityAnswerInput" class="question-input" placeholder="請輸入解答（不分大小寫）" style="margin: 0; width: 100%; font-size: 14px;" maxlength="50">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                      🔒 提示：解答將進行 SHA-256 不可逆雜湊，任何人都無法在資料庫窺視明文。
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 系統安全特色小百科卡片 -->
+              <div style="background: rgba(0, 122, 255, 0.05); border: 1px dashed rgba(0, 122, 255, 0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 22px;">
+                <div style="font-size: 13px; font-weight: bold; color: var(--accent-color); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>💡</span> 多重安全守護機制說明：
+                </div>
+                <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: var(--text-secondary); line-height: 1.7;">
+                  <li><strong>防暴力破解鎖定</strong>：密碼連續輸入錯誤 5 次，系統自動安全鎖定 180 秒（3 分鐘），按鈕禁用並出現即時倒數。</li>
+                  <li><strong>單一密碼多白板通用</strong>：您日後新登記的任何班級代碼，皆自動享有此組專屬密碼，不必每班重複設定。</li>
+                  <li><strong>終極救援保障</strong>：若連安全問題都遺忘，可由系統管理員使用「超級救援金鑰」協助重設，教學進度絕不中斷。</li>
+                </ul>
+              </div>
+
+              <!-- 底部操作按鈕列 -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-top: 1px solid var(--border-color); padding-top: 18px;">
+                <button type="button" onclick="window.app.confirmResetPasswordToDefault()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                  🔄 恢復為預設密碼 (1234)
+                </button>
+                <button type="button" id="btnSaveTeacherSecuritySettings" onclick="window.app.saveTeacherSecuritySettings()" class="ask-btn" style="padding: 10px 28px; height: auto; font-size: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,122,255,0.3); display: flex; align-items: center; gap: 6px;">
+                  💾 儲存教師安全設定
+                </button>
               </div>
             </div>
           </div>
@@ -3010,6 +3171,7 @@ Python</pre>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <script src="js/firebase-config.js?v=380"></script>
+  <script src="js/teacher_auth_manager.js?v=380"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
   <script src="js/song_quiz_pool.js?v=380"></script>
@@ -3183,15 +3345,118 @@ Python</pre>
 
   <!-- 管理員密碼彈出視窗 -->
   <div id="adminPasswordModal" class="modal-overlay confirm-modal">
-    <div class="modal-content">
-      <div class="modal-body">
-        <div style="font-size: 32px; margin-bottom: 12px;">🔒</div>
-        <div style="font-weight: bold; font-size: 16px; margin-bottom: 16px; color: var(--text-primary);">請輸入管理員密碼</div>
-        <input type="password" id="adminPasswordInput" class="question-input" placeholder="密碼">
-        <div class="confirm-actions">
-          <button class="confirm-btn cancel" onclick="closeAdminPasswordModal()">取消</button>
-          <button class="confirm-btn confirm" onclick="submitAdminPassword()">確認</button>
+    <div class="modal-content" style="max-width: 420px; width: 90%; text-align: center;">
+      <div class="modal-body" style="padding: 24px 20px;">
+        <div style="font-size: 38px; margin-bottom: 8px;">🔒</div>
+        <div style="font-weight: bold; font-size: 18px; margin-bottom: 6px; color: var(--text-primary);">請輸入管理員密碼</div>
+        <div id="adminPasswordSubInfo" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
+          🏫 當前課堂身分驗證
         </div>
+
+        <!-- 防暴力破解安全鎖定警告通知盒 -->
+        <div id="adminPasswordLockoutWarning" style="display: none; background: rgba(255, 59, 48, 0.1); border: 1.5px solid #ff3b30; color: #ff3b30; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: bold; margin-bottom: 14px; line-height: 1.5;">
+          ⚠️ 連續錯誤次數過多，已被安全鎖定！請稍候再試。
+        </div>
+
+        <div style="position: relative; margin-bottom: 12px;">
+          <input type="password" id="adminPasswordInput" class="question-input" placeholder="請輸入密碼" style="margin: 0; width: 100%; font-size: 16px; padding-right: 42px; text-align: center; letter-spacing: 2px;" onkeydown="if(event.key === 'Enter') submitAdminPassword()">
+          <button type="button" onclick="window.app.togglePasswordVisibility('adminPasswordInput', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 18px; padding: 4px; line-height: 1;" title="切換顯示/隱藏密碼">👁️</button>
+        </div>
+
+        <!-- 忘記密碼自救連結 -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+          <button type="button" onclick="window.teacherAuthManager.openRecoveryModal()" style="background: transparent; border: none; color: var(--accent-color); font-size: 13px; font-weight: 600; cursor: pointer; padding: 2px 4px; text-decoration: underline;">
+            ❓ 忘記密碼？
+          </button>
+        </div>
+
+        <div class="confirm-actions" style="margin: 0;">
+          <button class="confirm-btn cancel" onclick="closeAdminPasswordModal()">取消</button>
+          <button id="btnSubmitAdminPassword" class="confirm-btn confirm" onclick="submitAdminPassword()">確認登入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 管理員忘記密碼自救與救援彈出視窗 -->
+  <div id="adminPasswordRecoveryModal" class="modal-overlay confirm-modal">
+    <div class="modal-content" style="max-width: 520px; width: 92%; text-align: left;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding: 14px 18px;">
+        <h3 style="margin: 0; font-size: 17px; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">
+          <span>🛡️</span> 管理員密碼救援與自救
+        </h3>
+        <button class="modal-close" onclick="window.teacherAuthManager.closeRecoveryModal()">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 16px 20px; max-height: 75vh; overflow-y: auto;">
+        <!-- 當前課堂身分資訊 -->
+        <div style="background: var(--bg-input); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+          <span>🎯 救援對象：<strong id="recoveryTeacherName" style="color: var(--text-primary);">載入中...</strong></span>
+          <span style="font-size: 11px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 4px;">SHA-256 安全保護</span>
+        </div>
+
+        <!-- 途徑 1：密碼提示 -->
+        <div style="background: rgba(255, 149, 0, 0.08); border-left: 4px solid #ff9500; border-radius: 6px; padding: 10px 12px; margin-bottom: 16px;">
+          <div style="font-size: 13px; font-weight: bold; color: #d97706; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <span>💡</span> 密碼記憶提示 (Hint)：
+          </div>
+          <div id="recoveryPasswordHintText" style="font-size: 13px; color: var(--text-primary); font-style: italic;">
+            載入中...
+          </div>
+        </div>
+
+        <!-- 途徑 2：安全提問自救 (不需外部郵件) -->
+        <div id="recoveryQuestionContainer" style="background: var(--bg-card); border: 1.5px solid rgba(52, 199, 89, 0.35); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+          <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #16a34a; display: flex; align-items: center; gap: 6px;">
+            <span>1️⃣</span> 途徑一：回答安全提問立即自救重設
+          </h4>
+          
+          <div style="margin-bottom: 10px;">
+            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">安全問題題目：</div>
+            <div id="recoveryQuestionLabel" style="font-size: 14px; font-weight: bold; color: var(--text-primary); background: var(--bg-input); padding: 8px 12px; border-radius: 8px;">
+              載入題目中...
+            </div>
+          </div>
+
+          <div style="margin-bottom: 10px;">
+            <input type="text" id="recoveryQuestionAnswer" class="question-input" placeholder="請輸入答案 (不分大小寫)" style="margin: 0; width: 100%; font-size: 13px;">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <input type="password" id="recoveryNewPassword" class="question-input" placeholder="新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 13px;">
+            <input type="password" id="recoveryNewPasswordConfirm" class="question-input" placeholder="確認新密碼" style="margin: 0; width: 100%; font-size: 13px;">
+          </div>
+
+          <button type="button" class="ask-btn" onclick="window.teacherAuthManager.submitQuestionRecovery()" style="width: 100%; height: 36px; font-size: 13px; font-weight: bold; border-radius: 8px; justify-content: center;">
+            🔑 驗證答案並重設新密碼
+          </button>
+        </div>
+
+        <!-- 途徑 3：系統超級救援金鑰重設 (Master Key) -->
+        <div style="background: var(--bg-card); border: 1.5px solid rgba(0, 122, 255, 0.3); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: bold; color: var(--accent-color); display: flex; align-items: center; gap: 6px;">
+            <span>2️⃣</span> 途徑二：系統超級救援金鑰重設 (Master Recovery)
+          </h4>
+          <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 10px 0;">
+            若連安全問題解答也遺忘，請輸入系統管理員超級救援金鑰重設。
+          </p>
+
+          <div style="margin-bottom: 10px;">
+            <input type="password" id="recoveryMasterKeyInput" class="question-input" placeholder="請輸入超級救援金鑰" style="margin: 0; width: 100%; font-size: 13px;">
+          </div>
+
+          <div style="margin-bottom: 10px;">
+            <input type="password" id="recoveryMasterNewPassword" class="question-input" placeholder="欲設定的新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 13px;">
+          </div>
+
+          <button type="button" class="ask-btn" onclick="window.teacherAuthManager.submitMasterKeyRecovery()" style="width: 100%; height: 36px; font-size: 13px; font-weight: bold; border-radius: 8px; justify-content: center; background: #4f46e5;">
+            🛡️ 驗證超級金鑰並重設密碼
+          </button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding: 12px 18px;">
+        <button class="confirm-btn cancel" onclick="window.teacherAuthManager.closeRecoveryModal()" style="margin: 0; padding: 8px 18px; font-size: 13px;">關閉</button>
       </div>
     </div>
   </div>

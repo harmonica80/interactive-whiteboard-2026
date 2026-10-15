@@ -1519,6 +1519,11 @@ class App {
       setTimeout(() => input.focus(), 300);
     }
     
+    // 即時更新課堂資訊、密碼鎖定與提示狀態
+    if (window.teacherAuthManager) {
+      window.teacherAuthManager.updatePasswordModalUI();
+    }
+
     // 立即隱藏遊戲與影片題目覆蓋層，讓使用者能正常輸入密碼
     if (this.focusGame) this.handleFocusGameSync(this.focusGame);
     if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
@@ -1533,6 +1538,11 @@ class App {
       modal.classList.remove('active');
     }
     
+    if (window.teacherAuthManager && window.teacherAuthManager.lockoutTimer) {
+      clearInterval(window.teacherAuthManager.lockoutTimer);
+      window.teacherAuthManager.lockoutTimer = null;
+    }
+
     // 關閉後台密碼對話框時重新觸發遊戲同步以確認是否需開啟遊戲覆蓋層
     if (this.focusGame) this.handleFocusGameSync(this.focusGame);
     if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
@@ -3779,6 +3789,12 @@ class App {
         category: '班級管理',
         icon: 'images/admin_icons/system_reset.svg'
       },
+      classSecurity: {
+        id: 'adminSecuritySection',
+        title: 'F. 教師身分與密碼安全設定',
+        category: '班級管理',
+        icon: 'images/admin_icons/class_security.svg'
+      },
       quizChoice: {
         id: 'adminChoiceQuizSection',
         title: 'A. 選擇題測驗',
@@ -3855,6 +3871,7 @@ class App {
       classCopy: 'adminCatBlock1',
       classSound: 'adminCatBlock1',
       systemReset: 'adminCatBlock1',
+      classSecurity: 'adminCatBlock1',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
@@ -3941,6 +3958,11 @@ class App {
     // 測驗與互動音效設定專屬 UI 同步
     if (featureKey === 'classSound') {
       this.updateSoundSettingsUI();
+    }
+
+    // 教師身分與密碼安全設定專屬 UI 同步
+    if (featureKey === 'classSecurity' && window.teacherAuthManager) {
+      window.teacherAuthManager.renderSecurityPanel();
     }
 
     // 滾動至後台頂部
@@ -13011,6 +13033,50 @@ class App {
     this.previewCurrentSelectedSounds();
   }
 
+  // ===== 教師身分與密碼安全設定 (Teacher Auth & Security Settings) =====
+  togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      if (btn) btn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      if (btn) btn.textContent = '👁️';
+    }
+  }
+
+  onSecurityQuestionSelectChange(val) {
+    const customInput = document.getElementById('secCustomQuestionInput');
+    if (customInput) {
+      if (val === 'custom') {
+        customInput.style.display = 'block';
+        customInput.focus();
+      } else {
+        customInput.style.display = 'none';
+      }
+    }
+  }
+
+  async saveTeacherSecuritySettings() {
+    if (window.teacherAuthManager) {
+      await window.teacherAuthManager.saveSecurityPanelSettings();
+    }
+  }
+
+  confirmResetPasswordToDefault() {
+    this.showConfirmModal(
+      '⚠️',
+      '恢復預設密碼',
+      '確定要將此管理員帳號密碼重設為預設的 1234 嗎？',
+      async () => {
+        if (window.teacherAuthManager) {
+          await window.teacherAuthManager.resetToDefaultPassword();
+        }
+      }
+    );
+  }
+
   // ===== 班級代碼與智慧雙軌管理 (Classroom & Dual-track Management - 嚴格管制模式) =====
   async initClassRoomUI() {
     const code = window.currentClassCode;
@@ -13643,8 +13709,10 @@ class App {
     const rawName = nameInput ? nameInput.value.trim() : '';
 
     try {
-      const created = await window.ClassRoomManager.registerClass(rawCode, rawName, '授課老師');
-      this.showNotification('🎉 開課成功', `班級【${created.code}】（${created.name}）已成功登記！學生現在可以輸入此代碼加入課堂。`);
+      const teacherId = window.teacherAuthManager ? window.teacherAuthManager.getActiveTeacherId() : '';
+      const teacherName = localStorage.getItem('wb_active_teacher_name') || '授課老師';
+      const created = await window.ClassRoomManager.registerClass(rawCode, rawName, teacherName, teacherId);
+      this.showNotification('🎉 開課成功', `班級【${created.code}】（${created.name}）已成功登記！專屬密碼已自動生效，學生現在可以輸入此代碼加入課堂。`);
       codeInput.value = '';
       if (nameInput) nameInput.value = '';
     } catch (err) {
@@ -15046,28 +15114,50 @@ function closeAdminPasswordModal() {
   window.app.closeAdminPasswordModal();
 }
 
-function submitAdminPassword() {
+async function submitAdminPassword() {
   const inputEl = document.getElementById('adminPasswordInput');
   const pwd = inputEl ? inputEl.value : '';
-  if (pwd === '1234') {
-    window.app.isAdmin = true;
-    if (window.videoQuiz) window.videoQuiz.setAdminState(true);
-    window.app.closeAdminPasswordModal(); // 關閉彈窗
-    window.app.switchToTab('panel-admin'); // 自動進入「管理後台」分頁
-    window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
-    window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
-    window.app.updateFocusGameAdminOptions();
-    window.app.updateAdminActiveActivitiesUI();
-    window.app.showNotification('成功', '已進入管理員模式！');
-    if (typeof window.app.checkTimerExpiry === 'function') {
-      window.app.checkTimerExpiry();
+
+  if (window.teacherAuthManager) {
+    const res = await window.teacherAuthManager.verifyPassword(pwd);
+    if (res.success) {
+      window.app.isAdmin = true;
+      if (window.videoQuiz) window.videoQuiz.setAdminState(true);
+      window.app.closeAdminPasswordModal(); // 關閉彈窗
+      window.app.switchToTab('panel-admin'); // 自動進入「管理後台」分頁
+      window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
+      window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
+      window.app.updateFocusGameAdminOptions();
+      window.app.updateAdminActiveActivitiesUI();
+
+      if (res.isDefault) {
+        window.app.showNotification('⚠️ 密碼安全提醒', '已登入管理員模式！目前仍使用預設密碼 1234，建議儘速至「班級管理 > F. 教師身分與密碼安全設定」設定專屬密碼。');
+      } else {
+        window.app.showNotification('🎉 驗證成功', res.message || '已進入管理員模式！');
+      }
+
+      if (typeof window.app.checkTimerExpiry === 'function') {
+        window.app.checkTimerExpiry();
+      }
+      if (window.app.timerState) {
+        window.app.updateAdminTimerUI(window.app.timerState);
+      }
+      window.app.checkSecurityRuleExpiry();
+    } else {
+      window.teacherAuthManager.updatePasswordModalUI();
+      window.app.showNotification('驗證失敗', res.message || '密碼不正確！');
     }
-    if (window.app.timerState) {
-      window.app.updateAdminTimerUI(window.app.timerState);
-    }
-    window.app.checkSecurityRuleExpiry();
   } else {
-    window.app.showNotification('錯誤', '密碼不正確！');
+    // 容錯備援舊邏輯
+    if (pwd === '1234') {
+      window.app.isAdmin = true;
+      if (window.videoQuiz) window.videoQuiz.setAdminState(true);
+      window.app.closeAdminPasswordModal();
+      window.app.switchToTab('panel-admin');
+      window.app.showNotification('成功', '已進入管理員模式！');
+    } else {
+      window.app.showNotification('錯誤', '密碼不正確！');
+    }
   }
 }
 
