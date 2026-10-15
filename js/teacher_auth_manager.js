@@ -653,10 +653,10 @@
 
         let expiryBadge = '';
         if (this.isDefaultPasswordExpired()) {
-          expiryBadge = `<div style="margin-top: 6px; font-size: 11px; color: #dc2626; background: rgba(255,59,48,0.08); border: 1px solid rgba(255,59,48,0.25); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⛔ 預設密碼 (1234) 已於 10/31 退場停用</div>`;
+          expiryBadge = `<div style="margin-top: 6px; font-size: 11px; color: #dc2626; background: rgba(255,59,48,0.08); border: 1px solid rgba(255,59,48,0.25); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⛔ 若您使用預設密碼，已於 10/31 退場停用</div>`;
         } else {
           const remDays = this.getDefaultPasswordRemainingDays();
-          expiryBadge = `<div style="margin-top: 6px; font-size: 11px; color: #d97706; background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⏳ 預設密碼 (1234) 將於 10/31 停用（剩餘 ${remDays} 天）</div>`;
+          expiryBadge = `<div style="margin-top: 6px; font-size: 11px; color: #d97706; background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⏳ 若您使用預設密碼，將於10/31停用(剩餘 ${remDays} 天)</div>`;
         }
 
         subInfo.innerHTML = `${infoText}<br>${expiryBadge}`;
@@ -710,14 +710,49 @@
     }
 
     /**
+     * 切換途徑二超級救援金鑰的展開與收合 (預設閉合)
+     */
+    toggleMasterRecoveryCollapse(forceState = null) {
+      const content = document.getElementById('masterRecoveryContent');
+      const arrow = document.getElementById('masterRecoveryCollapseArrow');
+      if (!content) return;
+
+      const isCurrentlyOpen = content.style.display !== 'none';
+      const shouldOpen = forceState !== null ? forceState : !isCurrentlyOpen;
+
+      if (shouldOpen) {
+        content.style.display = 'block';
+        if (arrow) arrow.innerHTML = '▲ 收合';
+      } else {
+        content.style.display = 'none';
+        if (arrow) arrow.innerHTML = '▼ 展開';
+      }
+    }
+
+    /**
      * 開啟忘記密碼救援彈窗
      */
     async openRecoveryModal() {
+      // 1. 先關閉或隱藏管理員密碼登入視窗，防止畫面重疊遮擋
+      if (window.app && typeof window.app.closeAdminPasswordModal === 'function') {
+        window.app.closeAdminPasswordModal();
+      } else {
+        const loginModal = document.getElementById('adminPasswordModal');
+        if (loginModal) {
+          loginModal.style.display = 'none';
+          loginModal.classList.remove('active');
+        }
+      }
+
       const modal = document.getElementById('adminPasswordRecoveryModal');
       if (!modal) return;
 
       modal.style.display = 'flex';
       modal.classList.add('active');
+      modal.style.zIndex = '3600';
+
+      // 途徑二預設保持閉合 (收合)
+      this.toggleMasterRecoveryCollapse(false);
 
       const info = await this.getRecoveryContext();
       
@@ -757,11 +792,18 @@
       modal.setAttribute('data-target-teacher-id', info.teacherId);
     }
 
-    closeRecoveryModal() {
+    closeRecoveryModal(skipReopenLogin = false) {
       const modal = document.getElementById('adminPasswordRecoveryModal');
       if (modal) {
         modal.style.display = 'none';
         modal.classList.remove('active');
+      }
+
+      // 若未成功登入管理員，且使用者關閉了救援彈窗，自動重新開啟管理員密碼登入視窗
+      if (!skipReopenLogin && (!window.app || !window.app.isAdmin)) {
+        if (window.app && typeof window.app.openAdminPasswordModal === 'function') {
+          window.app.openAdminPasswordModal();
+        }
       }
     }
 
