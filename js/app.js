@@ -15131,7 +15131,8 @@ async function submitAdminPassword() {
       window.app.updateAdminActiveActivitiesUI();
 
       if (res.isDefault) {
-        window.app.showNotification('⚠️ 密碼安全提醒', '已登入管理員模式！目前仍使用預設密碼 1234，建議儘速至「班級管理 > F. 教師身分與密碼安全設定」設定專屬密碼。');
+        const days = res.remainingDays !== undefined ? res.remainingDays : (window.teacherAuthManager ? window.teacherAuthManager.getDefaultPasswordRemainingDays() : 0);
+        window.app.showNotification('⚠️ 預設密碼落日提醒', `已登入管理員！目前仍使用預設密碼 1234，此密碼將於 2026/10/31 23:59 正式退場停用（僅剩 ${days} 天）！請儘速至「班級管理 > F. 教師身分與密碼安全設定」修改為專屬密碼。`);
       } else {
         window.app.showNotification('🎉 驗證成功', res.message || '已進入管理員模式！');
       }
@@ -15145,11 +15146,19 @@ async function submitAdminPassword() {
       window.app.checkSecurityRuleExpiry();
     } else {
       window.teacherAuthManager.updatePasswordModalUI();
-      window.app.showNotification('驗證失敗', res.message || '密碼不正確！');
+      if (res.isExpiredDefault) {
+        window.app.showNotification('⛔ 預設密碼已停用', res.message);
+      } else {
+        window.app.showNotification('驗證失敗', res.message || '密碼不正確！');
+      }
     }
   } else {
     // 容錯備援舊邏輯
     if (pwd === '1234') {
+      if (Date.now() > 1793462399000) {
+        window.app.showNotification('⛔ 密碼已停用', '預設密碼 1234 已於 2026/10/31 正式退場停用！請使用自訂密碼或忘記密碼自救。');
+        return;
+      }
       window.app.isAdmin = true;
       if (window.videoQuiz) window.videoQuiz.setAdminState(true);
       window.app.closeAdminPasswordModal();
