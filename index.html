@@ -427,7 +427,7 @@
         <div class="panel-body">
           <div class="guide-header" style="text-align: center; margin-bottom: 28px; background: var(--bg-card); padding: 24px; border-radius: 14px; border: 1px solid var(--border-color);">
             <h1 style="margin: 0 0 10px 0; color: var(--accent-color); font-size: 24px;">📚 教師專屬建置與連線指南</h1>
-            <p style="margin: 0; color: var(--text-secondary); font-size: 15px;">只需要 3 分鐘簡單 4 步驟，立刻為您的班級建立免費專屬的即時互動白板！</p>
+            <p style="margin: 0; color: var(--text-secondary); font-size: 15px;">只需 5 個簡單步驟，立刻為您的班級建立免費專屬的即時互動白板，並設定教師專屬密碼與安全自救機制！</p>
           </div>
 
           <!-- 步驟 1 -->
@@ -551,10 +551,50 @@
                 </div>
               </div>
 
-              <div class="alert-tip" style="background: rgba(255, 149, 0, 0.1); border-left: 4px solid #ff9500; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-top: 14px;">
-                💡 <strong>如何進入管理員模式？</strong><br>
-                老師點擊上方連結進入白板後，點選右上角的「⚙️ 管理後台」並輸入預設密碼 <strong><code>1234</code></strong>，即可解鎖測驗發布、清除資料、刪除提問等管理權限。一般學生直接在原頁面作答與提問即可。
+              <div class="alert-tip" style="background: rgba(0, 122, 255, 0.08); border-left: 4px solid var(--accent-color); padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-top: 16px; line-height: 1.6;">
+                💡 <strong>老師如何進入管理員模式？</strong><br>
+                點選上方專屬連結進入白板後，點選右上角「⚙️ 管理後台」進行身分驗證。首次登入可使用過渡預設密碼（或您已設定的專屬密碼），登入後請立即參閱下方<strong>【步驟 5】</strong>設定專屬密碼與安全自救問題。一般學生則直接在原頁面作答與互動即可。
               </div>
+            </div>
+          </div>
+
+          <!-- 步驟 5：登入管理後台與設定專屬密碼 -->
+          <div class="step-card" style="border-left: 6px solid #4f46e5; padding: 24px; margin-bottom: 28px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+            <div class="step-title" style="font-size: 18px; font-weight: bold; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="step-num" style="background: #4f46e5; color: white; border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(79,70,229,0.3);">5</span>
+                <span style="color: var(--text-primary); font-size: 18px; font-weight: 800;">登入管理後台並設定「教師專屬安全密碼」</span>
+              </div>
+              <span style="font-size: 12px; background: rgba(79,70,229,0.1); color: #4f46e5; border: 1px solid rgba(79,70,229,0.25); padding: 3px 10px; border-radius: 6px; font-weight: bold;">🛡️ 資安防護核心</span>
+            </div>
+
+            <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.6; padding-left: 42px;">
+              為維護班級測驗與學生資料安全，白板採用新一代 SHA-256 加密防護體系。完成建置後，請依循以下 3 階段完成專屬身分綁定：
+            </p>
+
+            <!-- 圖檔導引流程圖 -->
+            <div style="margin-left: 42px; margin-bottom: 20px;" class="step-img-box">
+              <img src="images/guide/step12_security_guide.svg" alt="步驟5 教師專屬安全設定流程" class="step-img" style="max-width: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
+            </div>
+
+            <ol style="font-size: 14px; margin: 0 0 16px 0; padding-left: 64px; color: var(--text-primary); line-height: 1.8;">
+              <li style="margin-bottom: 12px;">
+                <strong>首次進入管理後台</strong>：點選白板畫面右上角的「<span style="color: var(--accent-color); font-weight: bold;">⚙️ 管理後台</span>」按鈕。在過渡期（2026/10/31 23:59 前）可暫以系統預設密碼 <code>1234</code> 首次登入；預設密碼將於 10/31 正式退場停用。
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong>前往 F 項目設定專屬密碼</strong>：登入後，請於「班級管理」選單點選「<span style="color: #4f46e5; font-weight: bold;">F. 教師身分與密碼安全設定</span>」。在此自訂您的專屬管理密碼（至少 4 碼）。<strong>一旦設定完成，舊預設密碼即刻失效</strong>，避免他人任意進入。
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong>填寫安全提示與自救問題</strong>：強烈建議設定「密碼提示」與「安全自救問題」（例如：第一所任教學校）。若日後遺忘密碼，不需外部 Email，點選登入畫面的「❓ 忘記密碼？」即可回答題目秒自救重設！
+              </li>
+              <li style="margin-bottom: 8px;">
+                <strong>一組密碼，所有班級白板通用</strong>：同位老師所建立或綁定的多個班級白板，均自動共用您所設定的專屬密碼，免除記誦多組密碼的負擔。
+              </li>
+            </ol>
+
+            <div style="margin-left: 42px; background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text-primary); line-height: 1.6;">
+              <strong style="color: #16a34a;">💡 貼心防護小提醒：</strong>
+              本系統內建防暴力破解機制（連續輸錯 5 次將自動鎖定 3 分鐘）。若您連安全提問答案也遺忘，可聯絡系統管理員使用「系統超級救援金鑰」進行強制重設。
             </div>
           </div>
 
@@ -3380,7 +3420,7 @@ Python</pre>
   </div>
 
   <!-- 管理員忘記密碼自救與救援彈出視窗 -->
-  <div id="adminPasswordRecoveryModal" class="modal-overlay confirm-modal">
+  <div id="adminPasswordRecoveryModal" class="modal-overlay confirm-modal" style="z-index: 3600;">
     <div class="modal-content" style="max-width: 520px; width: 92%; text-align: left;">
       <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding: 14px 18px;">
         <h3 style="margin: 0; font-size: 17px; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">
@@ -3433,26 +3473,36 @@ Python</pre>
           </button>
         </div>
 
-        <!-- 途徑 3：系統超級救援金鑰重設 (Master Key) -->
-        <div style="background: var(--bg-card); border: 1.5px solid rgba(0, 122, 255, 0.3); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;">
-          <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: bold; color: var(--accent-color); display: flex; align-items: center; gap: 6px;">
-            <span>2️⃣</span> 途徑二：系統超級救援金鑰重設 (Master Recovery)
-          </h4>
-          <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 10px 0;">
-            若連安全問題解答也遺忘，請輸入系統管理員超級救援金鑰重設。
-          </p>
-
-          <div style="margin-bottom: 10px;">
-            <input type="password" id="recoveryMasterKeyInput" class="question-input" placeholder="請輸入超級救援金鑰" style="margin: 0; width: 100%; font-size: 13px;">
-          </div>
-
-          <div style="margin-bottom: 10px;">
-            <input type="password" id="recoveryMasterNewPassword" class="question-input" placeholder="欲設定的新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 13px;">
-          </div>
-
-          <button type="button" class="ask-btn" onclick="window.teacherAuthManager.submitMasterKeyRecovery()" style="width: 100%; height: 36px; font-size: 13px; font-weight: bold; border-radius: 8px; justify-content: center; background: #4f46e5;">
-            🛡️ 驗證超級金鑰並重設密碼
+        <!-- 途徑 3：系統超級救援金鑰重設 (Master Recovery) - 折疊按鈕與緊湊字級 -->
+        <div style="background: var(--bg-card); border: 1.5px solid rgba(0, 122, 255, 0.25); border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; transition: all 0.2s;">
+          <button type="button" id="btnToggleMasterRecovery" onclick="window.teacherAuthManager.toggleMasterRecoveryCollapse()" style="background: transparent; border: none; width: 100%; display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 0; outline: none;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 15px;">2️⃣</span>
+              <span style="font-size: 13.5px; font-weight: bold; color: var(--accent-color);">途徑二：系統超級救援金鑰重設 (Master Recovery)</span>
+            </div>
+            <span id="masterRecoveryCollapseArrow" style="font-size: 12px; color: var(--accent-color); font-weight: bold; background: rgba(0, 122, 255, 0.1); padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+              ▼ 展開
+            </span>
           </button>
+
+          <!-- 折疊內容容器，預設閉合隱藏 -->
+          <div id="masterRecoveryContent" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+            <p style="font-size: 11.5px; color: var(--text-secondary); margin: 0 0 10px 0; line-height: 1.5;">
+              若連安全問題解答也遺忘，請輸入系統管理員超級救援金鑰重設。
+            </p>
+
+            <div style="margin-bottom: 8px;">
+              <input type="password" id="recoveryMasterKeyInput" class="question-input" placeholder="請輸入超級救援金鑰" style="margin: 0; width: 100%; font-size: 12px; padding: 7px 10px;">
+            </div>
+
+            <div style="margin-bottom: 10px;">
+              <input type="password" id="recoveryMasterNewPassword" class="question-input" placeholder="欲設定的新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 12px; padding: 7px 10px;">
+            </div>
+
+            <button type="button" class="ask-btn" onclick="window.teacherAuthManager.submitMasterKeyRecovery()" style="width: 100%; height: 34px; font-size: 12.5px; font-weight: bold; border-radius: 8px; justify-content: center; background: #4f46e5;">
+              🛡️ 驗證超級金鑰並重設密碼
+            </button>
+          </div>
         </div>
       </div>
 
