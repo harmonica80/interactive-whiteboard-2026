@@ -8029,35 +8029,6 @@ class App {
       btn.style.background = '#7f8c8d';
     }
 
-    const bellAudio = document.getElementById('bellAudioPlayer');
-    let playedHtml5 = false;
-    if (bellAudio) {
-      if (!bellAudio.src.endsWith('audio/bell.mp3')) {
-        bellAudio.src = 'audio/bell.mp3';
-        bellAudio.load();
-      }
-      bellAudio.currentTime = 0;
-      bellAudio.muted = false;
-      bellAudio.volume = 1.0;
-      bellAudio.onended = () => {
-        this.stopClassBell();
-      };
-      const playPromise = bellAudio.play();
-      if (playPromise !== undefined) {
-        playedHtml5 = true;
-        playPromise.catch(err => {
-          console.warn("HTML5 bellAudioPlayer play catch, fallback to YouTube:", err);
-          this.playYoutubeClassBell();
-        });
-      }
-    }
-
-    if (!playedHtml5) {
-      this.playYoutubeClassBell();
-    }
-  }
-
-  playYoutubeClassBell() {
     if (this.ytBellReady && this.playerBell) {
       try {
         if (typeof this.playerBell.loadVideoById === 'function') {
