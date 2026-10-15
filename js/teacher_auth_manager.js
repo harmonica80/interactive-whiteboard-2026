@@ -417,13 +417,26 @@
             message: '管理員密碼驗證成功！'
           };
         }
+
+        // 若此班級老師已自訂專屬密碼，但使用者輸入預設密碼 1234
+        if (inputHash === DEFAULT_PASSWORD_HASH && expectedHash !== DEFAULT_PASSWORD_HASH) {
+          const record = this.recordFailedAttempt();
+          return {
+            success: false,
+            locked: record.isLocked,
+            remainingSeconds: record.remainingSeconds,
+            remainingAttempts: record.remainingAttempts,
+            message: '⛔ 此班級白板已設定專屬安全密碼，預設密碼 1234 已失效！請輸入授課老師設定的專屬密碼。'
+          };
+        }
       } else {
         // 公共課堂／未綁定教師班級：
         // 優先檢查本機活躍教師
         const activeId = this.getActiveTeacherId();
         const activeProfile = await this.getTeacherProfile(activeId);
+        const isSelfDefault = (!activeProfile.passwordHash || activeProfile.passwordHash === DEFAULT_PASSWORD_HASH);
         
-        if (activeProfile && activeProfile.passwordHash && activeProfile.passwordHash !== DEFAULT_PASSWORD_HASH) {
+        if (activeProfile && activeProfile.passwordHash && !isSelfDefault) {
           if (inputHash === activeProfile.passwordHash) {
             this.clearLockout();
             this.currentVerifiedTeacher = activeProfile;
@@ -438,6 +451,18 @@
               message: '管理員密碼驗證成功！'
             };
           }
+        }
+
+        // 若當前老師已設定專屬密碼，但輸入了預設密碼 1234
+        if (!isSelfDefault && inputHash === DEFAULT_PASSWORD_HASH) {
+          const record = this.recordFailedAttempt();
+          return {
+            success: false,
+            locked: record.isLocked,
+            remainingSeconds: record.remainingSeconds,
+            remainingAttempts: record.remainingAttempts,
+            message: '⛔ 此管理員帳號已設定專屬安全密碼，預設密碼 1234 已失效！請輸入專屬密碼。'
+          };
         }
 
         // 搜尋 Firebase 中所有教師看是否有匹配的密碼
@@ -470,8 +495,8 @@
           console.warn('比對全域教師密碼失敗:', e);
         }
 
-        // 最後比對預設密碼 '1234' (若已過期上面已攔截)
-        if (inputHash === DEFAULT_PASSWORD_HASH && !this.isDefaultPasswordExpired()) {
+        // 最後比對預設密碼 '1234' (僅在當前帳號尚未設定過專屬密碼且未過期時允許)
+        if (isSelfDefault && inputHash === DEFAULT_PASSWORD_HASH && !this.isDefaultPasswordExpired()) {
           this.clearLockout();
           this.currentVerifiedTeacher = activeProfile;
           return {
