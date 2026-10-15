@@ -1518,6 +1518,8 @@ class App {
       input.value = '';
       setTimeout(() => input.focus(), 300);
     }
+    const errBox = document.getElementById('adminPasswordErrorMsg');
+    if (errBox) errBox.style.display = 'none';
     
     // 即時更新課堂資訊、密碼鎖定與提示狀態
     if (window.teacherAuthManager) {
@@ -1537,6 +1539,8 @@ class App {
       modal.style.display = 'none';
       modal.classList.remove('active');
     }
+    const errBox = document.getElementById('adminPasswordErrorMsg');
+    if (errBox) errBox.style.display = 'none';
     
     if (window.teacherAuthManager && window.teacherAuthManager.lockoutTimer) {
       clearInterval(window.teacherAuthManager.lockoutTimer);
@@ -15146,6 +15150,11 @@ async function submitAdminPassword() {
       window.app.checkSecurityRuleExpiry();
     } else {
       window.teacherAuthManager.updatePasswordModalUI();
+      const errBox = document.getElementById('adminPasswordErrorMsg');
+      if (errBox) {
+        errBox.style.display = 'block';
+        errBox.innerHTML = res.message || '密碼不正確！';
+      }
       if (res.isExpiredDefault) {
         window.app.showNotification('⛔ 預設密碼已停用', res.message);
       } else {
