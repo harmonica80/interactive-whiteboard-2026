@@ -579,7 +579,7 @@
 
             <ol style="font-size: 14px; margin: 0 0 16px 0; padding-left: 64px; color: var(--text-primary); line-height: 1.8;">
               <li style="margin-bottom: 12px;">
-                <strong>首次進入管理後台</strong>：點選白板畫面右上角的「<span style="color: var(--accent-color); font-weight: bold;">⚙️ 管理後台</span>」按鈕。在過渡期（2026/10/31 23:59 前）可暫以系統預設密碼 <code>1234</code> 首次登入；預設密碼將於 10/31 正式退場停用。
+                <strong>首次進入管理後台</strong>：點選白板畫面右上角的「<span style="color: var(--accent-color); font-weight: bold;">⚙️ 管理後台</span>」按鈕。在過渡期（2026/10/31 23:59 前）可暫以系統預設密碼首次登入；預設密碼將於 10/31 正式退場停用。
               </li>
               <li style="margin-bottom: 12px;">
                 <strong>前往 F 項目設定專屬密碼</strong>：登入後，請於「班級管理」選單點選「<span style="color: #4f46e5; font-weight: bold;">F. 教師身分與密碼安全設定</span>」。在此自訂您的專屬管理密碼（至少 4 碼）。<strong>一旦設定完成，舊預設密碼即刻失效</strong>，避免他人任意進入。
@@ -1687,10 +1687,7 @@
               </div>
 
               <!-- 底部操作按鈕列 -->
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-top: 1px solid var(--border-color); padding-top: 18px;">
-                <button type="button" onclick="window.app.confirmResetPasswordToDefault()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                  🔄 恢復為預設密碼 (1234，過渡期至 10/31)
-                </button>
+              <div style="display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 14px; border-top: 1px solid var(--border-color); padding-top: 18px;">
                 <button type="button" id="btnSaveTeacherSecuritySettings" onclick="window.app.saveTeacherSecuritySettings()" class="ask-btn" style="padding: 10px 28px; height: auto; font-size: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,122,255,0.3); display: flex; align-items: center; gap: 6px;">
                   💾 儲存教師安全設定
                 </button>
@@ -3370,8 +3367,8 @@ Python</pre>
     </div>
   </div>
 
-  <!-- 通知彈出視窗（用於投票成功、重複投票等提示） -->
-  <div id="notifyModal" class="modal-overlay question-modal">
+  <!-- 通知彈出視窗（用於投票成功、重複投票等提示，提高 z-index 防止被任何彈窗遮擋） -->
+  <div id="notifyModal" class="modal-overlay question-modal" style="z-index: 4000;">
     <div class="modal-content">
       <div class="modal-header">
         <span id="notifyModalTitle">提示</span>
@@ -3399,8 +3396,12 @@ Python</pre>
           ⚠️ 連續錯誤次數過多，已被安全鎖定！請稍候再試。
         </div>
 
+        <!-- 密碼輸入錯誤即時提示盒 (防止被彈窗遮擋或無提示) -->
+        <div id="adminPasswordErrorMsg" style="display: none; background: rgba(255, 59, 48, 0.1); border: 1.5px solid #ff3b30; color: #ff3b30; padding: 8px 12px; border-radius: 8px; font-size: 12.5px; font-weight: bold; margin-bottom: 14px; line-height: 1.4; text-align: left;">
+        </div>
+
         <div style="position: relative; margin-bottom: 12px;">
-          <input type="password" id="adminPasswordInput" class="question-input" placeholder="請輸入密碼" style="margin: 0; width: 100%; font-size: 16px; padding-right: 42px; text-align: center; letter-spacing: 2px;" onkeydown="if(event.key === 'Enter') submitAdminPassword()">
+          <input type="password" id="adminPasswordInput" class="question-input" placeholder="請輸入密碼" style="margin: 0; width: 100%; font-size: 16px; padding-right: 42px; text-align: center; letter-spacing: 2px;" onkeydown="if(event.key === 'Enter') submitAdminPassword()" oninput="const eBox = document.getElementById('adminPasswordErrorMsg'); if(eBox) eBox.style.display = 'none';">
           <button type="button" onclick="window.app.togglePasswordVisibility('adminPasswordInput', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 18px; padding: 4px; line-height: 1;" title="切換顯示/隱藏密碼">👁️</button>
         </div>
 
@@ -3420,7 +3421,7 @@ Python</pre>
   </div>
 
   <!-- 管理員忘記密碼自救與救援彈出視窗 -->
-  <div id="adminPasswordRecoveryModal" class="modal-overlay confirm-modal" style="z-index: 3600;">
+  <div id="adminPasswordRecoveryModal" class="modal-overlay recovery-modal" style="z-index: 3600;">
     <div class="modal-content" style="max-width: 520px; width: 92%; text-align: left;">
       <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding: 14px 18px;">
         <h3 style="margin: 0; font-size: 17px; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">
@@ -3492,11 +3493,11 @@ Python</pre>
             </p>
 
             <div style="margin-bottom: 8px;">
-              <input type="password" id="recoveryMasterKeyInput" class="question-input" placeholder="請輸入超級救援金鑰" style="margin: 0; width: 100%; font-size: 12px; padding: 7px 10px;">
+              <input type="password" id="recoveryMasterKeyInput" class="question-input" placeholder="請輸入超級救援金鑰" style="margin: 0; width: 100%; font-size: 11px !important; letter-spacing: normal !important; padding: 6px 10px !important; height: 32px !important; text-align: left !important;">
             </div>
 
             <div style="margin-bottom: 10px;">
-              <input type="password" id="recoveryMasterNewPassword" class="question-input" placeholder="欲設定的新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 12px; padding: 7px 10px;">
+              <input type="password" id="recoveryMasterNewPassword" class="question-input" placeholder="欲設定的新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 11px !important; letter-spacing: normal !important; padding: 6px 10px !important; height: 32px !important; text-align: left !important;">
             </div>
 
             <button type="button" class="ask-btn" onclick="window.teacherAuthManager.submitMasterKeyRecovery()" style="width: 100%; height: 34px; font-size: 12.5px; font-weight: bold; border-radius: 8px; justify-content: center; background: #4f46e5;">
