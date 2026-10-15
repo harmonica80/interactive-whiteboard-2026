@@ -136,7 +136,7 @@ window.ClassRoomManager = {
   },
 
   // 老師登記新班級 (開課)
-  async registerClass(code, name = '', createdBy = '老師') {
+  async registerClass(code, name = '', createdBy = '老師', ownerTeacherId = '') {
     const sanitized = this.sanitizeClassCode(code);
     if (!sanitized) throw new Error('班級代碼不可為空或包含不合法字元！');
     
@@ -151,6 +151,7 @@ window.ClassRoomManager = {
       name: (name || sanitized).trim(),
       createdAt: Date.now(),
       createdBy: createdBy || '老師',
+      ownerTeacherId: ownerTeacherId || '',
       status: 'active'
     };
 
