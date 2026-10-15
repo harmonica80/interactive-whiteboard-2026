@@ -1641,6 +1641,7 @@
                 <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: var(--text-secondary); line-height: 1.7;">
                   <li><strong>防暴力破解鎖定</strong>：密碼連續輸入錯誤 5 次，系統自動安全鎖定 180 秒（3 分鐘），按鈕禁用並出現即時倒數。</li>
                   <li><strong>單一密碼多白板通用</strong>：您日後新登記的任何班級代碼，皆自動享有此組專屬密碼，不必每班重複設定。</li>
+                  <li><strong>預設密碼落日退場機制</strong>：初始密碼 1234 僅作為過渡相容，將於 <strong>2026/10/31 23:59</strong> 正式全面停用！屆時無法再使用 1234 登入或設定，防止未修改之安全風險。</li>
                   <li><strong>終極救援保障</strong>：若連安全問題都遺忘，可由系統管理員使用「超級救援金鑰」協助重設，教學進度絕不中斷。</li>
                 </ul>
               </div>
@@ -1648,7 +1649,7 @@
               <!-- 底部操作按鈕列 -->
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-top: 1px solid var(--border-color); padding-top: 18px;">
                 <button type="button" onclick="window.app.confirmResetPasswordToDefault()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                  🔄 恢復為預設密碼 (1234)
+                  🔄 恢復為預設密碼 (1234，過渡期至 10/31)
                 </button>
                 <button type="button" id="btnSaveTeacherSecuritySettings" onclick="window.app.saveTeacherSecuritySettings()" class="ask-btn" style="padding: 10px 28px; height: auto; font-size: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,122,255,0.3); display: flex; align-items: center; gap: 6px;">
                   💾 儲存教師安全設定
