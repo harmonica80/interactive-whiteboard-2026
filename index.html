@@ -640,9 +640,8 @@
               <span id="adminCurrentScopeBadge" class="mode-display-pill one-off" style="font-size: 12px;">🌱 目前管理空間：一次性課堂（公共空間）</span>
             </div>
             <!-- 目前進行中的測驗與教學互動顯示區塊（紅框處） -->
-            <div id="adminActiveActivitiesContainer" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: flex-end; margin: 0 8px;">
+            <div id="adminActiveActivitiesContainer" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: flex-end; margin: 0;">
             </div>
-            <button class="preset-btn" onclick="logoutAdmin()" style="border-color: var(--danger-color); color: var(--danger-color); padding: 6px 12px; font-weight: bold; flex-shrink: 0;">登出管理員</button>
           </div>
           
           <!-- 後台功能總覽目錄 (Dashboard View) -->
@@ -2115,11 +2114,14 @@
                 </div>
               </div>
 
-              <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-                <button onclick="window.app.startBuzzGameAdmin()" style="flex: 1; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 38px;">
+              <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button onclick="window.app.startBuzzGameAdmin()" style="flex: 1; min-width: 140px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 38px;">
                   🚀 開始搶答
                 </button>
-                <button onclick="window.app.endBuzzGameAdmin()" style="flex: 1; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 38px;">
+                <button onclick="window.app.previewStudentActivity('gameBuzz')" style="flex: 1; min-width: 140px; justify-content: center; background: #4f46e5; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(79,70,229,0.28); height: 38px;">
+                  👁️ 前台搶答畫面
+                </button>
+                <button onclick="window.app.endBuzzGameAdmin()" style="flex: 1; min-width: 140px; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 38px;">
                   🛑 停止搶答
                 </button>
               </div>
@@ -2410,11 +2412,14 @@
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">選擇「位置序列記憶」時使用：學生需記住閃爍格子，並依正常或反向順序點回。</div>
               </div>
 
-              <div style="display: flex; gap: 8px;">
-                <button onclick="window.app.startFocusGame()" style="flex: 1; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 38px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button onclick="window.app.startFocusGame()" style="flex: 1; min-width: 140px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 38px;">
                   🚀 開始遊戲
                 </button>
-                <button onclick="window.app.endFocusGame()" style="flex: 1; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 38px;">
+                <button onclick="window.app.previewStudentActivity('gameFocus')" style="flex: 1; min-width: 140px; justify-content: center; background: #4f46e5; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(79,70,229,0.28); height: 38px;">
+                  👁️ 前台測驗畫面
+                </button>
+                <button onclick="window.app.endFocusGame()" style="flex: 1; min-width: 140px; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 38px;">
                   ❌ 結束遊戲
                 </button>
               </div>
@@ -3675,8 +3680,15 @@ Python</pre>
   <div id="focusGameOverlay" class="modal-overlay" style="display: none; background: rgba(240, 244, 248, 0.98); align-items: center; justify-content: center; backdrop-filter: blur(8px); overflow-y: auto;">
     <div id="focusGameOverlayContent" style="width: 95%; max-width: 600px; padding: 24px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--border-color); position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; max-height: calc(100vh - 105px); overflow-y: auto;">
       
-      <!-- 教師強行關閉按鈕，只對教師顯示 -->
-      <button id="focusGameTeacherCloseBtn" onclick="window.app.endFocusGame()" style="display: none; position: absolute; top: 15px; right: 15px; background: var(--danger-color); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(255,59,48,0.2);">結束遊戲 ❌</button>
+      <!-- 教師前台預覽快捷控場列（僅對已登入管理員顯示，支援一鍵切回後台或結束遊戲） -->
+      <div id="focusGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: linear-gradient(90deg, rgba(79, 70, 229, 0.1) 0%, rgba(0, 122, 255, 0.08) 100%); border: 1.5px solid rgba(79, 70, 229, 0.28); border-radius: 12px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <span style="font-size: 12px; font-weight: 800; color: #4f46e5; display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <button type="button" onclick="window.app.returnToAdminFromPreview()" style="background: #4f46e5; color: white; border: none; padding: 5px 11px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(79,70,229,0.25);">🔙 返回後台控場</button>
+          <button type="button" onclick="window.app.openAdminDashboardDirect()" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">🗂️ 後台總覽</button>
+          <button type="button" onclick="window.app.endFocusGame()" style="background: var(--danger-color); color: white; border: none; padding: 5px 11px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(255,59,48,0.2);">結束遊戲 ❌</button>
+        </div>
+      </div>
 
       <!-- 1. 倒數階段畫面 -->
       <div id="focusCountdownArea" style="display: none; width: 100%; overflow: hidden;">
@@ -3716,7 +3728,7 @@ Python</pre>
         <div id="focusNumberGridContainer" style="display: flex; width: 100%; flex-direction: column; align-items: center;">
           <div id="focusNumberGridHeader" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px; padding: 0 10px; box-sizing: border-box;">
             <div style="font-size: 16px; font-weight: bold; color: var(--text-primary);">
-              目標：依序點擊數字 <span id="focusCurrentTarget" style="color: var(--accent-color); font-size: 20px; font-weight: 900;">1</span>
+              <span id="focusTargetPrefix">目標：依序點擊數字 </span><span id="focusCurrentTarget" style="color: var(--accent-color); font-size: 20px; font-weight: 900;">1</span>
             </div>
             <div style="font-size: 18px; font-weight: 900; color: var(--danger-color); font-family: monospace;">
               ⏱️ <span id="focusTimer">0.00</span> 秒
@@ -3794,8 +3806,15 @@ Python</pre>
   <div id="buzzGameOverlay" class="modal-overlay" style="display: none; background: rgba(240, 244, 248, 0.98); align-items: center; justify-content: center; backdrop-filter: blur(8px); overflow-y: auto;">
     <div id="buzzGameOverlayContent" style="width: 95%; max-width: 650px; padding: 30px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); border: 1px solid var(--border-color); position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; max-height: calc(100vh - 105px); overflow-y: auto; overflow-x: hidden;">
       
-      <!-- 教師結束按鈕，僅對教師顯示 -->
-      <button id="buzzGameTeacherCloseBtn" onclick="window.app.endBuzzGameAdmin()" style="display: none; position: absolute; top: 15px; right: 15px; background: var(--danger-color); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(255,59,48,0.2);">結束搶答 ❌</button>
+      <!-- 教師前台預覽快捷控場列，僅對教師顯示 -->
+      <div id="buzzGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: linear-gradient(90deg, rgba(79, 70, 229, 0.1) 0%, rgba(0, 122, 255, 0.08) 100%); border: 1.5px solid rgba(79, 70, 229, 0.28); border-radius: 12px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <span style="font-size: 12px; font-weight: 800; color: #4f46e5; display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <button type="button" onclick="window.app.returnToAdminFromPreview()" style="background: #4f46e5; color: white; border: none; padding: 5px 11px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(79,70,229,0.25);">🔙 返回後台控場</button>
+          <button type="button" onclick="window.app.openAdminDashboardDirect()" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">🗂️ 後台總覽</button>
+          <button type="button" onclick="window.app.endBuzzGameAdmin()" style="background: var(--danger-color); color: white; border: none; padding: 5px 11px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(255,59,48,0.2);">結束搶答 ❌</button>
+        </div>
+      </div>
 
       <!-- 1. 倒數階段畫面 -->
       <div id="buzzCountdownArea" style="display: none; width: 100%; text-align: center; overflow: hidden;">
