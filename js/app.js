@@ -141,6 +141,9 @@ class App {
     // 記錄目前選按的功能選單（預設是提問區）
     this.activeTabId = 'panel-questions';
     
+    // 檢查並恢復同分頁未逾時的管理員登入狀態（支援切換班級與重整後免重複輸入密碼）
+    this.restoreAdminSessionIfValid();
+    
     // 移除舊的 lastClickedSectionType mousedown 追蹤，改用選單追蹤
     this.bindCollapseEvents();
     this.bindQuestionEvents();
@@ -162,6 +165,9 @@ class App {
     this.initClassRoomUI();
     if (window.timerMusicManager) {
       window.timerMusicManager.updateDropdown();
+    }
+    if (this.isAdmin) {
+      this.updateAdminActiveActivitiesUI();
     }
     
     // Global user interaction listener to resume audio if blocked by autoplay
@@ -1429,6 +1435,9 @@ class App {
     // 記錄目前選按的功能選單，供貼上事件判斷用
     this.previousTabId = this.activeTabId;
     this.activeTabId = targetId;
+    if (this.isAdmin && typeof this.saveAdminSession === 'function') {
+      this.saveAdminSession(targetId === 'panel-admin');
+    }
 
     if (targetId === 'panel-admin' || targetId === 'panel-teacher-shares') {
       const focusOverlay = document.getElementById('focusGameOverlay');
@@ -13332,6 +13341,58 @@ class App {
   }
 
   /**
+   * 儲存／恢復管理員工作階段（僅限當前瀏覽器分頁 sessionStorage，切換班級或重整頁面時免重複輸入密碼，關閉分頁或閒置 30 分鐘自動失效）
+   */
+  saveAdminSession(autoOpenAdminPanel = undefined) {
+    if (!this.isAdmin) return;
+    try {
+      let prevAutoOpen = false;
+      const existing = sessionStorage.getItem('wb_admin_session_v1');
+      if (existing) {
+        try {
+          const parsed = JSON.parse(existing);
+          prevAutoOpen = Boolean(parsed && parsed.autoOpenAdminPanel);
+        } catch (e) {}
+      }
+      const sessionData = {
+        isAdmin: true,
+        teacherId: (window.teacherAuthManager && typeof window.teacherAuthManager.getActiveTeacherId === 'function')
+          ? window.teacherAuthManager.getActiveTeacherId()
+          : '',
+        lastActiveAt: Date.now(),
+        autoOpenAdminPanel: autoOpenAdminPanel !== undefined ? Boolean(autoOpenAdminPanel) : prevAutoOpen
+      };
+      sessionStorage.setItem('wb_admin_session_v1', JSON.stringify(sessionData));
+    } catch (e) {}
+  }
+
+  clearAdminSession() {
+    try {
+      sessionStorage.removeItem('wb_admin_session_v1');
+    } catch (e) {}
+  }
+
+  restoreAdminSessionIfValid() {
+    try {
+      const raw = sessionStorage.getItem('wb_admin_session_v1');
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      const timeoutMs = this.ADMIN_IDLE_TIMEOUT_MS || (30 * 60 * 1000);
+      if (data && data.isAdmin && data.lastActiveAt && (Date.now() - data.lastActiveAt < timeoutMs)) {
+        this.isAdmin = true;
+        this._restoredAutoOpenAdminPanel = Boolean(data.autoOpenAdminPanel);
+        this.startAdminIdleMonitor();
+        return data;
+      } else {
+        this.clearAdminSession();
+      }
+    } catch (e) {
+      this.clearAdminSession();
+    }
+    return null;
+  }
+
+  /**
    * 啟動管理員閒置自動登出保護（預設 30 分鐘無任何操作自動鎖定登出，避免公用電腦忘記登出）
    */
   startAdminIdleMonitor() {
@@ -13361,6 +13422,7 @@ class App {
       this._adminIdleTimer = null;
     }
     if (!this.isAdmin) return;
+    this.saveAdminSession();
     const timeoutMs = this.ADMIN_IDLE_TIMEOUT_MS || (30 * 60 * 1000);
     this._adminIdleTimer = setTimeout(() => {
       if (this.isAdmin) {
@@ -13429,15 +13491,19 @@ class App {
         this.updateStudentNameUI();
 
         if (!userName) {
-          // 進入班級課堂但未設定姓名或暱稱，主動跳出提示彈窗要求同學設定
-          setTimeout(() => {
-            this.openStudentNameModal();
-          }, 350);
+          // 進入班級課堂但未設定姓名或暱稱，非管理員主動跳出提示彈窗要求同學設定
+          if (!this.isAdmin) {
+            setTimeout(() => {
+              this.openStudentNameModal();
+            }, 350);
+          }
         } else {
           // 已登入學生，進教室後自動檢查並顯示重要公告
-          setTimeout(() => {
-            this.checkAndShowLoginSharesModal();
-          }, 600);
+          if (!this.isAdmin) {
+            setTimeout(() => {
+              this.checkAndShowLoginSharesModal();
+            }, 600);
+          }
         }
       }
     } else {
@@ -13623,6 +13689,10 @@ class App {
       window.ClassRoomManager.setActiveClassCode(sanitized);
     }
 
+    if (this.isAdmin) {
+      this.saveAdminSession(this.activeTabId === 'panel-admin');
+    }
+
     // 切換班級前，先檢查並主動停止當前班級的音樂播放與計時器
     await this.stopTimerBeforeClassSwitch();
 
@@ -13641,6 +13711,10 @@ class App {
 
     const confirmExit = confirm('確定要退出當前班級，返回免代碼的一次性課堂（公開空間）嗎？');
     if (!confirmExit) return;
+
+    if (this.isAdmin) {
+      this.saveAdminSession(this.activeTabId === 'panel-admin');
+    }
 
     // 退出班級前，先檢查並主動停止當前班級的音樂播放與計時器
     await this.stopTimerBeforeClassSwitch();
@@ -14089,6 +14163,9 @@ class App {
 
   async adminSwitchToClass(code) {
     if (!code) return;
+    if (this.isAdmin) {
+      this.saveAdminSession(true);
+    }
     // 切換班級前，先檢查並主動停止當前班級的音樂播放與計時器
     await this.stopTimerBeforeClassSwitch();
 
@@ -14258,6 +14335,9 @@ class App {
 
     // 若老師當前所在的班級代碼就是剛被修改的舊代碼，關閉提醒後自動切換至新代碼頁面
     if (this._pendingNewClassCode && window.currentClassCode === this._pendingNewClassCode) {
+      if (this.isAdmin) {
+        this.saveAdminSession(true);
+      }
       await this.stopTimerBeforeClassSwitch();
       const newUrl = new URL(window.location.href);
       if (newUrl.searchParams.get('class') !== this._pendingNewClassCode) {
@@ -15402,6 +15482,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.videoQuiz && typeof window.videoQuiz.init === 'function') {
       window.videoQuiz.init();
     }
+    if (window.app.isAdmin) {
+      if (window.videoQuiz && typeof window.videoQuiz.setAdminState === 'function') {
+        window.videoQuiz.setAdminState(true);
+      }
+      if (window.app._restoredAutoOpenAdminPanel) {
+        window.app._restoredAutoOpenAdminPanel = false;
+        window.app.switchToTab('panel-admin');
+      }
+      window.app.updateAdminActiveActivitiesUI();
+    }
   } catch (err) {
     console.error("CRITICAL RUNTIME ERROR:", err);
     alert("載入錯誤: " + err.message + "\n" + err.stack);
@@ -15500,6 +15590,9 @@ async function submitAdminPassword() {
 
 function logoutAdmin(isAutoIdleLogout = false) {
   window.app.isAdmin = false;
+  if (typeof window.app.clearAdminSession === 'function') {
+    window.app.clearAdminSession();
+  }
   if (typeof window.app.stopAdminIdleMonitor === 'function') {
     window.app.stopAdminIdleMonitor();
   }
