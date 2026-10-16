@@ -5458,3 +5458,286 @@ body {
   border-color: var(--accent-color);
   color: var(--accent-color);
 }
+
+/* ========================================================
+   即時互動回饋 (Live Floating Reactions & Dock)
+   ======================================================== */
+.live-reactions-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+}
+
+/* 漂浮升空的表情符號物件 */
+.floating-reaction-item {
+  position: absolute;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+  animation: floatUpReaction 3.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.floating-reaction-emoji {
+  font-size: 38px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.25));
+  transform-origin: center bottom;
+}
+
+.floating-reaction-name {
+  background: rgba(0, 0, 0, 0.72);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes floatUpReaction {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5) translateX(0);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(-50px) scale(1.18) translateX(var(--drift-1, -10px));
+  }
+  28% {
+    transform: translateY(-150px) scale(1) translateX(var(--drift-2, 12px));
+  }
+  60% {
+    opacity: 0.95;
+    transform: translateY(-360px) scale(0.95) translateX(var(--drift-3, -8px));
+  }
+  85% {
+    opacity: 0.65;
+    transform: translateY(-560px) scale(0.85) translateX(var(--drift-4, 10px));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-720px) scale(0.7) translateX(var(--drift-5, -4px));
+  }
+}
+
+/* 浮動互動回饋列 (Dock) */
+.live-reaction-dock {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 3400;
+  user-select: none;
+  font-family: inherit;
+}
+
+/* 收合按鈕狀態 */
+.reaction-collapsed-btn {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-card, #ffffff);
+  border: 1.5px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.reaction-collapsed-btn:hover {
+  transform: scale(1.12);
+  box-shadow: 0 8px 26px rgba(255, 59, 48, 0.28);
+  border-color: #ff3b30;
+}
+
+.reaction-collapsed-heart {
+  font-size: 24px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.reaction-collapsed-btn:hover .reaction-collapsed-heart {
+  transform: scale(1.15);
+}
+
+/* 箭頭 < 指示與向左脈動動畫 */
+.reaction-collapsed-arrow {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 20px;
+  height: 20px;
+  background: #ff3b30;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
+  animation: arrowBounceLeft 1.2s infinite ease-in-out;
+}
+
+@keyframes arrowBounceLeft {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+/* 滑鼠滑過時顯示「即時互動回饋」氣泡提示 */
+.reaction-collapsed-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  background: rgba(30, 30, 35, 0.92);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.reaction-collapsed-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 18px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(30, 30, 35, 0.92) transparent transparent transparent;
+}
+
+.reaction-collapsed-btn:hover .reaction-collapsed-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 展開狀態的互動列 (圖 1) */
+.reaction-expanded-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card, #ffffff);
+  border: 1.5px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  border-radius: 40px;
+  padding: 6px 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.reaction-emoji-btn {
+  background: transparent;
+  border: none;
+  font-size: 26px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.18s ease;
+}
+
+.reaction-emoji-btn:hover {
+  transform: scale(1.32) translateY(-2px);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.reaction-emoji-btn:active {
+  transform: scale(0.92);
+}
+
+.reaction-collapse-toggle-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  color: var(--text-secondary, #666666);
+  font-size: 15px;
+  font-weight: 800;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  transition: all 0.2s ease;
+}
+
+.reaction-collapse-toggle-btn:hover {
+  background: var(--accent-color, #007aff);
+  color: #ffffff;
+  border-color: var(--accent-color, #007aff);
+  transform: scale(1.1);
+}
+
+/* 控制收合與展開的顯示切換 */
+.live-reaction-dock.collapsed .reaction-collapsed-btn {
+  display: flex;
+}
+
+.live-reaction-dock.collapsed .reaction-expanded-bar {
+  display: none;
+}
+
+.live-reaction-dock:not(.collapsed) .reaction-collapsed-btn {
+  display: none;
+}
+
+.live-reaction-dock:not(.collapsed) .reaction-expanded-bar {
+  display: flex;
+}
+
+@media (max-width: 600px) {
+  .live-reaction-dock {
+    bottom: 16px;
+    right: 14px;
+  }
+  .reaction-expanded-bar {
+    gap: 4px;
+    padding: 4px 8px;
+  }
+  .reaction-emoji-btn {
+    font-size: 22px;
+    padding: 4px 5px;
+  }
+}
+
