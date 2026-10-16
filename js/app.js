@@ -1456,10 +1456,6 @@ class App {
       }
     }
 
-    if (targetId === 'panel-focus-game') {
-      this.handleFocusGameSync(this.focusGame);
-    }
-    
     if (targetId === 'panel-lucky-wheel') {
       this.updateWheelControlPanelVisibility();
       this.drawWheelLocal();
@@ -1475,6 +1471,7 @@ class App {
     }
     
     if (targetId === 'panel-admin') {
+      this.adminPreviewingBuzz = false;
       const focusOverlay = document.getElementById('focusGameOverlay');
       if (focusOverlay) {
         focusOverlay.style.display = 'none';
@@ -4140,15 +4137,10 @@ class App {
         break;
       case 'gameFocus':
         this.switchToTab('panel-focus-game');
-        if (this.focusGame) {
-          this.handleFocusGameSync(this.focusGame);
-        }
         break;
       case 'gameBuzz':
+        this.adminPreviewingBuzz = true;
         this.switchToTab('panel-questions');
-        if (this.buzzGame) {
-          this.handleBuzzGameSync(this.buzzGame);
-        }
         break;
       case 'timer':
         this.toggleMinimizeTimer(false);
@@ -8994,6 +8986,11 @@ class App {
     const numHeader = document.getElementById('focusNumberGridHeader');
     if (numHeader) numHeader.style.display = 'flex';
 
+    const targetPrefixEl = document.getElementById('focusTargetPrefix');
+    if (targetPrefixEl) {
+      targetPrefixEl.textContent = '目標：依序點擊數字 ';
+    }
+
     const targetEl = document.getElementById('focusCurrentTarget');
     if (targetEl) {
       targetEl.textContent = '1';
@@ -9553,9 +9550,9 @@ class App {
     // 學生端大廳永遠只顯示 studentLobby，不需要隱藏
     if (studentLobby) studentLobby.style.display = 'block';
 
-    // 只有管理員在 Overlay 顯示結束遊戲按鈕
+    // 只有管理員在 Overlay 顯示教師前台預覽快捷控場列（含返回後台與結束遊戲按鈕）
     if (teacherCloseBtn) {
-      teacherCloseBtn.style.display = this.isAdmin ? 'block' : 'none';
+      teacherCloseBtn.style.display = this.isAdmin ? 'flex' : 'none';
     }
 
     // 渲染管理後台的即時排行榜 (如果目前已登入管理員，一律在管理面板下方顯示)
@@ -9587,9 +9584,14 @@ class App {
       return;
     }
 
-    // 已進入管理介面者，畫面不用顯示專注力遊戲，只要留在管理頁面就好 (全班聽歌搶答除外，需在主畫面呈現全班搶答大螢幕)
+    // 當管理員停留在管理後台或其他非專注力分頁時，不彈出覆蓋層干擾控場；
+    // 但若管理員主動切換至前台專注力畫面 (panel-focus-game) 預覽，或進行全班聽歌搶答時，則完整顯示專注力測驗畫面！
     const isSongQuizBuzzer = game && game.gameType === 'songQuiz' && game.playMode === 'buzzer';
-    if (this.isAdmin && !isSongQuizBuzzer) {
+    const isTeacherPreviewingFocus = this.isAdmin && (
+      this.activeTabId === 'panel-focus-game' ||
+      (isSongQuizBuzzer && this.activeTabId !== 'panel-admin')
+    );
+    if (this.isAdmin && !isTeacherPreviewingFocus) {
       if (gameOverlay) {
         gameOverlay.style.display = 'none';
         gameOverlay.classList.remove('active');
@@ -9599,6 +9601,7 @@ class App {
 
       // 倒數階段仍需由管理員的背景計時觸發 status -> playing，因此倒數階段管理員不 return，其餘 status 一律 return
       if (game.status !== 'countdown') {
+        this.focusLocalGameKey = null;
         this.stopFocusTimers();
         return;
       }
@@ -9749,7 +9752,7 @@ class App {
       const supportedPlayingTypes = ['numberGrid', 'schulte', 'memoryPosition', 'memoryMatch', 'classicsQuiz', 'characterTest', 'characterCrossword', 'characterUnitedWords'];
       const curType = game.gameType || 'numberGrid';
       const isCharWaiting = result && result.status !== 'correct' && (curType === 'characterTest' || curType === 'characterCrossword' || curType === 'characterUnitedWords');
-      const showPlayingRank = !this.isAdmin && supportedPlayingTypes.includes(curType) && (!hasCompleted || isCharWaiting);
+      const showPlayingRank = (!this.isAdmin || isTeacherPreviewingFocus) && supportedPlayingTypes.includes(curType) && (!hasCompleted || isCharWaiting);
 
       if (playingRankSection) {
         if (showPlayingRank) {
@@ -9989,10 +9992,10 @@ class App {
 
     const existingGrid = document.getElementById('focusGameGrid');
     const existingCharContainer = document.getElementById('characterTestContainer');
-    const existingMemBoard = document.getElementById('focusMemoryMatchBoard');
+    const existingMemGrid = document.getElementById('focusMemoryGrid');
     const hasRenderedContent = (existingGrid && existingGrid.children.length > 0) ||
                                (existingCharContainer && existingCharContainer.children.length > 0) ||
-                               (existingMemBoard && existingMemBoard.children.length > 0);
+                               (existingMemGrid && existingMemGrid.children.length > 0);
 
     if (this.focusLocalGameKey === localGameKey && hasRenderedContent) {
       return;
@@ -10043,6 +10046,8 @@ class App {
     const helpInfo = document.getElementById('focusHelpInfo');
     if (helpInfo) { helpInfo.textContent = ''; helpInfo.style.display = allowHint ? '' : 'none'; }
     
+    const targetPrefixEl = document.getElementById('focusTargetPrefix');
+    if (targetPrefixEl) targetPrefixEl.textContent = '目標：依序點擊數字 ';
     const targetLabel = document.getElementById('focusCurrentTarget')?.parentElement;
     if (targetLabel) targetLabel.style.display = '';
 
@@ -10153,7 +10158,7 @@ class App {
     const teacherCloseBtn = document.getElementById('buzzGameTeacherCloseBtn');
 
     if (teacherCloseBtn) {
-      teacherCloseBtn.style.display = this.isAdmin ? 'block' : 'none';
+      teacherCloseBtn.style.display = this.isAdmin ? 'flex' : 'none';
     }
 
     const adminRankSection = document.getElementById('adminBuzzGameRankSection');
@@ -10167,6 +10172,7 @@ class App {
     }
 
     if (!game || game.status === 'idle') {
+      this.adminPreviewingBuzz = false;
       if (overlay) {
         overlay.style.display = 'none';
         overlay.classList.remove('active');
@@ -10175,7 +10181,8 @@ class App {
       return;
     }
 
-    if (this.isAdmin) {
+    const isTeacherPreviewingBuzz = this.isAdmin && this.adminPreviewingBuzz && this.activeTabId !== 'panel-admin';
+    if (this.isAdmin && !isTeacherPreviewingBuzz) {
       if (overlay) {
         overlay.style.display = 'none';
         overlay.classList.remove('active');
@@ -10545,6 +10552,8 @@ class App {
     // OpenCode 修改：修正位置序列模式未宣告 grid 導致無作用，並相容 Firebase array/object 序列格式
     const numContainer = document.getElementById('focusNumberGridContainer');
     if (numContainer) numContainer.classList.add('schulte-mode');
+    const numHeader = document.getElementById('focusNumberGridHeader');
+    if (numHeader) numHeader.style.display = 'flex';
     const grid = document.getElementById('focusGameGrid');
     if (grid) grid.classList.add('schulte-mode');
     const sequence = Array.isArray(game.sequence)
@@ -10558,18 +10567,22 @@ class App {
     this.focusHelpPenaltySeconds = 0;
     this.focusHelpCount = 0;
 
+    const targetPrefixEl = document.getElementById('focusTargetPrefix');
+    if (targetPrefixEl) targetPrefixEl.textContent = '目標：位置序列記憶・';
     const targetEl = document.getElementById('focusCurrentTarget');
     const helpBtn = document.getElementById('focusHelpBtn');
     const helpInfo = document.getElementById('focusHelpInfo');
     const timerEl = document.getElementById('focusTimer');
-    
 
     if (helpBtn) {
       helpBtn.style.display = 'none';
       helpBtn.disabled = false;
       helpBtn.textContent = '🆘 重播提示（+5 秒）';
     }
-    if (helpInfo) helpInfo.textContent = game.reverseMode ? '請記住閃爍位置，等播放完後反向點回。' : '請記住閃爍位置，等播放完後照順序點回。';
+    if (helpInfo) {
+      helpInfo.style.display = 'block';
+      helpInfo.textContent = game.reverseMode ? '請記住閃爍位置，等播放完後反向點回。' : '請記住閃爍位置，等播放完後照順序點回。';
+    }
     if (targetEl) targetEl.textContent = '記憶中...';
     if (timerEl) timerEl.textContent = '0.00';
 
@@ -10577,17 +10590,26 @@ class App {
     if (targetLabel) targetLabel.style.display = '';
 
     if (grid) {
-      grid.style.display = 'grid';
-      grid.style.aspectRatio = '1';
-      grid.style.flexDirection = '';
-      grid.style.gap = '8px';
-      grid.style.maxWidth = '450px';
+      const cols = Math.max(3, Math.round(Math.sqrt(this.focusGridSize)));
+      const gap = cols >= 6 ? '5px' : (cols >= 5 ? '6px' : (cols >= 4 ? '8px' : '10px'));
+      const borderRadius = cols >= 6 ? '7px' : (cols >= 5 ? '9px' : '12px');
+      const borderWidth = cols >= 6 ? '1.5px' : '2px';
 
-      const cols = Math.sqrt(this.focusGridSize);
+      grid.style.display = 'grid';
       grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      grid.style.gap = gap;
+      grid.style.width = '100%';
+      grid.style.maxWidth = 'min(92vw, calc(100dvh - 165px), 440px)';
+      grid.style.maxHeight = 'min(92vw, calc(100dvh - 165px), 440px)';
+      grid.style.minHeight = '';
+      grid.style.margin = '6px auto';
+      grid.style.boxSizing = 'border-box';
+      grid.style.aspectRatio = '1 / 1';
+      grid.style.flexDirection = '';
+
       grid.innerHTML = Array.from({ length: this.focusGridSize }, (_, i) => {
         const cell = i + 1;
-        return `<button class="schulte-btn memory-cell" data-cell="${cell}" onclick="window.app.clickMemoryPosition(${cell}, this)" style="width: 100%; height: 100%; border-radius: 12px; background: rgba(0,122,255,0.06); border: 2px solid rgba(0,122,255,0.13); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.04); user-select: none;"></button>`;
+        return `<button class="schulte-btn memory-cell" data-cell="${cell}" onclick="window.app.clickMemoryPosition(${cell}, this)" style="width: 100%; height: 100%; aspect-ratio: 1; border-radius: ${borderRadius}; background: rgba(0,122,255,0.08); border: ${borderWidth} solid rgba(0,122,255,0.22); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 8px rgba(0,122,255,0.05); user-select: none; box-sizing: border-box; padding: 0;"></button>`;
       }).join('');
     }
 
@@ -10596,6 +10618,11 @@ class App {
 
   // OpenCode 修改：依序播放位置序列閃爍提示
   playMemorySequence(game, isReplay = false) {
+    if (Array.isArray(this.focusMemoryTimeouts)) {
+      this.focusMemoryTimeouts.forEach(t => clearTimeout(t));
+    }
+    this.focusMemoryTimeouts = [];
+
     let index = 0;
     this.focusMemoryAcceptInput = false;
     const flashNext = () => {
@@ -10607,6 +10634,7 @@ class App {
         const helpBtn = document.getElementById('focusHelpBtn');
         if (targetEl) targetEl.textContent = game.reverseMode ? '反向作答' : '依序作答';
         if (helpInfo) {
+          helpInfo.style.display = 'block';
           const directionText = game.reverseMode ? '請從最後一個閃爍位置開始點回來。' : '請從第一個閃爍位置開始點回來。';
           helpInfo.textContent = isReplay
             ? `提示已重播，累計加時 ${this.focusHelpPenaltySeconds} 秒。${directionText}`
@@ -10629,10 +10657,12 @@ class App {
       const cell = document.querySelector(`#focusGameGrid .memory-cell[data-cell="${cellNum}"]`);
       if (cell) cell.classList.add('memory-sequence-highlight');
       index++;
-      setTimeout(() => {
+      const t1 = setTimeout(() => {
         if (cell) cell.classList.remove('memory-sequence-highlight');
-        setTimeout(flashNext, 180);
+        const t2 = setTimeout(flashNext, 180);
+        if (Array.isArray(this.focusMemoryTimeouts)) this.focusMemoryTimeouts.push(t2);
       }, 620);
+      if (Array.isArray(this.focusMemoryTimeouts)) this.focusMemoryTimeouts.push(t1);
     };
     if (isReplay) {
       const targetEl = document.getElementById('focusCurrentTarget');
@@ -10640,7 +10670,10 @@ class App {
       const helpInfo = document.getElementById('focusHelpInfo');
       if (targetEl) targetEl.textContent = '重播提示中...';
       if (helpBtn) helpBtn.disabled = true;
-      if (helpInfo) helpInfo.textContent = `正在重播位置提示，已加時 ${this.focusHelpPenaltySeconds} 秒。`;
+      if (helpInfo) {
+        helpInfo.style.display = 'block';
+        helpInfo.textContent = `正在重播位置提示，已加時 ${this.focusHelpPenaltySeconds} 秒。`;
+      }
     }
     flashNext();
   }
