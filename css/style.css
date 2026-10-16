@@ -5281,10 +5281,180 @@ body {
   }
 }
 
+/* ===== 密碼輸入錯誤單一提示微幅搖晃動畫 ===== */
+@keyframes adminInputShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
 
+.admin-input-shake {
+  animation: adminInputShake 0.36s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
 
+/* ===== 頂部常駐快速登出管理員按鈕 ===== */
+.admin-logout-top-btn {
+  flex: none !important;
+  max-width: none !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  border-radius: 10px !important;
+  white-space: nowrap !important;
+  font-weight: 700 !important;
+  border: 1.5px solid rgba(255, 59, 48, 0.45) !important;
+  background: rgba(255, 59, 48, 0.08) !important;
+  color: #dc2626 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
 
+.admin-logout-top-btn:hover {
+  background: #ff3b30 !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 10px rgba(255, 59, 48, 0.28);
+}
 
+/* ===== 教師前台視角快速控場列 (#teacherQuickControlBar) ===== */
+.teacher-quick-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 9px 14px;
+  margin-bottom: 14px;
+  background: linear-gradient(90deg, rgba(0, 122, 255, 0.09) 0%, rgba(88, 86, 214, 0.09) 100%);
+  border: 1.5px solid rgba(0, 122, 255, 0.32);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 122, 255, 0.08);
+}
 
+.teacher-quick-bar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
+.teacher-quick-badge {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--accent-color);
+  background: var(--bg-card);
+  border: 1px solid rgba(0, 122, 255, 0.25);
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
 
+.teacher-quick-active-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.teacher-quick-activity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  background: rgba(255, 59, 48, 0.1);
+  border: 1px solid rgba(255, 59, 48, 0.45);
+  border-radius: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #d70015;
+  white-space: nowrap;
+}
+
+.teacher-quick-activity-chip .pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff3b30;
+  animation: blinkPulse 1.2s infinite;
+}
+
+.teacher-quick-activity-chip .chip-btn {
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.teacher-quick-activity-chip .chip-btn.setting {
+  background: #ffffff;
+  border: 1px solid #ff3b30;
+  color: #d70015;
+}
+
+.teacher-quick-activity-chip .chip-btn.stop {
+  background: #ff3b30;
+  border: none;
+  color: #ffffff;
+}
+
+.teacher-quick-tab-shortcut {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.teacher-quick-tab-shortcut:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.teacher-quick-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.teacher-quick-btn {
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.teacher-quick-btn.primary {
+  background: var(--accent-color);
+  border: 1px solid var(--accent-color);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.25);
+}
+
+.teacher-quick-btn.primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.teacher-quick-btn.secondary {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.teacher-quick-btn.secondary:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}

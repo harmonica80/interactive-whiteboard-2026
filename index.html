@@ -53,6 +53,7 @@
           <button type="button" class="switch-class-mobile-btn mobile-only" id="mobileSwitchClassBtn" onclick="window.app && window.app.openClassModal()" title="切換班級/回一次性課堂">🏫</button>
           <!-- 管理後台按鈕移至右上角 -->
           <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️<span class="admin-btn-text"> 管理後台</span></button>
+          <button type="button" class="menu-tab admin-logout-top-btn" id="topBarAdminLogoutBtn" onclick="logoutAdmin()" style="display: none;" title="一鍵登出管理員模式，鎖定後台">🔓<span class="admin-btn-text"> 登出管理</span></button>
         </div>
         <div class="theme-switcher">
           <button class="theme-btn light active" data-theme="light" title="淺色"></button>
@@ -126,6 +127,22 @@
         <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
       </div>
       <button class="nav-scroll-btn right-scroll-btn" id="menuScrollRight" title="向右查看更多選單">▶</button>
+    </div>
+
+    <!-- 教師在前台分頁時的快速視角切換與控場捷徑列 -->
+    <div id="teacherQuickControlBar" class="teacher-quick-control-bar" style="display: none;">
+      <div class="teacher-quick-bar-left">
+        <span class="teacher-quick-badge">👨‍🏫 教師管理模式（前台視角）</span>
+        <div id="teacherQuickActiveList" class="teacher-quick-active-list"></div>
+      </div>
+      <div class="teacher-quick-bar-right">
+        <button type="button" id="btnQuickBackToAdminWorkspace" class="teacher-quick-btn primary" onclick="window.app && window.app.returnToAdminFromPreview()">
+          🔙 返回後台控場
+        </button>
+        <button type="button" class="teacher-quick-btn secondary" onclick="window.app && window.app.openAdminDashboardDirect()">
+          🗂️ 後台總覽
+        </button>
+      </div>
     </div>
 
     <!-- 主要內容 -->
@@ -1681,7 +1698,7 @@
                 <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: var(--text-secondary); line-height: 1.7;">
                   <li><strong>防暴力破解鎖定</strong>：密碼連續輸入錯誤 5 次，系統自動安全鎖定 180 秒（3 分鐘），按鈕禁用並出現即時倒數。</li>
                   <li><strong>單一密碼多白板通用</strong>：您日後新登記的任何班級代碼，皆自動享有此組專屬密碼，不必每班重複設定。</li>
-                  <li><strong>預設密碼落日退場機制</strong>：初始密碼 1234 僅作為過渡相容，將於 <strong>2026/10/31 23:59</strong> 正式全面停用！屆時無法再使用 1234 登入或設定，防止未修改之安全風險。</li>
+                  <li><strong>預設密碼落日退場機制</strong>：系統初始預設密碼僅作為過渡相容，將於 <strong>2026/10/31 23:59</strong> 正式全面停用！屆時無法再使用預設密碼登入或設定，防止未修改之安全風險。</li>
                   <li><strong>終極救援保障</strong>：若連安全問題都遺忘，可由系統管理員使用「超級救援金鑰」協助重設，教學進度絕不中斷。</li>
                 </ul>
               </div>
@@ -3431,10 +3448,24 @@ Python</pre>
       </div>
 
       <div class="modal-body" style="padding: 16px 20px; max-height: 75vh; overflow-y: auto;">
-        <!-- 當前課堂身分資訊 -->
-        <div style="background: var(--bg-input); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
-          <span>🎯 救援對象：<strong id="recoveryTeacherName" style="color: var(--text-primary);">載入中...</strong></span>
-          <span style="font-size: 11px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 4px;">SHA-256 安全保護</span>
+        <!-- 當前課堂身分資訊與跨電腦教師帳號切換 -->
+        <div style="background: var(--bg-input); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+            <span>🎯 救援對象：<strong id="recoveryTeacherName" style="color: var(--text-primary);">載入中...</strong></span>
+            <span style="font-size: 11px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 4px;">SHA-256 安全保護</span>
+          </div>
+          <!-- 公共課堂或跨裝置時提供切換救援教師帳號下拉選單 -->
+          <div id="recoveryTeacherSelectorWrapper" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
+            <label for="recoveryTeacherSelect" style="display: block; font-size: 11.5px; color: var(--text-secondary); margin-bottom: 4px;">
+              🔄 換電腦或無痕視窗？請選擇您要找回密碼的教師帳號或班級：
+            </label>
+            <select id="recoveryTeacherSelect" class="question-input" onchange="window.teacherAuthManager.onRecoveryTeacherSelectChange(this.value)" style="margin: 0; width: 100%; font-size: 12.5px !important; padding: 6px 10px !important; height: 34px !important; letter-spacing: normal !important; text-align: left !important;">
+            </select>
+          </div>
+        </div>
+
+        <!-- 救援驗證錯誤即時提示盒 (單一框內紅字提示，免彈出第二層遮罩) -->
+        <div id="recoveryErrorMsg" style="display: none; background: rgba(255, 59, 48, 0.1); border: 1.5px solid #ff3b30; color: #ff3b30; padding: 8px 12px; border-radius: 8px; font-size: 12.5px; font-weight: bold; margin-bottom: 12px; line-height: 1.4; text-align: left;">
         </div>
 
         <!-- 途徑 1：密碼提示 -->
@@ -3461,12 +3492,12 @@ Python</pre>
           </div>
 
           <div style="margin-bottom: 10px;">
-            <input type="text" id="recoveryQuestionAnswer" class="question-input" placeholder="請輸入答案 (不分大小寫)" style="margin: 0; width: 100%; font-size: 13px;">
+            <input type="text" id="recoveryQuestionAnswer" class="question-input" placeholder="請輸入答案 (不分大小寫)" style="margin: 0; width: 100%; font-size: 13px;" oninput="window.teacherAuthManager.clearRecoveryError()">
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-            <input type="password" id="recoveryNewPassword" class="question-input" placeholder="新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 13px;">
-            <input type="password" id="recoveryNewPasswordConfirm" class="question-input" placeholder="確認新密碼" style="margin: 0; width: 100%; font-size: 13px;">
+            <input type="password" id="recoveryNewPassword" class="question-input" placeholder="新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 13px;" oninput="window.teacherAuthManager.clearRecoveryError()">
+            <input type="password" id="recoveryNewPasswordConfirm" class="question-input" placeholder="確認新密碼" style="margin: 0; width: 100%; font-size: 13px;" oninput="window.teacherAuthManager.clearRecoveryError()">
           </div>
 
           <button type="button" class="ask-btn" onclick="window.teacherAuthManager.submitQuestionRecovery()" style="width: 100%; height: 36px; font-size: 13px; font-weight: bold; border-radius: 8px; justify-content: center;">
@@ -3493,11 +3524,11 @@ Python</pre>
             </p>
 
             <div style="margin-bottom: 8px;">
-              <input type="password" id="recoveryMasterKeyInput" class="question-input" placeholder="請輸入超級救援金鑰" style="margin: 0; width: 100%; font-size: 11px !important; letter-spacing: normal !important; padding: 6px 10px !important; height: 32px !important; text-align: left !important;">
+              <input type="password" id="recoveryMasterKeyInput" class="question-input" placeholder="請輸入超級救援金鑰" style="margin: 0; width: 100%; font-size: 11px !important; letter-spacing: normal !important; padding: 6px 10px !important; height: 32px !important; text-align: left !important;" oninput="window.teacherAuthManager.clearRecoveryError()">
             </div>
 
             <div style="margin-bottom: 10px;">
-              <input type="password" id="recoveryMasterNewPassword" class="question-input" placeholder="欲設定的新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 11px !important; letter-spacing: normal !important; padding: 6px 10px !important; height: 32px !important; text-align: left !important;">
+              <input type="password" id="recoveryMasterNewPassword" class="question-input" placeholder="欲設定的新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 11px !important; letter-spacing: normal !important; padding: 6px 10px !important; height: 32px !important; text-align: left !important;" oninput="window.teacherAuthManager.clearRecoveryError()">
             </div>
 
             <button type="button" class="ask-btn" onclick="window.teacherAuthManager.submitMasterKeyRecovery()" style="width: 100%; height: 34px; font-size: 12.5px; font-weight: bold; border-radius: 8px; justify-content: center; background: #4f46e5;">

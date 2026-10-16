@@ -1500,11 +1500,11 @@ class App {
       } else if (!this.currentAdminFeatureKey) {
         this.backToAdminDashboard();
       }
-      this.updateAdminActiveActivitiesUI();
     } else {
       if (this.focusGame) this.handleFocusGameSync(this.focusGame);
       if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
     }
+    this.updateAdminActiveActivitiesUI();
   }
 
   openAdminPasswordModal() {
@@ -3867,6 +3867,12 @@ class App {
     if (!cfg) return;
 
     this.currentAdminFeatureKey = featureKey;
+    this.lastAdminFeatureKey = featureKey;
+    this.lastAdminFeatureTitle = cfg.title;
+
+    if (this.activeTabId !== 'panel-admin') {
+      this.switchToTab('panel-admin');
+    }
 
     // 開啟功能時，目錄區亦同步自動收合其他類別，僅保留該功能所屬類別展開
     const catBlockMap = {
@@ -4001,11 +4007,8 @@ class App {
     this.updateAdminActiveActivitiesUI();
   }
 
-  // 渲染管理後台頂部紅框區塊中正在進行中的測驗與教學互動
+  // 渲染管理後台頂部紅框區塊中正在進行中的測驗與教學互動，並同步更新前台教師快捷控場列
   updateAdminActiveActivitiesUI() {
-    const container = document.getElementById('adminActiveActivitiesContainer');
-    if (!container) return;
-
     const activeItems = [];
 
     // 1. 專注力測驗 (Focus Game)
@@ -4017,6 +4020,7 @@ class App {
         icon: '🧠',
         title: `專注力測驗 (${typeTitle})`,
         status: statusText,
+        previewAction: "window.app.previewStudentActivity('gameFocus')",
         settingAction: "window.app.openAdminFeature('gameFocus')",
         stopAction: "window.app.quickStopFocusGame()"
       });
@@ -4030,6 +4034,7 @@ class App {
         icon: '📝',
         title: `${qType}測驗`,
         status: '進行中',
+        previewAction: "window.app.previewStudentActivity('quizChoice')",
         settingAction: "window.app.openAdminFeature('quizChoice')",
         stopAction: "window.app.quickStopQuiz()"
       });
@@ -4043,6 +4048,7 @@ class App {
         icon: '⚡',
         title: '搶答遊戲',
         status: statusText,
+        previewAction: "window.app.previewStudentActivity('gameBuzz')",
         settingAction: "window.app.openAdminFeature('gameBuzz')",
         stopAction: "window.app.quickStopBuzzGame()"
       });
@@ -4055,6 +4061,7 @@ class App {
         icon: '🎬',
         title: '影片出題測驗',
         status: '同步中',
+        previewAction: "window.app.previewStudentActivity('quizVideo')",
         settingAction: "window.app.openAdminFeature('quizVideo')",
         stopAction: "window.app.quickStopVideoQuiz()"
       });
@@ -4068,7 +4075,8 @@ class App {
         icon: '⏱️',
         title: '倒數計時器',
         status: isPaused ? '已暫停' : '運行中',
-        settingAction: "window.app.backToAdminDashboard(); const el = document.getElementById('adminTimerSection'); if (el) el.scrollIntoView({ behavior: 'smooth' });",
+        previewAction: "window.app.previewStudentActivity('timer')",
+        settingAction: "window.app.openAdminDashboardDirect()",
         stopAction: "window.app.quickStopTimer()"
       });
     }
@@ -4080,10 +4088,17 @@ class App {
         icon: '🎡',
         title: '抽人轉盤廣播',
         status: '進行中',
+        previewAction: "window.app.previewStudentActivity('gameWheel')",
         settingAction: "window.app.openAdminFeature('gameWheel')",
         stopAction: "window.app.quickStopWheelBroadcast()"
       });
     }
+
+    // 同步更新頂部常駐登出按鈕與前台教師快捷控場列
+    this.updateTeacherQuickControlBar(activeItems);
+
+    const container = document.getElementById('adminActiveActivitiesContainer');
+    if (!container) return;
 
     if (activeItems.length === 0) {
       container.innerHTML = `
@@ -4099,10 +4114,142 @@ class App {
       <div class="admin-active-activity-pill" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(255, 59, 48, 0.08); border: 1.5px solid #ff3b30; border-radius: 20px; font-size: 12px; color: #d70015; font-weight: bold; box-shadow: 0 1px 6px rgba(255,59,48,0.15); flex-wrap: nowrap;">
         <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ff3b30; animation: blinkPulse 1.2s infinite; flex-shrink: 0;"></span>
         <span style="white-space: nowrap;">${item.icon} ${item.title} (${item.status})</span>
-        <button type="button" onclick="${item.settingAction}" title="進入此項目的設定頁面" style="background: white; border: 1px solid #ff3b30; color: #d70015; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⚙️ 設定</button>
+        <button type="button" onclick="${item.previewAction}" title="一鍵切換至前台學生畫面預覽" style="background: rgba(0, 122, 255, 0.12); border: 1px solid #007aff; color: #0062cc; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">👁️ 前台畫面</button>
+        <button type="button" onclick="${item.settingAction}" title="進入此項目的後台控場頁面" style="background: white; border: 1px solid #ff3b30; color: #d70015; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⚙️ 設定</button>
         <button type="button" onclick="${item.stopAction}" title="直接強制停止此活動" style="background: #ff3b30; border: none; color: white; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⏹️ 停止</button>
       </div>
     `).join('');
+  }
+
+  /**
+   * 老師從後台一鍵預覽前台學生畫面（解決後台發起活動後的視角切換摩擦）
+   */
+  previewStudentActivity(activityKey) {
+    if (this.currentAdminFeatureKey) {
+      this.lastAdminFeatureKey = this.currentAdminFeatureKey;
+    }
+    switch (activityKey) {
+      case 'quizChoice':
+        this.switchToTab('panel-quiz');
+        break;
+      case 'gameWheel':
+        this.switchToTab('panel-lucky-wheel');
+        break;
+      case 'quizVideo':
+        this.switchToTab('panel-video-quiz');
+        break;
+      case 'gameFocus':
+        this.switchToTab('panel-focus-game');
+        if (this.focusGame) {
+          this.handleFocusGameSync(this.focusGame);
+        }
+        break;
+      case 'gameBuzz':
+        this.switchToTab('panel-questions');
+        if (this.buzzGame) {
+          this.handleBuzzGameSync(this.buzzGame);
+        }
+        break;
+      case 'timer':
+        this.toggleMinimizeTimer(false);
+        break;
+      default:
+        this.switchToTab('panel-questions');
+        break;
+    }
+  }
+
+  /**
+   * 從前台預覽畫面一鍵返回剛才操作的後台工作區
+   */
+  returnToAdminFromPreview() {
+    const targetFeature = this.lastAdminFeatureKey || this.currentAdminFeatureKey;
+    this.switchToTab('panel-admin');
+    if (targetFeature) {
+      this.openAdminFeature(targetFeature);
+    } else {
+      this.backToAdminDashboard();
+    }
+  }
+
+  /**
+   * 從前台或任何位置直接進入後台總覽目錄
+   */
+  openAdminDashboardDirect() {
+    this.switchToTab('panel-admin');
+    this.backToAdminDashboard();
+  }
+
+  /**
+   * 更新前台「教師管理模式快捷列 (#teacherQuickControlBar)」與頂部常駐登出按鈕
+   */
+  updateTeacherQuickControlBar(activeItems = []) {
+    const topLogoutBtn = document.getElementById('topBarAdminLogoutBtn');
+    if (topLogoutBtn) {
+      topLogoutBtn.style.display = this.isAdmin ? 'inline-flex' : 'none';
+    }
+
+    const quickBar = document.getElementById('teacherQuickControlBar');
+    if (!quickBar) return;
+
+    const currentTab = this.activeTabId || 'panel-questions';
+    if (!this.isAdmin || currentTab === 'panel-admin') {
+      quickBar.style.display = 'none';
+      return;
+    }
+
+    quickBar.style.display = 'flex';
+
+    // 更新返回後台按鈕文案
+    const backBtn = document.getElementById('btnQuickBackToAdminWorkspace');
+    if (backBtn) {
+      if (this.lastAdminFeatureTitle) {
+        backBtn.innerHTML = `🔙 返回【${this.lastAdminFeatureTitle}】`;
+      } else {
+        backBtn.innerHTML = `🔙 返回後台控場`;
+      }
+    }
+
+    // 渲染目前進行中活動的快捷膠囊 + 當前分頁對應的後台管理捷徑
+    const activeListEl = document.getElementById('teacherQuickActiveList');
+    if (!activeListEl) return;
+
+    const tabFeatureShortcutMap = {
+      'panel-questions': { key: 'qaMgmt', label: '⚙️ 提問管理' },
+      'panel-images': { key: 'imgMgmt', label: '⚙️ 圖片管理' },
+      'panel-videos': { key: 'vidMgmt', label: '⚙️ 影片管理' },
+      'panel-video-quiz': { key: 'quizVideo', label: '⚙️ 影片出題管理' },
+      'panel-quiz': { key: 'quizChoice', label: '⚙️ 選擇題出題管理' },
+      'panel-lucky-wheel': { key: 'gameWheel', label: '⚙️ 轉盤名單設定' },
+      'panel-focus-game': { key: 'gameFocus', label: '⚙️ 專注力設定' },
+      'panel-teacher-shares': { key: 'shareMaterials', label: '⚙️ 教師分享管理' }
+    };
+
+    const pillsHtml = [];
+
+    if (Array.isArray(activeItems) && activeItems.length > 0) {
+      activeItems.forEach(item => {
+        pillsHtml.push(`
+          <span class="teacher-quick-activity-chip">
+            <span class="pulse-dot"></span>
+            <span>${item.icon} ${item.title} (${item.status})</span>
+            <button type="button" onclick="${item.settingAction}" class="chip-btn setting">⚙️ 控場</button>
+            <button type="button" onclick="${item.stopAction}" class="chip-btn stop">⏹️ 停止</button>
+          </span>
+        `);
+      });
+    }
+
+    const tabShortcut = tabFeatureShortcutMap[currentTab];
+    if (tabShortcut && (!activeItems || !activeItems.some(a => a.key === tabShortcut.key))) {
+      pillsHtml.push(`
+        <button type="button" class="teacher-quick-tab-shortcut" onclick="window.app.openAdminFeature('${tabShortcut.key}')">
+          ${tabShortcut.label}
+        </button>
+      `);
+    }
+
+    activeListEl.innerHTML = pillsHtml.join('');
   }
 
   quickStopFocusGame() {
@@ -13142,13 +13289,58 @@ class App {
     this.showConfirmModal(
       '⚠️',
       '恢復預設密碼',
-      '確定要將此管理員帳號密碼重設為預設的 1234 嗎？',
+      '確定要將此管理員帳號密碼重設為系統預設密碼嗎？',
       async () => {
         if (window.teacherAuthManager) {
           await window.teacherAuthManager.resetToDefaultPassword();
         }
       }
     );
+  }
+
+  /**
+   * 啟動管理員閒置自動登出保護（預設 30 分鐘無任何操作自動鎖定登出，避免公用電腦忘記登出）
+   */
+  startAdminIdleMonitor() {
+    this.ADMIN_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+    this.resetAdminIdleTimer();
+
+    if (!this._adminIdleListenersBound) {
+      this._adminIdleListenersBound = true;
+      let lastActivityTs = 0;
+      const onUserActivity = () => {
+        if (!this.isAdmin) return;
+        const now = Date.now();
+        if (now - lastActivityTs > 5000) {
+          lastActivityTs = now;
+          this.resetAdminIdleTimer();
+        }
+      };
+      ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(evt => {
+        window.addEventListener(evt, onUserActivity, { passive: true });
+      });
+    }
+  }
+
+  resetAdminIdleTimer() {
+    if (this._adminIdleTimer) {
+      clearTimeout(this._adminIdleTimer);
+      this._adminIdleTimer = null;
+    }
+    if (!this.isAdmin) return;
+    const timeoutMs = this.ADMIN_IDLE_TIMEOUT_MS || (30 * 60 * 1000);
+    this._adminIdleTimer = setTimeout(() => {
+      if (this.isAdmin) {
+        logoutAdmin(true);
+      }
+    }, timeoutMs);
+  }
+
+  stopAdminIdleMonitor() {
+    if (this._adminIdleTimer) {
+      clearTimeout(this._adminIdleTimer);
+      this._adminIdleTimer = null;
+    }
   }
 
   // ===== 班級代碼與智慧雙軌管理 (Classroom & Dual-track Management - 嚴格管制模式) =====
@@ -15196,6 +15388,9 @@ async function submitAdminPassword() {
     const res = await window.teacherAuthManager.verifyPassword(pwd);
     if (res.success) {
       window.app.isAdmin = true;
+      if (typeof window.app.startAdminIdleMonitor === 'function') {
+        window.app.startAdminIdleMonitor();
+      }
       if (window.videoQuiz) window.videoQuiz.setAdminState(true);
       window.app.closeAdminPasswordModal(); // 關閉彈窗
       window.app.switchToTab('panel-admin'); // 自動進入「管理後台」分頁
@@ -15206,7 +15401,7 @@ async function submitAdminPassword() {
 
       if (res.isDefault) {
         const days = res.remainingDays !== undefined ? res.remainingDays : (window.teacherAuthManager ? window.teacherAuthManager.getDefaultPasswordRemainingDays() : 0);
-        window.app.showNotification('⚠️ 預設密碼落日提醒', `已登入管理員！目前仍使用預設密碼 1234，此密碼將於 2026/10/31 23:59 正式退場停用（僅剩 ${days} 天）！請儘速至「班級管理 > F. 教師身分與密碼安全設定」修改為專屬密碼。`);
+        window.app.showNotification('⚠️ 預設密碼落日提醒', `已登入管理員！目前仍使用系統預設密碼，此密碼將於 2026/10/31 23:59 正式退場停用（僅剩 ${days} 天）！請儘速至「班級管理 > F. 教師身分與密碼安全設定」修改為專屬密碼。`);
       } else {
         window.app.showNotification('🎉 驗證成功', res.message || '已進入管理員模式！');
       }
@@ -15220,43 +15415,73 @@ async function submitAdminPassword() {
       window.app.checkSecurityRuleExpiry();
     } else {
       window.teacherAuthManager.updatePasswordModalUI();
+      // 簡化為單一登入框內紅字提示 + 輸入框搖晃特效，不重複彈出 #notifyModal 阻斷輸入焦點
       const errBox = document.getElementById('adminPasswordErrorMsg');
       if (errBox) {
         errBox.style.display = 'block';
         errBox.innerHTML = res.message || '密碼不正確！';
+        errBox.classList.remove('admin-input-shake');
+        void errBox.offsetWidth;
+        errBox.classList.add('admin-input-shake');
       }
-      if (res.isExpiredDefault) {
-        window.app.showNotification('⛔ 預設密碼已停用', res.message);
-      } else {
-        window.app.showNotification('驗證失敗', res.message || '密碼不正確！');
+      if (inputEl && !res.locked) {
+        inputEl.classList.remove('admin-input-shake');
+        void inputEl.offsetWidth;
+        inputEl.classList.add('admin-input-shake');
+        inputEl.select();
+        inputEl.focus();
       }
     }
   } else {
     // 容錯備援舊邏輯
     if (pwd === '1234') {
       if (Date.now() > 1793462399000) {
-        window.app.showNotification('⛔ 密碼已停用', '預設密碼 1234 已於 2026/10/31 正式退場停用！請使用自訂密碼或忘記密碼自救。');
+        const errBox = document.getElementById('adminPasswordErrorMsg');
+        if (errBox) {
+          errBox.style.display = 'block';
+          errBox.innerHTML = '⛔ 系統預設密碼已於 2026/10/31 正式退場停用！請使用自訂密碼或忘記密碼自救。';
+        }
         return;
       }
       window.app.isAdmin = true;
+      if (typeof window.app.startAdminIdleMonitor === 'function') {
+        window.app.startAdminIdleMonitor();
+      }
       if (window.videoQuiz) window.videoQuiz.setAdminState(true);
       window.app.closeAdminPasswordModal();
       window.app.switchToTab('panel-admin');
+      window.app.updateAdminActiveActivitiesUI();
       window.app.showNotification('成功', '已進入管理員模式！');
     } else {
-      window.app.showNotification('錯誤', '密碼不正確！');
+      const errBox = document.getElementById('adminPasswordErrorMsg');
+      if (errBox) {
+        errBox.style.display = 'block';
+        errBox.innerHTML = '密碼不正確！';
+        errBox.classList.remove('admin-input-shake');
+        void errBox.offsetWidth;
+        errBox.classList.add('admin-input-shake');
+      }
     }
   }
 }
 
-function logoutAdmin() {
+function logoutAdmin(isAutoIdleLogout = false) {
   window.app.isAdmin = false;
+  if (typeof window.app.stopAdminIdleMonitor === 'function') {
+    window.app.stopAdminIdleMonitor();
+  }
   if (window.videoQuiz) window.videoQuiz.setAdminState(false);
   window.app.closeAdminPasswordModal();
   window.app.switchToTab('panel-questions'); // 登出後切換回到「提問區分頁」
   window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
   window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
-  window.app.showNotification('提示', '已登出管理員模式');
+  window.app.updateAdminActiveActivitiesUI();
+
+  if (isAutoIdleLogout === true) {
+    window.app.showNotification('🔒 安全自動保護', '因管理員模式閒置超過 30 分鐘，系統已自動登出並切回學生視角，防止公用電腦誤觸。');
+  } else {
+    window.app.showNotification('提示', '已登出管理員模式');
+  }
   
   const volBtn = document.getElementById('timerVolumeBtn');
   if (volBtn) volBtn.style.display = 'none';
