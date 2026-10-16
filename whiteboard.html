@@ -154,26 +154,179 @@
 
     let editorInstance = null;
     let isApplyingRemote = false;
+    let pendingRemoteSnapshot = null;
+
+    window.whiteboardSnapshotDiagnostics = {
+      loadedCount: 0,
+      recoveredCount: 0,
+      rejectedCount: 0,
+      droppedRecordCount: 0,
+      validationFailures: 0
+    };
+
+    // 2.1.4 預設合規 Schema 備援，確保 migrateStoreSnapshot 100% 讀得到相容 schemaVersion
+    const DEFAULT_2_1_4_SCHEMA = {
+      schemaVersion: 1,
+      storeVersion: 4,
+      recordVersions: {
+        asset: { version: 1, subTypeVersion: 1 },
+        camera: { version: 1 },
+        document: { version: 2 },
+        instance: { version: 22 },
+        instance_page_state: { version: 5 },
+        page: { version: 1 },
+        shape: { version: 3, subTypeVersion: 1 },
+        instance_presence: { version: 5 },
+        pointer: { version: 1 }
+      }
+    };
+
+    const ALLOWED_DOCUMENT_RECORD_TYPES = new Set(['document', 'page', 'shape', 'asset']);
+
+    function isPlainObject(val) {
+      return Boolean(val) && typeof val === 'object' && !Array.isArray(val);
+    }
+
+    function sanitizeRecord(record) {
+      if (!isPlainObject(record)) return null;
+      if (typeof record.id !== 'string' || !record.id.trim()) return null;
+      if (typeof record.typeName !== 'string' || !ALLOWED_DOCUMENT_RECORD_TYPES.has(record.typeName)) {
+        return null;
+      }
+      if (!record.id.startsWith(record.typeName + ':')) {
+        return null;
+      }
+
+      const cloned = { ...record };
+      if (!isPlainObject(cloned.meta)) {
+        cloned.meta = {};
+      }
+
+      if (cloned.typeName === 'document') {
+        if (cloned.id !== 'document:document') return null;
+        if (typeof cloned.gridSize !== 'number' || !Number.isFinite(cloned.gridSize)) {
+          cloned.gridSize = 10;
+        }
+        if (typeof cloned.name !== 'string') {
+          cloned.name = '';
+        }
+        return cloned;
+      }
+
+      if (cloned.typeName === 'page') {
+        if (typeof cloned.name !== 'string' || !cloned.name) {
+          cloned.name = 'Page 1';
+        }
+        if (typeof cloned.index !== 'string' || !cloned.index) {
+          cloned.index = 'a1';
+        }
+        return cloned;
+      }
+
+      if (cloned.typeName === 'asset') {
+        if (typeof cloned.type !== 'string' || !cloned.type) return null;
+        if (!isPlainObject(cloned.props)) return null;
+        if (cloned.type === 'image' || cloned.type === 'video') {
+          const w = Number(cloned.props.w);
+          const h = Number(cloned.props.h);
+          if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
+            return null;
+          }
+          if (typeof cloned.props.src !== 'string' && cloned.props.src !== null) {
+            return null;
+          }
+        }
+        return cloned;
+      }
+
+      if (cloned.typeName === 'shape') {
+        if (typeof cloned.type !== 'string' || !cloned.type) return null;
+        if (typeof cloned.parentId !== 'string' || !cloned.parentId) {
+          cloned.parentId = 'page:page';
+        }
+        if (typeof cloned.index !== 'string' || !cloned.index) {
+          cloned.index = 'a1';
+        }
+        if (!isPlainObject(cloned.props)) return null;
+
+        cloned.x = (typeof cloned.x === 'number' && Number.isFinite(cloned.x)) ? cloned.x : 0;
+        cloned.y = (typeof cloned.y === 'number' && Number.isFinite(cloned.y)) ? cloned.y : 0;
+        cloned.rotation = (typeof cloned.rotation === 'number' && Number.isFinite(cloned.rotation)) ? cloned.rotation : 0;
+        cloned.isLocked = Boolean(cloned.isLocked);
+        cloned.opacity = (typeof cloned.opacity === 'number' && Number.isFinite(cloned.opacity) && cloned.opacity >= 0 && cloned.opacity <= 1)
+          ? cloned.opacity
+          : 1;
+
+        const cleanProps = { ...cloned.props };
+        if (cloned.type === 'text' && cleanProps.font === 'draw') {
+          cleanProps.font = 'sans';
+        }
+        if (cloned.type === 'image') {
+          const w = Number(cleanProps.w);
+          const h = Number(cleanProps.h);
+          if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
+            return null;
+          }
+        }
+        cloned.props = cleanProps;
+        return cloned;
+      }
+
+      return null;
+    }
+
+    function normalizeSchema(rawSchema, fallbackSchema) {
+      if (!isPlainObject(rawSchema)) return fallbackSchema;
+      if (rawSchema.schemaVersion !== fallbackSchema.schemaVersion) return fallbackSchema;
+      if (typeof rawSchema.storeVersion !== 'number' || rawSchema.storeVersion > fallbackSchema.storeVersion || rawSchema.storeVersion < 1) {
+        return fallbackSchema;
+      }
+      if (!isPlainObject(rawSchema.recordVersions)) return fallbackSchema;
+
+      for (const [recType, verObj] of Object.entries(fallbackSchema.recordVersions || {})) {
+        const rawVer = rawSchema.recordVersions[recType];
+        if (!isPlainObject(rawVer) || typeof rawVer.version !== 'number') {
+          return fallbackSchema;
+        }
+        if (rawVer.version > verObj.version) {
+          return fallbackSchema;
+        }
+      }
+      return rawSchema;
+    }
 
     // 快照全自動防禦、轉換與淨化過濾器 (Sanitizer) - 100% 歸一化為 2.1.4 Store-level 快照
     function sanitizeSnapshot(snapshot) {
-      if (!snapshot || typeof snapshot !== 'object') return null;
+      let parsed = snapshot;
+      if (typeof parsed === 'string') {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e) {
+          window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
+          return null;
+        }
+      }
+      if (!isPlainObject(parsed)) {
+        window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
+        return null;
+      }
 
       let rawStore = null;
       let rawSchema = null;
 
       // 情況 A：原生 2.1.4 Store-level 結構 { store: {...}, schema: {...} }
-      if (snapshot.store && typeof snapshot.store === 'object') {
-        rawStore = snapshot.store;
-        rawSchema = snapshot.schema;
+      if (isPlainObject(parsed.store)) {
+        rawStore = parsed.store;
+        rawSchema = parsed.schema;
       } 
       // 情況 B：舊雙層包裝結構 { document: { store: {...}, schema: {...} } }
-      else if (snapshot.document && typeof snapshot.document === 'object') {
-        rawStore = snapshot.document.store;
-        rawSchema = snapshot.document.schema || snapshot.schema;
+      else if (isPlainObject(parsed.document) && isPlainObject(parsed.document.store)) {
+        rawStore = parsed.document.store;
+        rawSchema = parsed.document.schema || parsed.schema;
       }
 
-      if (!rawStore || typeof rawStore !== 'object') {
+      if (!isPlainObject(rawStore)) {
+        window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
         return null;
       }
 
@@ -181,39 +334,111 @@
       const cleanStore = {};
       for (const key in rawStore) {
         if (!Object.prototype.hasOwnProperty.call(rawStore, key)) continue;
-        const record = rawStore[key];
-        if (record && typeof record === 'object' && typeof record.id === 'string' && typeof record.typeName === 'string') {
-          cleanStore[key] = record;
+        const candidate = rawStore[key];
+        if (isPlainObject(candidate) && typeof candidate.typeName === 'string' && !ALLOWED_DOCUMENT_RECORD_TYPES.has(candidate.typeName)) {
+          continue;
+        }
+        const sanitized = sanitizeRecord(candidate);
+        if (sanitized) {
+          cleanStore[sanitized.id] = sanitized;
         } else {
-          console.warn('[Snapshot Sanitizer] Skipped invalid record:', key, record);
+          window.whiteboardSnapshotDiagnostics.droppedRecordCount += 1;
+          console.warn('[Snapshot Sanitizer] Skipped invalid record:', key, candidate);
         }
       }
 
-      // 2.1.4 預設合規 Schema 備援，確保 migrateStoreSnapshot 100% 讀得到 schemaVersion
-      const DEFAULT_2_1_4_SCHEMA = {
-        schemaVersion: 1,
-        storeVersion: 4,
-        recordVersions: {
-          asset: { version: 1, subTypeVersion: 1 },
-          camera: { version: 1 },
-          document: { version: 2 },
-          instance: { version: 22 },
-          instance_page_state: { version: 5 },
-          page: { version: 1 },
-          shape: { version: 3, subTypeVersion: 1 },
-          instance_presence: { version: 5 },
-          pointer: { version: 1 }
-        }
-      };
-
-      const fallbackSchema = (editorInstance && editorInstance.store) 
+      const fallbackSchema = (editorInstance && editorInstance.store && editorInstance.store.schema) 
         ? editorInstance.store.schema.serialize() 
         : DEFAULT_2_1_4_SCHEMA;
 
       return {
         store: cleanStore,
-        schema: rawSchema || fallbackSchema
+        schema: normalizeSchema(rawSchema, fallbackSchema)
       };
+    }
+
+    window.sanitizeWhiteboardSnapshot = sanitizeSnapshot;
+
+    function applySnapshotSafely(rawSnapshot) {
+      if (!editorInstance || !editorInstance.store) {
+        pendingRemoteSnapshot = rawSnapshot;
+        return false;
+      }
+
+      const cleanSnapshot = sanitizeSnapshot(rawSnapshot);
+      if (!cleanSnapshot || !isPlainObject(cleanSnapshot.store)) {
+        console.warn('[Snapshot Guard] Rejected invalid or empty snapshot');
+        return false;
+      }
+
+      const fallbackSchema = (editorInstance.store.schema && typeof editorInstance.store.schema.serialize === 'function')
+        ? editorInstance.store.schema.serialize()
+        : DEFAULT_2_1_4_SCHEMA;
+
+      try {
+        if (typeof editorInstance.store.loadSnapshot === 'function') {
+          editorInstance.store.loadSnapshot(cleanSnapshot);
+        } else if (typeof editorInstance.loadSnapshot === 'function') {
+          editorInstance.loadSnapshot(cleanSnapshot);
+        }
+        window.whiteboardSnapshotDiagnostics.loadedCount += 1;
+        return true;
+      } catch (stage1Err) {
+        console.warn('[Snapshot Guard] Stage 1 loadSnapshot failed, retrying with runtime schema:', stage1Err);
+      }
+
+      try {
+        const runtimeSnapshot = {
+          store: cleanSnapshot.store,
+          schema: fallbackSchema
+        };
+        if (typeof editorInstance.store.loadSnapshot === 'function') {
+          editorInstance.store.loadSnapshot(runtimeSnapshot);
+        } else if (typeof editorInstance.loadSnapshot === 'function') {
+          editorInstance.loadSnapshot(runtimeSnapshot);
+        }
+        window.whiteboardSnapshotDiagnostics.recoveredCount += 1;
+        return true;
+      } catch (stage2Err) {
+        console.warn('[Snapshot Guard] Stage 2 loadSnapshot failed, falling back to per-record isolation:', stage2Err);
+      }
+
+      try {
+        const records = Object.values(cleanSnapshot.store);
+        const order = { document: 1, page: 2, asset: 3, shape: 4 };
+        records.sort((a, b) => (order[a.typeName] || 99) - (order[b.typeName] || 99));
+
+        const applyRecords = () => {
+          const existingShapes = typeof editorInstance.getCurrentPageShapeIds === 'function'
+            ? Array.from(editorInstance.getCurrentPageShapeIds())
+            : [];
+          const incomingIds = new Set(records.map((r) => r.id));
+          const toRemove = existingShapes.filter((id) => !incomingIds.has(id));
+          if (toRemove.length > 0 && typeof editorInstance.store.remove === 'function') {
+            try { editorInstance.store.remove(toRemove); } catch (_) {}
+          }
+          for (const rec of records) {
+            try {
+              editorInstance.store.put([rec]);
+            } catch (recErr) {
+              window.whiteboardSnapshotDiagnostics.droppedRecordCount += 1;
+              console.warn('[Snapshot Guard] Isolated & skipped corrupted record:', rec.id, recErr);
+            }
+          }
+        };
+
+        if (typeof editorInstance.store.mergeRemoteChanges === 'function') {
+          editorInstance.store.mergeRemoteChanges(applyRecords);
+        } else {
+          applyRecords();
+        }
+        window.whiteboardSnapshotDiagnostics.recoveredCount += 1;
+        return true;
+      } catch (stage3Err) {
+        window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
+        console.error('[Snapshot Guard] All 3 stages failed to apply snapshot:', stage3Err);
+        return false;
+      }
     }
 
     function App() {
@@ -233,6 +458,7 @@
         try {
           if (editor.store && editor.store.schema) {
             editor.store.schema.onValidationFailure = ({ error, phase, record, recordBefore }) => {
+              window.whiteboardSnapshotDiagnostics.validationFailures += 1;
               console.warn('[tldraw Validation Safeguarded]:', {
                 error: error ? (error.message || error) : 'unknown',
                 phase,
@@ -240,7 +466,11 @@
                 recordTypeName: record ? record.typeName : undefined,
                 recordBeforeTypeName: recordBefore ? recordBefore.typeName : undefined
               });
-              return record;
+              const repaired = sanitizeRecord(record) || sanitizeRecord(recordBefore);
+              if (repaired) return repaired;
+              if (record && typeof record === 'object') return record;
+              if (recordBefore && typeof recordBefore === 'object') return recordBefore;
+              return { id: 'document:document', typeName: 'document', gridSize: 10, name: '', meta: {} };
             };
           }
         } catch (e) {
@@ -307,8 +537,6 @@
           }
         } catch (err) {
           console.warn('registerExternalContentHandler registration warning:', err);
-        }
-
         }
 
         // 核心剪貼簿圖片貼上全自動接管 (Base64 Data URL Clipboard Guard)
@@ -416,7 +644,8 @@
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
               try {
-                const snapshot = editor.store ? editor.store.getSnapshot() : null;
+                const rawSnapshot = editor.store ? editor.store.getSnapshot() : null;
+                const snapshot = rawSnapshot ? (sanitizeSnapshot(rawSnapshot) || rawSnapshot) : null;
                 if (snapshot && window.parent && window.parent !== window) {
                   window.parent.postMessage({
                     type: 'TLDRAW_LOCAL_CHANGE',
@@ -429,6 +658,17 @@
             }, 300);
           }
         }, { scope: 'document' });
+
+        if (pendingRemoteSnapshot) {
+          const queuedSnapshot = pendingRemoteSnapshot;
+          pendingRemoteSnapshot = null;
+          try {
+            isApplyingRemote = true;
+            applySnapshotSafely(queuedSnapshot);
+          } finally {
+            setTimeout(() => { isApplyingRemote = false; }, 300);
+          }
+        }
 
         // 通知父視窗已準備就緒
         if (window.parent && window.parent !== window) {
@@ -543,9 +783,10 @@
         case 'GET_TLDRAW_SNAPSHOT':
           if (editorInstance && editorInstance.store) {
             try {
-              const snapshot = typeof editorInstance.store.getSnapshot === 'function' 
+              const rawSnapshot = typeof editorInstance.store.getSnapshot === 'function' 
                 ? editorInstance.store.getSnapshot() 
                 : (editorInstance.getSnapshot ? editorInstance.getSnapshot() : null);
+              const snapshot = rawSnapshot ? (sanitizeSnapshot(rawSnapshot) || rawSnapshot) : null;
               window.parent.postMessage({
                 type: 'TLDRAW_SNAPSHOT_RESPONSE',
                 requestId: data.requestId,
@@ -563,25 +804,23 @@
           break;
 
         case 'LOAD_TLDRAW_SNAPSHOT':
-          if (editorInstance && editorInstance.store && data.snapshot) {
-            try {
-              isApplyingRemote = true;
-              const cleanSnapshot = sanitizeSnapshot(data.snapshot);
-              if (cleanSnapshot) {
-                if (typeof editorInstance.store.loadSnapshot === 'function') {
-                  editorInstance.store.loadSnapshot(cleanSnapshot);
-                } else if (typeof editorInstance.loadSnapshot === 'function') {
-                  editorInstance.loadSnapshot(cleanSnapshot);
-                }
-                console.log('tldraw remote snapshot sanitized and loaded successfully');
-              } else {
-                console.warn('Received invalid snapshot format, skipped loading to prevent crash');
-              }
-            } catch (err) {
-              console.error('Failed to load tldraw snapshot safely:', err);
-            } finally {
-              setTimeout(() => { isApplyingRemote = false; }, 300);
+          if (!data.snapshot) break;
+          if (!editorInstance || !editorInstance.store) {
+            pendingRemoteSnapshot = data.snapshot;
+            break;
+          }
+          try {
+            isApplyingRemote = true;
+            const loaded = applySnapshotSafely(data.snapshot);
+            if (loaded) {
+              console.log('tldraw remote snapshot sanitized and loaded successfully');
+            } else {
+              console.warn('Received invalid snapshot format, skipped loading to prevent crash');
             }
+          } catch (err) {
+            console.error('Failed to load tldraw snapshot safely:', err);
+          } finally {
+            setTimeout(() => { isApplyingRemote = false; }, 300);
           }
           break;
 

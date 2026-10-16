@@ -8216,21 +8216,74 @@ class App {
     });
   }
 
+  sanitizeTldrawPayload(raw) {
+    let parsed = raw;
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (e) {
+        console.warn('[Tldraw Boundary] Invalid JSON snapshot payload:', e);
+        return null;
+      }
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return null;
+    }
+
+    let rawStore = null;
+    let rawSchema = null;
+    if (parsed.store && typeof parsed.store === 'object' && !Array.isArray(parsed.store)) {
+      rawStore = parsed.store;
+      rawSchema = parsed.schema;
+    } else if (parsed.document && typeof parsed.document === 'object' && parsed.document.store && typeof parsed.document.store === 'object' && !Array.isArray(parsed.document.store)) {
+      rawStore = parsed.document.store;
+      rawSchema = parsed.document.schema || parsed.schema;
+    }
+
+    if (!rawStore) {
+      return null;
+    }
+
+    const allowedTypes = new Set(['document', 'page', 'shape', 'asset']);
+    const cleanStore = {};
+    for (const [key, rec] of Object.entries(rawStore)) {
+      if (!rec || typeof rec !== 'object' || Array.isArray(rec)) continue;
+      if (typeof rec.id !== 'string' || typeof rec.typeName !== 'string') continue;
+      if (!allowedTypes.has(rec.typeName)) continue;
+      if (!rec.id.startsWith(rec.typeName + ':')) continue;
+      cleanStore[rec.id] = rec;
+    }
+
+    return {
+      store: cleanStore,
+      schema: (rawSchema && typeof rawSchema === 'object' && !Array.isArray(rawSchema)) ? rawSchema : undefined
+    };
+  }
+
   loadTldrawSnapshot(snapshot) {
+    const cleanSnapshot = this.sanitizeTldrawPayload(snapshot);
+    if (!cleanSnapshot) {
+      console.warn('[Tldraw Boundary] Skipped loading invalid tldraw snapshot');
+      return false;
+    }
+    this.pendingTldrawSnapshot = cleanSnapshot;
     const iframe = document.getElementById('whiteboardFrame');
     if (iframe && iframe.contentWindow) {
       try {
         iframe.contentWindow.postMessage({
           type: 'LOAD_TLDRAW_SNAPSHOT',
-          snapshot: snapshot
+          snapshot: cleanSnapshot
         }, '*');
+        return true;
       } catch (e) {
         console.warn('Failed to send tldraw snapshot to iframe:', e);
       }
     }
+    return false;
   }
 
   clearTldrawWhiteboard() {
+    this.pendingTldrawSnapshot = null;
     const iframe = document.getElementById('whiteboardFrame');
     if (iframe && iframe.contentWindow) {
       try {
@@ -8257,13 +8310,14 @@ class App {
       }
 
       try {
-        const parsedSnapshot = JSON.parse(val.data);
-        if (parsedSnapshot && (parsedSnapshot.store || (parsedSnapshot.document && parsedSnapshot.document.store))) {
+        const cleanSnapshot = this.sanitizeTldrawPayload(val.data);
+        if (cleanSnapshot) {
+          this.pendingTldrawSnapshot = cleanSnapshot;
           const iframe = document.getElementById('whiteboardFrame');
           if (iframe && iframe.contentWindow) {
             iframe.contentWindow.postMessage({
               type: 'LOAD_TLDRAW_SNAPSHOT',
-              snapshot: parsedSnapshot
+              snapshot: cleanSnapshot
             }, '*');
           }
         } else {
@@ -8275,15 +8329,21 @@ class App {
     });
 
     // 2. 監聽來自 iframe (whiteboard.html) 的使用者繪圖與就緒事件
+    if (this._tldrawMessageBound) return;
+    this._tldrawMessageBound = true;
+
     window.addEventListener('message', (event) => {
       const data = event.data;
       if (!data || typeof data !== 'object') return;
 
       if (data.type === 'TLDRAW_LOCAL_CHANGE' && data.snapshot) {
+        const cleanOutgoing = this.sanitizeTldrawPayload(data.snapshot);
+        if (!cleanOutgoing) return;
+
         this.isPublishingTldraw = true;
         
         try {
-          const jsonStr = JSON.stringify(data.snapshot);
+          const jsonStr = JSON.stringify(cleanOutgoing);
           // 將畫稿 Snapshot 序列化為純文字 JSON 字串寫入 Firebase (避免 Firebase 物件 Key 包含 "." 的非法字元錯誤)
           this.tldrawSyncRef.set({
             data: jsonStr,
@@ -8301,18 +8361,28 @@ class App {
           console.error('Failed to stringify tldraw snapshot:', err);
         }
       } else if (data.type === 'TLDRAW_READY') {
+        if (this.pendingTldrawSnapshot) {
+          const iframe = document.getElementById('whiteboardFrame');
+          if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+              type: 'LOAD_TLDRAW_SNAPSHOT',
+              snapshot: this.pendingTldrawSnapshot
+            }, '*');
+          }
+        }
         // 當白板載入完成時，主動向 Firebase 拉取最新畫稿給 iframe 展示
         this.tldrawSyncRef.once('value').then(snapshot => {
           const val = snapshot.val();
           if (val && val.data) {
             try {
-              const parsedSnapshot = JSON.parse(val.data);
-              if (parsedSnapshot && (parsedSnapshot.store || (parsedSnapshot.document && parsedSnapshot.document.store))) {
+              const cleanSnapshot = this.sanitizeTldrawPayload(val.data);
+              if (cleanSnapshot) {
+                this.pendingTldrawSnapshot = cleanSnapshot;
                 const iframe = document.getElementById('whiteboardFrame');
                 if (iframe && iframe.contentWindow) {
                   iframe.contentWindow.postMessage({
                     type: 'LOAD_TLDRAW_SNAPSHOT',
-                    snapshot: parsedSnapshot
+                    snapshot: cleanSnapshot
                   }, '*');
                 }
               } else {
