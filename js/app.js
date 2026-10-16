@@ -160,6 +160,7 @@ class App {
     this.initTimerDragging();
     this.initImageCanvasDrawing();
     this.initLuckyWheel();
+    this.initLiveReactions();
     this.bindTldrawRealtimeSync();
     this.checkSecurityRuleExpiry();
     this.initClassRoomUI();
@@ -1511,6 +1512,135 @@ class App {
       if (this.buzzGame) this.handleBuzzGameSync(this.buzzGame);
     }
     this.updateAdminActiveActivitiesUI();
+  }
+
+  // ==========================================
+  // ❤️ 即時互動回饋 (Live Floating Reactions)
+  // ==========================================
+  initLiveReactions() {
+    // 讀取收合狀態（預設收合為愛心按鈕，點擊展開）
+    const savedState = localStorage.getItem('wb_reaction_dock_collapsed');
+    const isCollapsed = savedState === null ? true : (savedState === 'true');
+    this.toggleReactionDock(!isCollapsed, false);
+    this.setupLiveReactionsSync();
+  }
+
+  toggleReactionDock(expand, save = true) {
+    const dock = document.getElementById('liveReactionDock');
+    if (!dock) return;
+    if (expand) {
+      dock.classList.remove('collapsed');
+      if (save) localStorage.setItem('wb_reaction_dock_collapsed', 'false');
+    } else {
+      dock.classList.add('collapsed');
+      if (save) localStorage.setItem('wb_reaction_dock_collapsed', 'true');
+    }
+  }
+
+  sendLiveReaction(emoji) {
+    if (!emoji) return;
+    const userName = this.getCurrentUserName() || (this.isAdmin ? '授課老師' : '同學');
+    const avatar = this.getCurrentUserAvatar();
+    const myUid = this.getUserId();
+
+    // 本機即時漂浮動畫回饋 (零延遲)
+    this.triggerFloatingReaction(emoji, userName, avatar, true);
+
+    // 透過 Firebase 即時廣播給全班
+    const now = Date.now();
+    if (!this._lastReactionSendTime || (now - this._lastReactionSendTime > 180)) {
+      this._lastReactionSendTime = now;
+      if (this.db) {
+        const reactionsRef = this.db.ref('quiz/liveReactions').push();
+        reactionsRef.set({
+          emoji: emoji,
+          userName: userName,
+          avatar: avatar,
+          uid: myUid,
+          xRatio: 0.12 + Math.random() * 0.76, // 螢幕水平分佈 12% ~ 88%
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          setTimeout(() => {
+            reactionsRef.remove().catch(() => {});
+          }, 8000);
+        }).catch(err => {
+          console.warn('即時回饋同步失敗:', err);
+        });
+      }
+    }
+  }
+
+  triggerFloatingReaction(emoji, userName, avatar, isSelf = false, xRatio = null) {
+    const overlay = document.getElementById('liveReactionsOverlay');
+    if (!overlay) return;
+
+    const item = document.createElement('div');
+    item.className = 'floating-reaction-item';
+
+    // 水平位置：若無指定則隨機分佈
+    const ratio = typeof xRatio === 'number' ? xRatio : (0.15 + Math.random() * 0.7);
+    const posX = Math.round(window.innerWidth * ratio);
+    item.style.left = `${posX}px`;
+
+    // 隨機搖晃路徑變數
+    const d1 = (Math.random() * 26 - 13).toFixed(1);
+    const d2 = (Math.random() * 26 - 13).toFixed(1);
+    const d3 = (Math.random() * 26 - 13).toFixed(1);
+    const d4 = (Math.random() * 26 - 13).toFixed(1);
+    const d5 = (Math.random() * 26 - 13).toFixed(1);
+    item.style.setProperty('--drift-1', `${d1}px`);
+    item.style.setProperty('--drift-2', `${d2}px`);
+    item.style.setProperty('--drift-3', `${d3}px`);
+    item.style.setProperty('--drift-4', `${d4}px`);
+    item.style.setProperty('--drift-5', `${d5}px`);
+
+    // 表情符號元素
+    const emojiEl = document.createElement('div');
+    emojiEl.className = 'floating-reaction-emoji';
+    emojiEl.textContent = emoji;
+
+    // 暱稱標籤
+    const nameEl = document.createElement('div');
+    nameEl.className = 'floating-reaction-name';
+    
+    // 如果有頭像且為合法 ID，加上微型大頭貼
+    const avatarHtml = (typeof this.renderAvatarHtml === 'function') 
+      ? this.renderAvatarHtml(avatar, 14) 
+      : '';
+    nameEl.innerHTML = `${avatarHtml}<span>${this.escapeHtml(userName || '同學')}</span>`;
+
+    item.appendChild(emojiEl);
+    item.appendChild(nameEl);
+    overlay.appendChild(item);
+
+    // 動畫 3.2 秒結束後自動移除 DOM
+    setTimeout(() => {
+      if (item && item.parentNode) {
+        item.parentNode.removeChild(item);
+      }
+    }, 3300);
+  }
+
+  setupLiveReactionsSync() {
+    if (!this.db) return;
+    const reactionsRef = this.db.ref('quiz/liveReactions');
+    const myUid = this.getUserId();
+    const initTime = Date.now() - 3000;
+
+    // 避免重複綁定監聽
+    if (this._liveReactionsListening) return;
+    this._liveReactionsListening = true;
+
+    reactionsRef.limitToLast(20).on('child_added', (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+      // 排除自己送出的（已本地渲染過）
+      if (data.uid === myUid) return;
+      // 排除連線前的歷史舊資料
+      if (data.timestamp && data.timestamp < initTime) return;
+
+      this.triggerFloatingReaction(data.emoji, data.userName, data.avatar, false, data.xRatio);
+    });
   }
 
   openAdminPasswordModal() {
@@ -7539,7 +7669,7 @@ class App {
         floatingTimer.style.backdropFilter = 'none';
         floatingTimer.style.top = 'auto';
         floatingTimer.style.left = 'auto';
-        floatingTimer.style.bottom = '24px';
+        floatingTimer.style.bottom = '82px';
         floatingTimer.style.right = '24px';
         floatingTimer.style.transform = 'none';
       }

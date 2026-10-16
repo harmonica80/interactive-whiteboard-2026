@@ -4606,5 +4606,29 @@ Python</pre>
     </div>
   </div>
 
+  <!-- 即時互動漂浮回饋全螢幕層 (不阻擋任何點擊與白板繪圖) -->
+  <div id="liveReactionsOverlay" class="live-reactions-overlay" aria-hidden="true"></div>
+
+  <!-- 即時互動表情符號快捷列 (右下角懸浮 Dock) -->
+  <div id="liveReactionDock" class="live-reaction-dock collapsed" data-position="right">
+    <!-- 收合狀態按鈕：顯示第一個愛心符號，上方有 < 箭頭與動畫，滑鼠滑過時顯示「即時互動回饋」 -->
+    <div class="reaction-collapsed-btn" id="reactionCollapsedBtn" onclick="window.app && window.app.toggleReactionDock(true)" title="即時互動回饋">
+      <span class="reaction-collapsed-arrow">‹</span>
+      <span class="reaction-collapsed-heart">❤️</span>
+      <div class="reaction-collapsed-tooltip">即時互動回饋</div>
+    </div>
+
+    <!-- 展開狀態的互動列 (圖 1) -->
+    <div class="reaction-expanded-bar" id="reactionExpandedBar">
+      <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('❤️')" title="愛心 (認同/喜歡)">❤️</button>
+      <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('👍')" title="讚 (學會了/贊成)">👍</button>
+      <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('👏')" title="鼓掌 (太棒了/喝采)">👏</button>
+      <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('😍')" title="喜愛 (精采)">😍</button>
+      <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('😂')" title="大笑 (有趣/幽默)">😂</button>
+      <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('😮')" title="驚訝 (震撼/原來如此)">😮</button>
+      <button type="button" class="reaction-collapse-toggle-btn" onclick="window.app && window.app.toggleReactionDock(false)" title="收合互動回饋列">›</button>
+    </div>
+  </div>
+
 </body>
 </html>
