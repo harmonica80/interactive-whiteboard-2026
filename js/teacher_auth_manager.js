@@ -372,13 +372,13 @@
         };
       }
 
-      // 3. 檢查預設密碼 1234 之落日過期狀態 (2026/10/31 23:59:59 停用)
+      // 3. 檢查系統預設密碼之落日過期狀態 (2026/10/31 23:59:59 停用)
       if (inputHash === DEFAULT_PASSWORD_HASH && this.isDefaultPasswordExpired()) {
         return {
           success: false,
           locked: false,
           isExpiredDefault: true,
-          message: '⛔ 系統安全政策：預設密碼 (1234) 已於 2026/10/31 23:59 正式退場停用！為保障課堂安全，請點選下方「忘記密碼？」使用安全提問或超級救援金鑰重設專屬密碼。'
+          message: '⛔ 系統安全政策：系統預設密碼已於 2026/10/31 23:59 正式退場停用！為保障課堂安全，請點選下方「忘記密碼？」使用安全提問或超級救援金鑰重設專屬密碼。'
         };
       }
 
@@ -401,7 +401,7 @@
             success: false,
             locked: false,
             isExpiredDefault: true,
-            message: '⛔ 系統安全政策：此班級管理密碼仍為舊有預設密碼 (1234)，已於 2026/10/31 正式停用！請點選下方「忘記密碼？」進行自救重設。'
+            message: '⛔ 系統安全政策：此班級管理密碼仍為系統預設密碼，已於 2026/10/31 正式停用！請點選下方「忘記密碼？」進行自救重設。'
           };
         }
 
@@ -418,7 +418,7 @@
           };
         }
 
-        // 若此班級老師已自訂專屬密碼，但使用者輸入預設密碼 1234
+        // 若此班級老師已自訂專屬密碼，但使用者輸入系統預設密碼
         if (inputHash === DEFAULT_PASSWORD_HASH && expectedHash !== DEFAULT_PASSWORD_HASH) {
           const record = this.recordFailedAttempt();
           return {
@@ -426,7 +426,7 @@
             locked: record.isLocked,
             remainingSeconds: record.remainingSeconds,
             remainingAttempts: record.remainingAttempts,
-            message: '⛔ 此班級白板已設定專屬安全密碼，預設密碼 1234 已失效！請輸入授課老師設定的專屬密碼。'
+            message: '⛔ 此班級白板已設定專屬安全密碼，系統預設密碼已失效！請輸入授課老師設定的專屬密碼。'
           };
         }
       } else {
@@ -453,7 +453,7 @@
           }
         }
 
-        // 若當前老師已設定專屬密碼，但輸入了預設密碼 1234
+        // 若當前老師已設定專屬密碼，但輸入了系統預設密碼
         if (!isSelfDefault && inputHash === DEFAULT_PASSWORD_HASH) {
           const record = this.recordFailedAttempt();
           return {
@@ -461,7 +461,7 @@
             locked: record.isLocked,
             remainingSeconds: record.remainingSeconds,
             remainingAttempts: record.remainingAttempts,
-            message: '⛔ 此管理員帳號已設定專屬安全密碼，預設密碼 1234 已失效！請輸入專屬密碼。'
+            message: '⛔ 此管理員帳號已設定專屬安全密碼，系統預設密碼已失效！請輸入專屬密碼。'
           };
         }
 
@@ -495,7 +495,7 @@
           console.warn('比對全域教師密碼失敗:', e);
         }
 
-        // 最後比對預設密碼 '1234' (僅在當前帳號尚未設定過專屬密碼且未過期時允許)
+        // 最後比對系統預設密碼 (僅在當前帳號尚未設定過專屬密碼且未過期時允許)
         if (isSelfDefault && inputHash === DEFAULT_PASSWORD_HASH && !this.isDefaultPasswordExpired()) {
           this.clearLockout();
           this.currentVerifiedTeacher = activeProfile;
@@ -504,7 +504,7 @@
             teacher: activeProfile,
             isDefault: true,
             remainingDays: this.getDefaultPasswordRemainingDays(),
-            message: '密碼正確（目前使用預設密碼 1234）'
+            message: '密碼正確（目前使用系統預設密碼）'
           };
         }
       }
@@ -529,18 +529,109 @@
     }
 
     /**
+     * 取得雲端所有可供跨裝置選擇救援的教師與班級清單
+     */
+    async getAvailableTeachersForRecovery() {
+      const list = [];
+      const seenIds = new Set();
+      const classMapByTeacher = {};
+
+      try {
+        if (window.firebase && typeof window.rawRef === 'function') {
+          const [classesSnap, teachersSnap] = await Promise.all([
+            window.rawRef('registered_classes').once('value').catch(() => null),
+            window.rawRef('teachers').once('value').catch(() => null)
+          ]);
+
+          if (classesSnap && classesSnap.exists() && classesSnap.val()) {
+            const clsObj = classesSnap.val();
+            for (const code in clsObj) {
+              const c = clsObj[code];
+              if (c && c.ownerTeacherId) {
+                if (!classMapByTeacher[c.ownerTeacherId]) classMapByTeacher[c.ownerTeacherId] = [];
+                classMapByTeacher[c.ownerTeacherId].push(code);
+              }
+            }
+          }
+
+          if (teachersSnap && teachersSnap.exists() && teachersSnap.val()) {
+            const tObj = teachersSnap.val();
+            for (const tid in tObj) {
+              const t = tObj[tid];
+              if (!t || !t.teacherId) continue;
+              const isConfigured = (t.passwordHash && t.passwordHash !== DEFAULT_PASSWORD_HASH) ||
+                Boolean(t.passwordHint) ||
+                Boolean(t.recoveryQuestion && t.recoveryAnswerHash) ||
+                Boolean(classMapByTeacher[t.teacherId] && classMapByTeacher[t.teacherId].length > 0);
+              if (isConfigured || tid === this.getActiveTeacherId()) {
+                seenIds.add(t.teacherId);
+                list.push({
+                  teacherId: t.teacherId,
+                  name: t.name || '授課老師',
+                  classes: classMapByTeacher[t.teacherId] || [],
+                  hasQuestion: Boolean(t.recoveryQuestion && t.recoveryAnswerHash),
+                  hasHint: Boolean(t.passwordHint),
+                  isCustomPassword: Boolean(t.passwordHash && t.passwordHash !== DEFAULT_PASSWORD_HASH)
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('讀取跨裝置教師救援清單失敗:', e);
+      }
+
+      const activeId = this.getActiveTeacherId();
+      if (!seenIds.has(activeId)) {
+        const localProfile = await this.getTeacherProfile(activeId);
+        list.unshift({
+          teacherId: localProfile.teacherId,
+          name: localProfile.name || '授課老師 (本機)',
+          classes: classMapByTeacher[localProfile.teacherId] || [],
+          hasQuestion: Boolean(localProfile.recoveryQuestion && localProfile.recoveryAnswerHash),
+          hasHint: Boolean(localProfile.passwordHint),
+          isCustomPassword: Boolean(localProfile.passwordHash && localProfile.passwordHash !== DEFAULT_PASSWORD_HASH)
+        });
+      }
+
+      // 優先排序：已設定安全問題或專屬密碼的教師排在前面
+      list.sort((a, b) => {
+        const scoreA = (a.hasQuestion ? 4 : 0) + (a.isCustomPassword ? 2 : 0) + (a.classes.length > 0 ? 1 : 0);
+        const scoreB = (b.hasQuestion ? 4 : 0) + (b.isCustomPassword ? 2 : 0) + (b.classes.length > 0 ? 1 : 0);
+        return scoreB - scoreA;
+      });
+
+      return list;
+    }
+
+    /**
      * 取得重設/自救所需的教師資訊 (不回傳 Hash)
      */
-    async getRecoveryContext() {
+    async getRecoveryContext(overrideTeacherId = null) {
       const classCode = window.currentClassCode;
-      let teacherId = null;
-      if (classCode) {
+      let teacherId = overrideTeacherId;
+      if (!teacherId && classCode) {
         teacherId = await this.getCurrentClassOwnerTeacherId();
       }
       if (!teacherId) {
         teacherId = this.getActiveTeacherId();
       }
-      const profile = await this.getTeacherProfile(teacherId);
+      let profile = await this.getTeacherProfile(teacherId);
+
+      // 若在公共課堂且本機為全新的未設定預設帳號（例如換教室電腦／無痕視窗），自動優先帶入雲端已設定專屬密碼的教師帳號
+      if (!overrideTeacherId && !classCode) {
+        const isUnconfiguredLocal = (!profile.passwordHash || profile.passwordHash === DEFAULT_PASSWORD_HASH) &&
+          !profile.passwordHint && !profile.recoveryAnswerHash;
+        if (isUnconfiguredLocal) {
+          const available = await this.getAvailableTeachersForRecovery();
+          const configuredCandidate = available.find(item => item.isCustomPassword || item.hasQuestion || item.hasHint);
+          if (configuredCandidate) {
+            teacherId = configuredCandidate.teacherId;
+            profile = await this.getTeacherProfile(teacherId);
+          }
+        }
+      }
+
       return {
         teacherId: profile.teacherId,
         name: profile.name || '授課老師',
@@ -563,12 +654,12 @@
         throw new Error('新密碼長度至少需 4 碼！');
       }
       if (newPassword.trim() === '1234' && this.isDefaultPasswordExpired()) {
-        throw new Error('預設密碼 1234 已於 2026/10/31 正式退場停用，請設定一組專屬自訂新密碼！');
+        throw new Error('系統預設密碼已於 2026/10/31 正式退場停用，請設定一組專屬自訂新密碼！');
       }
 
       const profile = await this.getTeacherProfile(teacherId);
       if (!profile.recoveryAnswerHash) {
-        throw new Error('此教師帳號尚未設定安全問題，請使用超級救援金鑰進行重設！');
+        throw new Error('此教師帳號尚未設定安全問題，請點開下方「途徑二：系統超級救援金鑰」進行重設！');
       }
 
       const normalizedAnswer = answer.trim().toLowerCase();
@@ -582,6 +673,7 @@
       await this.saveTeacherProfile(teacherId, {
         passwordHash: newPasswordHash
       });
+      this.setActiveTeacher(teacherId, profile.name || '授課老師');
 
       this.clearLockout();
       return true;
@@ -598,7 +690,7 @@
         throw new Error('新密碼長度至少需 4 碼！');
       }
       if (newPassword.trim() === '1234' && this.isDefaultPasswordExpired()) {
-        throw new Error('預設密碼 1234 已於 2026/10/31 正式退場停用，請設定一組專屬自訂新密碼！');
+        throw new Error('系統預設密碼已於 2026/10/31 正式退場停用，請設定一組專屬自訂新密碼！');
       }
 
       const masterKeyHash = await this.sha256(masterKey.trim());
@@ -609,9 +701,10 @@
       const targetId = teacherId || this.getActiveTeacherId();
       const newPasswordHash = await this.sha256(newPassword.trim());
 
-      await this.saveTeacherProfile(targetId, {
+      const updated = await this.saveTeacherProfile(targetId, {
         passwordHash: newPasswordHash
       });
+      this.setActiveTeacher(targetId, updated.name || '授課老師');
 
       this.clearLockout();
       return true;
@@ -634,32 +727,51 @@
       const input = document.getElementById('adminPasswordInput');
       const subInfo = document.getElementById('adminPasswordSubInfo');
 
-      // 班級與老師資訊
+      // 班級與老師資訊 + 是否已設定專屬密碼偵測
       if (subInfo) {
         const classCode = window.currentClassCode;
         let infoText = '';
+        let hasCustomPassword = false;
+
         if (classCode) {
           const ownerId = await this.getCurrentClassOwnerTeacherId();
           let teacherName = '授課老師';
           if (ownerId) {
             const p = await this.getTeacherProfile(ownerId);
-            if (p && p.name) teacherName = p.name;
+            if (p) {
+              if (p.name) teacherName = p.name;
+              hasCustomPassword = Boolean(p.passwordHash && p.passwordHash !== DEFAULT_PASSWORD_HASH);
+            }
           }
           infoText = `🏫 當前班級：<strong>【${classCode}】</strong> (管理老師: ${teacherName})`;
         } else {
-          const activeName = localStorage.getItem(STORAGE_KEYS.ACTIVE_TEACHER_NAME) || '授課老師';
+          const activeId = this.getActiveTeacherId();
+          const activeProfile = await this.getTeacherProfile(activeId);
+          let activeName = (activeProfile && activeProfile.name) || localStorage.getItem(STORAGE_KEYS.ACTIVE_TEACHER_NAME) || '授課老師';
+          hasCustomPassword = Boolean(activeProfile && activeProfile.passwordHash && activeProfile.passwordHash !== DEFAULT_PASSWORD_HASH);
+
+          if (!hasCustomPassword) {
+            const available = await this.getAvailableTeachersForRecovery();
+            const customTeacher = available.find(t => t.isCustomPassword);
+            if (customTeacher) {
+              hasCustomPassword = true;
+              activeName = customTeacher.name || activeName;
+            }
+          }
           infoText = `🌐 公共課堂 (目前老師: <strong>${activeName}</strong>)`;
         }
 
-        let expiryBadge = '';
-        if (this.isDefaultPasswordExpired()) {
-          expiryBadge = `<div style="margin-top: 6px; font-size: 11px; color: #dc2626; background: rgba(255,59,48,0.08); border: 1px solid rgba(255,59,48,0.25); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⛔ 若您使用預設密碼，已於 10/31 退場停用</div>`;
+        let statusBadge = '';
+        if (hasCustomPassword) {
+          statusBadge = `<div style="margin-top: 6px; font-size: 11px; color: #16a34a; background: rgba(52,199,89,0.1); border: 1px solid rgba(52,199,89,0.35); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">🛡️ 已啟用教師專屬安全密碼保護</div>`;
+        } else if (this.isDefaultPasswordExpired()) {
+          statusBadge = `<div style="margin-top: 6px; font-size: 11px; color: #dc2626; background: rgba(255,59,48,0.08); border: 1px solid rgba(255,59,48,0.25); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⛔ 若您使用預設密碼，已於 10/31 退場停用</div>`;
         } else {
           const remDays = this.getDefaultPasswordRemainingDays();
-          expiryBadge = `<div style="margin-top: 6px; font-size: 11px; color: #d97706; background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⏳ 若您使用預設密碼，將於10/31停用(剩餘 ${remDays} 天)</div>`;
+          statusBadge = `<div style="margin-top: 6px; font-size: 11px; color: #d97706; background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⏳ 若您使用預設密碼，將於10/31停用(剩餘 ${remDays} 天)</div>`;
         }
 
-        subInfo.innerHTML = `${infoText}<br>${expiryBadge}`;
+        subInfo.innerHTML = `${infoText}<br>${statusBadge}`;
       }
 
       if (lockout.isLocked) {
@@ -710,6 +822,35 @@
     }
 
     /**
+     * 顯示／清除忘記密碼彈窗內的單一內嵌紅字錯誤提示（搭配微幅搖晃動畫，免跳第二層彈窗）
+     */
+    showRecoveryError(message, focusInputEl = null) {
+      const errBox = document.getElementById('recoveryErrorMsg');
+      if (errBox) {
+        errBox.style.display = 'block';
+        errBox.innerHTML = `⚠️ ${message}`;
+        errBox.classList.remove('admin-input-shake');
+        void errBox.offsetWidth;
+        errBox.classList.add('admin-input-shake');
+        errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      if (focusInputEl) {
+        focusInputEl.classList.remove('admin-input-shake');
+        void focusInputEl.offsetWidth;
+        focusInputEl.classList.add('admin-input-shake');
+        focusInputEl.focus();
+      }
+    }
+
+    clearRecoveryError() {
+      const errBox = document.getElementById('recoveryErrorMsg');
+      if (errBox) {
+        errBox.style.display = 'none';
+        errBox.classList.remove('admin-input-shake');
+      }
+    }
+
+    /**
      * 切換途徑二超級救援金鑰的展開與收合 (預設閉合)
      */
     toggleMasterRecoveryCollapse(forceState = null) {
@@ -727,6 +868,45 @@
         content.style.display = 'none';
         if (arrow) arrow.innerHTML = '▼ 展開';
       }
+    }
+
+    /**
+     * 將指定教師的救援資訊渲染至忘記密碼彈窗
+     */
+    _applyRecoveryContextToUI(info) {
+      const modal = document.getElementById('adminPasswordRecoveryModal');
+      if (!modal || !info) return;
+
+      const teacherNameSpan = document.getElementById('recoveryTeacherName');
+      if (teacherNameSpan) teacherNameSpan.textContent = `${info.name} (${info.classCode})`;
+
+      const hintText = document.getElementById('recoveryPasswordHintText');
+      if (hintText) {
+        hintText.textContent = info.passwordHint || '（此教師帳號尚未填寫密碼提示）';
+      }
+
+      const qBox = document.getElementById('recoveryQuestionContainer');
+      const qText = document.getElementById('recoveryQuestionLabel');
+      if (qBox && qText) {
+        if (info.hasQuestion) {
+          qBox.style.display = 'block';
+          qText.textContent = info.recoveryQuestion;
+        } else {
+          qBox.style.display = 'none';
+        }
+      }
+
+      modal.setAttribute('data-target-teacher-id', info.teacherId);
+    }
+
+    /**
+     * 當老師在公共課堂/跨電腦下拉選單切換救援對象時觸發
+     */
+    async onRecoveryTeacherSelectChange(selectedTeacherId) {
+      if (!selectedTeacherId) return;
+      this.clearRecoveryError();
+      const info = await this.getRecoveryContext(selectedTeacherId);
+      this._applyRecoveryContextToUI(info);
     }
 
     /**
@@ -751,27 +931,32 @@
       modal.classList.add('active');
       modal.style.zIndex = '3600';
 
+      this.clearRecoveryError();
+
       // 途徑二預設保持閉合 (收合)
       this.toggleMasterRecoveryCollapse(false);
 
-      const info = await this.getRecoveryContext();
-      
-      const teacherNameSpan = document.getElementById('recoveryTeacherName');
-      if (teacherNameSpan) teacherNameSpan.textContent = `${info.name} (${info.classCode})`;
+      const [info, availableTeachers] = await Promise.all([
+        this.getRecoveryContext(),
+        this.getAvailableTeachersForRecovery()
+      ]);
 
-      const hintText = document.getElementById('recoveryPasswordHintText');
-      if (hintText) {
-        hintText.textContent = info.passwordHint || '（此教師帳號尚未填寫密碼提示）';
-      }
+      this._applyRecoveryContextToUI(info);
 
-      const qBox = document.getElementById('recoveryQuestionContainer');
-      const qText = document.getElementById('recoveryQuestionLabel');
-      if (qBox && qText) {
-        if (info.hasQuestion) {
-          qBox.style.display = 'block';
-          qText.textContent = info.recoveryQuestion;
+      // 若在公共課堂或雲端有多位教師帳號，顯示跨電腦教師選擇器，解決換電腦／無痕視窗找不到安全提問的盲點
+      const selectorWrapper = document.getElementById('recoveryTeacherSelectorWrapper');
+      const selectEl = document.getElementById('recoveryTeacherSelect');
+      if (selectorWrapper && selectEl) {
+        if (!window.currentClassCode && availableTeachers.length > 0) {
+          selectorWrapper.style.display = 'block';
+          selectEl.innerHTML = availableTeachers.map(t => {
+            const classLabel = t.classes && t.classes.length > 0 ? ` [班級: ${t.classes.join(', ')}]` : '';
+            const qBadge = t.hasQuestion ? ' ✓已設安全提問' : '';
+            const selectedAttr = t.teacherId === info.teacherId ? 'selected' : '';
+            return `<option value="${t.teacherId}" ${selectedAttr}>👨‍🏫 ${t.name}${classLabel}${qBadge}</option>`;
+          }).join('');
         } else {
-          qBox.style.display = 'none';
+          selectorWrapper.style.display = 'none';
         }
       }
 
@@ -787,9 +972,6 @@
       if (newPwd2) newPwd2.value = '';
       if (masterKey) masterKey.value = '';
       if (masterNewPwd) masterNewPwd.value = '';
-
-      // 儲存目前救援目標教師 ID
-      modal.setAttribute('data-target-teacher-id', info.teacherId);
     }
 
     closeRecoveryModal(skipReopenLogin = false) {
@@ -798,6 +980,7 @@
         modal.style.display = 'none';
         modal.classList.remove('active');
       }
+      this.clearRecoveryError();
 
       // 若未成功登入管理員，且使用者關閉了救援彈窗，自動重新開啟管理員密碼登入視窗
       if (!skipReopenLogin && (!window.app || !window.app.isAdmin)) {
@@ -822,25 +1005,25 @@
       const p2 = newPwd2 ? newPwd2.value : '';
 
       if (!answer) {
-        window.app.showNotification('請輸入答案', '請填寫安全問題的正確答案！');
+        this.showRecoveryError('請填寫安全問題的正確答案！', answerInput);
         return;
       }
       if (!p1 || p1.length < 4) {
-        window.app.showNotification('密碼過短', '新密碼長度至少需 4 碼！');
+        this.showRecoveryError('新密碼長度至少需 4 碼！', newPwd1);
         return;
       }
       if (p1 !== p2) {
-        window.app.showNotification('密碼不一致', '兩次輸入的新密碼不相符，請重新輸入！');
+        this.showRecoveryError('兩次輸入的新密碼不相符，請重新確認！', newPwd2);
         return;
       }
 
       try {
         await this.verifyAndResetViaQuestion(teacherId, answer, p1);
-        window.app.showNotification('🎉 重設成功', '管理員密碼已成功更新！請使用新密碼登入。');
         this.closeRecoveryModal();
         this.updatePasswordModalUI();
+        window.app.showNotification('🎉 重設成功', '管理員密碼已成功更新！請使用新密碼登入。');
       } catch (e) {
-        window.app.showNotification('重設失敗', e.message || '安全提問驗證錯誤');
+        this.showRecoveryError(e.message || '安全提問驗證錯誤', answerInput);
       }
     }
 
@@ -857,21 +1040,21 @@
       const p1 = masterNewPwd ? masterNewPwd.value : '';
 
       if (!key) {
-        window.app.showNotification('請輸入金鑰', '請輸入系統超級救援金鑰！');
+        this.showRecoveryError('請輸入系統超級救援金鑰！', masterKeyInput);
         return;
       }
       if (!p1 || p1.length < 4) {
-        window.app.showNotification('密碼過短', '新密碼長度至少需 4 碼！');
+        this.showRecoveryError('新密碼長度至少需 4 碼！', masterNewPwd);
         return;
       }
 
       try {
         await this.resetViaMasterKey(teacherId, key, p1);
-        window.app.showNotification('🎉 救援成功', '已透過系統超級救援金鑰重設密碼！請立即登入。');
         this.closeRecoveryModal();
         this.updatePasswordModalUI();
+        window.app.showNotification('🎉 救援成功', '已透過系統超級救援金鑰重設密碼！請立即登入。');
       } catch (e) {
-        window.app.showNotification('金鑰驗證失敗', e.message || '金鑰錯誤');
+        this.showRecoveryError(e.message || '超級救援金鑰錯誤，請重新確認！', masterKeyInput);
       }
     }
 
@@ -899,10 +1082,10 @@
       if (statusBadge) {
         if (isDefault) {
           if (this.isDefaultPasswordExpired()) {
-            statusBadge.innerHTML = `<span style="background: rgba(255, 59, 48, 0.15); color: #dc2626; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(255, 59, 48, 0.4); display: inline-flex; align-items: center; gap: 4px;">⛔ 預設密碼 (1234) 已於 10/31 退場停用 — 必須設定專屬密碼！</span>`;
+            statusBadge.innerHTML = `<span style="background: rgba(255, 59, 48, 0.15); color: #dc2626; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(255, 59, 48, 0.4); display: inline-flex; align-items: center; gap: 4px;">⛔ 系統預設密碼已於 10/31 退場停用 — 必須設定專屬密碼！</span>`;
           } else {
             const remDays = this.getDefaultPasswordRemainingDays();
-            statusBadge.innerHTML = `<span style="background: rgba(255, 149, 0, 0.15); color: #d97706; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(255, 149, 0, 0.4); display: inline-flex; align-items: center; gap: 4px;">⚠️ 仍使用預設密碼 (1234) — 將於 10/31 停用（剩餘 ${remDays} 天），請儘速修改！</span>`;
+            statusBadge.innerHTML = `<span style="background: rgba(255, 149, 0, 0.15); color: #d97706; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(255, 149, 0, 0.4); display: inline-flex; align-items: center; gap: 4px;">⚠️ 仍使用系統預設密碼 — 將於 10/31 停用（剩餘 ${remDays} 天），請儘速修改！</span>`;
           }
         } else {
           statusBadge.innerHTML = `<span style="background: rgba(52, 199, 89, 0.15); color: #16a34a; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(52, 199, 89, 0.4); display: inline-flex; align-items: center; gap: 4px;">🛡️ 已啟用專屬安全密碼 (SHA-256 加密守護中)</span>`;
@@ -911,14 +1094,6 @@
 
       // 安全問題下拉選單
       if (questionSelect) {
-        const commonQuestions = [
-          '我的第一所任教學校名稱？',
-          '我的第一隻寵物叫什麼名字？',
-          '我最崇拜的一位歷史人物？',
-          '我就讀的國小學校名稱？',
-          '我人生中購買的第一本書名？'
-        ];
-        
         let found = false;
         for (let i = 0; i < questionSelect.options.length; i++) {
           if (questionSelect.options[i].value === profile.recoveryQuestion) {
@@ -1017,7 +1192,7 @@
           return;
         }
         if (p1 === '1234' && this.isDefaultPasswordExpired()) {
-          window.app.showNotification('密碼不合規', '預設密碼 1234 已於 2026/10/31 正式退場停用，不可再設定為 1234！請使用其他自訂密碼。');
+          window.app.showNotification('密碼不合規', '系統預設密碼已於 2026/10/31 正式退場停用，不可再設定為預設密碼！請使用其他自訂密碼。');
           return;
         }
         updateData.passwordHash = await this.sha256(p1);
@@ -1044,11 +1219,11 @@
     }
 
     /**
-     * 重設為系統預設密碼 (1234，僅在 2026/10/31 前有效)
+     * 重設為系統預設密碼 (僅在 2026/10/31 前有效)
      */
     async resetToDefaultPassword() {
       if (this.isDefaultPasswordExpired()) {
-        window.app.showNotification('⛔ 無法恢復預設密碼', '預設密碼 (1234) 已於 2026/10/31 正式退場停用，系統已全面禁止使用預設密碼。請直接在上方欄位設定專屬新密碼！');
+        window.app.showNotification('⛔ 無法恢復預設密碼', '系統預設密碼已於 2026/10/31 正式退場停用，系統已全面禁止使用預設密碼。請直接在上方欄位設定專屬新密碼！');
         return;
       }
       const teacherId = this.getActiveTeacherId();
@@ -1059,7 +1234,7 @@
         recoveryAnswerHash: ''
       });
       const days = this.getDefaultPasswordRemainingDays();
-      window.app.showNotification('🔄 已重設為預設', `密碼已恢復為預設的 1234。提醒：此預設密碼將於 10/31 停用（剩餘 ${days} 天），請務必及時設定專屬安全密碼。`);
+      window.app.showNotification('🔄 已重設為預設', `密碼已恢復為系統預設密碼。提醒：此預設密碼將於 10/31 停用（剩餘 ${days} 天），請務必及時設定專屬安全密碼。`);
       this.renderSecurityPanel();
     }
   }
