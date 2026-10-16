@@ -5473,18 +5473,24 @@ body {
   overflow: hidden;
 }
 
-/* 漂浮升空的表情符號物件 */
+/* 漂浮升空的表情符號物件（外層負責垂直平順勻速上升與淡出，零停頓感） */
 .floating-reaction-item {
   position: absolute;
   bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
   pointer-events: none;
   user-select: none;
   will-change: transform, opacity;
-  animation: floatUpReaction 3.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: reactionFloatUp 3.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* 內部容器（負責進場彈性縮放與如氣球隨微風輕柔擺動） */
+.floating-reaction-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  will-change: transform;
+  animation: reactionPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, reactionSway 3.6s ease-in-out infinite;
 }
 
 .floating-reaction-emoji {
@@ -5513,29 +5519,44 @@ body {
   text-overflow: ellipsis;
 }
 
-@keyframes floatUpReaction {
+/* 單一平滑無停頓的升空軌道（垂直位移連續不斷，仿氣球升空） */
+@keyframes reactionFloatUp {
   0% {
+    transform: translateY(0);
     opacity: 0;
-    transform: translateY(0) scale(0.5) translateX(0);
   }
-  12% {
+  6% {
     opacity: 1;
-    transform: translateY(-50px) scale(1.18) translateX(var(--drift-1, -10px));
   }
-  28% {
-    transform: translateY(-150px) scale(1) translateX(var(--drift-2, 12px));
-  }
-  60% {
-    opacity: 0.95;
-    transform: translateY(-360px) scale(0.95) translateX(var(--drift-3, -8px));
-  }
-  85% {
-    opacity: 0.65;
-    transform: translateY(-560px) scale(0.85) translateX(var(--drift-4, 10px));
+  80% {
+    opacity: 1;
   }
   100% {
+    transform: translateY(calc(-92vh - 60px));
     opacity: 0;
-    transform: translateY(-720px) scale(0.7) translateX(var(--drift-5, -4px));
+  }
+}
+
+/* 初登場 Q 彈縮放 */
+@keyframes reactionPopIn {
+  0% {
+    transform: scale(0.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 左右如氣球被微風吹拂的自然正弦微幅擺動 */
+@keyframes reactionSway {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(var(--drift-left, -12px)) rotate(-3deg);
+  }
+  75% {
+    transform: translateX(var(--drift-right, 12px)) rotate(3deg);
   }
 }
 

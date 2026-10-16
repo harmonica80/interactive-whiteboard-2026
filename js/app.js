@@ -1582,17 +1582,15 @@ class App {
     const posX = Math.round(window.innerWidth * ratio);
     item.style.left = `${posX}px`;
 
-    // 隨機搖晃路徑變數
-    const d1 = (Math.random() * 26 - 13).toFixed(1);
-    const d2 = (Math.random() * 26 - 13).toFixed(1);
-    const d3 = (Math.random() * 26 - 13).toFixed(1);
-    const d4 = (Math.random() * 26 - 13).toFixed(1);
-    const d5 = (Math.random() * 26 - 13).toFixed(1);
-    item.style.setProperty('--drift-1', `${d1}px`);
-    item.style.setProperty('--drift-2', `${d2}px`);
-    item.style.setProperty('--drift-3', `${d3}px`);
-    item.style.setProperty('--drift-4', `${d4}px`);
-    item.style.setProperty('--drift-5', `${d5}px`);
+    // 氣球隨風左右擺動幅度 (負值與正值)
+    const driftLeft = -(8 + Math.random() * 12).toFixed(1);
+    const driftRight = (8 + Math.random() * 12).toFixed(1);
+
+    // 內部氣球容器（負責 Q 彈登場與自然左右擺動）
+    const bubble = document.createElement('div');
+    bubble.className = 'floating-reaction-bubble';
+    bubble.style.setProperty('--drift-left', `${driftLeft}px`);
+    bubble.style.setProperty('--drift-right', `${driftRight}px`);
 
     // 表情符號元素
     const emojiEl = document.createElement('div');
@@ -1609,16 +1607,17 @@ class App {
       : '';
     nameEl.innerHTML = `${avatarHtml}<span>${this.escapeHtml(userName || '同學')}</span>`;
 
-    item.appendChild(emojiEl);
-    item.appendChild(nameEl);
+    bubble.appendChild(emojiEl);
+    bubble.appendChild(nameEl);
+    item.appendChild(bubble);
     overlay.appendChild(item);
 
-    // 動畫 3.2 秒結束後自動移除 DOM
+    // 動畫 3.6 秒升空結束後自動移除 DOM
     setTimeout(() => {
       if (item && item.parentNode) {
         item.parentNode.removeChild(item);
       }
-    }, 3300);
+    }, 3700);
   }
 
   setupLiveReactionsSync() {
