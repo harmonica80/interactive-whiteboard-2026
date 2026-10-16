@@ -1612,12 +1612,12 @@ class App {
     item.appendChild(bubble);
     overlay.appendChild(item);
 
-    // 動畫 3.6 秒升空結束後自動移除 DOM
+    // 動畫 2.8 秒升空結束後自動移除 DOM
     setTimeout(() => {
       if (item && item.parentNode) {
         item.parentNode.removeChild(item);
       }
-    }, 3700);
+    }, 2900);
   }
 
   setupLiveReactionsSync() {
