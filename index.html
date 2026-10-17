@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=387">
+  <link rel="stylesheet" href="css/style.css?v=388">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -725,25 +725,27 @@
             </div>
 
             <!-- 總覽頂部操作列 -->
-            <div class="admin-dashboard-top-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 12px;">
-              <div style="flex: 0 1 auto;">
-                <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                  <span>🎛️</span> 管理後台功能總覽目錄
-                </h3>
-                <p style="margin: 4px 0 0 0; font-size: 13.5px; color: var(--text-secondary);">
-                  請點選功能卡片進入該功能的獨立全頁操作模式。點擊各類別標題可自由展開或折疊。
-                </p>
+            <div class="admin-dashboard-top-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: nowrap; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0;">
+                <div>
+                  <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span>🎛️</span> 管理後台功能總覽目錄
+                  </h3>
+                  <p style="margin: 4px 0 0 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary);">
+                    請點選功能卡片進入該功能的獨立全頁操作模式。<br>點擊各類別標題可自由展開或折疊。
+                  </p>
+                </div>
+                <div style="display: flex; gap: 6px; flex-shrink: 0; align-self: flex-end; margin-bottom: 2px;">
+                  <button type="button" class="preset-btn" onclick="window.app.expandAllAdminCategories()" style="font-size: 12.5px; padding: 5px 10px; font-weight: 600; white-space: nowrap;">
+                    📂 全部展開
+                  </button>
+                  <button type="button" class="preset-btn" onclick="window.app.collapseAllAdminCategories()" style="font-size: 12.5px; padding: 5px 10px; font-weight: 600; white-space: nowrap;">
+                    📁 全部折疊
+                  </button>
+                </div>
               </div>
               <!-- Firebase 空間與流量即時監測儀表板 (後台總覽直接顯示) -->
               <div id="firebaseQuotaBannerDashboard" class="firebase-quota-banner-dashboard-slot"></div>
-              <div style="display: flex; gap: 8px; flex-shrink: 0;">
-                <button type="button" class="preset-btn" onclick="window.app.expandAllAdminCategories()" style="font-size: 13px; padding: 6px 12px; font-weight: 600;">
-                  📂 全部展開
-                </button>
-                <button type="button" class="preset-btn" onclick="window.app.collapseAllAdminCategories()" style="font-size: 13px; padding: 6px 12px; font-weight: 600;">
-                  📁 全部折疊
-                </button>
-              </div>
             </div>
 
             <!-- 班級管理 (預設折疊) -->
