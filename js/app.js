@@ -5504,7 +5504,7 @@ class App {
   }
 
   renderFirebaseQuotaBanners() {
-    const bannerIds = ['firebaseQuotaBannerQuestions', 'firebaseQuotaBannerShares'];
+    const bannerIds = ['firebaseQuotaBannerDashboard', 'firebaseQuotaBannerQuestions', 'firebaseQuotaBannerShares'];
     const MAX_STORAGE_BYTES = 1024 * 1024 * 1024; // 1 GB
     const MAX_TRAFFIC_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB
 
@@ -5556,7 +5556,6 @@ class App {
         <div class="firebase-quota-header">
           <div class="firebase-quota-title">
             <span>📊 Firebase 空間與本月流量即時監測</span>
-            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">（主表與附件分離・點擊才下載省流模式）</span>
           </div>
           <div class="firebase-quota-actions">
             <button type="button" class="quota-mini-btn" onclick="window.app.recalculateAllFirebaseStorage(true)" title="重新掃描計算目前課堂與附件空間">🔄 重新掃描</button>
@@ -5966,22 +5965,22 @@ class App {
           const safeClassCode = this.escapeQuote(att.classCode || '');
           const previewBtn = att.isImage ? `
             <button type="button" class="attachment-download-btn" style="background: rgba(16, 185, 129, 0.12); color: #059669; border-color: rgba(16, 185, 129, 0.35);" onclick="event.stopPropagation(); window.app.downloadOrPreviewAttachment('${att.id}', '${safeAttrName}', '${safeClassCode}', true, this)">
-              👁️ 預覽圖片
+              👁️ 預覽
             </button>
           ` : '';
           return `
             <div class="attachment-pill-card">
-              <div class="attachment-pill-info">
+              <div class="attachment-pill-info" onclick="event.stopPropagation(); window.app.downloadOrPreviewAttachment('${att.id}', '${safeAttrName}', '${safeClassCode}', false, this.parentElement.querySelector('.btn-dl-main'))" title="點擊下載：${safeName} (${sizeLabel})" style="cursor: pointer;">
                 <span class="attachment-pill-icon">${icon}</span>
                 <div class="attachment-pill-meta">
                   <span class="attachment-pill-name" title="${safeName}">${safeName}</span>
-                  <span class="attachment-pill-size">${sizeLabel} ・ 點擊才下載</span>
+                  <span class="attachment-pill-size">${sizeLabel}</span>
                 </div>
               </div>
-              <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+              <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
                 ${previewBtn}
-                <button type="button" class="attachment-download-btn" onclick="event.stopPropagation(); window.app.downloadOrPreviewAttachment('${att.id}', '${safeAttrName}', '${safeClassCode}', false, this)">
-                  📥 點擊下載
+                <button type="button" class="attachment-download-btn btn-dl-main" onclick="event.stopPropagation(); window.app.downloadOrPreviewAttachment('${att.id}', '${safeAttrName}', '${safeClassCode}', false, this)">
+                  📥 下載
                 </button>
               </div>
             </div>
