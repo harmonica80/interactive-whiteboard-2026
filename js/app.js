@@ -4661,8 +4661,8 @@ class App {
       },
       classReaction: {
         id: 'adminReactionSettingsSection',
-        title: 'G. 即時互動回饋設定',
-        category: '班級管理',
+        title: 'D. 即時互動回饋設定',
+        category: '教學互動管理',
         icon: 'images/admin_icons/class_reaction.svg'
       },
       quizChoice: {
@@ -4748,12 +4748,12 @@ class App {
       classSound: 'adminCatBlock1',
       systemReset: 'adminCatBlock1',
       classSecurity: 'adminCatBlock1',
-      classReaction: 'adminCatBlock1',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
       gameFocus: 'adminCatBlock3',
       gameWheel: 'adminCatBlock3',
+      classReaction: 'adminCatBlock3',
       qaMgmt: 'adminCatBlock4',
       imgMgmt: 'adminCatBlock4',
       vidMgmt: 'adminCatBlock4',

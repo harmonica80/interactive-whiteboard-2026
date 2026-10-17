@@ -740,7 +740,7 @@
                 <div class="admin-cat-title">
                   <span>🏫</span>
                   <span>班級管理</span>
-                  <span class="admin-cat-badge">7 個功能</span>
+                  <span class="admin-cat-badge">6 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -805,16 +805,6 @@
                     <div class="admin-feature-card-desc">自訂教師專屬密碼（多班級通用）、密碼提示、安全提問自救與防暴力破解保護。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
-
-                  <!-- G. 即時互動回饋設定 -->
-                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('classReaction')">
-                    <div class="admin-feature-icon-box">
-                      <img src="images/admin_icons/class_reaction.svg" width="64" height="64" alt="即時互動回饋設定">
-                    </div>
-                    <div class="admin-feature-card-title">G. 即時互動回饋設定</div>
-                    <div class="admin-feature-card-desc">切換全班右下角即時漂浮互動情境組合（經典表情、五大表情、1~5星評等、快選表決、理解度回報等）與防洗版保護。</div>
-                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -860,7 +850,7 @@
                 <div class="admin-cat-title">
                   <span>⚡</span>
                   <span>教學互動管理</span>
-                  <span class="admin-cat-badge">3 個功能</span>
+                  <span class="admin-cat-badge">4 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -893,6 +883,16 @@
                     </div>
                     <div class="admin-feature-card-title">C. 抽人轉盤</div>
                     <div class="admin-feature-card-desc">學生名單匯入與自訂、打亂與排序、不重複抽人、轉盤色系音效設定與全班同步廣播。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+
+                  <!-- D. 即時互動回饋設定 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('classReaction')">
+                    <div class="admin-feature-icon-box">
+                      <img src="images/admin_icons/class_reaction.svg" width="64" height="64" alt="即時互動回饋設定">
+                    </div>
+                    <div class="admin-feature-card-title">D. 即時互動回饋設定</div>
+                    <div class="admin-feature-card-desc">切換全班右下角即時漂浮互動情境組合（經典表情、五大表情、1~5星評等、快選表決、理解度回報等）與各情境每秒點擊上限。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
                 </div>
@@ -1002,7 +1002,6 @@
                     <option value="classSound">D. 測驗與互動音效設定</option>
                     <option value="systemReset">E. 系統重設與備份管理</option>
                     <option value="classSecurity">F. 教師身分與密碼安全設定</option>
-                    <option value="classReaction">G. 即時互動回饋設定</option>
                   </optgroup>
                   <optgroup label="測驗出題管理">
                     <option value="quizChoice">A. 選擇題測驗</option>
@@ -1012,6 +1011,7 @@
                     <option value="gameBuzz">A. 搶答</option>
                     <option value="gameFocus">B. 專注力測驗</option>
                     <option value="gameWheel">C. 抽人轉盤</option>
+                    <option value="classReaction">D. 即時互動回饋設定</option>
                   </optgroup>
                   <optgroup label="同學提問與資料分享管理">
                     <option value="qaMgmt">A. 提問管理</option>
@@ -1722,10 +1722,10 @@
             </div>
           </div>
 
-          <!-- G. 即時互動回饋設定區 -->
+          <!-- D. 即時互動回饋設定區 -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminReactionSettingsSection">
             <div class="admin-section-header">
-              <h3>💖 G. 即時互動回饋設定</h3>
+              <h3>💖 D. 即時互動回饋設定</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3352,7 +3352,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=382"></script>
+  <script src="js/app.js?v=383"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
