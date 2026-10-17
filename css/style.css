@@ -6052,13 +6052,40 @@ body {
   margin-bottom: 14px;
 }
 
+.admin-dashboard-top-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: 10px !important;
+  margin-bottom: 10px !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-dashboard-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.admin-dashboard-expand-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
 .firebase-quota-banner-dashboard-slot {
-  flex: 1 1 380px;
-  max-width: 600px;
+  flex: 1 1 340px;
+  max-width: 550px;
   min-width: 280px;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 820px) {
   .admin-dashboard-top-row {
     flex-wrap: wrap !important;
   }

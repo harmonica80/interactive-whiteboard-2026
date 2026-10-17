@@ -5967,6 +5967,37 @@ class App {
       const el = document.getElementById(id);
       if (el) el.innerHTML = html;
     });
+
+    // 確保管理後台總覽頂部操作列維持單行並列、說明文字強制換行且展開/折疊按鈕不掉行
+    const topRow = document.querySelector('#adminDashboardView .admin-dashboard-top-row');
+    if (topRow) {
+      topRow.style.flexWrap = 'nowrap';
+      const pEl = topRow.querySelector('p');
+      if (pEl && !pEl.innerHTML.includes('<br>')) {
+        pEl.innerHTML = '請點選功能卡片進入該功能的獨立全頁操作模式。<br>點擊各類別標題可自由展開或折疊。';
+        pEl.style.fontSize = '12.5px';
+        pEl.style.lineHeight = '1.45';
+        pEl.style.whiteSpace = 'nowrap';
+      }
+      // 若為舊版 HTML 結構（3 個直屬子區塊），自動將展開/折疊按鈕移至說明文字右側並列
+      const dashSlot = document.getElementById('firebaseQuotaBannerDashboard');
+      if (dashSlot && topRow.children.length === 3 && topRow.children[1] === dashSlot) {
+        const firstChild = topRow.children[0];
+        const thirdChild = topRow.children[2];
+        firstChild.style.display = 'flex';
+        firstChild.style.alignItems = 'center';
+        firstChild.style.gap = '10px';
+        firstChild.style.flexShrink = '0';
+        const innerTextWrap = document.createElement('div');
+        while (firstChild.firstChild) {
+          innerTextWrap.appendChild(firstChild.firstChild);
+        }
+        thirdChild.style.alignSelf = 'flex-end';
+        thirdChild.style.marginBottom = '2px';
+        firstChild.appendChild(innerTextWrap);
+        firstChild.appendChild(thirdChild);
+      }
+    }
   }
 
   // ===== 提問區「允許學生提問附檔」後台開關與即時同步 =====
