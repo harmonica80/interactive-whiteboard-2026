@@ -1694,10 +1694,11 @@ class App {
   }
 
   initLiveReactions() {
-    // 預設設定結構
+    // 預設設定結構（支援每個情境獨立設定 1 秒最多可按幾個）
     this.reactionSettings = {
       enabled: true,
       activePreset: 'classic',
+      presetMaxPerSec: {},
       customItems: this.getDefaultCustomReactionItems()
     };
     this._reactionClickTimestamps = [];
@@ -1714,6 +1715,23 @@ class App {
     this.setupLiveReactionsSync();
   }
 
+  getPresetMaxReactionsPerSec(presetKey) {
+    const key = presetKey || (this.reactionSettings && this.reactionSettings.activePreset) || 'classic';
+    const map = (this.reactionSettings && this.reactionSettings.presetMaxPerSec && typeof this.reactionSettings.presetMaxPerSec === 'object')
+      ? this.reactionSettings.presetMaxPerSec
+      : {};
+    const raw = parseInt(map[key], 10);
+    if (!isNaN(raw) && raw >= 1 && raw <= 20) {
+      return raw;
+    }
+    return 3; // 預設 1 秒最多 3 個
+  }
+
+  getActiveMaxReactionsPerSec() {
+    const activeKey = (this.reactionSettings && this.reactionSettings.activePreset) || 'classic';
+    return this.getPresetMaxReactionsPerSec(activeKey);
+  }
+
   initReactionSettingsListener() {
     if (!this.db) return;
     if (this._reactionSettingsRef) {
@@ -1726,6 +1744,7 @@ class App {
         this.reactionSettings = {
           enabled: val.enabled !== false,
           activePreset: val.activePreset || 'classic',
+          presetMaxPerSec: (val.presetMaxPerSec && typeof val.presetMaxPerSec === 'object') ? val.presetMaxPerSec : {},
           customItems: Array.isArray(val.customItems) && val.customItems.length >= 2
             ? val.customItems
             : this.getDefaultCustomReactionItems()
@@ -1734,6 +1753,7 @@ class App {
         this.reactionSettings = {
           enabled: true,
           activePreset: 'classic',
+          presetMaxPerSec: {},
           customItems: this.getDefaultCustomReactionItems()
         };
       }
@@ -1770,6 +1790,7 @@ class App {
     const expandedBar = document.getElementById('reactionExpandedBar');
     const collapsedIcon = document.getElementById('reactionCollapsedIcon');
     const collapsedTooltip = document.getElementById('reactionCollapsedTooltip');
+    const toast = document.getElementById('reactionRateLimitToast');
     if (!dock || !expandedBar) return;
 
     const enabled = !this.reactionSettings || this.reactionSettings.enabled !== false;
@@ -1778,6 +1799,11 @@ class App {
       return;
     }
     dock.style.display = '';
+
+    const maxPerSec = this.getActiveMaxReactionsPerSec();
+    if (toast) {
+      toast.textContent = `⏳ 1 秒最多只能按 ${maxPerSec} 個喔！`;
+    }
 
     const preset = this.getActiveReactionPresetData();
     const firstEmoji = (preset.items && preset.items[0] && preset.items[0].emoji) || preset.collapsedIcon || '❤️';
@@ -1836,10 +1862,12 @@ class App {
     }
   }
 
-  showReactionRateLimitNotice() {
+  showReactionRateLimitNotice(maxPerSec) {
     const dock = document.getElementById('liveReactionDock');
     const toast = document.getElementById('reactionRateLimitToast');
+    const limit = maxPerSec || this.getActiveMaxReactionsPerSec();
     if (toast) {
+      toast.textContent = `⏳ 1 秒最多只能按 ${limit} 個喔！`;
       toast.classList.add('show');
       clearTimeout(this._reactionRateLimitToastTimer);
       this._reactionRateLimitToastTimer = setTimeout(() => {
@@ -1860,15 +1888,16 @@ class App {
   sendLiveReaction(emoji, floatBadge = '') {
     if (!emoji) return;
 
-    // 嚴格防洗版保護：滑動視窗檢查 1 秒（1000ms）內最多只能按 3 個
+    // 依目前啟用情境的「1 秒最多可按幾個」設定進行滑動視窗檢查
+    const maxPerSec = this.getActiveMaxReactionsPerSec();
     const now = Date.now();
     if (!Array.isArray(this._reactionClickTimestamps)) {
       this._reactionClickTimestamps = [];
     }
     this._reactionClickTimestamps = this._reactionClickTimestamps.filter(t => (now - t) < 1000);
 
-    if (this._reactionClickTimestamps.length >= 3) {
-      this.showReactionRateLimitNotice();
+    if (this._reactionClickTimestamps.length >= maxPerSec) {
+      this.showReactionRateLimitNotice(maxPerSec);
       return;
     }
     this._reactionClickTimestamps.push(now);
@@ -1977,12 +2006,13 @@ class App {
       // 排除連線前的歷史舊資料
       if (data.timestamp && data.timestamp < initTime) return;
 
-      // 接收端同步執行每位使用者 1 秒最多 3 個的防洗版保護
+      // 接收端同步依目前情境的每秒點擊上限執行防洗版保護
+      const maxPerSec = this.getActiveMaxReactionsPerSec();
       const senderKey = data.uid || data.userName || 'anon';
       const now = Date.now();
       if (!this._remoteReactionTimestampsByUid) this._remoteReactionTimestampsByUid = {};
       const list = (this._remoteReactionTimestampsByUid[senderKey] || []).filter(t => (now - t) < 1000);
-      if (list.length >= 3) return;
+      if (list.length >= maxPerSec) return;
       list.push(now);
       this._remoteReactionTimestampsByUid[senderKey] = list;
 
@@ -2028,9 +2058,20 @@ class App {
     }
 
     const activePreset = this.getActiveReactionPresetData();
+    const activeMaxPerSec = this.getActiveMaxReactionsPerSec();
     const titleBadge = document.getElementById('reactionActivePresetTitleBadge');
     if (titleBadge && activePreset) {
       titleBadge.textContent = activePreset.title;
+    }
+
+    const rateBadge = document.getElementById('reactionActiveRateLimitBadge');
+    if (rateBadge) {
+      rateBadge.textContent = `🛡️ 目前情境防洗版：每人 1 秒最多按 ${activeMaxPerSec} 個`;
+    }
+
+    const activeSelect = document.getElementById('reactionActiveMaxPerSecSelect');
+    if (activeSelect) {
+      activeSelect.value = String(activeMaxPerSec);
     }
 
     // 渲染上方即時試按預覽列
@@ -2055,7 +2096,7 @@ class App {
       });
     }
 
-    // 渲染情境分類與選擇卡片
+    // 渲染情境分類與選擇卡片（每張卡片皆內建專屬「1 秒最多可按幾個」設定選單）
     const container = document.getElementById('reactionPresetsContainer');
     if (container) {
       const catalog = this.getReactionPresetsCatalog();
@@ -2063,6 +2104,16 @@ class App {
       catalog.forEach(p => {
         if (!categories.includes(p.category)) categories.push(p.category);
       });
+
+      const rateOptions = [
+        { val: 1, label: '1 個 / 秒 (單擊表決)' },
+        { val: 2, label: '2 個 / 秒 (溫和互動)' },
+        { val: 3, label: '3 個 / 秒 (預設推薦)' },
+        { val: 4, label: '4 個 / 秒' },
+        { val: 5, label: '5 個 / 秒 (熱烈互動)' },
+        { val: 8, label: '8 個 / 秒 (高潮喝采)' },
+        { val: 10, label: '10 個 / 秒 (全場狂歡)' }
+      ];
 
       container.innerHTML = '';
       categories.forEach(catName => {
@@ -2076,6 +2127,7 @@ class App {
 
         catalog.filter(p => p.category === catName).forEach(preset => {
           const isSelected = (this.reactionSettings?.activePreset || 'classic') === preset.key;
+          const presetRate = this.getPresetMaxReactionsPerSec(preset.key);
           const card = document.createElement('div');
           card.className = `reaction-preset-card${isSelected ? ' active' : ''}`;
           card.onclick = () => this.selectReactionPreset(preset.key);
@@ -2089,6 +2141,10 @@ class App {
             return `<span class="reaction-preset-pill"><span>${this.escapeHtml(it.emoji)}</span>${labelPart}</span>`;
           }).join('');
 
+          const optionsHtml = rateOptions.map(opt =>
+            `<option value="${opt.val}"${presetRate === opt.val ? ' selected' : ''}>${opt.label}</option>`
+          ).join('');
+
           card.innerHTML = `
             <div>
               <div class="reaction-preset-card-top">
@@ -2097,7 +2153,15 @@ class App {
               </div>
               <div class="reaction-preset-card-desc">${this.escapeHtml(preset.desc)}</div>
             </div>
-            <div class="reaction-preset-pills">${pillsHtml}</div>
+            <div>
+              <div class="reaction-preset-pills" style="margin-bottom: 8px;">${pillsHtml}</div>
+              <div class="reaction-preset-rate-row" onclick="event.stopPropagation()">
+                <span>⏱️ 1 秒最多可按：</span>
+                <select class="reaction-preset-rate-select" onchange="window.app.setPresetMaxPerSec('${preset.key}', this.value)">
+                  ${optionsHtml}
+                </select>
+              </div>
+            </div>
           `;
           grid.appendChild(card);
         });
@@ -2115,6 +2179,30 @@ class App {
         this.renderCustomReactionEditorList();
       }
     }
+  }
+
+  setPresetMaxPerSec(presetKey, val) {
+    const num = Math.max(1, Math.min(20, parseInt(val, 10) || 3));
+    if (!this.reactionSettings) {
+      this.reactionSettings = {
+        enabled: true,
+        activePreset: 'classic',
+        presetMaxPerSec: {},
+        customItems: this.getDefaultCustomReactionItems()
+      };
+    }
+    if (!this.reactionSettings.presetMaxPerSec || typeof this.reactionSettings.presetMaxPerSec !== 'object') {
+      this.reactionSettings.presetMaxPerSec = {};
+    }
+    this.reactionSettings.presetMaxPerSec[presetKey] = num;
+    this.renderLiveReactionDock();
+    this.updateReactionSettingsUI();
+    this.saveReactionSettings(true);
+  }
+
+  setActivePresetMaxPerSec(val) {
+    const activeKey = (this.reactionSettings && this.reactionSettings.activePreset) || 'classic';
+    this.setPresetMaxPerSec(activeKey, val);
   }
 
   renderCustomReactionEditorList() {
@@ -2205,7 +2293,12 @@ class App {
 
   selectReactionPreset(presetKey) {
     if (!this.reactionSettings) {
-      this.reactionSettings = { enabled: true, activePreset: 'classic', customItems: this.getDefaultCustomReactionItems() };
+      this.reactionSettings = {
+        enabled: true,
+        activePreset: 'classic',
+        presetMaxPerSec: {},
+        customItems: this.getDefaultCustomReactionItems()
+      };
     }
     this.reactionSettings.activePreset = presetKey;
     if (presetKey === 'custom') {
@@ -2220,7 +2313,12 @@ class App {
 
   toggleReactionEnabled(enabled) {
     if (!this.reactionSettings) {
-      this.reactionSettings = { enabled: true, activePreset: 'classic', customItems: this.getDefaultCustomReactionItems() };
+      this.reactionSettings = {
+        enabled: true,
+        activePreset: 'classic',
+        presetMaxPerSec: {},
+        customItems: this.getDefaultCustomReactionItems()
+      };
     }
     this.reactionSettings.enabled = Boolean(enabled);
     this.renderLiveReactionDock();
@@ -2233,6 +2331,9 @@ class App {
     const payload = {
       enabled: this.reactionSettings.enabled !== false,
       activePreset: this.reactionSettings.activePreset || 'classic',
+      presetMaxPerSec: (this.reactionSettings.presetMaxPerSec && typeof this.reactionSettings.presetMaxPerSec === 'object')
+        ? this.reactionSettings.presetMaxPerSec
+        : {},
       customItems: Array.isArray(this.reactionSettings.customItems)
         ? this.reactionSettings.customItems
         : this.getDefaultCustomReactionItems(),
@@ -2257,6 +2358,7 @@ class App {
     this.reactionSettings = {
       enabled: true,
       activePreset: 'classic',
+      presetMaxPerSec: {},
       customItems: this.getDefaultCustomReactionItems()
     };
     this._editingCustomReactions = JSON.parse(JSON.stringify(this.reactionSettings.customItems));

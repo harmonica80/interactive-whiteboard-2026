@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=381">
+  <link rel="stylesheet" href="css/style.css?v=382">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -1736,12 +1736,12 @@
                     <span id="reactionSettingsScopeBadge" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--accent-color); background: rgba(0, 122, 255, 0.1); border: 1px solid rgba(0, 122, 255, 0.25); padding: 4px 10px; border-radius: 999px;">
                       🏫 套用範圍：載入中...
                     </span>
-                    <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 999px;">
-                      🛡️ 防洗版保護：每人 1 秒最多按 3 個
+                    <span id="reactionActiveRateLimitBadge" style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 999px;">
+                      🛡️ 目前情境防洗版：每人 1 秒最多按 3 個
                     </span>
                   </div>
                   <p style="font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
-                    老師可依課堂活動需求，隨時一鍵切換全班白板右下角的「即時互動回饋」情境組合（如：五大表情、1~5星評等、是/否、A/B/C/D 快選、學習理解度等），學生端將即時同步更新！
+                    老師可依課堂活動需求，隨時一鍵切換全班白板右下角的「即時互動回饋」情境組合，並可針對<strong>每一個情境個別設定「1 秒最多可按幾個」</strong>，學生端將即時同步更新！
                   </p>
                 </div>
 
@@ -1760,12 +1760,25 @@
               <!-- 即時預覽與試按區 -->
               <div class="reaction-admin-preview-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="font-size: 18px;">✨</span>
                     <span style="font-size: 14px; font-weight: 800; color: var(--text-primary);">目前啟用情境預覽（點擊下方按鈕可直接試放漂浮特效）：</span>
                     <span id="reactionActivePresetTitleBadge" class="reaction-active-preset-badge">經典互動表情</span>
                   </div>
-                  <span style="font-size: 12px; color: var(--text-secondary);">💡 點按下方任一情境卡片即可立即切換並同步至全班</span>
+                  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: var(--text-primary); background: var(--bg-card); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(236, 72, 153, 0.35);">
+                      <span>⏱️ 此情境 1 秒最多可按：</span>
+                      <select id="reactionActiveMaxPerSecSelect" onchange="window.app.setActivePresetMaxPerSec(this.value)" style="border: none; background: transparent; font-size: 12.5px; font-weight: 800; color: #ec4899; cursor: pointer; outline: none;">
+                        <option value="1">1 個 / 秒（單擊表決）</option>
+                        <option value="2">2 個 / 秒（溫和互動）</option>
+                        <option value="3" selected>3 個 / 秒（預設推薦）</option>
+                        <option value="4">4 個 / 秒</option>
+                        <option value="5">5 個 / 秒（熱烈互動）</option>
+                        <option value="8">8 個 / 秒（高潮喝采）</option>
+                        <option value="10">10 個 / 秒（全場狂歡）</option>
+                      </select>
+                    </label>
+                  </div>
                 </div>
                 <div id="reactionAdminPreviewBar" class="reaction-admin-preview-bar"></div>
               </div>
@@ -3339,7 +3352,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=381"></script>
+  <script src="js/app.js?v=382"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>

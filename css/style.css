@@ -5999,4 +5999,38 @@ body {
   padding: 8px 10px;
 }
 
+.reaction-preset-rate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.reaction-preset-rate-select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.18s ease;
+}
+
+.reaction-preset-rate-select:hover,
+.reaction-preset-card.active .reaction-preset-rate-select {
+  border-color: #ec4899;
+  color: #ec4899;
+  background: rgba(236, 72, 153, 0.08);
+}
+
+
 
