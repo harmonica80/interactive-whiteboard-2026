@@ -14207,7 +14207,7 @@ class App {
   }
 
   /**
-   * 儲存／恢復管理員工作階段（僅限當前瀏覽器分頁 sessionStorage，切換班級或重整頁面時免重複輸入密碼，關閉分頁或閒置 30 分鐘自動失效）
+   * 儲存／恢復管理員工作階段（僅限當前瀏覽器分頁 sessionStorage，切換班級或重整頁面時免重複輸入密碼，關閉分頁或閒置 90 分鐘自動失效）
    */
   saveAdminSession(autoOpenAdminPanel = undefined) {
     if (!this.isAdmin) return;
@@ -14243,7 +14243,7 @@ class App {
       const raw = sessionStorage.getItem('wb_admin_session_v1');
       if (!raw) return null;
       const data = JSON.parse(raw);
-      const timeoutMs = this.ADMIN_IDLE_TIMEOUT_MS || (30 * 60 * 1000);
+      const timeoutMs = this.ADMIN_IDLE_TIMEOUT_MS || (90 * 60 * 1000);
       if (data && data.isAdmin && data.lastActiveAt && (Date.now() - data.lastActiveAt < timeoutMs)) {
         this.isAdmin = true;
         this._restoredAutoOpenAdminPanel = Boolean(data.autoOpenAdminPanel);
@@ -14259,10 +14259,10 @@ class App {
   }
 
   /**
-   * 啟動管理員閒置自動登出保護（預設 30 分鐘無任何操作自動鎖定登出，避免公用電腦忘記登出）
+   * 啟動管理員閒置自動登出保護（預設 90 分鐘無任何操作自動鎖定登出，避免公用電腦忘記登出）
    */
   startAdminIdleMonitor() {
-    this.ADMIN_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+    this.ADMIN_IDLE_TIMEOUT_MS = 90 * 60 * 1000;
     this.resetAdminIdleTimer();
 
     if (!this._adminIdleListenersBound) {
@@ -14289,7 +14289,7 @@ class App {
     }
     if (!this.isAdmin) return;
     this.saveAdminSession();
-    const timeoutMs = this.ADMIN_IDLE_TIMEOUT_MS || (30 * 60 * 1000);
+    const timeoutMs = this.ADMIN_IDLE_TIMEOUT_MS || (90 * 60 * 1000);
     this._adminIdleTimer = setTimeout(() => {
       if (this.isAdmin) {
         logoutAdmin(true);
@@ -16470,7 +16470,7 @@ function logoutAdmin(isAutoIdleLogout = false) {
   window.app.updateAdminActiveActivitiesUI();
 
   if (isAutoIdleLogout === true) {
-    window.app.showNotification('🔒 安全自動保護', '因管理員模式閒置超過 30 分鐘，系統已自動登出並切回學生視角，防止公用電腦誤觸。');
+    window.app.showNotification('🔒 安全自動保護', '因管理員模式閒置超過 90 分鐘，系統已自動登出並切回學生視角，防止公用電腦誤觸。');
   } else {
     window.app.showNotification('提示', '已登出管理員模式');
   }
