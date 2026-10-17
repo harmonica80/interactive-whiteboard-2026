@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=388">
+  <link rel="stylesheet" href="css/style.css?v=390">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -725,21 +725,21 @@
             </div>
 
             <!-- 總覽頂部操作列 -->
-            <div class="admin-dashboard-top-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: nowrap; gap: 12px;">
-              <div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0;">
-                <div>
-                  <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <div class="admin-dashboard-top-row">
+              <div class="admin-dashboard-title-group">
+                <div class="admin-dashboard-title-text">
+                  <h3 style="margin: 0; font-size: 17.5px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 6px; white-space: nowrap;">
                     <span>🎛️</span> 管理後台功能總覽目錄
                   </h3>
-                  <p style="margin: 4px 0 0 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary);">
+                  <p id="adminDashboardSubDesc" style="margin: 3px 0 0 0; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); white-space: nowrap;">
                     請點選功能卡片進入該功能的獨立全頁操作模式。<br>點擊各類別標題可自由展開或折疊。
                   </p>
                 </div>
-                <div style="display: flex; gap: 6px; flex-shrink: 0; align-self: flex-end; margin-bottom: 2px;">
-                  <button type="button" class="preset-btn" onclick="window.app.expandAllAdminCategories()" style="font-size: 12.5px; padding: 5px 10px; font-weight: 600; white-space: nowrap;">
+                <div class="admin-dashboard-expand-btns">
+                  <button type="button" class="preset-btn" onclick="window.app.expandAllAdminCategories()" style="font-size: 12px; padding: 5px 10px; font-weight: 600; white-space: nowrap;">
                     📂 全部展開
                   </button>
-                  <button type="button" class="preset-btn" onclick="window.app.collapseAllAdminCategories()" style="font-size: 12.5px; padding: 5px 10px; font-weight: 600; white-space: nowrap;">
+                  <button type="button" class="preset-btn" onclick="window.app.collapseAllAdminCategories()" style="font-size: 12px; padding: 5px 10px; font-weight: 600; white-space: nowrap;">
                     📁 全部折疊
                   </button>
                 </div>
@@ -3408,7 +3408,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=389"></script>
+  <script src="js/app.js?v=390"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
