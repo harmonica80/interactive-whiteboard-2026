@@ -6032,5 +6032,574 @@ body {
   background: rgba(236, 72, 153, 0.08);
 }
 
+/* =========================================================
+   📎 主表與附件分離 (點擊才下載) & Firebase 空間/流量監測儀表板
+   ========================================================= */
+
+/* 1. Firebase 空間與流量監測儀表板卡片 */
+.firebase-quota-banner-slot {
+  margin-bottom: 14px;
+}
+
+.firebase-quota-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+}
+
+/* 整體卡片狀態：超過 80% 橘黃色預警 */
+.firebase-quota-card.quota-card-warn-80 {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.09) 0%, var(--bg-card) 100%);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+}
+
+/* 整體卡片狀態：超過 90% 紅色危險警報 */
+.firebase-quota-card.quota-card-danger-90 {
+  border-color: #ef4444;
+  border-width: 2px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, var(--bg-card) 100%);
+  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.22);
+  animation: quotaDangerPulse 2s infinite ease-in-out;
+}
+
+@keyframes quotaDangerPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.25); }
+  50% { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.08); }
+}
+
+.firebase-quota-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.firebase-quota-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.firebase-quota-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quota-action-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.quota-action-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.firebase-quota-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.quota-metric-box {
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.25s ease;
+}
+
+/* 單項指標 < 80% (正常綠/藍) */
+.quota-metric-box.tier-normal {
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+/* 單項指標 >= 80% & < 90% (琥珀橘黃色預警) */
+.quota-metric-box.tier-warn-80 {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: #f59e0b;
+}
+
+/* 單項指標 >= 90% (鮮紅色危險警示) */
+.quota-metric-box.tier-danger-90 {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: #ef4444;
+}
+
+.quota-metric-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.quota-metric-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.quota-metric-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.quota-metric-badge.tier-normal {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.quota-metric-badge.tier-warn-80 {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.quota-metric-badge.tier-danger-90 {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.quota-metric-numbers {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.quota-metric-numbers.tier-normal {
+  color: #059669;
+}
+
+.quota-metric-numbers.tier-warn-80 {
+  color: #d97706;
+}
+
+.quota-metric-numbers.tier-danger-90 {
+  color: #dc2626;
+}
+
+.quota-progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+[data-theme="dark"] .quota-progress-track {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.quota-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease, background-color 0.25s ease;
+}
+
+.quota-progress-fill.tier-normal {
+  background: linear-gradient(90deg, #10b981, #0ea5e9);
+}
+
+.quota-progress-fill.tier-warn-80 {
+  background: linear-gradient(90deg, #f59e0b, #ea580c);
+}
+
+.quota-progress-fill.tier-danger-90 {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+}
+
+.quota-alert-banner {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quota-alert-banner.tier-warn-80 {
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+[data-theme="dark"] .quota-alert-banner.tier-warn-80 {
+  color: #fbbf24;
+}
+
+.quota-alert-banner.tier-danger-90 {
+  background: rgba(239, 68, 68, 0.18);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+}
+
+[data-theme="dark"] .quota-alert-banner.tier-danger-90 {
+  color: #f87171;
+}
+
+/* 2. 後台「允許學生提問附檔」開關卡片 */
+.question-attachment-admin-toggle-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.question-attachment-admin-toggle-card.enabled {
+  border-color: #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, var(--bg-card) 100%);
+}
+
+.qa-toggle-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.qa-toggle-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.qa-toggle-icon {
+  font-size: 16px;
+}
+
+.qa-toggle-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.qa-toggle-status-badge {
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.qa-toggle-status-badge.on {
+  background: rgba(16, 185, 129, 0.16);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.qa-toggle-status-badge.off {
+  background: rgba(142, 142, 147, 0.15);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.qa-toggle-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* iOS 風格撥桿開關 */
+.ios-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.ios-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ios-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #cbd5e1;
+  transition: 0.25s;
+  border-radius: 26px;
+}
+
+.ios-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.25s;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.ios-switch input:checked + .ios-switch-slider {
+  background-color: #10b981;
+}
+
+.ios-switch input:checked + .ios-switch-slider:before {
+  transform: translateX(22px);
+}
+
+/* 3. 前台學生提問區附件工具列 & 教師分享附件上傳區 */
+.question-attachment-bar {
+  margin-top: -6px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.question-attachment-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.attachment-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--accent-color);
+  background: rgba(0, 122, 255, 0.08);
+  color: var(--accent-color);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.attachment-select-btn:hover {
+  background: var(--accent-color);
+  color: #ffffff;
+}
+
+.attachment-select-btn.small {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.att-limit-hint {
+  font-size: 11.5px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.share-attachments-zone {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--bg-input);
+  border: 1.5px dashed var(--border-color);
+  border-radius: 10px;
+}
+
+.share-attachments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 已選取待上傳的檔案列表 */
+.attachment-selected-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attachment-staged-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.attachment-staged-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.attachment-staged-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-staged-size {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.attachment-staged-remove {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: none;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* 4. 卡片上的附件膠囊按鈕（點擊才從 Firebase attachments/ 節點下載） */
+.attachment-pill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.attachment-pill-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 11px;
+  background: rgba(0, 122, 255, 0.06);
+  border: 1px solid rgba(0, 122, 255, 0.25);
+  border-radius: 8px;
+  transition: all 0.18s ease;
+  box-sizing: border-box;
+}
+
+.attachment-pill-card:hover {
+  background: rgba(0, 122, 255, 0.11);
+  border-color: var(--accent-color);
+}
+
+.attachment-pill-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+
+.attachment-pill-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.attachment-pill-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-pill-size {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.attachment-pill-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.att-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--accent-color);
+  background: var(--accent-color);
+  color: #ffffff;
+  transition: all 0.18s ease;
+}
+
+.att-action-btn.preview {
+  background: transparent;
+  color: var(--accent-color);
+}
+
+.att-action-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.att-action-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+
+
 
 

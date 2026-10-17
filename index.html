@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=382">
+  <link rel="stylesheet" href="css/style.css?v=385">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -153,6 +153,16 @@
           <div class="question-input-group">
             <textarea id="questionInput" class="question-input question-textarea" placeholder="請在此輸入您的問題...（支援自由換行，或按 Ctrl+Enter 快速提問）" rows="3"></textarea>
             <button id="askBtn" class="ask-btn">提問</button>
+          </div>
+          <!-- 學生提問附加檔案列（由後台「允許學生提問附檔」開關控制顯示） -->
+          <div id="studentQuestionAttachmentBar" class="question-attachment-bar" style="display: none;">
+            <div class="question-attachment-actions">
+              <button type="button" id="btnSelectQuestionAttachment" class="attachment-select-btn" onclick="window.app && window.app.triggerQuestionAttachmentSelect()">
+                📎 附加檔案 <span class="att-limit-hint">（最多 1 個檔案，單檔上限 5MB，圖片自動壓縮）</span>
+              </button>
+              <input type="file" id="questionAttachmentInput" style="display: none;" onchange="window.app && window.app.handleQuestionAttachmentSelect(event)">
+            </div>
+            <div id="questionAttachmentPreview" class="attachment-selected-list" style="display: none;"></div>
           </div>
           <ul id="questionList" class="question-list" style="margin-bottom: 16px;"></ul>
           <div id="questionsGroupedContainer" class="grouped-folders-container"></div>
@@ -2657,6 +2667,29 @@
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
+              <!-- Firebase 空間與流量監測儀表板 (提問管理) -->
+              <div id="firebaseQuotaBannerQuestions" class="firebase-quota-banner-slot"></div>
+
+              <!-- 允許學生提問附檔開關卡片 -->
+              <div class="question-attachment-admin-toggle-card">
+                <div class="qa-toggle-left">
+                  <div class="qa-toggle-title-row">
+                    <span class="qa-toggle-icon">📎</span>
+                    <span class="qa-toggle-title">允許學生提問附檔</span>
+                    <span id="badgeQuestionAttachmentStatus" class="qa-toggle-status-badge off">🔒 目前關閉（預設）</span>
+                  </div>
+                  <div class="qa-toggle-desc">
+                    開啟後，前台「提問區」會顯示附加檔案按鈕（最多 <strong>1 個檔案</strong>、單檔上限 <strong>5 MB</strong>、圖片自動壓縮；採「<strong>主表與附件分離・點擊才下載</strong>」零待機流量設計）。平時可關閉避免學生誤傳無關大檔。
+                  </div>
+                </div>
+                <div class="qa-toggle-right">
+                  <label class="ios-switch" title="切換是否允許學生在提問區上傳附件">
+                    <input type="checkbox" id="toggleAllowQuestionAttachment" onchange="window.app && window.app.toggleQuestionAttachmentEnabled(this.checked)">
+                    <span class="ios-switch-slider"></span>
+                  </label>
+                </div>
+              </div>
+
               <!-- 新建群組與清單 -->
               <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                 <input type="text" id="newQuestionFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新提問群組名稱（如：第一組）...">
@@ -2787,6 +2820,9 @@
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
+              <!-- Firebase 空間與流量監測儀表板 (教師分享管理) -->
+              <div id="firebaseQuotaBannerShares" class="firebase-quota-banner-slot"></div>
+
               <!-- 新建分享資料夾 -->
               <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                 <input type="text" id="newShareFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新分享資料夾名稱（如：課堂講義）...">
@@ -2804,17 +2840,18 @@
                 <div style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-primary);">➕ 新增分享內容</div>
                 
                 <!-- 類型切換按鈕 -->
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                  <button class="preset-btn active-share-type" id="shareTypeBtnText" onclick="window.app.switchShareFormType('text')" style="flex: 1; padding: 6px; font-size: 13px; font-weight: bold;">💬 文字</button>
-                  <button class="preset-btn" id="shareTypeBtnImage" onclick="window.app.switchShareFormType('image')" style="flex: 1; padding: 6px; font-size: 13px;">🖼️ 圖片</button>
-                  <button class="preset-btn" id="shareTypeBtnLink" onclick="window.app.switchShareFormType('link')" style="flex: 1; padding: 6px; font-size: 13px;">🔗 網址</button>
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                  <button class="preset-btn active-share-type" id="shareTypeBtnText" onclick="window.app.switchShareFormType('text')" style="flex: 1; min-width: 72px; padding: 6px; font-size: 13px; font-weight: bold;">💬 文字</button>
+                  <button class="preset-btn" id="shareTypeBtnImage" onclick="window.app.switchShareFormType('image')" style="flex: 1; min-width: 72px; padding: 6px; font-size: 13px;">🖼️ 圖片</button>
+                  <button class="preset-btn" id="shareTypeBtnLink" onclick="window.app.switchShareFormType('link')" style="flex: 1; min-width: 72px; padding: 6px; font-size: 13px;">🔗 網址</button>
+                  <button class="preset-btn" id="shareTypeBtnFile" onclick="window.app.switchShareFormType('file')" style="flex: 1; min-width: 86px; padding: 6px; font-size: 13px;">📎 附件檔案</button>
                 </div>
 
                 <!-- 動態表單欄位 -->
                 <div id="shareFormFields">
                   <!-- 文字輸入欄位 -->
                   <div id="shareFieldText">
-                    <textarea id="shareInputText" class="question-input" style="width: 100%; height: 80px; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入要分享給學生的文字訊息..."></textarea>
+                    <textarea id="shareInputText" class="question-input" style="width: 100%; height: 80px; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入要分享給學生的文字訊息（亦可搭配下方附加檔案一起發佈）..."></textarea>
                   </div>
                   <!-- 圖片選擇欄位 -->
                   <div id="shareFieldImage" style="display: none;">
@@ -2830,6 +2867,25 @@
                     <input type="text" id="shareInputLinkTitle" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="連結標題（例如：Google 首頁，選填）">
                     <input type="url" id="shareInputLinkUrl" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入連結網址（如 https://google.com）">
                   </div>
+                  <!-- 純附件檔案說明欄位 -->
+                  <div id="shareFieldFile" style="display: none;">
+                    <input type="text" id="shareInputFileTitle" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="教材/附件標題或說明（選填，若留空將自動使用檔案名稱）">
+                  </div>
+                </div>
+
+                <!-- 教師分享通用附件上傳區（最多 3 個檔案，單檔上限 6MB，獨立儲存點擊才下載） -->
+                <div id="shareAttachmentsZone" class="share-attachments-zone">
+                  <div class="share-attachments-header">
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                      <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">📎 附加檔案（點擊才下載）</span>
+                      <span style="font-size: 11.5px; color: var(--text-secondary);">最多 <strong>3 個檔案</strong>，單檔上限 <strong>6 MB</strong>（總計可達 18 MB，獨立節點儲存不塞車）</span>
+                    </div>
+                    <button type="button" id="btnSelectShareAttachments" class="attachment-select-btn small" onclick="window.app && window.app.triggerShareAttachmentSelect()">
+                      ➕ 選擇檔案 (<span id="shareSelectedAttachmentCount">0</span>/3)
+                    </button>
+                    <input type="file" id="shareAttachmentFileInput" multiple style="display: none;" onchange="window.app && window.app.handleShareAttachmentSelect(event)">
+                  </div>
+                  <div id="shareAttachmentPreviewList" class="attachment-selected-list" style="display: none; margin-top: 8px;"></div>
                 </div>
 
                 <!-- 選擇所屬分頁與資料夾 -->
@@ -2860,7 +2916,7 @@
                   </button>
                 </div>
 
-                <button class="preset-btn" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 14px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
+                <button class="preset-btn" id="btnSubmitTeacherShare" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 14px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
               </div>
 
               <!-- 分享內容批次管理與列表 -->
@@ -3352,7 +3408,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=384"></script>
+  <script src="js/app.js?v=385"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
@@ -3368,7 +3424,8 @@ Python</pre>
       
       <div class="modal-body" style="padding: 40px 30px 30px 30px;">
         <div id="questionModalUser" class="question-user" style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-secondary); text-align: left;"></div>
-        <div id="questionModalText" class="question-text" style="font-size: 16px; color: var(--text-primary); line-height: 1.6; word-break: break-word; margin-bottom: 24px; text-align: left; white-space: pre-wrap; background: var(--bg-input); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);"></div>
+        <div id="questionModalText" class="question-text" style="font-size: 16px; color: var(--text-primary); line-height: 1.6; word-break: break-word; margin-bottom: 16px; text-align: left; white-space: pre-wrap; background: var(--bg-input); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);"></div>
+        <div id="questionModalAttachments" class="attachment-pill-list" style="margin-bottom: 18px; display: none;"></div>
         
         <!-- 複製內容與表情符號回饋 -->
         <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px; flex-wrap: wrap;">
