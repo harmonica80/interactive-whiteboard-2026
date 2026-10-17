@@ -2003,11 +2003,17 @@ class App {
   updateReactionSettingsUI() {
     const scopeBadge = document.getElementById('reactionSettingsScopeBadge');
     if (scopeBadge) {
-      const roomInfo = window.ClassRoomManager ? window.ClassRoomManager.getCurrentRoomInfo() : null;
-      const roomTitle = roomInfo && roomInfo.name
-        ? `${roomInfo.name} (${roomInfo.code || '預設'})`
-        : '預設公開白板';
-      scopeBadge.textContent = `🏫 套用範圍：目前班級【${roomTitle}】`;
+      const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+        ? window.ClassRoomManager.getActiveClassCode()
+        : (window.currentClassCode || '');
+      let roomTitle = '預設公開白板';
+      if (currentCode) {
+        const matched = Array.isArray(this.adminRegisteredClasses)
+          ? this.adminRegisteredClasses.find(c => c.code === currentCode)
+          : null;
+        roomTitle = matched && matched.name ? `${matched.name} (${currentCode})` : `專屬班級【${currentCode}】`;
+      }
+      scopeBadge.textContent = `🏫 套用範圍：${roomTitle}`;
     }
 
     const enabled = !this.reactionSettings || this.reactionSettings.enabled !== false;
