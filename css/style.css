@@ -6053,9 +6053,15 @@ body {
 }
 
 .firebase-quota-banner-dashboard-slot {
-  flex: 1 1 500px;
-  max-width: 720px;
-  min-width: 320px;
+  flex: 1 1 380px;
+  max-width: 600px;
+  min-width: 280px;
+}
+
+@media (max-width: 860px) {
+  .admin-dashboard-top-row {
+    flex-wrap: wrap !important;
+  }
 }
 
 .firebase-quota-card {
