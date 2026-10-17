@@ -32,6 +32,21 @@ class App {
     this.selectedShareFormType = 'text';
     this.isUploadingShareImage = false;
     this.shareImageFile = null;
+    this.questionAttachmentEnabled = false;
+    this.selectedQuestionAttachment = null;
+    this.selectedShareAttachments = [];
+    this.isProcessingAttachment = false;
+    this.quotaStats = {
+      storageBytes: 0,
+      monthlyTrafficBytes: 0,
+      monthKey: '',
+      manualStorageOffsetBytes: 0,
+      manualTrafficOffsetBytes: 0,
+      classStorageMap: {},
+      attachmentStorageBytes: 0
+    };
+    this._pendingTrafficBytes = 0;
+    this._trafficFlushTimer = null;
     this.currentQuiz = null;
     this.quizAnswers = {};
     this.isAdmin = false;
@@ -151,6 +166,8 @@ class App {
     this.bindVideoUpload();
     this.bindTeacherShareEvents();
     this.setupRealtimeSync();
+    this.initQuestionAttachmentSettingListener();
+    this.initFirebaseQuotaMonitor();
     this.setupConnectionStatus();
     this.initModals();
     this.initImageZoom();
@@ -1200,6 +1217,10 @@ class App {
       '確定要刪除此提問嗎？',
       '刪除後該提問及相關留言回饋將永久移除，無法復原。',
       () => {
+        const targetQ = (this.questions || []).find(q => q.id === id);
+        if (targetQ && Array.isArray(targetQ.attachments) && targetQ.attachments.length > 0) {
+          this.deleteAttachmentsFromDb(targetQ.attachments);
+        }
         db.ref('questions').child(id).remove()
           .then(() => {
             if (this.activeQuestionId === id) {
@@ -2491,6 +2512,8 @@ class App {
 
     // 監聽問題資料庫
     db.ref('questions').on('value', (snapshot) => {
+      const rawVal = snapshot.val();
+      if (rawVal) this.recordFirebaseTraffic(this.estimateJsonBytes(rawVal));
       const questions = [];
       snapshot.forEach(child => {
         questions.push({ id: child.key, ...child.val() });
@@ -2499,10 +2522,13 @@ class App {
       this.questions = questions;
       this.renderQuestions();
       this.renderAdminQuestions();
+      this.scheduleCurrentClassStorageSync();
     });
 
     // 監聽圖片資料庫
     this.imageRef.on('value', (snapshot) => {
+      const rawVal = snapshot.val();
+      if (rawVal) this.recordFirebaseTraffic(this.estimateJsonBytes(rawVal));
       const images = [];
       snapshot.forEach(child => {
         images.push({ id: child.key, ...child.val() });
@@ -2511,6 +2537,7 @@ class App {
       this.images = images;
       this.renderImages();
       this.renderAdminImages();
+      this.scheduleCurrentClassStorageSync();
     });
 
     // 監聽測驗狀態
@@ -2566,6 +2593,8 @@ class App {
 
     // 監聽影片資料庫
     this.videoRef.on('value', (snapshot) => {
+      const rawVal = snapshot.val();
+      if (rawVal) this.recordFirebaseTraffic(this.estimateJsonBytes(rawVal));
       const videos = [];
       snapshot.forEach(child => {
         videos.push({ id: child.key, ...child.val() });
@@ -2575,6 +2604,7 @@ class App {
       this.renderVideos();
       this.renderAdminVideos();
       this.updateActiveVideoModal();
+      this.scheduleCurrentClassStorageSync();
     });
 
     // 監聽影片群組資料庫
@@ -2599,6 +2629,8 @@ class App {
 
     // 監聽教師分享資料庫
     this.sharesRef.on('value', (snapshot) => {
+      const rawVal = snapshot.val();
+      if (rawVal) this.recordFirebaseTraffic(this.estimateJsonBytes(rawVal));
       const shares = [];
       snapshot.forEach(child => {
         shares.push({ id: child.key, ...child.val() });
@@ -2608,6 +2640,7 @@ class App {
       this.renderTeacherShares();
       this.renderAdminShares();
       this.updateLoginSharesBadge();
+      this.scheduleCurrentClassStorageSync();
       if (!this.hasShownLoginSharesOnEntry && !this.isAdmin && this.getUserName()) {
         setTimeout(() => {
           this.checkAndShowLoginSharesModal();
@@ -3446,9 +3479,18 @@ class App {
       '此動作將永久刪除所選提問，且無法復原。',
       () => {
         const updates = {};
+        const attList = [];
         qBoxes.forEach(box => {
-          updates[`questions/${box.value}`] = null;
+          const qId = box.value;
+          updates[`questions/${qId}`] = null;
+          const qObj = (this.questions || []).find(q => q.id === qId);
+          if (qObj && Array.isArray(qObj.attachments)) {
+            attList.push(...qObj.attachments);
+          }
         });
+        if (attList.length > 0) {
+          this.deleteAttachmentsFromDb(attList);
+        }
         
         db.ref().update(updates).then(() => {
           this.showNotification('成功', `已成功刪除 ${qBoxes.length} 個提問！`);
@@ -3504,9 +3546,18 @@ class App {
       '此動作將永久刪除所選提問，且無法復原。',
       () => {
         const updates = {};
+        const attList = [];
         qBoxes.forEach(box => {
-          updates[`questions/${box.value}`] = null;
+          const qId = box.value;
+          updates[`questions/${qId}`] = null;
+          const qObj = (this.questions || []).find(q => q.id === qId);
+          if (qObj && Array.isArray(qObj.attachments)) {
+            attList.push(...qObj.attachments);
+          }
         });
+        if (attList.length > 0) {
+          this.deleteAttachmentsFromDb(attList);
+        }
         
         db.ref().update(updates).then(() => {
           this.showNotification('成功', `已成功刪除群組中的 ${qBoxes.length} 個提問！`);
@@ -4215,7 +4266,13 @@ class App {
         </div>
       `;
     }
-    document.getElementById('questionModalText').innerHTML = this.linkify(q.text);
+    document.getElementById('questionModalText').innerHTML = this.linkify(q.text || '');
+    const modalAttEl = document.getElementById('questionModalAttachments');
+    if (modalAttEl) {
+      modalAttEl.innerHTML = (Array.isArray(q.attachments) && q.attachments.length > 0)
+        ? this.renderAttachmentPillsHtml(q.attachments)
+        : '';
+    }
     
     this.updateActiveQuestionModal();
     
@@ -4847,6 +4904,13 @@ class App {
       this.updateReactionSettingsUI();
     }
 
+    // 提問管理與教師分享管理：更新 Firebase 空間與流量監測儀表板及附檔開關狀態
+    if (featureKey === 'qaMgmt' || featureKey === 'shareNews' || featureKey === 'shareMaterials') {
+      this.updateQuestionAttachmentUI();
+      this.renderFirebaseQuotaBanners();
+      this.scheduleCurrentClassStorageSync();
+    }
+
     // 滾動至後台頂部
     const panelAdmin = document.getElementById('panel-admin');
     if (panelAdmin) {
@@ -5200,13 +5264,797 @@ class App {
     });
   }
   
+  // =========================================================================
+  // 📎 提問區與教師分享附件系統（主表與附件分離 Lazy Load）+ 📊 Firebase 空間與流量監測
+  // =========================================================================
+
+  getCurrentMonthKey() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${yyyy}-${mm}`;
+  }
+
+  estimateJsonBytes(obj) {
+    if (!obj) return 0;
+    try {
+      const str = typeof obj === 'string' ? obj : JSON.stringify(obj);
+      return new Blob([str]).size;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  formatQuotaBytes(bytes) {
+    const b = Math.max(0, Number(bytes) || 0);
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+    return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  }
+
+  initFirebaseQuotaMonitor() {
+    this._attachmentCache = {};
+    this.quotaStatsRef = db.ref('system/quotaStats');
+    const currentMonth = this.getCurrentMonthKey();
+
+    this.quotaStatsRef.on('value', (snapshot) => {
+      const data = snapshot.val() || {};
+      if (data.monthKey && data.monthKey !== currentMonth) {
+        // 跨月自動歸零本月流量
+        if (this.isAdmin) {
+          this.quotaStatsRef.update({
+            monthKey: currentMonth,
+            monthlyTrafficBytes: 0,
+            manualTrafficOffsetBytes: 0
+          }).catch(() => {});
+        }
+        data.monthKey = currentMonth;
+        data.monthlyTrafficBytes = 0;
+        data.manualTrafficOffsetBytes = 0;
+      }
+      this.quotaStats = {
+        storageBytes: Number(data.storageBytes) || 0,
+        monthlyTrafficBytes: Number(data.monthlyTrafficBytes) || 0,
+        monthKey: data.monthKey || currentMonth,
+        manualStorageOffsetBytes: Number(data.manualStorageOffsetBytes) || 0,
+        manualTrafficOffsetBytes: Number(data.manualTrafficOffsetBytes) || 0,
+        classStorageMap: data.classStorageMap || {},
+        attachmentStorageBytes: Number(data.attachmentStorageBytes) || 0,
+        lastScannedAt: data.lastScannedAt || 0
+      };
+      this.renderFirebaseQuotaBanners();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      this.flushPendingTraffic();
+    });
+  }
+
+  recordFirebaseTraffic(bytes, immediate = false) {
+    const addBytes = Math.max(0, Math.round(Number(bytes) || 0));
+    if (addBytes <= 0) return;
+    this._pendingTrafficBytes = (this._pendingTrafficBytes || 0) + addBytes;
+
+    if (immediate) {
+      this.flushPendingTraffic();
+      return;
+    }
+    if (!this._trafficFlushTimer) {
+      this._trafficFlushTimer = setTimeout(() => {
+        this._trafficFlushTimer = null;
+        this.flushPendingTraffic();
+      }, 6000);
+    }
+  }
+
+  flushPendingTraffic() {
+    const delta = Math.max(0, Math.round(this._pendingTrafficBytes || 0));
+    if (delta <= 0 || !this.quotaStatsRef) return;
+    this._pendingTrafficBytes = 0;
+    const currentMonth = this.getCurrentMonthKey();
+
+    this.quotaStatsRef.transaction((current) => {
+      const obj = current || {};
+      if (obj.monthKey !== currentMonth) {
+        obj.monthKey = currentMonth;
+        obj.monthlyTrafficBytes = delta;
+        obj.manualTrafficOffsetBytes = 0;
+      } else {
+        obj.monthlyTrafficBytes = (Number(obj.monthlyTrafficBytes) || 0) + delta;
+      }
+      return obj;
+    }).catch(() => {});
+  }
+
+  scheduleCurrentClassStorageSync() {
+    if (!this.isAdmin) return;
+    if (this._storageSyncTimer) clearTimeout(this._storageSyncTimer);
+    this._storageSyncTimer = setTimeout(() => {
+      this._storageSyncTimer = null;
+      this.scanAndSyncCurrentClassStorage();
+    }, 1800);
+  }
+
+  scanAndSyncCurrentClassStorage() {
+    if (!this.quotaStatsRef) return;
+    const classKey = window.currentClassCode ? `class_${window.currentClassCode}` : 'one_off_root';
+    const baseBytes =
+      this.estimateJsonBytes(this.questions) +
+      this.estimateJsonBytes(this.images) +
+      this.estimateJsonBytes(this.videos) +
+      this.estimateJsonBytes(this.shares);
+
+    // 計算目前課堂內所有提問與教師分享附檔的總 Base64 空間
+    let classAttBytes = 0;
+    (this.questions || []).forEach(q => {
+      if (Array.isArray(q.attachments)) {
+        q.attachments.forEach(a => {
+          classAttBytes += (Number(a.base64Size) || Number(a.size) || 0);
+        });
+      }
+    });
+    (this.shares || []).forEach(s => {
+      if (Array.isArray(s.attachments)) {
+        s.attachments.forEach(a => {
+          classAttBytes += (Number(a.base64Size) || Number(a.size) || 0);
+        });
+      }
+    });
+
+    const totalForThisClass = baseBytes + classAttBytes;
+    this.quotaStatsRef.child('classStorageMap').child(classKey).set(totalForThisClass).catch(() => {});
+  }
+
+  recalculateAllFirebaseStorage(showToast = true) {
+    if (!this.quotaStatsRef) return;
+    if (showToast) {
+      this.showNotification('📊 掃描中', '正在重新計算目前課堂與附件的資料庫空間用量...');
+    }
+    // 掃描本班主表與獨立 attachments 節點
+    this.scanAndSyncCurrentClassStorage();
+    db.ref('attachments').once('value').then((snap) => {
+      const val = snap.val();
+      const attBytes = val ? this.estimateJsonBytes(val) : 0;
+      const baseBytes =
+        this.estimateJsonBytes(this.questions) +
+        this.estimateJsonBytes(this.images) +
+        this.estimateJsonBytes(this.videos) +
+        this.estimateJsonBytes(this.shares);
+      const classKey = window.currentClassCode ? `class_${window.currentClassCode}` : 'one_off_root';
+      const totalForThisClass = baseBytes + attBytes;
+      return this.quotaStatsRef.update({
+        [`classStorageMap/${classKey}`]: totalForThisClass,
+        lastScannedAt: Date.now()
+      });
+    }).then(() => {
+      if (showToast) {
+        this.showNotification('✅ 掃描完成', '已更新 Firebase 儲存空間與流量統計！');
+      }
+    }).catch((err) => {
+      console.warn('重新掃描空間失敗:', err);
+      if (showToast) {
+        this.showNotification('提示', '已完成本地快取空間估算');
+      }
+    });
+  }
+
+  promptCalibrateFirebaseQuota() {
+    const { totalStorageBytes, totalTrafficBytes } = this.getCalculatedQuotaTotals();
+    const curStorageMB = (totalStorageBytes / (1024 * 1024)).toFixed(2);
+    const curTrafficMB = (totalTrafficBytes / (1024 * 1024)).toFixed(2);
+
+    const storageInput = prompt(
+      `【校準 Firebase 已使用空間】\n您可對照 Firebase Console > Realtime Database > Usage 顯示的實際容量進行微調。\n\n請輸入目前總使用空間（單位：MB，上限 1024 MB = 1 GB）：`,
+      curStorageMB
+    );
+    if (storageInput === null) return;
+
+    const trafficInput = prompt(
+      `【校準本月 Firebase 已使用下載流量】\n請輸入本月目前已使用流量（單位：MB，上限 10240 MB = 10 GB）：`,
+      curTrafficMB
+    );
+    if (trafficInput === null) return;
+
+    const targetStorageBytes = Math.max(0, (parseFloat(storageInput) || 0) * 1024 * 1024);
+    const targetTrafficBytes = Math.max(0, (parseFloat(trafficInput) || 0) * 1024 * 1024);
+
+    const autoStorageBytes = this.getAutoTrackedStorageBytes();
+    const autoTrafficBytes = Number(this.quotaStats?.monthlyTrafficBytes) || 0;
+
+    const manualStorageOffsetBytes = Math.round(targetStorageBytes - autoStorageBytes);
+    const manualTrafficOffsetBytes = Math.round(targetTrafficBytes - autoTrafficBytes);
+
+    this.quotaStatsRef.update({
+      manualStorageOffsetBytes,
+      manualTrafficOffsetBytes,
+      monthKey: this.getCurrentMonthKey(),
+      lastScannedAt: Date.now()
+    }).then(() => {
+      this.showNotification('✅ 校準完成', '已同步更新 Firebase 空間與本月流量基準值！');
+    }).catch(err => {
+      this.showNotification('錯誤', '校準失敗：' + err.message);
+    });
+  }
+
+  getAutoTrackedStorageBytes() {
+    const map = (this.quotaStats && this.quotaStats.classStorageMap) || {};
+    const keys = Object.keys(map);
+    if (keys.length > 0) {
+      return keys.reduce((sum, k) => sum + (Number(map[k]) || 0), 0);
+    }
+    return (
+      this.estimateJsonBytes(this.questions) +
+      this.estimateJsonBytes(this.images) +
+      this.estimateJsonBytes(this.videos) +
+      this.estimateJsonBytes(this.shares)
+    );
+  }
+
+  getCalculatedQuotaTotals() {
+    const autoStorage = this.getAutoTrackedStorageBytes();
+    const manualStorageOffset = Number(this.quotaStats?.manualStorageOffsetBytes) || 0;
+    const totalStorageBytes = Math.max(0, autoStorage + manualStorageOffset);
+
+    const autoTraffic = Number(this.quotaStats?.monthlyTrafficBytes) || 0;
+    const manualTrafficOffset = Number(this.quotaStats?.manualTrafficOffsetBytes) || 0;
+    const totalTrafficBytes = Math.max(0, autoTraffic + manualTrafficOffset);
+
+    return { totalStorageBytes, totalTrafficBytes };
+  }
+
+  renderFirebaseQuotaBanners() {
+    const bannerIds = ['firebaseQuotaBannerQuestions', 'firebaseQuotaBannerShares'];
+    const MAX_STORAGE_BYTES = 1024 * 1024 * 1024; // 1 GB
+    const MAX_TRAFFIC_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB
+
+    const { totalStorageBytes, totalTrafficBytes } = this.getCalculatedQuotaTotals();
+    const storagePct = Math.min(100, (totalStorageBytes / MAX_STORAGE_BYTES) * 100);
+    const trafficPct = Math.min(100, (totalTrafficBytes / MAX_TRAFFIC_BYTES) * 100);
+
+    const getTierClass = (pct) => {
+      if (pct >= 90) return 'tier-danger-90';
+      if (pct >= 80) return 'tier-warn-80';
+      return 'tier-normal';
+    };
+
+    const getTierBadgeLabel = (pct) => {
+      if (pct >= 90) return '🚨 危險 (>90%)';
+      if (pct >= 80) return '⚠️ 預警 (>80%)';
+      return '🟢 正常';
+    };
+
+    const storageTier = getTierClass(storagePct);
+    const trafficTier = getTierClass(trafficPct);
+    const maxPct = Math.max(storagePct, trafficPct);
+    const cardStateClass = maxPct >= 90 ? 'quota-card-danger-90' : (maxPct >= 80 ? 'quota-card-warn-80' : '');
+
+    let alertBannerHtml = '';
+    if (maxPct >= 90) {
+      const whichText = (storagePct >= 90 && trafficPct >= 90)
+        ? '儲存空間與本月流量皆已超過 90%'
+        : (storagePct >= 90 ? `儲存空間已達 ${storagePct.toFixed(1)}%（超過 90% 警戒線）` : `本月下載流量已達 ${trafficPct.toFixed(1)}%（超過 90% 警戒線）`);
+      alertBannerHtml = `
+        <div class="quota-alert-banner alert-90">
+          <span>🚨 <strong>嚴重額度警告：</strong>目前 Firebase ${whichText}！即將觸及免費版硬性上限，請立即刪除不再使用的大型附件、舊圖片或舊提問。</span>
+        </div>
+      `;
+    } else if (maxPct >= 80) {
+      const whichText = (storagePct >= 80 && trafficPct >= 80)
+        ? '儲存空間與本月流量皆已超過 80%'
+        : (storagePct >= 80 ? `儲存空間已達 ${storagePct.toFixed(1)}%（超過 80% 提醒線）` : `本月下載流量已達 ${trafficPct.toFixed(1)}%（超過 80% 提醒線）`);
+      alertBannerHtml = `
+        <div class="quota-alert-banner alert-80">
+          <span>⚠️ <strong>容量預警提醒：</strong>目前 Firebase ${whichText}，建議適時清理歷史附件或備份舊課堂資料。</span>
+        </div>
+      `;
+    }
+
+    const monthLabel = this.quotaStats?.monthKey || this.getCurrentMonthKey();
+    const html = `
+      <div class="firebase-quota-card ${cardStateClass}">
+        <div class="firebase-quota-header">
+          <div class="firebase-quota-title">
+            <span>📊 Firebase 空間與本月流量即時監測</span>
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">（主表與附件分離・點擊才下載省流模式）</span>
+          </div>
+          <div class="firebase-quota-actions">
+            <button type="button" class="quota-mini-btn" onclick="window.app.recalculateAllFirebaseStorage(true)" title="重新掃描計算目前課堂與附件空間">🔄 重新掃描</button>
+            <button type="button" class="quota-mini-btn" onclick="window.app.promptCalibrateFirebaseQuota()" title="手動校準對齊 Firebase Console 顯示數值">⚙️ 校準數值</button>
+          </div>
+        </div>
+        <div class="firebase-quota-grid">
+          <div class="quota-metric-box ${storageTier}">
+            <div class="quota-metric-top">
+              <span class="quota-metric-label">💾 目前已使用空間 <span class="quota-status-pill">${getTierBadgeLabel(storagePct)}</span></span>
+              <span class="quota-metric-value">${this.formatQuotaBytes(totalStorageBytes)} / 1 GB <span style="font-size: 11px; opacity: 0.85;">(${storagePct.toFixed(1)}%)</span></span>
+            </div>
+            <div class="quota-progress-track">
+              <div class="quota-progress-fill" style="width: ${Math.max(1.5, storagePct).toFixed(1)}%;"></div>
+            </div>
+          </div>
+          <div class="quota-metric-box ${trafficTier}">
+            <div class="quota-metric-top">
+              <span class="quota-metric-label">📡 本月已使用流量 (${monthLabel}) <span class="quota-status-pill">${getTierBadgeLabel(trafficPct)}</span></span>
+              <span class="quota-metric-value">${this.formatQuotaBytes(totalTrafficBytes)} / 10 GB <span style="font-size: 11px; opacity: 0.85;">(${trafficPct.toFixed(1)}%)</span></span>
+            </div>
+            <div class="quota-progress-track">
+              <div class="quota-progress-fill" style="width: ${Math.max(1.5, trafficPct).toFixed(1)}%;"></div>
+            </div>
+          </div>
+        </div>
+        ${alertBannerHtml}
+      </div>
+    `;
+
+    bannerIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+  }
+
+  // ===== 提問區「允許學生提問附檔」後台開關與即時同步 =====
+  initQuestionAttachmentSettingListener() {
+    this.questionAttachmentSettingRef = db.ref('settings/questionAttachmentEnabled');
+    this.questionAttachmentSettingRef.on('value', (snapshot) => {
+      this.questionAttachmentEnabled = snapshot.val() === true;
+      this.updateQuestionAttachmentUI();
+    });
+  }
+
+  toggleQuestionAttachmentEnabled(enabled) {
+    if (!this.isAdmin) return;
+    const nextState = !!enabled;
+    this.questionAttachmentEnabled = nextState;
+    this.updateQuestionAttachmentUI();
+    if (this.questionAttachmentSettingRef) {
+      this.questionAttachmentSettingRef.set(nextState).then(() => {
+        this.showNotification(
+          nextState ? '📎 已開啟提問附檔' : '🔒 已關閉提問附檔',
+          nextState ? '學生現在可以在提問區附加最多 1 個檔案（上限 5 MB）！' : '已關閉學生提問附檔功能。'
+        );
+      }).catch(err => {
+        this.showNotification('錯誤', '切換開關失敗：' + err.message);
+      });
+    }
+  }
+
+  updateQuestionAttachmentUI() {
+    const enabled = !!this.questionAttachmentEnabled;
+    const studentBar = document.getElementById('studentQuestionAttachmentBar');
+    if (studentBar) {
+      studentBar.style.display = enabled ? 'flex' : 'none';
+    }
+    if (!enabled && this.selectedQuestionAttachment) {
+      this.removeSelectedQuestionAttachment();
+    }
+    const adminToggle = document.getElementById('toggleAllowQuestionAttachment');
+    if (adminToggle) {
+      adminToggle.checked = enabled;
+    }
+    const statusBadge = document.getElementById('badgeQuestionAttachmentStatus');
+    if (statusBadge) {
+      statusBadge.textContent = enabled ? '🟢 已開放（最多 1 檔 / 5MB）' : '已關閉';
+      statusBadge.classList.toggle('active', enabled);
+    }
+  }
+
+  // ===== 檔案讀取與圖片自動壓縮核心 =====
+  getAttachmentIcon(mimeType = '', fileName = '') {
+    const lower = (fileName || '').toLowerCase();
+    if ((mimeType && mimeType.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/.test(lower)) return '🖼️';
+    if (mimeType === 'application/pdf' || lower.endsWith('.pdf')) return '📕';
+    if (/\.(doc|docx|odt|rtf)$/.test(lower)) return '📘';
+    if (/\.(xls|xlsx|csv|ods)$/.test(lower)) return '📗';
+    if (/\.(ppt|pptx|odp)$/.test(lower)) return '📙';
+    if (/\.(zip|rar|7z|tar|gz)$/.test(lower)) return '🗜️';
+    if (/\.(mp3|wav|ogg|m4a)$/.test(lower)) return '🎵';
+    if (/\.(mp4|mov|webm|avi)$/.test(lower)) return '🎬';
+    if (/\.(txt|md|json|py|js|html|css|c|cpp)$/.test(lower)) return '📄';
+    return '📎';
+  }
+
+  processFileForAttachment(file, maxMB = 5) {
+    return new Promise((resolve, reject) => {
+      if (!file) return reject(new Error('未選擇檔案'));
+      const maxBytes = maxMB * 1024 * 1024;
+      const isCompressibleImage = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type);
+
+      // 非可壓縮圖片若直接超過單檔上限，立即阻擋；可壓縮圖片允許先嘗試壓縮
+      if (!isCompressibleImage && file.size > maxBytes) {
+        return reject(new Error(`檔案「${file.name}」大小為 ${this.formatQuotaBytes(file.size)}，超過單檔上限 ${maxMB} MB！`));
+      }
+      if (isCompressibleImage && file.size > 18 * 1024 * 1024) {
+        return reject(new Error(`圖片「${file.name}」原始大小超過 18 MB，請先縮小後再上傳。`));
+      }
+
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error(`讀取檔案「${file.name}」失敗`));
+      reader.onload = (e) => {
+        const rawDataUrl = e.target.result;
+        if (!isCompressibleImage) {
+          const base64Size = this.estimateJsonBytes(rawDataUrl);
+          if (base64Size > 9.2 * 1024 * 1024) {
+            return reject(new Error(`檔案「${file.name}」轉換後超過 Firebase 單一節點寫入限制，請控制在 ${maxMB} MB 以內。`));
+          }
+          return resolve({
+            name: file.name,
+            size: file.size,
+            originalSize: file.size,
+            base64Size: base64Size,
+            mimeType: file.type || 'application/octet-stream',
+            isImage: /^image\//i.test(file.type),
+            compressed: false,
+            dataUrl: rawDataUrl
+          });
+        }
+
+        // 圖片自動進行 Canvas 最佳化壓縮
+        const img = new Image();
+        img.onerror = () => {
+          if (file.size > maxBytes) {
+            return reject(new Error(`圖片「${file.name}」超過單檔上限 ${maxMB} MB！`));
+          }
+          resolve({
+            name: file.name,
+            size: file.size,
+            originalSize: file.size,
+            base64Size: this.estimateJsonBytes(rawDataUrl),
+            mimeType: file.type || 'image/jpeg',
+            isImage: true,
+            compressed: false,
+            dataUrl: rawDataUrl
+          });
+        };
+        img.onload = () => {
+          const MAX_DIM = 1600;
+          let w = img.width;
+          let h = img.height;
+          if (w > MAX_DIM || h > MAX_DIM) {
+            if (w > h) {
+              h = Math.round((h * MAX_DIM) / w);
+              w = MAX_DIM;
+            } else {
+              w = Math.round((w * MAX_DIM) / h);
+              h = MAX_DIM;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          const rawLen = rawDataUrl.length;
+          const compLen = compressedDataUrl.length;
+
+          const useCompressed = compLen < rawLen || file.size > maxBytes;
+          const finalDataUrl = useCompressed ? compressedDataUrl : rawDataUrl;
+          const approxBinaryBytes = Math.round((finalDataUrl.length - (finalDataUrl.indexOf(',') + 1)) * 0.75);
+
+          if (approxBinaryBytes > maxBytes) {
+            return reject(new Error(`圖片「${file.name}」壓縮後仍超過 ${maxMB} MB 上限！`));
+          }
+          const base64Size = this.estimateJsonBytes(finalDataUrl);
+          resolve({
+            name: file.name,
+            size: approxBinaryBytes,
+            originalSize: file.size,
+            base64Size: base64Size,
+            mimeType: useCompressed ? 'image/jpeg' : (file.type || 'image/jpeg'),
+            isImage: true,
+            compressed: useCompressed && approxBinaryBytes < file.size,
+            dataUrl: finalDataUrl
+          });
+        };
+        img.src = rawDataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ===== 提問區（學生端）選擇與移除附件（最多 1 個檔案，5MB 上限） =====
+  triggerQuestionAttachmentSelect() {
+    if (!this.questionAttachmentEnabled) {
+      this.showNotification('提示', '老師目前未開放提問附檔功能');
+      return;
+    }
+    const input = document.getElementById('questionAttachmentInput');
+    if (input) {
+      input.value = '';
+      input.click();
+    }
+  }
+
+  async handleQuestionAttachmentSelect(event) {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+    if (!this.questionAttachmentEnabled) {
+      this.showNotification('提示', '老師目前未開放提問附檔功能');
+      return;
+    }
+    try {
+      this.isProcessingAttachment = true;
+      const processed = await this.processFileForAttachment(file, 5);
+      this.selectedQuestionAttachment = processed;
+      this.renderQuestionAttachmentPreview();
+    } catch (err) {
+      this.showNotification('檔案超過限制或格式錯誤', err.message || '無法附加此檔案');
+    } finally {
+      this.isProcessingAttachment = false;
+      if (event && event.target) event.target.value = '';
+    }
+  }
+
+  removeSelectedQuestionAttachment() {
+    this.selectedQuestionAttachment = null;
+    const input = document.getElementById('questionAttachmentInput');
+    if (input) input.value = '';
+    this.renderQuestionAttachmentPreview();
+  }
+
+  renderQuestionAttachmentPreview() {
+    const container = document.getElementById('questionAttachmentPreview');
+    if (!container) return;
+    const att = this.selectedQuestionAttachment;
+    if (!att) {
+      container.style.display = 'none';
+      container.innerHTML = '';
+      return;
+    }
+    const icon = this.getAttachmentIcon(att.mimeType, att.name);
+    const compTag = att.compressed
+      ? `<span style="color: #10b981; font-weight: 700;">(已自動壓縮 ${this.formatQuotaBytes(att.originalSize)} ➔ ${this.formatQuotaBytes(att.size)})</span>`
+      : `<span>(${this.formatQuotaBytes(att.size)})</span>`;
+    container.style.display = 'flex';
+    container.innerHTML = `
+      <div class="attachment-staged-chip">
+        <span>${icon}</span>
+        <span class="chip-name" title="${this.escapeHtml(att.name)}">${this.escapeHtml(att.name)}</span>
+        <span class="chip-size">${compTag}</span>
+        <button type="button" class="chip-remove-btn" onclick="window.app.removeSelectedQuestionAttachment()" title="移除附件">✕</button>
+      </div>
+    `;
+  }
+
+  // ===== 教師分享（後台）選擇與移除附件（最多 3 個檔案，單檔 6MB 上限） =====
+  triggerShareAttachmentSelect() {
+    if ((this.selectedShareAttachments || []).length >= 3) {
+      this.showNotification('提示', '每則教師分享最多可附加 3 個檔案！');
+      return;
+    }
+    const input = document.getElementById('shareAttachmentFileInput');
+    if (input) {
+      input.value = '';
+      input.click();
+    }
+  }
+
+  async handleShareAttachmentSelect(event) {
+    const files = Array.from(event?.target?.files || []);
+    if (files.length === 0) return;
+
+    const currentList = this.selectedShareAttachments || [];
+    const remainingSlots = 3 - currentList.length;
+    if (remainingSlots <= 0) {
+      this.showNotification('提示', '每則教師分享最多可附加 3 個檔案！');
+      if (event?.target) event.target.value = '';
+      return;
+    }
+
+    const filesToProcess = files.slice(0, remainingSlots);
+    if (files.length > remainingSlots) {
+      this.showNotification('提示', `最多僅能附加 3 個檔案，已自動選取前 ${remainingSlots} 個檔案。`);
+    }
+
+    this.isProcessingAttachment = true;
+    for (const file of filesToProcess) {
+      try {
+        const processed = await this.processFileForAttachment(file, 6);
+        this.selectedShareAttachments.push(processed);
+      } catch (err) {
+        this.showNotification('附件未加入', err.message || `無法處理 ${file.name}`);
+      }
+    }
+    this.isProcessingAttachment = false;
+    if (event?.target) event.target.value = '';
+    this.renderShareAttachmentPreview();
+  }
+
+  removeSelectedShareAttachment(index) {
+    if (!Array.isArray(this.selectedShareAttachments)) return;
+    this.selectedShareAttachments.splice(index, 1);
+    this.renderShareAttachmentPreview();
+  }
+
+  clearSelectedShareAttachments() {
+    this.selectedShareAttachments = [];
+    const input = document.getElementById('shareAttachmentFileInput');
+    if (input) input.value = '';
+    this.renderShareAttachmentPreview();
+  }
+
+  renderShareAttachmentPreview() {
+    const listEl = document.getElementById('shareAttachmentPreviewList');
+    const countEl = document.getElementById('shareSelectedAttachmentCount');
+    const items = this.selectedShareAttachments || [];
+    if (countEl) {
+      const totalBytes = items.reduce((acc, a) => acc + (a.size || 0), 0);
+      countEl.textContent = items.length > 0
+        ? `已選 ${items.length} / 3 個檔案（共 ${this.formatQuotaBytes(totalBytes)}）`
+        : '已選 0 / 3 個檔案';
+    }
+    if (!listEl) return;
+    if (items.length === 0) {
+      listEl.innerHTML = '';
+      return;
+    }
+    listEl.innerHTML = items.map((att, idx) => {
+      const icon = this.getAttachmentIcon(att.mimeType, att.name);
+      const sizeStr = att.compressed
+        ? `${this.formatQuotaBytes(att.originalSize)} ➔ ${this.formatQuotaBytes(att.size)}`
+        : this.formatQuotaBytes(att.size);
+      return `
+        <div class="attachment-staged-chip">
+          <span>${icon}</span>
+          <span class="chip-name" title="${this.escapeHtml(att.name)}">${this.escapeHtml(att.name)}</span>
+          <span class="chip-size">(${sizeStr})</span>
+          <button type="button" class="chip-remove-btn" onclick="window.app.removeSelectedShareAttachment(${idx})" title="移除此附件">✕</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ===== 將附件獨立寫入 attachments/{attId} 節點（主表僅存輕量中繼資料） =====
+  async uploadAttachmentToDb(stagedAtt, sourceType = 'question') {
+    const attRef = db.ref('attachments').push();
+    const attId = attRef.key;
+    const classCode = window.currentClassCode || '';
+    const payload = {
+      id: attId,
+      name: stagedAtt.name,
+      size: stagedAtt.size,
+      base64Size: stagedAtt.base64Size || this.estimateJsonBytes(stagedAtt.dataUrl),
+      mimeType: stagedAtt.mimeType || 'application/octet-stream',
+      isImage: !!stagedAtt.isImage,
+      sourceType: sourceType,
+      dataUrl: stagedAtt.dataUrl,
+      timestamp: Date.now()
+    };
+    await attRef.set(payload);
+
+    // 同步更新當前課堂空間統計
+    this.scheduleCurrentClassStorageSync();
+
+    return {
+      id: attId,
+      name: stagedAtt.name,
+      size: stagedAtt.size,
+      base64Size: payload.base64Size,
+      mimeType: payload.mimeType,
+      isImage: payload.isImage,
+      classCode: classCode
+    };
+  }
+
+  deleteAttachmentsFromDb(attachments) {
+    if (!Array.isArray(attachments) || attachments.length === 0) return;
+    attachments.forEach(att => {
+      if (!att || !att.id) return;
+      db.ref('attachments').child(att.id).remove().catch(() => {});
+      if (att.classCode && typeof rawRef === 'function') {
+        rawRef(`classes/${att.classCode}/attachments/${att.id}`).remove().catch(() => {});
+      }
+      if (this._attachmentCache) {
+        delete this._attachmentCache[att.id];
+      }
+    });
+    this.scheduleCurrentClassStorageSync();
+  }
+
+  // ===== 渲染附件膠囊卡片（0 流量預載，點擊才下載或預覽） =====
+  renderAttachmentPillsHtml(attachments) {
+    if (!Array.isArray(attachments) || attachments.length === 0) return '';
+    return `
+      <div class="item-attachments-list" onclick="event.stopPropagation();">
+        ${attachments.map(att => {
+          if (!att || !att.id) return '';
+          const icon = this.getAttachmentIcon(att.mimeType, att.name);
+          const sizeLabel = this.formatQuotaBytes(att.size || 0);
+          const safeName = this.escapeHtml(att.name || '附件檔案');
+          const safeAttrName = this.escapeQuote(att.name || '附件檔案');
+          const safeClassCode = this.escapeQuote(att.classCode || '');
+          const previewBtn = att.isImage ? `
+            <button type="button" class="attachment-download-btn" style="background: rgba(16, 185, 129, 0.12); color: #059669; border-color: rgba(16, 185, 129, 0.35);" onclick="event.stopPropagation(); window.app.downloadOrPreviewAttachment('${att.id}', '${safeAttrName}', '${safeClassCode}', true, this)">
+              👁️ 預覽圖片
+            </button>
+          ` : '';
+          return `
+            <div class="attachment-pill-card">
+              <div class="attachment-pill-info">
+                <span class="attachment-pill-icon">${icon}</span>
+                <div class="attachment-pill-meta">
+                  <span class="attachment-pill-name" title="${safeName}">${safeName}</span>
+                  <span class="attachment-pill-size">${sizeLabel} ・ 點擊才下載</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                ${previewBtn}
+                <button type="button" class="attachment-download-btn" onclick="event.stopPropagation(); window.app.downloadOrPreviewAttachment('${att.id}', '${safeAttrName}', '${safeClassCode}', false, this)">
+                  📥 點擊下載
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  async downloadOrPreviewAttachment(attId, fileName, sourceClassCode = '', isPreview = false, btnEl = null) {
+    if (!attId) return;
+    const origText = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) {
+      btnEl.classList.add('loading');
+      btnEl.innerHTML = '⏳ 讀取中...';
+    }
+
+    try {
+      let dataObj = this._attachmentCache && this._attachmentCache[attId];
+      if (!dataObj) {
+        let snap = await db.ref('attachments').child(attId).once('value');
+        dataObj = snap.val();
+
+        // 若該分享或提問是跨班複製過來的，支援回退至原班級節點讀取
+        if (!dataObj && sourceClassCode && typeof rawRef === 'function') {
+          snap = await rawRef(`classes/${sourceClassCode}/attachments/${attId}`).once('value');
+          dataObj = snap.val();
+        }
+        if (!dataObj && typeof rawRef === 'function') {
+          snap = await rawRef(`attachments/${attId}`).once('value');
+          dataObj = snap.val();
+        }
+
+        if (!dataObj || !dataObj.dataUrl) {
+          throw new Error('找不到此附件內容，可能已被刪除');
+        }
+
+        // 記錄本次按需下載所產生的實際 Firebase 流量
+        const downloadedBytes = Number(dataObj.base64Size) || this.estimateJsonBytes(dataObj.dataUrl);
+        this.recordFirebaseTraffic(downloadedBytes, true);
+
+        this._attachmentCache = this._attachmentCache || {};
+        this._attachmentCache[attId] = dataObj;
+      }
+
+      if (isPreview && dataObj.isImage) {
+        this.zoomShareImage(dataObj.dataUrl);
+      } else {
+        const a = document.createElement('a');
+        a.href = dataObj.dataUrl;
+        a.download = fileName || dataObj.name || 'attachment';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        this.showNotification('📥 下載完成', `已下載「${fileName || dataObj.name}」`);
+      }
+    } catch (err) {
+      this.showNotification('錯誤', err.message || '讀取附件失敗');
+    } finally {
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.innerHTML = origText;
+      }
+    }
+  }
+
   bindQuestionEvents() {
     this.questionInput = document.getElementById('questionInput');
     this.askBtn = document.getElementById('askBtn');
     this.questionList = document.getElementById('questionList');
     this.questionsRef = db.ref('questions');
     
-    const submitQuestion = () => {
+    const submitQuestion = async () => {
       if (this.askBtn.disabled) return;
       
       // 若未設定姓名則彈窗要求設定
@@ -5221,38 +6069,53 @@ class App {
         this.showNotification('提示', '提問頻率太快，請稍候再試...');
         return;
       }
-      this.lastQuestionSubmitTime = now;
       
-      const text = this.questionInput.value.trim();
-      if (!text) {
-        this.showNotification('提示', '請輸入問題');
+      const rawText = this.questionInput.value.trim();
+      const hasAttachment = !!(this.questionAttachmentEnabled && this.selectedQuestionAttachment);
+      if (!rawText && !hasAttachment) {
+        this.showNotification('提示', '請輸入問題內容或選擇附件檔案');
         return;
       }
+      this.lastQuestionSubmitTime = now;
       
       this.askBtn.disabled = true;
-      this.askBtn.textContent = '提交中...';
+      this.askBtn.textContent = hasAttachment ? '上傳附件中...' : '提交中...';
       
       const author = this.getCurrentUserName() || '同學';
       const uid = this.getUserId();
 
-      this.questionsRef.push({ 
-        text: text, 
-        user: author,
-        userId: uid,
-        avatar: this.getCurrentUserAvatar(),
-        timestamp: Date.now() 
-      }).then(() => {
+      try {
+        let attachmentsMeta = null;
+        if (hasAttachment) {
+          const uploadedMeta = await this.uploadAttachmentToDb(this.selectedQuestionAttachment, 'question');
+          attachmentsMeta = [uploadedMeta];
+        }
+
+        const finalQuestionText = rawText || `📎 附加檔案：${this.selectedQuestionAttachment.name}`;
+        const questionPayload = { 
+          text: finalQuestionText, 
+          user: author,
+          userId: uid,
+          avatar: this.getCurrentUserAvatar(),
+          timestamp: Date.now() 
+        };
+        if (attachmentsMeta) {
+          questionPayload.attachments = attachmentsMeta;
+        }
+
+        await this.questionsRef.push(questionPayload);
         this.questionInput.value = '';
+        this.removeSelectedQuestionAttachment();
         this.questionInput.focus();
         this.askBtn.disabled = false;
         this.askBtn.textContent = '提問';
-        this.showNotification('成功', '問題已提交！');
-      }).catch((error) => {
+        this.showNotification('成功', hasAttachment ? '問題與附件已成功提交！' : '問題已提交！');
+      } catch (error) {
         console.error('提問失敗:', error);
         this.askBtn.disabled = false;
         this.askBtn.textContent = '提問';
-        this.showNotification('錯誤', '提問失敗，請稍後再試');
-      });
+        this.showNotification('錯誤', '提問失敗：' + (error.message || '請稍後再試'));
+      }
     };
     
     this.askBtn.addEventListener('click', submitQuestion);
@@ -5280,6 +6143,9 @@ class App {
       const commentCount = (this.allCommentCounts && this.allCommentCounts.questions && this.allCommentCounts.questions[q.id]) || (q.comments ? (Array.isArray(q.comments) ? q.comments.length : Object.keys(q.comments).length) : 0);
       const isOwner = this.isItemOwner(q);
       const authorName = q.user || '同學';
+      const attachmentsHtml = (Array.isArray(q.attachments) && q.attachments.length > 0)
+        ? this.renderAttachmentPillsHtml(q.attachments)
+        : '';
       return `
         <li class="question-item card-style" data-id="${q.id}" data-user="${this.escapeHtml(authorName)}" data-text="${this.escapeHtml(q.text)}" style="cursor: pointer; margin-bottom: 8px; position: relative;">
           ${commentCount > 0 ? `
@@ -5301,6 +6167,7 @@ class App {
             </div>
           </div>
           <div class="text">${this.linkify(q.text)}</div>
+          ${attachmentsHtml}
           <div class="reactions-bar" onclick="event.stopPropagation()">
             <button class="reaction-btn" onclick="reactToQuestion('${q.id}', 'like')" title="讚">
               <span class="reaction-emoji">👍</span>
@@ -5372,7 +6239,7 @@ class App {
     // Bind click events
     document.querySelectorAll('.panel-body .question-item').forEach(item => {
       item.addEventListener('click', (e) => {
-        if (e.target.closest('a') || e.target.closest('.reactions-bar')) {
+        if (e.target.closest('a') || e.target.closest('.reactions-bar') || e.target.closest('.item-attachments-list')) {
           return;
         }
         this.showQuestionModal(item.dataset.id);
@@ -6228,7 +7095,8 @@ class App {
     const btns = {
       'text': document.getElementById('shareTypeBtnText'),
       'image': document.getElementById('shareTypeBtnImage'),
-      'link': document.getElementById('shareTypeBtnLink')
+      'link': document.getElementById('shareTypeBtnLink'),
+      'file': document.getElementById('shareTypeBtnFile')
     };
     
     Object.keys(btns).forEach(key => {
@@ -6245,7 +7113,8 @@ class App {
     const fields = {
       'text': document.getElementById('shareFieldText'),
       'image': document.getElementById('shareFieldImage'),
-      'link': document.getElementById('shareFieldLink')
+      'link': document.getElementById('shareFieldLink'),
+      'file': document.getElementById('shareFieldFile')
     };
     
     Object.keys(fields).forEach(key => {
@@ -6256,16 +7125,18 @@ class App {
     });
   }
 
-  submitTeacherShare() {
+  async submitTeacherShare() {
     const type = this.selectedShareFormType;
     const folderId = document.getElementById('shareFolderSelect')?.value || '';
     const category = document.getElementById('shareInputCategory')?.value || this.getSavedTeacherShareCategory();
     const showOnLogin = !!document.getElementById('shareInputShowOnLogin')?.checked;
+    const stagedAttachments = Array.isArray(this.selectedShareAttachments) ? [...this.selectedShareAttachments] : [];
     this.saveTeacherShareCategory(category);
 
     const resetShowOnLoginCheckbox = () => {
       const chk = document.getElementById('shareInputShowOnLogin');
       if (chk) chk.checked = false;
+      this.clearSelectedShareAttachments();
     };
     
     const onPublishSuccess = (key, shareObj) => {
@@ -6275,34 +7146,85 @@ class App {
         this.updateLoginSharesBadge();
         this.renderAdminShares();
         this.renderTeacherShares();
+        this.scheduleCurrentClassStorageSync();
       }
     };
+
+    const uploadStagedShareAttachments = async () => {
+      if (stagedAttachments.length === 0) return null;
+      this.showNotification('📎 上傳附件中', `正在獨立上傳 ${stagedAttachments.length} 個附件檔案，請稍候...`);
+      const uploadedMetaList = [];
+      for (const att of stagedAttachments) {
+        const meta = await this.uploadAttachmentToDb(att, 'share');
+        uploadedMetaList.push(meta);
+      }
+      return uploadedMetaList;
+    };
     
+    if (type === 'file') {
+      if (stagedAttachments.length === 0) {
+        this.showNotification('提示', '請至少選擇 1 個要分享的附件檔案（最多 3 個）');
+        return;
+      }
+      const fileTitleInput = document.getElementById('shareInputFileTitle');
+      const customTitle = fileTitleInput ? fileTitleInput.value.trim() : '';
+      const defaultTitle = stagedAttachments.map(a => a.name).join('、');
+
+      try {
+        const attachmentsMeta = await uploadStagedShareAttachments();
+        const shareData = {
+          type: 'file',
+          title: customTitle || defaultTitle,
+          content: customTitle || `📎 共 ${stagedAttachments.length} 個附件檔案`,
+          attachments: attachmentsMeta || [],
+          folderId: folderId,
+          category: category,
+          showOnLogin: showOnLogin,
+          timestamp: Date.now()
+        };
+        const newRef = await this.sharesRef.push(shareData);
+        if (newRef && newRef.key) {
+          onPublishSuccess(newRef.key, shareData);
+        }
+        if (fileTitleInput) fileTitleInput.value = '';
+        resetShowOnLoginCheckbox();
+        this.showNotification('成功', `已成功發佈 ${stagedAttachments.length} 個附件檔案！`);
+      } catch (err) {
+        this.showNotification('錯誤', '發佈附件失敗: ' + err.message);
+      }
+      return;
+    }
+
     if (type === 'text') {
       const input = document.getElementById('shareInputText');
       const val = input.value.trim();
-      if (!val) {
-        this.showNotification('提示', '請輸入分享文字內容');
+      if (!val && stagedAttachments.length === 0) {
+        this.showNotification('提示', '請輸入分享文字內容或選擇附件檔案');
         return;
       }
-      const shareData = {
-        type: 'text',
-        content: val,
-        folderId: folderId,
-        category: category,
-        showOnLogin: showOnLogin,
-        timestamp: Date.now()
-      };
-      this.sharesRef.push(shareData).then((newRef) => {
+      try {
+        const attachmentsMeta = await uploadStagedShareAttachments();
+        const shareData = {
+          type: 'text',
+          content: val || `📎 附件分享：${stagedAttachments.map(a => a.name).join('、')}`,
+          folderId: folderId,
+          category: category,
+          showOnLogin: showOnLogin,
+          timestamp: Date.now()
+        };
+        if (attachmentsMeta && attachmentsMeta.length > 0) {
+          shareData.attachments = attachmentsMeta;
+        }
+        const newRef = await this.sharesRef.push(shareData);
         if (newRef && newRef.key) {
           onPublishSuccess(newRef.key, shareData);
         }
         input.value = '';
         resetShowOnLoginCheckbox();
         this.showNotification('成功', '文字發佈成功！');
-      }).catch(err => {
+      } catch (err) {
         this.showNotification('錯誤', '發佈失敗: ' + err.message);
-      });
+      }
     } else if (type === 'link') {
       const titleInput = document.getElementById('shareInputLinkTitle');
       const urlInput = document.getElementById('shareInputLinkUrl');
@@ -6317,17 +7239,22 @@ class App {
         return;
       }
 
-      const publishLink = (finalTitle) => {
-        const shareData = {
-          type: 'link',
-          title: finalTitle || '',
-          content: url,
-          folderId: folderId,
-          category: category,
-          showOnLogin: showOnLogin,
-          timestamp: Date.now()
-        };
-        this.sharesRef.push(shareData).then((newRef) => {
+      const publishLink = async (finalTitle) => {
+        try {
+          const attachmentsMeta = await uploadStagedShareAttachments();
+          const shareData = {
+            type: 'link',
+            title: finalTitle || '',
+            content: url,
+            folderId: folderId,
+            category: category,
+            showOnLogin: showOnLogin,
+            timestamp: Date.now()
+          };
+          if (attachmentsMeta && attachmentsMeta.length > 0) {
+            shareData.attachments = attachmentsMeta;
+          }
+          const newRef = await this.sharesRef.push(shareData);
           if (newRef && newRef.key) {
             onPublishSuccess(newRef.key, shareData);
           }
@@ -6335,9 +7262,9 @@ class App {
           urlInput.value = '';
           resetShowOnLoginCheckbox();
           this.showNotification('成功', '連結發佈成功！');
-        }).catch(err => {
+        } catch (err) {
           this.showNotification('錯誤', '發佈失敗: ' + err.message);
-        });
+        }
       };
 
       if (!title) {
@@ -6390,7 +7317,8 @@ class App {
           ctx.drawImage(img, 0, 0, w, h);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           
-          const uploadToDatabase = (finalUrl) => {
+          const uploadToDatabase = async (finalUrl) => {
+            const attachmentsMeta = await uploadStagedShareAttachments();
             const shareData = {
               type: 'image',
               title: file.name,
@@ -6400,6 +7328,9 @@ class App {
               showOnLogin: showOnLogin,
               timestamp: Date.now()
             };
+            if (attachmentsMeta && attachmentsMeta.length > 0) {
+              shareData.attachments = attachmentsMeta;
+            }
             return this.sharesRef.push(shareData).then((newRef) => {
               if (newRef && newRef.key) {
                 onPublishSuccess(newRef.key, shareData);
@@ -6622,12 +7553,16 @@ class App {
     const adminCopyBtn = this.isAdmin ? `
       <button class="share-copy-btn" onclick="window.app.openSingleItemCopyModal('teacherShares', '${item.id}')" style="background: rgba(0,122,255,0.1); color: var(--accent-color); border: 1px solid var(--accent-color);">📤 複製到其他班</button>
     ` : '';
+    const attachmentsHtml = (Array.isArray(item.attachments) && item.attachments.length > 0)
+      ? this.renderAttachmentPillsHtml(item.attachments)
+      : '';
 
     let contentHTML = '';
     if (item.type === 'text') {
       contentHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-          <div class="share-item-content-text" style="flex: 1; text-align: left; min-height: 80px; white-space: pre-wrap; word-break: break-word; line-height: 1.5; padding: 4px 0;">${this.linkify ? this.linkify(item.content) : this.escapeHtml(item.content)}</div>
+          <div class="share-item-content-text" style="flex: 1; text-align: left; min-height: 60px; white-space: pre-wrap; word-break: break-word; line-height: 1.5; padding: 4px 0;">${this.linkify ? this.linkify(item.content) : this.escapeHtml(item.content)}</div>
+          ${attachmentsHtml}
           <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
             ${adminCopyBtn}
             <button class="share-copy-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)">📋 複製文字</button>
@@ -6640,6 +7575,7 @@ class App {
           <div style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">
             <a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>
           </div>
+          ${attachmentsHtml}
           ${this.isAdmin ? `
             <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
               ${adminCopyBtn}
@@ -6653,10 +7589,23 @@ class App {
           <div style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 140px;">
             <img src="${item.content}" class="share-item-content-image" onclick="window.app.zoomShareImage('${item.content}')" alt="Shared Image">
           </div>
+          ${attachmentsHtml}
           <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
             ${adminCopyBtn}
             <button class="share-copy-btn" onclick="window.app.copyShareImage('${item.content}')">📋 複製圖片</button>
           </div>
+        </div>
+      `;
+    } else if (item.type === 'file') {
+      contentHTML = `
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+          ${(item.title || item.content) ? `<div class="share-item-content-text" style="font-weight: 700; font-size: 13.5px; color: var(--text-primary); margin-bottom: 4px; text-align: left;">📎 ${this.escapeHtml(item.title || item.content)}</div>` : ''}
+          ${attachmentsHtml}
+          ${this.isAdmin ? `
+            <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+              ${adminCopyBtn}
+            </div>
+          ` : ''}
         </div>
       `;
     }
@@ -6938,14 +7887,24 @@ class App {
   buildAdminShareItemHTML(item) {
     const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     let preview = '';
+    const attachmentsHtml = (Array.isArray(item.attachments) && item.attachments.length > 0)
+      ? this.renderAttachmentPillsHtml(item.attachments)
+      : '';
     
     if (item.type === 'text') {
-      preview = `<div class="share-item-content-text" style="max-height: 50px; overflow: hidden; text-overflow: ellipsis;">${this.escapeHtml(item.content)}</div>`;
+      preview = `<div class="share-item-content-text" style="max-height: 50px; overflow: hidden; text-overflow: ellipsis;">${this.escapeHtml(item.content)}</div>${attachmentsHtml}`;
     } else if (item.type === 'link') {
-      preview = `<a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>`;
+      preview = `<a href="${item.content}" target="_blank" class="share-item-content-link">🔗 ${this.escapeHtml(item.title || item.content)}</a>${attachmentsHtml}`;
     } else if (item.type === 'image') {
-      preview = `<img src="${item.content}" class="share-item-content-image" style="max-width: 60px; max-height: 60px;" onclick="window.app.zoomShareImage('${item.content}')">`;
+      preview = `<img src="${item.content}" class="share-item-content-image" style="max-width: 60px; max-height: 60px;" onclick="window.app.zoomShareImage('${item.content}')">${attachmentsHtml}`;
+    } else if (item.type === 'file') {
+      preview = `<div class="share-item-content-text" style="font-weight: 700;">📎 ${this.escapeHtml(item.title || item.content)}</div>${attachmentsHtml}`;
     }
+
+    const typeBadgeText = item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : item.type === 'file' ? '📎 附件檔案' : '🔗 連結';
+    const hasAttBadge = (Array.isArray(item.attachments) && item.attachments.length > 0 && item.type !== 'file')
+      ? `<span style="padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; background: rgba(16, 185, 129, 0.12); color: #059669;">📎 含 ${item.attachments.length} 附件</span>`
+      : '';
 
     return `
       <div class="admin-share-item-row" style="display: flex; flex-direction: column; padding: 8px; border-bottom: 1px dashed var(--border-color); gap: 6px;">
@@ -6955,7 +7914,8 @@ class App {
             <div class="admin-share-item-content" style="flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
               <div class="admin-share-item-meta" style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); gap: 8px;">
                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
-                  <span style="font-weight: bold; color: var(--accent-color);">${item.type === 'text' ? '💬 文字' : item.type === 'image' ? '🖼️ 圖片' : '🔗 連結'}</span>
+                  <span style="font-weight: bold; color: var(--accent-color);">${typeBadgeText}</span>
+                  ${hasAttBadge}
                   <span style="padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; ${item.category === 'news' ? 'background: rgba(255,149,0,0.12); color: #ff9500;' : 'background: rgba(0,122,255,0.1); color: var(--accent-color);'}">
                     ${item.category === 'news' ? '📢 最新消息' : '📚 課程教材'}
                   </span>
@@ -6988,6 +7948,10 @@ class App {
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <input type="text" id="share-edit-title-${item.id}" value="${this.escapeHtml(item.title || '')}" placeholder="連結標題" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
               <input type="text" id="share-edit-content-${item.id}" value="${this.escapeHtml(item.content)}" placeholder="連結網址" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
+            </div>
+          ` : item.type === 'file' ? `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <input type="text" id="share-edit-content-${item.id}" value="${this.escapeHtml(item.title || item.content || '')}" placeholder="附件分享標題或說明" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
             </div>
           ` : `
             <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -7122,11 +8086,15 @@ class App {
       const folder = (this.shareFolders || []).find(f => f.id === item.folderId);
       const folderName = folder ? folder.name : '';
       const timeStr = new Date(item.timestamp).toLocaleString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const attachmentsHtml = (Array.isArray(item.attachments) && item.attachments.length > 0)
+        ? this.renderAttachmentPillsHtml(item.attachments)
+        : '';
 
       let bodyHTML = '';
       if (item.type === 'text') {
         bodyHTML = `
           <div style="font-size: 14.5px; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; word-break: break-word;">${this.linkify ? this.linkify(item.content) : this.escapeHtml(item.content)}</div>
+          ${attachmentsHtml}
           <div style="margin-top: 8px; display: flex; justify-content: flex-end;">
             <button class="preset-btn" onclick="window.app.copyShareText(\`${this.escapeQuote(item.content)}\`)" style="font-size: 12px; padding: 4px 10px; background: rgba(0,122,255,0.1); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer;">📋 複製文字</button>
           </div>
@@ -7138,6 +8106,7 @@ class App {
               🔗 ${this.escapeHtml(item.title || item.content)}
             </a>
             <div style="font-size: 12px; color: var(--text-secondary); word-break: break-all;">${this.escapeHtml(item.content)}</div>
+            ${attachmentsHtml}
             <div style="margin-top: 6px; display: flex; justify-content: flex-end;">
               <a href="${item.content}" target="_blank" rel="noopener noreferrer" class="preset-btn" style="text-decoration: none; font-size: 12px; padding: 5px 12px; background: var(--accent-color); color: #fff; border-radius: 6px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
                 🚀 開啟連結 ➔
@@ -7150,6 +8119,14 @@ class App {
           <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
             <img src="${item.content}" alt="公告圖片" style="max-width: 100%; max-height: 280px; object-fit: contain; border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color);" onclick="window.app.zoomShareImage('${item.content}')" title="點擊放大圖片">
             <span style="font-size: 11px; color: var(--text-muted);">（點擊圖片可放大檢視）</span>
+            <div style="width: 100%;">${attachmentsHtml}</div>
+          </div>
+        `;
+      } else if (item.type === 'file') {
+        bodyHTML = `
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            ${(item.title || item.content) ? `<div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">📎 ${this.escapeHtml(item.title || item.content)}</div>` : ''}
+            ${attachmentsHtml}
           </div>
         `;
       }
@@ -7440,6 +8417,10 @@ class App {
       '確定要刪除此分享項目嗎？',
       '此動作無法復原。',
       () => {
+        const targetShare = (this.shares || []).find(s => s.id === id);
+        if (targetShare && Array.isArray(targetShare.attachments) && targetShare.attachments.length > 0) {
+          this.deleteAttachmentsFromDb(targetShare.attachments);
+        }
         // 本地立即移除並即時更新公告數量與清單
         this.shares = (this.shares || []).filter(s => s.id !== id);
         this.updateLoginSharesBadge();
@@ -7449,6 +8430,7 @@ class App {
         this.sharesRef.child(id).remove()
           .then(() => {
             this.showNotification('成功', '已刪除分享項目');
+            this.scheduleCurrentClassStorageSync();
           })
           .catch(err => {
             this.showNotification('錯誤', '刪除失敗: ' + err.message);
@@ -7471,6 +8453,15 @@ class App {
       () => {
         this.showNotification('提示', '正在刪除項目...');
         const deleteIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-id'));
+        const attList = [];
+        (this.shares || []).forEach(s => {
+          if (deleteIds.includes(s.id) && Array.isArray(s.attachments)) {
+            attList.push(...s.attachments);
+          }
+        });
+        if (attList.length > 0) {
+          this.deleteAttachmentsFromDb(attList);
+        }
         // 本地立即移除並即時更新公告數量與清單
         this.shares = (this.shares || []).filter(s => !deleteIds.includes(s.id));
         this.updateLoginSharesBadge();
@@ -7485,6 +8476,7 @@ class App {
             const selectAll = document.getElementById('selectAllShares');
             if (selectAll) selectAll.checked = false;
             this.updateBatchShareSelectCount();
+            this.scheduleCurrentClassStorageSync();
           })
           .catch(err => {
             this.showNotification('錯誤', '刪除失敗: ' + err.message);
@@ -7725,13 +8717,21 @@ class App {
       return;
     }
     
-    const renderQuestionItemHtml = (q, idx) => `
+    const renderQuestionItemHtml = (q, idx) => {
+      const attachmentsHtml = (Array.isArray(q.attachments) && q.attachments.length > 0)
+        ? this.renderAttachmentPillsHtml(q.attachments)
+        : '';
+      const hasAttBadge = (Array.isArray(q.attachments) && q.attachments.length > 0)
+        ? `<span style="padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; background: rgba(16, 185, 129, 0.12); color: #059669; flex-shrink: 0;">📎 附檔</span>`
+        : '';
+      return `
       <li class="question-item card-style admin-card" style="border-left-color: var(--danger-color); cursor: default; flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 8px;">
         <!-- 頂部資訊與操作列 -->
         <div class="admin-q-header-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
           <div class="admin-q-header-left" style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
             <input type="checkbox" class="admin-select-question" value="${q.id}" onchange="window.app.updateBatchSelectCount()" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; margin: 0;">
             ${q.user && q.user !== '匿名' ? `<span class="user" style="color: var(--danger-color); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;" title="${this.escapeHtml(q.user)}">${this.escapeHtml(q.user)}</span>` : ''}
+            ${hasAttBadge}
             <span class="time" style="font-size: 11px; color: var(--text-muted); flex-shrink: 0; margin-left: 2px;">${this.formatTime(q.timestamp)}</span>
           </div>
           <div class="admin-q-actions" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
@@ -7743,6 +8743,7 @@ class App {
 
         <!-- 問題內容：使用完整寬度區塊 (紅框範圍) -->
         <div class="text admin-q-text" id="q-text-${q.id}" style="width: 100%; box-sizing: border-box; word-break: break-all; margin: 2px 0; font-size: 14.5px; line-height: 1.55; color: var(--text-primary);">${this.linkify(q.text)}</div>
+        ${attachmentsHtml}
 
         <!-- 內嵌編輯區：使用完整寬度區塊 -->
         <div id="q-edit-${q.id}" style="display:none; margin-top: 4px; width: 100%; box-sizing: border-box;">
@@ -7763,6 +8764,7 @@ class App {
         </div>
       </li>
     `;
+    };
 
     // 1. Grouped Folders
     let groupedHtml = '';
@@ -16291,8 +17293,11 @@ function resetAll() {
     ? window.ClassRoomManager.isOneOffClass()
     : !window.currentClassCode;
 
+  const classKey = window.currentClassCode ? `class_${window.currentClassCode}` : 'one_off_root';
+
   const promises = [
     db.ref('questions').remove(),
+    db.ref('attachments').remove(),
     db.ref('quiz/questionFolders').remove(),
     db.ref('quiz/current').remove(),
     db.ref('quiz/answers').remove(),
@@ -16311,6 +17316,7 @@ function resetAll() {
     db.ref('quiz/presence').remove(), // 徹底清除在線與快取紀錄，避免舊名稱殘留
     db.ref('whiteboard').remove(),
     db.ref('whiteboard_room').remove(),
+    db.ref('system/quotaStats/classStorageMap').child(classKey).set(0),
     db.ref('quiz/resetTimestamp').set(Date.now()) // 廣播重設事件至所有在線學生客戶端
   ];
 
@@ -16387,6 +17393,8 @@ async function submitAdminPassword() {
       window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
       window.app.updateFocusGameAdminOptions();
       window.app.updateAdminActiveActivitiesUI();
+      window.app.renderFirebaseQuotaBanners();
+      window.app.scheduleCurrentClassStorageSync();
 
       if (res.isDefault) {
         const days = res.remainingDays !== undefined ? res.remainingDays : (window.teacherAuthManager ? window.teacherAuthManager.getDefaultPasswordRemainingDays() : 0);
@@ -16440,6 +17448,8 @@ async function submitAdminPassword() {
       window.app.closeAdminPasswordModal();
       window.app.switchToTab('panel-admin');
       window.app.updateAdminActiveActivitiesUI();
+      window.app.renderFirebaseQuotaBanners();
+      window.app.scheduleCurrentClassStorageSync();
       window.app.showNotification('成功', '已進入管理員模式！');
     } else {
       const errBox = document.getElementById('adminPasswordErrorMsg');
@@ -16557,8 +17567,15 @@ function deleteQuestion(id) {
     '確定要刪除此問題嗎？',
     '此動作將永久刪除該提問，且無法復原。',
     () => {
+      const targetQ = (window.app.questions || []).find(q => q.id === id);
+      if (targetQ && Array.isArray(targetQ.attachments) && targetQ.attachments.length > 0) {
+        window.app.deleteAttachmentsFromDb(targetQ.attachments);
+      }
       db.ref('questions').child(id).remove()
-        .then(() => window.app.showNotification('成功', '已刪除問題！'))
+        .then(() => {
+          window.app.showNotification('成功', '已刪除問題！');
+          window.app.scheduleCurrentClassStorageSync();
+        })
         .catch(err => window.app.showNotification('錯誤', '刪除失敗: ' + err.message));
     }
   );
@@ -16717,7 +17734,7 @@ function adminEditShare(id) {
         const titleInput = document.getElementById('share-edit-title-' + id);
         const contentInput = document.getElementById('share-edit-content-' + id);
         const catInput = document.getElementById('share-edit-category-' + id);
-        if (contentInput) contentInput.value = item.content;
+        if (contentInput) contentInput.value = item.type === 'file' ? (item.title || item.content || '') : item.content;
         if (titleInput && item.type === 'link') titleInput.value = item.title || '';
         if (catInput) catInput.value = item.category || 'materials';
       }
@@ -16767,6 +17784,8 @@ function adminSaveShare(id) {
         return;
       }
       updates.title = titleInput.value.trim() || newContent;
+    } else if (item.type === 'file') {
+      updates.title = newContent;
     }
     if (catInput) {
       updates.category = catInput.value || 'materials';
