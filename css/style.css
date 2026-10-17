@@ -5763,3 +5763,240 @@ body {
   }
 }
 
+/* 1 秒最多 3 次防洗版提示與微晃動 */
+.reaction-rate-limit-toast {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  background: rgba(220, 38, 38, 0.92);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.95);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+  z-index: 10;
+}
+
+.reaction-rate-limit-toast.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@keyframes reactionDockShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+}
+
+.live-reaction-dock.rate-limited .reaction-expanded-bar {
+  animation: reactionDockShake 0.28s ease;
+  border-color: rgba(239, 68, 68, 0.65);
+}
+
+/* 支援帶文字標籤的情境按鈕（如：是/否、正確/錯誤、1~5星、A/B/C/D、聽懂了嗎） */
+.reaction-emoji-btn.with-label {
+  border-radius: 999px;
+  padding: 5px 11px;
+  gap: 5px;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  font-size: 18px;
+}
+
+.reaction-emoji-btn.with-label:hover {
+  transform: scale(1.12) translateY(-2px);
+  background: rgba(236, 72, 153, 0.12);
+  border-color: rgba(236, 72, 153, 0.45);
+}
+
+.reaction-emoji-btn .reaction-btn-emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.reaction-emoji-btn .reaction-btn-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary, #222222);
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+/* 漂浮回饋氣泡上的情境文字標籤（例如：⭐⭐⭐⭐⭐ 5顆星 / ⭕ 是 / 💡 完全聽懂） */
+.floating-reaction-badge {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  padding: 2px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.3px;
+}
+
+/* 後台「G. 即時互動回饋設定」專屬樣式 */
+.reaction-admin-preview-card {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.06), rgba(139, 92, 246, 0.06));
+  border: 1.5px solid rgba(236, 72, 153, 0.28);
+  border-radius: 14px;
+  padding: 14px 18px;
+}
+
+.reaction-active-preset-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.reaction-admin-preview-bar {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--bg-card, #ffffff);
+  border: 1.5px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  border-radius: 40px;
+  padding: 7px 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.reaction-preset-cat-header {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 18px 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reaction-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+  gap: 12px;
+}
+
+.reaction-preset-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  position: relative;
+}
+
+.reaction-preset-card:hover {
+  border-color: rgba(236, 72, 153, 0.55);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(236, 72, 153, 0.12);
+}
+
+.reaction-preset-card.active {
+  border-color: #ec4899;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(139, 92, 246, 0.05));
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.18);
+}
+
+.reaction-preset-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.reaction-preset-card-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reaction-preset-check {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.reaction-preset-card.active .reaction-preset-check {
+  background: #ec4899;
+  color: #ffffff;
+}
+
+.reaction-preset-card-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+.reaction-preset-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.reaction-preset-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--text-primary);
+}
+
+.reaction-custom-editor-card {
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.reaction-custom-items-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.reaction-custom-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+
