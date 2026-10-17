@@ -3110,8 +3110,10 @@
         ✏️ 修改內容
       </h3>
       <div>
-        <textarea id="itemEditModalTextarea" class="question-input" rows="4" style="width: 100%; margin: 0 0 14px 0; font-size: 14px; line-height: 1.5; resize: vertical;" placeholder="請輸入修改後的內容..."></textarea>
+        <textarea id="itemEditModalTextarea" class="question-input" rows="4" style="width: 100%; margin: 0 0 12px 0; font-size: 14px; line-height: 1.5; resize: vertical;" placeholder="請輸入修改後的內容..."></textarea>
       </div>
+      <!-- 彈窗內附件編輯區（刪除 / 更換 / 新增附件） -->
+      <div id="itemEditModalAttachmentArea" style="display: none; margin-bottom: 14px;"></div>
       <div style="display: flex; justify-content: flex-end; gap: 8px;">
         <button type="button" class="preset-btn" onclick="window.app.closeItemEditModal()" style="padding: 8px 16px; font-size: 13px; border-radius: 8px; cursor: pointer;">取消</button>
         <button type="button" class="ask-btn" id="itemEditModalSaveBtn" style="padding: 8px 18px; font-size: 13px; border-radius: 8px; cursor: pointer;">儲存修改</button>
@@ -3406,7 +3408,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=386"></script>
+  <script src="js/app.js?v=389"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>

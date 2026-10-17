@@ -1151,21 +1151,30 @@ class App {
   }
 
   // ===== 通用內容修改彈窗 (避免 prompt 被手機阻擋) =====
-  openEditItemModal({ title, initialValue, placeholder, onSave }) {
+  openEditItemModal({ title, initialValue, placeholder, onSave, keepAttachmentArea = false }) {
     const modal = document.getElementById('itemEditModal');
     const titleEl = document.getElementById('itemEditModalTitle');
     const textarea = document.getElementById('itemEditModalTextarea');
     const saveBtn = document.getElementById('itemEditModalSaveBtn');
+    const attArea = document.getElementById('itemEditModalAttachmentArea');
     if (!modal || !textarea || !saveBtn) return;
+
+    if (!keepAttachmentArea && attArea) {
+      attArea.style.display = 'none';
+      attArea.innerHTML = '';
+    }
 
     if (titleEl && title) titleEl.textContent = title;
     textarea.value = initialValue || '';
     if (placeholder) textarea.placeholder = placeholder;
 
-    saveBtn.onclick = () => {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '儲存修改';
+    saveBtn.onclick = async () => {
       const val = textarea.value;
       if (typeof onSave === 'function') {
-        onSave(val);
+        const res = await onSave(val, saveBtn);
+        if (res === false) return;
       }
       this.closeItemEditModal();
     };
@@ -1180,35 +1189,403 @@ class App {
   closeItemEditModal() {
     const modal = document.getElementById('itemEditModal');
     if (modal) modal.classList.remove('active');
+    const attArea = document.getElementById('itemEditModalAttachmentArea');
+    if (attArea) {
+      attArea.style.display = 'none';
+      attArea.innerHTML = '';
+    }
+    this._modalQuestionAttEditState = null;
   }
 
-  // ===== 學生/管理員修改與刪除提問 =====
+  // ===== 學生/管理員修改與刪除提問（含附件刪除、更換與新增） =====
   editQuestionPrompt(id) {
     const q = this.questions.find(item => item.id === id);
     if (!q) return;
+
+    const origAtts = Array.isArray(q.attachments) ? q.attachments : [];
+    const hasOrigAtt = origAtts.length > 0;
+    const canManageAtt = hasOrigAtt || !!this.questionAttachmentEnabled || !!this.isAdmin;
+
+    this._modalQuestionAttEditState = {
+      questionId: id,
+      original: origAtts.map(a => ({ ...a })),
+      current: hasOrigAtt ? { isNew: false, meta: { ...origAtts[0] } } : null
+    };
+
     this.openEditItemModal({
       title: '✏️ 修改提問內容',
       initialValue: q.text || '',
       placeholder: '請輸入修改後的提問內容...',
-      onSave: (newText) => {
-        if (!newText.trim()) {
-          this.showNotification('提示', '提問內容不可為空！');
-          return;
+      keepAttachmentArea: canManageAtt,
+      onSave: async (newText, saveBtn) => {
+        const state = this._modalQuestionAttEditState;
+        const currentAtt = state ? state.current : null;
+        let finalText = (newText || '').trim();
+        if (!finalText && currentAtt) {
+          const attName = currentAtt.isNew ? currentAtt.staged.name : currentAtt.meta.name;
+          finalText = `📎 分享附件：${attName}`;
         }
-        db.ref('questions').child(id).update({
-          text: newText.trim(),
-          updatedAt: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
+        if (!finalText) {
+          this.showNotification('提示', '提問內容不可為空！');
+          return false;
+        }
+
+        try {
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = '⏳ 儲存中...';
+          }
+
+          let nextAttachments = null;
+          if (state) {
+            const origList = state.original || [];
+            // 若原本有附件，且被刪除或更換為新檔案，清理舊附件節點
+            if (origList.length > 0 && (!currentAtt || currentAtt.isNew)) {
+              this.deleteAttachmentsFromDb(origList);
+            }
+            if (currentAtt) {
+              if (currentAtt.isNew) {
+                const uploadedMeta = await this.uploadAttachmentToDb(currentAtt.staged, 'question');
+                nextAttachments = [uploadedMeta];
+              } else {
+                nextAttachments = [currentAtt.meta];
+              }
+            } else {
+              nextAttachments = null;
+            }
+          }
+
+          await db.ref('questions').child(id).update({
+            text: finalText,
+            attachments: nextAttachments,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
+
+          q.text = finalText;
+          q.attachments = nextAttachments || undefined;
+
           if (this.activeQuestionId === id) {
             const el = document.getElementById('questionModalText');
-            if (el) el.innerHTML = this.linkify(newText.trim());
+            if (el) el.innerHTML = this.linkify(finalText);
+            const modalAttEl = document.getElementById('questionModalAttachments');
+            if (modalAttEl) {
+              const hasAtt = Array.isArray(nextAttachments) && nextAttachments.length > 0;
+              modalAttEl.style.display = hasAtt ? 'block' : 'none';
+              modalAttEl.innerHTML = hasAtt ? this.renderAttachmentPillsHtml(nextAttachments) : '';
+            }
           }
-          this.showNotification('成功', '提問已更新！');
-        }).catch(err => {
+          this.showNotification('成功', '提問與附件已更新！');
+          return true;
+        } catch (err) {
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '儲存修改';
+          }
           this.showNotification('錯誤', '更新失敗: ' + err.message);
-        });
+          return false;
+        }
       }
     });
+
+    if (canManageAtt) {
+      this.renderModalQuestionAttEdit();
+    }
+  }
+
+  renderModalQuestionAttEdit() {
+    const attArea = document.getElementById('itemEditModalAttachmentArea');
+    const state = this._modalQuestionAttEditState;
+    if (!attArea || !state) return;
+
+    attArea.style.display = 'block';
+    const cur = state.current;
+    const hasOrig = state.original && state.original.length > 0;
+    const canUploadNew = !!this.questionAttachmentEnabled || !!this.isAdmin || hasOrig;
+
+    if (cur) {
+      const name = cur.isNew ? cur.staged.name : (cur.meta.name || '附件檔案');
+      const size = cur.isNew ? cur.staged.size : (cur.meta.size || 0);
+      const mime = cur.isNew ? cur.staged.mimeType : (cur.meta.mimeType || '');
+      const icon = this.getAttachmentIcon(mime, name);
+      const badge = cur.isNew
+        ? `<span style="font-size: 11px; padding: 1px 6px; border-radius: 4px; background: rgba(16,185,129,0.15); color: #059669; font-weight: bold;">新更換</span>`
+        : `<span style="font-size: 11px; padding: 1px 6px; border-radius: 4px; background: rgba(0,122,255,0.12); color: var(--accent-color); font-weight: bold;">目前附件</span>`;
+
+      attArea.innerHTML = `
+        <div style="padding: 10px 12px; border-radius: 10px; background: var(--bg-input); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
+              <span style="font-size: 16px; flex-shrink: 0;">${icon}</span>
+              <span style="font-size: 13px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(name)}">${this.escapeHtml(name)}</span>
+              <span style="font-size: 11.5px; color: var(--text-secondary); flex-shrink: 0;">(${this.formatQuotaBytes(size)})</span>
+              ${badge}
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+              ${canUploadNew ? `<button type="button" class="preset-btn" onclick="window.app.triggerModalQuestionAttFileSelect()" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; color: var(--accent-color); border: 1px solid var(--accent-color); background: transparent; cursor: pointer;">🔄 更換檔案</button>` : ''}
+              <button type="button" class="preset-btn" onclick="window.app.removeModalQuestionAtt()" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; color: var(--danger-color); border: 1px solid var(--danger-color); background: transparent; cursor: pointer;">🗑️ 刪除附件</button>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      const removedNotice = hasOrig
+        ? `<span style="font-size: 12px; color: var(--danger-color); font-weight: 600;">🗑️ 已標記移除原附件（儲存後生效）</span>
+           <button type="button" class="preset-btn" onclick="window.app.restoreModalQuestionAtt()" style="padding: 3px 8px; font-size: 11.5px; border-radius: 6px; cursor: pointer;">↩️ 復原原附件</button>`
+        : `<span style="font-size: 12px; color: var(--text-secondary);">📎 目前無附件（最多 1 檔 / 5 MB）</span>`;
+
+      attArea.innerHTML = `
+        <div style="padding: 9px 12px; border-radius: 10px; background: var(--bg-input); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            ${removedNotice}
+          </div>
+          ${canUploadNew ? `<button type="button" class="preset-btn" onclick="window.app.triggerModalQuestionAttFileSelect()" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; color: var(--accent-color); border: 1px solid var(--accent-color); background: transparent; cursor: pointer;">📎 ${hasOrig ? '選擇新附件' : '新增附件'}</button>` : ''}
+        </div>
+      `;
+    }
+  }
+
+  triggerModalQuestionAttFileSelect() {
+    this._openHiddenAttFilePicker(false, async (files) => {
+      const file = files[0];
+      if (!file || !this._modalQuestionAttEditState) return;
+      try {
+        const processed = await this.processFileForAttachment(file, 5);
+        this._modalQuestionAttEditState.current = { isNew: true, staged: processed };
+        this.renderModalQuestionAttEdit();
+      } catch (err) {
+        this.showNotification('檔案超過限制或格式錯誤', err.message || '無法附加此檔案');
+      }
+    });
+  }
+
+  removeModalQuestionAtt() {
+    if (!this._modalQuestionAttEditState) return;
+    this._modalQuestionAttEditState.current = null;
+    this.renderModalQuestionAttEdit();
+  }
+
+  restoreModalQuestionAtt() {
+    const state = this._modalQuestionAttEditState;
+    if (!state || !state.original || state.original.length === 0) return;
+    state.current = { isNew: false, meta: { ...state.original[0] } };
+    this.renderModalQuestionAttEdit();
+  }
+
+  // 共用隱藏檔案選擇器（供彈窗與後台內嵌編輯更換/新增附件使用）
+  _openHiddenAttFilePicker(multiple = false, onPicked = null) {
+    let input = document.getElementById('_sharedEditAttachmentFileInput');
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'file';
+      input.id = '_sharedEditAttachmentFileInput';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+    }
+    input.multiple = !!multiple;
+    input.value = '';
+    input.onchange = (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0 && typeof onPicked === 'function') {
+        onPicked(files);
+      }
+      input.value = '';
+    };
+    input.click();
+  }
+
+  // ===== 後台「提問管理」內嵌編輯之附件刪除/更換/新增 =====
+  initAdminQuestionAttachmentEdit(id) {
+    if (!this._adminQEditAttState) this._adminQEditAttState = {};
+    const q = (this.questions || []).find(item => item.id === id);
+    const origAtts = (q && Array.isArray(q.attachments)) ? q.attachments : [];
+    this._adminQEditAttState[id] = {
+      original: origAtts.map(a => ({ ...a })),
+      current: origAtts.length > 0 ? { isNew: false, meta: { ...origAtts[0] } } : null
+    };
+    this.renderAdminQuestionAttEdit(id);
+  }
+
+  renderAdminQuestionAttEdit(id) {
+    const container = document.getElementById(`q-edit-att-area-${id}`);
+    const state = this._adminQEditAttState?.[id];
+    if (!container || !state) return;
+
+    const cur = state.current;
+    const hasOrig = state.original && state.original.length > 0;
+
+    if (cur) {
+      const name = cur.isNew ? cur.staged.name : (cur.meta.name || '附件檔案');
+      const size = cur.isNew ? cur.staged.size : (cur.meta.size || 0);
+      const mime = cur.isNew ? cur.staged.mimeType : (cur.meta.mimeType || '');
+      const icon = this.getAttachmentIcon(mime, name);
+      const badge = cur.isNew
+        ? `<span style="font-size: 10.5px; padding: 1px 6px; border-radius: 4px; background: rgba(16,185,129,0.15); color: #059669; font-weight: bold;">新更換</span>`
+        : `<span style="font-size: 10.5px; padding: 1px 6px; border-radius: 4px; background: rgba(0,122,255,0.12); color: var(--accent-color); font-weight: bold;">目前附件</span>`;
+
+      container.innerHTML = `
+        <div style="padding: 8px 10px; border-radius: 8px; background: rgba(0,122,255,0.04); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
+            <span style="font-size: 15px; flex-shrink: 0;">${icon}</span>
+            <span style="font-size: 12.5px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(name)}">${this.escapeHtml(name)}</span>
+            <span style="font-size: 11px; color: var(--text-secondary); flex-shrink: 0;">(${this.formatQuotaBytes(size)})</span>
+            ${badge}
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <button type="button" class="preset-btn" onclick="window.app.triggerAdminQuestionAttFileSelect('${id}')" style="padding: 3px 8px; font-size: 11.5px; border-radius: 6px; color: var(--accent-color); border: 1px solid var(--accent-color); background: transparent; cursor: pointer; height: auto;">🔄 更換檔案</button>
+            <button type="button" class="preset-btn" onclick="window.app.removeAdminQuestionAtt('${id}')" style="padding: 3px 8px; font-size: 11.5px; border-radius: 6px; color: var(--danger-color); border: 1px solid var(--danger-color); background: transparent; cursor: pointer; height: auto;">🗑️ 刪除附件</button>
+          </div>
+        </div>
+      `;
+    } else {
+      const infoHtml = hasOrig
+        ? `<span style="font-size: 12px; color: var(--danger-color); font-weight: 600;">🗑️ 已標記移除原附件（儲存後生效）</span>
+           <button type="button" class="preset-btn" onclick="window.app.restoreAdminQuestionAtt('${id}')" style="padding: 2px 8px; font-size: 11px; border-radius: 5px; cursor: pointer; height: auto;">↩️ 復原原附件</button>`
+        : `<span style="font-size: 12px; color: var(--text-secondary);">📎 目前無附件（可附加 1 個檔案，上限 5 MB）</span>`;
+
+      container.innerHTML = `
+        <div style="padding: 7px 10px; border-radius: 8px; background: rgba(0,0,0,0.02); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">${infoHtml}</div>
+          <button type="button" class="preset-btn" onclick="window.app.triggerAdminQuestionAttFileSelect('${id}')" style="padding: 3px 9px; font-size: 11.5px; border-radius: 6px; color: var(--accent-color); border: 1px solid var(--accent-color); background: transparent; cursor: pointer; height: auto;">📎 ${hasOrig ? '選擇新附件' : '新增附件'}</button>
+        </div>
+      `;
+    }
+  }
+
+  triggerAdminQuestionAttFileSelect(id) {
+    this._openHiddenAttFilePicker(false, async (files) => {
+      const file = files[0];
+      if (!file || !this._adminQEditAttState?.[id]) return;
+      try {
+        const processed = await this.processFileForAttachment(file, 5);
+        this._adminQEditAttState[id].current = { isNew: true, staged: processed };
+        this.renderAdminQuestionAttEdit(id);
+      } catch (err) {
+        this.showNotification('檔案超過限制或格式錯誤', err.message || '無法附加此檔案');
+      }
+    });
+  }
+
+  removeAdminQuestionAtt(id) {
+    if (!this._adminQEditAttState?.[id]) return;
+    this._adminQEditAttState[id].current = null;
+    this.renderAdminQuestionAttEdit(id);
+  }
+
+  restoreAdminQuestionAtt(id) {
+    const state = this._adminQEditAttState?.[id];
+    if (!state || !state.original || state.original.length === 0) return;
+    state.current = { isNew: false, meta: { ...state.original[0] } };
+    this.renderAdminQuestionAttEdit(id);
+  }
+
+  // ===== 後台「教師分享管理」內嵌編輯之附件刪除/更換/新增（最多 3 檔，單檔 6MB） =====
+  initAdminShareAttachmentEdit(id) {
+    if (!this._adminShareEditAttState) this._adminShareEditAttState = {};
+    const item = (this.shares || []).find(s => s.id === id);
+    const origAtts = (item && Array.isArray(item.attachments)) ? item.attachments : [];
+    this._adminShareEditAttState[id] = {
+      original: origAtts.map(a => ({ ...a })),
+      list: origAtts.map(a => ({ isNew: false, meta: { ...a } }))
+    };
+    this.renderAdminShareAttEdit(id);
+  }
+
+  renderAdminShareAttEdit(id) {
+    const container = document.getElementById(`share-edit-att-area-${id}`);
+    const state = this._adminShareEditAttState?.[id];
+    if (!container || !state) return;
+
+    const list = state.list || [];
+    const hasOrig = state.original && state.original.length > 0;
+
+    const rowsHtml = list.map((entry, idx) => {
+      const name = entry.isNew ? entry.staged.name : (entry.meta.name || '附件檔案');
+      const size = entry.isNew ? entry.staged.size : (entry.meta.size || 0);
+      const mime = entry.isNew ? entry.staged.mimeType : (entry.meta.mimeType || '');
+      const icon = this.getAttachmentIcon(mime, name);
+      const badge = entry.isNew
+        ? `<span style="font-size: 10px; padding: 1px 5px; border-radius: 4px; background: rgba(16,185,129,0.15); color: #059669; font-weight: bold;">新檔案</span>`
+        : '';
+
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 8px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border-color); flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
+            <span style="font-size: 14px; flex-shrink: 0;">${icon}</span>
+            <span style="font-size: 12px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(name)}">${this.escapeHtml(name)}</span>
+            <span style="font-size: 11px; color: var(--text-secondary); flex-shrink: 0;">(${this.formatQuotaBytes(size)})</span>
+            ${badge}
+          </div>
+          <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+            <button type="button" class="preset-btn" onclick="window.app.triggerAdminShareAttFileSelect('${id}', ${idx})" style="padding: 2px 7px; font-size: 11px; border-radius: 5px; color: var(--accent-color); border: 1px solid var(--accent-color); background: transparent; cursor: pointer; height: auto;">🔄 更換</button>
+            <button type="button" class="preset-btn" onclick="window.app.removeAdminShareAtt('${id}', ${idx})" style="padding: 2px 7px; font-size: 11px; border-radius: 5px; color: var(--danger-color); border: 1px solid var(--danger-color); background: transparent; cursor: pointer; height: auto;">🗑️ 刪除</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const canAddMore = list.length < 3;
+    const isModified = JSON.stringify(list.map(e => e.isNew ? 'new' : e.meta.id)) !== JSON.stringify((state.original || []).map(a => a.id));
+
+    container.innerHTML = `
+      <div style="padding: 8px 10px; border-radius: 8px; background: rgba(0,122,255,0.03); border: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+          <span style="font-size: 12px; font-weight: bold; color: var(--text-secondary);">📎 附件管理（已選 ${list.length} / 3 個檔案，單檔上限 6 MB）</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            ${(hasOrig && isModified) ? `<button type="button" class="preset-btn" onclick="window.app.restoreAdminShareAtt('${id}')" style="padding: 2px 8px; font-size: 11px; border-radius: 5px; cursor: pointer; height: auto;">↩️ 復原原附件</button>` : ''}
+            ${canAddMore ? `<button type="button" class="preset-btn" onclick="window.app.triggerAdminShareAttFileSelect('${id}', -1)" style="padding: 3px 9px; font-size: 11.5px; border-radius: 5px; color: var(--accent-color); border: 1px solid var(--accent-color); background: transparent; cursor: pointer; height: auto;">➕ 新增附件</button>` : ''}
+          </div>
+        </div>
+        ${list.length > 0 ? `<div style="display: flex; flex-direction: column; gap: 5px;">${rowsHtml}</div>` : `<div style="font-size: 11.5px; color: var(--text-muted);">目前無附件，可點擊右上方「➕ 新增附件」上傳檔案。</div>`}
+      </div>
+    `;
+  }
+
+  triggerAdminShareAttFileSelect(id, replaceIdx = -1) {
+    const state = this._adminShareEditAttState?.[id];
+    if (!state) return;
+    const isReplace = replaceIdx >= 0 && replaceIdx < state.list.length;
+    this._openHiddenAttFilePicker(!isReplace, async (files) => {
+      if (!files || files.length === 0) return;
+      if (isReplace) {
+        try {
+          const processed = await this.processFileForAttachment(files[0], 6);
+          state.list[replaceIdx] = { isNew: true, staged: processed };
+          this.renderAdminShareAttEdit(id);
+        } catch (err) {
+          this.showNotification('附件未更換', err.message || '無法處理此檔案');
+        }
+      } else {
+        const remaining = 3 - state.list.length;
+        if (remaining <= 0) {
+          this.showNotification('提示', '每則教師分享最多可附加 3 個檔案！');
+          return;
+        }
+        const toProcess = files.slice(0, remaining);
+        for (const f of toProcess) {
+          try {
+            const processed = await this.processFileForAttachment(f, 6);
+            state.list.push({ isNew: true, staged: processed });
+          } catch (err) {
+            this.showNotification('附件未加入', err.message || `無法處理 ${f.name}`);
+          }
+        }
+        this.renderAdminShareAttEdit(id);
+      }
+    });
+  }
+
+  removeAdminShareAtt(id, idx) {
+    const state = this._adminShareEditAttState?.[id];
+    if (!state || idx < 0 || idx >= state.list.length) return;
+    state.list.splice(idx, 1);
+    this.renderAdminShareAttEdit(id);
+  }
+
+  restoreAdminShareAtt(id) {
+    const state = this._adminShareEditAttState?.[id];
+    if (!state) return;
+    state.list = (state.original || []).map(a => ({ isNew: false, meta: { ...a } }));
+    this.renderAdminShareAttEdit(id);
   }
 
   deleteMyQuestion(id) {
@@ -4269,9 +4646,9 @@ class App {
     document.getElementById('questionModalText').innerHTML = this.linkify(q.text || '');
     const modalAttEl = document.getElementById('questionModalAttachments');
     if (modalAttEl) {
-      modalAttEl.innerHTML = (Array.isArray(q.attachments) && q.attachments.length > 0)
-        ? this.renderAttachmentPillsHtml(q.attachments)
-        : '';
+      const hasAtts = Array.isArray(q.attachments) && q.attachments.length > 0;
+      modalAttEl.style.display = hasAtts ? 'block' : 'none';
+      modalAttEl.innerHTML = hasAtts ? this.renderAttachmentPillsHtml(q.attachments) : '';
     }
     
     this.updateActiveQuestionModal();
@@ -7957,7 +8334,8 @@ class App {
               <input type="text" id="share-edit-content-${item.id}" value="${this.escapeHtml(item.content)}" placeholder="圖片 URL (Base64 或遠端網址)" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
             </div>
           `}
-          <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+          <div id="share-edit-att-area-${item.id}" style="margin-top: 8px;"></div>
+          <div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <div style="display: flex; align-items: center; gap: 4px;">
                 <label style="font-size: 12px; color: var(--text-secondary); font-weight: bold;">所屬分頁：</label>
@@ -7972,7 +8350,7 @@ class App {
               </label>
             </div>
             <div style="display: flex; gap: 6px;">
-              <button onclick="window.app.adminSaveShare('${item.id}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 儲存</button>
+              <button id="share-save-btn-${item.id}" onclick="window.app.adminSaveShare('${item.id}')" style="background: var(--accent-color); color: white; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 儲存</button>
               <button onclick="window.app.adminCancelEditShare('${item.id}')" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer;">取消</button>
             </div>
           </div>
@@ -8747,8 +9125,9 @@ class App {
         <!-- 內嵌編輯區：使用完整寬度區塊 -->
         <div id="q-edit-${q.id}" style="display:none; margin-top: 4px; width: 100%; box-sizing: border-box;">
           <textarea id="q-textarea-${q.id}" style="width:100%; min-height:70px; padding:8px; border-radius:8px; border:1px solid var(--accent-color); background:var(--bg-input); color:var(--text-primary); font-size:14px; resize:vertical; box-sizing:border-box;">${this.escapeHtml(q.text)}</textarea>
-          <div style="display:flex; gap:8px; margin-top:6px; justify-content:flex-end;">
-            <button onclick="adminSaveQuestion('${q.id}')" style="background:var(--accent-color);color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">💾 儲存</button>
+          <div id="q-edit-att-area-${q.id}" style="margin-top: 8px;"></div>
+          <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+            <button id="q-save-btn-${q.id}" onclick="adminSaveQuestion('${q.id}')" style="background:var(--accent-color);color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">💾 儲存</button>
             <button onclick="adminCancelEditQuestion('${q.id}')" style="background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border-color);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">取消</button>
           </div>
         </div>
@@ -17489,13 +17868,16 @@ function logoutAdmin(isAutoIdleLogout = false) {
   window.app.playAudio('none');
 }
 
-// ===== 管理員編輯提問 =====
+// ===== 管理員編輯提問（含附件刪除、更換與新增） =====
 function adminEditQuestion(id) {
   const textDiv  = document.getElementById('q-text-' + id);
   const editDiv  = document.getElementById('q-edit-' + id);
   if (!textDiv || !editDiv) return;
   textDiv.style.display = 'none';
   editDiv.style.display  = 'block';
+  if (window.app && typeof window.app.initAdminQuestionAttachmentEdit === 'function') {
+    window.app.initAdminQuestionAttachmentEdit(id);
+  }
   const ta = document.getElementById('q-textarea-' + id);
   if (ta) ta.focus();
 }
@@ -17506,20 +17888,63 @@ function adminCancelEditQuestion(id) {
   const editDiv = document.getElementById('q-edit-' + id);
   if (textDiv) textDiv.style.display = '';
   if (editDiv) editDiv.style.display = 'none';
+  if (window.app && window.app._adminQEditAttState) {
+    delete window.app._adminQEditAttState[id];
+  }
 }
 window.app && (window.app.adminCancelEditQuestion = adminCancelEditQuestion);
 
-function adminSaveQuestion(id) {
+async function adminSaveQuestion(id) {
   const ta = document.getElementById('q-textarea-' + id);
-  if (!ta) return;
-  const newText = ta.value.trim();
-  if (!newText) { window.app.showNotification('提示', '問題文字不能為空'); return; }
-  db.ref('questions').child(id).update({ text: newText })
-    .then(() => {
-      window.app.showNotification('成功', '提問已更新！');
-      adminCancelEditQuestion(id);
-    })
-    .catch(err => window.app.showNotification('錯誤', '更新失敗: ' + err.message));
+  if (!ta || !window.app) return;
+  const state = window.app._adminQEditAttState ? window.app._adminQEditAttState[id] : null;
+  const currentAtt = state ? state.current : null;
+
+  let newText = ta.value.trim();
+  if (!newText && currentAtt) {
+    const attName = currentAtt.isNew ? currentAtt.staged.name : currentAtt.meta.name;
+    newText = `📎 分享附件：${attName}`;
+  }
+  if (!newText) {
+    window.app.showNotification('提示', '問題文字不能為空');
+    return;
+  }
+
+  const saveBtn = document.getElementById('q-save-btn-' + id);
+  try {
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = '⏳ 儲存中...';
+    }
+
+    const updates = { text: newText, updatedAt: firebase.database.ServerValue.TIMESTAMP };
+    if (state) {
+      const origList = state.original || [];
+      if (origList.length > 0 && (!currentAtt || currentAtt.isNew)) {
+        window.app.deleteAttachmentsFromDb(origList);
+      }
+      if (currentAtt) {
+        if (currentAtt.isNew) {
+          const uploadedMeta = await window.app.uploadAttachmentToDb(currentAtt.staged, 'question');
+          updates.attachments = [uploadedMeta];
+        } else {
+          updates.attachments = [currentAtt.meta];
+        }
+      } else {
+        updates.attachments = null;
+      }
+    }
+
+    await db.ref('questions').child(id).update(updates);
+    window.app.showNotification('成功', '提問與附件已更新！');
+    adminCancelEditQuestion(id);
+  } catch (err) {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 儲存';
+    }
+    window.app.showNotification('錯誤', '更新失敗: ' + err.message);
+  }
 }
 window.app && (window.app.adminSaveQuestion = adminSaveQuestion);
 
@@ -17723,11 +18148,12 @@ function moveFolder(type, folderId, direction) {
     });
 }
 
-// 管理員編輯教師分享
+// 管理員編輯教師分享（含附件刪除、更換與新增）
 function adminEditShare(id) {
   const editDiv = document.getElementById('share-edit-' + id);
   if (editDiv) {
-    if (window.app) {
+    const isOpening = editDiv.style.display === 'none';
+    if (isOpening && window.app) {
       const item = window.app.shares.find(s => s.id === id);
       if (item) {
         const titleInput = document.getElementById('share-edit-title-' + id);
@@ -17737,8 +18163,11 @@ function adminEditShare(id) {
         if (titleInput && item.type === 'link') titleInput.value = item.title || '';
         if (catInput) catInput.value = item.category || 'materials';
       }
+      if (typeof window.app.initAdminShareAttachmentEdit === 'function') {
+        window.app.initAdminShareAttachmentEdit(id);
+      }
     }
-    editDiv.style.display = editDiv.style.display === 'none' ? 'block' : 'none';
+    editDiv.style.display = isOpening ? 'block' : 'none';
   }
 }
 window.app && (window.app.adminEditShare = adminEditShare);
@@ -17746,10 +18175,14 @@ window.app && (window.app.adminEditShare = adminEditShare);
 function adminCancelEditShare(id) {
   const editDiv = document.getElementById('share-edit-' + id);
   if (editDiv) editDiv.style.display = 'none';
+  if (window.app && window.app._adminShareEditAttState) {
+    delete window.app._adminShareEditAttState[id];
+  }
 }
 window.app && (window.app.adminCancelEditShare = adminCancelEditShare);
 
-function adminSaveShare(id) {
+async function adminSaveShare(id) {
+  const saveBtn = document.getElementById('share-save-btn-' + id);
   try {
     if (!window.app) {
       alert("系統錯誤: window.app 尚未初始化");
@@ -17769,21 +18202,48 @@ function adminSaveShare(id) {
       alert("錯誤: 找不到內容輸入欄位，ID: " + id);
       return;
     }
-    
-    const newContent = contentInput.value.trim();
+
+    const attState = window.app._adminShareEditAttState ? window.app._adminShareEditAttState[id] : null;
+    const attList = attState ? (attState.list || []) : null;
+
+    if (item.type === 'file' && attList && attList.length === 0) {
+      window.app.showNotification('提示', '純附件分享項目至少需保留 1 個附件，或請直接刪除此分享項目！');
+      return;
+    }
+
+    let newContent = contentInput.value.trim();
+    if (!newContent && item.type === 'file' && attList && attList.length > 0) {
+      const names = attList.map(e => e.isNew ? e.staged.name : e.meta.name).join('、');
+      newContent = `📎 教材附件：${names}`;
+    }
     if (!newContent) {
       window.app.showNotification('提示', '內容不能為空');
       return;
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = '⏳ 儲存中...';
     }
     
     const updates = { content: newContent };
     if (item.type === 'link') {
       if (!titleInput) {
         alert("錯誤: 找不到標題輸入欄位，ID: " + id);
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 儲存'; }
         return;
       }
       updates.title = titleInput.value.trim() || newContent;
     } else if (item.type === 'file') {
+      // 若為純附件類型且原本標題就是預設檔名列表，當使用者未手動改標題但換了檔案時，自動同步新檔名標題
+      const origAutoTitle = Array.isArray(item.attachments) && item.attachments.length > 0
+        ? `📎 教材附件：${item.attachments.map(a => a.name).join('、')}`
+        : '';
+      if (attList && attList.length > 0 && (newContent === origAutoTitle || newContent === item.title) && newContent.startsWith('📎 教材附件：')) {
+        const updatedNames = attList.map(e => e.isNew ? e.staged.name : e.meta.name).join('、');
+        newContent = `📎 教材附件：${updatedNames}`;
+        updates.content = newContent;
+      }
       updates.title = newContent;
     }
     if (catInput) {
@@ -17793,28 +18253,51 @@ function adminSaveShare(id) {
     if (showOnLoginInput) {
       updates.showOnLogin = !!showOnLoginInput.checked;
     }
+
+    // 處理附件刪除、更換與新增
+    if (attState) {
+      const origList = attState.original || [];
+      const keptIds = new Set(attList.filter(e => !e.isNew && e.meta && e.meta.id).map(e => e.meta.id));
+      const removedOriginals = origList.filter(a => a && a.id && !keptIds.has(a.id));
+      if (removedOriginals.length > 0) {
+        window.app.deleteAttachmentsFromDb(removedOriginals);
+      }
+
+      const finalAttachments = [];
+      for (const entry of attList) {
+        if (entry.isNew) {
+          const uploadedMeta = await window.app.uploadAttachmentToDb(entry.staged, 'teacherShare');
+          finalAttachments.push(uploadedMeta);
+        } else if (entry.meta) {
+          finalAttachments.push(entry.meta);
+        }
+      }
+      updates.attachments = finalAttachments.length > 0 ? finalAttachments : null;
+    }
     
     const targetRef = (window.app && window.app.sharesRef) ? window.app.sharesRef.child(id) : db.ref('teacherShares').child(id);
-    targetRef.update(updates)
-      .then(() => {
-        // 本地同步更新物件與介面 (公告數量與卡片立即響應)
-        item.content = newContent;
-        if (updates.title !== undefined) item.title = updates.title;
-        if (updates.category !== undefined) item.category = updates.category;
-        if (updates.showOnLogin !== undefined) item.showOnLogin = updates.showOnLogin;
-        if (window.app.updateLoginSharesBadge) window.app.updateLoginSharesBadge();
-        if (window.app.renderAdminShares) window.app.renderAdminShares();
-        if (window.app.renderTeacherShares) window.app.renderTeacherShares();
+    await targetRef.update(updates);
 
-        window.app.showNotification('成功', '教師分享已更新！');
-        adminCancelEditShare(id);
-      })
-      .catch(err => {
-        window.app.showNotification('錯誤', '更新失敗: ' + err.message);
-        alert("Firebase 更新失敗: " + err.message);
-      });
+    // 本地同步更新物件與介面 (公告數量與卡片立即響應)
+    item.content = newContent;
+    if (updates.title !== undefined) item.title = updates.title;
+    if (updates.category !== undefined) item.category = updates.category;
+    if (updates.showOnLogin !== undefined) item.showOnLogin = updates.showOnLogin;
+    if ('attachments' in updates) {
+      item.attachments = updates.attachments || undefined;
+    }
+    if (window.app.updateLoginSharesBadge) window.app.updateLoginSharesBadge();
+    if (window.app.renderAdminShares) window.app.renderAdminShares();
+    if (window.app.renderTeacherShares) window.app.renderTeacherShares();
+
+    window.app.showNotification('成功', '教師分享與附件已更新！');
+    adminCancelEditShare(id);
   } catch (err) {
-    alert("執行錯誤: " + err.message + "\n" + err.stack);
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 儲存';
+    }
+    window.app.showNotification('錯誤', '更新失敗: ' + err.message);
     console.error(err);
   }
 }
