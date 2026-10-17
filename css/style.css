@@ -6007,22 +6007,33 @@ body {
   padding-top: 8px;
   margin-top: 2px;
   border-top: 1px solid var(--border-color);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 400;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
-.reaction-preset-rate-select {
+.reaction-preset-rate-select,
+.admin-feature-fullpage select.reaction-preset-rate-select {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 12px;
-  font-weight: 800;
+  padding: 3px 8px !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.3 !important;
+  height: auto !important;
   color: var(--text-primary);
   cursor: pointer;
   outline: none;
   transition: all 0.18s ease;
+}
+
+.reaction-preset-rate-select option {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-primary);
+  background: var(--bg-card);
 }
 
 .reaction-preset-rate-select:hover,
