@@ -1606,13 +1606,13 @@ class App {
         title: '✋ 實作進度與任務回報',
         shortTitle: '實作進度回報',
         collapsedIcon: '✅',
-        desc: '進行課堂練習、平板實作或小組討論時，學生可隨時浮出「我完成了、進行中、需要幫忙」。',
+        desc: '進行課堂練習、平板實作或小組討論時，學生可隨時浮出「我完成了、進行中、需要幫忙、恍神中」。',
         showBtnLabel: true,
         items: [
           { emoji: '✅', floatEmoji: '✅', btnLabel: '我完成了', floatBadge: '✅ 我完成了！', title: '✅ 任務已完成' },
           { emoji: '⏳', floatEmoji: '⏳', btnLabel: '進行中', floatBadge: '⏳ 努力進行中', title: '⏳ 正在進行中' },
           { emoji: '🆘', floatEmoji: '🆘', btnLabel: '需要幫忙', floatBadge: '🆘 需要老師幫忙', title: '🆘 卡關了，需要幫忙' },
-          { emoji: '👀', floatEmoji: '👀', btnLabel: '看白板中', floatBadge: '👀 專心看白板', title: '👀 已停手看白板' }
+          { emoji: '😵‍💫', floatEmoji: '😵‍💫', btnLabel: '恍神中', floatBadge: '😵‍💫 恍神中', title: '😵‍💫 不小心恍神中' }
         ]
       },
       {
