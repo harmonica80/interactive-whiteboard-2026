@@ -1517,12 +1517,311 @@ class App {
   // ==========================================
   // ❤️ 即時互動回饋 (Live Floating Reactions)
   // ==========================================
+  getReactionPresetsCatalog() {
+    return [
+      {
+        key: 'classic',
+        category: '😍 表情與課堂氛圍互動',
+        title: '❤️ 經典六大表情（預設）',
+        shortTitle: '經典互動表情',
+        collapsedIcon: '❤️',
+        desc: 'Google Meet / Canva 風格經典互動，適合日常授課隨時給予愛心、按讚與掌聲。',
+        showBtnLabel: false,
+        items: [
+          { emoji: '❤️', floatEmoji: '❤️', btnLabel: '', floatBadge: '', title: '愛心 (認同/喜歡)' },
+          { emoji: '👍', floatEmoji: '👍', btnLabel: '', floatBadge: '', title: '讚 (學會了/贊成)' },
+          { emoji: '👏', floatEmoji: '👏', btnLabel: '', floatBadge: '', title: '鼓掌 (太棒了/喝采)' },
+          { emoji: '😍', floatEmoji: '😍', btnLabel: '', floatBadge: '', title: '喜愛 (精采)' },
+          { emoji: '😂', floatEmoji: '😂', btnLabel: '', floatBadge: '', title: '大笑 (有趣/幽默)' },
+          { emoji: '😮', floatEmoji: '😮', btnLabel: '', floatBadge: '', title: '驚訝 (震撼/原來如此)' }
+        ]
+      },
+      {
+        key: 'five_emotions',
+        category: '😍 表情與課堂氛圍互動',
+        title: '😍 五大表情（感受與滿意度）',
+        shortTitle: '五大表情回饋',
+        collapsedIcon: '😍',
+        desc: '五階段表情符號（超愛、開心、普通、困惑、太難了），適合詢問學生對活動或課程的感受。',
+        showBtnLabel: true,
+        items: [
+          { emoji: '😍', floatEmoji: '😍', btnLabel: '超愛', floatBadge: '非常喜歡', title: '😍 超愛 / 非常滿意' },
+          { emoji: '😊', floatEmoji: '😊', btnLabel: '開心', floatBadge: '喜歡', title: '😊 開心 / 滿意' },
+          { emoji: '😐', floatEmoji: '😐', btnLabel: '普通', floatBadge: '普通', title: '😐 普通 / 尚可' },
+          { emoji: '😕', floatEmoji: '😕', btnLabel: '困惑', floatBadge: '有點困惑', title: '😕 困惑 / 不太確定' },
+          { emoji: '😢', floatEmoji: '😢', btnLabel: '太難', floatBadge: '覺得太難', title: '😢 太難了 / 需要協助' }
+        ]
+      },
+      {
+        key: 'cheer_stage',
+        category: '😍 表情與課堂氛圍互動',
+        title: '🎉 舞台喝采與競賽應援',
+        shortTitle: '舞台喝采應援',
+        collapsedIcon: '🎉',
+        desc: '同學上台報告、作品發表或分組競賽時，全班熱烈打氣、歡呼與給滿分！',
+        showBtnLabel: true,
+        items: [
+          { emoji: '🎉', floatEmoji: '🎉', btnLabel: '歡呼', floatBadge: '🎉 太棒了！', title: '🎉 歡呼喝采' },
+          { emoji: '🔥', floatEmoji: '🔥', btnLabel: '超燃', floatBadge: '🔥 超級精采', title: '🔥 氣氛超燃' },
+          { emoji: '💯', floatEmoji: '💯', btnLabel: '滿分', floatBadge: '💯 給滿分！', title: '💯 表現滿分' },
+          { emoji: '🙌', floatEmoji: '🙌', btnLabel: '加油', floatBadge: '🙌 加油加油', title: '🙌 為你加油' },
+          { emoji: '🏆', floatEmoji: '🏆', btnLabel: '超強', floatBadge: '🏆 高手！', title: '🏆 冠軍表現' }
+        ]
+      },
+      {
+        key: 'star_rating',
+        category: '⭐ 星級評等與學習狀態回報',
+        title: '⭐ 1 ～ 5 顆星評等',
+        shortTitle: '1~5顆星評等',
+        collapsedIcon: '⭐',
+        desc: '同儕作品互評、上台發表評分、課程滿意度或題目難易度 1～5 顆星即時投票。',
+        showBtnLabel: true,
+        items: [
+          { emoji: '⭐', floatEmoji: '⭐', btnLabel: '1星', floatBadge: '⭐ 1 顆星', title: '給予 1 顆星評等' },
+          { emoji: '⭐', floatEmoji: '⭐⭐', btnLabel: '2星', floatBadge: '⭐⭐ 2 顆星', title: '給予 2 顆星評等' },
+          { emoji: '⭐', floatEmoji: '⭐⭐⭐', btnLabel: '3星', floatBadge: '⭐⭐⭐ 3 顆星', title: '給予 3 顆星評等' },
+          { emoji: '⭐', floatEmoji: '⭐⭐⭐⭐', btnLabel: '4星', floatBadge: '⭐⭐⭐⭐ 4 顆星', title: '給予 4 顆星評等' },
+          { emoji: '🌟', floatEmoji: '⭐⭐⭐⭐⭐', btnLabel: '5星', floatBadge: '🌟 5 顆星滿分', title: '給予 5 顆星最高評等' }
+        ]
+      },
+      {
+        key: 'understanding',
+        category: '⭐ 星級評等與學習狀態回報',
+        title: '💡 聽懂了嗎？（學習理解度）',
+        shortTitle: '學習理解度回報',
+        collapsedIcon: '💡',
+        desc: '講解完關鍵觀念後，讓學生零壓力秒速回報「完全聽懂、似懂非懂、請再講一次、太快了」。',
+        showBtnLabel: true,
+        items: [
+          { emoji: '💡', floatEmoji: '💡', btnLabel: '完全聽懂', floatBadge: '💡 完全聽懂', title: '💡 我完全聽懂了！' },
+          { emoji: '👌', floatEmoji: '👌', btnLabel: '大致明白', floatBadge: '👌 大致明白', title: '👌 大致明白了' },
+          { emoji: '🤔', floatEmoji: '🤔', btnLabel: '似懂非懂', floatBadge: '🤔 似懂非懂', title: '🤔 還有點似懂非懂' },
+          { emoji: '❓', floatEmoji: '❓', btnLabel: '再講一次', floatBadge: '❓ 請再講一次', title: '❓ 希望老師再講一次' },
+          { emoji: '🐢', floatEmoji: '🐢', btnLabel: '太快了', floatBadge: '🐢 講太快了', title: '🐢 速度有點太快了' }
+        ]
+      },
+      {
+        key: 'progress_check',
+        category: '⭐ 星級評等與學習狀態回報',
+        title: '✋ 實作進度與任務回報',
+        shortTitle: '實作進度回報',
+        collapsedIcon: '✅',
+        desc: '進行課堂練習、平板實作或小組討論時，學生可隨時浮出「我完成了、進行中、需要幫忙」。',
+        showBtnLabel: true,
+        items: [
+          { emoji: '✅', floatEmoji: '✅', btnLabel: '我完成了', floatBadge: '✅ 我完成了！', title: '✅ 任務已完成' },
+          { emoji: '⏳', floatEmoji: '⏳', btnLabel: '進行中', floatBadge: '⏳ 努力進行中', title: '⏳ 正在進行中' },
+          { emoji: '🆘', floatEmoji: '🆘', btnLabel: '需要幫忙', floatBadge: '🆘 需要老師幫忙', title: '🆘 卡關了，需要幫忙' },
+          { emoji: '👀', floatEmoji: '👀', btnLabel: '看白板中', floatBadge: '👀 專心看白板', title: '👀 已停手看白板' }
+        ]
+      },
+      {
+        key: 'yes_no',
+        category: '⚡ 快速選項與隨堂表決（如圖 1 快速選項）',
+        title: '⭕ 是 / 否 快速表決',
+        shortTitle: '是 / 否 表決',
+        collapsedIcon: '⭕',
+        desc: '課堂二選一提問、同意/不同意、有沒有遇到問題，全班一秒浮出「是」或「否」。',
+        showBtnLabel: true,
+        items: [
+          { emoji: '⭕', floatEmoji: '⭕', btnLabel: '是', floatBadge: '⭕ 是', title: '是 (Yes / 同意)' },
+          { emoji: '❌', floatEmoji: '❌', btnLabel: '否', floatBadge: '❌ 否', title: '否 (No / 不同意)' }
+        ]
+      },
+      {
+        key: 'true_false',
+        category: '⚡ 快速選項與隨堂表決（如圖 1 快速選項）',
+        title: '✔️ 正確 / 錯誤 是非判斷',
+        shortTitle: '正確 / 錯誤 判斷',
+        collapsedIcon: '✔️',
+        desc: '老師口頭出是非題或觀念辨析時，學生免開測驗單即可立即浮出「正確」或「錯誤」。',
+        showBtnLabel: true,
+        items: [
+          { emoji: '✔️', floatEmoji: '✔️', btnLabel: '正確', floatBadge: '✔️ 正確', title: '正確 (True)' },
+          { emoji: '✖️', floatEmoji: '✖️', btnLabel: '錯誤', floatBadge: '✖️ 錯誤', title: '錯誤 (False)' }
+        ]
+      },
+      {
+        key: 'abcd',
+        category: '⚡ 快速選項與隨堂表決（如圖 1 快速選項）',
+        title: '🅰️ A / B / C / D 四選一快選',
+        shortTitle: 'A/B/C/D 快選',
+        collapsedIcon: '🅰️',
+        desc: '老師在白板手寫題目或口頭詢問 A/B/C/D 哪個對，全班直接點擊浮出選項與姓名！',
+        showBtnLabel: true,
+        items: [
+          { emoji: '🅰️', floatEmoji: '🅰️', btnLabel: 'A', floatBadge: '選 A', title: '選擇 A' },
+          { emoji: '🅱️', floatEmoji: '🅱️', btnLabel: 'B', floatBadge: '選 B', title: '選擇 B' },
+          { emoji: '🅲', floatEmoji: '🅲', btnLabel: 'C', floatBadge: '選 C', title: '選擇 C' },
+          { emoji: '🅳', floatEmoji: '🅳', btnLabel: 'D', floatBadge: '選 D', title: '選擇 D' }
+        ]
+      },
+      {
+        key: 'num_1234',
+        category: '⚡ 快速選項與隨堂表決（如圖 1 快速選項）',
+        title: '1️⃣ 1 / 2 / 3 / 4 數字快選',
+        shortTitle: '1/2/3/4 快選',
+        collapsedIcon: '1️⃣',
+        desc: '對應白板上的編號 1～4 題號或四種方案投票，學生點擊立即飄出數字氣球。',
+        showBtnLabel: true,
+        items: [
+          { emoji: '1️⃣', floatEmoji: '1️⃣', btnLabel: '1', floatBadge: '選 1', title: '選擇 1' },
+          { emoji: '2️⃣', floatEmoji: '2️⃣', btnLabel: '2', floatBadge: '選 2', title: '選擇 2' },
+          { emoji: '3️⃣', floatEmoji: '3️⃣', btnLabel: '3', floatBadge: '選 3', title: '選擇 3' },
+          { emoji: '4️⃣', floatEmoji: '4️⃣', btnLabel: '4', floatBadge: '選 4', title: '選擇 4' }
+        ]
+      },
+      {
+        key: 'custom',
+        category: '🛠️ 教師自訂專屬情境',
+        title: '🛠️ 自訂互動按鈕組合',
+        shortTitle: '自訂互動組合',
+        collapsedIcon: '✨',
+        desc: '由老師自由設定 2～8 個表情符號與文字標籤（如：贊成/中立/反對、第一組～第四組等）。',
+        showBtnLabel: true,
+        items: []
+      }
+    ];
+  }
+
+  getDefaultCustomReactionItems() {
+    return [
+      { emoji: '🙋', floatEmoji: '🙋', btnLabel: '我想回答', floatBadge: '🙋 我想回答', title: '我想回答' },
+      { emoji: '👍', floatEmoji: '👍', btnLabel: '贊成', floatBadge: '👍 贊成', title: '贊成' },
+      { emoji: '🤔', floatEmoji: '🤔', btnLabel: '有疑問', floatBadge: '🤔 有疑問', title: '有疑問' },
+      { emoji: '👏', floatEmoji: '👏', btnLabel: '太棒了', floatBadge: '👏 太棒了', title: '太棒了' }
+    ];
+  }
+
   initLiveReactions() {
-    // 讀取收合狀態（預設收合為愛心按鈕，點擊展開）
+    // 預設設定結構
+    this.reactionSettings = {
+      enabled: true,
+      activePreset: 'classic',
+      customItems: this.getDefaultCustomReactionItems()
+    };
+    this._reactionClickTimestamps = [];
+    this._remoteReactionTimestampsByUid = {};
+
+    // 讀取收合狀態（預設收合為第一個符號按鈕，點擊展開）
     const savedState = localStorage.getItem('wb_reaction_dock_collapsed');
     const isCollapsed = savedState === null ? true : (savedState === 'true');
     this.toggleReactionDock(!isCollapsed, false);
+
+    // 初次渲染右下角 Dock 與後台設定面板
+    this.renderLiveReactionDock();
+    this.initReactionSettingsListener();
     this.setupLiveReactionsSync();
+  }
+
+  initReactionSettingsListener() {
+    if (!this.db) return;
+    if (this._reactionSettingsRef) {
+      this._reactionSettingsRef.off();
+    }
+    this._reactionSettingsRef = this.db.ref('settings/liveReactions');
+    this._reactionSettingsRef.on('value', (snap) => {
+      const val = snap.val();
+      if (val && typeof val === 'object') {
+        this.reactionSettings = {
+          enabled: val.enabled !== false,
+          activePreset: val.activePreset || 'classic',
+          customItems: Array.isArray(val.customItems) && val.customItems.length >= 2
+            ? val.customItems
+            : this.getDefaultCustomReactionItems()
+        };
+      } else {
+        this.reactionSettings = {
+          enabled: true,
+          activePreset: 'classic',
+          customItems: this.getDefaultCustomReactionItems()
+        };
+      }
+      this.renderLiveReactionDock();
+      this.updateReactionSettingsUI();
+    });
+  }
+
+  getActiveReactionPresetData() {
+    const catalog = this.getReactionPresetsCatalog();
+    const activeKey = (this.reactionSettings && this.reactionSettings.activePreset) || 'classic';
+    if (activeKey === 'custom') {
+      const customPreset = catalog.find(p => p.key === 'custom');
+      const items = (this.reactionSettings && Array.isArray(this.reactionSettings.customItems) && this.reactionSettings.customItems.length > 0)
+        ? this.reactionSettings.customItems
+        : this.getDefaultCustomReactionItems();
+      return {
+        ...customPreset,
+        collapsedIcon: items[0]?.emoji || '✨',
+        items: items.map(it => ({
+          emoji: it.emoji || '✨',
+          floatEmoji: it.floatEmoji || it.emoji || '✨',
+          btnLabel: it.btnLabel || '',
+          floatBadge: it.floatBadge !== undefined ? it.floatBadge : (it.btnLabel ? `${it.emoji || ''} ${it.btnLabel}`.trim() : ''),
+          title: it.title || it.btnLabel || it.emoji || '互動回饋'
+        }))
+      };
+    }
+    return catalog.find(p => p.key === activeKey) || catalog[0];
+  }
+
+  renderLiveReactionDock() {
+    const dock = document.getElementById('liveReactionDock');
+    const expandedBar = document.getElementById('reactionExpandedBar');
+    const collapsedIcon = document.getElementById('reactionCollapsedIcon');
+    const collapsedTooltip = document.getElementById('reactionCollapsedTooltip');
+    if (!dock || !expandedBar) return;
+
+    const enabled = !this.reactionSettings || this.reactionSettings.enabled !== false;
+    if (!enabled) {
+      dock.style.display = 'none';
+      return;
+    }
+    dock.style.display = '';
+
+    const preset = this.getActiveReactionPresetData();
+    const firstEmoji = (preset.items && preset.items[0] && preset.items[0].emoji) || preset.collapsedIcon || '❤️';
+    if (collapsedIcon) collapsedIcon.textContent = firstEmoji;
+    if (collapsedTooltip) {
+      collapsedTooltip.textContent = preset.key === 'classic'
+        ? '即時互動回饋'
+        : `即時互動：${preset.shortTitle}`;
+    }
+
+    expandedBar.innerHTML = '';
+    (preset.items || []).forEach((item) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const hasLabel = Boolean(item.btnLabel && item.btnLabel.trim());
+      btn.className = hasLabel ? 'reaction-emoji-btn with-label' : 'reaction-emoji-btn';
+      btn.title = item.title || item.btnLabel || item.emoji;
+
+      if (hasLabel) {
+        const emojiSpan = document.createElement('span');
+        emojiSpan.className = 'reaction-btn-emoji';
+        emojiSpan.textContent = item.emoji;
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'reaction-btn-label';
+        labelSpan.textContent = item.btnLabel;
+        btn.appendChild(emojiSpan);
+        btn.appendChild(labelSpan);
+      } else {
+        btn.textContent = item.emoji;
+      }
+
+      btn.addEventListener('click', () => {
+        this.sendLiveReaction(item.floatEmoji || item.emoji, item.floatBadge || '');
+      });
+      expandedBar.appendChild(btn);
+    });
+
+    const collapseBtn = document.createElement('button');
+    collapseBtn.type = 'button';
+    collapseBtn.className = 'reaction-collapse-toggle-btn';
+    collapseBtn.title = '收合互動回饋列';
+    collapseBtn.textContent = '›';
+    collapseBtn.addEventListener('click', () => this.toggleReactionDock(false));
+    expandedBar.appendChild(collapseBtn);
   }
 
   toggleReactionDock(expand, save = true) {
@@ -1537,40 +1836,72 @@ class App {
     }
   }
 
-  sendLiveReaction(emoji) {
+  showReactionRateLimitNotice() {
+    const dock = document.getElementById('liveReactionDock');
+    const toast = document.getElementById('reactionRateLimitToast');
+    if (toast) {
+      toast.classList.add('show');
+      clearTimeout(this._reactionRateLimitToastTimer);
+      this._reactionRateLimitToastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 1100);
+    }
+    if (dock) {
+      dock.classList.remove('rate-limited');
+      void dock.offsetWidth; // 觸發重繪以重新播放搖晃動畫
+      dock.classList.add('rate-limited');
+      clearTimeout(this._reactionDockShakeTimer);
+      this._reactionDockShakeTimer = setTimeout(() => {
+        dock.classList.remove('rate-limited');
+      }, 350);
+    }
+  }
+
+  sendLiveReaction(emoji, floatBadge = '') {
     if (!emoji) return;
+
+    // 嚴格防洗版保護：滑動視窗檢查 1 秒（1000ms）內最多只能按 3 個
+    const now = Date.now();
+    if (!Array.isArray(this._reactionClickTimestamps)) {
+      this._reactionClickTimestamps = [];
+    }
+    this._reactionClickTimestamps = this._reactionClickTimestamps.filter(t => (now - t) < 1000);
+
+    if (this._reactionClickTimestamps.length >= 3) {
+      this.showReactionRateLimitNotice();
+      return;
+    }
+    this._reactionClickTimestamps.push(now);
+
     const userName = this.getCurrentUserName() || (this.isAdmin ? '授課老師' : '同學');
     const avatar = this.getCurrentUserAvatar();
     const myUid = this.getUserId();
 
     // 本機即時漂浮動畫回饋 (零延遲)
-    this.triggerFloatingReaction(emoji, userName, avatar, true);
+    this.triggerFloatingReaction(emoji, userName, avatar, true, null, floatBadge);
 
     // 透過 Firebase 即時廣播給全班
-    const now = Date.now();
-    if (!this._lastReactionSendTime || (now - this._lastReactionSendTime > 180)) {
-      this._lastReactionSendTime = now;
-      if (this.db) {
-        const reactionsRef = this.db.ref('quiz/liveReactions').push();
-        reactionsRef.set({
-          emoji: emoji,
-          userName: userName,
-          avatar: avatar,
-          uid: myUid,
-          xRatio: 0.12 + Math.random() * 0.76, // 螢幕水平分佈 12% ~ 88%
-          timestamp: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-          setTimeout(() => {
-            reactionsRef.remove().catch(() => {});
-          }, 8000);
-        }).catch(err => {
-          console.warn('即時回饋同步失敗:', err);
-        });
-      }
+    if (this.db) {
+      const reactionsRef = this.db.ref('quiz/liveReactions').push();
+      reactionsRef.set({
+        emoji: String(emoji).slice(0, 16),
+        floatBadge: String(floatBadge || '').slice(0, 24),
+        userName: userName,
+        avatar: avatar,
+        uid: myUid,
+        xRatio: 0.12 + Math.random() * 0.76, // 螢幕水平分佈 12% ~ 88%
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      }).then(() => {
+        setTimeout(() => {
+          reactionsRef.remove().catch(() => {});
+        }, 8000);
+      }).catch(err => {
+        console.warn('即時回饋同步失敗:', err);
+      });
     }
   }
 
-  triggerFloatingReaction(emoji, userName, avatar, isSelf = false, xRatio = null) {
+  triggerFloatingReaction(emoji, userName, avatar, isSelf = false, xRatio = null, floatBadge = '') {
     const overlay = document.getElementById('liveReactionsOverlay');
     if (!overlay) return;
 
@@ -1596,18 +1927,26 @@ class App {
     const emojiEl = document.createElement('div');
     emojiEl.className = 'floating-reaction-emoji';
     emojiEl.textContent = emoji;
+    bubble.appendChild(emojiEl);
+
+    // 若有情境短標籤（例如「⭐⭐⭐⭐⭐ 5顆星」、「⭕ 是」、「💡 完全聽懂」），顯示醒目膠囊標章
+    if (floatBadge && String(floatBadge).trim()) {
+      const badgeEl = document.createElement('div');
+      badgeEl.className = 'floating-reaction-badge';
+      badgeEl.textContent = String(floatBadge).trim();
+      bubble.appendChild(badgeEl);
+    }
 
     // 暱稱標籤
     const nameEl = document.createElement('div');
     nameEl.className = 'floating-reaction-name';
-    
+
     // 如果有頭像且為合法 ID，加上微型大頭貼
-    const avatarHtml = (typeof this.renderAvatarHtml === 'function') 
-      ? this.renderAvatarHtml(avatar, 14) 
+    const avatarHtml = (typeof this.renderAvatarHtml === 'function')
+      ? this.renderAvatarHtml(avatar, 14)
       : '';
     nameEl.innerHTML = `${avatarHtml}<span>${this.escapeHtml(userName || '同學')}</span>`;
 
-    bubble.appendChild(emojiEl);
     bubble.appendChild(nameEl);
     item.appendChild(bubble);
     overlay.appendChild(item);
@@ -1638,8 +1977,286 @@ class App {
       // 排除連線前的歷史舊資料
       if (data.timestamp && data.timestamp < initTime) return;
 
-      this.triggerFloatingReaction(data.emoji, data.userName, data.avatar, false, data.xRatio);
+      // 接收端同步執行每位使用者 1 秒最多 3 個的防洗版保護
+      const senderKey = data.uid || data.userName || 'anon';
+      const now = Date.now();
+      if (!this._remoteReactionTimestampsByUid) this._remoteReactionTimestampsByUid = {};
+      const list = (this._remoteReactionTimestampsByUid[senderKey] || []).filter(t => (now - t) < 1000);
+      if (list.length >= 3) return;
+      list.push(now);
+      this._remoteReactionTimestampsByUid[senderKey] = list;
+
+      this.triggerFloatingReaction(
+        data.emoji,
+        data.userName,
+        data.avatar,
+        false,
+        data.xRatio,
+        data.floatBadge || ''
+      );
     });
+  }
+
+  // ==========================================
+  // 💖 後台「班級管理 > G. 即時互動回饋設定」管理方法
+  // ==========================================
+  updateReactionSettingsUI() {
+    const scopeBadge = document.getElementById('reactionSettingsScopeBadge');
+    if (scopeBadge) {
+      const roomInfo = window.ClassRoomManager ? window.ClassRoomManager.getCurrentRoomInfo() : null;
+      const roomTitle = roomInfo && roomInfo.name
+        ? `${roomInfo.name} (${roomInfo.code || '預設'})`
+        : '預設公開白板';
+      scopeBadge.textContent = `🏫 套用範圍：目前班級【${roomTitle}】`;
+    }
+
+    const enabled = !this.reactionSettings || this.reactionSettings.enabled !== false;
+    const toggleEl = document.getElementById('reactionEnabledToggle');
+    const statusTextEl = document.getElementById('reactionEnabledStatusText');
+    if (toggleEl) toggleEl.checked = enabled;
+    if (statusTextEl) {
+      statusTextEl.textContent = enabled
+        ? '目前狀態：已開啟（全班右下角顯示互動列）'
+        : '目前狀態：已關閉（全班隱藏互動列）';
+      statusTextEl.style.color = enabled ? '#10b981' : '#ef4444';
+    }
+
+    const activePreset = this.getActiveReactionPresetData();
+    const titleBadge = document.getElementById('reactionActivePresetTitleBadge');
+    if (titleBadge && activePreset) {
+      titleBadge.textContent = activePreset.title;
+    }
+
+    // 渲染上方即時試按預覽列
+    const previewBar = document.getElementById('reactionAdminPreviewBar');
+    if (previewBar && activePreset) {
+      previewBar.innerHTML = '';
+      (activePreset.items || []).forEach(item => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const hasLabel = Boolean(item.btnLabel && item.btnLabel.trim());
+        btn.className = hasLabel ? 'reaction-emoji-btn with-label' : 'reaction-emoji-btn';
+        btn.title = `點擊試放：${item.title || item.btnLabel || item.emoji}`;
+        if (hasLabel) {
+          btn.innerHTML = `<span class="reaction-btn-emoji">${this.escapeHtml(item.emoji)}</span><span class="reaction-btn-label">${this.escapeHtml(item.btnLabel)}</span>`;
+        } else {
+          btn.textContent = item.emoji;
+        }
+        btn.addEventListener('click', () => {
+          this.sendLiveReaction(item.floatEmoji || item.emoji, item.floatBadge || '');
+        });
+        previewBar.appendChild(btn);
+      });
+    }
+
+    // 渲染情境分類與選擇卡片
+    const container = document.getElementById('reactionPresetsContainer');
+    if (container) {
+      const catalog = this.getReactionPresetsCatalog();
+      const categories = [];
+      catalog.forEach(p => {
+        if (!categories.includes(p.category)) categories.push(p.category);
+      });
+
+      container.innerHTML = '';
+      categories.forEach(catName => {
+        const catHeader = document.createElement('div');
+        catHeader.className = 'reaction-preset-cat-header';
+        catHeader.textContent = catName;
+        container.appendChild(catHeader);
+
+        const grid = document.createElement('div');
+        grid.className = 'reaction-presets-grid';
+
+        catalog.filter(p => p.category === catName).forEach(preset => {
+          const isSelected = (this.reactionSettings?.activePreset || 'classic') === preset.key;
+          const card = document.createElement('div');
+          card.className = `reaction-preset-card${isSelected ? ' active' : ''}`;
+          card.onclick = () => this.selectReactionPreset(preset.key);
+
+          const displayItems = preset.key === 'custom'
+            ? (this.reactionSettings?.customItems || this.getDefaultCustomReactionItems())
+            : preset.items;
+
+          const pillsHtml = (displayItems || []).map(it => {
+            const labelPart = it.btnLabel ? `<span>${this.escapeHtml(it.btnLabel)}</span>` : '';
+            return `<span class="reaction-preset-pill"><span>${this.escapeHtml(it.emoji)}</span>${labelPart}</span>`;
+          }).join('');
+
+          card.innerHTML = `
+            <div>
+              <div class="reaction-preset-card-top">
+                <div class="reaction-preset-card-title">${this.escapeHtml(preset.title)}</div>
+                <span class="reaction-preset-check">${isSelected ? '✓ 使用中' : '點擊套用'}</span>
+              </div>
+              <div class="reaction-preset-card-desc">${this.escapeHtml(preset.desc)}</div>
+            </div>
+            <div class="reaction-preset-pills">${pillsHtml}</div>
+          `;
+          grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
+      });
+    }
+
+    // 自訂組合編輯器顯示與渲染
+    const customCard = document.getElementById('reactionCustomEditorCard');
+    if (customCard) {
+      const isCustom = (this.reactionSettings?.activePreset === 'custom');
+      customCard.style.display = isCustom ? 'block' : 'none';
+      if (isCustom) {
+        this.renderCustomReactionEditorList();
+      }
+    }
+  }
+
+  renderCustomReactionEditorList() {
+    const listEl = document.getElementById('reactionCustomItemsList');
+    if (!listEl) return;
+    if (!this._editingCustomReactions) {
+      this._editingCustomReactions = JSON.parse(JSON.stringify(
+        (this.reactionSettings && Array.isArray(this.reactionSettings.customItems) && this.reactionSettings.customItems.length >= 2)
+          ? this.reactionSettings.customItems
+          : this.getDefaultCustomReactionItems()
+      ));
+    }
+
+    listEl.innerHTML = '';
+    this._editingCustomReactions.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.className = 'reaction-custom-item-row';
+      row.innerHTML = `
+        <span style="font-size:12px; font-weight:800; color:var(--text-secondary); min-width:22px;">#${idx + 1}</span>
+        <input type="text" value="${this.escapeHtml(item.emoji || '')}" placeholder="表情" maxlength="8"
+          style="width:52px; text-align:center; font-size:18px; padding:5px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-input); color:var(--text-primary);"
+          oninput="window.app.updateCustomReactionDraft(${idx}, 'emoji', this.value)">
+        <input type="text" value="${this.escapeHtml(item.btnLabel || '')}" placeholder="按鈕文字(選填，如：贊成)" maxlength="10"
+          style="flex:1; min-width:80px; font-size:13px; padding:6px 8px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-input); color:var(--text-primary);"
+          oninput="window.app.updateCustomReactionDraft(${idx}, 'btnLabel', this.value)">
+        <button type="button" onclick="window.app.removeCustomReactionItem(${idx})" title="刪除此按鈕"
+          style="background:rgba(239,68,68,0.12); color:#ef4444; border:none; border-radius:6px; width:28px; height:28px; cursor:pointer; font-weight:bold;">✕</button>
+      `;
+      listEl.appendChild(row);
+    });
+  }
+
+  updateCustomReactionDraft(index, field, value) {
+    if (!Array.isArray(this._editingCustomReactions) || !this._editingCustomReactions[index]) return;
+    this._editingCustomReactions[index][field] = value;
+    const em = (this._editingCustomReactions[index].emoji || '✨').trim();
+    const lb = (this._editingCustomReactions[index].btnLabel || '').trim();
+    this._editingCustomReactions[index].floatEmoji = em;
+    this._editingCustomReactions[index].floatBadge = lb ? `${em} ${lb}` : '';
+    this._editingCustomReactions[index].title = lb || em;
+  }
+
+  addCustomReactionItem() {
+    if (!Array.isArray(this._editingCustomReactions)) {
+      this._editingCustomReactions = JSON.parse(JSON.stringify(this.getDefaultCustomReactionItems()));
+    }
+    if (this._editingCustomReactions.length >= 8) {
+      alert('自訂互動按鈕最多支援 8 個選項喔！');
+      return;
+    }
+    this._editingCustomReactions.push({
+      emoji: '⭐',
+      floatEmoji: '⭐',
+      btnLabel: `選項${this._editingCustomReactions.length + 1}`,
+      floatBadge: `⭐ 選項${this._editingCustomReactions.length + 1}`,
+      title: `選項${this._editingCustomReactions.length + 1}`
+    });
+    this.renderCustomReactionEditorList();
+  }
+
+  removeCustomReactionItem(index) {
+    if (!Array.isArray(this._editingCustomReactions)) return;
+    if (this._editingCustomReactions.length <= 2) {
+      alert('自訂互動組合至少需要保留 2 個按鈕喔！');
+      return;
+    }
+    this._editingCustomReactions.splice(index, 1);
+    this.renderCustomReactionEditorList();
+  }
+
+  applyCustomReactionItems() {
+    if (!Array.isArray(this._editingCustomReactions) || this._editingCustomReactions.length < 2) return;
+    const cleaned = this._editingCustomReactions.map(it => {
+      const em = (it.emoji || '✨').trim();
+      const lb = (it.btnLabel || '').trim();
+      return {
+        emoji: em,
+        floatEmoji: em,
+        btnLabel: lb,
+        floatBadge: lb ? `${em} ${lb}` : '',
+        title: lb || em
+      };
+    });
+    this.reactionSettings.customItems = cleaned;
+    this.reactionSettings.activePreset = 'custom';
+    this.saveReactionSettings();
+  }
+
+  selectReactionPreset(presetKey) {
+    if (!this.reactionSettings) {
+      this.reactionSettings = { enabled: true, activePreset: 'classic', customItems: this.getDefaultCustomReactionItems() };
+    }
+    this.reactionSettings.activePreset = presetKey;
+    if (presetKey === 'custom') {
+      this._editingCustomReactions = JSON.parse(JSON.stringify(
+        this.reactionSettings.customItems || this.getDefaultCustomReactionItems()
+      ));
+    }
+    this.renderLiveReactionDock();
+    this.updateReactionSettingsUI();
+    this.saveReactionSettings(true);
+  }
+
+  toggleReactionEnabled(enabled) {
+    if (!this.reactionSettings) {
+      this.reactionSettings = { enabled: true, activePreset: 'classic', customItems: this.getDefaultCustomReactionItems() };
+    }
+    this.reactionSettings.enabled = Boolean(enabled);
+    this.renderLiveReactionDock();
+    this.updateReactionSettingsUI();
+    this.saveReactionSettings(true);
+  }
+
+  saveReactionSettings(silent = false) {
+    if (!this.db || !this.reactionSettings) return;
+    const payload = {
+      enabled: this.reactionSettings.enabled !== false,
+      activePreset: this.reactionSettings.activePreset || 'classic',
+      customItems: Array.isArray(this.reactionSettings.customItems)
+        ? this.reactionSettings.customItems
+        : this.getDefaultCustomReactionItems(),
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    this.db.ref('settings/liveReactions').set(payload).then(() => {
+      const hint = document.getElementById('reactionSaveStatusHint');
+      if (hint) {
+        hint.style.opacity = '1';
+        clearTimeout(this._reactionSaveHintTimer);
+        this._reactionSaveHintTimer = setTimeout(() => {
+          hint.style.opacity = '0';
+        }, 2200);
+      }
+    }).catch(err => {
+      console.error('儲存即時互動回饋設定失敗:', err);
+      if (!silent) alert('儲存設定失敗，請檢查網路連線。');
+    });
+  }
+
+  resetReactionSettingsToDefault() {
+    this.reactionSettings = {
+      enabled: true,
+      activePreset: 'classic',
+      customItems: this.getDefaultCustomReactionItems()
+    };
+    this._editingCustomReactions = JSON.parse(JSON.stringify(this.reactionSettings.customItems));
+    this.renderLiveReactionDock();
+    this.updateReactionSettingsUI();
+    this.saveReactionSettings(true);
   }
 
   openAdminPasswordModal() {
@@ -3934,6 +4551,12 @@ class App {
         category: '班級管理',
         icon: 'images/admin_icons/class_security.svg'
       },
+      classReaction: {
+        id: 'adminReactionSettingsSection',
+        title: 'G. 即時互動回饋設定',
+        category: '班級管理',
+        icon: 'images/admin_icons/class_reaction.svg'
+      },
       quizChoice: {
         id: 'adminChoiceQuizSection',
         title: 'A. 選擇題測驗',
@@ -4017,6 +4640,7 @@ class App {
       classSound: 'adminCatBlock1',
       systemReset: 'adminCatBlock1',
       classSecurity: 'adminCatBlock1',
+      classReaction: 'adminCatBlock1',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
@@ -4108,6 +4732,11 @@ class App {
     // 教師身分與密碼安全設定專屬 UI 同步
     if (featureKey === 'classSecurity' && window.teacherAuthManager) {
       window.teacherAuthManager.renderSecurityPanel();
+    }
+
+    // 即時互動回饋設定專屬 UI 同步
+    if (featureKey === 'classReaction') {
+      this.updateReactionSettingsUI();
     }
 
     // 滾動至後台頂部

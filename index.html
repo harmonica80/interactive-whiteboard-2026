@@ -740,7 +740,7 @@
                 <div class="admin-cat-title">
                   <span>🏫</span>
                   <span>班級管理</span>
-                  <span class="admin-cat-badge">6 個功能</span>
+                  <span class="admin-cat-badge">7 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -803,6 +803,16 @@
                     </div>
                     <div class="admin-feature-card-title">F. 教師身分與密碼安全設定</div>
                     <div class="admin-feature-card-desc">自訂教師專屬密碼（多班級通用）、密碼提示、安全提問自救與防暴力破解保護。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+
+                  <!-- G. 即時互動回饋設定 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('classReaction')">
+                    <div class="admin-feature-icon-box">
+                      <img src="images/admin_icons/class_reaction.svg" width="64" height="64" alt="即時互動回饋設定">
+                    </div>
+                    <div class="admin-feature-card-title">G. 即時互動回饋設定</div>
+                    <div class="admin-feature-card-desc">切換全班右下角即時漂浮互動情境組合（經典表情、五大表情、1~5星評等、快選表決、理解度回報等）與防洗版保護。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
                 </div>
@@ -992,6 +1002,7 @@
                     <option value="classSound">D. 測驗與互動音效設定</option>
                     <option value="systemReset">E. 系統重設與備份管理</option>
                     <option value="classSecurity">F. 教師身分與密碼安全設定</option>
+                    <option value="classReaction">G. 即時互動回饋設定</option>
                   </optgroup>
                   <optgroup label="測驗出題管理">
                     <option value="quizChoice">A. 選擇題測驗</option>
@@ -1707,6 +1718,95 @@
                 <button type="button" id="btnSaveTeacherSecuritySettings" onclick="window.app.saveTeacherSecuritySettings()" class="ask-btn" style="padding: 10px 28px; height: auto; font-size: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,122,255,0.3); display: flex; align-items: center; gap: 6px;">
                   💾 儲存教師安全設定
                 </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- G. 即時互動回饋設定區 -->
+          <div class="admin-section admin-section-collapsible collapsed" id="adminReactionSettingsSection">
+            <div class="admin-section-header">
+              <h3>💖 G. 即時互動回饋設定</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <!-- 頂部說明、班級範圍與總開關 -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);">
+                <div style="flex: 1; min-width: 260px;">
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+                    <span id="reactionSettingsScopeBadge" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--accent-color); background: rgba(0, 122, 255, 0.1); border: 1px solid rgba(0, 122, 255, 0.25); padding: 4px 10px; border-radius: 999px;">
+                      🏫 套用範圍：載入中...
+                    </span>
+                    <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 999px;">
+                      🛡️ 防洗版保護：每人 1 秒最多按 3 個
+                    </span>
+                  </div>
+                  <p style="font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                    老師可依課堂活動需求，隨時一鍵切換全班白板右下角的「即時互動回饋」情境組合（如：五大表情、1~5星評等、是/否、A/B/C/D 快選、學習理解度等），學生端將即時同步更新！
+                  </p>
+                </div>
+
+                <!-- 啟用/停用開關 -->
+                <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-secondary); padding: 10px 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+                  <label for="reactionEnabledToggle" style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; margin: 0;">
+                    <input type="checkbox" id="reactionEnabledToggle" checked onchange="window.app.toggleReactionEnabled(this.checked)" style="width: 20px; height: 20px; accent-color: #ec4899; cursor: pointer;">
+                    <div>
+                      <div style="font-size: 14px; font-weight: 800; color: var(--text-primary);">啟用全班即時互動回饋列</div>
+                      <div id="reactionEnabledStatusText" style="font-size: 12px; color: #10b981; font-weight: 600;">目前狀態：已開啟（全班顯示）</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- 即時預覽與試按區 -->
+              <div class="reaction-admin-preview-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;">✨</span>
+                    <span style="font-size: 14px; font-weight: 800; color: var(--text-primary);">目前啟用情境預覽（點擊下方按鈕可直接試放漂浮特效）：</span>
+                    <span id="reactionActivePresetTitleBadge" class="reaction-active-preset-badge">經典互動表情</span>
+                  </div>
+                  <span style="font-size: 12px; color: var(--text-secondary);">💡 點按下方任一情境卡片即可立即切換並同步至全班</span>
+                </div>
+                <div id="reactionAdminPreviewBar" class="reaction-admin-preview-bar"></div>
+              </div>
+
+              <!-- 情境組合選擇網格 (由 JS 動態渲染分類與卡片) -->
+              <div id="reactionPresetsContainer" style="margin-top: 18px;"></div>
+
+              <!-- 自訂互動組合編輯區 (當選擇「自訂互動組合」時展開，或可隨時展開編輯) -->
+              <div id="reactionCustomEditorCard" class="reaction-custom-editor-card" style="display: none; margin-top: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                  <div>
+                    <h4 style="margin: 0 0 4px 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                      <span>🛠️</span> 自訂互動按鈕組合（支援 2 ～ 8 個選項）
+                    </h4>
+                    <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">
+                      可自由設定每個按鈕的「表情符號/圖示」與「文字標籤」（若留空文字標籤，則僅顯示純表情符號）。
+                    </p>
+                  </div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" onclick="window.app.addCustomReactionItem()" class="secondary-btn" style="padding: 6px 12px; font-size: 13px; font-weight: 700;">
+                      ➕ 新增按鈕
+                    </button>
+                    <button type="button" onclick="window.app.applyCustomReactionItems()" class="ask-btn" style="padding: 6px 16px; height: auto; font-size: 13px; font-weight: 700;">
+                      ✅ 套用自訂組合至全班
+                    </button>
+                  </div>
+                </div>
+                <div id="reactionCustomItemsList" class="reaction-custom-items-list"></div>
+              </div>
+
+              <!-- 底部操作按鈕列 -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 20px;">
+                <button type="button" onclick="window.app.resetReactionSettingsToDefault()" class="secondary-btn" style="padding: 9px 16px; font-size: 14px; font-weight: bold; border-radius: 8px;">
+                  🔄 恢復預設（經典六大表情）
+                </button>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span id="reactionSaveStatusHint" style="font-size: 13px; color: #10b981; font-weight: 700; opacity: 0; transition: opacity 0.25s ease;">✓ 已同步更新至全班！</span>
+                  <button type="button" onclick="window.app.saveReactionSettings()" class="ask-btn" style="padding: 10px 24px; height: auto; font-size: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3); background: linear-gradient(135deg, #ec4899, #8b5cf6);">
+                    💾 儲存並同步至全班
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -4611,14 +4711,17 @@ Python</pre>
 
   <!-- 即時互動表情符號快捷列 (右下角懸浮 Dock) -->
   <div id="liveReactionDock" class="live-reaction-dock collapsed" data-position="right">
-    <!-- 收合狀態按鈕：顯示第一個愛心符號，上方有 < 箭頭與動畫，滑鼠滑過時顯示「即時互動回饋」 -->
+    <!-- 1 秒超過 3 次時的溫馨防洗版提示 -->
+    <div id="reactionRateLimitToast" class="reaction-rate-limit-toast" aria-live="polite">⏳ 1 秒最多只能按 3 個喔！</div>
+
+    <!-- 收合狀態按鈕：顯示第一個符號，上方有 < 箭頭與動畫，滑鼠滑過時顯示「即時互動回饋」 -->
     <div class="reaction-collapsed-btn" id="reactionCollapsedBtn" onclick="window.app && window.app.toggleReactionDock(true)" title="即時互動回饋">
       <span class="reaction-collapsed-arrow">‹</span>
-      <span class="reaction-collapsed-heart">❤️</span>
-      <div class="reaction-collapsed-tooltip">即時互動回饋</div>
+      <span class="reaction-collapsed-heart" id="reactionCollapsedIcon">❤️</span>
+      <div class="reaction-collapsed-tooltip" id="reactionCollapsedTooltip">即時互動回饋</div>
     </div>
 
-    <!-- 展開狀態的互動列 (圖 1) -->
+    <!-- 展開狀態的互動列 (可由教師於「班級管理 > G. 即時互動回饋設定」切換不同教學情境) -->
     <div class="reaction-expanded-bar" id="reactionExpandedBar">
       <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('❤️')" title="愛心 (認同/喜歡)">❤️</button>
       <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('👍')" title="讚 (學會了/贊成)">👍</button>
