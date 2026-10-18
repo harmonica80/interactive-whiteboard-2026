@@ -245,35 +245,114 @@ body {
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* 色系切換按鈕 */
+/* 色系切換按鈕（採用貼近切換後背景色的淺色柔和色塊 + 滑鼠滑過即時顯示色系名稱） */
 .theme-switcher {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 7px;
 }
 
 .theme-btn {
+  position: relative;
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 3px solid transparent;
+  border: 2px solid rgba(0, 0, 0, 0.14);
   cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.6);
 }
 
 .theme-btn:hover {
   transform: scale(1.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .theme-btn.active {
-  border-color: var(--text-primary);
+  border: 2.5px solid var(--accent-color) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.22), 0 2px 6px rgba(0, 0, 0, 0.14);
   transform: scale(1.1);
 }
 
-.theme-btn.light { background: linear-gradient(135deg, #667eea, #764ba2); }
-.theme-btn.dark { background: linear-gradient(135deg, #0f3460, #533483); }
-.theme-btn.pink { background: linear-gradient(135deg, #f093fb, #f5576c); }
-.theme-btn.brown { background: linear-gradient(135deg, #8d6e63, #a1887f); }
+/* 貼近切換後實際背景色 (--bg-primary) 的柔和淺色系呈現 */
+.theme-btn.light {
+  background: linear-gradient(135deg, #ffffff 0%, #e4e9f2 100%);
+  border-color: #cbd5e1;
+}
+.theme-btn.dark {
+  background: linear-gradient(135deg, #64748b 0%, #3b4968 100%);
+  border-color: #94a3b8;
+}
+.theme-btn.pink {
+  background: linear-gradient(135deg, #fff5f8 0%, #fbd0e5 100%);
+  border-color: #f4a8c8;
+}
+.theme-btn.brown {
+  background: linear-gradient(135deg, #faf6ef 0%, #e4d6c4 100%);
+  border-color: #cbb8a3;
+}
+
+/* 滑鼠滑過時即時顯示色系名稱 Tooltip */
+.theme-btn::after {
+  content: attr(data-theme-label);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  background: rgba(30, 41, 59, 0.92);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 4px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  z-index: 4500;
+}
+
+.theme-btn.light::after { content: "淺色系"; }
+.theme-btn.dark::after  { content: "深色系"; }
+.theme-btn.pink::after  { content: "粉色系"; }
+.theme-btn.brown::after { content: "淺棕色系"; }
+
+/* 最右側按鈕防止貼邊超出視窗 */
+.theme-btn:last-child::after {
+  left: auto;
+  right: -2px;
+  transform: translateY(-4px);
+}
+
+.theme-btn::before {
+  content: "";
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  border-width: 0 5px 5px 5px;
+  border-style: solid;
+  border-color: transparent transparent rgba(30, 41, 59, 0.92) transparent;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  z-index: 4500;
+}
+
+.theme-btn:hover::after,
+.theme-btn:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.theme-btn:last-child:hover::after {
+  transform: translateY(0);
+}
 
 /* 重設按鈕 */
 .reset-btn {
