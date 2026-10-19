@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.8.0</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.2</a>
         </p>
       </div>
       <div class="top-actions">
@@ -3481,7 +3481,7 @@
           <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
             🚀 即時互動白板版本更新歷程
           </h3>
-          <span class="changelog-badge-latest">目前最新 ver 3.8.0</span>
+          <span class="changelog-badge-latest">目前最新 ver 3.9.2</span>
         </div>
         <button type="button" onclick="window.app && window.app.closeChangelogModal()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="關閉視窗">✕</button>
       </div>
@@ -3489,12 +3489,49 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.8.0 -->
+        <!-- ver 3.9.2 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.8.0</span>
+              <span>🌟 ver 3.9.2</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">抽人轉盤五大模式</span>
+              <span class="changelog-badge-tag">即時互動文字雲</span>
+              <span class="changelog-badge-tag">剪貼簿Ctrl+V貼圖出題</span>
+              <span class="changelog-badge-tag">成果PNG匯出</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🎡 隨機抽人擴充五大互動模式：</strong>
+              <ul>
+                <li><strong>經典轉盤</strong>：雙層高畫質立體轉盤與自訂指針，旋轉音效與扇區即時同步。</li>
+                <li><strong>老虎機滾輪</strong>：街機風格拉桿機台，多樣化符號與滾輪極速滾動回彈。</li>
+                <li><strong>翻牌抽卡</strong>：3D 命運卡牌陣列，洗牌動畫、金色翻轉高光與幸運者揭曉。</li>
+                <li><strong>幸運抽籤筒</strong>：朱紅祥雲竹籤筒，劇烈搖籤碰撞音效與大吉之籤彈出。</li>
+                <li><strong>閃電極速抽</strong>：60FPS 高刷新率賽博龐克動態掃描，降頻脈衝鎖定得獎學生。</li>
+                <li><strong>全面整合</strong>：5 種模式皆共用線上名單一鍵匯入、隨機打亂、排序、不重複抽人及歷史中獎紀錄。</li>
+              </ul>
+            </li>
+            <li><strong>☁️ 即時互動文字雲系統全新上線：</strong>
+              <ul>
+                <li><strong>文字與圖片出題</strong>：支援輸入提示詞引導，並支援直接按 <code>Ctrl + V</code> 貼上剪貼簿截圖或拖曳上傳題圖。</li>
+                <li><strong>提交次數彈性</strong>：支援每人限交 1 次、限交 3 次或不限次數（自由腦力激盪）。</li>
+                <li><strong>阿基米德螺旋碰撞演算</strong>：詞頻動態計算，熱門詞自動放大置中，即時絢麗調色盤切換。</li>
+                <li><strong>排行榜與控場管理</strong>：即時 TOP 15 詞頻排行、不當詞一鍵隱藏遮蔽、作答鎖定與高畫質成果 PNG 圖檔匯出。</li>
+              </ul>
+            </li>
+            <li><strong>🎨 主題色系按鈕優化：</strong>右上角網站主題切換按鈕調整為貼近背景色系之淺色柔和風格，滑鼠滑過時即時顯示色系名稱。</li>
+            <li><strong>📎 提問與分享編輯附件管理：</strong>支援在編輯時直接刪除舊附件、更換或追加新檔案，並自動清理儲存空間。</li>
+          </ul>
+        </div>
+
+        <!-- ver 3.8.0 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.8.0</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">連連看配對題</span>
