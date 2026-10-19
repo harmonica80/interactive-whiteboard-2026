@@ -1866,6 +1866,7 @@ class App {
 
     if (targetId === 'panel-lucky-wheel') {
       this.updateWheelControlPanelVisibility();
+      this.applyWheelMode(this.wheelMode || 'wheel', true);
       this.drawWheelLocal();
       if (this.isAdmin) {
         const activeRef = db.ref('quiz/luckyWheel/active');
@@ -1876,6 +1877,13 @@ class App {
       const activeRef = db.ref('quiz/luckyWheel/active');
       activeRef.set({ active: false, timestamp: Date.now() });
       activeRef.onDisconnect().cancel();
+    }
+
+    if (targetId === 'panel-word-cloud') {
+      if (window.wordCloud && typeof window.wordCloud.recalculateAndRender === 'function') {
+        setTimeout(() => window.wordCloud.recalculateAndRender(), 60);
+      }
+      this.updateWheelControlPanelVisibility();
     }
     
     if (targetId === 'panel-admin') {
@@ -5125,9 +5133,15 @@ class App {
       },
       gameWheel: {
         id: 'adminWheelSection',
-        title: 'C. 抽人轉盤',
+        title: 'C. 隨機抽人 (5種模式)',
         category: '教學互動管理',
         icon: 'images/admin_icons/game_wheel.svg'
+      },
+      gameWordCloud: {
+        id: 'adminWordCloudSection',
+        title: 'E. 即時文字雲',
+        category: '教學互動管理',
+        icon: 'images/admin_icons/game_focus.svg'
       },
       qaMgmt: {
         id: 'adminQuestionSection',
@@ -5188,6 +5202,7 @@ class App {
       gameFocus: 'adminCatBlock3',
       gameWheel: 'adminCatBlock3',
       classReaction: 'adminCatBlock3',
+      gameWordCloud: 'adminCatBlock3',
       qaMgmt: 'adminCatBlock4',
       imgMgmt: 'adminCatBlock4',
       vidMgmt: 'adminCatBlock4',
@@ -5399,11 +5414,24 @@ class App {
       activeItems.push({
         key: 'gameWheel',
         icon: '🎡',
-        title: '抽人轉盤廣播',
+        title: '抽人模式廣播',
         status: '進行中',
         previewAction: "window.app.previewStudentActivity('gameWheel')",
         settingAction: "window.app.openAdminFeature('gameWheel')",
         stopAction: "window.app.quickStopWheelBroadcast()"
+      });
+    }
+
+    // 7. 即時文字雲 (Word Cloud)
+    if (window.wordCloud && window.wordCloud.activeActivity && window.wordCloud.activeActivity.active) {
+      activeItems.push({
+        key: 'gameWordCloud',
+        icon: '☁️',
+        title: '即時文字雲',
+        status: window.wordCloud.activeActivity.accepting === false ? '已鎖定作答' : '進行中',
+        previewAction: "window.app.previewStudentActivity('gameWordCloud')",
+        settingAction: "window.app.openAdminFeature('gameWordCloud')",
+        stopAction: "window.wordCloud.stopActivity()"
       });
     }
 
@@ -5447,6 +5475,9 @@ class App {
         break;
       case 'gameWheel':
         this.switchToTab('panel-lucky-wheel');
+        break;
+      case 'gameWordCloud':
+        this.switchToTab('panel-word-cloud');
         break;
       case 'quizVideo':
         this.switchToTab('panel-video-quiz');
@@ -5528,7 +5559,8 @@ class App {
       'panel-videos': { key: 'vidMgmt', label: '⚙️ 影片管理' },
       'panel-video-quiz': { key: 'quizVideo', label: '⚙️ 影片出題管理' },
       'panel-quiz': { key: 'quizChoice', label: '⚙️ 選擇題出題管理' },
-      'panel-lucky-wheel': { key: 'gameWheel', label: '⚙️ 轉盤名單設定' },
+      'panel-lucky-wheel': { key: 'gameWheel', label: '⚙️ 抽人設定' },
+      'panel-word-cloud': { key: 'gameWordCloud', label: '⚙️ 文字雲出題設定' },
       'panel-focus-game': { key: 'gameFocus', label: '⚙️ 專注力設定' },
       'panel-teacher-shares': { key: 'shareMaterials', label: '⚙️ 教師分享管理' }
     };
@@ -14309,8 +14341,15 @@ class App {
     this.wheelRemoveWinner = false;
     this.pendingRemoveWinner = null;
     this.wheelSoundStyle = 0; // 預設音效樣式 index
+    this.wheelMode = 'wheel'; // 'wheel' | 'slot' | 'card' | 'stick' | 'flash'
     this.soundEffects = new WheelSoundEffects();
     
+    // 監聽抽籤模式
+    db.ref('quiz/luckyWheel/mode').on('value', (snapshot) => {
+      const mode = snapshot.val() || 'wheel';
+      this.applyWheelMode(mode, false);
+    });
+
     // 監聽原始完整名單
     db.ref('quiz/luckyWheel/originalNames').on('value', (snapshot) => {
       const val = snapshot.val();
@@ -14549,6 +14588,121 @@ class App {
     if (adminSound) {
       adminSound.value = this.wheelSoundStyle || 0;
     }
+    const selMode = document.getElementById('selWheelMode');
+    if (selMode) {
+      selMode.value = this.wheelMode || 'wheel';
+    }
+    const adminSelMode = document.getElementById('adminSelWheelMode');
+    if (adminSelMode) {
+      adminSelMode.value = this.wheelMode || 'wheel';
+    }
+
+    // 文字雲教師工具列顯示切換
+    const wcTeacherTools = document.getElementById('wcTeacherQuickTools');
+    if (wcTeacherTools) wcTeacherTools.style.display = this.isAdmin ? 'flex' : 'none';
+    document.querySelectorAll('.wc-teacher-only').forEach(el => {
+      el.style.display = this.isAdmin ? 'inline-flex' : 'none';
+    });
+  }
+
+  changeWheelMode(mode) {
+    if (!mode) return;
+    this.wheelMode = mode;
+    this.applyWheelMode(mode, true);
+    if (this.isAdmin) {
+      db.ref('quiz/luckyWheel/mode').set(mode);
+    }
+  }
+
+  applyWheelMode(mode, updateSelects = true) {
+    this.wheelMode = mode || 'wheel';
+
+    // 1. 更新按鈕標籤 active 樣式
+    document.querySelectorAll('.picker-mode-btn').forEach(btn => {
+      if (btn.getAttribute('data-mode') === this.wheelMode) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // 2. 更新下拉選單
+    if (updateSelects) {
+      const sel = document.getElementById('selWheelMode');
+      if (sel) sel.value = this.wheelMode;
+      const adminSel = document.getElementById('adminSelWheelMode');
+      if (adminSel) adminSel.value = this.wheelMode;
+    }
+
+    // 3. 切換展示面板 (5 個面板)
+    const modePanelMap = {
+      wheel: 'pickerDisplayWheel',
+      slot: 'pickerDisplaySlot',
+      card: 'pickerDisplayCard',
+      stick: 'pickerDisplayStick',
+      flash: 'pickerDisplayFlash'
+    };
+
+    Object.keys(modePanelMap).forEach(m => {
+      const panel = document.getElementById(modePanelMap[m]);
+      if (panel) {
+        if (m === this.wheelMode) {
+          panel.style.display = 'flex';
+          panel.classList.add('active');
+        } else {
+          panel.style.display = 'none';
+          panel.classList.remove('active');
+        }
+      }
+    });
+
+    // 4. 重設對應模式的靜態預設畫面
+    if (!this.wheelSpinning) {
+      if (this.wheelMode === 'wheel') {
+        this.drawWheelLocal();
+      } else if (this.wheelMode === 'slot') {
+        const reel = document.getElementById('slotMachineReel');
+        if (reel) reel.innerHTML = '<div class="slot-item">準備抽人</div>';
+      } else if (this.wheelMode === 'card') {
+        this.renderCardGrid();
+      } else if (this.wheelMode === 'stick') {
+        const popped = document.getElementById('fortuneStickPopped');
+        if (popped) popped.style.display = 'none';
+        const box = document.getElementById('stickCylinderBox');
+        if (box) box.classList.remove('stick-shaking');
+      } else if (this.wheelMode === 'flash') {
+        const display = document.getElementById('flashNameDisplay');
+        if (display) {
+          display.textContent = 'READY';
+          display.classList.remove('flash-locked');
+        }
+      }
+    }
+  }
+
+  renderCardGrid() {
+    const grid = document.getElementById('pickerCardGrid');
+    if (!grid) return;
+    const cards = [
+      { id: 1, symbol: '🔮', label: '命運之牌' },
+      { id: 2, symbol: '✨', label: '幸運之星' },
+      { id: 3, symbol: '🌟', label: '榮耀之冠' },
+      { id: 4, symbol: '⚡', label: '雷霆之選' },
+      { id: 5, symbol: '👑', label: '至尊之牌' },
+      { id: 6, symbol: '💎', label: '璀璨之心' }
+    ];
+    grid.innerHTML = cards.map(c => `
+      <div class="picker-card-item" data-card-id="${c.id}" onclick="window.app.triggerWheelSpin()">
+        <div class="card-face card-back">
+          <div style="font-size: 30px; margin-bottom: 6px;">${c.symbol}</div>
+          <div style="font-size: 13px; font-weight: bold; letter-spacing: 1px;">${c.label}</div>
+        </div>
+        <div class="card-face card-front" id="cardFront_${c.id}">
+          <div style="font-size: 12px; margin-bottom: 4px; opacity: 0.85;">🎉 幸運得主</div>
+          <div class="card-winner-title" style="font-size: 18px; font-weight: 900;">-</div>
+        </div>
+      </div>
+    `).join('');
   }
 
   syncAdminWheelUI() {
@@ -14778,13 +14932,21 @@ class App {
     const startAngle = currentBaseAngle;
     const endAngle = currentBaseAngle + totalRotation;
     
+    const mode = this.wheelMode || 'wheel';
+    let duration = 5000;
+    if (mode === 'slot') duration = 4000;
+    else if (mode === 'card') duration = 3200;
+    else if (mode === 'stick') duration = 3500;
+    else if (mode === 'flash') duration = 2600;
+
     db.ref('quiz/luckyWheel/spinEvent').set({
+      mode: mode,
       targetIndex: targetIndex,
       winnerName: winnerName,
       namesSnapshot: this.wheelNames,
       startAngle: startAngle,
       endAngle: endAngle,
-      duration: 5000,
+      duration: duration,
       timestamp: firebase.database.ServerValue.TIMESTAMP
     });
   }
@@ -14792,6 +14954,9 @@ class App {
   startWheelAnimation(event) {
     if (this.wheelSpinning) return;
     this.wheelSpinning = true;
+
+    const mode = event.mode || this.wheelMode || 'wheel';
+    this.applyWheelMode(mode, false);
     
     // 同步快照名單確保前後台 100% 一致
     if (event.namesSnapshot && Array.isArray(event.namesSnapshot) && event.namesSnapshot.length > 0) {
@@ -14804,14 +14969,6 @@ class App {
     const banner = document.getElementById('wheelWinnerDisplay');
     if (banner) banner.style.display = 'none';
     
-    const startTime = Date.now();
-    const duration = event.duration || 5000;
-    const startAngle = (typeof event.startAngle === 'number') ? event.startAngle : (this.wheelAngle || 0);
-    const endAngle = (typeof event.endAngle === 'number') ? event.endAngle : (startAngle + 10 * Math.PI);
-    
-    const canvas = document.getElementById('wheelCanvas');
-    if (!canvas) return;
-    
     // 音樂與音效：僅在教師/管理員電腦播放（學生端靜音避免干擾）
     if (this.isAdmin && this.soundEffects) {
       this.soundEffects.init();
@@ -14820,6 +14977,31 @@ class App {
       }
       this.soundEffects.style = this.wheelSoundStyle || 0;
       this.soundEffects.startCheerfulMusic();
+    }
+
+    if (mode === 'slot') {
+      this.startSlotAnimation(event);
+    } else if (mode === 'card') {
+      this.startCardAnimation(event);
+    } else if (mode === 'stick') {
+      this.startStickAnimation(event);
+    } else if (mode === 'flash') {
+      this.startFlashAnimation(event);
+    } else {
+      this.startClassicWheelAnimation(event);
+    }
+  }
+
+  startClassicWheelAnimation(event) {
+    const startTime = Date.now();
+    const duration = event.duration || 5000;
+    const startAngle = (typeof event.startAngle === 'number') ? event.startAngle : (this.wheelAngle || 0);
+    const endAngle = (typeof event.endAngle === 'number') ? event.endAngle : (startAngle + 10 * Math.PI);
+    
+    const canvas = document.getElementById('wheelCanvas');
+    if (!canvas) {
+      this.finishWheelSpin(event.winnerName);
+      return;
     }
     
     let lastSectorIndex = -1;
@@ -14847,40 +15029,215 @@ class App {
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
-        this.wheelSpinning = false;
         this.wheelAngle = endAngle;
         this.drawWheelLocal();
-        
-        // 轉盤停止後立即停止音樂
-        if (this.soundEffects) {
-          this.soundEffects.stopMusic();
-        }
-        if (this.isAdmin && this.soundEffects) {
-          this.soundEffects.playWinFanfare();
-        }
-        
         const winnerName = event.winnerName || (this.wheelNames[event.targetIndex] || '');
-        
-        // 顯示中獎 Banner
-        if (banner) {
-          banner.style.display = 'block';
-          const lblWinner = document.getElementById('lblWheelWinner');
-          if (lblWinner) lblWinner.textContent = winnerName;
-        }
-        
-        // 寫入歷史紀錄
-        if (winnerName) {
-          this.addWheelHistory(winnerName);
-        }
-        
-        // 若開啟自動移除：抽中後先留在轉盤上，暫存為待刪除，等下一次抽人時再移除
-        if (this.isAdmin && this.wheelRemoveWinner && winnerName) {
-          this.pendingRemoveWinner = winnerName;
-        }
+        this.finishWheelSpin(winnerName);
       }
     };
     
     requestAnimationFrame(animate);
+  }
+
+  startSlotAnimation(event) {
+    const reel = document.getElementById('slotMachineReel');
+    const lever = document.querySelector('.slot-lever-wrapper');
+    if (lever) {
+      lever.classList.add('slot-lever-pulled');
+      setTimeout(() => lever.classList.remove('slot-lever-pulled'), 400);
+    }
+
+    if (!reel) {
+      this.finishWheelSpin(event.winnerName);
+      return;
+    }
+
+    const winnerName = event.winnerName || (this.wheelNames[event.targetIndex] || '');
+    const names = this.wheelNames.length > 0 ? this.wheelNames : [winnerName];
+    const itemsList = [];
+    const casinoDecor = ['👑', '💎', '⭐', '🍒', '🍀', '🔔'];
+
+    for (let i = 0; i < 28; i++) {
+      const randName = names[Math.floor(Math.random() * names.length)];
+      const randDecor = casinoDecor[Math.floor(Math.random() * casinoDecor.length)];
+      itemsList.push(`${randDecor} ${randName}`);
+    }
+    itemsList.push(`🎉 ${winnerName}`);
+
+    reel.innerHTML = itemsList.map(item => `<div class="slot-item">${this.escapeHtml(item)}</div>`).join('');
+
+    const itemHeight = 60;
+    const totalDistance = (itemsList.length - 1) * itemHeight;
+    const duration = event.duration || 4000;
+    const startTime = Date.now();
+    let lastTickStep = -1;
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const currentY = totalDistance * ease;
+
+      reel.style.transform = `translateY(-${currentY}px)`;
+
+      const currentStep = Math.floor(currentY / itemHeight);
+      if (currentStep !== lastTickStep) {
+        if (this.isAdmin && this.soundEffects) {
+          this.soundEffects.playTick();
+        }
+        lastTickStep = currentStep;
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        reel.style.transform = `translateY(-${totalDistance}px)`;
+        this.finishWheelSpin(winnerName);
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+
+  startCardAnimation(event) {
+    this.renderCardGrid();
+    const grid = document.getElementById('pickerCardGrid');
+    const winnerName = event.winnerName || (this.wheelNames[event.targetIndex] || '');
+
+    if (!grid) {
+      this.finishWheelSpin(winnerName);
+      return;
+    }
+
+    const cardItems = grid.querySelectorAll('.picker-card-item');
+    if (cardItems.length === 0) {
+      this.finishWheelSpin(winnerName);
+      return;
+    }
+
+    const chosenIdx = Math.floor(Math.random() * cardItems.length);
+    const chosenCard = cardItems[chosenIdx];
+    const frontEl = chosenCard.querySelector('.card-winner-title');
+    if (frontEl) frontEl.textContent = winnerName;
+
+    let tickCount = 0;
+    const tickInterval = setInterval(() => {
+      tickCount++;
+      if (this.isAdmin && this.soundEffects) {
+        this.soundEffects.playTick();
+      }
+      if (tickCount >= 10) clearInterval(tickInterval);
+    }, 180);
+
+    setTimeout(() => {
+      cardItems.forEach((c, idx) => {
+        if (idx !== chosenIdx) {
+          c.classList.add('is-dimmed');
+        }
+      });
+      chosenCard.classList.add('is-flipped');
+    }, 1400);
+
+    setTimeout(() => {
+      this.finishWheelSpin(winnerName);
+    }, event.duration || 3200);
+  }
+
+  startStickAnimation(event) {
+    const box = document.getElementById('stickCylinderBox');
+    const popped = document.getElementById('fortuneStickPopped');
+    const winnerDisplay = document.getElementById('fortuneStickWinnerName');
+    const winnerName = event.winnerName || (this.wheelNames[event.targetIndex] || '');
+
+    if (popped) popped.style.display = 'none';
+    if (box) box.classList.add('stick-shaking');
+
+    let tickCount = 0;
+    const tickInterval = setInterval(() => {
+      tickCount++;
+      if (this.isAdmin && this.soundEffects) {
+        this.soundEffects.playTick();
+      }
+      if (tickCount >= 16) clearInterval(tickInterval);
+    }, 140);
+
+    setTimeout(() => {
+      if (box) box.classList.remove('stick-shaking');
+      if (winnerDisplay) winnerDisplay.textContent = winnerName;
+      if (popped) popped.style.display = 'block';
+    }, 2400);
+
+    setTimeout(() => {
+      this.finishWheelSpin(winnerName);
+    }, event.duration || 3500);
+  }
+
+  startFlashAnimation(event) {
+    const display = document.getElementById('flashNameDisplay');
+    const winnerName = event.winnerName || (this.wheelNames[event.targetIndex] || '');
+    const names = this.wheelNames.length > 0 ? this.wheelNames : [winnerName];
+
+    if (!display) {
+      this.finishWheelSpin(winnerName);
+      return;
+    }
+
+    display.classList.remove('flash-locked');
+    const duration = event.duration || 2600;
+    const startTime = Date.now();
+    let currentDelay = 30;
+
+    const runStep = () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= duration) {
+        display.textContent = `⚡ ${winnerName} ⚡`;
+        display.classList.add('flash-locked');
+        this.finishWheelSpin(winnerName);
+        return;
+      }
+
+      const randName = names[Math.floor(Math.random() * names.length)];
+      display.textContent = randName;
+
+      if (this.isAdmin && this.soundEffects) {
+        this.soundEffects.playTick();
+      }
+
+      const progress = elapsed / duration;
+      currentDelay = 30 + Math.floor(Math.pow(progress, 2.5) * 320);
+      setTimeout(runStep, currentDelay);
+    };
+
+    runStep();
+  }
+
+  finishWheelSpin(winnerName) {
+    this.wheelSpinning = false;
+    
+    // 停止旋轉音樂
+    if (this.soundEffects) {
+      this.soundEffects.stopMusic();
+    }
+    if (this.isAdmin && this.soundEffects) {
+      this.soundEffects.playWinFanfare();
+    }
+    
+    // 顯示中獎 Banner
+    const banner = document.getElementById('wheelWinnerDisplay');
+    if (banner) {
+      banner.style.display = 'block';
+      const lblWinner = document.getElementById('lblWheelWinner');
+      if (lblWinner) lblWinner.textContent = winnerName;
+    }
+    
+    // 寫入歷史紀錄
+    if (winnerName) {
+      this.addWheelHistory(winnerName);
+    }
+    
+    // 若開啟自動移除：抽中後先留在轉盤上，暫存為待刪除，等下一次抽人時再移除
+    if (this.isAdmin && this.wheelRemoveWinner && winnerName) {
+      this.pendingRemoveWinner = winnerName;
+    }
   }
 
   addWheelHistory(winnerName) {

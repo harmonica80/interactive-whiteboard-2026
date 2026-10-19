@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=391">
+  <link rel="stylesheet" href="css/style.css?v=392">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -121,7 +121,8 @@
         <button class="menu-tab" data-target="panel-videos">🎥 影片分享</button>
         <button class="menu-tab" data-target="panel-video-quiz">🎬 影片出題測驗</button>
         <button class="menu-tab" data-target="panel-quiz">📝 選擇題測驗</button>
-        <button class="menu-tab" data-target="panel-lucky-wheel">🎡 抽人轉盤</button>
+        <button class="menu-tab" data-target="panel-lucky-wheel">🎡 隨機抽人</button>
+        <button class="menu-tab" data-target="panel-word-cloud">☁️ 即時文字雲</button>
         <button class="menu-tab" data-target="panel-whiteboard">🎨 互動白板</button>
         <button class="menu-tab" data-target="panel-focus-game" style="display: none;">🧠 專注力遊戲</button>
         <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
@@ -321,16 +322,126 @@
         </div>
       </div>
 
-      <!-- 抽人轉盤 -->
+      <!-- 隨機抽人 (5種模式) -->
       <div class="panel-card" id="panel-lucky-wheel">
         <div class="panel-body">
+          <!-- 頂部抽籤模式切換列 (5 大抽人模式) -->
+          <div class="picker-mode-bar" id="pickerModeBar">
+            <button type="button" class="picker-mode-btn active" data-mode="wheel" onclick="window.app.changeWheelMode('wheel')">
+              <span class="picker-mode-icon">🎡</span>
+              <span class="picker-mode-name">經典轉盤</span>
+            </button>
+            <button type="button" class="picker-mode-btn" data-mode="slot" onclick="window.app.changeWheelMode('slot')">
+              <span class="picker-mode-icon">🎰</span>
+              <span class="picker-mode-name">老虎機</span>
+            </button>
+            <button type="button" class="picker-mode-btn" data-mode="card" onclick="window.app.changeWheelMode('card')">
+              <span class="picker-mode-icon">🃏</span>
+              <span class="picker-mode-name">翻牌抽卡</span>
+            </button>
+            <button type="button" class="picker-mode-btn" data-mode="stick" onclick="window.app.changeWheelMode('stick')">
+              <span class="picker-mode-icon">🎋</span>
+              <span class="picker-mode-name">幸運籤筒</span>
+            </button>
+            <button type="button" class="picker-mode-btn" data-mode="flash" onclick="window.app.changeWheelMode('flash')">
+              <span class="picker-mode-icon">⚡</span>
+              <span class="picker-mode-name">閃電極速</span>
+            </button>
+          </div>
+
           <div class="lucky-wheel-container">
-            <!-- 左側轉盤區 -->
+            <!-- 左側展示區 (依選取模式切換顯示) -->
             <div class="wheel-display-area">
-              <div style="position: relative; display: inline-block;">
-                <canvas id="wheelCanvas" width="550" height="550" style="max-width: 100%; height: auto; background: transparent; cursor: pointer;"></canvas>
-                <div class="wheel-pointer"></div>
+              <!-- 1. 經典大轉盤 -->
+              <div id="pickerDisplayWheel" class="picker-display-panel active">
+                <div style="position: relative; display: inline-block;">
+                  <canvas id="wheelCanvas" width="550" height="550" style="max-width: 100%; height: auto; background: transparent; cursor: pointer;" title="點擊轉盤開始旋轉"></canvas>
+                  <div class="wheel-pointer"></div>
+                </div>
               </div>
+
+              <!-- 2. 老虎機滾輪 -->
+              <div id="pickerDisplaySlot" class="picker-display-panel" style="display: none;">
+                <div class="slot-machine-cabinet" onclick="window.app.triggerWheelSpin()" title="點擊機台開始抽人">
+                  <div class="slot-machine-header">
+                    <span class="slot-light-dot"></span>
+                    <span class="slot-title-text">🎰 LUCKY SLOT 🎰</span>
+                    <span class="slot-light-dot"></span>
+                  </div>
+                  <div class="slot-machine-window">
+                    <div class="slot-center-line"></div>
+                    <div class="slot-reel" id="slotMachineReel">
+                      <div class="slot-item active-name">準備抽人</div>
+                    </div>
+                  </div>
+                  <div class="slot-machine-footer">
+                    <span class="slot-hint">💡 點擊機身或拉桿開始</span>
+                  </div>
+                  <div class="slot-lever-wrapper" onclick="event.stopPropagation(); window.app.triggerWheelSpin();" title="拉下拉桿開始">
+                    <div class="slot-lever-base"></div>
+                    <div class="slot-lever-stick" id="slotLeverStick">
+                      <div class="slot-lever-ball"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. 翻牌抽卡 -->
+              <div id="pickerDisplayCard" class="picker-display-panel" style="display: none;">
+                <div class="card-picker-cabinet">
+                  <div class="card-picker-hint">🃏 命運卡牌已就緒，點擊任一張牌或按開始抽人</div>
+                  <div class="card-grid" id="pickerCardGrid">
+                    <!-- 卡牌清單由 JS 動態生成 -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. 幸運抽籤筒 -->
+              <div id="pickerDisplayStick" class="picker-display-panel" style="display: none;">
+                <div class="stick-picker-cabinet" onclick="window.app.triggerWheelSpin()" title="點擊籤筒開始搖籤">
+                  <div class="stick-cylinder-box" id="stickCylinderBox">
+                    <div class="stick-cylinder-top-sticks" id="stickTopBundle">
+                      <div class="stick-bamboo-preview s1"></div>
+                      <div class="stick-bamboo-preview s2"></div>
+                      <div class="stick-bamboo-preview s3"></div>
+                      <div class="stick-bamboo-preview s4"></div>
+                      <div class="stick-bamboo-preview s5"></div>
+                    </div>
+                    <div class="stick-cylinder-body">
+                      <div class="stick-cylinder-title">幸運籤筒</div>
+                      <div class="stick-cylinder-sub">心想事成</div>
+                    </div>
+                  </div>
+                  <div class="fortune-stick-popped" id="fortuneStickPopped" style="display: none;">
+                    <div class="fortune-stick-label">🎋 大吉 ‧ 幸運之籤</div>
+                    <div class="fortune-stick-winner" id="fortuneStickWinnerName">-</div>
+                  </div>
+                  <div class="stick-hint">🎋 點擊籤筒或下方按鈕開始搖籤</div>
+                </div>
+              </div>
+
+              <!-- 5. 閃電極速抽 -->
+              <div id="pickerDisplayFlash" class="picker-display-panel" style="display: none;">
+                <div class="flash-picker-cabinet" onclick="window.app.triggerWheelSpin()" title="點擊螢幕開始極速鎖定">
+                  <div class="flash-cyber-border">
+                    <div class="flash-hud-top">
+                      <span class="flash-blink-rec">● READY</span>
+                      <span class="flash-hud-title">SPEED LIGHTNING PICKER</span>
+                      <span class="flash-speed-badge">⚡ 60 FPS</span>
+                    </div>
+                    <div class="flash-screen">
+                      <div class="flash-scanlines"></div>
+                      <div class="flash-name-display" id="flashNameDisplay">READY</div>
+                    </div>
+                    <div class="flash-hud-bottom">
+                      <span>TARGET LOCK SYSTEM</span>
+                      <span>⚡ 極速動態鎖定</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 得獎 Banner (全模式共用) -->
               <div id="wheelWinnerDisplay" class="wheel-winner-banner" style="display: none;">
                 恭喜抽中：<span id="lblWheelWinner" class="winner-name">-</span>
               </div>
@@ -339,8 +450,20 @@
             <!-- 右側設定區 (僅教師/後台可見) -->
             <div class="wheel-control-panel" id="wheelControlPanel" style="display: none;">
               <div class="control-header">
-                <h3>🎡 轉盤設定 (教師專屬)</h3>
+                <h3>🎮 抽人設定 (教師專屬)</h3>
                 <span class="badge" id="lblWheelCount">0 人</span>
+              </div>
+
+              <!-- 抽籤模式下拉切換 -->
+              <div class="control-group" style="margin-bottom: 12px;">
+                <label for="selWheelMode" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎮 抽籤類型模式：</label>
+                <select id="selWheelMode" onchange="window.app.changeWheelMode(this.value)" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: bold;">
+                  <option value="wheel">🎡 經典大轉盤</option>
+                  <option value="slot">🎰 老虎機滾輪</option>
+                  <option value="card">🃏 翻牌抽卡</option>
+                  <option value="stick">🎋 幸運抽籤筒</option>
+                  <option value="flash">⚡ 閃電極速抽</option>
+                </select>
               </div>
               
               <div class="control-group">
@@ -353,24 +476,24 @@
                     🗑️ 清空名單
                   </button>
                 </div>
-                <textarea id="wheelNamesInput" rows="10" placeholder="請貼上或輸入學生名單，每行一人&#10;&#10;例：&#10;王小明 01&#10;李小花 02&#10;張大偉 03&#10;&#10;💡 也可以點選上方「👥 匯入線上名單」自動匯入目前登入平台的同學名單" style="width: 100%; box-sizing: border-box; resize: vertical; margin-top: 0; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: monospace;"></textarea>
+                <textarea id="wheelNamesInput" rows="8" placeholder="請貼上或輸入學生名單，每行一人&#10;&#10;例：&#10;王小明 01&#10;李小花 02&#10;張大偉 03&#10;&#10;💡 也可以點選上方「👥 匯入線上名單」自動匯入目前登入平台的同學名單" style="width: 100%; box-sizing: border-box; resize: vertical; margin-top: 0; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: monospace; font-size: 13px;"></textarea>
               </div>
               
               <div class="control-actions" style="display: flex; gap: 8px; margin-top: 8px;">
                 <button class="btn btn-secondary" onclick="window.app.shuffleWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔀 隨機打亂</button>
                 <button class="btn btn-secondary" onclick="window.app.sortWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔤 排序名單</button>
-                <button class="btn btn-secondary" onclick="window.app.broadcastWheelToClass()" style="flex: 1; padding: 8px; font-size: 13px; background: rgba(0,122,255,0.08); border-color: var(--accent-color); color: var(--accent-color); font-weight: bold;" title="立即讓全班同學端畫面切換顯示抽人轉盤">📢 廣播全班</button>
+                <button class="btn btn-secondary" onclick="window.app.broadcastWheelToClass()" style="flex: 1; padding: 8px; font-size: 13px; background: rgba(0,122,255,0.08); border-color: var(--accent-color); color: var(--accent-color); font-weight: bold;" title="立即讓全班同學端畫面切換顯示抽人畫面">📢 廣播全班</button>
               </div>
               
-              <div class="control-options" style="margin: 14px 0;">
+              <div class="control-options" style="margin: 12px 0;">
                 <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; font-size: 13px; color: var(--text-secondary);">
                   <input type="checkbox" id="chkRemoveWinner" onchange="window.app.toggleRemoveWinner(this.checked)" style="width: 16px; height: 16px;">
-                  <span>不重複抽人</span>
+                  <span>不重複抽人 (抽中後移出名單)</span>
                 </label>
               </div>
 
-              <div class="control-group" style="margin: 14px 0;">
-                <label for="selWheelColor" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎨 轉盤色系：</label>
+              <div class="control-group" style="margin: 12px 0;">
+                <label for="selWheelColor" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎨 轉盤色系風格：</label>
                 <select id="selWheelColor" onchange="window.app.changeWheelColor(parseInt(this.value))" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer;">
                   <option value="0">🍭 馬卡龍 Macaron</option>
                   <option value="1">🎪 遊樂場 Playground</option>
@@ -382,8 +505,8 @@
                 </select>
               </div>
 
-              <div class="control-group" style="margin: 14px 0;">
-                <label for="selWheelSound" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎵 旋轉音效風格：</label>
+              <div class="control-group" style="margin: 12px 0;">
+                <label for="selWheelSound" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎵 音效風格：</label>
                 <select id="selWheelSound" onchange="window.app.changeWheelSound(parseInt(this.value))" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer;">
                   <option value="0">🎹 歡樂鋼琴</option>
                   <option value="1">👾 復古電玩</option>
@@ -393,9 +516,9 @@
                 </select>
               </div>
               
-              <button class="btn btn-primary" id="btnSpinWheel" onclick="window.app.triggerWheelSpin()" style="width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; font-weight: bold; border-radius: 8px;">🔥 開始旋轉 (或按 Ctrl+Enter)</button>
+              <button class="btn btn-primary" id="btnSpinWheel" onclick="window.app.triggerWheelSpin()" style="width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; font-weight: bold; border-radius: 8px;">🔥 開始抽人 (或按 Ctrl+Enter)</button>
               
-              <div class="results-history" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+              <div class="results-history" style="margin-top: 18px; border-top: 1px solid var(--border-color); padding-top: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <h4 style="margin: 0; font-size: 14px; color: var(--text-primary);">🏆 本次抽中記錄：</h4>
                   <button type="button" class="btn btn-secondary" onclick="window.app.clearWheelHistory()" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;" title="清除抽中記錄並重設">🗑️ 清除記錄</button>
@@ -403,6 +526,84 @@
                 <ul id="wheelHistoryList" style="list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto;">
                   <li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</li>
                 </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ☁️ 即時文字雲互動 -->
+      <div class="panel-card" id="panel-word-cloud">
+        <div class="panel-body">
+          <div class="word-cloud-page-wrapper">
+            <!-- 頂部題目標題與狀態列 -->
+            <div class="wc-header-card">
+              <div class="wc-header-left">
+                <span class="wc-badge-icon">☁️</span>
+                <div class="wc-title-box">
+                  <h3 id="wcStudentTitleDisplay" class="wc-title-text">目前無進行中的文字雲活動</h3>
+                  <div class="wc-subtitle-info">
+                    <span id="wcStudentPrompt" class="wc-prompt-text">💡 同學可輸入關鍵字或簡短想法，即時匯聚成全班文字雲</span>
+                    <span id="wcStatusLockBadge" class="wc-lock-badge" style="display: none;">🔒 老師已鎖定作答</span>
+                  </div>
+                </div>
+              </div>
+              <div class="wc-header-right" id="wcTeacherQuickTools" style="display: none;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.broadcastToClass()" title="廣播全班同步切換至文字雲">📢 廣播全班</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="wcBtnToggleAccept" onclick="window.wordCloud?.toggleAccepting()">⏸️ 停止作答</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.switchPalette()" title="更換文字雲色系">🎨 切換色系</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="window.wordCloud?.exportPng()" title="下載文字雲成果圖">💾 匯出 PNG</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.app?.openAdminFeature('gameWordCloud')" title="進入文字雲管理後台">⚙️ 出題設定</button>
+              </div>
+            </div>
+
+            <!-- 題目圖片顯示區 (若有圖片出題時顯示) -->
+            <div id="wcStudentImageDisplay" class="wc-image-display-box" style="display: none;"></div>
+
+            <!-- 學生輸入提交列 (進行中時顯示) -->
+            <div id="wcStudentInputSection" class="wc-student-input-container" style="display: none;">
+              <div class="wc-input-row">
+                <input type="text" id="wcStudentWordInput" class="question-input wc-input-field" placeholder="請輸入 1~15 字的短詞、關鍵字或感想..." maxlength="15" onkeydown="if(event.key==='Enter') window.wordCloud?.submitWord()">
+                <button type="button" class="btn btn-primary wc-submit-btn" onclick="window.wordCloud?.submitWord()">
+                  🚀 送出詞彙
+                </button>
+              </div>
+              <div class="wc-input-tips">
+                <span>💡 繁體中文、英文、數字或 Emoji 符號皆可！</span>
+              </div>
+            </div>
+
+            <!-- 核心內容：雙欄佈局 (左側文字雲大畫布 + 右側詞頻排行) -->
+            <div class="wc-main-grid">
+              <!-- 左欄：文字雲即時 Canvas 畫布 -->
+              <div class="wc-canvas-card">
+                <div class="wc-canvas-top-bar">
+                  <div class="wc-canvas-stats">
+                    <span>總提交數：<strong id="wcTotalWordsCount" style="color: var(--accent-color);">0 則</strong></span>
+                    <span>獨立詞彙：<strong id="wcUniqueWordsCount" style="color: #10b981;">0 款</strong></span>
+                  </div>
+                  <div class="wc-canvas-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.switchPalette()" title="切換調色盤風格">🎨 換色</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.exportPng()" title="匯出高畫質 PNG 圖片">💾 下載成果</button>
+                    <button type="button" class="btn btn-secondary btn-sm wc-teacher-only" onclick="window.wordCloud?.clearSubmissions()" style="display: none; color: #ef4444; border-color: rgba(239,68,68,0.3);" title="清空全部詞彙">🗑️ 清空</button>
+                  </div>
+                </div>
+                <div class="wc-canvas-wrapper" id="wcCanvasWrapper">
+                  <canvas id="wordCloudCanvas" width="800" height="480"></canvas>
+                </div>
+              </div>
+
+              <!-- 右欄：熱門詞頻排行榜 -->
+              <div class="wc-ranking-card">
+                <div class="wc-ranking-header">
+                  <h4>🏆 熱門詞頻排行</h4>
+                  <span style="font-size: 12px; color: var(--text-muted);">TOP 15</span>
+                </div>
+                <div class="wc-ranking-body">
+                  <ul id="wcRankingList" class="wc-ranking-list">
+                    <li style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 13px;">尚無詞彙，等待同學提交中...</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -864,7 +1065,7 @@
                 <div class="admin-cat-title">
                   <span>⚡</span>
                   <span>教學互動管理</span>
-                  <span class="admin-cat-badge">4 個功能</span>
+                  <span class="admin-cat-badge">5 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -890,13 +1091,13 @@
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- C. 抽人轉盤 -->
+                  <!-- C. 隨機抽人 (5種模式) -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('gameWheel')">
                     <div class="admin-feature-icon-box">
-                      <img src="images/admin_icons/game_wheel.svg" width="64" height="64" alt="抽人轉盤">
+                      <img src="images/admin_icons/game_wheel.svg" width="64" height="64" alt="隨機抽人">
                     </div>
-                    <div class="admin-feature-card-title">C. 抽人轉盤</div>
-                    <div class="admin-feature-card-desc">學生名單匯入與自訂、打亂與排序、不重複抽人、轉盤色系音效設定與全班同步廣播。</div>
+                    <div class="admin-feature-card-title">C. 隨機抽人 (5種模式)</div>
+                    <div class="admin-feature-card-desc">經典轉盤、老虎機、翻牌抽卡、幸運籤筒、閃電極速抽 5 大類型，支援線上名單匯入與全班同步廣播。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
@@ -907,6 +1108,16 @@
                     </div>
                     <div class="admin-feature-card-title">D. 即時互動回饋設定</div>
                     <div class="admin-feature-card-desc">切換全班右下角即時漂浮互動情境組合（經典表情、五大表情、1~5星評等、快選表決、理解度回報等）與各情境每秒點擊上限。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+
+                  <!-- E. 即時文字雲 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('gameWordCloud')">
+                    <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 40px;">
+                      ☁️
+                    </div>
+                    <div class="admin-feature-card-title">E. 即時文字雲</div>
+                    <div class="admin-feature-card-desc">文字與圖片題型出題 (支援直接 Ctrl+V 貼上截圖與圖檔上傳)、全班即時詞頻螺旋雲演算、排行與高畫質 PNG 匯出。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
                 </div>
@@ -1024,8 +1235,9 @@
                   <optgroup label="教學互動管理">
                     <option value="gameBuzz">A. 搶答</option>
                     <option value="gameFocus">B. 專注力測驗</option>
-                    <option value="gameWheel">C. 抽人轉盤</option>
+                    <option value="gameWheel">C. 隨機抽人 (5種模式)</option>
                     <option value="classReaction">D. 即時互動回饋設定</option>
+                    <option value="gameWordCloud">E. 即時文字雲</option>
                   </optgroup>
                   <optgroup label="同學提問與資料分享管理">
                     <option value="qaMgmt">A. 提問管理</option>
@@ -2562,23 +2774,23 @@
             </div>
           </div>
 
-          <!-- 🎡 抽人轉盤管理區 -->
+          <!-- 🎡 隨機抽人管理區 (5大模式) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminWheelSection">
             <div class="admin-section-header">
-              <h3>🎡 抽人轉盤管理</h3>
+              <h3>🎡 隨機抽人管理 (5大模式)</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
               <!-- 快捷控制橫幅 -->
               <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                 <button type="button" onclick="window.app.switchToTab('panel-lucky-wheel')" class="preset-btn" style="flex: 1; min-width: 180px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,122,255,0.25);">
-                  🎯 前往轉盤互動大螢幕
+                  🎯 前往抽人互動大螢幕
                 </button>
-                <button type="button" onclick="window.app.broadcastWheelToClass()" class="preset-btn" style="flex: 1; min-width: 180px; justify-content: center; background: #10b981; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(16,185,129,0.25);" title="立即讓全班同學端畫面切換顯示抽人轉盤">
-                  📢 廣播全班切換轉盤
+                <button type="button" onclick="window.app.broadcastWheelToClass()" class="preset-btn" style="flex: 1; min-width: 180px; justify-content: center; background: #10b981; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(16,185,129,0.25);" title="立即讓全班同學端畫面切換顯示抽人畫面">
+                  📢 廣播全班切換抽人
                 </button>
                 <button type="button" onclick="window.app.triggerWheelSpin()" class="preset-btn" style="flex: 1; min-width: 180px; justify-content: center; background: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(245,158,11,0.25);">
-                  🔥 立即啟動旋轉
+                  🔥 立即啟動抽人
                 </button>
               </div>
 
@@ -2586,7 +2798,7 @@
               <div style="margin-bottom: 20px; padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                   <label style="font-weight: bold; font-size: 15px; margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                    <span>👥 轉盤名單列表 (每行一人)：</span>
+                    <span>👥 抽人名單列表 (每行一人)：</span>
                   </label>
                   <span class="badge" id="adminLblWheelCount" style="background: var(--accent-color); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: bold;">0 人</span>
                 </div>
@@ -2609,15 +2821,27 @@
                 <textarea id="adminWheelNamesInput" rows="8" placeholder="請貼上或輸入學生名單，每行一人&#10;&#10;例：&#10;王小明 01&#10;李小花 02&#10;張大偉 03&#10;&#10;💡 也可以點選上方「👥 匯入線上名單」自動匯入目前登入平台的同學名單" style="width: 100%; box-sizing: border-box; resize: vertical; margin-top: 0; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-family: monospace; font-size: 14px; line-height: 1.5;"></textarea>
               </div>
 
-              <!-- 轉盤規則與視覺音效設定 -->
+              <!-- 模式與風格設定 -->
               <div style="margin-bottom: 20px; padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card);">
                 <div style="font-weight: bold; font-size: 15px; margin-bottom: 14px; color: var(--text-primary);">⚙️ 抽籤模式與視聽風格設定</div>
 
-                <div style="margin-bottom: 14px;">
-                  <label style="display: inline-flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; font-size: 14px; color: var(--text-primary); background: var(--bg-input); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <input type="checkbox" id="adminChkRemoveWinner" onchange="window.app.toggleRemoveWinner(this.checked)" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-color);">
-                    <span>🎯 不重複抽人 (抽中者自動移出後續候選清單)</span>
-                  </label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px;">
+                  <div>
+                    <label for="adminSelWheelMode" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎮 抽籤類型模式：</label>
+                    <select id="adminSelWheelMode" onchange="window.app.changeWheelMode(this.value)" class="question-input" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer; margin: 0; font-weight: bold;">
+                      <option value="wheel">🎡 經典大轉盤</option>
+                      <option value="slot">🎰 老虎機滾輪</option>
+                      <option value="card">🃏 翻牌抽卡</option>
+                      <option value="stick">🎋 幸運抽籤筒</option>
+                      <option value="flash">⚡ 閃電極速抽</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="display: inline-flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; font-size: 13px; color: var(--text-primary); background: var(--bg-input); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); height: 38px; box-sizing: border-box; margin-top: 22px;">
+                      <input type="checkbox" id="adminChkRemoveWinner" onchange="window.app.toggleRemoveWinner(this.checked)" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-color);">
+                      <span>🎯 不重複抽人 (抽中後移出名單)</span>
+                    </label>
+                  </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
@@ -2634,7 +2858,7 @@
                     </select>
                   </div>
                   <div>
-                    <label for="adminSelWheelSound" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎵 旋轉音效風格：</label>
+                    <label for="adminSelWheelSound" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎵 音效風格：</label>
                     <select id="adminSelWheelSound" onchange="window.app.changeWheelSound(parseInt(this.value))" class="question-input" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer; margin: 0;">
                       <option value="0">🎹 歡樂鋼琴</option>
                       <option value="1">👾 復古電玩</option>
@@ -2661,6 +2885,95 @@
                 </div>
               </div>
 
+            </div>
+          </div>
+
+          <!-- ☁️ 即時文字雲管理區 -->
+          <div class="admin-section admin-section-collapsible collapsed" id="adminWordCloudSection">
+            <div class="admin-section-header">
+              <h3>☁️ 即時文字雲管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <!-- 快捷控制按鈕群 -->
+              <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button type="button" onclick="window.app.switchToTab('panel-word-cloud')" class="preset-btn" style="flex: 1; min-width: 180px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,122,255,0.25);">
+                  🎯 前往文字雲大螢幕
+                </button>
+                <button type="button" onclick="window.wordCloud?.broadcastToClass()" class="preset-btn" style="flex: 1; min-width: 180px; justify-content: center; background: #10b981; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(16,185,129,0.25);">
+                  📢 廣播全班切換文字雲
+                </button>
+                <button type="button" id="adminWcBtnToggleAccept" onclick="window.wordCloud?.toggleAccepting()" class="preset-btn" style="flex: 1; min-width: 180px; justify-content: center; background: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(245,158,11,0.25);">
+                  ⏸️ 停止接收作答
+                </button>
+                <button type="button" onclick="window.wordCloud?.exportPng()" class="preset-btn" style="flex: 1; min-width: 180px; justify-content: center; background: #8b5cf6; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 10px rgba(139,92,246,0.25);">
+                  💾 匯出成果 PNG
+                </button>
+              </div>
+
+              <!-- 出題設定面板 (支援文字題型與圖片題型) -->
+              <div style="margin-bottom: 20px; padding: 18px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card);">
+                <div style="font-weight: bold; font-size: 15px; margin-bottom: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  <span>📝</span>
+                  <span>出題設定 (文字題型 / 圖片題型)</span>
+                </div>
+
+                <!-- 題目標題/提問引導語 -->
+                <div style="margin-bottom: 14px;">
+                  <label for="adminWcQuestionTitleInput" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
+                    題目標題 / 提問指引詞：
+                  </label>
+                  <input type="text" id="adminWcQuestionTitleInput" class="question-input" placeholder="例：請用一個詞形容今天學到的核心觀念，或看圖說出特徵..." style="margin: 0; width: 100%; font-size: 14px;">
+                </div>
+
+                <!-- 圖片題型區：支援剪貼簿 Ctrl+V 貼上與圖檔上傳 -->
+                <div style="margin-bottom: 16px; padding: 14px; background: var(--bg-input); border: 1.5px dashed var(--accent-color); border-radius: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                    <label style="font-size: 13px; font-weight: bold; color: var(--accent-color); display: flex; align-items: center; gap: 6px; margin: 0;">
+                      <span>🖼️ 題目圖片 (選填，支援圖檔或直接剪貼簿 Ctrl+V 貼上截圖)：</span>
+                    </label>
+                    <div style="font-size: 12px; color: var(--text-muted);">支援 PNG / JPG / WebP，自動壓縮防卡頓</div>
+                  </div>
+
+                  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="file" id="adminWcImageFileInput" accept="image/*" style="display: none;" onchange="window.wordCloud?.processAndSetImage(this.files[0])">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('adminWcImageFileInput').click()" style="padding: 7px 14px; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                      📁 選擇本機圖檔上傳
+                    </button>
+                    <span style="font-size: 13px; color: var(--text-secondary);">或直接在此視窗按 <kbd style="background: var(--bg-card); padding: 2px 6px; border: 1px solid var(--border-color); border-radius: 4px; font-family: monospace; font-weight: bold;">Ctrl + V</kbd> 貼上截圖</span>
+                  </div>
+
+                  <!-- 圖片預覽容器 -->
+                  <div id="adminWcImagePreviewContainer" style="margin-top: 10px;"></div>
+                </div>
+
+                <!-- 學生提交次數限制 -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 16px;">
+                  <div>
+                    <label for="adminWcLimitSelect" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-secondary);">
+                      🎯 每位同學提交次數上限：
+                    </label>
+                    <select id="adminWcLimitSelect" class="question-input" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 13px; margin: 0;">
+                      <option value="1">每人限提交 1 次 (最經典聚焦)</option>
+                      <option value="3">每人限提交 3 次 (多面向發想)</option>
+                      <option value="0">不限次數 (自由腦力激盪)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 發布按鈕 -->
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-primary" onclick="window.wordCloud?.publishActivity()" style="flex: 2; min-width: 200px; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 8px;">
+                    🚀 發布 / 更新文字雲題目 (全班同步開動)
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.stopActivity()" style="flex: 1; min-width: 120px; padding: 12px; font-size: 14px; border-radius: 8px; color: #ef4444; border-color: rgba(239,68,68,0.3);">
+                    🛑 結束文字雲
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.clearSubmissions()" style="flex: 1; min-width: 120px; padding: 12px; font-size: 14px; border-radius: 8px; color: #ef4444; border-color: rgba(239,68,68,0.3);">
+                    🗑️ 清空所有提交
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3408,10 +3721,11 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=390"></script>
+  <script src="js/app.js?v=392"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
+  <script src="js/word_cloud.js?v=392"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
