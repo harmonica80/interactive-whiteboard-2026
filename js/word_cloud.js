@@ -271,20 +271,50 @@
       }
     }
 
-    // 廣播至全班切換分頁
+    // 廣播至全班切換分頁 (若活動處於結束或未開放，自動重新激活並允許提交)
     broadcastToClass() {
       if (!window.app?.isAdmin) return;
-      db.ref('quiz/wordCloud/active/broadcastTimestamp').set(Date.now()).then(() => {
-        window.app?.showNotification('廣播成功', '已通知全班切換至即時文字雲畫面！');
+      const updates = {
+        broadcastTimestamp: Date.now()
+      };
+      // 若活動處於結束或未啟用狀態，廣播全班時應自動恢復為進行中與開放作答
+      if (!this.activeActivity || !this.activeActivity.active) {
+        updates.active = true;
+        updates.accepting = true;
+        updates.roundTimestamp = Date.now();
+        if (!this.activeActivity?.sessionId) {
+          updates.sessionId = 'wc_' + Date.now();
+        }
+      } else if (this.activeActivity.accepting === false) {
+        updates.accepting = true;
+      }
+      db.ref('quiz/wordCloud/active').update(updates).then(() => {
+        window.app?.showNotification('廣播成功', '已通知全班切換至即時文字雲畫面並開放作答！');
+      }).catch(err => {
+        window.app?.showNotification('錯誤', '廣播失敗: ' + err.message);
       });
     }
 
-    // 停止/恢復接收作答 (鎖定作答)
+    // 停止/恢復接收作答 (鎖定作答 / 若已結束則重新開啟)
     toggleAccepting() {
-      if (!window.app?.isAdmin || !this.activeActivity) return;
-      const nextState = !this.activeActivity.accepting;
-      db.ref('quiz/wordCloud/active/accepting').set(nextState).then(() => {
-        window.app?.showNotification('成功', nextState ? '已開放學生提交詞彙！' : '已停止接收提交 (鎖定作答)');
+      if (!window.app?.isAdmin) return;
+      if (!this.activeActivity) {
+        this.publishActivity(false);
+        return;
+      }
+      const nextAccepting = !this.activeActivity.accepting;
+      const updates = {
+        accepting: nextAccepting
+      };
+      // 若原本活動已結束 (active === false)，老師點擊開放作答時自動恢復為 active: true
+      if (nextAccepting && !this.activeActivity.active) {
+        updates.active = true;
+        updates.roundTimestamp = Date.now();
+      }
+      db.ref('quiz/wordCloud/active').update(updates).then(() => {
+        window.app?.showNotification('成功', nextAccepting ? '已開放學生提交詞彙！' : '已停止接收提交 (鎖定作答)');
+      }).catch(err => {
+        window.app?.showNotification('錯誤', '操作失敗: ' + err.message);
       });
     }
 
@@ -356,6 +386,7 @@
       // 檢查提交次數限制 (limit === 0 為不限次數)
       if (limit > 0) {
         let userSubmitCount = 0;
+        const roundStartTs = this.activeActivity.roundTimestamp || this.activeActivity.timestamp || 0;
         for (const key in this.submissions) {
           const item = this.submissions[key];
           if (!item) continue;
@@ -363,10 +394,11 @@
           if (currentSessionId && item.sessionId && item.sessionId !== currentSessionId) {
             continue;
           }
-          if (this.activeActivity.timestamp && item.timestamp && item.timestamp < (this.activeActivity.timestamp - 1000)) {
+          // 若本輪有重新開放時間 roundStartTs，排除之前的舊提交
+          if (roundStartTs && item.timestamp && item.timestamp < (roundStartTs - 1000)) {
             continue;
           }
-          if (item.userId === studentId || item.user === studentName) {
+          if ((studentId && item.userId === studentId) || item.user === studentName) {
             userSubmitCount++;
           }
         }
@@ -382,6 +414,7 @@
 
       const payload = {
         sessionId: currentSessionId || null,
+        roundTimestamp: this.activeActivity.roundTimestamp || null,
         word: cleanWord,
         user: studentName,
         userId: studentId,
@@ -725,10 +758,44 @@
         frontLimitSelect.value = currentLimit;
       }
       const wordInput = document.getElementById('wcStudentWordInput');
+      const submitBtn = document.querySelector('.wc-submit-btn');
       if (wordInput && isActive) {
-        wordInput.placeholder = currentLimit === 0
-          ? '請輸入 1~15 字詞彙（不限提交次數）...'
-          : `請輸入 1~15 字詞彙（每人限 ${currentLimit} 次）...`;
+        const isLocked = (act.accepting === false);
+        wordInput.disabled = isLocked;
+        if (submitBtn) submitBtn.disabled = isLocked;
+
+        if (isLocked) {
+          wordInput.placeholder = '老師已鎖定作答，目前暫停輸入...';
+        } else {
+          // 計算當前學生在此輪有效提交次數
+          const studentName = window.app?.currentUserName || '匿名同學';
+          const studentId = window.app?.currentUserId || '';
+          let myCount = 0;
+          const roundStartTs = act.roundTimestamp || act.timestamp || 0;
+          for (const key in this.submissions) {
+            const item = this.submissions[key];
+            if (!item) continue;
+            if (act.sessionId && item.sessionId && item.sessionId !== act.sessionId) continue;
+            if (roundStartTs && item.timestamp && item.timestamp < (roundStartTs - 1000)) continue;
+            if ((studentId && item.userId === studentId) || item.user === studentName) {
+              myCount++;
+            }
+          }
+
+          if (currentLimit > 0 && myCount >= currentLimit) {
+            wordInput.disabled = true;
+            if (submitBtn) submitBtn.disabled = true;
+            wordInput.placeholder = `您已完成作答（已送出 ${myCount}/${currentLimit} 次）`;
+          } else {
+            wordInput.disabled = false;
+            if (submitBtn) submitBtn.disabled = false;
+            wordInput.placeholder = currentLimit === 0
+              ? '請輸入 1~15 字詞彙（不限提交次數）...'
+              : (myCount > 0
+                  ? `請輸入 1~15 字詞彙（每人限 ${currentLimit} 次，已送出 ${myCount} 次）...`
+                  : `請輸入 1~15 字詞彙（每人限 ${currentLimit} 次）...`);
+          }
+        }
       }
       if (isActive && act.imageUrl && !this.uploadedImageUrl) {
         this.uploadedImageUrl = act.imageUrl;

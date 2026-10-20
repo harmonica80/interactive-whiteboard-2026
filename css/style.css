@@ -7106,7 +7106,7 @@ body {
 /* 開扇撲克牌舞台容器 */
 .card-fan-stage {
   width: 100%;
-  height: 340px;
+  min-height: 310px;
   position: relative;
   display: flex;
   align-items: flex-end;

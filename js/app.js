@@ -14728,32 +14728,63 @@ class App {
 
     const totalCards = names.length;
 
-    // 自適應計算開扇幾何尺寸與弧度
-    let cardW = 90;
-    let cardH = 140;
-    let originY = 145; // %
-    let totalSpan = 70; // deg
-
-    if (totalCards <= 8) {
-      cardW = 96;
-      cardH = 148;
-      originY = 135;
-      totalSpan = Math.min(55, Math.max(25, (totalCards - 1) * 9));
-    } else if (totalCards <= 16) {
-      cardW = 86;
-      cardH = 136;
-      originY = 145;
-      totalSpan = Math.min(72, (totalCards - 1) * 5.2);
-    } else if (totalCards <= 28) {
-      cardW = 76;
-      cardH = 122;
-      originY = 160;
-      totalSpan = Math.min(84, (totalCards - 1) * 3.4);
+    // 當卡片數量較多時，智慧分為 1 列、2 列或 3 列，避免向右溢出覆蓋設定面板
+    let numRows = 1;
+    if (totalCards > 20) {
+      numRows = 3;
+    } else if (totalCards > 10) {
+      numRows = 2;
     } else {
-      cardW = 66;
-      cardH = 108;
-      originY = 175;
-      totalSpan = Math.min(94, (totalCards - 1) * 2.4);
+      numRows = 1;
+    }
+
+    // 動態調整撲克台高度
+    const stage = document.getElementById('pickerCardFanStage');
+    if (stage) {
+      const stageH = numRows === 3 ? 390 : (numRows === 2 ? 350 : 310);
+      stage.style.height = stageH + 'px';
+    }
+
+    // 依列數自適應卡片寬高與弧度
+    let cardW = 86;
+    let cardH = 132;
+    let originY = 145;
+
+    if (numRows === 1) {
+      cardW = totalCards <= 6 ? 94 : 86;
+      cardH = totalCards <= 6 ? 144 : 132;
+      originY = 140;
+    } else if (numRows === 2) {
+      cardW = 76;
+      cardH = 118;
+      originY = 148;
+    } else { // 3 rows
+      cardW = 68;
+      cardH = 106;
+      originY = 152;
+    }
+
+    // 計算各列卡片數量分配
+    const rowCounts = [];
+    const baseCount = Math.floor(totalCards / numRows);
+    const remainder = totalCards % numRows;
+    for (let r = 0; r < numRows; r++) {
+      rowCounts.push(baseCount + (r < remainder ? 1 : 0));
+    }
+
+    // 計算每個全域索引的 row 與列內 col 序號
+    const cardPositions = [];
+    let currentGlobalIdx = 0;
+    for (let r = 0; r < numRows; r++) {
+      const count = rowCounts[r];
+      for (let col = 0; col < count; col++) {
+        cardPositions.push({
+          globalIdx: currentGlobalIdx++,
+          row: r,
+          col: col,
+          rowCount: count
+        });
+      }
     }
 
     const pokerSuits = ['♦', '♠', '♥', '♣'];
@@ -14761,8 +14792,29 @@ class App {
 
     grid.innerHTML = names.map((name, idx) => {
       const cardNum = idx + 1;
-      const angle = totalCards > 1 ? (-totalSpan / 2 + (idx / (totalCards - 1)) * totalSpan) : 0;
-      const xOffset = totalCards > 1 ? ((idx - (totalCards - 1) / 2) * (cardW * 0.36)) : 0;
+      const pos = cardPositions[idx] || { row: 0, col: idx, rowCount: totalCards };
+      const r = pos.row;
+      const col = pos.col;
+      const rowCount = pos.rowCount;
+
+      // 依列數計算垂直位移 (Row 0 在最上方後排，最末列在最下方前排)
+      let yOffset = 0;
+      if (numRows === 2) {
+        yOffset = (r === 0) ? -75 : 0;
+      } else if (numRows === 3) {
+        yOffset = (r === 0) ? -135 : ((r === 1) ? -68 : 0);
+      }
+
+      // 列內開扇角度與橫向分佈 (收斂寬度確保永遠置中、不與右側設定選單重疊)
+      const totalSpan = Math.min(52, Math.max(18, (rowCount - 1) * (numRows === 1 ? 6.2 : (numRows === 2 ? 5.0 : 4.4))));
+      const angle = rowCount > 1 ? (-totalSpan / 2 + (col / (rowCount - 1)) * totalSpan) : 0;
+      const xSpread = cardW * (numRows === 1 ? 0.36 : 0.32);
+      const xOffset = rowCount > 1 ? ((col - (rowCount - 1) / 2) * xSpread) : 0;
+
+      // 圖層 z-index：前排覆蓋後排，且列內依序層疊
+      const baseZ = (r + 1) * 60;
+      const zIndex = baseZ + col;
+
       const suit = pokerSuits[idx % pokerSuits.length];
       const sym = pokerSymbols[idx % pokerSymbols.length];
 
@@ -14771,7 +14823,8 @@ class App {
              data-card-index="${idx}"
              data-angle="${angle.toFixed(2)}"
              data-xoffset="${xOffset.toFixed(2)}"
-             style="width: ${cardW}px; height: ${cardH}px; margin-left: -${cardW / 2}px; transform-origin: 50% ${originY}%; transform: translate(${xOffset.toFixed(1)}px, 0px) rotate(${angle.toFixed(2)}deg); z-index: ${idx + 1};"
+             data-yoffset="${yOffset.toFixed(2)}"
+             style="width: ${cardW}px; height: ${cardH}px; margin-left: -${cardW / 2}px; transform-origin: 50% ${originY}%; transform: translate(${xOffset.toFixed(1)}px, ${yOffset.toFixed(1)}px) rotate(${angle.toFixed(2)}deg); z-index: ${zIndex};"
              onclick="window.app.triggerWheelSpin(${idx})">
           <div class="poker-face poker-back">
             <div class="poker-corner-top">
@@ -14795,7 +14848,7 @@ class App {
 
     const hint = document.getElementById('pickerCardHint');
     if (hint) {
-      hint.textContent = '🃏 共有 ' + totalCards + ' 張命運撲克牌已開扇就緒，點擊任一張牌或按開始抽人';
+      hint.textContent = '🃏 共有 ' + totalCards + ' 張命運撲克牌已分 ' + numRows + ' 列開扇就緒，點擊任一張牌或按開始抽人';
     }
   }
 
@@ -15260,8 +15313,9 @@ class App {
       // 復原上一張抽出的卡
       if (lastPulledCard) {
         const xOff = parseFloat(lastPulledCard.dataset.xoffset || '0');
+        const yOff = parseFloat(lastPulledCard.dataset.yoffset || '0');
         const ang = parseFloat(lastPulledCard.dataset.angle || '0');
-        lastPulledCard.style.transform = 'translate(' + xOff + 'px, 0px) rotate(' + ang + 'deg)';
+        lastPulledCard.style.transform = 'translate(' + xOff + 'px, ' + yOff + 'px) rotate(' + ang + 'deg)';
         lastPulledCard.classList.remove('pulling-up');
         lastPulledCard = null;
       }
@@ -15277,8 +15331,9 @@ class App {
       const card = cards[randIdx];
       if (card) {
         const xOff = parseFloat(card.dataset.xoffset || '0');
+        const yOff = parseFloat(card.dataset.yoffset || '0');
         const ang = parseFloat(card.dataset.angle || '0');
-        card.style.transform = 'translate(' + xOff + 'px, -45px) rotate(' + ang + 'deg) scale(1.08)';
+        card.style.transform = 'translate(' + xOff + 'px, ' + (yOff - 40) + 'px) rotate(' + ang + 'deg) scale(1.08)';
         card.classList.add('pulling-up');
         lastPulledCard = card;
 
@@ -15293,8 +15348,9 @@ class App {
       // 確保所有探查卡牌歸位
       if (lastPulledCard) {
         const xOff = parseFloat(lastPulledCard.dataset.xoffset || '0');
+        const yOff = parseFloat(lastPulledCard.dataset.yoffset || '0');
         const ang = parseFloat(lastPulledCard.dataset.angle || '0');
-        lastPulledCard.style.transform = 'translate(' + xOff + 'px, 0px) rotate(' + ang + 'deg)';
+        lastPulledCard.style.transform = 'translate(' + xOff + 'px, ' + yOff + 'px) rotate(' + ang + 'deg)';
         lastPulledCard.classList.remove('pulling-up');
       }
 
@@ -15311,7 +15367,7 @@ class App {
 
       if (chosenCard) {
         chosenCard.classList.add('extracted-to-top');
-        chosenCard.style.transform = 'translate(0px, -65px) rotate(0deg) scale(1.25)';
+        chosenCard.style.transform = 'translate(0px, -70px) rotate(0deg) scale(1.25)';
       }
     }, 2200);
 
@@ -15329,7 +15385,7 @@ class App {
       if (chosenCard) {
         chosenCard.classList.remove('extracted-to-top');
         chosenCard.classList.add('flipped');
-        chosenCard.style.transform = 'translate(0px, -65px) rotateY(180deg) scale(1.3)';
+        chosenCard.style.transform = 'translate(0px, -70px) rotateY(180deg) scale(1.3)';
       }
 
       if (hint) {
