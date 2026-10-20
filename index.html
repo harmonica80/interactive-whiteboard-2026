@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.3</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.4</a>
         </p>
       </div>
       <div class="top-actions">
@@ -389,7 +389,7 @@
               <!-- 3. 翻牌抽卡 -->
               <div id="pickerDisplayCard" class="picker-display-panel" style="display: none;">
                 <div class="card-picker-cabinet">
-                  <div class="card-picker-hint">🃏 命運卡牌已就緒，點擊任一張牌或按開始抽人</div>
+                  <div class="card-picker-hint" id="pickerCardHint">🃏 命運卡牌已就緒，點擊任一張牌或按開始抽人</div>
                   <div class="card-grid" id="pickerCardGrid">
                     <!-- 卡牌清單由 JS 動態生成 -->
                   </div>
@@ -3487,7 +3487,7 @@
           <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
             🚀 即時互動白板版本更新歷程
           </h3>
-          <span class="changelog-badge-latest">目前最新 ver 3.9.3</span>
+          <span class="changelog-badge-latest">目前最新 ver 3.9.4</span>
         </div>
         <button type="button" onclick="window.app && window.app.closeChangelogModal()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="關閉視窗">✕</button>
       </div>
@@ -3495,12 +3495,40 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.3 -->
+        <!-- ver 3.9.4 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.3</span>
+              <span>🌟 ver 3.9.4</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">抽卡張數與名單相符</span>
+              <span class="changelog-badge-tag">命運洗牌換位動畫</span>
+              <span class="changelog-badge-tag">文字雲遮蔽詞彙修復</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🃏 翻牌抽卡卡牌張數與名單全面連動：</strong>
+              <ul>
+                <li><strong>動態卡片數量</strong>：抽卡張數自動 100% 依據名單人數動態生成（如 25 人名單即生成 25 張編號卡牌），自適應響應式排列排版。</li>
+                <li><strong>生動洗牌與換位對調動畫</strong>：抽卡開始時，所有卡牌展開三維空間洗牌、彈跳與隨機對調動畫，並伴隨快速洗牌聲效；揭曉前選中卡牌升起浮空聚焦，隨後金色翻轉揭曉幸運得主。</li>
+              </ul>
+            </li>
+            <li><strong>☁️ 文字雲隱藏/遮蔽詞彙按鈕修復：</strong>
+              <ul>
+                <li><strong>URI 解碼修復</strong>：解決先前點擊排行旁 <code>✕</code> 遮蔽鈕時因編碼字串比對不符導致無法隱藏的問題，點擊即可立即將不當詞彙從文字雲與排行榜中隱藏。</li>
+                <li><strong>遮蔽管理支援</strong>：新增「🚫 已遮蔽 N 個詞彙」狀態提示與「全部取消遮蔽」快速復原按鈕。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.3 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌟 ver 3.9.3</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">文字雲多輪作答修復</span>

@@ -45,10 +45,22 @@
         this.recalculateAndRender();
       });
 
-      // 監聽教師隱藏的詞彙名單
+      // 監聽教師隱藏的詞彙名單 (自動進行 URL 解碼以相容所有編碼格式)
       db.ref('quiz/wordCloud/hiddenWords').on('value', (snapshot) => {
         const val = snapshot.val();
-        this.hiddenWords = new Set(Array.isArray(val) ? val : []);
+        const set = new Set();
+        if (Array.isArray(val)) {
+          val.forEach(item => {
+            if (typeof item === 'string') {
+              try {
+                set.add(decodeURIComponent(item).trim().toLowerCase());
+              } catch (e) {
+                set.add(item.trim().toLowerCase());
+              }
+            }
+          });
+        }
+        this.hiddenWords = set;
         this.recalculateAndRender();
       });
     }
@@ -361,16 +373,40 @@
       }, 50);
     }
 
-    // 隱藏/遮蔽特定不當詞彙
-    toggleHideWord(word) {
+    // 隱藏/遮蔽特定不當詞彙 (支援 URI 解碼)
+    toggleHideWord(rawWord) {
       if (!window.app?.isAdmin) return;
-      const lower = word.toLowerCase();
-      if (this.hiddenWords.has(lower)) {
-        this.hiddenWords.delete(lower);
-      } else {
-        this.hiddenWords.add(lower);
+      let word = rawWord;
+      try {
+        word = decodeURIComponent(rawWord);
+      } catch (e) {
+        word = rawWord;
       }
+      word = (word || '').trim();
+      if (!word) return;
+
+      const lower = word.toLowerCase();
+      const isHiding = !this.hiddenWords.has(lower);
+
+      if (isHiding) {
+        this.hiddenWords.add(lower);
+        window.app?.showNotification('遮蔽詞彙', '已遮蔽隱藏詞彙「' + word + '」！');
+      } else {
+        this.hiddenWords.delete(lower);
+        window.app?.showNotification('取消遮蔽', '已取消遮蔽詞彙「' + word + '」！');
+      }
+
+      this.recalculateAndRender();
       db.ref('quiz/wordCloud/hiddenWords').set(Array.from(this.hiddenWords));
+    }
+
+    // 全部取消遮蔽
+    unhideAllWords() {
+      if (!window.app?.isAdmin) return;
+      this.hiddenWords.clear();
+      db.ref('quiz/wordCloud/hiddenWords').remove();
+      this.recalculateAndRender();
+      window.app?.showNotification('成功', '已解除所有詞彙之遮蔽！');
     }
 
     // 更新活動狀態 UI (題目標題、圖片、按鈕狀態)
@@ -531,6 +567,15 @@
           </li>
         `;
       }).join('');
+
+      if (window.app?.isAdmin && this.hiddenWords.size > 0) {
+        listEl.innerHTML += `
+          <li style="margin-top: 10px; padding: 6px 10px; background: rgba(239, 68, 68, 0.08); border-radius: 8px; font-size: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #ef4444; font-weight: bold;">🚫 已遮蔽 ${this.hiddenWords.size} 個詞彙</span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.unhideAllWords()" style="font-size: 11px; padding: 2px 8px; height: 22px; cursor: pointer;">全部取消遮蔽</button>
+          </li>
+        `;
+      }
     }
 
     // 核心 Canvas 文字雲螺旋碰撞排版演算

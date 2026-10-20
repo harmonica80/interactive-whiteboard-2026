@@ -18,7 +18,7 @@ class App {
     this.dragStart = { x: 0, y: 0 };
     this.imagePos = { x: 0, y: 0 };
     
-    this.APP_VERSION = '3.9.3';
+    this.APP_VERSION = '3.9.4';
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
@@ -14698,26 +14698,40 @@ class App {
   renderCardGrid() {
     const grid = document.getElementById('pickerCardGrid');
     if (!grid) return;
-    const cards = [
-      { id: 1, symbol: '🔮', label: '命運之牌' },
-      { id: 2, symbol: '✨', label: '幸運之星' },
-      { id: 3, symbol: '🌟', label: '榮耀之冠' },
-      { id: 4, symbol: '⚡', label: '雷霆之選' },
-      { id: 5, symbol: '👑', label: '至尊之牌' },
-      { id: 6, symbol: '💎', label: '璀璨之心' }
-    ];
-    grid.innerHTML = cards.map((c, idx) => `
-      <div class="picker-card-item" data-card-id="${c.id}" data-card-index="${idx}" onclick="window.app.triggerWheelSpin(${idx})">
-        <div class="card-face card-back">
-          <div style="font-size: 30px; margin-bottom: 6px;">${c.symbol}</div>
-          <div style="font-size: 13px; font-weight: bold; letter-spacing: 1px;">${c.label}</div>
+    const names = (this.wheelNames && this.wheelNames.length > 0)
+      ? this.wheelNames
+      : ['王小明', '李小美', '陳大文', '張小強', '林美麗', '周杰倫'];
+
+    const totalCards = names.length;
+    if (totalCards > 12) {
+      grid.classList.add('dense-cards');
+    } else {
+      grid.classList.remove('dense-cards');
+    }
+
+    const cardSymbols = ['🔮', '✨', '🌟', '⚡', '👑', '💎', '🃏', '🍀', '🎯', '🔥', '🌙', '☀️', '⭐', '🎈', '🪄'];
+
+    grid.innerHTML = names.map((name, idx) => {
+      const sym = cardSymbols[idx % cardSymbols.length];
+      const cardNum = idx + 1;
+      return `
+        <div class="picker-card-item" data-card-id="${cardNum}" data-card-index="${idx}" onclick="window.app.triggerWheelSpin(${idx})">
+          <div class="card-face card-back">
+            <div class="card-symbol" style="font-size: 26px; margin-bottom: 4px;">${sym}</div>
+            <div class="card-label" style="font-size: 12px; font-weight: 800; letter-spacing: 0.5px;">No. ${cardNum}</div>
+          </div>
+          <div class="card-face card-front" id="cardFront_${cardNum}">
+            <div style="font-size: 11px; margin-bottom: 2px; opacity: 0.85;">🎉 幸運得主</div>
+            <div class="card-winner-title card-front-name" style="font-size: 16px; font-weight: 900;">-</div>
+          </div>
         </div>
-        <div class="card-face card-front" id="cardFront_${c.id}">
-          <div style="font-size: 12px; margin-bottom: 4px; opacity: 0.85;">🎉 幸運得主</div>
-          <div class="card-winner-title" style="font-size: 18px; font-weight: 900;">-</div>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+
+    const hint = document.getElementById('pickerCardHint');
+    if (hint) {
+      hint.textContent = '🃏 共有 ' + totalCards + ' 張命運卡牌已就緒，點擊任一張牌或按開始抽人';
+    }
   }
 
   syncAdminWheelUI() {
@@ -14955,9 +14969,10 @@ class App {
     else if (mode === 'flash') duration = 2600;
 
     // 翻牌抽卡模式下，由老師端指定或隨機選定同一張牌卡位置，廣播給全班同步翻開同一張牌！
-    const cardIndex = (typeof specificCardIndex === 'number' && specificCardIndex >= 0 && specificCardIndex < 6)
+    const totalCards = Math.max(1, this.wheelNames.length);
+    const cardIndex = (typeof specificCardIndex === 'number' && specificCardIndex >= 0 && specificCardIndex < totalCards)
       ? specificCardIndex
-      : Math.floor(Math.random() * 6);
+      : Math.floor(Math.random() * totalCards);
 
     db.ref('quiz/luckyWheel/spinEvent').set({
       mode: mode,
@@ -15140,48 +15155,85 @@ class App {
     this.renderCardGrid();
     const grid = document.getElementById('pickerCardGrid');
     const winnerName = event.winnerName || (this.wheelNames[event.targetIndex] || '');
+    const hint = document.getElementById('pickerCardHint');
 
     if (!grid) {
       this.finishWheelSpin(winnerName);
       return;
     }
 
-    const cardItems = grid.querySelectorAll('.picker-card-item');
+    const cardItems = Array.from(grid.querySelectorAll('.picker-card-item'));
     if (cardItems.length === 0) {
       this.finishWheelSpin(winnerName);
       return;
     }
 
+    const totalCards = cardItems.length;
     // 翻牌位置使用 Firebase 廣播的 cardIndex，全班（包含老師與所有學生端）完全同步翻開同一張牌！
-    const chosenIdx = (typeof event.cardIndex === 'number' && event.cardIndex >= 0 && event.cardIndex < cardItems.length)
+    const chosenIdx = (typeof event.cardIndex === 'number' && event.cardIndex >= 0 && event.cardIndex < totalCards)
       ? event.cardIndex
-      : (typeof event.targetIndex === 'number' ? (event.targetIndex % cardItems.length) : 0);
+      : (typeof event.targetIndex === 'number' ? (event.targetIndex % totalCards) : 0);
 
     const chosenCard = cardItems[chosenIdx];
-    const frontEl = chosenCard.querySelector('.card-winner-title');
+    const frontEl = chosenCard ? chosenCard.querySelector('.card-winner-title') : null;
     if (frontEl) frontEl.textContent = winnerName;
 
+    if (hint) {
+      hint.innerHTML = '<span style="color: #6366f1; font-size: 15px;">🔀 命運洗牌中... 正在隨機對調與跳動卡牌！</span>';
+    }
+
+    // 1. 洗牌、對調與彈跳動畫 (前 1.8 秒)
+    cardItems.forEach((c, idx) => {
+      const animType = idx % 3 === 0 ? 'is-shuffling-a' : (idx % 3 === 1 ? 'is-shuffling-b' : 'is-shuffling-c');
+      c.classList.add(animType);
+    });
+
+    // 播放洗牌音效 (僅管理員端)
     let tickCount = 0;
     const tickInterval = setInterval(() => {
       tickCount++;
       if (this.isAdmin && this.soundEffects) {
         this.soundEffects.playTick();
       }
-      if (tickCount >= 10) clearInterval(tickInterval);
-    }, 180);
+      if (tickCount >= 14) clearInterval(tickInterval);
+    }, 120);
 
+    // 2. 鎖定卡片與聚焦 (1800ms)
     setTimeout(() => {
+      // 停止洗牌抖動
+      cardItems.forEach(c => {
+        c.classList.remove('is-shuffling-a', 'is-shuffling-b', 'is-shuffling-c');
+      });
+
+      if (hint) {
+        hint.innerHTML = '<span style="color: #d97706; font-size: 15px;">✨ 命運卡牌已鎖定！即將翻開...</span>';
+      }
+
+      // 非選中的卡片淡出，被選中的卡片彈出升起
       cardItems.forEach((c, idx) => {
         if (idx !== chosenIdx) {
           c.classList.add('is-dimmed');
+        } else {
+          c.classList.add('is-selected-pop');
         }
       });
-      chosenCard.classList.add('is-flipped');
-    }, 1400);
+    }, 1800);
 
+    // 3. 翻牌揭曉得獎者 (2200ms)
+    setTimeout(() => {
+      if (chosenCard) {
+        chosenCard.classList.remove('is-selected-pop');
+        chosenCard.classList.add('is-flipped');
+      }
+      if (hint) {
+        hint.innerHTML = '🎉 恭喜得獎同學：<strong style="color: #b45309; font-size: 17px;">' + this.escapeHtml(winnerName) + '</strong>';
+      }
+    }, 2200);
+
+    // 4. 完成抽籤 (3600ms)
     setTimeout(() => {
       this.finishWheelSpin(winnerName);
-    }, event.duration || 3200);
+    }, event.duration || 3600);
   }
 
   startStickAnimation(event) {
