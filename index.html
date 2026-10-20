@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.8</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.9</a>
         </p>
       </div>
       <div class="top-actions">
@@ -3514,8 +3514,29 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.8 -->
+        <!-- ver 3.9.9 -->
         <div class="changelog-version-card is-latest">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌟 ver 3.9.9</span>
+              <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">修復文字雲畫布與排行榜顯示異常</span>
+              <span class="changelog-badge-tag">增強詞彙容錯與即時繪製穩定性</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>☁️ 即時文字雲畫布與排行榜修復：</strong>
+              <ul>
+                <li>徹底修復因字串跳脫方法未綁定導致的渲染中斷問題，確保提交詞彙後畫布與右側熱門詞頻排行榜 100% 正常同步呈現！</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.8 -->
+        <div class="changelog-version-card">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
               <span>🌟 ver 3.9.8</span>

@@ -37,6 +37,17 @@
     }
 
     // 初始化 Firebase 監聽
+    // 安全跳脫 HTML 特殊字元
+    escapeHtml(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     initFirebaseListeners() {
       if (typeof db === 'undefined') return;
 
@@ -808,52 +819,61 @@
 
     // 重新統計詞頻並觸發排版演算 (多位同學重複送出時票數累計、排名即時更新、文字明顯放大)
     recalculateAndRender() {
-      const counts = {};
-      const wordsList = [];
+      try {
+        const counts = {};
+        const wordsList = [];
 
-      for (const id in this.submissions) {
-        const item = this.submissions[id];
-        if (!item || !item.word) continue;
-        const rawW = item.word.trim();
-        if (!rawW) continue;
+        for (const id in this.submissions) {
+          const item = this.submissions[id];
+          if (!item || !item.word) continue;
+          const rawW = item.word.trim();
+          if (!rawW) continue;
 
-        // 去除首尾常見標點符號與多餘空白，讓如「好棒」、「好棒！」、「#好棒」完美合併為同一詞彙累加票數
-        const cleanW = rawW.replace(/^[#＃\s]+|[!！?？,，.\s]+$/g, '').trim() || rawW;
-        const key = cleanW.toLowerCase();
-        if (this.hiddenWords.has(key)) continue;
+          // 去除首尾常見標點符號與多餘空白，讓如「好棒」、「好棒！」、「#好棒」完美合併為同一詞彙累加票數
+          const cleanW = rawW.replace(/^[#＃\s]+|[!！?？,，.\s]+$/g, '').trim() || rawW;
+          const key = cleanW.toLowerCase();
+          if (this.hiddenWords.has(key)) continue;
 
-        if (!counts[key]) {
-          counts[key] = {
-            word: cleanW,
-            count: 0,
-            latestTs: item.timestamp || 0,
-            voters: new Set()
-          };
+          if (!counts[key]) {
+            counts[key] = {
+              word: cleanW,
+              count: 0,
+              latestTs: item.timestamp || 0,
+              voters: new Set()
+            };
+          }
+          counts[key].count++;
+          if (item.userId || item.user) {
+            counts[key].voters.add(item.userId || item.user);
+          }
+          if (item.timestamp && item.timestamp > counts[key].latestTs) {
+            counts[key].latestTs = item.timestamp;
+            counts[key].word = cleanW; // 保留最新格式
+          }
         }
-        counts[key].count++;
-        if (item.userId || item.user) {
-          counts[key].voters.add(item.userId || item.user);
+
+        for (const k in counts) {
+          const item = counts[k];
+          item.isFocused = this.focusWords.has(k);
+          wordsList.push(item);
         }
-        if (item.timestamp && item.timestamp > counts[key].latestTs) {
-          counts[key].latestTs = item.timestamp;
-          counts[key].word = cleanW; // 保留最新格式
-        }
+
+        // 排行榜嚴格依「票數(count)由高至低」排序；同票數則依最新提交時間排序
+        wordsList.sort((a, b) => b.count - a.count || b.latestTs - a.latestTs);
+        this.wordsData = wordsList;
+
+        // 即時更新右側票數與排行榜名次
+        this.updateRankingListUI(wordsList);
+      } catch (err) {
+        console.error('WordCloud updateRankingListUI error:', err);
       }
 
-      for (const k in counts) {
-        const item = counts[k];
-        item.isFocused = this.focusWords.has(k);
-        wordsList.push(item);
+      try {
+        // 重新繪製文字雲 (票數越高的詞彙字級明顯遞增放大)
+        this.renderCanvas();
+      } catch (err) {
+        console.error('WordCloud renderCanvas error:', err);
       }
-
-      // 排行榜嚴格依「票數(count)由高至低」排序；同票數則依最新提交時間排序
-      wordsList.sort((a, b) => b.count - a.count || b.latestTs - a.latestTs);
-      this.wordsData = wordsList;
-
-      // 即時更新右側票數與排行榜名次
-      this.updateRankingListUI(wordsList);
-      // 重新繪製文字雲 (票數越高的詞彙字級明顯遞增放大)
-      this.renderCanvas();
     }
 
     // 更新詞頻排行榜 UI
