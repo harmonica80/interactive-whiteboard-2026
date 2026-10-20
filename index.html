@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.9</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.10</a>
         </p>
       </div>
       <div class="top-actions">
@@ -3514,8 +3514,30 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.9 -->
+        <!-- ver 3.9.10 -->
         <div class="changelog-version-card is-latest">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌟 ver 3.9.10</span>
+              <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">教師焦點詞超過3個自動自適應排版</span>
+              <span class="changelog-badge-tag">智能降級重試確保所有星號詞全部呈現</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>☁️ 文字雲多焦點詞彙智慧自適應：</strong>
+              <ul>
+                <li><strong>動態階梯字級調校</strong>：當老師標註超過 3 個焦點詞（如 4、5、6 個或更多）時，系統自動依數量調校字級曲線，既維持大於一般詞彙與加粗外框的視覺焦點，又保證中央空間足夠容納。</li>
+                <li><strong>三輪搜尋與保底機制</strong>：搜尋半徑擴大至 750 步，若畫布中心極為緊湊會自動啟動縮小重試與保底放置，確保 100% 所有標註星號的詞彙完整展示！</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.9 -->
+        <div class="changelog-version-card">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
               <span>🌟 ver 3.9.9</span>

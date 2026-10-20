@@ -970,9 +970,19 @@
         return b.count - a.count || b.latestTs - a.latestTs;
       });
 
-      // 字級大小階梯演算：不同同學重複提交時，該文字隨票數大幅明顯變大！
-      const baseSingleFont = Math.max(18, Math.min(28, Math.floor(width / 30)));
-      const maxAllowedFont = Math.min(84, Math.floor(width / 8));
+      // 統計星號焦點詞數量，若超過三個自動依數量自適應動態調降字級，確保全部皆能排入！
+      const numFocused = wordsForCanvas.filter(w => w.isFocused).length;
+      let targetFocusFont = 84;
+      if (numFocused === 2) targetFocusFont = 70;
+      else if (numFocused === 3) targetFocusFont = 58;
+      else if (numFocused === 4) targetFocusFont = 48;
+      else if (numFocused === 5) targetFocusFont = 42;
+      else if (numFocused === 6) targetFocusFont = 38;
+      else if (numFocused >= 7) targetFocusFont = Math.max(20, Math.min(35, Math.round(380 / (Math.sqrt(numFocused) * 3.2))));
+
+      // 基本字級大小區間
+      const baseSingleFont = Math.max(16, Math.min(26, Math.floor(width / 32)));
+      const maxAllowedFont = Math.min(78, Math.floor(width / 8.5));
 
       const palette = CLOUD_PALETTES[this.currentPalette % CLOUD_PALETTES.length];
       const centerX = width / 2;
@@ -982,29 +992,20 @@
       const placedResults = [];
 
       wordsForCanvas.forEach((item, index) => {
-        let fontSize;
-        if (maxCount <= 1) {
-          // 全部均為 1 票時，適度以統一清晰大小展示
-          fontSize = baseSingleFont;
-        } else {
-          // 當有同學重複提交 (count > 1) 時，大幅度放大字級！
-          const countBoost = (item.count - 1) * Math.max(11, Math.floor(width / 44));
-          const relativeRatio = (item.count - minCount) / countRange;
-          fontSize = Math.round(baseSingleFont + countBoost + relativeRatio * 16);
-          fontSize = Math.min(maxAllowedFont, Math.max(baseSingleFont, fontSize));
-        }
-
+        let initFontSize;
         if (item.isFocused) {
-          // 焦點詞彙：顯著放大至最大字級的 1.3 倍 (至多 94px)
-          fontSize = Math.min(94, Math.round(Math.max(fontSize, maxAllowedFont * 0.95) * 1.3));
+          // 焦點詞彙：依星號焦點詞總數自適應調整大小，保持比一般詞突出且保證容得下全部
+          initFontSize = targetFocusFont;
+        } else {
+          if (maxCount <= 1) {
+            initFontSize = baseSingleFont;
+          } else {
+            const countBoost = (item.count - 1) * Math.max(9, Math.floor(width / 50));
+            const relativeRatio = (item.count - minCount) / countRange;
+            initFontSize = Math.round(baseSingleFont + countBoost + relativeRatio * 14);
+            initFontSize = Math.min(maxAllowedFont, Math.max(baseSingleFont, initFontSize));
+          }
         }
-
-        const fontStr = `bold ${fontSize}px "Microsoft JhengHei", "Noto Sans TC", sans-serif`;
-        ctx.font = fontStr;
-
-        const metrics = ctx.measureText(item.word);
-        const textWidth = Math.ceil(metrics.width);
-        const textHeight = Math.ceil(fontSize * 1.05);
 
         // 決定詞彙旋轉角度 (橫式 / 直式 / 直橫交錯 / ±30° / ±45°)
         let itemAngle = 0;
@@ -1014,7 +1015,12 @@
         } else if (orient === 'vertical') {
           itemAngle = Math.PI / 2;
         } else if (orient === 'mixed') {
-          itemAngle = item.isFocused ? 0 : (index % 2 === 1 ? Math.PI / 2 : 0);
+          // 當焦點詞較多 (>=4) 時，焦點詞也可適度交錯以完美鑲嵌在中央區域
+          if (item.isFocused) {
+            itemAngle = (numFocused >= 4 && index % 2 === 1) ? Math.PI / 2 : 0;
+          } else {
+            itemAngle = (index % 2 === 1 ? Math.PI / 2 : 0);
+          }
         } else if (orient === 'tilt30') {
           const angles30 = [0, -Math.PI / 6, Math.PI / 6];
           itemAngle = item.isFocused ? 0 : angles30[index % angles30.length];
@@ -1023,61 +1029,99 @@
           itemAngle = item.isFocused ? 0 : angles45[index % angles45.length];
         }
 
-        // 計算旋轉後之幾何外接矩形 (AABB)
-        const cos = Math.abs(Math.cos(itemAngle));
-        const sin = Math.abs(Math.sin(itemAngle));
-        const boundingW = Math.ceil(textWidth * cos + textHeight * sin);
-        const boundingH = Math.ceil(textWidth * sin + textHeight * cos);
-
-        // 阿基米德螺旋線搜尋碰撞空位
-        let angle = (index * 2.39996);
-        let radius = 0;
-        const angleStep = 0.22;
-        const radiusStep = 1.35;
+        // 自動搜尋空位與自適應降級重試機制 (最多重試 3 輪縮小，保證 100% 全部呈現！)
         let placed = false;
         let bestX = centerX;
         let bestY = centerY;
+        let finalFontSize = initFontSize;
+        let finalBoundingW = 0;
+        let finalBoundingH = 0;
+        let finalTextWidth = 0;
+        let finalTextHeight = 0;
 
-        const maxSteps = item.isFocused ? 120 : 450;
-        for (let step = 0; step < maxSteps; step++) {
-          const testX = Math.round(centerX + radius * Math.cos(angle) - boundingW / 2);
-          const testY = Math.round(centerY + radius * Math.sin(angle) - boundingH / 2);
+        for (let attempt = 0; attempt < 3; attempt++) {
+          ctx.font = `bold ${finalFontSize}px "Microsoft JhengHei", "Noto Sans TC", sans-serif`;
+          const metrics = ctx.measureText(item.word);
+          const tW = Math.ceil(metrics.width);
+          const tH = Math.ceil(finalFontSize * 1.05);
 
-          // 邊界檢查
-          if (testX >= 6 && testX + boundingW <= width - 6 && testY >= 6 && testY + boundingH <= height - 6) {
-            // 圖案形狀遮罩輪廓檢查 (Requirement D)
-            if (this.isInsideCurrentShape(testX, testY, boundingW, boundingH, width, height)) {
-              // 碰撞檢測 (AABB 邊界碰撞 + 留白 padding)
-              const padding = Math.max(2, Math.floor(fontSize * 0.12));
-              const box = {
-                x: testX - padding,
-                y: testY - padding,
-                w: boundingW + padding * 2,
-                h: boundingH + padding * 2
-              };
+          // 若為焦點詞，計算外框 padding 所需預留空間
+          const padX = item.isFocused ? Math.round(finalFontSize * 0.18) * 2 : 0;
+          const padY = item.isFocused ? Math.round(finalFontSize * 0.12) * 2 : 0;
+          const totalW = tW + padX;
+          const totalH = tH + padY;
 
-              let collided = false;
-              for (let b = 0; b < occupiedBoxes.length; b++) {
-                const ob = occupiedBoxes[b];
-                if (box.x < ob.x + ob.w && box.x + box.w > ob.x &&
-                    box.y < ob.y + ob.h && box.y + box.h > ob.y) {
-                  collided = true;
+          const cos = Math.abs(Math.cos(itemAngle));
+          const sin = Math.abs(Math.sin(itemAngle));
+          const bW = Math.ceil(totalW * cos + totalH * sin);
+          const bH = Math.ceil(totalW * sin + totalH * cos);
+
+          let angle = (index * 2.39996) + attempt * 0.45;
+          let radius = 0;
+          const angleStep = 0.22;
+          const radiusStep = 1.35;
+          // 大幅擴大搜尋步數上限 (750 步)，半徑可覆蓋整張畫布
+          const maxSteps = item.isFocused ? 750 : 550;
+
+          for (let step = 0; step < maxSteps; step++) {
+            const testX = Math.round(centerX + radius * Math.cos(angle) - bW / 2);
+            const testY = Math.round(centerY + radius * Math.sin(angle) - bH / 2);
+
+            // 邊界檢查
+            if (testX >= 6 && testX + bW <= width - 6 && testY >= 6 && testY + bH <= height - 6) {
+              if (this.isInsideCurrentShape(testX, testY, bW, bH, width, height)) {
+                const padding = Math.max(2, Math.floor(finalFontSize * 0.08));
+                const box = {
+                  x: testX - padding,
+                  y: testY - padding,
+                  w: bW + padding * 2,
+                  h: bH + padding * 2
+                };
+
+                let collided = false;
+                for (let b = 0; b < occupiedBoxes.length; b++) {
+                  const ob = occupiedBoxes[b];
+                  if (box.x < ob.x + ob.w && box.x + box.w > ob.x &&
+                      box.y < ob.y + ob.h && box.y + box.h > ob.y) {
+                    collided = true;
+                    break;
+                  }
+                }
+
+                if (!collided) {
+                  bestX = testX;
+                  bestY = testY;
+                  occupiedBoxes.push(box);
+                  placed = true;
+                  finalBoundingW = bW;
+                  finalBoundingH = bH;
+                  finalTextWidth = tW;
+                  finalTextHeight = tH;
                   break;
                 }
               }
-
-              if (!collided) {
-                bestX = testX;
-                bestY = testY;
-                occupiedBoxes.push(box);
-                placed = true;
-                break;
-              }
             }
+
+            angle += angleStep;
+            radius += radiusStep;
           }
 
-          angle += angleStep;
-          radius += radiusStep;
+          if (placed) break;
+
+          // 若空間不足，微幅縮小字級 (82%) 再進行下一輪嘗試
+          finalFontSize = Math.max(14, Math.round(finalFontSize * 0.82));
+        }
+
+        // 保底機制：若空間極度擁擠仍未能放入，以安全坐標強制安置，絕不丟失任何詞彙
+        if (!placed) {
+          finalBoundingW = Math.ceil(ctx.measureText(item.word).width);
+          finalBoundingH = Math.ceil(finalFontSize * 1.05);
+          finalTextWidth = finalBoundingW;
+          finalTextHeight = finalBoundingH;
+          bestX = Math.max(8, Math.min(width - finalBoundingW - 8, centerX + (Math.random() - 0.5) * (width * 0.5)));
+          bestY = Math.max(8, Math.min(height - finalBoundingH - 8, centerY + (Math.random() - 0.5) * (height * 0.5)));
+          occupiedBoxes.push({ x: bestX, y: bestY, w: finalBoundingW, h: finalBoundingH });
+          placed = true;
         }
 
         if (placed) {
@@ -1088,11 +1132,11 @@
             isFocused: item.isFocused,
             x: bestX,
             y: bestY,
-            boundingW: boundingW,
-            boundingH: boundingH,
-            textWidth: textWidth,
-            textHeight: textHeight,
-            fontSize: fontSize,
+            boundingW: finalBoundingW,
+            boundingH: finalBoundingH,
+            textWidth: finalTextWidth,
+            textHeight: finalTextHeight,
+            fontSize: finalFontSize,
             angle: itemAngle,
             color: color
           });
