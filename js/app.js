@@ -14661,8 +14661,7 @@ class App {
       if (this.wheelMode === 'wheel') {
         this.drawWheelLocal();
       } else if (this.wheelMode === 'slot') {
-        const reel = document.getElementById('slotMachineReel');
-        if (reel) reel.innerHTML = '<div class="slot-item">準備抽人</div>';
+        this.renderSlotMachine();
       } else if (this.wheelMode === 'card') {
         this.renderCardGrid();
       } else if (this.wheelMode === 'stick') {
@@ -14680,6 +14679,22 @@ class App {
     }
   }
 
+  renderSlotMachine(previewNames) {
+    const reel = document.getElementById('slotMachineReel');
+    if (!reel) return;
+    const names = (previewNames && previewNames.length > 0) ? previewNames : (this.wheelNames.length > 0 ? this.wheelNames : ['同學A', '同學B', '同學C']);
+    const casinoDecor = ['👑', '💎', '⭐', '🍒', '🍀', '🔔', '🎯', '🎁'];
+    const item0 = names[0] ? `${casinoDecor[0]} ${names[0]}` : '🌟 準備就緒';
+    const item1 = names.length > 1 ? `🎰 ${names[1]}` : '🎰 點擊拉桿開始抽人';
+    const item2 = names.length > 2 ? `${casinoDecor[1]} ${names[2]}` : '🍀 祝您好運';
+    reel.style.transform = 'translateY(0px)';
+    reel.innerHTML = `
+      <div class="slot-item">${this.escapeHtml(item0)}</div>
+      <div class="slot-item slot-item-ready">${this.escapeHtml(item1)}</div>
+      <div class="slot-item">${this.escapeHtml(item2)}</div>
+    `;
+  }
+
   renderCardGrid() {
     const grid = document.getElementById('pickerCardGrid');
     if (!grid) return;
@@ -14691,8 +14706,8 @@ class App {
       { id: 5, symbol: '👑', label: '至尊之牌' },
       { id: 6, symbol: '💎', label: '璀璨之心' }
     ];
-    grid.innerHTML = cards.map(c => `
-      <div class="picker-card-item" data-card-id="${c.id}" onclick="window.app.triggerWheelSpin()">
+    grid.innerHTML = cards.map((c, idx) => `
+      <div class="picker-card-item" data-card-id="${c.id}" data-card-index="${idx}" onclick="window.app.triggerWheelSpin(${idx})">
         <div class="card-face card-back">
           <div style="font-size: 30px; margin-bottom: 6px;">${c.symbol}</div>
           <div style="font-size: 13px; font-weight: bold; letter-spacing: 1px;">${c.label}</div>
@@ -14872,7 +14887,7 @@ class App {
     if (!this.wheelSpinning) this.drawWheelLocal();
   }
 
-  triggerWheelSpin() {
+  triggerWheelSpin(specificCardIndex) {
     if (!this.isAdmin) return;
     if (this.wheelSpinning) return;
     
@@ -14939,10 +14954,16 @@ class App {
     else if (mode === 'stick') duration = 3500;
     else if (mode === 'flash') duration = 2600;
 
+    // 翻牌抽卡模式下，由老師端指定或隨機選定同一張牌卡位置，廣播給全班同步翻開同一張牌！
+    const cardIndex = (typeof specificCardIndex === 'number' && specificCardIndex >= 0 && specificCardIndex < 6)
+      ? specificCardIndex
+      : Math.floor(Math.random() * 6);
+
     db.ref('quiz/luckyWheel/spinEvent').set({
       mode: mode,
       targetIndex: targetIndex,
       winnerName: winnerName,
+      cardIndex: cardIndex,
       namesSnapshot: this.wheelNames,
       startAngle: startAngle,
       endAngle: endAngle,
@@ -15054,20 +15075,32 @@ class App {
 
     const winnerName = event.winnerName || (this.wheelNames[event.targetIndex] || '');
     const names = this.wheelNames.length > 0 ? this.wheelNames : [winnerName];
+    const casinoDecor = ['👑', '💎', '⭐', '🍒', '🍀', '🔔', '🎯', '🎁', '⚡', '✨'];
+
+    // 構建循環不中斷的名單輪播，並在 stopIndex 命中得獎者
+    // stopIndex 設為 42，前後均充滿循環名單，滾動或停下時都不會看到任何空白！
+    const stopIndex = 42;
+    const totalItems = stopIndex + 6;
     const itemsList = [];
-    const casinoDecor = ['👑', '💎', '⭐', '🍒', '🍀', '🔔'];
 
-    for (let i = 0; i < 28; i++) {
-      const randName = names[Math.floor(Math.random() * names.length)];
-      const randDecor = casinoDecor[Math.floor(Math.random() * casinoDecor.length)];
-      itemsList.push(`${randDecor} ${randName}`);
+    for (let i = 0; i < totalItems; i++) {
+      if (i === stopIndex) {
+        itemsList.push({ text: `🎉 ${winnerName}`, isWinner: true });
+      } else {
+        const name = names[i % names.length];
+        const decor = casinoDecor[i % casinoDecor.length];
+        itemsList.push({ text: `${decor} ${name}`, isWinner: false });
+      }
     }
-    itemsList.push(`🎉 ${winnerName}`);
 
-    reel.innerHTML = itemsList.map(item => `<div class="slot-item">${this.escapeHtml(item)}</div>`).join('');
+    reel.innerHTML = itemsList.map(item => `
+      <div class="slot-item ${item.isWinner ? 'slot-item-winner' : ''}">${this.escapeHtml(item.text)}</div>
+    `).join('');
 
     const itemHeight = 60;
-    const totalDistance = (itemsList.length - 1) * itemHeight;
+    // translateY(0) 時，item 0 在第 1 列 (0~60px)，item 1 在第 2 列紅框中 (60~120px)。
+    // 欲將 item stopIndex 準確置中於紅框，需向上平移 (stopIndex - 1) * 60px
+    const targetDistance = (stopIndex - 1) * itemHeight;
     const duration = event.duration || 4000;
     const startTime = Date.now();
     let lastTickStep = -1;
@@ -15075,8 +15108,9 @@ class App {
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(1, elapsed / duration);
+      // Ease Out Cubic 緩動曲線
       const ease = 1 - Math.pow(1 - progress, 3);
-      const currentY = totalDistance * ease;
+      const currentY = targetDistance * ease;
 
       reel.style.transform = `translateY(-${currentY}px)`;
 
@@ -15091,7 +15125,11 @@ class App {
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
-        reel.style.transform = `translateY(-${totalDistance}px)`;
+        reel.style.transform = `translateY(-${targetDistance}px)`;
+        const winnerEl = reel.children[stopIndex];
+        if (winnerEl) {
+          winnerEl.classList.add('slot-item-highlight');
+        }
         this.finishWheelSpin(winnerName);
       }
     };
@@ -15114,7 +15152,11 @@ class App {
       return;
     }
 
-    const chosenIdx = Math.floor(Math.random() * cardItems.length);
+    // 翻牌位置使用 Firebase 廣播的 cardIndex，全班（包含老師與所有學生端）完全同步翻開同一張牌！
+    const chosenIdx = (typeof event.cardIndex === 'number' && event.cardIndex >= 0 && event.cardIndex < cardItems.length)
+      ? event.cardIndex
+      : (typeof event.targetIndex === 'number' ? (event.targetIndex % cardItems.length) : 0);
+
     const chosenCard = cardItems[chosenIdx];
     const frontEl = chosenCard.querySelector('.card-winner-title');
     if (frontEl) frontEl.textContent = winnerName;

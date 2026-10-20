@@ -146,17 +146,20 @@
       if (adminInput) adminInput.value = '';
     }
 
-    // 發布或更新文字雲活動
-    publishActivity() {
+    // 發布或開啟新一輪文字雲活動
+    publishActivity(isNewRound = false) {
       if (!window.app?.isAdmin) return;
 
       const titleInput = document.getElementById('adminWcQuestionTitleInput') || document.getElementById('wcQuestionTitleInput');
       const title = (titleInput?.value || '').trim() || '即時互動文字雲';
 
       const limitSelect = document.getElementById('adminWcLimitSelect') || document.getElementById('wcLimitSelect');
-      const limit = parseInt(limitSelect?.value || '1', 10);
+      const limit = (limitSelect && limitSelect.value !== undefined) ? parseInt(limitSelect.value, 10) : 1;
+
+      const sessionId = 'wc_' + Date.now();
 
       const payload = {
+        sessionId: sessionId,
         title: title,
         imageUrl: this.uploadedImageUrl || null,
         limitPerStudent: limit,
@@ -166,13 +169,55 @@
         creator: window.app?.currentUserName || '老師'
       };
 
+      // 每次發布全新活動或新一輪時，徹底清除舊提交紀錄與隱藏名單，確保全班同學皆可重新提交
+      db.ref('quiz/wordCloud/submissions').remove();
+      db.ref('quiz/wordCloud/hiddenWords').remove();
+      this.submissions = {};
+      this.hiddenWords.clear();
+      this.recalculateAndRender();
+
       // 寫入 Firebase
       db.ref('quiz/wordCloud/active').set(payload).then(() => {
-        window.app?.showNotification('成功', '即時文字雲活動已成功發布！全班同學端將同步接收。');
+        window.app?.showNotification('成功', isNewRound ? '已成功開啟新一輪文字雲！全班同學已可再次作答。' : '即時文字雲活動已成功發布！全班同學端將同步接收。');
         this.broadcastToClass();
       }).catch(err => {
         window.app?.showNotification('錯誤', '發布失敗: ' + err.message);
       });
+    }
+
+    // 重設並開啟新一輪活動
+    restartOrNewRound() {
+      if (!window.app?.isAdmin) return;
+      window.app?.showConfirmModal(
+        '🔄',
+        '確定要開啟新一輪文字雲活動嗎？',
+        '這將重設所有同學的提交次數並清空畫布，讓全班重新進行文字雲作答。',
+        () => {
+          this.publishActivity(true);
+        }
+      );
+    }
+
+    // 即時調整學生提交次數限制
+    changeSubmissionLimit(newLimit) {
+      if (!window.app?.isAdmin) return;
+      const limit = parseInt(newLimit, 10);
+      this.maxSubmissionsPerStudent = limit;
+
+      const frontSel = document.getElementById('wcLimitSelect');
+      if (frontSel && String(frontSel.value) !== String(limit)) frontSel.value = limit;
+      const adminSel = document.getElementById('adminWcLimitSelect');
+      if (adminSel && String(adminSel.value) !== String(limit)) adminSel.value = limit;
+
+      if (this.activeActivity) {
+        db.ref('quiz/wordCloud/active/limitPerStudent').set(limit).then(() => {
+          window.app?.showNotification('設定更新', `每人提交上限已調整為：${limit === 0 ? '不限次數' : limit + ' 次'}`);
+        }).catch(err => {
+          window.app?.showNotification('錯誤', '設定更新失敗: ' + err.message);
+        });
+      } else {
+        window.app?.showNotification('設定更新', `已預設每人提交上限為：${limit === 0 ? '不限次數' : limit + ' 次'}`);
+      }
     }
 
     // 廣播至全班切換分頁
@@ -249,13 +294,28 @@
 
       const studentName = window.app?.currentUserName || '匿名同學';
       const studentId = window.app?.currentUserId || (navigator.userAgent + '_' + (studentName));
-      const limit = this.activeActivity.limitPerStudent || 1;
+      
+      // 正確判定提交限制：若設定為 0 代表不限次數；避免 0 || 1 誤判為 1
+      const limit = (this.activeActivity && this.activeActivity.limitPerStudent !== undefined)
+        ? parseInt(this.activeActivity.limitPerStudent, 10)
+        : 1;
 
-      // 檢查提交次數限制
+      const currentSessionId = this.activeActivity.sessionId;
+
+      // 檢查提交次數限制 (limit === 0 為不限次數)
       if (limit > 0) {
         let userSubmitCount = 0;
         for (const key in this.submissions) {
-          if (this.submissions[key].userId === studentId || this.submissions[key].user === studentName) {
+          const item = this.submissions[key];
+          if (!item) continue;
+          // 若有 sessionId，只統計當前本輪的提交
+          if (currentSessionId && item.sessionId && item.sessionId !== currentSessionId) {
+            continue;
+          }
+          if (this.activeActivity.timestamp && item.timestamp && item.timestamp < (this.activeActivity.timestamp - 1000)) {
+            continue;
+          }
+          if (item.userId === studentId || item.user === studentName) {
             userSubmitCount++;
           }
         }
@@ -267,8 +327,10 @@
 
       if (this.isSubmitting) return;
       this.isSubmitting = true;
+      setTimeout(() => { this.isSubmitting = false; }, 4000);
 
       const payload = {
+        sessionId: currentSessionId || null,
         word: cleanWord,
         user: studentName,
         userId: studentId,
@@ -370,9 +432,20 @@
       if (adminTitleInput && document.activeElement !== adminTitleInput && isActive && act.title) {
         if (!adminTitleInput.value) adminTitleInput.value = act.title;
       }
+      const currentLimit = (isActive && act.limitPerStudent !== undefined) ? parseInt(act.limitPerStudent, 10) : 1;
       const adminLimitSelect = document.getElementById('adminWcLimitSelect');
-      if (adminLimitSelect && isActive && act.limitPerStudent !== undefined) {
-        adminLimitSelect.value = act.limitPerStudent;
+      if (adminLimitSelect && String(adminLimitSelect.value) !== String(currentLimit)) {
+        adminLimitSelect.value = currentLimit;
+      }
+      const frontLimitSelect = document.getElementById('wcLimitSelect');
+      if (frontLimitSelect && String(frontLimitSelect.value) !== String(currentLimit)) {
+        frontLimitSelect.value = currentLimit;
+      }
+      const wordInput = document.getElementById('wcStudentWordInput');
+      if (wordInput && isActive) {
+        wordInput.placeholder = currentLimit === 0
+          ? '請輸入 1~15 字詞彙（不限提交次數）...'
+          : `請輸入 1~15 字詞彙（每人限 ${currentLimit} 次）...`;
       }
       if (isActive && act.imageUrl && !this.uploadedImageUrl) {
         this.uploadedImageUrl = act.imageUrl;

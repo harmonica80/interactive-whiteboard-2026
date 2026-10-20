@@ -549,8 +549,14 @@
                 </div>
               </div>
               <div class="wc-header-right" id="wcTeacherQuickTools" style="display: none;">
+                <select id="wcLimitSelect" class="btn btn-secondary btn-sm" onchange="window.wordCloud?.changeSubmissionLimit(this.value)" title="設定每人作答次數上限" style="padding: 4px 8px; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
+                  <option value="1">每人 1 次</option>
+                  <option value="3">每人 3 次</option>
+                  <option value="0">不限次數</option>
+                </select>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.broadcastToClass()" title="廣播全班同步切換至文字雲">📢 廣播全班</button>
                 <button type="button" class="btn btn-secondary btn-sm" id="wcBtnToggleAccept" onclick="window.wordCloud?.toggleAccepting()">⏸️ 停止作答</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.restartOrNewRound()" title="重設次數並清空畫布，開始新一輪">🔄 新一輪</button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.switchPalette()" title="更換文字雲色系">🎨 切換色系</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="window.wordCloud?.exportPng()" title="下載文字雲成果圖">💾 匯出 PNG</button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.app?.openAdminFeature('gameWordCloud')" title="進入文字雲管理後台">⚙️ 出題設定</button>
@@ -2953,7 +2959,7 @@
                     <label for="adminWcLimitSelect" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-secondary);">
                       🎯 每位同學提交次數上限：
                     </label>
-                    <select id="adminWcLimitSelect" class="question-input" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 13px; margin: 0;">
+                    <select id="adminWcLimitSelect" class="question-input" onchange="window.wordCloud?.changeSubmissionLimit(this.value)" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 13px; margin: 0;">
                       <option value="1">每人限提交 1 次 (最經典聚焦)</option>
                       <option value="3">每人限提交 3 次 (多面向發想)</option>
                       <option value="0">不限次數 (自由腦力激盪)</option>
@@ -3481,7 +3487,7 @@
           <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
             🚀 即時互動白板版本更新歷程
           </h3>
-          <span class="changelog-badge-latest">目前最新 ver 3.9.2</span>
+          <span class="changelog-badge-latest">目前最新 ver 3.9.3</span>
         </div>
         <button type="button" onclick="window.app && window.app.closeChangelogModal()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="關閉視窗">✕</button>
       </div>
@@ -3489,12 +3495,46 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.2 -->
+        <!-- ver 3.9.3 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.2</span>
+              <span>🌟 ver 3.9.3</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">文字雲多輪作答修復</span>
+              <span class="changelog-badge-tag">提交次數不限次數修復</span>
+              <span class="changelog-badge-tag">老虎機無縫循環滾輪</span>
+              <span class="changelog-badge-tag">翻牌位置全班精準同步</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>☁️ 文字雲多輪活動與提交次數全面優化：</strong>
+              <ul>
+                <li><strong>多輪提交修復</strong>：解決結束活動後開啟第二輪時學生端無法提交的問題，發布新一輪時自動清空舊輪資料並產生專屬 Session ID，新增「🔄 新一輪」快捷按鈕。</li>
+                <li><strong>提交次數彈性修復</strong>：修正每人次數上限設定為 0 (不限次數) 時被程式 falsy 誤判為 1 次之問題；教師端調整提交次數後即時寫入雲端並同步至學生端作答輸入列。</li>
+              </ul>
+            </li>
+            <li><strong>🎰 老虎機滾輪無縫循環與視窗幾何校正：</strong>
+              <ul>
+                <li><strong>無縫無限循環名單</strong>：重構滾輪排版幾何與平移演算，消除 flex 垂直置中產生的偏移，滾動與停止時前後皆有循環學生名單填充，徹底告別空白斷層。</li>
+                <li><strong>得獎者紅框置中與高光</strong>：得獎者精準停於中心紅線框內，並伴隨金色脈衝放大光芒與音效。</li>
+              </ul>
+            </li>
+            <li><strong>🃏 翻牌抽卡位置全班 100% 精準同步：</strong>
+              <ul>
+                <li><strong>牌卡索引全班廣播</strong>：解決原先各客戶端獨立隨機選牌導致教師與學生看到翻開不同卡牌的問題，由廣播事件統一牌卡位置，師生翻開完全一致的卡牌。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.2 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌟 ver 3.9.2</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">抽人轉盤五大模式</span>
