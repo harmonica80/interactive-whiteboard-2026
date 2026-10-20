@@ -23,6 +23,14 @@
       this.uploadedImageUrl = null;
       this.maxSubmissionsPerStudent = 1; // 預設每人 1 次，可選 3 次或不限 (0)
       this.maxWordLength = 15;
+      this.focusWords = new Set();
+      this.wordOrientation = 'mixed'; // 'horizontal' | 'vertical' | 'mixed' | 'tilt30' | 'tilt45'
+      this.cloudShape = 'circle'; // 'circle' | 'rectangle' | 'cloud' | 'heart' | 'star' | 'custom'
+      this.customMaskImg = null;
+      this.customMaskUrl = null;
+      this.customMaskCanvas = null;
+      this.customMaskCtx = null;
+      this.knownSubmissionKeys = new Set();
       
       this.initFirebaseListeners();
       this.initClipboardPasteListener();
@@ -36,12 +44,43 @@
       db.ref('quiz/wordCloud/active').on('value', (snapshot) => {
         const val = snapshot.val();
         this.activeActivity = val || null;
+        if (val) {
+          if (val.wordOrientation) this.wordOrientation = val.wordOrientation;
+          if (val.cloudShape) this.cloudShape = val.cloudShape;
+          if (val.customMaskUrl && val.customMaskUrl !== this.customMaskUrl) {
+            this.setCustomMaskFromUrl(val.customMaskUrl);
+          }
+        }
         this.updateActiveActivityUI();
       });
 
-      // 監聽提交資料
+      // 監聽焦點/重點詞彙 (老師精選放大)
+      db.ref('quiz/wordCloud/focusWords').on('value', (snapshot) => {
+        const val = snapshot.val();
+        this.focusWords = new Set(Array.isArray(val) ? val.map(w => String(w).trim().toLowerCase()) : []);
+        this.recalculateAndRender();
+      });
+
+      // 監聽提交資料 (含新文字由下往上浮現與3秒晃動)
       db.ref('quiz/wordCloud/submissions').on('value', (snapshot) => {
-        this.submissions = snapshot.val() || {};
+        const newSubs = snapshot.val() || {};
+        const oldKeys = this.knownSubmissionKeys;
+        const newKeys = Object.keys(newSubs);
+
+        if (oldKeys.size > 0 && newKeys.length > oldKeys.size) {
+          // 找出新提交的項目觸發浮現動畫
+          for (let i = 0; i < newKeys.length; i++) {
+            const k = newKeys[i];
+            if (!oldKeys.has(k)) {
+              const sub = newSubs[k];
+              if (sub && sub.word) {
+                this.showFloatingWordAnnouncement(sub.word, sub.user);
+              }
+            }
+          }
+        }
+        this.knownSubmissionKeys = new Set(newKeys);
+        this.submissions = newSubs;
         this.recalculateAndRender();
       });
 
@@ -409,6 +448,205 @@
       window.app?.showNotification('成功', '已解除所有詞彙之遮蔽！');
     }
 
+    // 挑選重點/焦點詞彙（變成最大字級加粗並顯示於中心）
+    toggleFocusWord(rawWord) {
+      if (!window.app?.isAdmin) return;
+      let word = rawWord;
+      try { word = decodeURIComponent(rawWord); } catch(e){}
+      word = (word || '').trim();
+      if (!word) return;
+
+      const lower = word.toLowerCase();
+      const isFocused = !this.focusWords.has(lower);
+
+      if (isFocused) {
+        this.focusWords.add(lower);
+        window.app?.showNotification('⭐ 設為焦點', `已將「${word}」設為重點放大加粗顯示！`);
+      } else {
+        this.focusWords.delete(lower);
+        window.app?.showNotification('取消焦點', `已取消「${word}」的焦點標記。`);
+      }
+
+      this.recalculateAndRender();
+      db.ref('quiz/wordCloud/focusWords').set(Array.from(this.focusWords));
+    }
+
+    // 切換文字方向 (橫式 / 直式 / 直橫交錯 / ±30° / ±45°)
+    changeOrientation(newOrientation) {
+      if (!window.app?.isAdmin) return;
+      this.wordOrientation = newOrientation;
+      const frontSel = document.getElementById('wcOrientationSelect');
+      if (frontSel) frontSel.value = newOrientation;
+      const adminSel = document.getElementById('adminWcOrientationSelect');
+      if (adminSel) adminSel.value = newOrientation;
+
+      if (this.activeActivity) {
+        db.ref('quiz/wordCloud/active/wordOrientation').set(newOrientation);
+      }
+      this.recalculateAndRender();
+      const labelMap = {
+        mixed: '直橫交錯',
+        horizontal: '水平橫式',
+        vertical: '垂直直式',
+        tilt30: '傾斜 ±30°',
+        tilt45: '傾斜 ±45°'
+      };
+      window.app?.showNotification('設定更新', `文字方向已切換為：${labelMap[newOrientation] || newOrientation}`);
+    }
+
+    // 切換文字雲圖案形狀 (圓形 / 矩形 / 雲朵 / 愛心 / 星形 / 自訂)
+    changeShape(newShape) {
+      if (!window.app?.isAdmin) return;
+      if (newShape === 'custom' && !this.customMaskUrl) {
+        const fileInput = document.getElementById('wcCustomMaskInput') || document.getElementById('adminWcCustomMaskInput');
+        if (fileInput) fileInput.click();
+        return;
+      }
+      this.cloudShape = newShape;
+      const frontSel = document.getElementById('wcShapeSelect');
+      if (frontSel) frontSel.value = newShape;
+      const adminSel = document.getElementById('adminWcShapeSelect');
+      if (adminSel) adminSel.value = newShape;
+
+      if (this.activeActivity) {
+        db.ref('quiz/wordCloud/active/cloudShape').set(newShape);
+      }
+      this.recalculateAndRender();
+      const labelMap = {
+        circle: '圓形 / 橢圓',
+        rectangle: '矩形 (滿版)',
+        cloud: '朵朵白雲',
+        heart: '溫馨愛心',
+        star: '璀璨星形',
+        custom: '自訂圖案遮罩'
+      };
+      window.app?.showNotification('設定更新', `文字雲圖案形狀已切換為：${labelMap[newShape] || newShape}`);
+    }
+
+    // 上傳自訂遮罩圖案
+    uploadCustomMask(file) {
+      if (!file) return;
+      if (file.size > 8 * 1024 * 1024) {
+        window.app?.showNotification('提示', '自訂圖案請小於 8MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        this.setCustomMaskFromUrl(dataUrl, () => {
+          this.cloudShape = 'custom';
+          const frontSel = document.getElementById('wcShapeSelect');
+          if (frontSel) frontSel.value = 'custom';
+          const adminSel = document.getElementById('adminWcShapeSelect');
+          if (adminSel) adminSel.value = 'custom';
+
+          if (this.activeActivity) {
+            db.ref('quiz/wordCloud/active/cloudShape').set('custom');
+            db.ref('quiz/wordCloud/active/customMaskUrl').set(dataUrl);
+          }
+          this.recalculateAndRender();
+          window.app?.showNotification('成功', '自訂文字雲圖案已成功套用！');
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 依 DataURL 載入並建立遮罩離屏畫布
+    setCustomMaskFromUrl(dataUrl, callback) {
+      this.customMaskUrl = dataUrl;
+      const img = new Image();
+      img.onload = () => {
+        this.customMaskImg = img;
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = 300;
+        offCanvas.height = 200;
+        const offCtx = offCanvas.getContext('2d');
+        offCtx.drawImage(img, 0, 0, 300, 200);
+        this.customMaskCanvas = offCanvas;
+        this.customMaskCtx = offCtx;
+        if (typeof callback === 'function') callback();
+        else this.recalculateAndRender();
+      };
+      img.src = dataUrl;
+    }
+
+    // 新文字由下往上浮現並做 3 秒晃動 (Requirement A)
+    showFloatingWordAnnouncement(word, user) {
+      const container = document.getElementById('wcCanvasWrapper') || document.body;
+      const bubble = document.createElement('div');
+      bubble.className = 'wc-new-word-bubble';
+      bubble.innerHTML = `
+        <span class="wc-bubble-icon">✨</span>
+        <span class="wc-bubble-text">${this.escapeHtml(word)}</span>
+        <span class="wc-bubble-user">${this.escapeHtml(user || '同學')}</span>
+      `;
+      container.appendChild(bubble);
+
+      setTimeout(() => {
+        if (bubble && bubble.parentNode) {
+          bubble.parentNode.removeChild(bubble);
+        }
+      }, 3300);
+    }
+
+    // 檢查指定坐標邊界是否位於當前形狀輪廓內部 (Requirement D)
+    isInsideCurrentShape(x, y, w, h, cw, ch) {
+      const shape = this.cloudShape || 'circle';
+      if (shape === 'rectangle') return true;
+
+      const points = [
+        { px: x, py: y },
+        { px: x + w, py: y },
+        { px: x, py: y + h },
+        { px: x + w, py: y + h },
+        { px: x + w / 2, py: y + h / 2 }
+      ];
+
+      const cx = cw / 2;
+      const cy = ch / 2;
+      const rx = cw * 0.46;
+      const ry = ch * 0.46;
+
+      for (let i = 0; i < points.length; i++) {
+        const { px, py } = points[i];
+        const nx = (px - cx) / rx;
+        const ny = (py - cy) / ry;
+
+        if (shape === 'circle') {
+          if (nx * nx + ny * ny > 0.95) return false;
+        } else if (shape === 'heart') {
+          const hx = nx * 1.15;
+          const hy = -(ny + 0.15) * 1.15;
+          const a = hx * hx + hy * hy - 1;
+          if (a * a * a - hx * hx * hy * hy * hy > 0) return false;
+        } else if (shape === 'cloud') {
+          const inCenter = (nx * nx + (ny + 0.1) * (ny + 0.1)) < 0.6;
+          const inLeft = ((nx + 0.45) * (nx + 0.45) + (ny - 0.05) * (ny - 0.05)) < 0.35;
+          const inRight = ((nx - 0.45) * (nx - 0.45) + (ny - 0.05) * (ny - 0.05)) < 0.35;
+          const inBottom = (nx * nx / 0.8 + (ny - 0.25) * (ny - 0.25) / 0.15) < 0.8;
+          if (!inCenter && !inLeft && !inRight && !inBottom) return false;
+        } else if (shape === 'star') {
+          const dist = Math.hypot(nx, ny);
+          if (dist > 1.0) return false;
+          let angle = Math.atan2(ny, nx) + Math.PI / 2;
+          angle = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+          const angleSegment = (Math.PI * 2) / 5;
+          const halfSegment = angleSegment / 2;
+          const localAngle = Math.abs((angle % angleSegment) - halfSegment);
+          const starR = 0.42 + 0.48 * (Math.cos(halfSegment) / Math.cos(localAngle));
+          if (dist > starR) return false;
+        } else if (shape === 'custom') {
+          if (this.customMaskCanvas && this.customMaskCtx) {
+            const sampleX = Math.max(0, Math.min(this.customMaskCanvas.width - 1, Math.floor((px / cw) * this.customMaskCanvas.width)));
+            const sampleY = Math.max(0, Math.min(this.customMaskCanvas.height - 1, Math.floor((py / ch) * this.customMaskCanvas.height)));
+            const pixel = this.customMaskCtx.getImageData(sampleX, sampleY, 1, 1).data;
+            if (pixel[3] < 45) return false;
+          }
+        }
+      }
+      return true;
+    }
+
     // 更新活動狀態 UI (題目標題、圖片、按鈕狀態)
     updateActiveActivityUI() {
       const act = this.activeActivity;
@@ -469,6 +707,15 @@
         if (!adminTitleInput.value) adminTitleInput.value = act.title;
       }
       const currentLimit = (isActive && act.limitPerStudent !== undefined) ? parseInt(act.limitPerStudent, 10) : 1;
+      const orientSel = document.getElementById('wcOrientationSelect');
+      if (orientSel && this.wordOrientation) orientSel.value = this.wordOrientation;
+      const adminOrientSel = document.getElementById('adminWcOrientationSelect');
+      if (adminOrientSel && this.wordOrientation) adminOrientSel.value = this.wordOrientation;
+
+      const shapeSel = document.getElementById('wcShapeSelect');
+      if (shapeSel && this.cloudShape) shapeSel.value = this.cloudShape;
+      const adminShapeSel = document.getElementById('adminWcShapeSelect');
+      if (adminShapeSel && this.cloudShape) adminShapeSel.value = this.cloudShape;
       const adminLimitSelect = document.getElementById('adminWcLimitSelect');
       if (adminLimitSelect && String(adminLimitSelect.value) !== String(currentLimit)) {
         adminLimitSelect.value = currentLimit;
@@ -516,11 +763,17 @@
       }
 
       for (const k in counts) {
-        wordsList.push(counts[k]);
+        const item = counts[k];
+        item.isFocused = this.focusWords.has(k);
+        wordsList.push(item);
       }
 
-      // 依出現次數降序排列
-      wordsList.sort((a, b) => b.count - a.count || b.latestTs - a.latestTs);
+      // 排序：精選/焦點詞彙排在最首位優先置中，其餘依詞頻降序排列
+      wordsList.sort((a, b) => {
+        if (a.isFocused && !b.isFocused) return -1;
+        if (!a.isFocused && b.isFocused) return 1;
+        return b.count - a.count || b.latestTs - a.latestTs;
+      });
       this.wordsData = wordsList;
 
       this.updateRankingListUI(wordsList);
@@ -578,7 +831,7 @@
       }
     }
 
-    // 核心 Canvas 文字雲螺旋碰撞排版演算
+    // 核心 Canvas 文字雲螺旋碰撞排版演算 (支援文字方向、圖案形狀與焦點加粗)
     renderCanvas() {
       const canvas = document.getElementById('wordCloudCanvas');
       if (!canvas) return;
@@ -605,13 +858,13 @@
         return;
       }
 
-      const maxCount = words[0].count;
-      const minCount = words[words.length - 1].count;
+      const maxCount = words[0]?.count || 1;
+      const minCount = words[words.length - 1]?.count || 1;
       const countRange = Math.max(1, maxCount - minCount);
 
-      // 字體大小區間計算 (最小 16px, 最大 72px)
-      const minFont = Math.max(14, Math.floor(width / 38));
-      const maxFont = Math.min(76, Math.floor(width / 8.5));
+      // 基本字級大小區間
+      const minFont = Math.max(14, Math.floor(width / 36));
+      const maxFont = Math.min(74, Math.floor(width / 8.5));
 
       const palette = CLOUD_PALETTES[this.currentPalette % CLOUD_PALETTES.length];
       const centerX = width / 2;
@@ -621,9 +874,15 @@
       const placedResults = [];
 
       words.forEach((item, index) => {
-        // 正規化字級大小
         const weight = (item.count - minCount) / countRange;
-        const fontSize = Math.round(minFont + Math.pow(weight, 0.8) * (maxFont - minFont));
+        let fontSize;
+        if (item.isFocused) {
+          // 焦點詞彙：顯著放大至最大字級的 1.35 倍 (至多 92px)
+          fontSize = Math.min(92, Math.round(maxFont * 1.35));
+        } else {
+          fontSize = Math.round(minFont + Math.pow(weight, 0.8) * (maxFont - minFont));
+        }
+
         const fontStr = `bold ${fontSize}px "Microsoft JhengHei", "Noto Sans TC", sans-serif`;
         ctx.font = fontStr;
 
@@ -631,8 +890,31 @@
         const textWidth = Math.ceil(metrics.width);
         const textHeight = Math.ceil(fontSize * 1.05);
 
-        // 阿基米德螺旋線 (Archimedean Spiral) 搜尋碰撞空位
-        let angle = (index * 2.39996); // 黃金角分散
+        // 決定詞彙旋轉角度 (橫式 / 直式 / 直橫交錯 / ±30° / ±45°)
+        let itemAngle = 0;
+        const orient = this.wordOrientation || 'mixed';
+        if (orient === 'horizontal') {
+          itemAngle = 0;
+        } else if (orient === 'vertical') {
+          itemAngle = Math.PI / 2;
+        } else if (orient === 'mixed') {
+          itemAngle = item.isFocused ? 0 : (index % 2 === 1 ? Math.PI / 2 : 0);
+        } else if (orient === 'tilt30') {
+          const angles30 = [0, -Math.PI / 6, Math.PI / 6];
+          itemAngle = item.isFocused ? 0 : angles30[index % angles30.length];
+        } else if (orient === 'tilt45') {
+          const angles45 = [0, -Math.PI / 4, Math.PI / 4];
+          itemAngle = item.isFocused ? 0 : angles45[index % angles45.length];
+        }
+
+        // 計算旋轉後之幾何外接矩形 (AABB)
+        const cos = Math.abs(Math.cos(itemAngle));
+        const sin = Math.abs(Math.sin(itemAngle));
+        const boundingW = Math.ceil(textWidth * cos + textHeight * sin);
+        const boundingH = Math.ceil(textWidth * sin + textHeight * cos);
+
+        // 阿基米德螺旋線搜尋碰撞空位
+        let angle = (index * 2.39996);
         let radius = 0;
         const angleStep = 0.22;
         const radiusStep = 1.35;
@@ -640,38 +922,41 @@
         let bestX = centerX;
         let bestY = centerY;
 
-        const maxSteps = 420;
+        const maxSteps = item.isFocused ? 120 : 450;
         for (let step = 0; step < maxSteps; step++) {
-          const testX = Math.round(centerX + radius * Math.cos(angle) - textWidth / 2);
-          const testY = Math.round(centerY + radius * Math.sin(angle) - textHeight / 2);
+          const testX = Math.round(centerX + radius * Math.cos(angle) - boundingW / 2);
+          const testY = Math.round(centerY + radius * Math.sin(angle) - boundingH / 2);
 
           // 邊界檢查
-          if (testX >= 6 && testX + textWidth <= width - 6 && testY >= 6 && testY + textHeight <= height - 6) {
-            // 碰撞檢測 (AABB 邊界碰撞 + 留白 padding)
-            const padding = Math.max(2, Math.floor(fontSize * 0.12));
-            const box = {
-              x: testX - padding,
-              y: testY - padding,
-              w: textWidth + padding * 2,
-              h: textHeight + padding * 2
-            };
+          if (testX >= 6 && testX + boundingW <= width - 6 && testY >= 6 && testY + boundingH <= height - 6) {
+            // 圖案形狀遮罩輪廓檢查 (Requirement D)
+            if (this.isInsideCurrentShape(testX, testY, boundingW, boundingH, width, height)) {
+              // 碰撞檢測 (AABB 邊界碰撞 + 留白 padding)
+              const padding = Math.max(2, Math.floor(fontSize * 0.12));
+              const box = {
+                x: testX - padding,
+                y: testY - padding,
+                w: boundingW + padding * 2,
+                h: boundingH + padding * 2
+              };
 
-            let collided = false;
-            for (let b = 0; b < occupiedBoxes.length; b++) {
-              const ob = occupiedBoxes[b];
-              if (box.x < ob.x + ob.w && box.x + box.w > ob.x &&
-                  box.y < ob.y + ob.h && box.y + box.h > ob.y) {
-                collided = true;
+              let collided = false;
+              for (let b = 0; b < occupiedBoxes.length; b++) {
+                const ob = occupiedBoxes[b];
+                if (box.x < ob.x + ob.w && box.x + box.w > ob.x &&
+                    box.y < ob.y + ob.h && box.y + box.h > ob.y) {
+                  collided = true;
+                  break;
+                }
+              }
+
+              if (!collided) {
+                bestX = testX;
+                bestY = testY;
+                occupiedBoxes.push(box);
+                placed = true;
                 break;
               }
-            }
-
-            if (!collided) {
-              bestX = testX;
-              bestY = testY;
-              occupiedBoxes.push(box);
-              placed = true;
-              break;
             }
           }
 
@@ -680,15 +965,19 @@
         }
 
         if (placed) {
-          const color = palette[index % palette.length];
+          const color = item.isFocused ? '#2563eb' : palette[index % palette.length];
           placedResults.push({
             word: item.word,
             count: item.count,
+            isFocused: item.isFocused,
             x: bestX,
             y: bestY,
-            w: textWidth,
-            h: textHeight,
+            boundingW: boundingW,
+            boundingH: boundingH,
+            textWidth: textWidth,
+            textHeight: textHeight,
             fontSize: fontSize,
+            angle: itemAngle,
             color: color
           });
         }
@@ -698,22 +987,37 @@
 
       // 繪製放置結果
       placedResults.forEach(item => {
+        ctx.save();
         ctx.font = `bold ${item.fontSize}px "Microsoft JhengHei", "Noto Sans TC", sans-serif`;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
-        // 柔和文字陰影
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
-        ctx.shadowBlur = 4;
+        // 旋轉中心置中
+        ctx.translate(item.x + item.boundingW / 2, item.y + item.boundingH / 2);
+        if (item.angle !== 0) {
+          ctx.rotate(item.angle);
+        }
+
+        // 文字柔和陰影
+        ctx.shadowColor = item.isFocused ? 'rgba(37, 99, 235, 0.35)' : 'rgba(0, 0, 0, 0.15)';
+        ctx.shadowBlur = item.isFocused ? 8 : 4;
         ctx.shadowOffsetX = 1;
         ctx.shadowOffsetY = 2;
 
         ctx.fillStyle = item.color;
-        ctx.fillText(item.word, item.x, item.y);
+        ctx.fillText(item.word, 0, 0);
 
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
+        // 若為精選焦點詞彙，繪製尊榮邊框框線 (如範例圖示)
+        if (item.isFocused) {
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = item.color;
+          ctx.lineWidth = Math.max(2.5, Math.floor(item.fontSize * 0.07));
+          const padX = Math.round(item.fontSize * 0.18);
+          const padY = Math.round(item.fontSize * 0.12);
+          ctx.strokeRect(-item.textWidth / 2 - padX, -item.textHeight / 2 - padY, item.textWidth + padX * 2, item.textHeight + padY * 2);
+        }
+
+        ctx.restore();
       });
     }
 

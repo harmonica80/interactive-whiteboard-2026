@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.5</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.6</a>
         </p>
       </div>
       <div class="top-actions">
@@ -559,6 +559,23 @@
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.broadcastToClass()" title="廣播全班同步切換至文字雲">📢 廣播全班</button>
                 <button type="button" class="btn btn-secondary btn-sm" id="wcBtnToggleAccept" onclick="window.wordCloud?.toggleAccepting()">⏸️ 停止作答</button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.restartOrNewRound()" title="重設次數並清空畫布，開始新一輪">🔄 新一輪</button>
+                <select id="wcOrientationSelect" class="btn btn-secondary btn-sm" onchange="window.wordCloud?.changeOrientation(this.value)" title="設定文字方向 (橫式/直式/交錯/傾斜)" style="padding: 4px 8px; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
+                  <option value="mixed">🔀 直橫交錯</option>
+                  <option value="horizontal">↔️ 水平橫式</option>
+                  <option value="vertical">↕️ 垂直直式</option>
+                  <option value="tilt30">📐 傾斜 ±30°</option>
+                  <option value="tilt45">📐 傾斜 ±45°</option>
+                </select>
+                <select id="wcShapeSelect" class="btn btn-secondary btn-sm" onchange="window.wordCloud?.changeShape(this.value)" title="設定文字雲圖案形狀" style="padding: 4px 8px; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
+                  <option value="circle">⭕ 圓形/橢圓</option>
+                  <option value="rectangle">⬛ 矩形滿版</option>
+                  <option value="cloud">☁️ 朵朵白雲</option>
+                  <option value="heart">❤️ 溫馨愛心</option>
+                  <option value="star">⭐ 璀璨星形</option>
+                  <option value="custom">🖼️ 自訂遮罩...</option>
+                </select>
+                <input type="file" id="wcCustomMaskInput" accept="image/*" style="display: none;" onchange="window.wordCloud?.uploadCustomMask(this.files[0])">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('wcCustomMaskInput').click()" title="上傳自訂遮罩圖案">🖼️ 自訂形狀</button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.switchPalette()" title="更換文字雲色系">🎨 切換色系</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="window.wordCloud?.exportPng()" title="下載文字雲成果圖">💾 匯出 PNG</button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.app?.openAdminFeature('gameWordCloud')" title="進入文字雲管理後台">⚙️ 出題設定</button>
@@ -3489,7 +3506,7 @@
           <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
             🚀 即時互動白板版本更新歷程
           </h3>
-          <span class="changelog-badge-latest">目前最新 ver 3.9.5</span>
+          <span class="changelog-badge-latest">目前最新 ver 3.9.6</span>
         </div>
         <button type="button" onclick="window.app && window.app.closeChangelogModal()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="關閉視窗">✕</button>
       </div>
@@ -3497,12 +3514,37 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.5 -->
+        <!-- ver 3.9.6 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.5</span>
+              <span>🌟 ver 3.9.6</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">新文字由下往上浮現晃動3秒</span>
+              <span class="changelog-badge-tag">多角度文字方向排版</span>
+              <span class="changelog-badge-tag">教師重點詞彙最大粗體邊框</span>
+              <span class="changelog-badge-tag">多圖案形狀與自訂上傳遮罩</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>☁️ 即時互動文字雲四重強大升級：</strong>
+              <ul>
+                <li><strong>A. 新詞動態浮現與 3 秒晃動</strong>：每當有同學提交新詞彙時，畫布正下方會浮現金色醒目膠囊氣泡，並生動左右晃動 3 秒後優雅漸隱，極易被全班看見。</li>
+                <li><strong>B. 多方向文字角度支援</strong>：老師可隨時切換「直橫交錯」、「水平橫式」、「垂直直式」、「傾斜 ±30°」、「傾斜 ±45°」，幾何碰撞完美適應。</li>
+                <li><strong>C. 教師重點詞彙精選放大加粗</strong>：在詞頻排行榜點擊「☆ 設焦點」，該詞彙即自動升格為全場最大字級（黑體 900），並伴隨尊榮矩形邊框置於正中心。</li>
+                <li><strong>D. 多種圖案呈現與自訂圖案遮罩</strong>：內建「圓形/橢圓」、「矩形滿版」、「朵朵白雲」、「溫馨愛心」、「璀璨星形」，更支援直接上傳任意圖片作為專屬形狀遮罩！</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.5 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌟 ver 3.9.5</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">撲克牌開扇攤開呈現</span>
