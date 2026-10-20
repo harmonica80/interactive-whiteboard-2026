@@ -806,7 +806,7 @@
       window.app?.updateAdminActiveActivitiesUI();
     }
 
-    // 重新統計詞頻並觸發排版演算
+    // 重新統計詞頻並觸發排版演算 (多位同學重複送出時票數累計、排名即時更新、文字明顯放大)
     recalculateAndRender() {
       const counts = {};
       const wordsList = [];
@@ -814,18 +814,29 @@
       for (const id in this.submissions) {
         const item = this.submissions[id];
         if (!item || !item.word) continue;
-        const w = item.word.trim();
-        if (!w) continue;
-        const key = w.toLowerCase();
+        const rawW = item.word.trim();
+        if (!rawW) continue;
+
+        // 去除首尾常見標點符號與多餘空白，讓如「好棒」、「好棒！」、「#好棒」完美合併為同一詞彙累加票數
+        const cleanW = rawW.replace(/^[#＃\s]+|[!！?？,，.\s]+$/g, '').trim() || rawW;
+        const key = cleanW.toLowerCase();
         if (this.hiddenWords.has(key)) continue;
 
         if (!counts[key]) {
-          counts[key] = { word: w, count: 0, latestTs: item.timestamp || 0 };
+          counts[key] = {
+            word: cleanW,
+            count: 0,
+            latestTs: item.timestamp || 0,
+            voters: new Set()
+          };
         }
         counts[key].count++;
+        if (item.userId || item.user) {
+          counts[key].voters.add(item.userId || item.user);
+        }
         if (item.timestamp && item.timestamp > counts[key].latestTs) {
           counts[key].latestTs = item.timestamp;
-          counts[key].word = w; // 保留最新大小寫/格式
+          counts[key].word = cleanW; // 保留最新格式
         }
       }
 
@@ -835,15 +846,13 @@
         wordsList.push(item);
       }
 
-      // 排序：精選/焦點詞彙排在最首位優先置中，其餘依詞頻降序排列
-      wordsList.sort((a, b) => {
-        if (a.isFocused && !b.isFocused) return -1;
-        if (!a.isFocused && b.isFocused) return 1;
-        return b.count - a.count || b.latestTs - a.latestTs;
-      });
+      // 排行榜嚴格依「票數(count)由高至低」排序；同票數則依最新提交時間排序
+      wordsList.sort((a, b) => b.count - a.count || b.latestTs - a.latestTs);
       this.wordsData = wordsList;
 
+      // 即時更新右側票數與排行榜名次
       this.updateRankingListUI(wordsList);
+      // 重新繪製文字雲 (票數越高的詞彙字級明顯遞增放大)
       this.renderCanvas();
     }
 
@@ -864,23 +873,27 @@
       }
 
       const top10 = wordsList.slice(0, 15);
-      const maxCount = top10[0]?.count || 1;
+      const maxCount = Math.max(1, top10[0]?.count || 1);
 
       listEl.innerHTML = top10.map((item, idx) => {
         const pct = Math.round((item.count / maxCount) * 100);
         const rankColor = idx === 0 ? '#f59e0b' : (idx === 1 ? '#94a3b8' : (idx === 2 ? '#b45309' : 'var(--text-secondary)'));
+        const isMultiple = item.count > 1;
         return `
-          <li class="wc-rank-item" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+          <li class="wc-rank-item" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px; border-bottom: 1px solid var(--border-color); font-size: 13px; ${isMultiple ? 'background: rgba(37, 99, 235, 0.04);' : ''}">
             <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
-              <span style="font-weight: 800; color: ${rankColor}; width: 22px; flex-shrink: 0; font-size: 14px;">#${idx + 1}</span>
-              <span style="font-weight: bold; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.word}">${item.word}</span>
+              <span style="font-weight: 800; color: ${rankColor}; width: 24px; flex-shrink: 0; font-size: 14px;">#${idx + 1}</span>
+              <span style="font-weight: bold; color: ${item.isFocused ? '#2563eb' : 'var(--text-primary)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.word}">
+                ${item.isFocused ? '⭐ ' : ''}${this.escapeHtml(item.word)}
+              </span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-              <div style="width: 55px; height: 6px; background: rgba(0,0,0,0.06); border-radius: 3px; overflow: hidden;">
-                <div style="width: ${pct}%; height: 100%; background: var(--accent-color); border-radius: 3px;"></div>
+              <div style="width: 50px; height: 7px; background: rgba(0,0,0,0.06); border-radius: 4px; overflow: hidden;" title="${pct}% 佔比">
+                <div style="width: ${pct}%; height: 100%; background: ${isMultiple ? 'linear-gradient(90deg, #3b82f6, #ec4899)' : 'var(--accent-color)'}; border-radius: 4px; transition: width 0.3s ease;"></div>
               </div>
-              <span style="font-weight: bold; color: var(--accent-color); font-size: 12px; min-width: 28px; text-align: right;">${item.count}票</span>
+              <span style="font-weight: 900; color: ${isMultiple ? '#2563eb' : 'var(--accent-color)'}; font-size: 13px; min-width: 32px; text-align: right;">${item.count}票</span>
               ${window.app?.isAdmin ? `
+                <button type="button" class="preset-btn" onclick="window.wordCloud?.toggleFocusWord('${encodeURIComponent(item.word)}')" style="padding: 1px 6px; font-size: 11px; color: ${item.isFocused ? '#2563eb' : '#64748b'}; border-color: ${item.isFocused ? '#2563eb' : 'var(--border-color)'}; background: ${item.isFocused ? 'rgba(37,99,235,0.1)' : 'transparent'}; height: auto;" title="${item.isFocused ? '取消焦點詞彙' : '設為焦點詞彙'}">${item.isFocused ? '★' : '☆'}</button>
                 <button type="button" class="preset-btn" onclick="window.wordCloud?.toggleHideWord('${encodeURIComponent(item.word)}')" style="padding: 1px 6px; font-size: 11px; color: #ef4444; border-color: rgba(239,68,68,0.3); background: transparent; height: auto;" title="隱藏此詞彙">✕</button>
               ` : ''}
             </div>
@@ -925,13 +938,21 @@
         return;
       }
 
-      const maxCount = words[0]?.count || 1;
-      const minCount = words[words.length - 1]?.count || 1;
+      // 計算實際全場最高票與最低票
+      const maxCount = words.reduce((max, w) => Math.max(max, w.count || 1), 1);
+      const minCount = words.reduce((min, w) => Math.min(min, w.count || 1), words[0]?.count || 1);
       const countRange = Math.max(1, maxCount - minCount);
 
-      // 基本字級大小區間
-      const minFont = Math.max(14, Math.floor(width / 36));
-      const maxFont = Math.min(74, Math.floor(width / 8.5));
+      // 排版優先級：老師精選焦點詞第一優先，其餘高票重複提交詞彙優先排在正中心
+      const wordsForCanvas = [...words].sort((a, b) => {
+        if (a.isFocused && !b.isFocused) return -1;
+        if (!a.isFocused && b.isFocused) return 1;
+        return b.count - a.count || b.latestTs - a.latestTs;
+      });
+
+      // 字級大小階梯演算：不同同學重複提交時，該文字隨票數大幅明顯變大！
+      const baseSingleFont = Math.max(18, Math.min(28, Math.floor(width / 30)));
+      const maxAllowedFont = Math.min(84, Math.floor(width / 8));
 
       const palette = CLOUD_PALETTES[this.currentPalette % CLOUD_PALETTES.length];
       const centerX = width / 2;
@@ -940,14 +961,22 @@
       const occupiedBoxes = [];
       const placedResults = [];
 
-      words.forEach((item, index) => {
-        const weight = (item.count - minCount) / countRange;
+      wordsForCanvas.forEach((item, index) => {
         let fontSize;
-        if (item.isFocused) {
-          // 焦點詞彙：顯著放大至最大字級的 1.35 倍 (至多 92px)
-          fontSize = Math.min(92, Math.round(maxFont * 1.35));
+        if (maxCount <= 1) {
+          // 全部均為 1 票時，適度以統一清晰大小展示
+          fontSize = baseSingleFont;
         } else {
-          fontSize = Math.round(minFont + Math.pow(weight, 0.8) * (maxFont - minFont));
+          // 當有同學重複提交 (count > 1) 時，大幅度放大字級！
+          const countBoost = (item.count - 1) * Math.max(11, Math.floor(width / 44));
+          const relativeRatio = (item.count - minCount) / countRange;
+          fontSize = Math.round(baseSingleFont + countBoost + relativeRatio * 16);
+          fontSize = Math.min(maxAllowedFont, Math.max(baseSingleFont, fontSize));
+        }
+
+        if (item.isFocused) {
+          // 焦點詞彙：顯著放大至最大字級的 1.3 倍 (至多 94px)
+          fontSize = Math.min(94, Math.round(Math.max(fontSize, maxAllowedFont * 0.95) * 1.3));
         }
 
         const fontStr = `bold ${fontSize}px "Microsoft JhengHei", "Noto Sans TC", sans-serif`;

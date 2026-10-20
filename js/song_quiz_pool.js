@@ -7520,6 +7520,346 @@
       "大象"
     ],
     "clue": "「小白兔，白又白，兩隻耳朵豎起來，愛吃蘿蔔愛吃菜……」，幼兒必學啟蒙兒歌。"
+  },
+  {
+      "id": "western_love_1",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Careless Whisper",
+      "artist": "George Michael",
+      "youtubeUrl": "https://www.youtube.com/watch?v=izGwDsrQ1eQ",
+      "youtubeId": "izGwDsrQ1eQ",
+      "startTime": 18,
+      "duration": 60,
+      "options": [
+          "Careless Whisper",
+          "Last Christmas",
+          "Faith",
+          "One More Try"
+      ],
+      "clue": "George Michael 1984 年標誌性薩克斯風浪漫情歌，前奏薩克斯風無人不曉。"
+  },
+  {
+      "id": "western_love_2",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Right Here Waiting",
+      "artist": "Richard Marx",
+      "youtubeUrl": "https://www.youtube.com/watch?v=S_E2EHVxNAE",
+      "youtubeId": "S_E2EHVxNAE",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "Right Here Waiting",
+          "Hold On to the Nights",
+          "Now and Forever",
+          "Endless Summer Nights"
+      ],
+      "clue": "Richard Marx 1989 年深情鋼琴抒情金曲，經典副歌「Wherever you go, whatever you do...」傳唱全球。"
+  },
+  {
+      "id": "western_love_3",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "I Will Always Love You",
+      "artist": "Whitney Houston",
+      "youtubeUrl": "https://www.youtube.com/watch?v=3JWTaaS7LdU",
+      "youtubeId": "3JWTaaS7LdU",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "I Will Always Love You",
+          "Greatest Love of All",
+          "I Have Nothing",
+          "Run to You"
+      ],
+      "clue": "惠妮休斯頓 1992 年電影《終極保鏢》主題曲，副歌高亢轉音堪稱流行樂壇天花板。"
+  },
+  {
+      "id": "western_love_4",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Nothing's Gonna Change My Love for You",
+      "artist": "Glenn Medeiros",
+      "youtubeUrl": "https://www.youtube.com/watch?v=MLxTEV5vpyg",
+      "youtubeId": "MLxTEV5vpyg",
+      "startTime": 15,
+      "duration": 60,
+      "options": [
+          "Nothing's Gonna Change My Love for You",
+          "Hard to Say I'm Sorry",
+          "Say You, Say Me",
+          "Can't Fight This Feeling"
+      ],
+      "clue": "Glenn Medeiros 1987 年深情對唱經典，「此情不渝」全球家喻戶曉的婚禮與表白神曲。"
+  },
+  {
+      "id": "western_love_5",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "My Heart Will Go On",
+      "artist": "Céline Dion",
+      "youtubeUrl": "https://www.youtube.com/watch?v=WNIPqafd4As",
+      "youtubeId": "WNIPqafd4As",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "My Heart Will Go On",
+          "Because You Loved Me",
+          "The Power of Love",
+          "All by Myself"
+      ],
+      "clue": "席琳狄翁 1997 年電影《鐵達尼號》史詩主題曲「愛無止境」，悠揚愛爾蘭錫口笛前奏最為經典。"
+  },
+  {
+      "id": "western_love_6",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "(Everything I Do) I Do It for You",
+      "artist": "Bryan Adams",
+      "youtubeUrl": "https://www.youtube.com/watch?v=Y0pdQU87dc8",
+      "youtubeId": "Y0pdQU87dc8",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "(Everything I Do) I Do It for You",
+          "Heaven",
+          "Please Forgive Me",
+          "Summer of '69"
+      ],
+      "clue": "布萊恩亞當斯 1991 年電影《俠盜王子羅賓漢》主題曲，沙啞滄桑的深情搖滾抒情名作。"
+  },
+  {
+      "id": "western_love_7",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Can You Feel the Love Tonight",
+      "artist": "Elton John",
+      "youtubeUrl": "https://www.youtube.com/watch?v=KjgWWjkNbhU",
+      "youtubeId": "KjgWWjkNbhU",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "Can You Feel the Love Tonight",
+          "Your Song",
+          "Circle of Life",
+          "Candle in the Wind"
+      ],
+      "clue": "艾爾頓強 1994 年迪士尼動畫長片《獅子王》主題曲，榮獲奧斯卡最佳原創歌曲獎。"
+  },
+  {
+      "id": "western_love_8",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Endless Love",
+      "artist": "Lionel Richie & Diana Ross",
+      "youtubeUrl": "https://www.youtube.com/watch?v=7Bwwo7ctG10",
+      "youtubeId": "7Bwwo7ctG10",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "Endless Love",
+          "Hello",
+          "Say You, Say Me",
+          "Truly"
+      ],
+      "clue": "萊諾李奇與黛安娜羅斯 1981 年合唱的《無盡的愛》，被評為告示牌史上最偉大抒情對唱歌曲。"
+  },
+  {
+      "id": "western_love_9",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Without You",
+      "artist": "Mariah Carey",
+      "youtubeUrl": "https://www.youtube.com/watch?v=Hat1Hc9SNwE",
+      "youtubeId": "Hat1Hc9SNwE",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "Without You",
+          "Hero",
+          "Vision of Love",
+          "Always Be My Baby"
+      ],
+      "clue": "瑪麗亞凱莉 1994 年翻唱的靈魂情歌「失去你」，副歌震撼人心的海豚音與寬廣音域震撼樂壇。"
+  },
+  {
+      "id": "western_love_10",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Take My Breath Away",
+      "artist": "Berlin",
+      "youtubeUrl": "https://www.youtube.com/watch?v=fUis9yny_lI",
+      "youtubeId": "fUis9yny_lI",
+      "startTime": 15,
+      "duration": 60,
+      "options": [
+          "Take My Breath Away",
+          "Danger Zone",
+          "Eternal Flame",
+          "Total Eclipse of the Heart"
+      ],
+      "clue": "柏林樂團 1986 年湯姆克魯斯主演電影《捍衛戰士 (Top Gun)》浪漫插曲，奧斯卡最佳原創歌曲得主。"
+  },
+  {
+      "id": "movie_theme_1",
+      "tag": "歷年經典國片主題曲",
+      "title": "國境之南",
+      "artist": "范逸臣",
+      "youtubeUrl": "https://www.youtube.com/watch?v=oyQZg2X_cd0",
+      "youtubeId": "oyQZg2X_cd0",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "國境之南",
+          "無樂不作",
+          "野玫瑰",
+          "留下來的人"
+      ],
+      "clue": "2008 年創下台灣影史票房奇蹟電影《海角七號》深情主題曲，榮獲金馬獎最佳原創電影歌曲。"
+  },
+  {
+      "id": "movie_theme_2",
+      "tag": "歷年經典國片主題曲",
+      "title": "那些年",
+      "artist": "胡夏",
+      "youtubeUrl": "https://www.youtube.com/watch?v=KqjgLbKZ1h0",
+      "youtubeId": "KqjgLbKZ1h0",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "那些年",
+          "人海中遇見你",
+          "孩子氣",
+          "寂寞的咖啡因"
+      ],
+      "clue": "2011 年九把刀同名小說改編電影《那些年，我們一起追的女孩》青春主題曲，喚起無數人青澀回憶。"
+  },
+  {
+      "id": "movie_theme_3",
+      "tag": "歷年經典國片主題曲",
+      "title": "小幸運",
+      "artist": "田馥甄 (Hebe)",
+      "youtubeUrl": "https://www.youtube.com/watch?v=HDMQuMJ4MSk",
+      "youtubeId": "HDMQuMJ4MSk",
+      "startTime": 40,
+      "duration": 60,
+      "options": [
+          "小幸運",
+          "不為誰而作的歌",
+          "愛著愛著就永遠",
+          "魔鬼中的天使"
+      ],
+      "clue": "2015 年校園愛情青春電影《我的少女時代》主題曲，YouTube 破億點閱之超人氣國民情歌。"
+  },
+  {
+      "id": "movie_theme_4",
+      "tag": "歷年經典國片主題曲",
+      "title": "有一種悲傷",
+      "artist": "A-Lin",
+      "youtubeUrl": "https://www.youtube.com/watch?v=BRcudpJzy1I",
+      "youtubeId": "BRcudpJzy1I",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "有一種悲傷",
+          "給我一個理由忘記",
+          "幸福了 然後呢",
+          "失戀無罪"
+      ],
+      "clue": "2018 年虐心催淚國片《比悲傷更悲傷的故事》主題曲，A-Lin 醇厚飽滿嗓音唱哭全台觀眾。"
+  },
+  {
+      "id": "movie_theme_5",
+      "tag": "歷年經典國片主題曲",
+      "title": "刻在我心底的名字",
+      "artist": "盧廣仲",
+      "youtubeUrl": "https://www.youtube.com/watch?v=m78lJuzftcc",
+      "youtubeId": "m78lJuzftcc",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "刻在我心底的名字",
+          "幾分之幾",
+          "魚仔",
+          "大人中"
+      ],
+      "clue": "2020 年台灣青春同志劇情片《刻在你心底的名字》主題曲，囊括第 57 屆金馬獎與金曲獎年度歌曲獎。"
+  },
+  {
+      "id": "movie_theme_6",
+      "tag": "歷年經典國片主題曲",
+      "title": "愛情你比我想的閣較偉大",
+      "artist": "茄子蛋",
+      "youtubeUrl": "https://www.youtube.com/watch?v=0rp3pP2Xwhs",
+      "youtubeId": "0rp3pP2Xwhs",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "愛情你比我想的閣較偉大",
+          "浪子回頭",
+          "浪流連",
+          "日常"
+      ],
+      "clue": "2021 年邱澤主演賣座國片《當男人戀愛時》主題曲，極具感染力的道地台式搖滾風情。"
+  },
+  {
+      "id": "movie_theme_7",
+      "tag": "歷年經典國片主題曲",
+      "title": "如果可以",
+      "artist": "韋禮安",
+      "youtubeUrl": "https://www.youtube.com/watch?v=8MG--WuNW1Y",
+      "youtubeId": "8MG--WuNW1Y",
+      "startTime": 35,
+      "duration": 60,
+      "options": [
+          "如果可以",
+          "女孩",
+          "還是會",
+          "慢慢等"
+      ],
+      "clue": "2021 年九把刀執導奇幻愛情國片《月老》主題曲，紅遍台日韓入圍金馬獎最佳原創電影歌曲。"
+  },
+  {
+      "id": "movie_theme_8",
+      "tag": "歷年經典國片主題曲",
+      "title": "酒矸倘賣無",
+      "artist": "蘇芮",
+      "youtubeUrl": "https://www.youtube.com/watch?v=HhO7NqVLLFc",
+      "youtubeId": "HhO7NqVLLFc",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "酒矸倘賣無",
+          "一樣的月光",
+          "是否",
+          "請跟我來"
+      ],
+      "clue": "1983 年虞戡平導演經典歌舞感人國片《搭錯車》主題曲，蘇芮以黑衣搖滾之姿掀起樂壇革命。"
+  },
+  {
+      "id": "movie_theme_9",
+      "tag": "歷年經典國片主題曲",
+      "title": "魯冰花",
+      "artist": "曾淑勤",
+      "youtubeUrl": "https://www.youtube.com/watch?v=i6ZLtqoDE4k",
+      "youtubeId": "i6ZLtqoDE4k",
+      "startTime": 15,
+      "duration": 60,
+      "options": [
+          "魯冰花",
+          "情生意動",
+          "微風往事",
+          "客途秋恨"
+      ],
+      "clue": "1989 年楊立國導演催淚經典國片《魯冰花》同名主題曲，「夜夜想起媽媽的話，閃閃的淚光魯冰花」。"
+  },
+  {
+      "id": "movie_theme_10",
+      "tag": "歷年經典國片主題曲",
+      "title": "不能說的秘密",
+      "artist": "周杰倫",
+      "youtubeUrl": "https://www.youtube.com/watch?v=C6dO6hCunTA",
+      "youtubeId": "C6dO6hCunTA",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "不能說的秘密",
+          "蒲公英的約定",
+          "晴天",
+          "彩虹"
+      ],
+      "clue": "2007 年周杰倫首部自編自導自演純愛奇幻國片《不能說的·秘密》同名主題曲，英倫搖滾風格名作。"
   }
 ];
 })(typeof window !== 'undefined' ? window : global);
