@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.4</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.5</a>
         </p>
       </div>
       <div class="top-actions">
@@ -386,12 +386,14 @@
                 </div>
               </div>
 
-              <!-- 3. 翻牌抽卡 -->
+              <!-- 3. 翻牌抽卡 (開扇撲克牌) -->
               <div id="pickerDisplayCard" class="picker-display-panel" style="display: none;">
                 <div class="card-picker-cabinet">
-                  <div class="card-picker-hint" id="pickerCardHint">🃏 命運卡牌已就緒，點擊任一張牌或按開始抽人</div>
-                  <div class="card-grid" id="pickerCardGrid">
-                    <!-- 卡牌清單由 JS 動態生成 -->
+                  <div class="card-picker-hint" id="pickerCardHint">🃏 命運撲克牌已開扇就緒，點擊任一張牌或按開始抽人</div>
+                  <div class="card-fan-stage" id="pickerCardFanStage">
+                    <div class="card-fan-deck" id="pickerCardGrid">
+                      <!-- 撲克卡牌由 JS 動態開扇生成 -->
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3487,7 +3489,7 @@
           <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
             🚀 即時互動白板版本更新歷程
           </h3>
-          <span class="changelog-badge-latest">目前最新 ver 3.9.4</span>
+          <span class="changelog-badge-latest">目前最新 ver 3.9.5</span>
         </div>
         <button type="button" onclick="window.app && window.app.closeChangelogModal()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="關閉視窗">✕</button>
       </div>
@@ -3495,12 +3497,42 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.4 -->
+        <!-- ver 3.9.5 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.4</span>
+              <span>🌟 ver 3.9.5</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">撲克牌開扇攤開呈現</span>
+              <span class="changelog-badge-tag">隨機逐一抽牌與頂層鎖定</span>
+              <span class="changelog-badge-tag">開牌晃機震動特效</span>
+              <span class="changelog-badge-tag">即時回饋防雙發修復</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🃏 隨機抽人抽卡全面升級為「撲克牌開扇攤開」：</strong>
+              <ul>
+                <li><strong>撲克開扇排版</strong>：卡牌依全班人數以圓弧幾何自然展開扇形（Fan-out），邊角帶有編號與花色，呈現真實荷官發牌效果。</li>
+                <li><strong>隨機逐一抽出探查動畫</strong>：抽人啟動時，命運之手在扇形牌組中隨機將卡片逐一快速往上抽出又放下，懸疑刺激感倍增。</li>
+                <li><strong>頂層鎖定與晃機揭曉</strong>：最後選中的卡牌完整抽出置於最頂層正中央，伴隨全螢幕震動「晃機」特效並翻轉揭曉幸運得主！</li>
+              </ul>
+            </li>
+            <li><strong>💖 即時回饋一次出現兩個問題徹底根治：</strong>
+              <ul>
+                <li><strong>專屬 Reaction ID 去重</strong>：新增本地專屬交易 ID 追蹤集合，解決先前用戶 UID 在登入/更名後因閉包變數固化比對失敗導致本機渲染後又接收雲端回流重複顯示的問題。</li>
+                <li><strong>觸控雙擊防抖保護</strong>：加入 160ms 防連擊過濾，徹底排除觸控螢幕 touch 與 click 同時觸發產生雙倍氣球的現象。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.4 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌟 ver 3.9.4</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">抽卡張數與名單相符</span>
