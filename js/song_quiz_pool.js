@@ -7692,6 +7692,346 @@
       "clue": "柏林樂團 1986 年湯姆克魯斯主演電影《捍衛戰士 (Top Gun)》浪漫插曲，奧斯卡最佳原創歌曲得主。"
   },
   {
+      "id": "western_love_11",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Every Breath You Take",
+      "artist": "The Police",
+      "youtubeUrl": "https://www.youtube.com/watch?v=OMOGaugKpzs",
+      "youtubeId": "OMOGaugKpzs",
+      "startTime": 15,
+      "duration": 60,
+      "options": [
+          "Every Breath You Take",
+          "Roxanne",
+          "Message in a Bottle",
+          "Fields of Gold"
+      ],
+      "clue": "警察樂隊 1983 年稱霸告示牌 8 週冠軍神曲，Sting 標誌性的深情嗓音與吉他分解和弦。"
+  },
+  {
+      "id": "western_love_12",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Total Eclipse of the Heart",
+      "artist": "Bonnie Tyler",
+      "youtubeUrl": "https://www.youtube.com/watch?v=lcOxhH8N3Bo",
+      "youtubeId": "lcOxhH8N3Bo",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "Total Eclipse of the Heart",
+          "Holding Out for a Hero",
+          "It's a Heartache",
+          "Lost in France"
+      ],
+      "clue": "邦妮泰勒 1983 年震撼樂壇的搖滾情歌「全蝕之心」，滄桑沙啞嗓音爆發力十足。"
+  },
+  {
+      "id": "western_love_13",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Time After Time",
+      "artist": "Cyndi Lauper",
+      "youtubeUrl": "https://www.youtube.com/watch?v=VdQY7BusJNU",
+      "youtubeId": "VdQY7BusJNU",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "Time After Time",
+          "Girls Just Want to Have Fun",
+          "True Colors",
+          "All Through the Night"
+      ],
+      "clue": "辛蒂羅波 1983 年真摯動人的抒情經典，副歌「If you're lost, you can look and you will find me」傳唱不衰。"
+  },
+  {
+      "id": "western_love_14",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Against All Odds (Take a Look at Me Now)",
+      "artist": "Phil Collins",
+      "youtubeUrl": "https://www.youtube.com/watch?v=FLy7dxC3nTo",
+      "youtubeId": "FLy7dxC3nTo",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "Against All Odds (Take a Look at Me Now)",
+          "In the Air Tonight",
+          "Another Day in Paradise",
+          "One More Night"
+      ],
+      "clue": "菲爾柯林斯 1984 年電影《再看我一眼》奧斯卡提名主題曲，深情鋼琴彈奏與撕心裂肺的呼喚。"
+  },
+  {
+      "id": "western_love_15",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Hello",
+      "artist": "Lionel Richie",
+      "youtubeUrl": "https://www.youtube.com/watch?v=mHONNcZbwDY",
+      "youtubeId": "mHONNcZbwDY",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "Hello",
+          "Say You, Say Me",
+          "Truly",
+          "Endless Love"
+      ],
+      "clue": "萊諾李奇 1984 年深情巨作，「Hello, is it me you're looking for?」經典告白問候語名留流行史。"
+  },
+  {
+      "id": "western_love_16",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "I Want to Know What Love Is",
+      "artist": "Foreigner",
+      "youtubeUrl": "https://www.youtube.com/watch?v=loWXMtjUZWM",
+      "youtubeId": "loWXMtjUZWM",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "I Want to Know What Love Is",
+          "Waiting for a Girl Like You",
+          "Cold as Ice",
+          "Feels Like the First Time"
+      ],
+      "clue": "外國人合唱團 1984 年福音色彩濃厚的抒情搖滾冠軍名曲，福音唱詩班合唱氣勢澎湃。"
+  },
+  {
+      "id": "western_love_17",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Hard to Say I'm Sorry",
+      "artist": "Chicago",
+      "youtubeUrl": "https://www.youtube.com/watch?v=pvxotwpM-_c",
+      "youtubeId": "pvxotwpM-_c",
+      "startTime": 15,
+      "duration": 60,
+      "options": [
+          "Hard to Say I'm Sorry",
+          "You're the Inspiration",
+          "Look Away",
+          "If You Leave Me Now"
+      ],
+      "clue": "芝加哥樂團 1982 年「難以開口說抱歉」，Peter Cetera 優雅動聽的假音與優雅鋼琴引領流行樂潮。"
+  },
+  {
+      "id": "western_love_18",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Saving All My Love for You",
+      "artist": "Whitney Houston",
+      "youtubeUrl": "https://www.youtube.com/watch?v=ewxmv2tyeRs",
+      "youtubeId": "ewxmv2tyeRs",
+      "startTime": 15,
+      "duration": 60,
+      "options": [
+          "Saving All My Love for You",
+          "Greatest Love of All",
+          "How Will I Know",
+          "I Will Always Love You"
+      ],
+      "clue": "惠妮休斯頓 1985 年首支全美告示牌冠軍抒情曲，薩克斯風伴奏與純熟藍調唱腔一戰封神。"
+  },
+  {
+      "id": "western_love_19",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Say You, Say Me",
+      "artist": "Lionel Richie",
+      "youtubeUrl": "https://www.youtube.com/watch?v=WX3-VHIZ7_8",
+      "youtubeId": "WX3-VHIZ7_8",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "Say You, Say Me",
+          "All Night Long",
+          "Hello",
+          "Stuck on You"
+      ],
+      "clue": "萊諾李奇 1985 年電影《飛越蘇聯 (White Nights)》主題曲，勇奪奧斯卡與金球獎最佳原創歌曲。"
+  },
+  {
+      "id": "western_love_20",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Eternal Flame",
+      "artist": "The Bangles",
+      "youtubeUrl": "https://www.youtube.com/watch?v=PSoOFn3wQV4",
+      "youtubeId": "PSoOFn3wQV4",
+      "startTime": 15,
+      "duration": 60,
+      "options": [
+          "Eternal Flame",
+          "Manic Monday",
+          "Walk Like an Egyptian",
+          "In Your Room"
+      ],
+      "clue": "手鐲合唱團 1988 年浪漫經典「永恆之火」，主唱 Susanna Hoffs 清新甜美的歌聲撥動無數心弦。"
+  },
+  {
+      "id": "western_love_21",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "More Than Words",
+      "artist": "Extreme",
+      "youtubeUrl": "https://www.youtube.com/watch?v=UrIiLvg58SY",
+      "youtubeId": "UrIiLvg58SY",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "More Than Words",
+          "Hole Hearted",
+          "Get the Funk Out",
+          "Rest in Peace"
+      ],
+      "clue": "極限樂團 1990 年雙人木吉他抒情名作，純粹原聲吉他彈奏與唯美雙人和聲紅遍大街小巷。"
+  },
+  {
+      "id": "western_love_22",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Unchained Melody",
+      "artist": "The Righteous Brothers",
+      "youtubeUrl": "https://www.youtube.com/watch?v=IYj2hex99gY",
+      "youtubeId": "IYj2hex99gY",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "Unchained Melody",
+          "You've Lost That Lovin' Feelin'",
+          "Soul and Inspiration",
+          "Ebb Tide"
+      ],
+      "clue": "正義兄弟「奔放的旋律」，1990 年隨電影《第六感生死戀 (Ghost)》陶藝經典橋段再次風靡全球。"
+  },
+  {
+      "id": "western_love_23",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Tears in Heaven",
+      "artist": "Eric Clapton",
+      "youtubeUrl": "https://www.youtube.com/watch?v=JxPj3GAYYZ0",
+      "youtubeId": "JxPj3GAYYZ0",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "Tears in Heaven",
+          "Wonderful Tonight",
+          "Layla",
+          "Change the World"
+      ],
+      "clue": "艾力克克萊普頓 1992 年寫給早逝幼子的悼念情歌「淚灑天堂」，橫掃第 35 屆葛萊美六項大獎。"
+  },
+  {
+      "id": "western_love_24",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Hero",
+      "artist": "Mariah Carey",
+      "youtubeUrl": "https://www.youtube.com/watch?v=0IA3ZvCkRkQ",
+      "youtubeId": "0IA3ZvCkRkQ",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "Hero",
+          "Vision of Love",
+          "Without You",
+          "One Sweet Day"
+      ],
+      "clue": "瑪麗亞凱莉 1993 年撫慰無數靈魂的勵志情歌「英雄」，展現無懈可擊的歌唱共鳴與感染力。"
+  },
+  {
+      "id": "western_love_25",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "I Swear",
+      "artist": "All-4-One",
+      "youtubeUrl": "https://www.youtube.com/watch?v=Nu9RVPTpDyA",
+      "youtubeId": "Nu9RVPTpDyA",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "I Swear",
+          "I Can Love You Like That",
+          "So Much in Love",
+          "I Will Be Right Here"
+      ],
+      "clue": "全能四人行 1994 年男子美聲合唱經典「我發誓」，告示牌蟬聯 11 週冠軍並獲葛萊美獎肯定。"
+  },
+  {
+      "id": "western_love_26",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Always",
+      "artist": "Bon Jovi",
+      "youtubeUrl": "https://www.youtube.com/watch?v=9BMwcO6_hyA",
+      "youtubeId": "9BMwcO6_hyA",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "Always",
+          "Livin' on a Prayer",
+          "Bed of Roses",
+          "It's My Life"
+      ],
+      "clue": "邦喬飛 1994 年狂銷數百萬張的強力抒情搖滾代表作，副歌激情嘶吼傾訴永恆的愛意。"
+  },
+  {
+      "id": "western_love_27",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Because You Loved Me",
+      "artist": "Céline Dion",
+      "youtubeUrl": "https://www.youtube.com/watch?v=fpl4if07ics",
+      "youtubeId": "fpl4if07ics",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "Because You Loved Me",
+          "The Power of Love",
+          "My Heart Will Go On",
+          "It's All Coming Back to Me Now"
+      ],
+      "clue": "席琳狄翁 1996 年電影《因為你愛過我 (Up Close & Personal)》主題曲，告示牌 6 週冠軍巨作。"
+  },
+  {
+      "id": "western_love_28",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "Truly Madly Deeply",
+      "artist": "Savage Garden",
+      "youtubeUrl": "https://www.youtube.com/watch?v=WQnAxOQxQIU",
+      "youtubeId": "WQnAxOQxQIU",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "Truly Madly Deeply",
+          "I Knew I Loved You",
+          "To the Moon and Back",
+          "Crash and Burn"
+      ],
+      "clue": "野人花園 1997 年澳洲雙人組風靡全球的純情之作「真誠地、瘋狂地、深刻地」，浪漫指數破表。"
+  },
+  {
+      "id": "western_love_29",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "As Long as You Love Me",
+      "artist": "Backstreet Boys",
+      "youtubeUrl": "https://www.youtube.com/watch?v=0Gl2QnHNpkA",
+      "youtubeId": "0Gl2QnHNpkA",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "As Long as You Love Me",
+          "I Want It That Way",
+          "Quit Playing Games (With My Heart)",
+          "Show Me the Meaning of Being Lonely"
+      ],
+      "clue": "新好男孩 1997 年席捲全球青少年的招牌抒情代表作，只要你愛我，不管你是誰、來自何方。"
+  },
+  {
+      "id": "western_love_30",
+      "tag": "80~90年代西洋經典情歌",
+      "title": "How Do I Live",
+      "artist": "LeAnn Rimes",
+      "youtubeUrl": "https://www.youtube.com/watch?v=MUFasKZcH_c",
+      "youtubeId": "MUFasKZcH_c",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "How Do I Live",
+          "Can't Fight the Moonlight",
+          "Blue",
+          "I Need You"
+      ],
+      "clue": "黎安萊姆絲 1997 年電影《空中監獄 (Con Air)》主題曲，在告示牌百大榜創下留榜 69 週傳奇紀錄。"
+  },
+  {
       "id": "movie_theme_1",
       "tag": "歷年經典國片主題曲",
       "title": "國境之南",
@@ -7860,6 +8200,346 @@
           "彩虹"
       ],
       "clue": "2007 年周杰倫首部自編自導自演純愛奇幻國片《不能說的·秘密》同名主題曲，英倫搖滾風格名作。"
+  },
+  {
+      "id": "movie_theme_11",
+      "tag": "歷年經典國片主題曲",
+      "title": "一樣的月光",
+      "artist": "蘇芮",
+      "youtubeUrl": "https://www.youtube.com/watch?v=dqcoG9LUzgE",
+      "youtubeId": "dqcoG9LUzgE",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "一樣的月光",
+          "酒矸倘賣無",
+          "是否",
+          "請跟我來"
+      ],
+      "clue": "1983 年電影《搭錯車》插曲，吳念真、羅大佑填詞，李壽全作曲，蘇芮高亢爆發力嗓音震撼華語樂壇。"
+  },
+  {
+      "id": "movie_theme_12",
+      "tag": "歷年經典國片主題曲",
+      "title": "亞細亞的孤兒",
+      "artist": "羅大佑",
+      "youtubeUrl": "https://www.youtube.com/watch?v=2fqhfVBjeso",
+      "youtubeId": "2fqhfVBjeso",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "亞細亞的孤兒",
+          "童年",
+          "鹿港小鎮",
+          "戀曲1990"
+      ],
+      "clue": "1990 年朱延平導演感人歷史戰爭國片《異域》片尾主題曲，嗩吶與孩童合唱深刻詮釋孤軍悲歌。"
+  },
+  {
+      "id": "movie_theme_13",
+      "tag": "歷年經典國片主題曲",
+      "title": "追夢人",
+      "artist": "鳳飛飛",
+      "youtubeUrl": "https://www.youtube.com/watch?v=JvQkhr3CWsI",
+      "youtubeId": "JvQkhr3CWsI",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "追夢人",
+          "掌聲響起",
+          "流水年華",
+          "祝你幸福"
+      ],
+      "clue": "1990 年電影《天若有情 (追夢人)》主題曲，羅大佑創作紀念作家三毛，帽子歌后鳳飛飛經典傳唱。"
+  },
+  {
+      "id": "movie_theme_14",
+      "tag": "歷年經典國片主題曲",
+      "title": "是否",
+      "artist": "蘇芮",
+      "youtubeUrl": "https://www.youtube.com/watch?v=tmurzlEsRtM",
+      "youtubeId": "tmurzlEsRtM",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "是否",
+          "牽手",
+          "親愛的小孩",
+          "跟著感覺走"
+      ],
+      "clue": "1983 年電影《搭錯車》深情插曲，羅大佑詞曲創作，「是否這次我將真的離開妳……」無比揪心。"
+  },
+  {
+      "id": "movie_theme_15",
+      "tag": "歷年經典國片主題曲",
+      "title": "當愛已成往事",
+      "artist": "林憶蓮 & 李宗盛",
+      "youtubeUrl": "https://www.youtube.com/watch?v=IKA47rEDVSs",
+      "youtubeId": "IKA47rEDVSs",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "當愛已成往事",
+          "為你我受冷風吹",
+          "至少還有你",
+          "傷痕"
+      ],
+      "clue": "1993 年陳凱歌執導、張國榮主演經典史詩電影《霸王別姬》主題曲，李宗盛與林憶蓮經典男女對唱。"
+  },
+  {
+      "id": "movie_theme_16",
+      "tag": "歷年經典國片主題曲",
+      "title": "滾滾紅塵",
+      "artist": "陳淑樺 & 羅大佑",
+      "youtubeUrl": "https://www.youtube.com/watch?v=uM0fgyqb8AQ",
+      "youtubeId": "uM0fgyqb8AQ",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "滾滾紅塵",
+          "夢醒時分",
+          "問",
+          "笑紅塵"
+      ],
+      "clue": "1990 年林青霞、秦漢主演同名金馬得獎電影《滾滾紅塵》主題曲，羅大佑作詞作曲，時代動盪下的刻骨愛情。"
+  },
+  {
+      "id": "movie_theme_17",
+      "tag": "歷年經典國片主題曲",
+      "title": "滄海一聲笑",
+      "artist": "黃霑 & 羅大佑 & 徐克",
+      "youtubeUrl": "https://www.youtube.com/watch?v=j0K27MndYBk",
+      "youtubeId": "j0K27MndYBk",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "滄海一聲笑",
+          "男兒當自強",
+          "倩女幽魂",
+          "萬水千山縱橫"
+      ],
+      "clue": "1990 年徐克監製武俠經典電影《笑傲江湖》主題曲，黃霑大師採五聲音階創作，豪情萬丈笑傲江湖。"
+  },
+  {
+      "id": "movie_theme_18",
+      "tag": "歷年經典國片主題曲",
+      "title": "一生所愛",
+      "artist": "盧冠廷",
+      "youtubeUrl": "https://www.youtube.com/watch?v=pAse1VuvcOE",
+      "youtubeId": "pAse1VuvcOE",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "一生所愛",
+          "陪著你走",
+          "世事何曾是絕對",
+          "快樂老實人"
+      ],
+      "clue": "1995 年周星馳主演經典奇幻愛情電影《大話西遊 / 西遊記之仙履奇緣》片尾插曲，空靈吉他訴盡無奈宿命。"
+  },
+  {
+      "id": "movie_theme_19",
+      "tag": "歷年經典國片主題曲",
+      "title": "菊花台",
+      "artist": "周杰倫",
+      "youtubeUrl": "https://www.youtube.com/watch?v=PdjbRvvJAzg",
+      "youtubeId": "PdjbRvvJAzg",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "菊花台",
+          "青花瓷",
+          "千里之外",
+          "東風破"
+      ],
+      "clue": "2006 年張藝謀導演古裝宮廷大片《滿城盡帶黃金甲》片尾曲，方文山田園詩意詞句與大提琴交織悲壯情愫。"
+  },
+  {
+      "id": "movie_theme_20",
+      "tag": "歷年經典國片主題曲",
+      "title": "無樂不作",
+      "artist": "范逸臣",
+      "youtubeUrl": "https://www.youtube.com/watch?v=ng5rE7s-AMU",
+      "youtubeId": "ng5rE7s-AMU",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "無樂不作",
+          "國境之南",
+          "情書",
+          "野玫瑰"
+      ],
+      "clue": "2008 年台灣最賣座國片《海角七號》熱血開場主題曲，激昂的流行搖滾點燃全場夏日奔放熱情。"
+  },
+  {
+      "id": "movie_theme_21",
+      "tag": "歷年經典國片主題曲",
+      "title": "金罵沒ㄤ",
+      "artist": "林美秀",
+      "youtubeUrl": "https://www.youtube.com/watch?v=E_OTWZuy_Eo",
+      "youtubeId": "E_OTWZuy_Eo",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "金罵沒ㄤ",
+          "三隻小豬",
+          "愛情的騙子我問你",
+          "練舞功"
+      ],
+      "clue": "2013 年陳玉勳導演熱血喜劇國片《總舖師》插曲，馬念先詞曲，膨風嫂洗腦舞步與歌聲紅遍全台。"
+  },
+  {
+      "id": "movie_theme_22",
+      "tag": "歷年經典國片主題曲",
+      "title": "等一個人",
+      "artist": "林芯儀",
+      "youtubeUrl": "https://www.youtube.com/watch?v=NluFa3bwZig",
+      "youtubeId": "NluFa3bwZig",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "等一個人",
+          "缺口",
+          "愛的可能",
+          "道聽途說"
+      ],
+      "clue": "2014 年九把刀小說改編青春電影《等一個人咖啡》主題曲，細膩唱出等待命中註定真愛的酸甜心境。"
+  },
+  {
+      "id": "movie_theme_23",
+      "tag": "歷年經典國片主題曲",
+      "title": "缺口",
+      "artist": "庾澄慶",
+      "youtubeUrl": "https://www.youtube.com/watch?v=BCJr1EG1boc",
+      "youtubeId": "BCJr1EG1boc",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "缺口",
+          "情非得已",
+          "春泥",
+          "熱情的沙漠"
+      ],
+      "clue": "2014 年電影《等一個人咖啡》主題曲，九把刀作詞，庾澄慶用溫暖吉他與獨特嗓音唱出愛的缺口與完整。"
+  },
+  {
+      "id": "movie_theme_24",
+      "tag": "歷年經典國片主題曲",
+      "title": "完美落地",
+      "artist": "亂彈阿翔",
+      "youtubeUrl": "https://www.youtube.com/watch?v=7QcCPmXlcqY",
+      "youtubeId": "7QcCPmXlcqY",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "完美落地",
+          "翻滾吧",
+          "走馬看花",
+          "不一樣的朋友"
+      ],
+      "clue": "2011 年彭于晏主演勵志國片《翻滾吧！阿信》主題曲，勇奪第 48 屆金馬獎最佳原創電影歌曲。"
+  },
+  {
+      "id": "movie_theme_25",
+      "tag": "歷年經典國片主題曲",
+      "title": "勇者的浪漫",
+      "artist": "羅美玲 & 范逸臣 & 舒米恩 & 中孝介 & Rake",
+      "youtubeUrl": "https://www.youtube.com/watch?v=u0rgcWyuQbY",
+      "youtubeId": "u0rgcWyuQbY",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "勇者的浪漫",
+          "小鳥先生",
+          "風起",
+          "陽光下的夢想"
+      ],
+      "clue": "2014 年魏德聖監製熱血棒球國片《KANO》主題曲，台日五大實力歌手跨界合唱，充滿青春熱血與堅定信念。"
+  },
+  {
+      "id": "movie_theme_26",
+      "tag": "歷年經典國片主題曲",
+      "title": "陣頭",
+      "artist": "柯有倫",
+      "youtubeUrl": "https://www.youtube.com/watch?v=rNEopzAYTUU",
+      "youtubeId": "rNEopzAYTUU",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "陣頭",
+          "零",
+          "哭笑不得",
+          "醒來後"
+      ],
+      "clue": "2012 年破三億票房熱門台灣本土電影《陣頭》同名同氣主題曲，結合傳統廟會戰鼓與搖滾龐克節奏。"
+  },
+  {
+      "id": "movie_theme_27",
+      "tag": "歷年經典國片主題曲",
+      "title": "孤味",
+      "artist": "陳淑芳 & 于子育",
+      "youtubeUrl": "https://www.youtube.com/watch?v=p8JgO6r6pyg",
+      "youtubeId": "p8JgO6r6pyg",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "孤味",
+          "追追追",
+          "純情青春夢",
+          "歡喜就好"
+      ],
+      "clue": "2020 年創下近 2 億票房金馬獎入圍大片《孤味》同名主題曲，國民阿嬤陳淑芳真摯嗓音唱出人生酸甜釋懷。"
+  },
+  {
+      "id": "movie_theme_28",
+      "tag": "歷年經典國片主題曲",
+      "title": "恰似你的溫柔",
+      "artist": "蔡琴",
+      "youtubeUrl": "https://www.youtube.com/watch?v=Yvg3L7RbFHY",
+      "youtubeId": "Yvg3L7RbFHY",
+      "startTime": 20,
+      "duration": 60,
+      "options": [
+          "恰似你的溫柔",
+          "被遺忘的時光",
+          "讀你",
+          "最後一夜"
+      ],
+      "clue": "梁弘志詞曲，蔡琴 1980 年成名代表作，傳唱超過四十載，多次作為金馬國片情感深沉之經典配樂。"
+  },
+  {
+      "id": "movie_theme_29",
+      "tag": "歷年經典國片主題曲",
+      "title": "無聲的所在",
+      "artist": "林強 & 侯孝賢",
+      "youtubeUrl": "https://www.youtube.com/watch?v=W8Qa5YQ9UzA",
+      "youtubeId": "W8Qa5YQ9UzA",
+      "startTime": 25,
+      "duration": 60,
+      "options": [
+          "無聲的所在",
+          "向前走",
+          "黑輪伯仔",
+          "春風少年兄"
+      ],
+      "clue": "1992 年台灣新電影標竿黑幫神作《少年吔，安啦！》主題曲，陳昇作詞作曲，林強與侯導滄桑對唱。"
+  },
+  {
+      "id": "movie_theme_30",
+      "tag": "歷年經典國片主題曲",
+      "title": "追",
+      "artist": "張國榮",
+      "youtubeUrl": "https://www.youtube.com/watch?v=HcSE3cQH-Ic",
+      "youtubeId": "HcSE3cQH-Ic",
+      "startTime": 30,
+      "duration": 60,
+      "options": [
+          "追",
+          "今生今世",
+          "風繼續吹",
+          "Monica"
+      ],
+      "clue": "1994 年陳可辛導演經典電影《金枝玉葉》主題曲，榮獲第 14 屆香港電影金像獎最佳電影歌曲。"
   }
 ];
 })(typeof window !== 'undefined' ? window : global);
