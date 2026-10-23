@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
   <link rel="stylesheet" href="css/style.css?v=392">
-  <link rel="stylesheet" href="css/presentation.css?v=3920">
+  <link rel="stylesheet" href="css/presentation.css?v=3921">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -29,10 +29,11 @@
           <h1 class="header-title">📚 即時互動白板</h1>
           <button class="menu-tab teacher-share-top-btn desktop-only" data-target="panel-teacher-shares" title="教師分享">📢 教師分享</button>
           <button type="button" id="btnLoginSharesNotice" class="desktop-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none;" title="查看最新課堂公告">🔔 公告 (<span id="txtLoginSharesNoticeCount">0</span>)</button>
+          <button class="menu-tab presentation-top-btn desktop-only" data-target="panel-presentation" title="同步簡報">📽️ 同步簡報</button>
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.0</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.1</a>
         </p>
       </div>
       <div class="top-actions">
@@ -54,6 +55,7 @@
         </div>
         <div class="header-buttons">
           <button class="menu-tab teacher-share-top-btn mobile-only" data-target="panel-teacher-shares" title="教師分享">教師分享</button>
+          <button class="menu-tab presentation-top-btn mobile-only" data-target="panel-presentation" title="同步簡報">📽️ 簡報</button>
           <button type="button" id="mobileLoginSharesNoticeBtn" class="mobile-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none;" title="查看最新課堂公告">🔔 (<span id="txtMobileLoginSharesNoticeCount">0</span>)</button>
           <!-- 連線狀態指示圖示移至鈴鐺右側 -->
           <div id="connectionStatus" class="connection-status disconnected" title="連線狀態：連線中..."></div>
@@ -131,7 +133,6 @@
         <button class="menu-tab" data-target="panel-lucky-wheel">🎡 隨機抽人</button>
         <button class="menu-tab" data-target="panel-word-cloud">☁️ 即時文字雲</button>
         <button class="menu-tab" data-target="panel-whiteboard">🎨 互動白板</button>
-        <button class="menu-tab" data-target="panel-presentation">📽️ 同步簡報</button>
         <button class="menu-tab" data-target="panel-focus-game" style="display: none;">🧠 專注力遊戲</button>
         <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
       </div>
@@ -707,7 +708,7 @@
           <main class="presentation-center-area">
             <div class="presentation-stage-wrapper" id="presentationStageWrapper">
               <div class="presentation-screen" id="presentationScreen">
-                <img id="presentationScreenBg" class="presentation-screen-bg" src="" alt="簡報頁面" style="display: none;">
+                <div id="presentationScreenBg" class="presentation-screen-bg" style="display: none;"></div>
                 
                 <!-- 空白無頁面提示 -->
                 <div class="presentation-screen-empty-hint" id="presentationEmptyHint">
@@ -3607,12 +3608,35 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.10.0 -->
+        <!-- ver 3.10.1 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.10.0</span>
+              <span>🌟 ver 3.10.1</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">同步簡報上移頂部主選單</span>
+              <span class="changelog-badge-tag">排除分頁重疊破版</span>
+              <span class="changelog-badge-tag">全功能操作零障礙啟用</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🛠️ 簡報入口位置調優、顯示層級修復與全功能全面解鎖：</strong>
+              <ul>
+                <li><strong>入口往上移至頂部主選單（圖 1）</strong>：將「📽️ 同步簡報」按鈕移至最上方主標題列，與「📢 教師分享」、「🔔 公告」平級並列，操作更直覺醒目；下層功能次選單同步清理，介面更清爽。</li>
+                <li><strong>徹底修復分頁重疊破版問題（圖 2）</strong>：修正簡報面板樣式覆蓋問題，設定嚴密獨立切換邏輯，當處於提問區、文字雲或白板時徹底隱藏簡報卡片，不再發生重疊干擾。</li>
+                <li><strong>全功能操作權限與畫布即時解鎖</strong>：全面排除權限檢查阻礙，本機開啟即可直接新增純色/圖片頁、匯入 PDF 解析選頁、使用紅線手繪標記筆劃、發光雷射筆、本頁多題設定與作答統計！</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.10.0 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.10.0</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">重大里程碑：同步互動簡報</span>
@@ -4353,7 +4377,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
   <script src="js/word_cloud.js?v=392"></script>
-  <script src="js/presentation_core.js?v=3920"></script>
+  <script src="js/presentation_core.js?v=3921"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

@@ -3,18 +3,61 @@
    支援：16:9 自適應畫布、雷射筆特效、多題互動面板、浮動表情條、PDF 預覽選取器
    ========================================================================== */
 
-/* 主容器與外框 */
+/* 主容器與外框 (預設嚴格隱藏，絕不與提問區或其它卡片同時出現) */
 .presentation-panel-card {
   padding: 0 !important;
   background: var(--bg-card) !important;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  display: flex;
+  display: none !important;
   flex-direction: column;
   min-height: 640px;
   height: calc(100vh - 120px);
   position: relative;
+}
+
+.presentation-panel-card.active {
+  display: flex !important;
+}
+
+/* 頂部主選單同步簡報按鈕樣式 (圖 1) */
+.presentation-top-btn {
+  flex: none !important;
+  max-width: none !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  border: 1.5px solid #0284c7 !important;
+  background: transparent !important;
+  color: #0284c7 !important;
+  border-radius: 20px !important;
+  white-space: nowrap;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.presentation-top-btn:hover,
+.presentation-top-btn.active {
+  background: #0284c7 !important;
+  color: white !important;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
+}
+
+@media (max-width: 768px) {
+  .header-buttons .presentation-top-btn {
+    flex: 0 0 auto !important;
+    justify-content: center;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    border-radius: 14px !important;
+    white-space: nowrap !important;
+    min-height: 28px !important;
+    line-height: 1.2 !important;
+  }
 }
 
 /* 頂部導航標題列 */
@@ -287,8 +330,10 @@
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  background: #0f172a;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #0f172a;
 }
 
 .presentation-screen-empty-hint {

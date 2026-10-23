@@ -1,12 +1,13 @@
 /**
  * ==========================================================================
  * 📽️ 同步互動簡報核心模組 (Synchronized Interactive Presentation Core)
- * 支援：
- * 1. PDF 逐頁解析匯入、JSON 匯出/匯入備份 (圖 3)
- * 2. 老師端 16:9 簡報投影、即時標記筆、光暈雷射筆同步廣播 (圖 4)
- * 3. 各頁多元多題互動設定、外部 URL 懸浮嵌入 (圖 5)
- * 4. 學生端逐題卡片 / 捲動清單 / 浮動表情回饋即時作答
- * 5. 學生即時提交側欄、統計圖表、CSV 下載匯出
+ * 修正版：
+ * 1. 預設開啟全功能主控操作（免額外登入密碼即可新增純色/圖片、匯入 PDF、手繪與雷射筆）
+ * 2. 16:9 簡報投影視區採用多功能 div 容器，支援純色底與高解析背景圖片無縫切換
+ * 3. 即時手繪標記 (紅線筆劃) 與發光雷射筆 (紅色光暈) 支援即時繪製與同步廣播
+ * 4. 完整的 PDF 逐頁解析預覽勾選匯入 (圖 3)、JSON 備份與還原
+ * 5. 本頁多題互動設定 (圖 5) 支援色塊選擇、文字選擇題、簡答心得、1~5星評分與心情浮動條
+ * 6. 即時提交側欄統計與 CSV 完整回應匯出
  * ==========================================================================
  */
 (function (global) {
@@ -14,34 +15,35 @@
 
   class PresentationManager {
     constructor() {
-      // 簡報核心狀態
+      // 簡報核心資料
       this.slides = []; // [{ id, type, bgUrl, bgColor, externalUrl, urlPosition, displayMode, questions }]
       this.currentSlideIndex = 0;
-      this.isPresenting = false; // 是否正在向全班同步廣播
+      this.isPresenting = false; // 是否向全班同步廣播
+      this.isRemoteBroadcastingActive = false; // 是否接收到他人主持廣播
       this.currentTool = 'none'; // 'none' | 'pen' | 'laser'
       
-      // 標註與雷射筆
+      // 標註與雷射筆狀態
       this.annotations = {}; // { [slideId]: [ { color, width, points: [[rx, ry], ...] } ] }
       this.isDrawing = false;
       this.currentStroke = null;
-      this.laserActive = false;
       this.lastLaserBroadcast = 0;
 
       // 互動與作答
       this.submissions = {}; // { [slideId]: { [studentUid]: { userName, avatar, answers, timestamp } } }
-      this.myAnswers = {}; // 學生當前作答草稿 { [qId]: answer }
+      this.myAnswers = {}; // 學生端當前作答草稿 { [qId]: answer }
 
       // PDF 暫存
       this.currentPdfDoc = null;
       this.selectedPdfPages = new Set();
+      this.tempQuestions = [];
 
-      // DOM 元素快取 (延遲綁定)
+      // DOM 元素快取
       this.els = {};
 
       this.init();
     }
 
-    // 初始化綁定
+    // 初始化程序
     init() {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => this.bindUI());
@@ -50,20 +52,22 @@
       }
     }
 
-    // 取得當前是否為老師
+    // 檢查當前是否為老師/主控端（預設允許本機操作全部簡報創作功能）
     isTeacher() {
-      return Boolean(window.app && window.app.isAdmin);
+      if (window.app && window.app.isAdmin) return true;
+      // 若當前沒有其他人在遠端廣播主控，則本機使用者即擁有主控權限
+      return !this.isRemoteBroadcastingActive;
     }
 
-    // 取得當前使用者名稱與 UID
+    // 取得當前使用者資訊
     getUserInfo() {
-      const name = (window.app && window.app.currentUserName) || '學生';
-      const uid = (window.app && window.app.currentUserId) || ('stu_' + Math.random().toString(36).substring(2, 9));
-      const avatar = (window.app && window.app.currentUserAvatar) || '👤';
+      const name = (window.app && window.app.getCurrentUserName && window.app.getCurrentUserName()) || (window.app && window.app.currentUserName) || '學生';
+      const uid = (window.app && window.app.getUserId && window.app.getUserId()) || (window.app && window.app.currentUserId) || ('stu_' + Math.random().toString(36).substring(2, 9));
+      const avatar = (window.app && window.app.getCurrentUserAvatar && window.app.getCurrentUserAvatar()) || (window.app && window.app.currentUserAvatar) || '👤';
       return { name, uid, avatar };
     }
 
-    // 綁定 UI 元素與事件
+    // 綁定 UI 與 Firebase
     bindUI() {
       this.cacheElements();
       this.bindEvents();
@@ -71,7 +75,7 @@
       this.render();
     }
 
-    // 快取主要 DOM 元素
+    // 快取所有相關 DOM 元素
     cacheElements() {
       this.els = {
         panel: document.getElementById('panel-presentation'),
@@ -81,7 +85,7 @@
         thumbnailsList: document.getElementById('presentationThumbnailsList'),
         fileInputImage: document.getElementById('inputPresentationImageFile'),
         
-        // 投影視區
+        // 投影幕視區
         stageWrapper: document.getElementById('presentationStageWrapper'),
         screen: document.getElementById('presentationScreen'),
         screenBg: document.getElementById('presentationScreenBg'),
@@ -111,10 +115,10 @@
         submissionsStats: document.getElementById('presentationSubmissionsStats'),
         btnDownloadResponses: document.getElementById('btnDownloadResponses'),
 
-        // 學生端作答卡片 / 浮動表情回饋條
+        // 學生端作答容器
         studentInteractionArea: document.getElementById('presentationStudentInteractionArea'),
 
-        // 彈窗容器
+        // 彈窗
         modalImportExport: document.getElementById('modalPresentationImportExport'),
         modalPdfPicker: document.getElementById('modalPresentationPdfPicker'),
         pdfPagesContainer: document.getElementById('presentationPdfPagesContainer'),
@@ -126,12 +130,12 @@
       };
     }
 
-    // 事件監聽綁定
+    // 綁定各項點擊與滑鼠互動
     bindEvents() {
       const { els } = this;
       if (!els.panel) return;
 
-      // 關閉按鈕
+      // 關閉按鈕 -> 切換回提問區或上一個分頁
       if (els.btnClosePresentation) {
         els.btnClosePresentation.onclick = () => {
           if (window.app && window.app.switchToTab) {
@@ -140,7 +144,7 @@
         };
       }
 
-      // 開始/結束同步簡報
+      // 開始/結束同步廣播
       if (els.btnStartSync) {
         els.btnStartSync.onclick = () => this.toggleSyncPresentation();
       }
@@ -156,11 +160,11 @@
         els.fileInputImage.onchange = (e) => this.handleImageSlideUpload(e);
       }
 
-      // 翻頁按鈕
+      // 上一頁 / 下一頁
       if (els.btnPrev) els.btnPrev.onclick = () => this.prevSlide();
       if (els.btnNext) els.btnNext.onclick = () => this.nextSlide();
 
-      // 標註筆與雷射筆切換
+      // 標註筆與雷射筆工具切換
       if (els.btnToolPen) {
         els.btnToolPen.onclick = () => this.setTool(this.currentTool === 'pen' ? 'none' : 'pen');
       }
@@ -201,9 +205,6 @@
         els.btnDownloadResponses.onclick = () => this.downloadResponsesCsv();
       }
 
-      // 簡報畫布繪製與雷射筆事件
-      this.bindCanvasEvents();
-
       // 外部 URL 懸浮點擊
       if (els.urlBadge) {
         els.urlBadge.onclick = (e) => {
@@ -212,36 +213,59 @@
         };
       }
 
-      // 切換至簡報分頁或視窗大小改變時重整尺寸
-      const presTabBtn = document.querySelector('.menu-tab[data-target="panel-presentation"]');
-      if (presTabBtn) {
-        presTabBtn.addEventListener('click', () => {
-          setTimeout(() => this.render(), 80);
+      // 畫布繪製與雷射筆滑鼠事件
+      this.bindCanvasEvents();
+
+      // 分頁切換監聽：當開啟簡報分頁時，自動重新計算畫布與投影幕尺寸
+      const presTabBtns = document.querySelectorAll('.menu-tab[data-target="panel-presentation"]');
+      presTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          setTimeout(() => {
+            this.updateCanvasDimensions();
+            this.render();
+          }, 60);
         });
-      }
+      });
+
       window.addEventListener('resize', () => {
         if (this.els.panel && (this.els.panel.classList.contains('active') || this.els.panel.style.display !== 'none')) {
+          this.updateCanvasDimensions();
           this.render();
         }
       });
 
-      // 鍵盤左右鍵切換頁面
+      // 鍵盤左右鍵快捷切換頁面
       window.addEventListener('keydown', (e) => {
-        if (!els.panel || els.panel.style.display === 'none') return;
+        if (!els.panel || !els.panel.classList.contains('active')) return;
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+          e.preventDefault();
           this.nextSlide();
         } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+          e.preventDefault();
           this.prevSlide();
         }
       });
     }
 
+    // 更新標註畫布的尺寸使其與螢幕精確對齊
+    updateCanvasDimensions() {
+      const { screen, annotationCanvas } = this.els;
+      if (!screen || !annotationCanvas) return;
+      const rect = screen.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        if (annotationCanvas.width !== rect.width || annotationCanvas.height !== rect.height) {
+          annotationCanvas.width = rect.width;
+          annotationCanvas.height = rect.height;
+          this.redrawAnnotations();
+        }
+      }
+    }
+
     // 畫布繪圖與雷射筆滑鼠/觸控事件
     bindCanvasEvents() {
-      const canvas = this.els.annotationCanvas;
-      const screen = this.els.screen;
-      if (!canvas || !screen) return;
+      const { screen, annotationCanvas } = this.els;
+      if (!screen || !annotationCanvas) return;
 
       const getRatioPos = (e) => {
         const rect = screen.getBoundingClientRect();
@@ -252,9 +276,27 @@
         return { rx, ry };
       };
 
-      // 滑鼠移動 (雷射筆或筆劃繪製中)
+      const onPointerDown = (e) => {
+        if (this.currentTool === 'none') return;
+        this.updateCanvasDimensions();
+        const { rx, ry } = getRatioPos(e);
+
+        if (this.currentTool === 'pen') {
+          this.isDrawing = true;
+          this.currentStroke = {
+            color: '#ef4444',
+            width: 4,
+            points: [[rx, ry]]
+          };
+          this.drawCurrentStroke();
+        } else if (this.currentTool === 'laser') {
+          this.updateLaserPointer(rx, ry, true);
+          this.broadcastLaser(rx, ry, true);
+        }
+      };
+
       const onPointerMove = (e) => {
-        if (!this.isTeacher()) return;
+        if (this.currentTool === 'none') return;
         const { rx, ry } = getRatioPos(e);
 
         if (this.currentTool === 'laser') {
@@ -266,25 +308,7 @@
         }
       };
 
-      const onPointerDown = (e) => {
-        if (!this.isTeacher()) return;
-        const { rx, ry } = getRatioPos(e);
-
-        if (this.currentTool === 'pen') {
-          this.isDrawing = true;
-          this.currentStroke = {
-            color: '#ef4444',
-            width: 4,
-            points: [[rx, ry]]
-          };
-        } else if (this.currentTool === 'laser') {
-          this.updateLaserPointer(rx, ry, true);
-          this.broadcastLaser(rx, ry, true);
-        }
-      };
-
       const onPointerUp = () => {
-        if (!this.isTeacher()) return;
         if (this.isDrawing && this.currentStroke) {
           this.isDrawing = false;
           const slide = this.getCurrentSlide();
@@ -298,7 +322,6 @@
       };
 
       const onPointerLeave = () => {
-        if (!this.isTeacher()) return;
         onPointerUp();
         if (this.currentTool === 'laser') {
           this.updateLaserPointer(0, 0, false);
@@ -311,15 +334,21 @@
       window.addEventListener('mouseup', onPointerUp);
       screen.addEventListener('mouseleave', onPointerLeave);
 
-      screen.addEventListener('touchstart', onPointerDown, { passive: true });
-      screen.addEventListener('touchmove', onPointerMove, { passive: true });
+      screen.addEventListener('touchstart', (e) => {
+        if (this.currentTool !== 'none') e.preventDefault();
+        onPointerDown(e);
+      }, { passive: false });
+      screen.addEventListener('touchmove', (e) => {
+        if (this.currentTool !== 'none') e.preventDefault();
+        onPointerMove(e);
+      }, { passive: false });
       screen.addEventListener('touchend', onPointerUp, { passive: true });
     }
 
     // 初始化 Firebase 同步監聽
     initFirebase() {
       if (typeof db === 'undefined') {
-        console.warn('Firebase db is undefined. Presentation runs in local offline mode.');
+        console.warn('Firebase db is undefined. Presentation runs smoothly in local mode.');
         return;
       }
 
@@ -330,21 +359,28 @@
         const data = snap.val();
         if (!data) return;
 
-        this.isPresenting = Boolean(data.isPresenting);
-        if (!this.isTeacher() && this.isPresenting) {
-          // 學生端自動跟隨老師頁面
+        const myUser = this.getUserInfo();
+        const isAnotherHost = data.hostUid && data.hostUid !== myUser.uid;
+        this.isRemoteBroadcastingActive = Boolean(data.isPresenting && isAnotherHost && !window.app?.isAdmin);
+
+        if (this.isRemoteBroadcastingActive) {
+          this.isPresenting = true;
           if (typeof data.currentSlideIndex === 'number' && data.currentSlideIndex !== this.currentSlideIndex) {
             this.currentSlideIndex = data.currentSlideIndex;
             this.render();
           }
+        } else if (data.isPresenting && (!data.hostUid || data.hostUid === myUser.uid)) {
+          this.isPresenting = true;
+        } else if (!data.isPresenting) {
+          this.isPresenting = false;
         }
         this.updateSyncButtonUI();
       });
 
-      // 2. 監聽全體簡報頁面 (若老師有發布)
+      // 2. 監聽全體簡報頁面 (當收到遠端老師同步時)
       presRef.child('slides').on('value', (snap) => {
         const cloudSlides = snap.val();
-        if (cloudSlides && Array.isArray(cloudSlides) && !this.isTeacher()) {
+        if (cloudSlides && Array.isArray(cloudSlides) && this.isRemoteBroadcastingActive) {
           this.slides = cloudSlides;
           this.render();
         }
@@ -353,7 +389,7 @@
       // 3. 監聽雷射筆座標
       presRef.child('laser').on('value', (snap) => {
         const laser = snap.val();
-        if (!this.isTeacher() && laser) {
+        if (this.isRemoteBroadcastingActive && laser) {
           this.updateLaserPointer(laser.rx, laser.ry, laser.active);
         }
       });
@@ -384,31 +420,38 @@
       if (now - this.lastLaserBroadcast < 35 && active) return;
       this.lastLaserBroadcast = now;
 
-      db.ref('presentation/laser').set({ rx, ry, active, ts: now });
+      db.ref('presentation/laser').set({ rx, ry, active, ts: now }).catch(() => {});
     }
 
     // 廣播繪圖標註
     broadcastAnnotations(slideId) {
       if (!this.isPresenting || typeof db === 'undefined') return;
-      db.ref(`presentation/annotations/${slideId}`).set(this.annotations[slideId] || []);
+      db.ref(`presentation/annotations/${slideId}`).set(this.annotations[slideId] || []).catch(() => {});
     }
 
     // 廣播當前簡報狀態給全班
     broadcastLiveState() {
       if (typeof db === 'undefined') return;
+      const user = this.getUserInfo();
       db.ref('presentation/live').set({
         isPresenting: this.isPresenting,
         currentSlideIndex: this.currentSlideIndex,
+        hostUid: user.uid,
+        hostName: user.name,
         updatedAt: Date.now()
-      });
-      if (this.isPresenting) {
-        db.ref('presentation/slides').set(this.slides);
+      }).catch(err => console.warn('broadcastLiveState error:', err));
+
+      if (this.isPresenting && this.slides.length > 0) {
+        try {
+          db.ref('presentation/slides').set(this.slides).catch(err => console.warn('Slide sync warning:', err));
+        } catch (e) {
+          console.warn('Cannot write full slides to Firebase:', e);
+        }
       }
     }
 
     // 開啟/結束同步簡報
     toggleSyncPresentation() {
-      if (!this.isTeacher()) return;
       if (this.slides.length === 0) {
         this.notify('提示', '請先新增至少一頁簡報才能開始同步！');
         return;
@@ -419,7 +462,7 @@
       this.updateSyncButtonUI();
 
       if (this.isPresenting) {
-        this.notify('🎉 同步簡報已開始', '全班學生畫面將自動同步顯示當前簡報！');
+        this.notify('🎉 同步簡報已開啟', '全班學生畫面將自動同步顯示當前簡報！');
       } else {
         this.notify('🏁 同步簡報已結束', '已關閉學生跟隨同步。');
       }
@@ -466,8 +509,7 @@
     // 更新雷射筆外觀座標 (光暈紅點)
     updateLaserPointer(rx, ry, active) {
       const dot = this.els.laserDot;
-      const screen = this.els.screen;
-      if (!dot || !screen) return;
+      if (!dot) return;
 
       if (!active) {
         dot.style.display = 'none';
@@ -487,7 +529,7 @@
         delete this.annotations[slide.id];
         this.redrawAnnotations();
         if (this.isPresenting && typeof db !== 'undefined') {
-          db.ref(`presentation/annotations/${slide.id}`).remove();
+          db.ref(`presentation/annotations/${slide.id}`).remove().catch(() => {});
         }
       }
     }
@@ -496,7 +538,7 @@
     drawCurrentStroke() {
       if (!this.currentStroke || this.currentStroke.points.length < 2) return;
       const canvas = this.els.annotationCanvas;
-      if (!canvas) return;
+      if (!canvas || canvas.width === 0) return;
       const ctx = canvas.getContext('2d');
       const w = canvas.width;
       const h = canvas.height;
@@ -518,7 +560,7 @@
     // 重繪當前頁面的全部標註
     redrawAnnotations() {
       const canvas = this.els.annotationCanvas;
-      if (!canvas) return;
+      if (!canvas || canvas.width === 0) return;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -576,9 +618,9 @@
 
     // 頁面變更觸發動作
     onSlideChanged() {
-      this.myAnswers = {}; // 重設學生端當前頁暫存
+      this.myAnswers = {};
       this.render();
-      if (this.isTeacher() && this.isPresenting) {
+      if (this.isPresenting) {
         this.broadcastLiveState();
       }
     }
@@ -599,9 +641,10 @@
       this.currentSlideIndex = this.slides.length - 1;
       this.render();
       if (this.isPresenting) this.broadcastLiveState();
+      this.notify('已新增', `已新增第 ${this.slides.length} 頁純色簡報頁面！`);
     }
 
-    // 處理圖片頁上傳 (可多選或單選)
+    // 處理圖片頁上傳 (可多選)
     handleImageSlideUpload(e) {
       const files = Array.from(e.target.files || []);
       if (files.length === 0) return;
@@ -637,7 +680,6 @@
 
     // 刪除指定頁面
     deleteSlide(index) {
-      if (!this.isTeacher()) return;
       if (!confirm(`確定要刪除第 ${index + 1} 頁嗎？`)) return;
 
       const deletedSlide = this.slides[index];
@@ -662,7 +704,7 @@
       const current = total > 0 ? this.currentSlideIndex + 1 : 0;
       const slide = this.getCurrentSlide();
 
-      // 頁碼更新
+      // 頁碼文字更新
       if (els.pageCounter) {
         els.pageCounter.textContent = `${current} / ${total}`;
       }
@@ -681,10 +723,10 @@
         if (els.screenBg) {
           els.screenBg.style.display = 'block';
           if (slide.type === 'image' && slide.bgUrl) {
-            els.screenBg.src = slide.bgUrl;
-            els.screenBg.style.backgroundColor = 'transparent';
+            els.screenBg.style.backgroundImage = `url("${slide.bgUrl}")`;
+            els.screenBg.style.backgroundColor = '#0f172a';
           } else {
-            els.screenBg.src = '';
+            els.screenBg.style.backgroundImage = 'none';
             els.screenBg.style.backgroundColor = slide.bgColor || '#1e293b';
           }
         }
@@ -700,27 +742,17 @@
         }
       }
 
-      // 重設標註畫布解析度與重繪
-      if (els.annotationCanvas && els.screen) {
-        const rect = els.screen.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          els.annotationCanvas.width = rect.width;
-          els.annotationCanvas.height = rect.height;
-        }
-        this.redrawAnnotations();
-      }
+      // 更新畫布尺寸並重繪
+      this.updateCanvasDimensions();
 
       // 側欄縮圖清單
       this.renderThumbnails();
 
-      // 右側提交欄
+      // 右側即時提交欄
       this.renderSubmissionsSidebar();
 
       // 學生端作答卡片 / 浮動表情回饋條
       this.renderStudentInteraction();
-
-      // 控制項角色權限調整
-      this.applyRolePermissions();
     }
 
     // 渲染左側縮圖列表
@@ -742,18 +774,16 @@
 
         card.innerHTML += `<div class="presentation-thumbnail-badge">${index + 1}</div>`;
 
-        // 老師專用刪除按鈕
-        if (this.isTeacher()) {
-          const delBtn = document.createElement('button');
-          delBtn.className = 'presentation-thumbnail-del';
-          delBtn.innerHTML = '✕';
-          delBtn.title = '刪除此頁';
-          delBtn.onclick = (e) => {
-            e.stopPropagation();
-            this.deleteSlide(index);
-          };
-          card.appendChild(delBtn);
-        }
+        // 刪除按鈕
+        const delBtn = document.createElement('button');
+        delBtn.className = 'presentation-thumbnail-del';
+        delBtn.innerHTML = '✕';
+        delBtn.title = '刪除此頁';
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          this.deleteSlide(index);
+        };
+        card.appendChild(delBtn);
 
         container.appendChild(card);
       });
@@ -800,7 +830,7 @@
       }
 
       submissionsList.innerHTML = '';
-      subEntries.reverse().forEach(sub => {
+      subEntries.slice().reverse().forEach(sub => {
         const card = document.createElement('div');
         card.className = 'presentation-submission-card';
 
@@ -829,8 +859,8 @@
       if (!area) return;
       area.innerHTML = '';
 
-      // 老師端不顯示作答浮窗
-      if (this.isTeacher()) return;
+      // 當前處於廣播主控端時不顯示作答浮窗
+      if (this.isPresenting && !this.isRemoteBroadcastingActive) return;
 
       const slide = this.getCurrentSlide();
       if (!slide || !slide.questions || slide.questions.length === 0) return;
@@ -845,6 +875,7 @@
         const emojis = ['👍', '💡', '❓', '❤️', '👏', '😂'];
         emojis.forEach(emo => {
           const btn = document.createElement('button');
+          btn.type = 'button';
           btn.className = 'presentation-reaction-btn';
           btn.textContent = emo;
           btn.onclick = () => this.submitStudentAnswer({ reaction: emo });
@@ -854,7 +885,7 @@
         return;
       }
 
-      // 模式 A (分步前進) / 模式 B (全部展開捲動) 卡片
+      // 模式 A / B：卡片彈窗
       const dialog = document.createElement('div');
       dialog.className = 'presentation-student-dialog';
 
@@ -906,7 +937,7 @@
           });
           qContainer.appendChild(grid);
         }
-        // 自訂一般選擇題
+        // 自訂文字選擇題
         else if (q.type === 'choice') {
           const list = document.createElement('div');
           list.className = 'presentation-choice-list';
@@ -924,7 +955,7 @@
           });
           qContainer.appendChild(list);
         }
-        // 文字回覆
+        // 文字心得回覆
         else if (q.type === 'text') {
           const textarea = document.createElement('textarea');
           textarea.className = 'presentation-text-answer-input';
@@ -958,7 +989,7 @@
         body.appendChild(qContainer);
       });
 
-      // 綁定送出按鈕
+      // 送出答案
       dialog.querySelector('#btnSubmitPresAnswers').onclick = () => {
         if (Object.keys(this.myAnswers).length === 0) {
           this.notify('提示', '請先選擇或填寫答案再送出喔！');
@@ -968,7 +999,7 @@
       };
     }
 
-    // 學生送出作答至 Firebase
+    // 送出作答至 Firebase
     submitStudentAnswer(answers) {
       const slide = this.getCurrentSlide();
       if (!slide) return;
@@ -998,15 +1029,14 @@
       }
     }
 
-    // 重設本頁提交作答
+    // 重設本頁提交紀錄
     resetSubmissions() {
-      if (!this.isTeacher()) return;
       const slide = this.getCurrentSlide();
       if (!slide) return;
 
       if (confirm('確定要清空本頁所有同學的作答提交紀錄嗎？')) {
         if (typeof db !== 'undefined') {
-          db.ref(`presentation/submissions/${slide.id}`).remove();
+          db.ref(`presentation/submissions/${slide.id}`).remove().catch(() => {});
         }
         delete this.submissions[slide.id];
         this.renderSubmissionsSidebar();
@@ -1063,23 +1093,6 @@
       } else {
         document.exitFullscreen();
       }
-    }
-
-    // 依據角色權限顯示/隱藏控制鈕
-    applyRolePermissions() {
-      const teacher = this.isTeacher();
-      const { els } = this;
-
-      if (els.btnStartSync) els.btnStartSync.style.display = teacher ? 'inline-flex' : 'none';
-      if (els.btnAddColor) els.btnAddColor.style.display = teacher ? 'inline-flex' : 'none';
-      if (els.btnAddImage) els.btnAddImage.style.display = teacher ? 'inline-flex' : 'none';
-      if (els.btnToolPen) els.btnToolPen.style.display = teacher ? 'inline-flex' : 'none';
-      if (els.btnToolLaser) els.btnToolLaser.style.display = teacher ? 'inline-flex' : 'none';
-      if (els.btnClearAnnotations) els.btnClearAnnotations.style.display = teacher ? 'inline-flex' : 'none';
-      if (els.btnSettings) els.btnSettings.style.display = teacher ? 'inline-flex' : 'none';
-      if (els.btnImportExport) els.btnImportExport.style.display = teacher ? 'inline-flex' : 'none';
-      if (els.btnResetSubmissions) els.btnResetSubmissions.style.display = teacher ? 'inline-flex' : 'none';
-      if (els.rightSidebar) els.rightSidebar.style.display = teacher ? 'flex' : 'none';
     }
 
     // ===== 彈窗邏輯：匯入 / 匯出 (圖 3) =====
@@ -1169,7 +1182,7 @@
 
         container.appendChild(pageItem);
 
-        // 渲染高解析縮圖
+        // 渲染縮圖
         this.currentPdfDoc.getPage(i).then(page => {
           const canvas = document.getElementById(`pdfPreviewCanvas_${i}`);
           if (!canvas) return;
@@ -1199,13 +1212,13 @@
 
       for (const pageNum of sortedPages) {
         const page = await this.currentPdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.6 }); // 高畫質
+        const viewport = page.getViewport({ scale: 1.5 });
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = viewport.width;
         tempCanvas.height = viewport.height;
         await page.render({ canvasContext: tempCanvas.getContext('2d'), viewport }).promise;
 
-        const imgDataUrl = tempCanvas.toDataURL('image/jpeg', 0.88);
+        const imgDataUrl = tempCanvas.toDataURL('image/jpeg', 0.85);
         this.slides.push({
           id: 'slide_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
           type: 'image',
@@ -1253,7 +1266,7 @@
       this.notify('匯出成功', '簡報 JSON 備份檔案已下載完成！');
     }
 
-    // 觸發從 JSON 匯入
+    // 從 JSON 匯入
     triggerJsonImport() {
       const input = document.createElement('input');
       input.type = 'file';
@@ -1336,14 +1349,17 @@
             <button type="button" style="color: #ef4444; border: none; background: none; font-size: 12px; cursor: pointer; font-weight: 600;" onclick="window.presentationManager.deleteQuestionItem(${idx})">✕ 刪除</button>
           </div>
           <div style="display: flex; gap: 8px;">
-            <select style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" onchange="window.presentationManager.updateQuestionType(${idx}, this.value)">
-              <option value="quick_choice" ${q.type === 'quick_choice' ? 'selected' : ''}>選擇題 (無題目，按色塊作答)</option>
+            <select style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; width: 100%;" onchange="window.presentationManager.updateQuestionType(${idx}, this.value)">
+              <option value="quick_choice" ${q.type === 'quick_choice' ? 'selected' : ''}>選擇題 (無題目，學生按色塊作答)</option>
               <option value="choice" ${q.type === 'choice' ? 'selected' : ''}>自訂文字選擇題</option>
               <option value="text" ${q.type === 'text' ? 'selected' : ''}>文字回覆 / 簡答心得</option>
               <option value="rating" ${q.type === 'rating' ? 'selected' : ''}>評分 (1~5 星級)</option>
             </select>
           </div>
           <input type="text" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" placeholder="輸入題幹或題目說明..." value="${this.escapeHtml(q.title || '')}" oninput="window.presentationManager.updateQuestionTitle(${idx}, this.value)">
+          ${q.type === 'choice' ? `
+            <input type="text" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px dashed #94a3b8; border-radius: 6px; font-size: 12px; background: #ffffff;" placeholder="選項清單 (以逗號分隔，例如：選項A, 選項B, 選項C, 選項D)" value="${this.escapeHtml((q.options || ['A', 'B', 'C', 'D']).join(', '))}" onchange="window.presentationManager.updateQuestionOptions(${idx}, this.value)">
+          ` : ''}
         `;
 
         container.appendChild(item);
@@ -1369,12 +1385,20 @@
     updateQuestionType(idx, type) {
       if (this.tempQuestions[idx]) {
         this.tempQuestions[idx].type = type;
+        this.renderQuestionsBuilderList();
       }
     }
 
     updateQuestionTitle(idx, title) {
       if (this.tempQuestions[idx]) {
         this.tempQuestions[idx].title = title;
+      }
+    }
+
+    updateQuestionOptions(idx, optionsStr) {
+      if (this.tempQuestions[idx]) {
+        const arr = optionsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+        this.tempQuestions[idx].options = arr.length > 0 ? arr : ['A', 'B', 'C', 'D'];
       }
     }
 
@@ -1454,7 +1478,7 @@
       if (iframe) iframe.src = 'about:blank';
     }
 
-    // 系統提示吐司
+    // 系統提示吐司通知
     notify(title, msg) {
       if (window.app && window.app.showNotification) {
         window.app.showNotification(title, msg);
@@ -1463,7 +1487,7 @@
       }
     }
 
-    // 跳脫 HTML
+    // 安全跳脫 HTML
     escapeHtml(str) {
       if (str == null) return '';
       return String(str)
@@ -1475,7 +1499,7 @@
     }
   }
 
-  // 掛載全域實例
+  // 掛載至全域
   global.PresentationManager = PresentationManager;
   global.presentationManager = new PresentationManager();
 
