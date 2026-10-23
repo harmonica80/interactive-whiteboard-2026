@@ -431,9 +431,10 @@
   flex: 1;
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 10px 16px;
   overflow: hidden;
 }
 
@@ -1092,20 +1093,23 @@
   touch-action: none;
 }
 
-/* 學生端手繪工具列 (圖 3) */
+/* 學生端手繪工具列 (圖 2: 移至畫面上方，固定為單一橫向工具條) */
 .presentation-student-draw-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
   background: #ffffff;
   border: 1.5px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 8px 16px;
-  margin-top: 10px;
+  border-radius: 9999px;
+  padding: 6px 18px;
+  margin-bottom: 8px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
   z-index: 24;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .presentation-draw-hint {
@@ -1114,7 +1118,7 @@
   color: #1e293b;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .presentation-draw-colors {
@@ -1137,6 +1141,7 @@
   transform: scale(1.18);
 }
 
+.presentation-draw-color-btn.active-color,
 .presentation-draw-color-btn.is-selected {
   border-color: #0f172a;
   box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2563eb;
@@ -1155,8 +1160,20 @@
 
 .presentation-draw-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
+}
+
+/* 左側縮圖在同步跟隨中鎖定學生自行點擊操作 (圖 1) */
+.presentation-thumbnails-container.is-sync-locked .presentation-thumbnail-card {
+  cursor: not-allowed !important;
+  opacity: 0.82;
+}
+
+.presentation-thumbnails-container.is-sync-locked .presentation-thumbnail-card:not(.active):hover {
+  border-color: #cbd5e1 !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .active-green {

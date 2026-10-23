@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
   <link rel="stylesheet" href="css/style.css?v=392">
-  <link rel="stylesheet" href="css/presentation.css?v=3104">
+  <link rel="stylesheet" href="css/presentation.css?v=3105">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -33,7 +33,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.4</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.5</a>
         </p>
       </div>
       <div class="top-actions">
@@ -778,6 +778,29 @@
           <!-- 中央展示區：16:9 簡報投影幕 (下方無多餘控制列，展示面積更大) -->
           <main class="presentation-center-area">
             <div class="presentation-stage-wrapper" id="presentationStageWrapper">
+              <!-- 學生端手繪作答工具列 (圖 2：移至頁面最上方，單行橫向呈現) -->
+              <div class="presentation-student-draw-bar" id="presentationStudentDrawBar" style="display: none;">
+                <div class="presentation-draw-hint">
+                  <span>✏️ 手繪作答：</span>
+                </div>
+                <div class="presentation-draw-colors" id="studentDrawColors">
+                  <button type="button" class="presentation-draw-color-btn active-color" data-color="#0f172a" style="background-color: #0f172a;" title="黑色"></button>
+                  <button type="button" class="presentation-draw-color-btn" data-color="#ef4444" style="background-color: #ef4444;" title="紅色"></button>
+                  <button type="button" class="presentation-draw-color-btn" data-color="#3b82f6" style="background-color: #3b82f6;" title="藍色"></button>
+                  <button type="button" class="presentation-draw-color-btn" data-color="#22c55e" style="background-color: #22c55e;" title="綠色"></button>
+                  <button type="button" class="presentation-draw-color-btn" data-color="#f97316" style="background-color: #f97316;" title="橘色"></button>
+                </div>
+                <select class="presentation-draw-width-select" id="selStudentDrawWidth" title="線條粗細">
+                  <option value="2">細</option>
+                  <option value="4" selected>中</option>
+                  <option value="8">粗</option>
+                </select>
+                <div class="presentation-draw-actions">
+                  <button type="button" class="presentation-tool-btn" id="btnStudentDrawClear" title="清空手繪筆劃">🗑️ 清空</button>
+                  <button type="button" class="presentation-tool-btn active-green" id="btnStudentDrawSubmit" title="送出作品">🚀 送出</button>
+                </div>
+              </div>
+
               <div class="presentation-screen" id="presentationScreen">
                 <div id="presentationScreenBg" class="presentation-screen-bg" style="display: none;"></div>
                 
@@ -818,29 +841,6 @@
 
                 <!-- 學生端作答卡片 / 浮動表情回饋條容器 (圖 1 & 圖 2) -->
                 <div id="presentationStudentInteractionArea"></div>
-              </div>
-
-              <!-- 學生端手繪作答工具列 (圖 3：設為手繪標記時在畫面下方/上方出現) -->
-              <div class="presentation-student-draw-bar" id="presentationStudentDrawBar" style="display: none;">
-                <div class="presentation-draw-hint">
-                  <span>✏️ 直接在上方簡報頁面手繪作答</span>
-                </div>
-                <div class="presentation-draw-colors" id="studentDrawColors">
-                  <button type="button" class="presentation-draw-color-btn is-selected" data-color="#0f172a" style="background-color: #0f172a;" title="黑色"></button>
-                  <button type="button" class="presentation-draw-color-btn" data-color="#ef4444" style="background-color: #ef4444;" title="紅色"></button>
-                  <button type="button" class="presentation-draw-color-btn" data-color="#3b82f6" style="background-color: #3b82f6;" title="藍色"></button>
-                  <button type="button" class="presentation-draw-color-btn" data-color="#22c55e" style="background-color: #22c55e;" title="綠色"></button>
-                  <button type="button" class="presentation-draw-color-btn" data-color="#f97316" style="background-color: #f97316;" title="橘色"></button>
-                </div>
-                <select class="presentation-draw-width-select" id="selStudentDrawWidth" title="線條粗細">
-                  <option value="2">細</option>
-                  <option value="4" selected>中</option>
-                  <option value="8">粗</option>
-                </select>
-                <div class="presentation-draw-actions">
-                  <button type="button" class="presentation-tool-btn" id="btnStudentDrawClear" title="清空手繪筆劃">🗑️ 清空</button>
-                  <button type="button" class="presentation-tool-btn active-green" id="btnStudentDrawSubmit" title="將手繪成果提交給老師">🚀 送出</button>
-                </div>
               </div>
             </div>
           </main>
@@ -3703,12 +3703,35 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.10.4 -->
+        <!-- ver 3.10.5 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.10.4</span>
+              <span>🌟 ver 3.10.5</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">同步廣播縮圖鎖定與釋放</span>
+              <span class="changelog-badge-tag">非同步作答權限自訂</span>
+              <span class="changelog-badge-tag">手繪工具列置頂單行化</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>✨ 同步互動簡報體驗精緻化：</strong>
+              <ul>
+                <li><strong>學生端簡報縮圖鎖定與自主翻頁（圖 1）</strong>：老師在同步廣播中，學生端簡報縮圖與翻頁控制全面鎖定，確保學生專注跟隨老師授課；當老師停止同步廣播時，自動解鎖恢復同學自由點選縮圖與自主瀏覽！</li>
+                <li><strong>學生互動題目非同步作答權限（需求 2）</strong>：於「⚙️ 本頁設定」新增「學生作答開放時機」，預設必須在老師開啟同步廣播時才能作答，老師亦可隨時切換為開放非同步自主作答。</li>
+                <li><strong>手繪標記工具列置頂單行化（圖 2）</strong>：手繪作答工具列優雅移至投影幕正上方，並將提示、常用色、筆寬、清空、送出整合為單一橫向工具條，版面清爽不遮擋！</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.10.4 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.10.4</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">互動作答收合與預覽</span>
@@ -4553,7 +4576,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
   <script src="js/word_cloud.js?v=392"></script>
-  <script src="js/presentation_core.js?v=3104"></script>
+  <script src="js/presentation_core.js?v=3105"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -6047,6 +6070,20 @@ Python</pre>
             <option value="scroll">整頁展開捲動模式（一次呈現多題）</option>
             <option value="floating">輕量浮動表情條（不遮擋簡報，可展開作答多題）</option>
           </select>
+        </div>
+
+        <!-- 學生作答開放時機 (需求 2：是否可在非同步廣播下作答，預設為必須在同步廣播時才能作答) -->
+        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 12px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
+            📝 學生作答開放時機
+          </label>
+          <select id="selPresAllowAsyncAnswer" style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; background: #ffffff;">
+            <option value="false">🔒 僅限同步廣播時才能作答（預設）</option>
+            <option value="true">🔓 非同步廣播時亦開放作答（自主學習）</option>
+          </select>
+          <div style="font-size: 11px; color: #64748b; margin-top: 4px; line-height: 1.4;">
+            預設只有在老師開啟「開始同步簡報」時同學才能作答；若設為非同步開放，則老師停止同步或學生自主瀏覽時亦可隨時作答。
+          </div>
         </div>
 
         <!-- 多題互動題目列表 -->

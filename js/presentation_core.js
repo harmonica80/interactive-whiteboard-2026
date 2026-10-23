@@ -426,6 +426,53 @@
         }
         if (els.screenBg) els.screenBg.style.display = 'none';
       }
+
+      // 圖 1: 學生端在老師簡報同步廣播時不能自行操作，若老師停止同步則可自行操作
+      if (this.isRemoteBroadcastingActive) {
+        if (els.btnPrevSlide) {
+          els.btnPrevSlide.disabled = true;
+          els.btnPrevSlide.style.opacity = '0.4';
+          els.btnPrevSlide.style.cursor = 'not-allowed';
+          els.btnPrevSlide.title = '跟隨老師同步中，由老師控制翻頁';
+        }
+        if (els.btnNextSlide) {
+          els.btnNextSlide.disabled = true;
+          els.btnNextSlide.style.opacity = '0.4';
+          els.btnNextSlide.style.cursor = 'not-allowed';
+          els.btnNextSlide.title = '跟隨老師同步中，由老師控制翻頁';
+        }
+        if (els.btnGridOverview) {
+          els.btnGridOverview.disabled = true;
+          els.btnGridOverview.style.opacity = '0.4';
+          els.btnGridOverview.style.cursor = 'not-allowed';
+          els.btnGridOverview.title = '跟隨老師同步中';
+        }
+        if (els.thumbnailsList) {
+          els.thumbnailsList.classList.add('is-sync-locked');
+        }
+      } else {
+        if (els.btnPrevSlide) {
+          els.btnPrevSlide.disabled = false;
+          els.btnPrevSlide.style.opacity = '1';
+          els.btnPrevSlide.style.cursor = 'pointer';
+          els.btnPrevSlide.title = '上一頁';
+        }
+        if (els.btnNextSlide) {
+          els.btnNextSlide.disabled = false;
+          els.btnNextSlide.style.opacity = '1';
+          els.btnNextSlide.style.cursor = 'pointer';
+          els.btnNextSlide.title = '下一頁';
+        }
+        if (els.btnGridOverview) {
+          els.btnGridOverview.disabled = false;
+          els.btnGridOverview.style.opacity = '1';
+          els.btnGridOverview.style.cursor = 'pointer';
+          els.btnGridOverview.title = '所有投影片總覽';
+        }
+        if (els.thumbnailsList) {
+          els.thumbnailsList.classList.remove('is-sync-locked');
+        }
+      }
     }
 
     // 更新標註畫布的尺寸使其與螢幕精確對齊
@@ -877,8 +924,12 @@
       return this.slides[this.currentSlideIndex] || null;
     }
 
-    // 翻到下一頁
+    // 翻到下一頁 (圖 1: 同步廣播中鎖定學生端自行操作)
     nextSlide() {
+      if (this.isRemoteBroadcastingActive) {
+        this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
+        return;
+      }
       if (this.currentSlideIndex < this.slides.length - 1) {
         this.currentSlideIndex++;
         this.onSlideChanged();
@@ -887,6 +938,10 @@
 
     // 翻到上一頁
     prevSlide() {
+      if (this.isRemoteBroadcastingActive) {
+        this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
+        return;
+      }
       if (this.currentSlideIndex > 0) {
         this.currentSlideIndex--;
         this.onSlideChanged();
@@ -895,6 +950,10 @@
 
     // 跳轉到指定頁
     goToSlide(index) {
+      if (this.isRemoteBroadcastingActive) {
+        this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
+        return;
+      }
       if (index >= 0 && index < this.slides.length) {
         this.currentSlideIndex = index;
         this.onSlideChanged();
@@ -928,6 +987,7 @@
         externalUrl: '',
         urlPosition: 'center',
         displayMode: 'step',
+        allowAsyncAnswer: false,
         questions: []
       };
       this.slides.push(newSlide);
@@ -955,6 +1015,7 @@
             externalUrl: '',
             urlPosition: 'center',
             displayMode: 'step',
+            allowAsyncAnswer: false,
             questions: []
           });
           loadedCount++;
@@ -1071,7 +1132,13 @@
       this.slides.forEach((slide, index) => {
         const card = document.createElement('div');
         card.className = `presentation-thumbnail-card ${index === this.currentSlideIndex ? 'active' : ''}`;
-        card.onclick = () => this.goToSlide(index);
+        card.onclick = () => {
+          if (this.isRemoteBroadcastingActive) {
+            this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
+            return;
+          }
+          this.goToSlide(index);
+        };
 
         if (slide.type === 'image' && slide.bgUrl) {
           card.innerHTML = `<img class="presentation-thumbnail-img" src="${slide.bgUrl}" alt="第 ${index + 1} 頁">`;
@@ -1224,6 +1291,34 @@
       const mode = slide.displayMode || 'step';
       const hasQuestions = questions.length > 0;
       const isTeacherUser = this.isTeacher() || (this.isPresenting && !this.isRemoteBroadcastingActive);
+
+      // 檢查非同步廣播作答權限 (需求 2：預設必須在同步廣播時才能作答，老師可設定是否允許非同步作答)
+      const isAllowedToAnswer = isTeacherUser || this.isRemoteBroadcastingActive || Boolean(slide.allowAsyncAnswer);
+
+      // 若不允許作答 (學生端且不在同步廣播中，且此頁未開啟非同步作答)
+      if (!isAllowedToAnswer) {
+        if (this.els.studentDrawBar) this.els.studentDrawBar.style.display = 'none';
+        if (this.els.studentDrawCanvas) {
+          this.els.studentDrawCanvas.style.display = 'none';
+          this.els.studentDrawCanvas.style.pointerEvents = 'none';
+        }
+
+        if (hasQuestions) {
+          const lockedCard = document.createElement('div');
+          lockedCard.className = 'presentation-student-dialog';
+          lockedCard.style.cssText = 'padding: 16px 20px; text-align: center; background: rgba(255, 255, 255, 0.96); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-left: 4px solid #f59e0b; max-width: 360px;';
+          lockedCard.innerHTML = `
+            <div style="font-size: 26px; margin-bottom: 6px;">🔒</div>
+            <div style="font-weight: 700; color: #1e293b; font-size: 14px;">隨堂作答暫未開放</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 6px; line-height: 1.5;">
+              本頁互動題目設定為「<strong>僅限老師同步廣播時作答</strong>」。<br>
+              請等待老師開啟同步簡報，系統將自動開啟作答！
+            </div>
+          `;
+          area.appendChild(lockedCard);
+        }
+        return;
+      }
 
       // 手繪作答工具列與畫布狀態控制 (圖 3)
       const hasDrawQuestion = questions.some(q => q.type === 'draw');
@@ -2009,6 +2104,7 @@
           externalUrl: '',
           urlPosition: 'center',
           displayMode: 'step',
+          allowAsyncAnswer: false,
           questions: []
         });
       }
@@ -2092,6 +2188,9 @@
       document.getElementById('txtPresExternalUrl').value = slide.externalUrl || '';
       document.getElementById('selPresUrlPosition').value = slide.urlPosition || 'center';
       document.getElementById('selPresDisplayMode').value = slide.displayMode || 'step';
+
+      const selAsync = document.getElementById('selPresAllowAsyncAnswer');
+      if (selAsync) selAsync.value = slide.allowAsyncAnswer ? 'true' : 'false';
 
       this.tempQuestions = JSON.parse(JSON.stringify(slide.questions || []));
       this.renderQuestionsBuilderList();
@@ -2270,6 +2369,10 @@
       slide.externalUrl = (document.getElementById('txtPresExternalUrl').value || '').trim();
       slide.urlPosition = document.getElementById('selPresUrlPosition').value || 'center';
       slide.displayMode = document.getElementById('selPresDisplayMode').value || 'step';
+      
+      const selAsync = document.getElementById('selPresAllowAsyncAnswer');
+      slide.allowAsyncAnswer = selAsync ? (selAsync.value === 'true') : false;
+
       slide.questions = this.tempQuestions || [];
 
       this.closeSlideSettingsModal();
@@ -2294,6 +2397,10 @@
         item.style.cursor = 'pointer';
         item.style.border = idx === this.currentSlideIndex ? '3px solid #06b6d4' : '1px solid #cbd5e1';
         item.onclick = () => {
+          if (this.isRemoteBroadcastingActive) {
+            this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。');
+            return;
+          }
           this.goToSlide(idx);
           this.closeGridOverviewModal();
         };
