@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
   <link rel="stylesheet" href="css/style.css?v=392">
-  <link rel="stylesheet" href="css/presentation.css?v=3105">
+  <link rel="stylesheet" href="css/presentation.css?v=3106">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -33,7 +33,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.5</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.6</a>
         </p>
       </div>
       <div class="top-actions">
@@ -3703,12 +3703,35 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.10.5 -->
+        <!-- ver 3.10.6 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.10.5</span>
+              <span>🌟 ver 3.10.6</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">手繪底圖自選設定</span>
+              <span class="changelog-badge-tag">學生端權限介面嚴格隔離</span>
+              <span class="changelog-badge-tag">收合大箭頭無文字化</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🎯 授課與學生體驗全面優化：</strong>
+              <ul>
+                <li><strong>手繪作品底圖自訂（圖 1）</strong>：老師於本頁手繪題設定中可決定學生提交時是否包含簡報畫面底圖（預設為不包含，僅呈現深色畫布與手繪筆劃；亦可切換為合成投影片底圖）。</li>
+                <li><strong>學生端介面乾淨隔離（圖 2）</strong>：修復學生端身份判定，在「僅老師進行簡報」時徹底隱藏教師專屬功能（結束/開始簡報、純色頁/圖片頁新增、標記、雷射筆、本頁設定、匯入匯出、重置、即時提交側欄），呈現簡潔乾淨的學生介面！</li>
+                <li><strong>作答收合大箭頭圖示化（圖 3）</strong>：作答對話框右上角按鈕去除「收合」中文字樣，改以大尺寸向下箭頭（▼）呈現，簡約清晰。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.10.5 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.10.5</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">同步廣播縮圖鎖定與釋放</span>
@@ -4576,7 +4599,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
   <script src="js/word_cloud.js?v=392"></script>
-  <script src="js/presentation_core.js?v=3105"></script>
+  <script src="js/presentation_core.js?v=3106"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

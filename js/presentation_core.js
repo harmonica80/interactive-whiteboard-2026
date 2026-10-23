@@ -65,19 +65,19 @@
       }
     }
 
-    // 檢查當前使用者是否具備教師身份
+    // 檢查當前使用者是否具備教師身份 (嚴格依據登入狀態與 URL 參數判定)
     isTeacher() {
       if (window.app && window.app.isAdmin) return true;
       if (window.teacherAuthManager && window.teacherAuthManager.isAuthenticated && window.teacherAuthManager.isAuthenticated()) return true;
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('role') === 'teacher' || urlParams.get('isAdmin') === '1') return true;
-      // 若當前沒有遠端廣播且本機有自訂簡報，亦視為主控者
-      if (!this.isRemoteBroadcastingActive && this.slides.length > 0) return true;
       return false;
     }
 
-    // 檢查當前使用者是否有權限操作與控制簡報 (Item 1)
+    // 檢查當前使用者是否有權限操作與控制簡報 (圖 2: 學生端在「僅老師進行」設定下不可控制)
     canControlPresentation() {
+      // 學生端在跟隨遠端廣播時一律不可操作主控工具
+      if (this.isRemoteBroadcastingActive) return false;
       if (this.isTeacher()) return true;
       return Boolean(this.studentCanUsePresentation);
     }
@@ -377,10 +377,10 @@
       });
     }
 
-    // 權限 UI 更新 (Item 1)
+    // 權限 UI 更新 (圖 2: 學生端在「僅老師進行」設定下徹底隱藏主控功能)
     updatePermissionsUI() {
       const { els } = this;
-      const teacher = this.isTeacher();
+      const teacher = this.isTeacher() && !this.isRemoteBroadcastingActive;
       const canControl = this.canControlPresentation();
 
       // 老師專用開關按鈕
@@ -1432,7 +1432,7 @@
           <span class="presentation-student-dialog-title">${headTitle}</span>
           <div style="display: flex; align-items: center; gap: 6px;">
             ${isSubmitted ? '<span style="color: #10b981; font-size: 11px; font-weight: 700;">✅ 已提交</span>' : ''}
-            <button type="button" class="presentation-collapse-dialog-btn" id="btnCollapseInteraction" title="收合作答視窗">收合 ▾</button>
+            <button type="button" class="presentation-collapse-dialog-btn" id="btnCollapseInteraction" title="收合作答視窗" aria-label="收合">▼</button>
             ${mode === 'floating' ? '<button type="button" class="presentation-btn-close-sub" id="btnCloseStudentDrawer" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:14px;" title="收合">✕</button>' : ''}
           </div>
         </div>
@@ -1772,7 +1772,7 @@
       });
     }
 
-    // 提交學生端手繪作答 (圖 3)
+    // 提交學生端手繪作答 (圖 1: 依據老師設定決定是否包含簡報畫面底圖，預設為不包含)
     submitStudentDrawing() {
       const slide = this.getCurrentSlide();
       if (!slide) return;
@@ -1783,32 +1783,74 @@
       const { studentDrawCanvas } = this.els;
       if (!studentDrawCanvas) return;
 
-      const drawDataUrl = studentDrawCanvas.toDataURL('image/png');
       const drawQ = (slide.questions || []).find(q => q.type === 'draw') || { id: 'q_draw' };
+      const shouldIncludeBg = Boolean(drawQ.includeSlideBg);
 
-      const user = this.getUserInfo();
-      const payload = {
-        userName: user.name,
-        avatar: user.avatar,
-        answers: { [drawQ.id]: '手繪標記作答' },
-        drawDataUrl: drawDataUrl,
-        timestamp: Date.now()
+      const doSubmit = (dataUrl) => {
+        const user = this.getUserInfo();
+        const payload = {
+          userName: user.name,
+          avatar: user.avatar,
+          answers: { [drawQ.id]: '手繪標記作答' },
+          drawDataUrl: dataUrl,
+          timestamp: Date.now()
+        };
+
+        if (typeof db !== 'undefined') {
+          db.ref(`presentation/submissions/${slide.id}/${user.uid}`).set(payload)
+            .then(() => {
+              this.notify('✅ 送出成功', '您的手繪標記作答已成功傳送給老師！');
+              this.render();
+            })
+            .catch(err => {
+              this.notify('❌ 失敗', '送出失敗：' + err.message);
+            });
+        } else {
+          if (!this.submissions[slide.id]) this.submissions[slide.id] = {};
+          this.submissions[slide.id][user.uid] = payload;
+          this.notify('✅ 送出成功', '已在本機記錄您的手繪作答！');
+          this.render();
+        }
       };
 
-      if (typeof db !== 'undefined') {
-        db.ref(`presentation/submissions/${slide.id}/${user.uid}`).set(payload)
-          .then(() => {
-            this.notify('✅ 送出成功', '您的手繪標記作答已成功傳送給老師！');
-            this.render();
-          })
-          .catch(err => {
-            this.notify('❌ 失敗', '送出失敗：' + err.message);
-          });
+      if (shouldIncludeBg) {
+        // 包含簡報畫面底圖：合成投影片內容與手繪筆劃
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = studentDrawCanvas.width;
+        exportCanvas.height = studentDrawCanvas.height;
+        const ctx = exportCanvas.getContext('2d');
+
+        if (slide.type === 'image' && slide.bgUrl) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            ctx.drawImage(img, 0, 0, exportCanvas.width, exportCanvas.height);
+            ctx.drawImage(studentDrawCanvas, 0, 0);
+            doSubmit(exportCanvas.toDataURL('image/png'));
+          };
+          img.onerror = () => {
+            ctx.fillStyle = slide.bgColor || '#0f172a';
+            ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            ctx.drawImage(studentDrawCanvas, 0, 0);
+            doSubmit(exportCanvas.toDataURL('image/png'));
+          };
+          img.src = slide.bgUrl;
+        } else {
+          ctx.fillStyle = slide.bgColor || '#1e293b';
+          ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+          ctx.drawImage(studentDrawCanvas, 0, 0);
+          doSubmit(exportCanvas.toDataURL('image/png'));
+        }
       } else {
-        if (!this.submissions[slide.id]) this.submissions[slide.id] = {};
-        this.submissions[slide.id][user.uid] = payload;
-        this.notify('✅ 送出成功', '已在本機記錄您的手繪作答！');
-        this.render();
+        // 預設為不包含簡報底圖 (圖 1: 僅深色底襯托學生手繪筆劃)
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = studentDrawCanvas.width;
+        exportCanvas.height = studentDrawCanvas.height;
+        const ctx = exportCanvas.getContext('2d');
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+        ctx.drawImage(studentDrawCanvas, 0, 0);
+        doSubmit(exportCanvas.toDataURL('image/png'));
       }
     }
 
@@ -2275,8 +2317,15 @@
           ` : ''}
 
           ${q.type === 'draw' ? `
-            <div style="font-size: 12px; color: #0284c7; background: #e0f2fe; padding: 6px 10px; border-radius: 6px; border: 1px dashed #7dd3fc;">
-              🎨 學生端將在畫面上方顯示繪圖工具列，並可在投影片上進行標記與提交作品。
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #0284c7; background: #e0f2fe; padding: 8px 10px; border-radius: 6px; border: 1px dashed #7dd3fc;">
+              <div>🎨 學生端將在畫面上方顯示手繪工具列，可直接在投影片上進行標記並送出。</div>
+              <div style="display: flex; align-items: center; gap: 8px; color: #0369a1; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd;">
+                <span style="font-weight: 700; white-space: nowrap;">繳交作品底圖 (圖 1)：</span>
+                <select style="padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px; flex: 1;" onchange="window.presentationManager.updateQuestionIncludeBg(${idx}, this.value)">
+                  <option value="false" ${!q.includeSlideBg ? 'selected' : ''}>不包含簡報畫面（僅手繪筆劃，預設）</option>
+                  <option value="true" ${q.includeSlideBg ? 'selected' : ''}>包含簡報畫面底圖</option>
+                </select>
+              </div>
             </div>
           ` : ''}
 
@@ -2307,6 +2356,7 @@
         optCount: 4,
         optStyle: 'abcd',
         correctAnswer: '',
+        includeSlideBg: false,
         options: ['A', 'B', 'C', 'D']
       });
       this.renderQuestionsBuilderList();
@@ -2345,6 +2395,12 @@
     updateQuestionCorrectAnswer(idx, ans) {
       if (this.tempQuestions[idx]) {
         this.tempQuestions[idx].correctAnswer = ans;
+      }
+    }
+
+    updateQuestionIncludeBg(idx, val) {
+      if (this.tempQuestions[idx]) {
+        this.tempQuestions[idx].includeSlideBg = (val === 'true');
       }
     }
 

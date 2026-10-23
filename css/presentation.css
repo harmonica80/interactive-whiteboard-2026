@@ -1187,22 +1187,27 @@
   background: #059669 !important;
 }
 
-/* 學生作答卡片收合與展開按鈕 (圖 1 & 項目 2) */
+/* 學生作答卡片收合與展開按鈕 (圖 3: 大尺寸箭頭無中文) */
 .presentation-collapse-dialog-btn {
   background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  font-size: 11px;
-  font-weight: 700;
+  border: 1.5px solid #cbd5e1;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 900;
   color: #475569;
   cursor: pointer;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 6px;
-  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .presentation-collapse-dialog-btn:hover {
   background: #e2e8f0;
   color: #0f172a;
+  transform: scale(1.1);
 }
 
 .presentation-collapsed-pill {
