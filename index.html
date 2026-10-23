@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
   <link rel="stylesheet" href="css/style.css?v=392">
-  <link rel="stylesheet" href="css/presentation.css?v=3102">
+  <link rel="stylesheet" href="css/presentation.css?v=3103">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -33,7 +33,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.2</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.3</a>
         </p>
       </div>
       <div class="top-actions">
@@ -680,7 +680,7 @@
         <div class="presentation-header">
           <div class="presentation-header-left">
             <span class="presentation-main-title">📽️ 同步簡報</span>
-            <span class="presentation-live-badge" id="presentationLiveBadge" style="display: none;">● 同步廣播中</span>
+            <span class="presentation-live-badge" id="presentationLiveBadge" style="display: none;">同步廣播中</span>
             <!-- 老師決定是否開放學生操作簡報 (圖 4 & Item 1，預設僅老師) -->
             <button type="button" class="presentation-perm-btn is-inactive" id="btnToggleStudentPresentation" style="display: none;" title="點擊切換是否開放學生自由操作簡報">
               <span>🔒 僅老師進行</span>
@@ -693,11 +693,39 @@
               <button type="button" class="presentation-tool-btn" id="btnSlidePrev" title="上一頁">◀ 上一頁</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideNext" title="下一頁">下一頁 ▶</button>
               <span class="presentation-page-counter" id="txtSlidePageCounter">0 / 0</span>
-              <button type="button" class="presentation-tool-btn" id="btnSlideGridOverview" title="九宮格總覽快速跳頁">■</button>
+              <!-- 圖 3：一般常見的九宮格圖示 -->
+              <button type="button" class="presentation-tool-btn" id="btnSlideGridOverview" title="九宮格總覽快速跳頁">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="display: block;">
+                  <rect x="1" y="1" width="3.6" height="3.6" rx="0.8"/>
+                  <rect x="6.2" y="1" width="3.6" height="3.6" rx="0.8"/>
+                  <rect x="11.4" y="1" width="3.6" height="3.6" rx="0.8"/>
+                  <rect x="1" y="6.2" width="3.6" height="3.6" rx="0.8"/>
+                  <rect x="6.2" y="6.2" width="3.6" height="3.6" rx="0.8"/>
+                  <rect x="11.4" y="6.2" width="3.6" height="3.6" rx="0.8"/>
+                  <rect x="1" y="11.4" width="3.6" height="3.6" rx="0.8"/>
+                  <rect x="6.2" y="11.4" width="3.6" height="3.6" rx="0.8"/>
+                  <rect x="11.4" y="11.4" width="3.6" height="3.6" rx="0.8"/>
+                </svg>
+              </button>
             </div>
 
             <div class="presentation-tools-group">
-              <button type="button" class="presentation-tool-btn" id="btnSlideToolPen" title="在簡報上畫重點，同步顯示給全班">✏️ 標記</button>
+              <!-- 圖 2：標記工具提供幾種常用顏色切換 -->
+              <div class="presentation-pen-wrapper" style="position: relative; display: inline-flex; align-items: center;">
+                <button type="button" class="presentation-tool-btn" id="btnSlideToolPen" title="在簡報上畫重點，同步顯示給全班">
+                  <span class="presentation-pen-color-dot" id="penColorDot"></span>
+                  <span>✏️ 標記</span>
+                </button>
+                <div class="presentation-pen-palette" id="presentationPenPalette" style="display: none;">
+                  <button type="button" class="presentation-palette-color is-selected" data-color="#ef4444" style="background-color: #ef4444;" title="紅色重點"></button>
+                  <button type="button" class="presentation-palette-color" data-color="#eab308" style="background-color: #eab308;" title="螢光黃"></button>
+                  <button type="button" class="presentation-palette-color" data-color="#22c55e" style="background-color: #22c55e;" title="草綠色"></button>
+                  <button type="button" class="presentation-palette-color" data-color="#3b82f6" style="background-color: #3b82f6;" title="科技藍"></button>
+                  <button type="button" class="presentation-palette-color" data-color="#ffffff" style="background-color: #ffffff; border: 1px solid #94a3b8;" title="白色"></button>
+                  <button type="button" class="presentation-palette-color" data-color="#0f172a" style="background-color: #0f172a;" title="黑灰色"></button>
+                </div>
+              </div>
+
               <button type="button" class="presentation-tool-btn" id="btnSlideToolLaser" title="發光雷射筆，滑鼠移動即時同步全班視線">🔴 雷射筆</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideClearAnnotations" title="清除本頁標記">清除標記</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideFullscreen" title="進入/退出全螢幕">🗖 最大化</button>
@@ -715,9 +743,29 @@
             <button type="button" class="presentation-btn-start" id="btnStartSyncPresentation">
               <span>🎉 開始同步簡報</span>
             </button>
-            <button type="button" class="presentation-add-page-btn" id="btnAddColorSlide">
-              <span>+ 純色頁</span>
-            </button>
+            <!-- 圖 1：新增純色頁時，可以選擇背景顏色 -->
+            <div class="presentation-add-color-wrapper" style="position: relative; width: 100%;">
+              <button type="button" class="presentation-add-page-btn" id="btnAddColorSlide">
+                <span>+ 純色頁</span>
+              </button>
+              <div class="presentation-color-picker-popover" id="presentationColorPickerPopover" style="display: none;">
+                <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">選擇純色背景底色</div>
+                <div class="presentation-color-swatches" id="presentationColorSwatches">
+                  <button type="button" class="presentation-color-swatch-btn" data-color="#1e293b" style="background-color: #1e293b;" title="沉穩深藍"></button>
+                  <button type="button" class="presentation-color-swatch-btn" data-color="#0f172a" style="background-color: #0f172a;" title="極致深黑"></button>
+                  <button type="button" class="presentation-color-swatch-btn" data-color="#134e4a" style="background-color: #134e4a;" title="黑板深綠"></button>
+                  <button type="button" class="presentation-color-swatch-btn" data-color="#ffffff" style="background-color: #ffffff; border: 1px solid #cbd5e1;" title="簡報純白"></button>
+                  <button type="button" class="presentation-color-swatch-btn" data-color="#fef3c7" style="background-color: #fef3c7;" title="護眼米黃"></button>
+                  <button type="button" class="presentation-color-swatch-btn" data-color="#e0f2fe" style="background-color: #e0f2fe;" title="晨曦淡藍"></button>
+                  <button type="button" class="presentation-color-swatch-btn" data-color="#ffedd5" style="background-color: #ffedd5;" title="溫暖粉橘"></button>
+                  <button type="button" class="presentation-color-swatch-btn" data-color="#f1f5f9" style="background-color: #f1f5f9; border: 1px solid #cbd5e1;" title="典雅淺灰"></button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e2e8f0;">
+                  <input type="color" id="presCustomBgColor" value="#1e293b" style="width: 26px; height: 26px; border: none; padding: 0; cursor: pointer; border-radius: 4px;">
+                  <button type="button" class="presentation-tool-btn active" id="btnConfirmCustomColorSlide" style="flex: 1; padding: 3px 6px; font-size: 11px;">自訂新增</button>
+                </div>
+              </div>
+            </div>
             <button type="button" class="presentation-add-page-btn" id="btnAddImageSlide">
               <span>+ 圖片頁</span>
             </button>
@@ -3626,12 +3674,39 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.10.2 -->
+        <!-- ver 3.10.3 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.10.2</span>
+              <span>🌟 ver 3.10.3</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">同步狀態生命週期修復</span>
+              <span class="changelog-badge-tag">純色頁自選底色</span>
+              <span class="changelog-badge-tag">標記工具多色切換</span>
+              <span class="changelog-badge-tag">標準九宮格圖示</span>
+              <span class="changelog-badge-tag">學生端多題互動完整呈現</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>✨ 同步互動簡報深度體驗升級（5 大項目全面優化）：</strong>
+              <ul>
+                <li><strong>同步狀態生命週期修復（圖 1）</strong>：進入簡報預設為本機準備模式，不再莫名自動同步；老師點擊「開始同步簡報」即時廣播，結束簡報亦可確實停止並即刻通知全班，離線自動清理廣播狀態。</li>
+                <li><strong>純色頁自選背景顏色（圖 1）</strong>：點擊「+ 純色頁」展開豐富色票選單（黑夜深藍、墨綠黑板、極致純黑、護眼米黃、純白、晨曦淡藍、粉橘、淺灰）或自由自訂色彩，一鍵建立專屬風格簡報頁！</li>
+                <li><strong>標記工具常用色盤（圖 2）</strong>：標記筆提供 6 種熱門教學標註色（紅、黃、綠、藍、白、黑），按鈕即時顯示當前色點，劃重點靈活隨心切換。</li>
+                <li><strong>標準九宮格圖示（圖 3）</strong>：將九宮格快速跳頁按鈕圖示更換為標準 3×3 網格向量圖示，視覺規範現代統一。</li>
+                <li><strong>學生端多題互動完整呈現（圖 4、圖 5）</strong>：徹底修復學生端題目漏顯問題，不論選擇分步模式、整頁捲動或置底浮動條，學生端皆能完整作答所有自訂題目（評分、選擇、問答），並即時提交彙整。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.10.2 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.10.2</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">簡報老師權限控管</span>
@@ -4421,7 +4496,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
   <script src="js/word_cloud.js?v=392"></script>
-  <script src="js/presentation_core.js?v=3102"></script>
+  <script src="js/presentation_core.js?v=3103"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -5911,9 +5986,9 @@ Python</pre>
             學生端互動呈現方式
           </label>
           <select id="selPresDisplayMode" style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
-            <option value="step">分步卡片模式（逐題前進）</option>
+            <option value="step">分步卡片模式（一次一題，引導學生依序作答）</option>
             <option value="scroll">整頁展開捲動模式（一次呈現多題）</option>
-            <option value="floating">輕量浮動表情條（不遮擋簡報）</option>
+            <option value="floating">輕量浮動表情條（不遮擋簡報，可展開作答多題）</option>
           </select>
         </div>
 

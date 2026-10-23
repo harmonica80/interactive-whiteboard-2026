@@ -22,15 +22,19 @@
       this.studentCanUsePresentation = false; // 預設僅老師可主控簡報 (Item 1)
       this.currentTool = 'none'; // 'none' | 'pen' | 'laser'
       
-      // 標註與雷射筆狀態
+      // 標註筆選色 (圖 2) 與雷射筆狀態
+      this.penColor = '#ef4444'; // 預設重點紅
+      this.penWidth = 4;
       this.annotations = {}; // { [slideId]: [ { color, width, points: [[rx, ry], ...] } ] }
       this.isDrawing = false;
       this.currentStroke = null;
       this.lastLaserBroadcast = 0;
 
-      // 互動與作答
+      // 互動與作答 (圖 4 & 圖 5)
       this.submissions = {}; // { [slideId]: { [studentUid]: { userName, avatar, answers, timestamp } } }
       this.myAnswers = {}; // 學生端當前作答草稿 { [qId]: answer }
+      this.currentStudentQuestionIndex = 0; // 分步模式當前題號
+      this.isFloatingDrawerOpen = false; // 浮動模式題目展開狀態
 
       // PDF 暫存
       this.currentPdfDoc = null;
@@ -114,6 +118,11 @@
         pageCounter: document.getElementById('txtSlidePageCounter'),
         btnGridOverview: document.getElementById('btnSlideGridOverview'),
         btnToolPen: document.getElementById('btnSlideToolPen'),
+        penPalette: document.getElementById('presentationPenPalette'),
+        penColorDot: document.getElementById('penColorDot'),
+        colorPickerPopover: document.getElementById('presentationColorPickerPopover'),
+        customBgColorInput: document.getElementById('presCustomBgColor'),
+        btnConfirmCustomColor: document.getElementById('btnConfirmCustomColorSlide'),
         btnToolLaser: document.getElementById('btnSlideToolLaser'),
         btnClearAnnotations: document.getElementById('btnSlideClearAnnotations'),
         btnFullscreen: document.getElementById('btnSlideFullscreen'),
@@ -175,14 +184,41 @@
         };
       }
 
-      // 開始/結束同步廣播
+      // 開始/結束同步廣播 (圖 1)
       if (els.btnStartSync) {
         els.btnStartSync.onclick = () => this.toggleSyncPresentation();
       }
 
-      // 新增純色頁
-      if (els.btnAddColor) {
+      // 新增純色頁 (圖 1：支援點擊展開背景顏色選擇浮窗)
+      if (els.btnAddColor && els.colorPickerPopover) {
+        els.btnAddColor.onclick = (e) => {
+          e.stopPropagation();
+          const isVisible = els.colorPickerPopover.style.display !== 'none';
+          els.colorPickerPopover.style.display = isVisible ? 'none' : 'block';
+        };
+      } else if (els.btnAddColor) {
         els.btnAddColor.onclick = () => this.addColorSlide();
+      }
+
+      // 純色頁預設色票點擊事件
+      const colorSwatches = document.querySelectorAll('.presentation-color-swatch-btn');
+      colorSwatches.forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const color = btn.dataset.color || '#1e293b';
+          this.addColorSlide(color);
+          if (els.colorPickerPopover) els.colorPickerPopover.style.display = 'none';
+        };
+      });
+
+      // 純色頁自訂底色確認按鈕
+      if (els.btnConfirmCustomColor && els.customBgColorInput) {
+        els.btnConfirmCustomColor.onclick = (e) => {
+          e.stopPropagation();
+          const color = els.customBgColorInput.value || '#1e293b';
+          this.addColorSlide(color);
+          if (els.colorPickerPopover) els.colorPickerPopover.style.display = 'none';
+        };
       }
 
       // 新增圖片頁
@@ -195,10 +231,41 @@
       if (els.btnPrev) els.btnPrev.onclick = () => this.prevSlide();
       if (els.btnNext) els.btnNext.onclick = () => this.nextSlide();
 
-      // 標註筆與雷射筆工具切換
+      // 標註筆與雷射筆工具切換 (圖 2：標記工具提供多種常用顏色切換)
       if (els.btnToolPen) {
-        els.btnToolPen.onclick = () => this.setTool(this.currentTool === 'pen' ? 'none' : 'pen');
+        els.btnToolPen.onclick = (e) => {
+          e.stopPropagation();
+          if (this.currentTool === 'pen') {
+            if (els.penPalette) {
+              const isVis = els.penPalette.style.display !== 'none';
+              els.penPalette.style.display = isVis ? 'none' : 'flex';
+            }
+          } else {
+            this.setTool('pen');
+            if (els.penPalette) els.penPalette.style.display = 'flex';
+          }
+        };
       }
+
+      // 標記筆選色按鈕事件
+      const penPaletteBtns = document.querySelectorAll('.presentation-palette-color');
+      penPaletteBtns.forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const color = btn.dataset.color || '#ef4444';
+          this.setPenColor(color);
+        };
+      });
+
+      // 點擊空白處自動關閉彈窗浮層
+      document.addEventListener('click', (e) => {
+        if (els.colorPickerPopover && !els.colorPickerPopover.contains(e.target) && e.target !== els.btnAddColor) {
+          els.colorPickerPopover.style.display = 'none';
+        }
+        if (els.penPalette && !els.penPalette.contains(e.target) && !els.btnToolPen?.contains(e.target)) {
+          els.penPalette.style.display = 'none';
+        }
+      });
       if (els.btnToolLaser) {
         els.btnToolLaser.onclick = () => this.setTool(this.currentTool === 'laser' ? 'none' : 'laser');
       }
@@ -367,8 +434,8 @@
         if (this.currentTool === 'pen') {
           this.isDrawing = true;
           this.currentStroke = {
-            color: '#ef4444',
-            width: 4,
+            color: this.penColor || '#ef4444',
+            width: this.penWidth || 4,
             points: [[rx, ry]]
           };
           this.drawCurrentStroke();
@@ -448,25 +515,43 @@
         }
       });
 
-      // 1. 監聽簡報同步狀態與當前頁
+      // 1. 監聽簡報同步狀態與當前頁 (圖 1：修復同步狀態生命週期與結束簡報)
       presRef.child('live').on('value', (snap) => {
         const data = snap.val();
         if (!data) return;
 
         const myUser = this.getUserInfo();
+        // 檢查廣播資料是否在 25 分鐘之內活躍更新 (避免過期舊廣播遺留卡住)
+        const isFresh = Boolean(data.updatedAt && (Date.now() - data.updatedAt < 1500000));
+        const isBroadcastingNow = Boolean(data.isPresenting && isFresh);
         const isAnotherHost = data.hostUid && data.hostUid !== myUser.uid;
-        this.isRemoteBroadcastingActive = Boolean(data.isPresenting && isAnotherHost && !this.isTeacher());
 
-        if (this.isRemoteBroadcastingActive) {
-          this.isPresenting = true;
-          if (typeof data.currentSlideIndex === 'number' && data.currentSlideIndex !== this.currentSlideIndex) {
-            this.currentSlideIndex = data.currentSlideIndex;
-            this.render();
+        if (!isBroadcastingNow) {
+          // 目前無有效廣播中
+          this.isRemoteBroadcastingActive = false;
+          if (this.isPresenting && isAnotherHost) {
+            this.isPresenting = false;
           }
-        } else if (data.isPresenting && (!data.hostUid || data.hostUid === myUser.uid)) {
-          this.isPresenting = true;
-        } else if (!data.isPresenting) {
-          this.isPresenting = false;
+        } else {
+          // 當前有活躍廣播
+          if (this.isTeacher()) {
+            if (data.hostUid === myUser.uid) {
+              this.isPresenting = true;
+              this.isRemoteBroadcastingActive = false;
+            } else {
+              // 另一位老師正在廣播
+              this.isRemoteBroadcastingActive = true;
+              this.isPresenting = false;
+            }
+          } else {
+            // 學生端：跟隨老師同步廣播
+            this.isRemoteBroadcastingActive = true;
+            this.isPresenting = true;
+            if (typeof data.currentSlideIndex === 'number' && data.currentSlideIndex !== this.currentSlideIndex) {
+              this.currentSlideIndex = data.currentSlideIndex;
+              this.render();
+            }
+          }
         }
         this.updateSyncButtonUI();
         this.updatePermissionsUI();
@@ -545,21 +630,70 @@
       }
     }
 
-    // 開啟/結束同步簡報
-    toggleSyncPresentation() {
+    // 開啟同步廣播
+    startSyncPresentation() {
       if (this.slides.length === 0) {
         this.notify('提示', '請先新增至少一頁簡報才能開始同步！');
         return;
       }
 
-      this.isPresenting = !this.isPresenting;
-      this.broadcastLiveState();
-      this.updateSyncButtonUI();
+      const user = this.getUserInfo();
+      this.isPresenting = true;
+      this.isRemoteBroadcastingActive = false;
 
+      if (typeof db !== 'undefined') {
+        const liveRef = db.ref('presentation/live');
+        liveRef.set({
+          isPresenting: true,
+          currentSlideIndex: this.currentSlideIndex,
+          hostUid: user.uid,
+          hostName: user.name,
+          updatedAt: Date.now()
+        }).catch(err => console.warn('startSyncPresentation error:', err));
+
+        // 離線自動解除廣播：關閉分頁或斷線時將 isPresenting 標記為 false
+        liveRef.child('isPresenting').onDisconnect().set(false);
+
+        if (this.slides.length > 0) {
+          try {
+            db.ref('presentation/slides').set(this.slides).catch(() => {});
+          } catch (e) {}
+        }
+      }
+
+      this.updateSyncButtonUI();
+      this.notify('🎉 同步簡報已開啟', '全班學生畫面將自動同步顯示當前簡報！');
+    }
+
+    // 結束同步廣播 (圖 1：確實停止廣播並清理狀態)
+    stopSyncPresentation() {
+      this.isPresenting = false;
+      this.isRemoteBroadcastingActive = false;
+
+      if (typeof db !== 'undefined') {
+        db.ref('presentation/live').set({
+          isPresenting: false,
+          currentSlideIndex: this.currentSlideIndex,
+          hostUid: '',
+          hostName: '',
+          updatedAt: Date.now()
+        }).catch(err => console.warn('stopSyncPresentation error:', err));
+
+        // 清除雷射筆
+        db.ref('presentation/laser').remove().catch(() => {});
+      }
+
+      this.updateSyncButtonUI();
+      this.updatePermissionsUI();
+      this.notify('🏁 同步簡報已結束', '已關閉學生跟隨同步。');
+    }
+
+    // 切換開始/結束同步簡報 (圖 1)
+    toggleSyncPresentation() {
       if (this.isPresenting) {
-        this.notify('🎉 同步簡報已開啟', '全班學生畫面將自動同步顯示當前簡報！');
+        this.stopSyncPresentation();
       } else {
-        this.notify('🏁 同步簡報已結束', '已關閉學生跟隨同步。');
+        this.startSyncPresentation();
       }
     }
 
@@ -580,10 +714,22 @@
       }
     }
 
+    // 設定標記筆色彩 (圖 2)
+    setPenColor(color) {
+      this.penColor = color;
+      if (this.els.penColorDot) {
+        this.els.penColorDot.style.backgroundColor = color;
+      }
+      const btns = document.querySelectorAll('.presentation-palette-color');
+      btns.forEach(btn => {
+        btn.classList.toggle('is-selected', btn.dataset.color === color);
+      });
+    }
+
     // 設定當前標註工具 ('none' | 'pen' | 'laser')
     setTool(tool) {
       this.currentTool = tool;
-      const { btnToolPen, btnToolLaser, annotationCanvas, screen } = this.els;
+      const { btnToolPen, btnToolLaser, annotationCanvas, screen, penPalette } = this.els;
 
       if (btnToolPen) btnToolPen.classList.toggle('active', tool === 'pen');
       if (btnToolLaser) btnToolLaser.classList.toggle('active', tool === 'laser');
@@ -593,6 +739,10 @@
       }
       if (screen) {
         screen.style.cursor = tool === 'laser' ? 'crosshair' : (tool === 'pen' ? 'crosshair' : 'default');
+      }
+
+      if (tool !== 'pen' && penPalette) {
+        penPalette.style.display = 'none';
       }
 
       if (tool !== 'laser') {
@@ -643,8 +793,8 @@
       const p2 = pts[pts.length - 1];
 
       ctx.beginPath();
-      ctx.strokeStyle = this.currentStroke.color || '#ef4444';
-      ctx.lineWidth = this.currentStroke.width || 4;
+      ctx.strokeStyle = this.currentStroke.color || this.penColor || '#ef4444';
+      ctx.lineWidth = this.currentStroke.width || this.penWidth || 4;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.moveTo(p1[0] * w, p1[1] * h);
@@ -714,6 +864,8 @@
     // 頁面變更觸發動作
     onSlideChanged() {
       this.myAnswers = {};
+      this.currentStudentQuestionIndex = 0;
+      this.isFloatingDrawerOpen = false;
       this.render();
       if (this.isPresenting) {
         this.broadcastLiveState();
@@ -964,7 +1116,7 @@
       });
     }
 
-    // 渲染學生端作答介面 (浮動表情回饋條 或 卡片彈窗)
+    // 渲染學生端作答介面 (圖 4 & 圖 5: 完整支援多題互動、分步模式、整頁捲動與置底浮動條)
     renderStudentInteraction() {
       const area = this.els.studentInteractionArea;
       if (!area) return;
@@ -974,12 +1126,24 @@
       if (this.isPresenting && !this.isRemoteBroadcastingActive) return;
 
       const slide = this.getCurrentSlide();
-      if (!slide || !slide.questions || slide.questions.length === 0) return;
+      if (!slide) return;
 
+      const questions = Array.isArray(slide.questions) ? slide.questions : [];
       const mode = slide.displayMode || 'step';
+      const hasQuestions = questions.length > 0;
 
-      // 模式 C：輕量浮動表情回饋條 (Floating Reaction Bar)
+      // 若完全無題目且不是 floating 模式，不需顯示
+      if (!hasQuestions && mode !== 'floating') return;
+
+      const userInfo = this.getUserInfo();
+      const mySub = this.submissions[slide.id]?.[userInfo.uid];
+      const isSubmitted = Boolean(mySub);
+
+      // 1. 浮動表情回饋條 (Floating Mode 或置底即時表情)
       if (mode === 'floating') {
+        const wrap = document.createElement('div');
+        wrap.className = 'presentation-floating-drawer-wrap';
+
         const bar = document.createElement('div');
         bar.className = 'presentation-floating-reaction-bar';
 
@@ -989,40 +1153,99 @@
           btn.type = 'button';
           btn.className = 'presentation-reaction-btn';
           btn.textContent = emo;
+          btn.title = `點擊送出 ${emo} 心情回饋`;
           btn.onclick = () => this.submitStudentAnswer({ reaction: emo });
           bar.appendChild(btn);
         });
-        area.appendChild(bar);
-        return;
+        wrap.appendChild(bar);
+
+        // 若本頁有自訂題目，提供展開/收合作答按鈕
+        if (hasQuestions) {
+          const drawerBtn = document.createElement('button');
+          drawerBtn.type = 'button';
+          drawerBtn.className = 'presentation-floating-drawer-btn';
+          drawerBtn.innerHTML = `
+            <span>📝</span>
+            <span>${this.isFloatingDrawerOpen ? '收合作答' : `互動作答 (${questions.length} 題)`}</span>
+            ${isSubmitted ? '<span style="color: #6ee7b7; font-size: 11px;">(已交)</span>' : ''}
+          `;
+          drawerBtn.onclick = () => {
+            this.isFloatingDrawerOpen = !this.isFloatingDrawerOpen;
+            this.renderStudentInteraction();
+          };
+          wrap.appendChild(drawerBtn);
+        }
+
+        area.appendChild(wrap);
+
+        // 若收合狀態且為 floating 模式，則作答卡片不顯示
+        if (!this.isFloatingDrawerOpen && hasQuestions) {
+          return;
+        }
       }
 
-      // 模式 A / B：卡片彈窗
+      // 2. 題目作答對話框 (Step 模式、Scroll 模式、或 Floating 展開時)
+      if (!hasQuestions) return;
+
       const dialog = document.createElement('div');
       dialog.className = 'presentation-student-dialog';
 
-      const userInfo = this.getUserInfo();
-      const mySub = this.submissions[slide.id]?.[userInfo.uid];
-      const isSubmitted = Boolean(mySub);
+      const totalQ = questions.length;
+      if (typeof this.currentStudentQuestionIndex !== 'number' || this.currentStudentQuestionIndex >= totalQ) {
+        this.currentStudentQuestionIndex = 0;
+      }
+      const qIdx = this.currentStudentQuestionIndex;
+
+      // 標題列
+      let headTitle = '📝 隨堂互動作答';
+      if (mode === 'step') {
+        headTitle = `📝 隨堂作答 (第 ${qIdx + 1} / ${totalQ} 題)`;
+      } else {
+        headTitle = `📝 隨堂作答 (共 ${totalQ} 題)`;
+      }
 
       dialog.innerHTML = `
         <div class="presentation-student-dialog-head">
-          <span class="presentation-student-dialog-title">📝 隨堂互動作答</span>
-          ${isSubmitted ? '<span style="color: #10b981; font-size: 11px; font-weight: 700;">✅ 已提交</span>' : ''}
+          <span class="presentation-student-dialog-title">${headTitle}</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            ${isSubmitted ? '<span style="color: #10b981; font-size: 11px; font-weight: 700;">✅ 已提交</span>' : ''}
+            ${mode === 'floating' ? '<button type="button" class="presentation-btn-close-sub" id="btnCloseStudentDrawer" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:14px;" title="收合">✕</button>' : ''}
+          </div>
         </div>
+        ${mode === 'step' ? `
+          <div style="padding: 0 16px;">
+            <div class="presentation-step-progress">
+              <span>進度 ${qIdx + 1} / ${totalQ}</span>
+              <span>${Math.round(((qIdx + 1) / totalQ) * 100)}%</span>
+            </div>
+            <div class="presentation-step-progress-bar">
+              <div class="presentation-step-progress-fill" style="width: ${((qIdx + 1) / totalQ) * 100}%;"></div>
+            </div>
+          </div>
+        ` : ''}
         <div class="presentation-student-dialog-body" id="presStudentDialogBody"></div>
-        <div class="presentation-student-dialog-footer">
-          <button type="button" class="presentation-tool-btn active" id="btnSubmitPresAnswers">
-            ${isSubmitted ? '重新送出' : '🚀 送出答案'}
-          </button>
-        </div>
+        <div class="presentation-student-dialog-footer" id="presStudentDialogFooter"></div>
       `;
 
       area.appendChild(dialog);
 
+      if (mode === 'floating') {
+        const closeBtn = dialog.querySelector('#btnCloseStudentDrawer');
+        if (closeBtn) {
+          closeBtn.onclick = () => {
+            this.isFloatingDrawerOpen = false;
+            this.renderStudentInteraction();
+          };
+        }
+      }
+
       const body = dialog.querySelector('#presStudentDialogBody');
-      slide.questions.forEach((q, qIndex) => {
+      const footer = dialog.querySelector('#presStudentDialogFooter');
+
+      // 渲染題目函數
+      const renderQuestionBlock = (q, displayIndex) => {
         const qContainer = document.createElement('div');
-        qContainer.innerHTML = `<div class="presentation-student-q-title">${qIndex + 1}. ${this.escapeHtml(q.title || '請作答')}</div>`;
+        qContainer.innerHTML = `<div class="presentation-student-q-title">${displayIndex + 1}. ${this.escapeHtml(q.title || '請作答')}</div>`;
 
         // 快速色塊選擇題
         if (q.type === 'quick_choice') {
@@ -1085,7 +1308,7 @@
           [1, 2, 3, 4, 5].forEach(star => {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'presentation-tool-btn';
+            btn.className = `presentation-tool-btn ${this.myAnswers[q.id] === `${star} 顆星` ? 'active' : ''}`;
             btn.textContent = `⭐ ${star}`;
             btn.onclick = () => {
               this.myAnswers[q.id] = `${star} 顆星`;
@@ -1097,17 +1320,69 @@
           qContainer.appendChild(ratingWrap);
         }
 
-        body.appendChild(qContainer);
-      });
-
-      // 送出答案
-      dialog.querySelector('#btnSubmitPresAnswers').onclick = () => {
-        if (Object.keys(this.myAnswers).length === 0) {
-          this.notify('提示', '請先選擇或填寫答案再送出喔！');
-          return;
-        }
-        this.submitStudentAnswer(this.myAnswers);
+        return qContainer;
       };
+
+      // 根據模式渲染題目本體
+      if (mode === 'step') {
+        body.appendChild(renderQuestionBlock(questions[qIdx], qIdx));
+
+        // Footer 按鈕: 上一題 / 下一題 / 送出
+        if (qIdx > 0) {
+          const prevBtn = document.createElement('button');
+          prevBtn.type = 'button';
+          prevBtn.className = 'presentation-tool-btn';
+          prevBtn.textContent = '◀ 上一題';
+          prevBtn.onclick = () => {
+            this.currentStudentQuestionIndex--;
+            this.renderStudentInteraction();
+          };
+          footer.appendChild(prevBtn);
+        }
+
+        if (qIdx < totalQ - 1) {
+          const nextBtn = document.createElement('button');
+          nextBtn.type = 'button';
+          nextBtn.className = 'presentation-tool-btn active';
+          nextBtn.textContent = '下一題 ▶';
+          nextBtn.onclick = () => {
+            this.currentStudentQuestionIndex++;
+            this.renderStudentInteraction();
+          };
+          footer.appendChild(nextBtn);
+        } else {
+          const submitBtn = document.createElement('button');
+          submitBtn.type = 'button';
+          submitBtn.className = 'presentation-tool-btn active';
+          submitBtn.textContent = isSubmitted ? '重新送出' : '🚀 完成送出';
+          submitBtn.onclick = () => {
+            if (Object.keys(this.myAnswers).length === 0) {
+              this.notify('提示', '請先選擇或填寫答案再送出喔！');
+              return;
+            }
+            this.submitStudentAnswer(this.myAnswers);
+          };
+          footer.appendChild(submitBtn);
+        }
+      } else {
+        // scroll 模式或 floating 展開模式：展示全部題目
+        questions.forEach((q, index) => {
+          body.appendChild(renderQuestionBlock(q, index));
+        });
+
+        const submitBtn = document.createElement('button');
+        submitBtn.type = 'button';
+        submitBtn.className = 'presentation-tool-btn active';
+        submitBtn.textContent = isSubmitted ? '重新送出' : '🚀 送出全部答案';
+        submitBtn.onclick = () => {
+          if (Object.keys(this.myAnswers).length === 0) {
+            this.notify('提示', '請先選擇或填寫答案再送出喔！');
+            return;
+          }
+          this.submitStudentAnswer(this.myAnswers);
+        };
+        footer.appendChild(submitBtn);
+      }
     }
 
     // 送出作答至 Firebase

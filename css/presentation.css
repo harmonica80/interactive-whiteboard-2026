@@ -131,6 +131,66 @@
   flex-wrap: wrap;
 }
 
+/* 標記筆選色小工具列樣式 (圖 2) */
+.presentation-pen-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.presentation-pen-color-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+  margin-right: 4px;
+  transition: background-color 0.2s;
+}
+
+.presentation-pen-palette {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 100;
+  animation: fadeInDown 0.18s ease-out;
+}
+
+.presentation-palette-color {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.presentation-palette-color:hover {
+  transform: scale(1.18);
+}
+
+.presentation-palette-color.is-selected {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2563eb;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .presentation-live-badge {
   font-size: 11px;
   padding: 2px 8px;
@@ -230,6 +290,49 @@
 .presentation-add-page-btn:hover {
   background: #f1f5f9;
   border-color: #94a3b8;
+}
+
+/* 純色頁背景選色浮窗 (圖 1) */
+.presentation-add-color-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.presentation-color-picker-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  padding: 10px 12px;
+  z-index: 100;
+  width: 168px;
+  box-sizing: border-box;
+  animation: fadeInDown 0.18s ease-out;
+}
+
+.presentation-color-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.presentation-color-swatch-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.presentation-color-swatch-btn:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .presentation-thumbnails-container {
@@ -805,6 +908,65 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* 分步卡片進度條 (Step Mode) */
+.presentation-step-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.presentation-step-progress-bar {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.presentation-step-progress-fill {
+  height: 100%;
+  background: #2563eb;
+  transition: width 0.25s ease;
+}
+
+/* 浮動表情條中的作答按鈕 (Floating Mode) */
+.presentation-floating-drawer-wrap {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 25;
+}
+
+.presentation-floating-drawer-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.presentation-floating-drawer-btn:hover {
+  transform: scale(1.05);
+  background: #1d4ed8;
 }
 
 /* ===== 匯入/匯出彈窗樣式 (圖 3) ===== */
