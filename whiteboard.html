@@ -628,6 +628,113 @@
       z-index: 30;
     }
 
+    /* 還原 / 重做按鈕樣式 (Item 1) */
+    .toolbar-history {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-color);
+      width: 100%;
+    }
+    .tool-btn-history {
+      width: 28px;
+      height: 28px;
+      border: 1px solid transparent;
+      background: #f8fafc;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      transition: all 0.15s;
+    }
+    .tool-btn-history:hover:not(:disabled) {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+    .tool-btn-history:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* 學生列表鎖定按鈕與狀態標籤 (Item 8) */
+    .lock-duration-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .btn-lock-time {
+      padding: 10px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .btn-lock-time:hover {
+      background: #e0f2fe;
+      border-color: #0284c7;
+      color: #0369a1;
+    }
+    .btn-lock-perm {
+      grid-column: span 2;
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #dc2626;
+    }
+    .btn-lock-perm:hover {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #b91c1c;
+    }
+    .btn-student-lock-action {
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: #f8fafc;
+      color: var(--text-main);
+      transition: all 0.15s;
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+    .btn-student-lock-action:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #ef4444;
+    }
+    .btn-student-unlock-action {
+      background: #fef2f2;
+      border-color: #fca5a5;
+      color: #ef4444;
+    }
+    .btn-student-unlock-action:hover {
+      background: #f0fdf4;
+      border-color: #86efac;
+      color: #16a34a;
+    }
+    .student-locked-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: #dc2626;
+      background: #fef2f2;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #fecaca;
+      margin-left: 4px;
+      white-space: nowrap;
+    }
+
     .color-swatch {
       width: 24px;
       height: 24px;
@@ -1223,6 +1330,10 @@
         <button class="btn-toggle-perm is-active" id="btnToggleMoveOthers" title="設定學生是否可移動別人的物件">
           <span>👥 可動他人物件</span>
         </button>
+        <!-- 學生增減頁面權限開關 (Item 7, 如圖 6) -->
+        <button class="btn-toggle-perm is-inactive" id="btnToggleStudentPages" title="設定學生是否可以增減畫布與頁數">
+          <span>🔒 僅老師管頁面</span>
+        </button>
 
         <!-- 視角模式 (全班跟隨 / 自由分組) -->
         <button class="btn-pill" id="btnFollowMode" title="切換全班跟隨老師視角或自由分組">
@@ -1232,8 +1343,9 @@
           <span>📢 召集全班</span>
         </button>
 
-        <button class="btn-pill" id="btnExport" title="匯出高畫質圖片">
-          <span>匯出</span>
+        <!-- 匯入 / 匯出 (Item 6, 如圖 5) -->
+        <button class="btn-pill" id="btnExport" title="匯入與匯出畫布資料">
+          <span>匯入/匯出</span>
         </button>
         <button class="btn-pill" id="btnToggleDrawer" title="開啟參與者名單">
           <span>👥</span>
@@ -1296,7 +1408,14 @@
             <button class="btn-minimap-zoom" id="btnZoomOut" title="縮小 (Ctrl + 滾輪)">−</button>
             <span class="minimap-zoom-val" id="zoomVal" title="點擊重設 100%">100%</span>
             <button class="btn-minimap-zoom" id="btnZoomIn" title="放大 (Ctrl + 滾輪)">+</button>
-            <button class="btn-minimap-zoom" id="btnZoomReset" title="自適應視角">⤢</button>
+            <button class="btn-minimap-zoom" id="btnZoomReset" title="讓所有物件完全顯示在畫面中 (如圖 4)">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 9 4 4 9 4"></polyline>
+                <polyline points="20 9 20 4 15 4"></polyline>
+                <polyline points="4 15 4 20 9 20"></polyline>
+                <polyline points="20 15 20 20 15 20"></polyline>
+              </svg>
+            </button>
             <button class="btn-minimap-toggle" id="btnToggleMinimap" title="展開/收合白板物件預覽 (如圖 4)">
               <svg id="iconMinimapToggle" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
@@ -1319,10 +1438,16 @@
               <path d="M3 3l7 18 3-7 7-3L3 3z"/>
             </svg>
           </button>
-          <!-- 2. 手繪筆刷 (Brush) -->
-          <button class="tool-btn" data-tool="pen" title="毛筆/筆刷工具 (P)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18.375 2.625a3.875 3.875 0 0 0-3.875 3.875c0 .762.222 1.472.607 2.072L5.454 18.225a2.25 2.25 0 0 0-.616 1.157l-.808 3.636a.75.75 0 0 0 .894.894l3.636-.808c.427-.095.823-.311 1.157-.616l9.653-9.653c.6.385 1.31.607 2.072.607A3.875 3.875 0 0 0 21.375 6.5a3.875 3.875 0 0 0-3-3.875z"/>
+          <!-- 2. 手繪筆 (Pencil - 如圖 1 鉛筆圖示) -->
+          <button class="tool-btn" data-tool="pen" title="鉛筆手繪工具 (P)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L19.5 7.5l-3-3L18.5 2.5z" fill="currentColor"/>
+              <path d="M16.5 4.5l3 3"/>
+              <path d="M16.5 4.5 7 14l3 3 9.5-9.5"/>
+              <path d="m9.5 11.5 8-8"/>
+              <path d="m11.5 13.5 8-8"/>
+              <path d="m7 14-4 7 7-4"/>
+              <path d="m3 21 2.2-.8-1.4-1.4L3 21z" fill="currentColor"/>
             </svg>
           </button>
           <!-- 3. 矩形 -->
@@ -1406,16 +1531,16 @@
         <!-- 顏色與線條粗細設定 -->
         <div class="toolbar-styles">
           <div class="color-btn-wrapper">
-            <div class="color-current-dot" id="colorCurrentDot" title="選擇筆刷與形狀顏色"></div>
+            <div class="color-current-dot" id="colorCurrentDot" style="background:#2563eb;" title="選擇筆刷與形狀顏色"></div>
             <!-- 顏色快選盤 -->
             <div class="color-palette-popover" id="colorPalette">
+              <div class="color-swatch" style="background:#2563eb;" data-color="#2563eb"></div>
               <div class="color-swatch" style="background:#1e293b;" data-color="#1e293b"></div>
               <div class="color-swatch" style="background:#ef4444;" data-color="#ef4444"></div>
               <div class="color-swatch" style="background:#f97316;" data-color="#f97316"></div>
               <div class="color-swatch" style="background:#eab308;" data-color="#eab308"></div>
               <div class="color-swatch" style="background:#10b981;" data-color="#10b981"></div>
               <div class="color-swatch" style="background:#06b6d4;" data-color="#06b6d4"></div>
-              <div class="color-swatch" style="background:#3b82f6;" data-color="#3b82f6"></div>
               <div class="color-swatch" style="background:#8b5cf6;" data-color="#8b5cf6"></div>
             </div>
           </div>
@@ -1424,6 +1549,22 @@
             <option value="4" selected>中</option>
             <option value="8">粗</option>
           </select>
+        </div>
+
+        <!-- 還原 / 重做操作按鈕 (Item 1) -->
+        <div class="toolbar-history">
+          <button class="tool-btn-history" id="btnUndo" title="還原上一步 (Ctrl + Z)" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7v6h6"/>
+              <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+            </svg>
+          </button>
+          <button class="tool-btn-history" id="btnRedo" title="重做下一步 (Ctrl + Y / Ctrl + Shift + Z)" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 7v6h-6"/>
+              <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
+            </svg>
+          </button>
         </div>
       </aside>
 
@@ -1552,8 +1693,41 @@
         </div>
       </div>
     </div>
+    <!-- 7. 學生個別鎖定彈窗 (Item 8, 如圖 7) -->
+    <div class="modal-overlay" id="studentLockModal">
+      <div class="modal-card" style="max-width: 440px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span style="font-size: 18px;">🔒</span>
+            <span>設定學生編輯限制：<span id="lockStudentTargetName" style="color:var(--primary); font-weight:700;"></span></span>
+          </div>
+          <button class="btn-close" id="btnCloseStudentLockModal">✕</button>
+        </div>
+        <div style="padding: 20px 24px;">
+          <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 12px 0;">
+            鎖定後該學生將暫時無法新增、編輯或移動白板上的任何物件：
+          </p>
+          <div class="lock-duration-grid">
+            <button class="btn-lock-time" data-duration="30">⏱️ 30 秒</button>
+            <button class="btn-lock-time" data-duration="60">⏱️ 1 分鐘</button>
+            <button class="btn-lock-time" data-duration="180">⏱️ 3 分鐘</button>
+            <button class="btn-lock-time" data-duration="300">⏱️ 5 分鐘</button>
+            <button class="btn-lock-time" data-duration="600">⏱️ 10 分鐘</button>
+            <button class="btn-lock-time" data-duration="1800">⏱️ 30 分鐘</button>
+            <button class="btn-lock-time btn-lock-perm" data-duration="-1">🛑 永久鎖定（需手動解鎖）</button>
+          </div>
+          <div id="lockStudentStatusBox" style="display:none; margin-top:14px; padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size:13px; color:#b91c1c; display:flex; align-items:center; justify-content:space-between;">
+            <span id="lockStudentStatusText">目前狀態：已鎖定</span>
+            <button class="btn-secondary" id="btnUnlockStudentDirect" style="padding:4px 10px; font-size:12px; border-color:#fca5a5; color:#dc2626; background:#fff;">解除鎖定</button>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end;">
+          <button class="btn-secondary" id="btnCancelStudentLockModal">關閉</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <script src="js/whiteboard_core.js?v=3001"></script>
+  <script src="js/whiteboard_core.js?v=3002"></script>
 </body>
 </html>

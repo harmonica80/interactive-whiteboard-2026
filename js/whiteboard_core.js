@@ -69,11 +69,12 @@
       canMoveOthers: true,
       followTeacher: true,
       showAuthorBadge: true,
+      studentCanManagePages: false, // 學生增減畫布與頁數權限 (Item 7，預設為否)
       activeCanvasId: 'main',
       activePageId: 'page_1'
     },
     currentTool: 'select', // select, pen, rect, circle, arrow, sticky, hand, eraser
-    currentColor: '#1e293b',
+    currentColor: '#2563eb', // 工具列預設顏色改為藍色 (Item 4)
     currentStrokeWidth: 4,
     showAuthorBadge: true,
     view: { x: 0, y: 0, zoom: 1 },
@@ -89,7 +90,10 @@
     isMarqueeSelecting: false,
     marqueeStart: { x: 0, y: 0 },
     activeDrawing: null,
-    onlineUsers: {}
+    onlineUsers: {},
+    lockedStudents: {}, // 遭個別鎖定編輯之學生名單 (Item 8)
+    isIndividuallyLocked: false,
+    individualLockUntil: null
   };
 
   // ===== DOM 參照 =====
@@ -104,6 +108,9 @@
     btnAddCanvas: document.getElementById('btnAddCanvas'),
     btnDeleteCanvas: document.getElementById('btnDeleteCanvas'),
     btnAddPage: document.getElementById('btnAddPage'),
+    btnToggleStudentPages: document.getElementById('btnToggleStudentPages'),
+    btnUndo: document.getElementById('btnUndo'),
+    btnRedo: document.getElementById('btnRedo'),
     // 右下角縮放與白板小地圖導航 (Item 5)
     canvasMinimapWidget: document.getElementById('canvasMinimapWidget'),
     btnZoomIn: document.getElementById('btnZoomIn'),
@@ -143,6 +150,14 @@
     btnConfirmInsertPdf: document.getElementById('btnConfirmInsertPdf'),
     pdfTotalPages: document.getElementById('pdfTotalPages'),
     pdfSelectAll: document.getElementById('pdfSelectAll'),
+    // Student Lock Modal (Item 8)
+    studentLockModal: document.getElementById('studentLockModal'),
+    lockStudentTargetName: document.getElementById('lockStudentTargetName'),
+    btnCloseStudentLockModal: document.getElementById('btnCloseStudentLockModal'),
+    btnCancelStudentLockModal: document.getElementById('btnCancelStudentLockModal'),
+    lockStudentStatusBox: document.getElementById('lockStudentStatusBox'),
+    lockStudentStatusText: document.getElementById('lockStudentStatusText'),
+    btnUnlockStudentDirect: document.getElementById('btnUnlockStudentDirect'),
     pdfSelectedBadge: document.getElementById('pdfSelectedBadge'),
     pdfThumbnailGrid: document.getElementById('pdfThumbnailGrid'),
     btnInsertPdf: document.getElementById('btnInsertPdf'),
@@ -220,6 +235,8 @@
       Object.assign(state.settings, val);
       state.showAuthorBadge = state.settings.showAuthorBadge !== false;
       applySettingsUI();
+      renderCanvasSelector();
+      renderPagesTabs();
 
       // 若啟用了「全班跟隨老師視角」且當前使用者是學生，強制切換到老師當前頁
       if (!isTeacherUser() && state.settings.followTeacher) {
@@ -249,7 +266,14 @@
       }
     });
 
-    // 4. 線上參與者 (Presence)
+    // 4. 個別學生鎖定名單監聽 (Item 8)
+    roomRef.child('lockedStudents').on('value', (snap) => {
+      state.lockedStudents = snap.val() || {};
+      checkMyLockStatus();
+      renderParticipantsList();
+    });
+
+    // 5. 線上參與者 (Presence)
     myPresenceRef = roomRef.child('presence').child(myPresenceKey);
     updateMyPresence();
     myPresenceRef.onDisconnect().remove();
@@ -308,6 +332,100 @@
   }
 
   // ===== UI 控制與權限套用 =====
+  let lockCountdownTimer = null;
+
+  function canManagePages() {
+    return isTeacherUser() || Boolean(state.settings.studentCanManagePages);
+  }
+
+  function isStudentAllowedToEdit() {
+    if (isTeacherUser()) return true;
+    if (state.isIndividuallyLocked) return false;
+    return Boolean(state.settings.studentCanEdit);
+  }
+
+  function checkMyLockStatus() {
+    if (isTeacherUser()) {
+      state.isIndividuallyLocked = false;
+      state.individualLockUntil = null;
+      if (lockCountdownTimer) {
+        clearInterval(lockCountdownTimer);
+        lockCountdownTimer = null;
+      }
+      return;
+    }
+    const lockedMap = state.lockedStudents || {};
+    let activeLock = null;
+    const now = Date.now();
+
+    for (const [key, lock] of Object.entries(lockedMap)) {
+      if (!lock) continue;
+      if (key === myClientId || key === persistentUid || key === myName || lock.name === myName || lock.uid === persistentUid) {
+        if (lock.until === -1 || lock.until > now) {
+          activeLock = lock;
+          break;
+        }
+      }
+    }
+
+    if (activeLock) {
+      state.isIndividuallyLocked = true;
+      state.individualLockUntil = activeLock.until;
+      updateLockCountdownBanner();
+      if (!lockCountdownTimer) {
+        lockCountdownTimer = setInterval(updateLockCountdownBanner, 1000);
+      }
+    } else {
+      const wasLocked = state.isIndividuallyLocked;
+      state.isIndividuallyLocked = false;
+      state.individualLockUntil = null;
+      if (lockCountdownTimer) {
+        clearInterval(lockCountdownTimer);
+        lockCountdownTimer = null;
+      }
+      if (wasLocked) {
+        flashToast('🎉 您的編輯限制已被解除，已恢復編輯！');
+      }
+      applySettingsUI();
+    }
+  }
+
+  function updateLockCountdownBanner() {
+    if (!state.isIndividuallyLocked) {
+      if (lockCountdownTimer) {
+        clearInterval(lockCountdownTimer);
+        lockCountdownTimer = null;
+      }
+      applySettingsUI();
+      return;
+    }
+    const until = state.individualLockUntil;
+    if (until === -1) {
+      els.readonlyBanner.textContent = '🔒 您已被老師個別限制編輯白板（永久鎖定，直到老師解除）';
+      els.readonlyBanner.style.display = 'block';
+      disableDrawingTools(true);
+    } else {
+      const remainingSec = Math.ceil((until - Date.now()) / 1000);
+      if (remainingSec <= 0) {
+        state.isIndividuallyLocked = false;
+        state.individualLockUntil = null;
+        if (lockCountdownTimer) {
+          clearInterval(lockCountdownTimer);
+          lockCountdownTimer = null;
+        }
+        flashToast('🎉 編輯限制時間已結束，已恢復白板編輯權限！');
+        applySettingsUI();
+        return;
+      }
+      const min = Math.floor(remainingSec / 60);
+      const sec = remainingSec % 60;
+      const timeStr = min > 0 ? `${min} 分 ${sec} 秒` : `${sec} 秒`;
+      els.readonlyBanner.textContent = `⏱️ 您已被老師個別限制編輯白板（剩餘禁言時間：${timeStr}）`;
+      els.readonlyBanner.style.display = 'block';
+      disableDrawingTools(true);
+    }
+  }
+
   function applySettingsUI() {
     // 學生可編輯開關
     if (els.btnToggleStudentEdit) {
@@ -335,6 +453,19 @@
       }
     }
 
+    // 學生增減頁面權限開關 (Item 7, 如圖 6)
+    if (els.btnToggleStudentPages) {
+      if (state.settings.studentCanManagePages) {
+        els.btnToggleStudentPages.classList.add('is-active');
+        els.btnToggleStudentPages.classList.remove('is-inactive');
+        els.btnToggleStudentPages.innerHTML = '<span>🔓 學生可管頁面</span>';
+      } else {
+        els.btnToggleStudentPages.classList.remove('is-active');
+        els.btnToggleStudentPages.classList.add('is-inactive');
+        els.btnToggleStudentPages.innerHTML = '<span>🔒 僅老師管頁面</span>';
+      }
+    }
+
     const teacher = isTeacherUser();
 
     // 跟隨老師模式
@@ -354,12 +485,20 @@
     if (!teacher) {
       if (els.btnToggleStudentEdit) els.btnToggleStudentEdit.style.display = 'none';
       if (els.btnToggleMoveOthers) els.btnToggleMoveOthers.style.display = 'none';
+      if (els.btnToggleStudentPages) els.btnToggleStudentPages.style.display = 'none';
       if (els.btnFollowMode) els.btnFollowMode.style.display = 'none';
       if (els.btnSummonAll) els.btnSummonAll.style.display = 'none';
       if (els.btnClearOrEnd) els.btnClearOrEnd.style.display = 'none';
 
-      // 唯讀提示 Banner
-      if (!state.settings.studentCanEdit) {
+      // 畫布增減控制 (學生端依據老師設定開放或隱藏)
+      if (els.btnAddCanvas) els.btnAddCanvas.style.display = state.settings.studentCanManagePages ? 'inline-flex' : 'none';
+      if (els.btnAddPage) els.btnAddPage.style.display = state.settings.studentCanManagePages ? 'inline-flex' : 'none';
+
+      // 唯讀提示 Banner (個別鎖定優先，否則全班唯讀)
+      if (state.isIndividuallyLocked) {
+        updateLockCountdownBanner();
+      } else if (!state.settings.studentCanEdit) {
+        els.readonlyBanner.textContent = '🔒 老師目前設定白板為唯讀狀態，僅能檢視內容';
         els.readonlyBanner.style.display = 'block';
         disableDrawingTools(true);
       } else {
@@ -369,9 +508,12 @@
     } else {
       if (els.btnToggleStudentEdit) els.btnToggleStudentEdit.style.display = 'inline-flex';
       if (els.btnToggleMoveOthers) els.btnToggleMoveOthers.style.display = 'inline-flex';
+      if (els.btnToggleStudentPages) els.btnToggleStudentPages.style.display = 'inline-flex';
       if (els.btnFollowMode) els.btnFollowMode.style.display = 'inline-flex';
       if (els.btnSummonAll) els.btnSummonAll.style.display = state.settings.followTeacher ? 'none' : 'inline-flex';
       if (els.btnClearOrEnd) els.btnClearOrEnd.style.display = 'inline-flex';
+      if (els.btnAddCanvas) els.btnAddCanvas.style.display = 'inline-flex';
+      if (els.btnAddPage) els.btnAddPage.style.display = 'inline-flex';
 
       els.readonlyBanner.style.display = 'none';
       disableDrawingTools(false);
@@ -419,7 +561,7 @@
     });
 
     if (els.btnDeleteCanvas) {
-      els.btnDeleteCanvas.style.display = (canvasIds.length > 1 && (isTeacherUser() || state.settings.studentCanEdit)) ? 'inline-flex' : 'none';
+      els.btnDeleteCanvas.style.display = (canvasIds.length > 1 && canManagePages()) ? 'inline-flex' : 'none';
     }
   }
 
@@ -437,8 +579,8 @@
       label.textContent = `頁 ${idx + 1}`;
       tab.appendChild(label);
 
-      // 當頁數大於 1 時，提供刪除按鈕 (Item 2)
-      if (pages.length > 1 && (isTeacherUser() || state.settings.studentCanEdit)) {
+      // 當頁數大於 1 且具備管頁面權限時，提供刪除按鈕 (Item 2 & 7)
+      if (pages.length > 1 && canManagePages()) {
         const delBtn = document.createElement('span');
         delBtn.className = 'page-del-btn';
         delBtn.innerHTML = '×';
@@ -491,13 +633,7 @@
     state.objects = {};
     state.selectedObjIds = [];
     if (typeof updateSelectionActionBar === 'function') updateSelectionActionBar();
-    els.svgLayer.innerHTML = `
-      <defs>
-        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="#f97316"/>
-        </marker>
-      </defs>
-    `;
+    els.svgLayer.innerHTML = '';
     els.htmlLayer.innerHTML = '';
 
     renderCanvasSelector();
@@ -520,6 +656,42 @@
         });
       }
     }
+  }
+
+  // ===== 學生個別鎖定彈窗控制 (Item 8) =====
+  let currentLockTarget = null; // { name, uid }
+
+  function openStudentLockModal(student) {
+    currentLockTarget = student;
+    if (els.lockStudentTargetName) els.lockStudentTargetName.textContent = student.name;
+
+    const lockedMap = state.lockedStudents || {};
+    const key = student.uid || student.name;
+    const existingLock = lockedMap[key] || lockedMap[student.name];
+    const isLocked = existingLock && (existingLock.until === -1 || existingLock.until > Date.now());
+
+    if (els.lockStudentStatusBox) {
+      if (isLocked) {
+        els.lockStudentStatusBox.style.display = 'flex';
+        if (existingLock.until === -1) {
+          els.lockStudentStatusText.textContent = `目前狀態：永久鎖定中`;
+        } else {
+          const sec = Math.ceil((existingLock.until - Date.now()) / 1000);
+          const min = Math.floor(sec / 60);
+          const tText = min > 0 ? `${min} 分 ${sec % 60} 秒` : `${sec} 秒`;
+          els.lockStudentStatusText.textContent = `目前狀態：鎖定中（剩餘 ${tText}）`;
+        }
+      } else {
+        els.lockStudentStatusBox.style.display = 'none';
+      }
+    }
+
+    if (els.studentLockModal) els.studentLockModal.classList.add('active');
+  }
+
+  function closeStudentLockModal() {
+    if (els.studentLockModal) els.studentLockModal.classList.remove('active');
+    currentLockTarget = null;
   }
 
   // ===== 參與者名單 (依「姓名 + 角色」去重，徹底解決重複出現問題) =====
@@ -564,19 +736,67 @@
       return a.name.localeCompare(b.name, 'zh-Hant');
     });
 
+    const teacher = isTeacherUser();
+
     deduplicatedUsers.forEach(u => {
       const item = document.createElement('div');
       item.className = 'user-list-item';
       const roleBadgeClass = u.role === 'teacher' ? 'role-teacher' : 'role-student';
       const roleText = u.role === 'teacher' ? '老師' : '同學';
 
+      const studentKey = u.uid || u.name;
+      const lockedMap = state.lockedStudents || {};
+      const lockData = lockedMap[studentKey] || lockedMap[u.name];
+      const isLocked = lockData && (lockData.until === -1 || lockData.until > Date.now());
+
+      let lockBadgeHtml = '';
+      let lockActionBtnHtml = '';
+
+      if (isLocked) {
+        lockBadgeHtml = `<span class="student-locked-tag">🚫 已鎖定</span>`;
+      }
+
+      if (teacher && u.role !== 'teacher' && !u.isMe) {
+        if (isLocked) {
+          lockActionBtnHtml = `<button class="btn-student-lock-action btn-student-unlock-action" data-action="unlock" data-key="${escapeHtml(studentKey)}" data-name="${escapeHtml(u.name)}">解除</button>`;
+        } else {
+          lockActionBtnHtml = `<button class="btn-student-lock-action" data-action="lock" data-uid="${escapeHtml(u.uid || '')}" data-name="${escapeHtml(u.name)}">🔒 限制編輯</button>`;
+        }
+      }
+
       item.innerHTML = `
         <div class="user-info-left">
           <div class="user-dot"></div>
           <span style="font-weight:600;">${escapeHtml(u.name)}${u.isMe ? ' (您)' : ''}</span>
+          ${lockBadgeHtml}
         </div>
-        <span class="user-role-badge ${roleBadgeClass}">${roleText}</span>
+        <div style="display:flex; align-items:center;">
+          <span class="user-role-badge ${roleBadgeClass}">${roleText}</span>
+          ${lockActionBtnHtml}
+        </div>
       `;
+
+      const actionBtn = item.querySelector('.btn-student-lock-action');
+      if (actionBtn) {
+        actionBtn.onclick = (e) => {
+          e.stopPropagation();
+          const action = actionBtn.dataset.action;
+          if (action === 'unlock') {
+            const key = actionBtn.dataset.key;
+            const name = actionBtn.dataset.name;
+            if (roomRef) {
+              roomRef.child('lockedStudents').child(key).remove();
+              if (key !== name) roomRef.child('lockedStudents').child(name).remove();
+              flashToast(`🔓 已解除 ${name} 的編輯限制`);
+            }
+          } else {
+            const uid = actionBtn.dataset.uid;
+            const name = actionBtn.dataset.name;
+            openStudentLockModal({ uid: uid || name, name: name });
+          }
+        };
+      }
+
       els.userList.appendChild(item);
     });
   }
@@ -612,6 +832,60 @@
     state.view.y = 0;
     state.view.zoom = 1;
     updateWorldTransform();
+  }
+
+  // 自適應全景縮放 (Item 5, 如圖 4 - 讓所有物件完全顯示在最佳比例)
+  function zoomToFitAllObjects() {
+    const objKeys = Object.keys(state.objects);
+    if (objKeys.length === 0) {
+      resetView();
+      flashToast('畫布尚無物件，已重設視角為 100%');
+      return;
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    objKeys.forEach(id => {
+      const o = state.objects[id];
+      if (!o) return;
+      const b = getObjBounds(o);
+      if (b && (b.width > 0 || b.height > 0)) {
+        minX = Math.min(minX, b.x);
+        minY = Math.min(minY, b.y);
+        maxX = Math.max(maxX, b.x + b.width);
+        maxY = Math.max(maxY, b.y + b.height);
+      }
+    });
+
+    if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+      resetView();
+      return;
+    }
+
+    const contentW = Math.max(100, maxX - minX);
+    const contentH = Math.max(80, maxY - minY);
+    const rect = els.canvasViewport.getBoundingClientRect();
+    const pad = 60;
+    const availW = Math.max(100, rect.width - pad * 2);
+    const availH = Math.max(100, rect.height - pad * 2);
+
+    let targetZoom = Math.min(availW / contentW, availH / contentH);
+    targetZoom = Math.max(0.15, Math.min(2.5, targetZoom));
+
+    const contentCenterX = minX + contentW / 2;
+    const contentCenterY = minY + contentH / 2;
+    const vpCenterX = rect.width / 2;
+    const vpCenterY = rect.height / 2;
+
+    state.view.zoom = targetZoom;
+    state.view.x = vpCenterX - contentCenterX * targetZoom;
+    state.view.y = vpCenterY - contentCenterY * targetZoom;
+
+    updateWorldTransform();
+    flashToast(`🔍 已最適比例全覽畫面 (${Math.round(targetZoom * 100)}%)`);
   }
 
   // ===== 座標轉換 =====
@@ -659,6 +933,7 @@
   // ===== 權限檢查：是否可動該物件 =====
   function canModifyObject(obj) {
     if (isTeacherUser()) return true;
+    if (state.isIndividuallyLocked) return false;
     if (!state.settings.studentCanEdit) return false;
     if (state.settings.canMoveOthers) return true;
     // 嚴格模式：僅可動自己創建的物件
@@ -755,14 +1030,57 @@
     `;
   }
 
+  // 動態粗細漸變單色箭頭路徑計算 (Item 3, 如圖 3 - 單一顏色、流線軸身、尖端銳角)
+  function getArrowPathData(x1, y1, x2, y2, strokeWidth = 4) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 2) return '';
+
+    const ux = dx / len;
+    const uy = dy / len;
+    const nx = -uy;
+    const ny = ux;
+
+    // 箭頭頂端銳角三角形與漸粗身部比例計算
+    const headLen = Math.min(50, Math.max(16, len * 0.28, strokeWidth * 3.6));
+    const headHalfW = Math.min(32, Math.max(10, headLen * 0.65, strokeWidth * 2.2));
+    const shaftEndW = Math.max(3.5, strokeWidth * 1.35);
+    const shaftStartW = Math.max(1.5, shaftEndW * 0.35);
+
+    const neckX = x2 - ux * headLen;
+    const neckY = y2 - uy * headLen;
+
+    // 尾端起點兩翼 (細)
+    const tLx = x1 - nx * (shaftStartW / 2);
+    const tLy = y1 - ny * (shaftStartW / 2);
+    const tRx = x1 + nx * (shaftStartW / 2);
+    const tRy = y1 + ny * (shaftStartW / 2);
+
+    // 頸部軸身兩翼 (漸粗)
+    const nLx = neckX - nx * (shaftEndW / 2);
+    const nLy = neckY - ny * (shaftEndW / 2);
+    const nRx = neckX + nx * (shaftEndW / 2);
+    const nRy = neckY + ny * (shaftEndW / 2);
+
+    // 箭頭翼角兩翼 (尖角倒鉤)
+    const bLx = neckX - nx * headHalfW;
+    const bLy = neckY - ny * headHalfW;
+    const bRx = neckX + nx * headHalfW;
+    const bRy = neckY + ny * headHalfW;
+
+    return `M ${tLx.toFixed(1)} ${tLy.toFixed(1)} L ${nLx.toFixed(1)} ${nLy.toFixed(1)} L ${bLx.toFixed(1)} ${bLy.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)} L ${bRx.toFixed(1)} ${bRy.toFixed(1)} L ${nRx.toFixed(1)} ${nRy.toFixed(1)} L ${tRx.toFixed(1)} ${tRy.toFixed(1)} Z`;
+  }
+
   // 3. SVG 筆劃、矩形、圓形、箭頭渲染
   function renderSvgElement(obj) {
     let el = document.getElementById(`svg_obj_${obj.id}`);
-    if (!el) {
-      if (obj.type === 'pen') el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const shouldRecreate = el && obj.type === 'arrow' && el.tagName.toLowerCase() !== 'path';
+    if (!el || shouldRecreate) {
+      if (shouldRecreate) el.remove();
+      if (obj.type === 'pen' || obj.type === 'arrow') el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       else if (obj.type === 'rect') el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       else if (obj.type === 'circle') el = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
-      else if (obj.type === 'arrow') el = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       el.id = `svg_obj_${obj.id}`;
       els.svgLayer.appendChild(el);
       bindSvgInteraction(el, obj);
@@ -770,7 +1088,7 @@
 
     if (obj.type === 'pen') {
       el.setAttribute('d', obj.d);
-      el.setAttribute('stroke', obj.color || '#1e293b');
+      el.setAttribute('stroke', obj.color || state.currentColor || '#2563eb');
       el.setAttribute('stroke-width', obj.strokeWidth || 4);
       el.setAttribute('fill', 'none');
       el.setAttribute('stroke-linecap', 'round');
@@ -780,7 +1098,7 @@
       el.setAttribute('y', obj.y);
       el.setAttribute('width', Math.max(1, obj.width));
       el.setAttribute('height', Math.max(1, obj.height));
-      el.setAttribute('stroke', obj.color || '#1e293b');
+      el.setAttribute('stroke', obj.color || state.currentColor || '#2563eb');
       el.setAttribute('stroke-width', obj.strokeWidth || 3);
       el.setAttribute('fill', obj.fill || 'transparent');
       el.setAttribute('rx', '4');
@@ -789,17 +1107,17 @@
       el.setAttribute('cy', obj.cy);
       el.setAttribute('rx', Math.max(1, obj.rx));
       el.setAttribute('ry', Math.max(1, obj.ry));
-      el.setAttribute('stroke', obj.color || '#1e293b');
+      el.setAttribute('stroke', obj.color || state.currentColor || '#2563eb');
       el.setAttribute('stroke-width', obj.strokeWidth || 3);
       el.setAttribute('fill', obj.fill || 'transparent');
     } else if (obj.type === 'arrow') {
-      el.setAttribute('x1', obj.x1);
-      el.setAttribute('y1', obj.y1);
-      el.setAttribute('x2', obj.x2);
-      el.setAttribute('y2', obj.y2);
-      el.setAttribute('stroke', obj.color || '#f97316');
-      el.setAttribute('stroke-width', obj.strokeWidth || 4);
-      el.setAttribute('marker-end', 'url(#arrowhead)');
+      const dStr = getArrowPathData(obj.x1 || 0, obj.y1 || 0, obj.x2 || 0, obj.y2 || 0, obj.strokeWidth || 4);
+      el.setAttribute('d', dStr);
+      const col = obj.color || state.currentColor || '#2563eb';
+      el.setAttribute('fill', col);
+      el.setAttribute('stroke', col);
+      el.setAttribute('stroke-width', '1');
+      el.setAttribute('stroke-linejoin', 'round');
     }
 
     // SVG 物件作者標籤 (置於起點上方)
@@ -832,11 +1150,97 @@
     });
   }
 
+  // ===== 歷史紀錄還原 / 重做 (Item 1, Ctrl + Z / Ctrl + Y) =====
+  let undoStack = [];
+  let redoStack = [];
+  let isApplyingHistory = false;
+
+  function pushHistoryAction(action) {
+    if (isApplyingHistory) return;
+    undoStack.push(action);
+    if (undoStack.length > 50) undoStack.shift();
+    redoStack = [];
+    updateHistoryUI();
+  }
+
+  function updateHistoryUI() {
+    if (els.btnUndo) els.btnUndo.disabled = (undoStack.length === 0);
+    if (els.btnRedo) els.btnRedo.disabled = (redoStack.length === 0);
+  }
+
+  function undo() {
+    if (undoStack.length === 0) {
+      flashToast('已無更早的操作可還原');
+      return;
+    }
+    const action = undoStack.pop();
+    redoStack.push(action);
+    applyHistoryAction(action, true);
+    updateHistoryUI();
+    flashToast('↩️ 已還原上一步');
+  }
+
+  function redo() {
+    if (redoStack.length === 0) {
+      flashToast('已無後續操作可重做');
+      return;
+    }
+    const action = redoStack.pop();
+    undoStack.push(action);
+    applyHistoryAction(action, false);
+    updateHistoryUI();
+    flashToast('↪️ 已重做下一步');
+  }
+
+  function applyHistoryAction(action, isUndo) {
+    isApplyingHistory = true;
+    try {
+      if (action.type === 'create') {
+        // isUndo: 刪除物件; !isUndo: 重建物件
+        if (isUndo) {
+          action.objects.forEach(obj => {
+            deleteObject(obj.id);
+          });
+        } else {
+          action.objects.forEach(obj => {
+            state.objects[obj.id] = JSON.parse(JSON.stringify(obj));
+            renderObject(obj);
+            pushObjectUpdate(obj);
+          });
+        }
+      } else if (action.type === 'delete') {
+        // isUndo: 重建物件; !isUndo: 刪除物件
+        if (isUndo) {
+          action.objects.forEach(obj => {
+            state.objects[obj.id] = JSON.parse(JSON.stringify(obj));
+            renderObject(obj);
+            pushObjectUpdate(obj);
+          });
+        } else {
+          action.objects.forEach(obj => {
+            deleteObject(obj.id);
+          });
+        }
+      } else if (action.type === 'update') {
+        const list = isUndo ? action.before : action.after;
+        list.forEach(obj => {
+          state.objects[obj.id] = JSON.parse(JSON.stringify(obj));
+          renderObject(obj);
+          pushObjectUpdate(obj);
+        });
+      }
+      if (typeof updateSelectionActionBar === 'function') updateSelectionActionBar();
+    } finally {
+      isApplyingHistory = false;
+    }
+  }
+
   function handleObjectPointerDown(e, obj, el, isSvg) {
     if (e.target.tagName === 'A' || e.target.classList.contains('sticky-content')) return;
 
     if (state.currentTool === 'eraser') {
       e.stopPropagation();
+      pushHistoryAction({ type: 'delete', objects: [JSON.parse(JSON.stringify(obj))] });
       deleteObject(obj.id);
       return;
     }
@@ -932,11 +1336,18 @@
       window.removeEventListener('pointerup', onUp);
 
       if (hasMoved) {
+        const beforeList = [];
+        const afterList = [];
         Object.keys(snapshots).forEach(id => {
           if (state.objects[id]) {
+            beforeList.push(snapshots[id]);
+            afterList.push(JSON.parse(JSON.stringify(state.objects[id])));
             pushObjectUpdate(state.objects[id]);
           }
         });
+        if (beforeList.length > 0) {
+          pushHistoryAction({ type: 'update', before: beforeList, after: afterList });
+        }
       }
       updateSelectionActionBar();
     }
@@ -1145,6 +1556,8 @@
     const objs = state.selectedObjIds.map(id => state.objects[id]).filter(Boolean);
     if (objs.length === 0) return;
 
+    const beforeList = objs.map(o => JSON.parse(JSON.stringify(o)));
+
     objs.forEach(obj => {
       if (!canModifyObject(obj)) return;
       const htmlEl = document.getElementById(`html_obj_${obj.id}`);
@@ -1172,6 +1585,9 @@
       pushObjectUpdate(obj);
     });
 
+    const afterList = objs.map(o => JSON.parse(JSON.stringify(o)));
+    pushHistoryAction({ type: 'update', before: beforeList, after: afterList });
+
     flashToast(`已調整圖層順序`);
     updateSelectionActionBar();
   }
@@ -1188,6 +1604,7 @@
     }
 
     const boxes = selectedObjs.map(o => ({ obj: o, ...getObjBounds(o) }));
+    const beforeList = boxes.map(b => JSON.parse(JSON.stringify(b.obj)));
     const minX = Math.min(...boxes.map(b => b.x));
     const maxX = Math.max(...boxes.map(b => b.x + b.width));
     const minY = Math.min(...boxes.map(b => b.y));
@@ -1207,6 +1624,9 @@
       pushObjectUpdate(b.obj);
     });
 
+    const afterList = boxes.map(b => JSON.parse(JSON.stringify(b.obj)));
+    pushHistoryAction({ type: 'update', before: beforeList, after: afterList });
+
     updateSelectionActionBar();
     flashToast('已完成物件對齊');
   }
@@ -1223,6 +1643,7 @@
     }
 
     const boxes = selectedObjs.map(o => ({ obj: o, ...getObjBounds(o) }));
+    const beforeList = boxes.map(b => JSON.parse(JSON.stringify(b.obj)));
 
     if (direction === 'h') {
       boxes.sort((a, b) => a.x - b.x);
@@ -1258,6 +1679,9 @@
       flashToast('已完成垂直均分間距');
     }
 
+    const afterList = boxes.map(b => JSON.parse(JSON.stringify(b.obj)));
+    pushHistoryAction({ type: 'update', before: beforeList, after: afterList });
+
     updateSelectionActionBar();
   }
 
@@ -1273,8 +1697,8 @@
     }
 
     // 檢查學生編輯權限
-    if (!isTeacherUser() && !state.settings.studentCanEdit) {
-      flashToast('🔒 老師目前設定白板為唯讀狀態');
+    if (state.currentTool !== 'select' && !isStudentAllowedToEdit()) {
+      flashToast(state.isIndividuallyLocked ? '🚫 您目前已被老師限制編輯白板' : '🔒 老師目前設定白板為唯讀狀態');
       return;
     }
 
@@ -1469,6 +1893,7 @@
       state.activeDrawing = null;
       // 寫入 Firebase 同步
       pushObjectUpdate(finishedObj);
+      pushHistoryAction({ type: 'create', objects: [JSON.parse(JSON.stringify(finishedObj))] });
     }
   });
 
@@ -1479,9 +1904,25 @@
     zoomAt(state.view.zoom * zoomFactor, e.clientX, e.clientY);
   }, { passive: false });
 
-  // 鍵盤空白鍵拖曳與 Delete 刪除按鍵監聽 (Item 4)
+  // 鍵盤空白鍵拖曳、Delete 刪除、Ctrl+Z/Y 還原重做監聽 (Item 1 & 4)
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+
+    // Ctrl+Z / Ctrl+Y 還原與重做 (Item 1)
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+      e.preventDefault();
+      if (e.shiftKey) {
+        redo();
+      } else {
+        undo();
+      }
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+      e.preventDefault();
+      redo();
+      return;
+    }
 
     // 空白鍵按住準備拖曳 (Item 4)
     if (e.code === 'Space' || e.key === ' ') {
@@ -1496,12 +1937,17 @@
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (state.selectedObjIds && state.selectedObjIds.length > 0) {
         const toDelete = [...state.selectedObjIds];
+        const deletedObjs = [];
         toDelete.forEach(id => {
           const obj = state.objects[id];
           if (obj && canModifyObject(obj)) {
+            deletedObjs.push(JSON.parse(JSON.stringify(obj)));
             deleteObject(id);
           }
         });
+        if (deletedObjs.length > 0) {
+          pushHistoryAction({ type: 'delete', objects: deletedObjs });
+        }
         deselectAll();
       }
     }
@@ -1522,8 +1968,8 @@
   // ===== 剪貼簿整合 (Ctrl+V 支援圖片與文字便利貼) =====
   window.addEventListener('paste', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
-    if (!isTeacherUser() && !state.settings.studentCanEdit) {
-      flashToast('🔒 老師目前已關閉學生編輯權限');
+    if (!isStudentAllowedToEdit()) {
+      flashToast(state.isIndividuallyLocked ? '🚫 您目前已被老師限制編輯白板' : '🔒 老師目前已關閉學生編輯權限');
       return;
     }
 
@@ -1575,6 +2021,7 @@
     state.objects[objId] = stickyObj;
     renderStickyNoteDOM(stickyObj);
     pushObjectUpdate(stickyObj);
+    pushHistoryAction({ type: 'create', objects: [JSON.parse(JSON.stringify(stickyObj))] });
   }
 
   function insertImageObject(src, x, y, width, height, title) {
@@ -1598,6 +2045,7 @@
       state.objects[objId] = imgObj;
       renderImageDOM(imgObj);
       pushObjectUpdate(imgObj);
+      pushHistoryAction({ type: 'create', objects: [JSON.parse(JSON.stringify(imgObj))] });
     };
     img.src = src;
   }
@@ -1616,8 +2064,8 @@
   let selectedPdfPages = new Set();
 
   els.btnInsertPdf.onclick = () => {
-    if (!isTeacherUser() && !state.settings.studentCanEdit) {
-      flashToast('🔒 老師目前已關閉學生編輯權限');
+    if (!isStudentAllowedToEdit()) {
+      flashToast(state.isIndividuallyLocked ? '🚫 您目前已被老師限制編輯白板' : '🔒 老師目前已關閉學生編輯權限');
       return;
     }
     els.pdfFileInput.click();
@@ -1767,8 +2215,8 @@
 
   // 插入本機圖片
   els.btnInsertImage.onclick = () => {
-    if (!isTeacherUser() && !state.settings.studentCanEdit) {
-      flashToast('🔒 老師目前已關閉學生編輯權限');
+    if (!isStudentAllowedToEdit()) {
+      flashToast(state.isIndividuallyLocked ? '🚫 您目前已被老師限制編輯白板' : '🔒 老師目前已關閉學生編輯權限');
       return;
     }
     els.imageFileInput.click();
@@ -1877,19 +2325,80 @@
     els.btnActionDelete.onclick = () => {
       if (!state.selectedObjIds || state.selectedObjIds.length === 0) return;
       const toDelete = [...state.selectedObjIds];
+      const deletedObjs = [];
       toDelete.forEach(id => {
         const obj = state.objects[id];
         if (obj && canModifyObject(obj)) {
+          deletedObjs.push(JSON.parse(JSON.stringify(obj)));
           deleteObject(id);
         }
       });
+      if (deletedObjs.length > 0) {
+        pushHistoryAction({ type: 'delete', objects: deletedObjs });
+      }
       deselectAll();
       flashToast('🗑️ 已刪除選取物件');
     };
   }
 
+  // 學生增減畫布與分頁權限按鈕 (Item 7, 如圖 6)
+  if (els.btnToggleStudentPages) {
+    els.btnToggleStudentPages.onclick = () => {
+      if (!isTeacherUser()) return;
+      state.settings.studentCanManagePages = !state.settings.studentCanManagePages;
+      applySettingsUI();
+      renderCanvasSelector();
+      renderPagesTabs();
+      if (roomRef) roomRef.child('settings').update({ studentCanManagePages: state.settings.studentCanManagePages });
+    };
+  }
+
+  // 還原與重做按鈕點擊綁定 (Item 1)
+  if (els.btnUndo) els.btnUndo.onclick = undo;
+  if (els.btnRedo) els.btnRedo.onclick = redo;
+
+  // 學生個別鎖定彈窗事件綁定 (Item 8)
+  if (els.btnCloseStudentLockModal) els.btnCloseStudentLockModal.onclick = closeStudentLockModal;
+  if (els.btnCancelStudentLockModal) els.btnCancelStudentLockModal.onclick = closeStudentLockModal;
+  document.querySelectorAll('.btn-lock-time').forEach(btn => {
+    btn.onclick = () => {
+      if (!isTeacherUser() || !currentLockTarget) return;
+      const durSec = parseInt(btn.dataset.duration, 10);
+      const until = durSec === -1 ? -1 : Date.now() + durSec * 1000;
+      const key = currentLockTarget.uid || currentLockTarget.name;
+
+      if (roomRef) {
+        roomRef.child('lockedStudents').child(key).set({
+          name: currentLockTarget.name,
+          uid: currentLockTarget.uid || '',
+          until: until,
+          lockedAt: Date.now()
+        }).then(() => {
+          flashToast(`🔒 已鎖定 ${currentLockTarget.name} 的編輯權限 (${btn.textContent.trim()})`);
+          closeStudentLockModal();
+        });
+      }
+    };
+  });
+  if (els.btnUnlockStudentDirect) {
+    els.btnUnlockStudentDirect.onclick = () => {
+      if (!isTeacherUser() || !currentLockTarget) return;
+      const key = currentLockTarget.uid || currentLockTarget.name;
+      if (roomRef) {
+        roomRef.child('lockedStudents').child(key).remove();
+        if (key !== currentLockTarget.name) roomRef.child('lockedStudents').child(currentLockTarget.name).remove();
+        flashToast(`🔓 已解除 ${currentLockTarget.name} 的編輯限制`);
+        closeStudentLockModal();
+      }
+    };
+  }
+
   // 新增畫布
   els.btnAddCanvas.onclick = () => {
+    if (!canManagePages()) {
+      flashToast('⚠️ 老師未開放學生增減畫布與頁數');
+      return;
+    }
     const name = prompt('請輸入新畫布名稱：', `畫布 ${Object.keys(state.canvases).length + 1}`);
     if (!name || !name.trim()) return;
     const newId = 'canvas_' + Date.now().toString(36);
@@ -1902,6 +2411,10 @@
   // 刪除目前畫布 (Item 2)
   if (els.btnDeleteCanvas) {
     els.btnDeleteCanvas.onclick = () => {
+      if (!canManagePages()) {
+        flashToast('⚠️ 老師未開放學生增減畫布與頁數');
+        return;
+      }
       const canvasIds = Object.keys(state.canvases);
       if (canvasIds.length <= 1) {
         flashToast('至少需保留 1 個主畫布，無法刪除！');
@@ -1940,6 +2453,10 @@
 
   // 新增頁面
   els.btnAddPage.onclick = () => {
+    if (!canManagePages()) {
+      flashToast('⚠️ 老師未開放學生增減畫布與頁數');
+      return;
+    }
     const cur = state.canvases[state.activeCanvasId] || { pages: ['page_1'] };
     const newPageId = 'page_' + (cur.pages.length + 1);
     cur.pages.push(newPageId);
@@ -1952,7 +2469,7 @@
   // 縮放按鈕
   els.btnZoomIn.onclick = () => zoomAt(state.view.zoom * 1.2);
   els.btnZoomOut.onclick = () => zoomAt(state.view.zoom * 0.8);
-  els.btnZoomReset.onclick = resetView;
+  els.btnZoomReset.onclick = zoomToFitAllObjects; // 如圖 4：讓畫布所有物件完全顯示在畫面中
   els.zoomVal.onclick = resetView;
 
   // 清空或結束白板
@@ -1972,13 +2489,7 @@
     if (confirm('確定要清空當前頁面的所有內容嗎？')) {
       if (objectsRef) objectsRef.remove();
       state.objects = {};
-      els.svgLayer.innerHTML = `
-        <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#f97316"/>
-          </marker>
-        </defs>
-      `;
+      els.svgLayer.innerHTML = '';
       els.htmlLayer.innerHTML = '';
     }
   }

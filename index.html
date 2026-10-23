@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.16</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.17</a>
         </p>
       </div>
       <div class="top-actions">
@@ -3504,12 +3504,45 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.16 -->
+        <!-- ver 3.9.17 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.16</span>
+              <span>🌟 ver 3.9.17</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">還原/重做 (Ctrl+Z)</span>
+              <span class="changelog-badge-tag">經典斜角手繪鉛筆</span>
+              <span class="changelog-badge-tag">動態漸粗單色箭頭</span>
+              <span class="changelog-badge-tag">預設工具藍色</span>
+              <span class="changelog-badge-tag">畫布全景最佳比例縮放</span>
+              <span class="changelog-badge-tag">匯入/匯出正名</span>
+              <span class="changelog-badge-tag">學生管頁面權限控制</span>
+              <span class="changelog-badge-tag">學生名單個別鎖定編輯</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🎨 互動白板專業操作體驗與班級教學管理深度升級：</strong>
+              <ul>
+                <li><strong>還原與重做（Undo / Redo）</strong>：左側工具列底部新增還原與重做按鈕，支援鍵盤 <code>Ctrl + Z</code> 與 <code>Ctrl + Y</code>（或 <code>Ctrl + Shift + Z</code>），手繪、幾何、貼圖、圖層與對齊操作皆可輕鬆反悔！</li>
+                <li><strong>手繪筆更換為經典斜角鉛筆</strong>：工具列筆刷改為具備金屬圈、圓弧擦皮擦與黑色筆芯的質感斜角鉛筆圖示（如圖 1）。</li>
+                <li><strong>動態漸粗單色箭頭</strong>：箭頭捨棄細線加異色箭頭，全面升級為流線單色漸粗箭身與尖端銳角箭頭之整合式平滑路徑（如圖 3）。</li>
+                <li><strong>預設顏色調整為明亮藍色</strong>：工具列筆刷與形狀預設調色盤直接調整為清晰醒目的專業藍色（<code>#2563eb</code>）。</li>
+                <li><strong>畫布全景自適應最適縮放（Fit to Content）</strong>：右下角小地圖列按鈕升級為四角擴展圖示（如圖 4），點擊即可自動計算當前頁面白板所有物件範圍，一鍵自動將視角平移縮放至最佳完整可視比例！</li>
+                <li><strong>「匯入/匯出」功能名稱正名</strong>：次工具列按鈕正式更名為「匯入/匯出」，更貼切多頁 PDF/ZIP/JSON 完整功能。</li>
+                <li><strong>學生增減畫布與頁數權限控制</strong>：老師可在頂部即時開關「🔒 僅老師管頁面 / 🔓 學生可管頁面」，預設為否，有效防止學生隨意增減班級畫布與刪除分頁。</li>
+                <li><strong>學生名單個別鎖定編輯（禁言/防調皮）</strong>：老師可於右側參與者名單，針對特定學生一鍵開啟限制編輯視窗，自由設定 30 秒、1 分鐘、3 分鐘、5 分鐘、10 分鐘、30 分鐘或永久鎖定；被鎖定學生白板即時切換唯讀並顯示倒數提示條，時間結束或老師點擊解鎖後自動恢復！</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.16 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.9.16</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">移除頂部關閉按鈕</span>
