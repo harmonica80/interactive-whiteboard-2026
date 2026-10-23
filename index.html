@@ -5,7 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
   <link rel="stylesheet" href="css/style.css?v=392">
+  <link rel="stylesheet" href="css/presentation.css?v=3920">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
 </head>
 <body>
   <!-- 校園網路智慧備用通道提示浮條 -->
@@ -25,7 +32,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.20</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.0</a>
         </p>
       </div>
       <div class="top-actions">
@@ -124,6 +131,7 @@
         <button class="menu-tab" data-target="panel-lucky-wheel">🎡 隨機抽人</button>
         <button class="menu-tab" data-target="panel-word-cloud">☁️ 即時文字雲</button>
         <button class="menu-tab" data-target="panel-whiteboard">🎨 互動白板</button>
+        <button class="menu-tab" data-target="panel-presentation">📽️ 同步簡報</button>
         <button class="menu-tab" data-target="panel-focus-game" style="display: none;">🧠 專注力遊戲</button>
         <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
       </div>
@@ -662,6 +670,101 @@
       <div class="panel-card" id="panel-whiteboard">
         <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
           <iframe id="whiteboardFrame" src="whiteboard.html?v=3003" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板"></iframe>
+        </div>
+      </div>
+
+      <!-- 📽️ 同步互動簡報 (Synchronized Interactive Presentation) -->
+      <div class="panel-card presentation-panel-card" id="panel-presentation">
+        <!-- 頂部導航列 -->
+        <div class="presentation-header">
+          <div class="presentation-title-group">
+            <span class="presentation-main-title">📽️ 同步簡報</span>
+            <span class="presentation-live-badge" id="presentationLiveBadge" style="display: none;">同步廣播中</span>
+          </div>
+          <button type="button" class="presentation-btn-close" id="btnClosePresentation" title="返回其他分頁">✕ 關閉</button>
+        </div>
+
+        <!-- 主工作區 (左欄、中欄、右欄) -->
+        <div class="presentation-workspace">
+          <!-- 左側邊欄：頁面縮圖與新增控制 -->
+          <aside class="presentation-left-sidebar" id="presentationLeftSidebar">
+            <button type="button" class="presentation-btn-start" id="btnStartSyncPresentation">
+              <span>🎉 開始同步簡報</span>
+            </button>
+            <button type="button" class="presentation-add-page-btn" id="btnAddColorSlide">
+              <span>+ 純色頁</span>
+            </button>
+            <button type="button" class="presentation-add-page-btn" id="btnAddImageSlide">
+              <span>+ 圖片頁</span>
+            </button>
+            <input type="file" id="inputPresentationImageFile" accept="image/*" multiple style="display: none;">
+
+            <!-- 垂直縮圖清單 -->
+            <div class="presentation-thumbnails-container" id="presentationThumbnailsList"></div>
+          </aside>
+
+          <!-- 中央展示區：16:9 簡報投影幕與工具列 -->
+          <main class="presentation-center-area">
+            <div class="presentation-stage-wrapper" id="presentationStageWrapper">
+              <div class="presentation-screen" id="presentationScreen">
+                <img id="presentationScreenBg" class="presentation-screen-bg" src="" alt="簡報頁面" style="display: none;">
+                
+                <!-- 空白無頁面提示 -->
+                <div class="presentation-screen-empty-hint" id="presentationEmptyHint">
+                  <span style="font-size: 36px;">📽️</span>
+                  <span>從左側新增頁面開始建立簡報</span>
+                </div>
+
+                <!-- 繪圖標註層 (老師手繪同步) -->
+                <canvas class="presentation-annotation-canvas" id="presentationAnnotationCanvas"></canvas>
+
+                <!-- 光暈雷射筆點 (老師雷射筆同步) -->
+                <div class="presentation-laser-dot" id="presentationLaserDot"></div>
+
+                <!-- 外部 URL 懸浮圖示 -->
+                <a href="javascript:void(0)" class="presentation-url-badge" id="presentationUrlBadge" style="display: none;" title="開啟本頁連結">
+                  🔗 <span>開啟外部連結</span>
+                </a>
+
+                <!-- 學生端作答卡片 / 浮動表情回饋條容器 -->
+                <div id="presentationStudentInteractionArea"></div>
+              </div>
+            </div>
+
+            <!-- 下方控制列 -->
+            <div class="presentation-bottom-bar" id="presentationBottomBar">
+              <div class="presentation-bottom-left">
+                <button type="button" class="presentation-tool-btn" id="btnSlidePrev" title="上一頁">◀ 上一頁</button>
+                <button type="button" class="presentation-tool-btn" id="btnSlideNext" title="下一頁">下一頁 ▶</button>
+                <span class="presentation-page-counter" id="txtSlidePageCounter">0 / 0</span>
+                <button type="button" class="presentation-tool-btn" id="btnSlideGridOverview" title="九宮格總覽快速跳頁">■</button>
+              </div>
+
+              <div class="presentation-bottom-right">
+                <button type="button" class="presentation-tool-btn" id="btnSlideToolPen" title="在簡報上畫重點，同步顯示給全班">✏️ 標記</button>
+                <button type="button" class="presentation-tool-btn" id="btnSlideToolLaser" title="發光雷射筆，滑鼠移動即時同步全班視線">🔴 雷射筆</button>
+                <button type="button" class="presentation-tool-btn" id="btnSlideClearAnnotations" title="清除本頁標記">清除標記</button>
+                <button type="button" class="presentation-tool-btn" id="btnSlideFullscreen" title="進入/退出全螢幕">🗖 最大化</button>
+                <button type="button" class="presentation-tool-btn" id="btnSlideSettings" title="設定外部 URL 與多題互動">⚙️ 本頁設定</button>
+                <button type="button" class="presentation-tool-btn purple" id="btnSlideImportExport" title="匯入 PDF / 匯入匯出 JSON 備份">📁 匯入 / 匯出</button>
+                <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答紀錄">重置提交</button>
+              </div>
+            </div>
+          </main>
+
+          <!-- 右側邊欄：即時提交紀錄 -->
+          <aside class="presentation-right-sidebar" id="presentationRightSidebar">
+            <div class="presentation-right-header">
+              <span>📥 即時提交</span>
+            </div>
+            <div id="presentationSubmissionsStats" style="font-size: 12px; font-weight: 600; color: #0284c7;"></div>
+            <div class="presentation-submissions-body" id="presentationSubmissionsList">
+              <div class="presentation-submissions-empty">本頁未設定互動。</div>
+            </div>
+            <button type="button" class="presentation-btn-download-responses" id="btnDownloadResponses" title="下載本頁提交紀錄 CSV">
+              ⬇ 下載回應
+            </button>
+          </aside>
         </div>
       </div>
 
@@ -3504,12 +3607,37 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.20 -->
+        <!-- ver 3.10.0 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.20</span>
+              <span>🌟 ver 3.10.0</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">重大里程碑：同步互動簡報</span>
+              <span class="changelog-badge-tag">PDF 逐頁解析匯入</span>
+              <span class="changelog-badge-tag">雷射筆與手繪標記同步</span>
+              <span class="changelog-badge-tag">多元多題互動與即時提交</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>📽️ 全新「同步互動簡報」強勢登場（圖 1~5）：</strong>
+              <ul>
+                <li><strong>16:9 高畫質簡報投影與多格式匯入匯出（圖 1、圖 2、圖 3）</strong>：支援老師上傳 PDF（整合 PDF.js 逐頁選取轉為簡報頁面）、純色頁、自選圖片，並可一鍵將簡報連同所有互動題目打包匯出為 JSON 備份或再次匯入。</li>
+                <li><strong>即時手繪標記筆與光暈雷射筆同步廣播（圖 4）</strong>：老師在簡報上的標註劃線與發光雷射光點以百分比座標毫秒級同步至全班學生端，教學引導一目了然！</li>
+                <li><strong>本頁設定與多元多題互動（圖 5）</strong>：每頁皆可獨立掛載外部網址（支援 iframe 內嵌或開新頁）與多道題目，支援快速色塊搶答、自訂文字選擇、簡答心得、1~5星評分與心情表情浮動條！</li>
+                <li><strong>即時提交統計側欄與 CSV 匯出</strong>：右側即時彙整學生提交內容，並支援一鍵下載完整回應 CSV 表格。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.20 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.9.20</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">垃圾桶權限納入頁面管理</span>
@@ -4225,6 +4353,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
   <script src="js/word_cloud.js?v=392"></script>
+  <script src="js/presentation_core.js?v=3920"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -5616,6 +5745,163 @@ Python</pre>
       <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('😂')" title="大笑 (有趣/幽默)">😂</button>
       <button type="button" class="reaction-emoji-btn" onclick="window.app && window.app.sendLiveReaction('😮')" title="驚訝 (震撼/原來如此)">😮</button>
       <button type="button" class="reaction-collapse-toggle-btn" onclick="window.app && window.app.toggleReactionDock(false)" title="收合互動回饋列">›</button>
+    </div>
+  </div>
+
+  <!-- 📽️ 同步簡報：匯入/匯出簡報彈窗 (圖 3) -->
+  <div id="modalPresentationImportExport" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+    <div class="presentation-modal-card">
+      <div class="presentation-modal-header">
+        <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+          📁 匯入 / 匯出簡報
+        </h3>
+        <button type="button" onclick="window.presentationManager.closeImportExportModal()" style="border: none; background: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
+      </div>
+      <div class="presentation-modal-body">
+        <div class="presentation-modal-tip">
+          💡 <strong>推薦</strong>：把現成的簡報（PowerPoint / Google 簡報）另存為 <strong>PDF</strong> 上傳，逐頁勾選後即可直接設為簡報內容。
+        </div>
+
+        <button type="button" class="presentation-btn-gradient-pdf" onclick="window.presentationManager.triggerPdfUpload()">
+          📄 上傳 PDF 設為簡報內容（逐頁勾選）
+        </button>
+
+        <button type="button" class="presentation-btn-modal-action" onclick="window.presentationManager.triggerJsonImport()">
+          📁 從 JSON 匯入
+        </button>
+
+        <button type="button" class="presentation-btn-modal-action" onclick="window.presentationManager.exportJsonBackup()">
+          💾 匯出 JSON 備份
+        </button>
+      </div>
+      <div class="presentation-modal-footer">
+        <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.closeImportExportModal()" style="padding: 8px 20px;">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📽️ 同步簡報：PDF 逐頁勾選彈窗 -->
+  <div id="modalPresentationPdfPicker" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10005;">
+    <div class="presentation-modal-card" style="max-width: 760px; max-height: 85vh;">
+      <div class="presentation-modal-header">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #1e293b;">
+          📑 勾選要匯入為簡報的 PDF 頁面
+        </h3>
+        <button type="button" onclick="window.presentationManager.closePdfPickerModal()" style="border: none; background: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
+      </div>
+      <div style="padding: 10px 20px; display: flex; gap: 10px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+        <button type="button" class="presentation-tool-btn" onclick="document.querySelectorAll('.pdf-page-checkbox').forEach(c => { if(!c.checked) { c.checked = true; c.dispatchEvent(new Event('change')); } })">全選</button>
+        <button type="button" class="presentation-tool-btn" onclick="document.querySelectorAll('.pdf-page-checkbox').forEach(c => { if(c.checked) { c.checked = false; c.dispatchEvent(new Event('change')); } })">全部取消</button>
+      </div>
+      <div style="flex: 1; overflow-y: auto; padding: 16px 20px;">
+        <div id="presentationPdfPagesContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px;"></div>
+      </div>
+      <div class="presentation-modal-footer">
+        <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.closePdfPickerModal()">取消</button>
+        <button type="button" class="presentation-tool-btn active" onclick="window.presentationManager.confirmImportPdfPages()" style="padding: 8px 22px;">🚀 確認匯入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📽️ 同步簡報：本頁設定彈窗 (圖 5 + 多題擴充) -->
+  <div id="modalPresentationSlideSettings" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+    <div class="presentation-modal-card" style="max-width: 640px; max-height: 90vh;">
+      <div class="presentation-modal-header">
+        <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+          ⚙️ 本頁設定
+        </h3>
+        <button type="button" onclick="window.presentationManager.closeSlideSettingsModal()" style="border: none; background: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
+      </div>
+      <div class="presentation-modal-body" style="overflow-y: auto; max-height: calc(90vh - 120px);">
+        <!-- 外部 URL -->
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">
+            外部 URL（選填，頁面上會顯示可點擊的連結圖示，學生點擊後可選擇在頁面內 iframe 開啟或開新分頁）
+          </label>
+          <input type="url" id="txtPresExternalUrl" placeholder="https://..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+        </div>
+
+        <!-- 連結圖示位置 -->
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">
+            連結圖示位置
+          </label>
+          <select id="selPresUrlPosition" style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+            <option value="center">中央</option>
+            <option value="top-left">左上</option>
+            <option value="top-right">右上</option>
+            <option value="bottom-left">左下</option>
+            <option value="bottom-right">右下</option>
+          </select>
+        </div>
+
+        <!-- 學生端呈現模式 -->
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">
+            學生端互動呈現方式
+          </label>
+          <select id="selPresDisplayMode" style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+            <option value="step">分步卡片模式（逐題前進）</option>
+            <option value="scroll">整頁展開捲動模式（一次呈現多題）</option>
+            <option value="floating">輕量浮動表情條（不遮擋簡報）</option>
+          </select>
+        </div>
+
+        <!-- 多題互動題目列表 -->
+        <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <label style="font-size: 13px; font-weight: 700; color: #1e293b;">
+              本頁互動題目 (可自訂多題)
+            </label>
+            <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.addQuestionItem()" style="padding: 4px 10px; font-size: 12px;">
+              ➕ 新增題目
+            </button>
+          </div>
+          <div id="presQuestionsBuilderList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+      </div>
+      <div class="presentation-modal-footer">
+        <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.closeSlideSettingsModal()">取消</button>
+        <button type="button" class="presentation-tool-btn active" onclick="window.presentationManager.saveSlideSettings()" style="padding: 8px 22px;">💾 儲存本頁設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📽️ 同步簡報：縮圖九宮格總覽彈窗 -->
+  <div id="modalPresentationGridOverview" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+    <div class="presentation-modal-card" style="max-width: 820px; max-height: 85vh;">
+      <div class="presentation-modal-header">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #1e293b;">
+          ■ 簡報頁面總覽快速跳頁
+        </h3>
+        <button type="button" onclick="window.presentationManager.closeGridOverviewModal()" style="border: none; background: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
+      </div>
+      <div style="flex: 1; overflow-y: auto; padding: 20px;">
+        <div id="presentationGridOverviewContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px;"></div>
+      </div>
+      <div class="presentation-modal-footer">
+        <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.closeGridOverviewModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📽️ 同步簡報：外部網頁內嵌預覽彈窗 -->
+  <div id="modalPresentationIframeViewer" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10010;">
+    <div class="presentation-modal-card" style="width: 95%; max-width: 1000px; height: 85vh;">
+      <div class="presentation-modal-header">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1e293b;">
+          🔗 外部網頁瀏覽
+        </h3>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="presentation-tool-btn" onclick="window.open(document.getElementById('presentationIframeViewerFrame').src, '_blank')">在新分頁開啟 ↗</button>
+          <button type="button" onclick="window.presentationManager.closeExternalUrlViewer()" style="border: none; background: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
+        </div>
+      </div>
+      <div style="flex: 1; overflow: hidden; background: #ffffff;">
+        <iframe id="presentationIframeViewerFrame" src="about:blank" style="width: 100%; height: 100%; border: none;"></iframe>
+      </div>
     </div>
   </div>
 

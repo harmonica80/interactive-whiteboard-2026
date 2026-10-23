@@ -1,0 +1,1482 @@
+/**
+ * ==========================================================================
+ * 📽️ 同步互動簡報核心模組 (Synchronized Interactive Presentation Core)
+ * 支援：
+ * 1. PDF 逐頁解析匯入、JSON 匯出/匯入備份 (圖 3)
+ * 2. 老師端 16:9 簡報投影、即時標記筆、光暈雷射筆同步廣播 (圖 4)
+ * 3. 各頁多元多題互動設定、外部 URL 懸浮嵌入 (圖 5)
+ * 4. 學生端逐題卡片 / 捲動清單 / 浮動表情回饋即時作答
+ * 5. 學生即時提交側欄、統計圖表、CSV 下載匯出
+ * ==========================================================================
+ */
+(function (global) {
+  'use strict';
+
+  class PresentationManager {
+    constructor() {
+      // 簡報核心狀態
+      this.slides = []; // [{ id, type, bgUrl, bgColor, externalUrl, urlPosition, displayMode, questions }]
+      this.currentSlideIndex = 0;
+      this.isPresenting = false; // 是否正在向全班同步廣播
+      this.currentTool = 'none'; // 'none' | 'pen' | 'laser'
+      
+      // 標註與雷射筆
+      this.annotations = {}; // { [slideId]: [ { color, width, points: [[rx, ry], ...] } ] }
+      this.isDrawing = false;
+      this.currentStroke = null;
+      this.laserActive = false;
+      this.lastLaserBroadcast = 0;
+
+      // 互動與作答
+      this.submissions = {}; // { [slideId]: { [studentUid]: { userName, avatar, answers, timestamp } } }
+      this.myAnswers = {}; // 學生當前作答草稿 { [qId]: answer }
+
+      // PDF 暫存
+      this.currentPdfDoc = null;
+      this.selectedPdfPages = new Set();
+
+      // DOM 元素快取 (延遲綁定)
+      this.els = {};
+
+      this.init();
+    }
+
+    // 初始化綁定
+    init() {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => this.bindUI());
+      } else {
+        this.bindUI();
+      }
+    }
+
+    // 取得當前是否為老師
+    isTeacher() {
+      return Boolean(window.app && window.app.isAdmin);
+    }
+
+    // 取得當前使用者名稱與 UID
+    getUserInfo() {
+      const name = (window.app && window.app.currentUserName) || '學生';
+      const uid = (window.app && window.app.currentUserId) || ('stu_' + Math.random().toString(36).substring(2, 9));
+      const avatar = (window.app && window.app.currentUserAvatar) || '👤';
+      return { name, uid, avatar };
+    }
+
+    // 綁定 UI 元素與事件
+    bindUI() {
+      this.cacheElements();
+      this.bindEvents();
+      this.initFirebase();
+      this.render();
+    }
+
+    // 快取主要 DOM 元素
+    cacheElements() {
+      this.els = {
+        panel: document.getElementById('panel-presentation'),
+        btnStartSync: document.getElementById('btnStartSyncPresentation'),
+        btnAddColor: document.getElementById('btnAddColorSlide'),
+        btnAddImage: document.getElementById('btnAddImageSlide'),
+        thumbnailsList: document.getElementById('presentationThumbnailsList'),
+        fileInputImage: document.getElementById('inputPresentationImageFile'),
+        
+        // 投影視區
+        stageWrapper: document.getElementById('presentationStageWrapper'),
+        screen: document.getElementById('presentationScreen'),
+        screenBg: document.getElementById('presentationScreenBg'),
+        emptyHint: document.getElementById('presentationEmptyHint'),
+        annotationCanvas: document.getElementById('presentationAnnotationCanvas'),
+        laserDot: document.getElementById('presentationLaserDot'),
+        urlBadge: document.getElementById('presentationUrlBadge'),
+        liveBadge: document.getElementById('presentationLiveBadge'),
+
+        // 底部工具列
+        btnPrev: document.getElementById('btnSlidePrev'),
+        btnNext: document.getElementById('btnSlideNext'),
+        pageCounter: document.getElementById('txtSlidePageCounter'),
+        btnGridOverview: document.getElementById('btnSlideGridOverview'),
+        btnToolPen: document.getElementById('btnSlideToolPen'),
+        btnToolLaser: document.getElementById('btnSlideToolLaser'),
+        btnClearAnnotations: document.getElementById('btnSlideClearAnnotations'),
+        btnFullscreen: document.getElementById('btnSlideFullscreen'),
+        btnSettings: document.getElementById('btnSlideSettings'),
+        btnImportExport: document.getElementById('btnSlideImportExport'),
+        btnResetSubmissions: document.getElementById('btnSlideResetSubmissions'),
+        btnClosePresentation: document.getElementById('btnClosePresentation'),
+
+        // 右側即時提交欄
+        rightSidebar: document.getElementById('presentationRightSidebar'),
+        submissionsList: document.getElementById('presentationSubmissionsList'),
+        submissionsStats: document.getElementById('presentationSubmissionsStats'),
+        btnDownloadResponses: document.getElementById('btnDownloadResponses'),
+
+        // 學生端作答卡片 / 浮動表情回饋條
+        studentInteractionArea: document.getElementById('presentationStudentInteractionArea'),
+
+        // 彈窗容器
+        modalImportExport: document.getElementById('modalPresentationImportExport'),
+        modalPdfPicker: document.getElementById('modalPresentationPdfPicker'),
+        pdfPagesContainer: document.getElementById('presentationPdfPagesContainer'),
+        modalSlideSettings: document.getElementById('modalPresentationSlideSettings'),
+        modalGridOverview: document.getElementById('modalPresentationGridOverview'),
+        gridOverviewContainer: document.getElementById('presentationGridOverviewContainer'),
+        modalIframeViewer: document.getElementById('modalPresentationIframeViewer'),
+        iframeViewerFrame: document.getElementById('presentationIframeViewerFrame')
+      };
+    }
+
+    // 事件監聽綁定
+    bindEvents() {
+      const { els } = this;
+      if (!els.panel) return;
+
+      // 關閉按鈕
+      if (els.btnClosePresentation) {
+        els.btnClosePresentation.onclick = () => {
+          if (window.app && window.app.switchToTab) {
+            window.app.switchToTab('panel-questions');
+          }
+        };
+      }
+
+      // 開始/結束同步簡報
+      if (els.btnStartSync) {
+        els.btnStartSync.onclick = () => this.toggleSyncPresentation();
+      }
+
+      // 新增純色頁
+      if (els.btnAddColor) {
+        els.btnAddColor.onclick = () => this.addColorSlide();
+      }
+
+      // 新增圖片頁
+      if (els.btnAddImage && els.fileInputImage) {
+        els.btnAddImage.onclick = () => els.fileInputImage.click();
+        els.fileInputImage.onchange = (e) => this.handleImageSlideUpload(e);
+      }
+
+      // 翻頁按鈕
+      if (els.btnPrev) els.btnPrev.onclick = () => this.prevSlide();
+      if (els.btnNext) els.btnNext.onclick = () => this.nextSlide();
+
+      // 標註筆與雷射筆切換
+      if (els.btnToolPen) {
+        els.btnToolPen.onclick = () => this.setTool(this.currentTool === 'pen' ? 'none' : 'pen');
+      }
+      if (els.btnToolLaser) {
+        els.btnToolLaser.onclick = () => this.setTool(this.currentTool === 'laser' ? 'none' : 'laser');
+      }
+      if (els.btnClearAnnotations) {
+        els.btnClearAnnotations.onclick = () => this.clearAnnotations();
+      }
+
+      // 全螢幕切換
+      if (els.btnFullscreen) {
+        els.btnFullscreen.onclick = () => this.toggleFullscreen();
+      }
+
+      // 匯入/匯出按鈕
+      if (els.btnImportExport) {
+        els.btnImportExport.onclick = () => this.openImportExportModal();
+      }
+
+      // 本頁設定按鈕
+      if (els.btnSettings) {
+        els.btnSettings.onclick = () => this.openSlideSettingsModal();
+      }
+
+      // 重置提交
+      if (els.btnResetSubmissions) {
+        els.btnResetSubmissions.onclick = () => this.resetSubmissions();
+      }
+
+      // 縮圖九宮格總覽
+      if (els.btnGridOverview) {
+        els.btnGridOverview.onclick = () => this.openGridOverviewModal();
+      }
+
+      // 下載回應 CSV
+      if (els.btnDownloadResponses) {
+        els.btnDownloadResponses.onclick = () => this.downloadResponsesCsv();
+      }
+
+      // 簡報畫布繪製與雷射筆事件
+      this.bindCanvasEvents();
+
+      // 外部 URL 懸浮點擊
+      if (els.urlBadge) {
+        els.urlBadge.onclick = (e) => {
+          e.preventDefault();
+          this.openExternalUrlViewer();
+        };
+      }
+
+      // 切換至簡報分頁或視窗大小改變時重整尺寸
+      const presTabBtn = document.querySelector('.menu-tab[data-target="panel-presentation"]');
+      if (presTabBtn) {
+        presTabBtn.addEventListener('click', () => {
+          setTimeout(() => this.render(), 80);
+        });
+      }
+      window.addEventListener('resize', () => {
+        if (this.els.panel && (this.els.panel.classList.contains('active') || this.els.panel.style.display !== 'none')) {
+          this.render();
+        }
+      });
+
+      // 鍵盤左右鍵切換頁面
+      window.addEventListener('keydown', (e) => {
+        if (!els.panel || els.panel.style.display === 'none') return;
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+          this.nextSlide();
+        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+          this.prevSlide();
+        }
+      });
+    }
+
+    // 畫布繪圖與雷射筆滑鼠/觸控事件
+    bindCanvasEvents() {
+      const canvas = this.els.annotationCanvas;
+      const screen = this.els.screen;
+      if (!canvas || !screen) return;
+
+      const getRatioPos = (e) => {
+        const rect = screen.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const rx = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        const ry = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+        return { rx, ry };
+      };
+
+      // 滑鼠移動 (雷射筆或筆劃繪製中)
+      const onPointerMove = (e) => {
+        if (!this.isTeacher()) return;
+        const { rx, ry } = getRatioPos(e);
+
+        if (this.currentTool === 'laser') {
+          this.updateLaserPointer(rx, ry, true);
+          this.broadcastLaser(rx, ry, true);
+        } else if (this.currentTool === 'pen' && this.isDrawing && this.currentStroke) {
+          this.currentStroke.points.push([rx, ry]);
+          this.drawCurrentStroke();
+        }
+      };
+
+      const onPointerDown = (e) => {
+        if (!this.isTeacher()) return;
+        const { rx, ry } = getRatioPos(e);
+
+        if (this.currentTool === 'pen') {
+          this.isDrawing = true;
+          this.currentStroke = {
+            color: '#ef4444',
+            width: 4,
+            points: [[rx, ry]]
+          };
+        } else if (this.currentTool === 'laser') {
+          this.updateLaserPointer(rx, ry, true);
+          this.broadcastLaser(rx, ry, true);
+        }
+      };
+
+      const onPointerUp = () => {
+        if (!this.isTeacher()) return;
+        if (this.isDrawing && this.currentStroke) {
+          this.isDrawing = false;
+          const slide = this.getCurrentSlide();
+          if (slide) {
+            if (!this.annotations[slide.id]) this.annotations[slide.id] = [];
+            this.annotations[slide.id].push(this.currentStroke);
+            this.broadcastAnnotations(slide.id);
+          }
+          this.currentStroke = null;
+        }
+      };
+
+      const onPointerLeave = () => {
+        if (!this.isTeacher()) return;
+        onPointerUp();
+        if (this.currentTool === 'laser') {
+          this.updateLaserPointer(0, 0, false);
+          this.broadcastLaser(0, 0, false);
+        }
+      };
+
+      screen.addEventListener('mousedown', onPointerDown);
+      screen.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('mouseup', onPointerUp);
+      screen.addEventListener('mouseleave', onPointerLeave);
+
+      screen.addEventListener('touchstart', onPointerDown, { passive: true });
+      screen.addEventListener('touchmove', onPointerMove, { passive: true });
+      screen.addEventListener('touchend', onPointerUp, { passive: true });
+    }
+
+    // 初始化 Firebase 同步監聽
+    initFirebase() {
+      if (typeof db === 'undefined') {
+        console.warn('Firebase db is undefined. Presentation runs in local offline mode.');
+        return;
+      }
+
+      const presRef = db.ref('presentation');
+
+      // 1. 監聽簡報同步狀態與當前頁
+      presRef.child('live').on('value', (snap) => {
+        const data = snap.val();
+        if (!data) return;
+
+        this.isPresenting = Boolean(data.isPresenting);
+        if (!this.isTeacher() && this.isPresenting) {
+          // 學生端自動跟隨老師頁面
+          if (typeof data.currentSlideIndex === 'number' && data.currentSlideIndex !== this.currentSlideIndex) {
+            this.currentSlideIndex = data.currentSlideIndex;
+            this.render();
+          }
+        }
+        this.updateSyncButtonUI();
+      });
+
+      // 2. 監聽全體簡報頁面 (若老師有發布)
+      presRef.child('slides').on('value', (snap) => {
+        const cloudSlides = snap.val();
+        if (cloudSlides && Array.isArray(cloudSlides) && !this.isTeacher()) {
+          this.slides = cloudSlides;
+          this.render();
+        }
+      });
+
+      // 3. 監聽雷射筆座標
+      presRef.child('laser').on('value', (snap) => {
+        const laser = snap.val();
+        if (!this.isTeacher() && laser) {
+          this.updateLaserPointer(laser.rx, laser.ry, laser.active);
+        }
+      });
+
+      // 4. 監聽繪圖標註
+      presRef.child('annotations').on('value', (snap) => {
+        const annots = snap.val();
+        if (annots) {
+          this.annotations = annots;
+          this.redrawAnnotations();
+        } else {
+          this.annotations = {};
+          this.redrawAnnotations();
+        }
+      });
+
+      // 5. 監聽學生提交作答
+      presRef.child('submissions').on('value', (snap) => {
+        this.submissions = snap.val() || {};
+        this.renderSubmissionsSidebar();
+      });
+    }
+
+    // 廣播雷射筆位置 (節流 35ms)
+    broadcastLaser(rx, ry, active) {
+      if (!this.isPresenting || typeof db === 'undefined') return;
+      const now = Date.now();
+      if (now - this.lastLaserBroadcast < 35 && active) return;
+      this.lastLaserBroadcast = now;
+
+      db.ref('presentation/laser').set({ rx, ry, active, ts: now });
+    }
+
+    // 廣播繪圖標註
+    broadcastAnnotations(slideId) {
+      if (!this.isPresenting || typeof db === 'undefined') return;
+      db.ref(`presentation/annotations/${slideId}`).set(this.annotations[slideId] || []);
+    }
+
+    // 廣播當前簡報狀態給全班
+    broadcastLiveState() {
+      if (typeof db === 'undefined') return;
+      db.ref('presentation/live').set({
+        isPresenting: this.isPresenting,
+        currentSlideIndex: this.currentSlideIndex,
+        updatedAt: Date.now()
+      });
+      if (this.isPresenting) {
+        db.ref('presentation/slides').set(this.slides);
+      }
+    }
+
+    // 開啟/結束同步簡報
+    toggleSyncPresentation() {
+      if (!this.isTeacher()) return;
+      if (this.slides.length === 0) {
+        this.notify('提示', '請先新增至少一頁簡報才能開始同步！');
+        return;
+      }
+
+      this.isPresenting = !this.isPresenting;
+      this.broadcastLiveState();
+      this.updateSyncButtonUI();
+
+      if (this.isPresenting) {
+        this.notify('🎉 同步簡報已開始', '全班學生畫面將自動同步顯示當前簡報！');
+      } else {
+        this.notify('🏁 同步簡報已結束', '已關閉學生跟隨同步。');
+      }
+    }
+
+    // 更新同步按鈕狀態外觀
+    updateSyncButtonUI() {
+      const btn = this.els.btnStartSync;
+      const badge = this.els.liveBadge;
+      if (!btn) return;
+
+      if (this.isPresenting) {
+        btn.classList.add('is-active');
+        btn.innerHTML = '<span>🏁 結束簡報</span>';
+        if (badge) badge.style.display = 'inline-flex';
+      } else {
+        btn.classList.remove('is-active');
+        btn.innerHTML = '<span>🎉 開始同步簡報</span>';
+        if (badge) badge.style.display = 'none';
+      }
+    }
+
+    // 設定當前標註工具 ('none' | 'pen' | 'laser')
+    setTool(tool) {
+      this.currentTool = tool;
+      const { btnToolPen, btnToolLaser, annotationCanvas, screen } = this.els;
+
+      if (btnToolPen) btnToolPen.classList.toggle('active', tool === 'pen');
+      if (btnToolLaser) btnToolLaser.classList.toggle('active', tool === 'laser');
+
+      if (annotationCanvas) {
+        annotationCanvas.classList.toggle('interactive', tool === 'pen');
+      }
+      if (screen) {
+        screen.style.cursor = tool === 'laser' ? 'crosshair' : (tool === 'pen' ? 'crosshair' : 'default');
+      }
+
+      if (tool !== 'laser') {
+        this.updateLaserPointer(0, 0, false);
+        this.broadcastLaser(0, 0, false);
+      }
+    }
+
+    // 更新雷射筆外觀座標 (光暈紅點)
+    updateLaserPointer(rx, ry, active) {
+      const dot = this.els.laserDot;
+      const screen = this.els.screen;
+      if (!dot || !screen) return;
+
+      if (!active) {
+        dot.style.display = 'none';
+        return;
+      }
+
+      dot.style.display = 'block';
+      dot.style.left = `${rx * 100}%`;
+      dot.style.top = `${ry * 100}%`;
+    }
+
+    // 清除當前頁面的標記
+    clearAnnotations() {
+      const slide = this.getCurrentSlide();
+      if (!slide) return;
+      if (confirm('確定要清除此頁的所有手繪標記嗎？')) {
+        delete this.annotations[slide.id];
+        this.redrawAnnotations();
+        if (this.isPresenting && typeof db !== 'undefined') {
+          db.ref(`presentation/annotations/${slide.id}`).remove();
+        }
+      }
+    }
+
+    // 繪製當前未放開滑鼠的筆劃
+    drawCurrentStroke() {
+      if (!this.currentStroke || this.currentStroke.points.length < 2) return;
+      const canvas = this.els.annotationCanvas;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      const pts = this.currentStroke.points;
+      const p1 = pts[pts.length - 2];
+      const p2 = pts[pts.length - 1];
+
+      ctx.beginPath();
+      ctx.strokeStyle = this.currentStroke.color || '#ef4444';
+      ctx.lineWidth = this.currentStroke.width || 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.moveTo(p1[0] * w, p1[1] * h);
+      ctx.lineTo(p2[0] * w, p2[1] * h);
+      ctx.stroke();
+    }
+
+    // 重繪當前頁面的全部標註
+    redrawAnnotations() {
+      const canvas = this.els.annotationCanvas;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const slide = this.getCurrentSlide();
+      if (!slide) return;
+
+      const strokes = this.annotations[slide.id] || [];
+      const w = canvas.width;
+      const h = canvas.height;
+
+      strokes.forEach(stroke => {
+        if (!stroke.points || stroke.points.length < 2) return;
+        ctx.beginPath();
+        ctx.strokeStyle = stroke.color || '#ef4444';
+        ctx.lineWidth = stroke.width || 4;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.moveTo(stroke.points[0][0] * w, stroke.points[0][1] * h);
+        for (let i = 1; i < stroke.points.length; i++) {
+          ctx.lineTo(stroke.points[i][0] * w, stroke.points[i][1] * h);
+        }
+        ctx.stroke();
+      });
+    }
+
+    // 取得當前顯示中的簡報頁面物件
+    getCurrentSlide() {
+      if (this.slides.length === 0) return null;
+      return this.slides[this.currentSlideIndex] || null;
+    }
+
+    // 翻到下一頁
+    nextSlide() {
+      if (this.currentSlideIndex < this.slides.length - 1) {
+        this.currentSlideIndex++;
+        this.onSlideChanged();
+      }
+    }
+
+    // 翻到上一頁
+    prevSlide() {
+      if (this.currentSlideIndex > 0) {
+        this.currentSlideIndex--;
+        this.onSlideChanged();
+      }
+    }
+
+    // 跳轉到指定頁
+    goToSlide(index) {
+      if (index >= 0 && index < this.slides.length) {
+        this.currentSlideIndex = index;
+        this.onSlideChanged();
+      }
+    }
+
+    // 頁面變更觸發動作
+    onSlideChanged() {
+      this.myAnswers = {}; // 重設學生端當前頁暫存
+      this.render();
+      if (this.isTeacher() && this.isPresenting) {
+        this.broadcastLiveState();
+      }
+    }
+
+    // 新增純色頁
+    addColorSlide(color = '#1e293b') {
+      const newSlide = {
+        id: 'slide_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        type: 'color',
+        bgColor: color,
+        bgUrl: '',
+        externalUrl: '',
+        urlPosition: 'center',
+        displayMode: 'step',
+        questions: []
+      };
+      this.slides.push(newSlide);
+      this.currentSlideIndex = this.slides.length - 1;
+      this.render();
+      if (this.isPresenting) this.broadcastLiveState();
+    }
+
+    // 處理圖片頁上傳 (可多選或單選)
+    handleImageSlideUpload(e) {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+
+      let loadedCount = 0;
+      files.forEach((file) => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          this.slides.push({
+            id: 'slide_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            type: 'image',
+            bgColor: '#0f172a',
+            bgUrl: event.target.result,
+            externalUrl: '',
+            urlPosition: 'center',
+            displayMode: 'step',
+            questions: []
+          });
+          loadedCount++;
+          if (loadedCount === files.length) {
+            this.currentSlideIndex = this.slides.length - 1;
+            this.render();
+            if (this.isPresenting) this.broadcastLiveState();
+            this.notify('成功', `已新增 ${files.length} 張圖片簡報頁面！`);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
+      e.target.value = '';
+    }
+
+    // 刪除指定頁面
+    deleteSlide(index) {
+      if (!this.isTeacher()) return;
+      if (!confirm(`確定要刪除第 ${index + 1} 頁嗎？`)) return;
+
+      const deletedSlide = this.slides[index];
+      if (deletedSlide) {
+        delete this.annotations[deletedSlide.id];
+      }
+
+      this.slides.splice(index, 1);
+      if (this.currentSlideIndex >= this.slides.length) {
+        this.currentSlideIndex = Math.max(0, this.slides.length - 1);
+      }
+      this.render();
+      if (this.isPresenting) this.broadcastLiveState();
+    }
+
+    // 主渲染流程
+    render() {
+      const { els } = this;
+      if (!els.panel) return;
+
+      const total = this.slides.length;
+      const current = total > 0 ? this.currentSlideIndex + 1 : 0;
+      const slide = this.getCurrentSlide();
+
+      // 頁碼更新
+      if (els.pageCounter) {
+        els.pageCounter.textContent = `${current} / ${total}`;
+      }
+
+      // 翻頁按鈕可用狀態
+      if (els.btnPrev) els.btnPrev.disabled = this.currentSlideIndex <= 0;
+      if (els.btnNext) els.btnNext.disabled = this.currentSlideIndex >= total - 1;
+
+      // 簡報畫面渲染
+      if (!slide) {
+        if (els.screenBg) els.screenBg.style.display = 'none';
+        if (els.emptyHint) els.emptyHint.style.display = 'flex';
+        if (els.urlBadge) els.urlBadge.style.display = 'none';
+      } else {
+        if (els.emptyHint) els.emptyHint.style.display = 'none';
+        if (els.screenBg) {
+          els.screenBg.style.display = 'block';
+          if (slide.type === 'image' && slide.bgUrl) {
+            els.screenBg.src = slide.bgUrl;
+            els.screenBg.style.backgroundColor = 'transparent';
+          } else {
+            els.screenBg.src = '';
+            els.screenBg.style.backgroundColor = slide.bgColor || '#1e293b';
+          }
+        }
+
+        // 外部 URL 懸浮圖示
+        if (els.urlBadge) {
+          if (slide.externalUrl && slide.externalUrl.trim()) {
+            els.urlBadge.style.display = 'inline-flex';
+            els.urlBadge.className = `presentation-url-badge presentation-url-pos-${slide.urlPosition || 'center'}`;
+          } else {
+            els.urlBadge.style.display = 'none';
+          }
+        }
+      }
+
+      // 重設標註畫布解析度與重繪
+      if (els.annotationCanvas && els.screen) {
+        const rect = els.screen.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          els.annotationCanvas.width = rect.width;
+          els.annotationCanvas.height = rect.height;
+        }
+        this.redrawAnnotations();
+      }
+
+      // 側欄縮圖清單
+      this.renderThumbnails();
+
+      // 右側提交欄
+      this.renderSubmissionsSidebar();
+
+      // 學生端作答卡片 / 浮動表情回饋條
+      this.renderStudentInteraction();
+
+      // 控制項角色權限調整
+      this.applyRolePermissions();
+    }
+
+    // 渲染左側縮圖列表
+    renderThumbnails() {
+      const container = this.els.thumbnailsList;
+      if (!container) return;
+      container.innerHTML = '';
+
+      this.slides.forEach((slide, index) => {
+        const card = document.createElement('div');
+        card.className = `presentation-thumbnail-card ${index === this.currentSlideIndex ? 'active' : ''}`;
+        card.onclick = () => this.goToSlide(index);
+
+        if (slide.type === 'image' && slide.bgUrl) {
+          card.innerHTML = `<img class="presentation-thumbnail-img" src="${slide.bgUrl}" alt="第 ${index + 1} 頁">`;
+        } else {
+          card.innerHTML = `<div class="presentation-thumbnail-color" style="background-color: ${slide.bgColor || '#1e293b'}"></div>`;
+        }
+
+        card.innerHTML += `<div class="presentation-thumbnail-badge">${index + 1}</div>`;
+
+        // 老師專用刪除按鈕
+        if (this.isTeacher()) {
+          const delBtn = document.createElement('button');
+          delBtn.className = 'presentation-thumbnail-del';
+          delBtn.innerHTML = '✕';
+          delBtn.title = '刪除此頁';
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.deleteSlide(index);
+          };
+          card.appendChild(delBtn);
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    // 渲染右側即時提交欄
+    renderSubmissionsSidebar() {
+      const { submissionsList, submissionsStats } = this.els;
+      if (!submissionsList) return;
+
+      const slide = this.getCurrentSlide();
+      if (!slide) {
+        submissionsList.innerHTML = '<div class="presentation-submissions-empty">尚未選取任何簡報頁面。</div>';
+        if (submissionsStats) submissionsStats.textContent = '';
+        return;
+      }
+
+      const hasQuestions = slide.questions && slide.questions.length > 0;
+      const pageSubs = (this.submissions && this.submissions[slide.id]) || {};
+      const subEntries = Object.values(pageSubs);
+
+      if (!hasQuestions) {
+        submissionsList.innerHTML = `
+          <div class="presentation-submissions-empty">
+            本頁未設定互動。<br>
+            <span style="font-size: 11px; opacity: 0.8;">可點擊下方「⚙️ 本頁設定」新增選擇題、心得或心情回饋。</span>
+          </div>
+        `;
+        if (submissionsStats) {
+          let totalAll = 0;
+          Object.values(this.submissions || {}).forEach(page => totalAll += Object.keys(page).length);
+          submissionsStats.textContent = `提交總數（其他頁）：${totalAll}`;
+        }
+        return;
+      }
+
+      if (submissionsStats) {
+        submissionsStats.textContent = `本頁提交人數：${subEntries.length} 人`;
+      }
+
+      if (subEntries.length === 0) {
+        submissionsList.innerHTML = '<div class="presentation-submissions-empty">目前尚未有同學提交作答...</div>';
+        return;
+      }
+
+      submissionsList.innerHTML = '';
+      subEntries.reverse().forEach(sub => {
+        const card = document.createElement('div');
+        card.className = 'presentation-submission-card';
+
+        const timeStr = sub.timestamp ? new Date(sub.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        let answerText = '';
+        if (typeof sub.answers === 'string') {
+          answerText = sub.answers;
+        } else if (typeof sub.answers === 'object') {
+          answerText = Object.entries(sub.answers).map(([qid, ans]) => `${ans}`).join(' | ');
+        }
+
+        card.innerHTML = `
+          <div class="presentation-submission-head">
+            <span class="presentation-student-name">${sub.avatar || '👤'} ${sub.userName || '同學'}</span>
+            <span class="presentation-submission-time">${timeStr}</span>
+          </div>
+          <div class="presentation-submission-answer">${this.escapeHtml(answerText)}</div>
+        `;
+        submissionsList.appendChild(card);
+      });
+    }
+
+    // 渲染學生端作答介面 (浮動表情回饋條 或 卡片彈窗)
+    renderStudentInteraction() {
+      const area = this.els.studentInteractionArea;
+      if (!area) return;
+      area.innerHTML = '';
+
+      // 老師端不顯示作答浮窗
+      if (this.isTeacher()) return;
+
+      const slide = this.getCurrentSlide();
+      if (!slide || !slide.questions || slide.questions.length === 0) return;
+
+      const mode = slide.displayMode || 'step';
+
+      // 模式 C：輕量浮動表情回饋條 (Floating Reaction Bar)
+      if (mode === 'floating') {
+        const bar = document.createElement('div');
+        bar.className = 'presentation-floating-reaction-bar';
+
+        const emojis = ['👍', '💡', '❓', '❤️', '👏', '😂'];
+        emojis.forEach(emo => {
+          const btn = document.createElement('button');
+          btn.className = 'presentation-reaction-btn';
+          btn.textContent = emo;
+          btn.onclick = () => this.submitStudentAnswer({ reaction: emo });
+          bar.appendChild(btn);
+        });
+        area.appendChild(bar);
+        return;
+      }
+
+      // 模式 A (分步前進) / 模式 B (全部展開捲動) 卡片
+      const dialog = document.createElement('div');
+      dialog.className = 'presentation-student-dialog';
+
+      const userInfo = this.getUserInfo();
+      const mySub = this.submissions[slide.id]?.[userInfo.uid];
+      const isSubmitted = Boolean(mySub);
+
+      dialog.innerHTML = `
+        <div class="presentation-student-dialog-head">
+          <span class="presentation-student-dialog-title">📝 隨堂互動作答</span>
+          ${isSubmitted ? '<span style="color: #10b981; font-size: 11px; font-weight: 700;">✅ 已提交</span>' : ''}
+        </div>
+        <div class="presentation-student-dialog-body" id="presStudentDialogBody"></div>
+        <div class="presentation-student-dialog-footer">
+          <button type="button" class="presentation-tool-btn active" id="btnSubmitPresAnswers">
+            ${isSubmitted ? '重新送出' : '🚀 送出答案'}
+          </button>
+        </div>
+      `;
+
+      area.appendChild(dialog);
+
+      const body = dialog.querySelector('#presStudentDialogBody');
+      slide.questions.forEach((q, qIndex) => {
+        const qContainer = document.createElement('div');
+        qContainer.innerHTML = `<div class="presentation-student-q-title">${qIndex + 1}. ${this.escapeHtml(q.title || '請作答')}</div>`;
+
+        // 快速色塊選擇題
+        if (q.type === 'quick_choice') {
+          const grid = document.createElement('div');
+          grid.className = 'presentation-quick-color-options';
+          const colors = [
+            { cls: 'opt-red', label: 'A' },
+            { cls: 'opt-yellow', label: 'B' },
+            { cls: 'opt-blue', label: 'C' },
+            { cls: 'opt-green', label: 'D' }
+          ];
+          colors.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `presentation-color-opt-btn ${opt.cls} ${this.myAnswers[q.id] === opt.label ? 'selected' : ''}`;
+            btn.textContent = opt.label;
+            btn.onclick = () => {
+              this.myAnswers[q.id] = opt.label;
+              grid.querySelectorAll('.presentation-color-opt-btn').forEach(b => b.classList.remove('selected'));
+              btn.classList.add('selected');
+            };
+            grid.appendChild(btn);
+          });
+          qContainer.appendChild(grid);
+        }
+        // 自訂一般選擇題
+        else if (q.type === 'choice') {
+          const list = document.createElement('div');
+          list.className = 'presentation-choice-list';
+          (q.options || ['A', 'B', 'C', 'D']).forEach(optText => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `presentation-choice-btn ${this.myAnswers[q.id] === optText ? 'selected' : ''}`;
+            btn.textContent = optText;
+            btn.onclick = () => {
+              this.myAnswers[q.id] = optText;
+              list.querySelectorAll('.presentation-choice-btn').forEach(b => b.classList.remove('selected'));
+              btn.classList.add('selected');
+            };
+            list.appendChild(btn);
+          });
+          qContainer.appendChild(list);
+        }
+        // 文字回覆
+        else if (q.type === 'text') {
+          const textarea = document.createElement('textarea');
+          textarea.className = 'presentation-text-answer-input';
+          textarea.placeholder = '請在此輸入您的想法或回答...';
+          textarea.value = this.myAnswers[q.id] || '';
+          textarea.oninput = (e) => {
+            this.myAnswers[q.id] = e.target.value;
+          };
+          qContainer.appendChild(textarea);
+        }
+        // 評分 (1~5 星)
+        else if (q.type === 'rating') {
+          const ratingWrap = document.createElement('div');
+          ratingWrap.style.display = 'flex';
+          ratingWrap.style.gap = '8px';
+          [1, 2, 3, 4, 5].forEach(star => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'presentation-tool-btn';
+            btn.textContent = `⭐ ${star}`;
+            btn.onclick = () => {
+              this.myAnswers[q.id] = `${star} 顆星`;
+              ratingWrap.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+            };
+            ratingWrap.appendChild(btn);
+          });
+          qContainer.appendChild(ratingWrap);
+        }
+
+        body.appendChild(qContainer);
+      });
+
+      // 綁定送出按鈕
+      dialog.querySelector('#btnSubmitPresAnswers').onclick = () => {
+        if (Object.keys(this.myAnswers).length === 0) {
+          this.notify('提示', '請先選擇或填寫答案再送出喔！');
+          return;
+        }
+        this.submitStudentAnswer(this.myAnswers);
+      };
+    }
+
+    // 學生送出作答至 Firebase
+    submitStudentAnswer(answers) {
+      const slide = this.getCurrentSlide();
+      if (!slide) return;
+      const user = this.getUserInfo();
+
+      const payload = {
+        userName: user.name,
+        avatar: user.avatar,
+        answers: answers,
+        timestamp: Date.now()
+      };
+
+      if (typeof db !== 'undefined') {
+        db.ref(`presentation/submissions/${slide.id}/${user.uid}`).set(payload)
+          .then(() => {
+            this.notify('✅ 送出成功', '您的作答已即時傳送給老師！');
+            this.render();
+          })
+          .catch(err => {
+            this.notify('❌ 失敗', '送出失敗：' + err.message);
+          });
+      } else {
+        if (!this.submissions[slide.id]) this.submissions[slide.id] = {};
+        this.submissions[slide.id][user.uid] = payload;
+        this.notify('✅ 送出成功', '已記錄您的作答！');
+        this.render();
+      }
+    }
+
+    // 重設本頁提交作答
+    resetSubmissions() {
+      if (!this.isTeacher()) return;
+      const slide = this.getCurrentSlide();
+      if (!slide) return;
+
+      if (confirm('確定要清空本頁所有同學的作答提交紀錄嗎？')) {
+        if (typeof db !== 'undefined') {
+          db.ref(`presentation/submissions/${slide.id}`).remove();
+        }
+        delete this.submissions[slide.id];
+        this.renderSubmissionsSidebar();
+        this.notify('已重置', '本頁作答紀錄已清空！');
+      }
+    }
+
+    // 下載回應 CSV 表格
+    downloadResponsesCsv() {
+      const slide = this.getCurrentSlide();
+      if (!slide) return;
+      const pageSubs = (this.submissions && this.submissions[slide.id]) || {};
+      const entries = Object.values(pageSubs);
+
+      if (entries.length === 0) {
+        this.notify('提示', '目前本頁尚無任何提交紀錄可下載。');
+        return;
+      }
+
+      let csvContent = '\uFEFF學生姓名,作答內容,提交時間\n';
+      entries.forEach(sub => {
+        const name = (sub.userName || '').replace(/"/g, '""');
+        let ansStr = '';
+        if (typeof sub.answers === 'string') {
+          ansStr = sub.answers;
+        } else if (typeof sub.answers === 'object') {
+          ansStr = Object.values(sub.answers).join('; ');
+        }
+        ansStr = ansStr.replace(/"/g, '""');
+        const time = sub.timestamp ? new Date(sub.timestamp).toLocaleString() : '';
+        csvContent += `"${name}","${ansStr}","${time}"\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `簡報第${this.currentSlideIndex + 1}頁作答統計_${Date.now()}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    // 全螢幕切換
+    toggleFullscreen() {
+      const panel = this.els.panel;
+      if (!panel) return;
+
+      if (!document.fullscreenElement) {
+        panel.requestFullscreen().catch(err => {
+          console.error('Fullscreen request error:', err);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // 依據角色權限顯示/隱藏控制鈕
+    applyRolePermissions() {
+      const teacher = this.isTeacher();
+      const { els } = this;
+
+      if (els.btnStartSync) els.btnStartSync.style.display = teacher ? 'inline-flex' : 'none';
+      if (els.btnAddColor) els.btnAddColor.style.display = teacher ? 'inline-flex' : 'none';
+      if (els.btnAddImage) els.btnAddImage.style.display = teacher ? 'inline-flex' : 'none';
+      if (els.btnToolPen) els.btnToolPen.style.display = teacher ? 'inline-flex' : 'none';
+      if (els.btnToolLaser) els.btnToolLaser.style.display = teacher ? 'inline-flex' : 'none';
+      if (els.btnClearAnnotations) els.btnClearAnnotations.style.display = teacher ? 'inline-flex' : 'none';
+      if (els.btnSettings) els.btnSettings.style.display = teacher ? 'inline-flex' : 'none';
+      if (els.btnImportExport) els.btnImportExport.style.display = teacher ? 'inline-flex' : 'none';
+      if (els.btnResetSubmissions) els.btnResetSubmissions.style.display = teacher ? 'inline-flex' : 'none';
+      if (els.rightSidebar) els.rightSidebar.style.display = teacher ? 'flex' : 'none';
+    }
+
+    // ===== 彈窗邏輯：匯入 / 匯出 (圖 3) =====
+    openImportExportModal() {
+      const modal = this.els.modalImportExport;
+      if (modal) modal.style.display = 'flex';
+    }
+
+    closeImportExportModal() {
+      const modal = this.els.modalImportExport;
+      if (modal) modal.style.display = 'none';
+    }
+
+    // 觸發 PDF 上傳 (使用 pdf.js 逐頁解析)
+    triggerPdfUpload() {
+      if (!window.pdfjsLib) {
+        this.notify('錯誤', 'PDF.js 解析庫載入中，請稍候重試。');
+        return;
+      }
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/pdf';
+      input.onchange = (e) => this.handlePdfFile(e.target.files[0]);
+      input.click();
+    }
+
+    // 解析 PDF 檔案並開啟選頁彈窗
+    async handlePdfFile(file) {
+      if (!file) return;
+      this.closeImportExportModal();
+      this.notify('解析中', '正在逐頁讀取 PDF 內容，請稍候...');
+
+      try {
+        const buffer = await file.arrayBuffer();
+        this.currentPdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+        this.selectedPdfPages.clear();
+        this.openPdfPickerModal();
+      } catch (err) {
+        console.error('PDF parsing error:', err);
+        this.notify('解析失敗', '無法讀取 PDF 檔案，請確認檔案格式是否正確。');
+      }
+    }
+
+    // 開啟 PDF 逐頁勾選彈窗
+    openPdfPickerModal() {
+      const modal = this.els.modalPdfPicker;
+      const container = this.els.pdfPagesContainer;
+      if (!modal || !container || !this.currentPdfDoc) return;
+
+      container.innerHTML = '';
+      modal.style.display = 'flex';
+      const numPages = this.currentPdfDoc.numPages;
+
+      for (let i = 1; i <= numPages; i++) {
+        const pageItem = document.createElement('div');
+        pageItem.style.display = 'flex';
+        pageItem.style.flexDirection = 'column';
+        pageItem.style.alignItems = 'center';
+        pageItem.style.gap = '6px';
+        pageItem.style.padding = '8px';
+        pageItem.style.background = '#f8fafc';
+        pageItem.style.borderRadius = '8px';
+        pageItem.style.border = '1px solid #cbd5e1';
+        pageItem.style.cursor = 'pointer';
+
+        pageItem.innerHTML = `
+          <canvas id="pdfPreviewCanvas_${i}" style="width: 140px; aspect-ratio: 16/9; object-fit: contain; background: white; border: 1px solid #e2e8f0; border-radius: 4px;"></canvas>
+          <label style="font-size: 12px; font-weight: 600; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <input type="checkbox" class="pdf-page-checkbox" data-page="${i}" checked> 第 ${i} 頁
+          </label>
+        `;
+
+        this.selectedPdfPages.add(i);
+
+        const chk = pageItem.querySelector('.pdf-page-checkbox');
+        chk.onchange = () => {
+          if (chk.checked) this.selectedPdfPages.add(i);
+          else this.selectedPdfPages.delete(i);
+        };
+
+        pageItem.onclick = (e) => {
+          if (e.target !== chk) {
+            chk.checked = !chk.checked;
+            chk.dispatchEvent(new Event('change'));
+          }
+        };
+
+        container.appendChild(pageItem);
+
+        // 渲染高解析縮圖
+        this.currentPdfDoc.getPage(i).then(page => {
+          const canvas = document.getElementById(`pdfPreviewCanvas_${i}`);
+          if (!canvas) return;
+          const viewport = page.getViewport({ scale: 0.3 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport });
+        });
+      }
+    }
+
+    closePdfPickerModal() {
+      const modal = this.els.modalPdfPicker;
+      if (modal) modal.style.display = 'none';
+      this.currentPdfDoc = null;
+    }
+
+    // 確認將勾選的 PDF 頁數轉換並加入簡報
+    async confirmImportPdfPages() {
+      if (!this.currentPdfDoc || this.selectedPdfPages.size === 0) {
+        this.notify('提示', '請至少勾選一頁 PDF！');
+        return;
+      }
+
+      const sortedPages = Array.from(this.selectedPdfPages).sort((a, b) => a - b);
+      this.notify('轉換中', `正在將 ${sortedPages.length} 頁 PDF 轉為簡報內容...`);
+
+      for (const pageNum of sortedPages) {
+        const page = await this.currentPdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.6 }); // 高畫質
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        await page.render({ canvasContext: tempCanvas.getContext('2d'), viewport }).promise;
+
+        const imgDataUrl = tempCanvas.toDataURL('image/jpeg', 0.88);
+        this.slides.push({
+          id: 'slide_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          type: 'image',
+          bgColor: '#0f172a',
+          bgUrl: imgDataUrl,
+          externalUrl: '',
+          urlPosition: 'center',
+          displayMode: 'step',
+          questions: []
+        });
+      }
+
+      this.closePdfPickerModal();
+      this.currentSlideIndex = this.slides.length - sortedPages.length;
+      this.render();
+      if (this.isPresenting) this.broadcastLiveState();
+      this.notify('匯入成功', `已將 ${sortedPages.length} 頁 PDF 成功設為簡報頁面！`);
+    }
+
+    // 匯出 JSON 備份
+    exportJsonBackup() {
+      if (this.slides.length === 0) {
+        this.notify('提示', '目前簡報無任何內容可匯出！');
+        return;
+      }
+
+      const backupData = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        slides: this.slides
+      };
+
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `同步簡報備份_${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      this.closeImportExportModal();
+      this.notify('匯出成功', '簡報 JSON 備份檔案已下載完成！');
+    }
+
+    // 觸發從 JSON 匯入
+    triggerJsonImport() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (data && Array.isArray(data.slides)) {
+              this.slides = data.slides;
+              this.currentSlideIndex = 0;
+              this.render();
+              if (this.isPresenting) this.broadcastLiveState();
+              this.closeImportExportModal();
+              this.notify('匯入成功', `成功匯入 ${this.slides.length} 頁簡報！`);
+            } else {
+              throw new Error('格式不正確');
+            }
+          } catch (err) {
+            this.notify('匯入失敗', '無效的 JSON 簡報檔案！');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    // ===== 彈窗邏輯：本頁設定 (圖 5 + 多題擴充) =====
+    openSlideSettingsModal() {
+      const slide = this.getCurrentSlide();
+      if (!slide) {
+        this.notify('提示', '請先新增簡報頁面後再進行設定。');
+        return;
+      }
+      const modal = this.els.modalSlideSettings;
+      if (!modal) return;
+
+      document.getElementById('txtPresExternalUrl').value = slide.externalUrl || '';
+      document.getElementById('selPresUrlPosition').value = slide.urlPosition || 'center';
+      document.getElementById('selPresDisplayMode').value = slide.displayMode || 'step';
+
+      this.tempQuestions = JSON.parse(JSON.stringify(slide.questions || []));
+      this.renderQuestionsBuilderList();
+
+      modal.style.display = 'flex';
+    }
+
+    closeSlideSettingsModal() {
+      const modal = this.els.modalSlideSettings;
+      if (modal) modal.style.display = 'none';
+    }
+
+    // 渲染本頁多題互動建構清單
+    renderQuestionsBuilderList() {
+      const container = document.getElementById('presQuestionsBuilderList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (this.tempQuestions.length === 0) {
+        container.innerHTML = '<div style="color: #94a3b8; font-size: 13px; padding: 10px 0;">目前本頁無設定互動題目，點擊下方「+ 新增題目」開始建立！</div>';
+        return;
+      }
+
+      this.tempQuestions.forEach((q, idx) => {
+        const item = document.createElement('div');
+        item.style.background = '#f8fafc';
+        item.style.border = '1px solid #cbd5e1';
+        item.style.borderRadius = '10px';
+        item.style.padding = '12px';
+        item.style.display = 'flex';
+        item.style.flexDirection = 'column';
+        item.style.gap = '8px';
+
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-weight: 700; font-size: 13px; color: #1e293b;">題目 ${idx + 1}</span>
+            <button type="button" style="color: #ef4444; border: none; background: none; font-size: 12px; cursor: pointer; font-weight: 600;" onclick="window.presentationManager.deleteQuestionItem(${idx})">✕ 刪除</button>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <select style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" onchange="window.presentationManager.updateQuestionType(${idx}, this.value)">
+              <option value="quick_choice" ${q.type === 'quick_choice' ? 'selected' : ''}>選擇題 (無題目，按色塊作答)</option>
+              <option value="choice" ${q.type === 'choice' ? 'selected' : ''}>自訂文字選擇題</option>
+              <option value="text" ${q.type === 'text' ? 'selected' : ''}>文字回覆 / 簡答心得</option>
+              <option value="rating" ${q.type === 'rating' ? 'selected' : ''}>評分 (1~5 星級)</option>
+            </select>
+          </div>
+          <input type="text" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" placeholder="輸入題幹或題目說明..." value="${this.escapeHtml(q.title || '')}" oninput="window.presentationManager.updateQuestionTitle(${idx}, this.value)">
+        `;
+
+        container.appendChild(item);
+      });
+    }
+
+    addQuestionItem() {
+      if (!this.tempQuestions) this.tempQuestions = [];
+      this.tempQuestions.push({
+        id: 'q_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        type: 'quick_choice',
+        title: '請在下方選擇您的答案',
+        options: ['A', 'B', 'C', 'D']
+      });
+      this.renderQuestionsBuilderList();
+    }
+
+    deleteQuestionItem(idx) {
+      this.tempQuestions.splice(idx, 1);
+      this.renderQuestionsBuilderList();
+    }
+
+    updateQuestionType(idx, type) {
+      if (this.tempQuestions[idx]) {
+        this.tempQuestions[idx].type = type;
+      }
+    }
+
+    updateQuestionTitle(idx, title) {
+      if (this.tempQuestions[idx]) {
+        this.tempQuestions[idx].title = title;
+      }
+    }
+
+    // 儲存本頁設定
+    saveSlideSettings() {
+      const slide = this.getCurrentSlide();
+      if (!slide) return;
+
+      slide.externalUrl = (document.getElementById('txtPresExternalUrl').value || '').trim();
+      slide.urlPosition = document.getElementById('selPresUrlPosition').value || 'center';
+      slide.displayMode = document.getElementById('selPresDisplayMode').value || 'step';
+      slide.questions = this.tempQuestions || [];
+
+      this.closeSlideSettingsModal();
+      this.render();
+      if (this.isPresenting) this.broadcastLiveState();
+      this.notify('儲存成功', '本頁互動設定已成功套用！');
+    }
+
+    // 縮圖九宮格總覽彈窗
+    openGridOverviewModal() {
+      const modal = this.els.modalGridOverview;
+      const container = this.els.gridOverviewContainer;
+      if (!modal || !container) return;
+
+      container.innerHTML = '';
+      this.slides.forEach((slide, idx) => {
+        const item = document.createElement('div');
+        item.style.position = 'relative';
+        item.style.aspectRatio = '16/9';
+        item.style.borderRadius = '8px';
+        item.style.overflow = 'hidden';
+        item.style.cursor = 'pointer';
+        item.style.border = idx === this.currentSlideIndex ? '3px solid #06b6d4' : '1px solid #cbd5e1';
+        item.onclick = () => {
+          this.goToSlide(idx);
+          this.closeGridOverviewModal();
+        };
+
+        if (slide.type === 'image' && slide.bgUrl) {
+          item.innerHTML = `<img src="${slide.bgUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        } else {
+          item.innerHTML = `<div style="width: 100%; height: 100%; background: ${slide.bgColor || '#1e293b'};"></div>`;
+        }
+        item.innerHTML += `<div style="position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.7); color: white; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 700;">${idx + 1}</div>`;
+        container.appendChild(item);
+      });
+
+      modal.style.display = 'flex';
+    }
+
+    closeGridOverviewModal() {
+      const modal = this.els.modalGridOverview;
+      if (modal) modal.style.display = 'none';
+    }
+
+    // 開啟外部 URL 嵌入視窗
+    openExternalUrlViewer() {
+      const slide = this.getCurrentSlide();
+      if (!slide || !slide.externalUrl) return;
+
+      const modal = this.els.modalIframeViewer;
+      const iframe = this.els.iframeViewerFrame;
+      if (!modal || !iframe) {
+        window.open(slide.externalUrl, '_blank');
+        return;
+      }
+
+      iframe.src = slide.externalUrl;
+      modal.style.display = 'flex';
+    }
+
+    closeExternalUrlViewer() {
+      const modal = this.els.modalIframeViewer;
+      const iframe = this.els.iframeViewerFrame;
+      if (modal) modal.style.display = 'none';
+      if (iframe) iframe.src = 'about:blank';
+    }
+
+    // 系統提示吐司
+    notify(title, msg) {
+      if (window.app && window.app.showNotification) {
+        window.app.showNotification(title, msg);
+      } else {
+        alert(`${title}\n${msg}`);
+      }
+    }
+
+    // 跳脫 HTML
+    escapeHtml(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  }
+
+  // 掛載全域實例
+  global.PresentationManager = PresentationManager;
+  global.presentationManager = new PresentationManager();
+
+})(window);
