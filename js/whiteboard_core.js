@@ -17,7 +17,21 @@
     false
   );
 
-  const myClientId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+  const persistentUid = (
+    urlParams.get('uid') ||
+    (parentApp && typeof parentApp.getUserId === 'function' && parentApp.getUserId()) ||
+    localStorage.getItem('whiteboard_uid') ||
+    sessionStorage.getItem('whiteboard_uid') ||
+    ('u_' + Math.random().toString(36).substring(2, 9))
+  );
+  try {
+    localStorage.setItem('whiteboard_uid', persistentUid);
+    sessionStorage.setItem('whiteboard_uid', persistentUid);
+  } catch (e) {}
+
+  const myClientId = persistentUid;
+  const myPresenceKey = isTeacher ? ('teacher_' + persistentUid) : ('student_' + persistentUid);
+
   const myName = (
     urlParams.get('name') ||
     (parentApp && typeof parentApp.getCurrentUserName === 'function' && parentApp.getCurrentUserName()) ||
@@ -86,6 +100,11 @@
     userCount: document.getElementById('userCount'),
     userList: document.getElementById('userList'),
     readonlyBanner: document.getElementById('readonlyBanner'),
+    // Guide Modal
+    btnHelpGuide: document.getElementById('btnHelpGuide'),
+    guideModal: document.getElementById('guideModal'),
+    btnCloseGuideModal: document.getElementById('btnCloseGuideModal'),
+    btnConfirmGuide: document.getElementById('btnConfirmGuide'),
     // PDF Modal
     pdfModal: document.getElementById('pdfModal'),
     btnClosePdfModal: document.getElementById('btnClosePdfModal'),
@@ -159,16 +178,27 @@
     });
 
     // 4. 線上參與者 (Presence)
-    const myPresenceRef = roomRef.child('presence').child(myClientId);
-    myPresenceRef.set({
-      id: myClientId,
-      name: myName,
-      role: isTeacher ? 'teacher' : 'student',
-      canvasId: state.activeCanvasId,
-      pageId: state.activePageId,
-      lastActive: firebase.database.ServerValue.TIMESTAMP
-    });
+    const myPresenceRef = roomRef.child('presence').child(myPresenceKey);
+    function updateMyPresence() {
+      myPresenceRef.set({
+        id: myPresenceKey,
+        uid: persistentUid,
+        name: myName,
+        role: isTeacher ? 'teacher' : 'student',
+        canvasId: state.activeCanvasId,
+        pageId: state.activePageId,
+        lastActive: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+    updateMyPresence();
     myPresenceRef.onDisconnect().remove();
+
+    // 每 40 秒定時發送心跳維護在線狀態
+    setInterval(() => {
+      if (roomRef) {
+        myPresenceRef.child('lastActive').set(firebase.database.ServerValue.TIMESTAMP);
+      }
+    }, 40000);
 
     roomRef.child('presence').on('value', (snap) => {
       state.onlineUsers = snap.val() || {};
@@ -351,9 +381,10 @@
 
     // 更新個人 Presence
     if (roomRef) {
-      roomRef.child('presence').child(myClientId).update({
+      roomRef.child('presence').child(myPresenceKey).update({
         canvasId: state.activeCanvasId,
-        pageId: state.activePageId
+        pageId: state.activePageId,
+        lastActive: firebase.database.ServerValue.TIMESTAMP
       });
 
       // 老師切換且開啟跟隨模式時，廣播給全班
@@ -366,23 +397,58 @@
     }
   }
 
-  // ===== 參與者名單 =====
+  // ===== 參與者名單 (依「姓名 + 角色」去重，徹底解決重複出現問題) =====
   function renderParticipantsList() {
-    const users = Object.values(state.onlineUsers);
-    els.userCount.textContent = users.length;
+    const rawUsers = Object.values(state.onlineUsers || {});
+    const now = Date.now();
+
+    // 1. 過濾超過 2.5 分鐘未發送心跳的過期殘留節點
+    const activeUsers = rawUsers.filter(u => {
+      if (!u || !u.name) return false;
+      if (u.lastActive && typeof u.lastActive === 'number' && (now - u.lastActive > 150000)) {
+        return false;
+      }
+      return true;
+    });
+
+    // 2. 嚴格依「姓名 + 角色」去重，保證同一個人永不重複顯示
+    const uniqueMap = new Map();
+    activeUsers.forEach(u => {
+      const trimmedName = (u.name || '').trim();
+      if (!trimmedName) return;
+      const key = `${u.role || 'student'}_${trimmedName}`;
+      const isMe = (u.id === myPresenceKey || u.uid === persistentUid || trimmedName === myName);
+
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, { ...u, name: trimmedName, isMe });
+      } else if (isMe) {
+        uniqueMap.get(key).isMe = true;
+      }
+    });
+
+    const deduplicatedUsers = Array.from(uniqueMap.values());
+    els.userCount.textContent = deduplicatedUsers.length;
     els.userList.innerHTML = '';
 
-    users.forEach(u => {
+    // 老師排在最前面，自己優先，其餘按姓名排序
+    deduplicatedUsers.sort((a, b) => {
+      if (a.role === 'teacher' && b.role !== 'teacher') return -1;
+      if (a.role !== 'teacher' && b.role === 'teacher') return 1;
+      if (a.isMe && !b.isMe) return -1;
+      if (!a.isMe && b.isMe) return 1;
+      return a.name.localeCompare(b.name, 'zh-Hant');
+    });
+
+    deduplicatedUsers.forEach(u => {
       const item = document.createElement('div');
       item.className = 'user-list-item';
-      const isMe = u.id === myClientId;
       const roleBadgeClass = u.role === 'teacher' ? 'role-teacher' : 'role-student';
       const roleText = u.role === 'teacher' ? '老師' : '同學';
 
       item.innerHTML = `
         <div class="user-info-left">
           <div class="user-dot"></div>
-          <span style="font-weight:600;">${escapeHtml(u.name || '在線使用者')}${isMe ? ' (您)' : ''}</span>
+          <span style="font-weight:600;">${escapeHtml(u.name)}${u.isMe ? ' (您)' : ''}</span>
         </div>
         <span class="user-role-badge ${roleBadgeClass}">${roleText}</span>
       `;
@@ -1317,6 +1383,17 @@
       document.exitFullscreen().catch(() => {});
     }
   };
+
+  // 使用說明彈窗事件 (圖 2)
+  if (els.btnHelpGuide && els.guideModal) {
+    els.btnHelpGuide.onclick = () => els.guideModal.classList.add('open');
+  }
+  if (els.btnCloseGuideModal && els.guideModal) {
+    els.btnCloseGuideModal.onclick = () => els.guideModal.classList.remove('open');
+  }
+  if (els.btnConfirmGuide && els.guideModal) {
+    els.btnConfirmGuide.onclick = () => els.guideModal.classList.remove('open');
+  }
 
   // 關閉白板按鈕 (透過 postMessage 通知父頁面切換或關閉)
   els.btnCloseWhiteboard.onclick = () => {

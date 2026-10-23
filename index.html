@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.13</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.14</a>
         </p>
       </div>
       <div class="top-actions">
@@ -658,21 +658,10 @@
         </div>
       </div>
 
-      <!-- 互動白板 (全新同步共編白板) -->
+      <!-- 互動白板 -->
       <div class="panel-card" id="panel-whiteboard">
-        <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 160px); min-height: 520px; display: flex; flex-direction: column;">
-          <iframe id="whiteboardFrame" src="whiteboard.html?v=3000" style="width: 100%; flex: 1; min-height: 440px; border: none; display: block;" title="同步共編白板"></iframe>
-          <div class="whiteboard-instructions" style="background: var(--bg-card); border-top: 1px solid var(--border-color); padding: 10px 16px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; border-radius: 0 0 16px 16px;">
-            <div style="font-weight: bold; color: var(--text-primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-              💡 同步共編白板使用說明：
-            </div>
-            <ol style="margin: 0; padding-left: 20px; line-height: 1.6;">
-              <li><strong>多白板與分頁</strong>：左上方可點選「+ 畫布」增加並自訂命名白板，各白板支援獨立分頁切換（頁 1、頁 2、+ 頁）。</li>
-              <li><strong>剪貼簿即時貼上</strong>：在白板上按 <code>Ctrl+V</code>，若為圖片將自動置中貼上；若為文字將自動生成<strong>黃色便利貼</strong>，且文字中的網址會自動轉換為超連結！</li>
-              <li><strong>PDF 頁面解析插入</strong>：點選工具列「📄 PDF」圖示，即可自由預覽勾選所需頁面，系統會自動在畫布上整齊依序編排不重疊。</li>
-              <li><strong>教學控場與權限</strong>：老師可在上方即時開關「🔒 學生可編輯」、「👥 可動他人物件（關閉時學生僅能動自己物件）」、「🎯 全班跟隨視角 / 自由分組」，並可切換「👤 作者姓名標籤」。</li>
-            </ol>
-          </div>
+        <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
+          <iframe id="whiteboardFrame" src="whiteboard.html?v=3001" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板"></iframe>
         </div>
       </div>
 
@@ -3515,8 +3504,33 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.13 -->
+        <!-- ver 3.9.14 -->
         <div class="changelog-version-card is-latest">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌟 ver 3.9.14</span>
+              <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">互動白板標題正名</span>
+              <span class="changelog-badge-tag">參與者重複修正與去重</span>
+              <span class="changelog-badge-tag">使用說明彈窗化</span>
+              <span class="changelog-badge-tag">畫布高度大擴展</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>✨ 互動白板功能與視覺全面最佳化：</strong>
+              <ul>
+                <li><strong>標題正名與使用說明彈窗化</strong>：白板頂部標題正式定名為「互動白板」，並將原本佔用底部的「使用說明」收納為頂部標題旁的「❓ 使用說明」按鈕，點擊彈出說明對話框，釋放白板底部大空間！</li>
+                <li><strong>參與者清單重複修復</strong>：引進設備持久化 UID 與連線心跳機制，參與者名單嚴格依「姓名 + 身分」即時去重，徹底解決同一個人在抽屜名單重複出現的問題。</li>
+                <li><strong>畫布操作視野擴大</strong>：移除底部說明框後，白板自動佔滿整個高度視野，在大螢幕、筆電與平板上皆可享受全尺寸寬廣的操作體驗。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.13 -->
+        <div class="changelog-version-card">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
               <span>🌟 ver 3.9.13</span>
@@ -4692,7 +4706,8 @@ Python</pre>
       if (iframe) {
         const isAdmin = window.app && window.app.isAdmin;
         const userName = window.app && window.app.getCurrentUserName ? window.app.getCurrentUserName() : '';
-        iframe.src = `whiteboard.html?v=3000&role=${isAdmin ? 'teacher' : 'student'}&name=${encodeURIComponent(userName)}`;
+        const uid = window.app && window.app.getUserId ? window.app.getUserId() : '';
+        iframe.src = `whiteboard.html?v=3001&role=${isAdmin ? 'teacher' : 'student'}&name=${encodeURIComponent(userName)}&uid=${encodeURIComponent(uid)}`;
       }
     });
   </script>

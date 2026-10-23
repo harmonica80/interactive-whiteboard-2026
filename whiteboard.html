@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>同步共編白板</title>
+  <title>互動白板</title>
 
   <!-- PDF.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -80,6 +80,27 @@
       font-size: 17px;
       font-weight: 700;
       color: var(--text-main);
+    }
+
+    .btn-help-guide {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 12px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #ef4444;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-help-guide:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
     }
 
     .topbar-title svg {
@@ -894,7 +915,11 @@
           <path d="M2 2l7.586 7.586"/>
           <circle cx="11" cy="11" r="2"/>
         </svg>
-        <span>同步白板</span>
+        <span>互動白板</span>
+        <button class="btn-help-guide" id="btnHelpGuide" title="點擊查看互動白板使用說明">
+          <span style="color:#ef4444; font-weight:900;">?</span>
+          <span>使用說明</span>
+        </button>
       </div>
       <button class="btn-close" id="btnCloseWhiteboard">
         <span>✕ 關閉</span>
@@ -1150,11 +1175,35 @@
       </div>
     </div>
 
+    <!-- 5. 使用說明彈窗 (圖 2) -->
+    <div class="modal-overlay" id="guideModal">
+      <div class="modal-card" style="max-width: 620px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span style="color: #ef4444;">💡 互動白板使用說明</span>
+          </div>
+          <button class="btn-close" id="btnCloseGuideModal">✕</button>
+        </div>
+        <div style="padding: 20px 24px; font-size: 14px; line-height: 1.8; color: var(--text-main); max-height: 70vh; overflow-y: auto;">
+          <ol style="padding-left: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <li><strong>多白板與分頁</strong>：左上方可點選「+ 畫布」增加並自訂命名白板，各白板支援獨立分頁切換（頁 1、頁 2、+ 頁）。</li>
+            <li><strong>剪貼簿即時貼上</strong>：在白板上按 <code>Ctrl+V</code>，若為圖片將自動置中貼上；若為文字將自動生成<strong>黃色便利貼</strong>，且文字中的網址會自動轉換為超連結！</li>
+            <li><strong>PDF 頁面解析插入</strong>：點選工具列「📄 PDF」圖示，即可自由預覽勾選所需頁面，系統會自動在畫布上整齊依序編排不重疊。</li>
+            <li><strong>教學控場與權限</strong>：老師可在上方即時開關「🔒 學生可編輯」、「👥 可動他人物件（關閉時學生僅能動自己物件）」、「🎯 全班跟隨視角 / 自由分組」，並可切換「👤 作者姓名標籤」。</li>
+            <li><strong>畫布縮放與平移</strong>：使用手掌工具拖曳（或按住空白鍵 / 滑鼠滾輪拖曳），滾輪可自由放大縮小。</li>
+          </ol>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" id="btnConfirmGuide">我知道了</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 隱藏檔案選取 Input -->
     <input type="file" id="imageFileInput" class="hidden-file-input" accept="image/*">
     <input type="file" id="pdfFileInput" class="hidden-file-input" accept="application/pdf">
   </div>
 
-  <script src="js/whiteboard_core.js?v=3000"></script>
+  <script src="js/whiteboard_core.js?v=3001"></script>
 </body>
 </html>
