@@ -102,11 +102,18 @@
     canvasSelect: document.getElementById('canvasSelect'),
     pagesTabs: document.getElementById('pagesTabs'),
     btnAddCanvas: document.getElementById('btnAddCanvas'),
+    btnDeleteCanvas: document.getElementById('btnDeleteCanvas'),
     btnAddPage: document.getElementById('btnAddPage'),
+    // 右下角縮放與白板小地圖導航 (Item 5)
+    canvasMinimapWidget: document.getElementById('canvasMinimapWidget'),
     btnZoomIn: document.getElementById('btnZoomIn'),
     btnZoomOut: document.getElementById('btnZoomOut'),
     btnZoomReset: document.getElementById('btnZoomReset'),
     zoomVal: document.getElementById('zoomVal'),
+    btnToggleMinimap: document.getElementById('btnToggleMinimap'),
+    minimapBody: document.getElementById('minimapBody'),
+    minimapCanvas: document.getElementById('minimapCanvas'),
+    minimapViewportRect: document.getElementById('minimapViewportRect'),
     btnToggleStudentEdit: document.getElementById('btnToggleStudentEdit'),
     btnToggleMoveOthers: document.getElementById('btnToggleMoveOthers'),
     btnFollowMode: document.getElementById('btnFollowMode'),
@@ -159,7 +166,17 @@
     btnAlignBottom: document.getElementById('btnAlignBottom'),
     btnDistributeH: document.getElementById('btnDistributeH'),
     btnDistributeV: document.getElementById('btnDistributeV'),
-    btnActionDelete: document.getElementById('btnActionDelete')
+    btnActionDelete: document.getElementById('btnActionDelete'),
+    // Export Modal (Item 6, 如圖 5)
+    exportModal: document.getElementById('exportModal'),
+    btnCloseExportModal: document.getElementById('btnCloseExportModal'),
+    btnCancelExportModal: document.getElementById('btnCancelExportModal'),
+    btnExportPdf: document.getElementById('btnExportPdf'),
+    btnExportPng: document.getElementById('btnExportPng'),
+    btnExportZip: document.getElementById('btnExportZip'),
+    btnExportJson: document.getElementById('btnExportJson'),
+    btnImportJson: document.getElementById('btnImportJson'),
+    jsonFileInput: document.getElementById('jsonFileInput')
   };
 
   // ===== Firebase 資料庫參照 =====
@@ -391,7 +408,8 @@
   // ===== 畫布與頁面切換 =====
   function renderCanvasSelector() {
     els.canvasSelect.innerHTML = '';
-    Object.keys(state.canvases).forEach(id => {
+    const canvasIds = Object.keys(state.canvases);
+    canvasIds.forEach(id => {
       const c = state.canvases[id];
       const opt = document.createElement('option');
       opt.value = id;
@@ -399,19 +417,70 @@
       if (id === state.activeCanvasId) opt.selected = true;
       els.canvasSelect.appendChild(opt);
     });
+
+    if (els.btnDeleteCanvas) {
+      els.btnDeleteCanvas.style.display = (canvasIds.length > 1 && (isTeacherUser() || state.settings.studentCanEdit)) ? 'inline-flex' : 'none';
+    }
   }
 
   function renderPagesTabs() {
     const curCanvas = state.canvases[state.activeCanvasId] || { pages: ['page_1'] };
     els.pagesTabs.innerHTML = '';
-    (curCanvas.pages || ['page_1']).forEach((pId, idx) => {
+    const pages = curCanvas.pages || ['page_1'];
+
+    pages.forEach((pId, idx) => {
       const tab = document.createElement('div');
       tab.className = `page-tab-item ${pId === state.activePageId ? 'active' : ''}`;
       tab.dataset.page = pId;
-      tab.textContent = `頁 ${idx + 1}`;
+
+      const label = document.createElement('span');
+      label.textContent = `頁 ${idx + 1}`;
+      tab.appendChild(label);
+
+      // 當頁數大於 1 時，提供刪除按鈕 (Item 2)
+      if (pages.length > 1 && (isTeacherUser() || state.settings.studentCanEdit)) {
+        const delBtn = document.createElement('span');
+        delBtn.className = 'page-del-btn';
+        delBtn.innerHTML = '×';
+        delBtn.title = `刪除頁 ${idx + 1}`;
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          deletePage(state.activeCanvasId, pId, idx + 1);
+        };
+        tab.appendChild(delBtn);
+      }
+
       tab.onclick = () => switchCanvasAndPage(state.activeCanvasId, pId, true);
       els.pagesTabs.appendChild(tab);
     });
+  }
+
+  function deletePage(canvasId, pageId, pageNum) {
+    const curCanvas = state.canvases[canvasId];
+    if (!curCanvas || !curCanvas.pages || curCanvas.pages.length <= 1) {
+      flashToast('至少需保留 1 個頁面，無法刪除！');
+      return;
+    }
+    if (!confirm(`確定要刪除「頁 ${pageNum}」嗎？該頁面的所有白板內容將會被移除。`)) return;
+
+    curCanvas.pages = curCanvas.pages.filter(p => p !== pageId);
+    state.canvases[canvasId] = curCanvas;
+
+    // 清空該頁資料庫物件
+    if (roomRef) {
+      const pageKey = `${canvasId}_${pageId}`;
+      roomRef.child('pages').child(pageKey).remove();
+      roomRef.child('canvases').set(state.canvases);
+    }
+
+    flashToast(`已刪除「頁 ${pageNum}」`);
+
+    // 若刪除的是當前頁，自動切換至第一頁
+    if (state.activePageId === pageId) {
+      switchCanvasAndPage(canvasId, curCanvas.pages[0], true);
+    } else {
+      renderPagesTabs();
+    }
   }
 
   function switchCanvasAndPage(canvasId, pageId, broadcast) {
@@ -515,9 +584,12 @@
   // ===== 視角縮放與平移 (Pan & Zoom) =====
   function updateWorldTransform() {
     els.canvasWorld.style.transform = `translate(${state.view.x}px, ${state.view.y}px) scale(${state.view.zoom})`;
-    els.zoomVal.textContent = Math.round(state.view.zoom * 100) + '%';
+    if (els.zoomVal) els.zoomVal.textContent = Math.round(state.view.zoom * 100) + '%';
     if (typeof updateSelectionActionBar === 'function') {
       updateSelectionActionBar();
+    }
+    if (typeof renderMinimap === 'function') {
+      renderMinimap();
     }
   }
 
@@ -1191,10 +1263,11 @@
 
   // ===== 繪圖與手勢交互 (畫布事件) =====
   els.canvasViewport.addEventListener('pointerdown', (e) => {
-    // 抓手平移模式
-    if (state.currentTool === 'hand' || e.button === 1 || e.spaceKey) {
+    // 抓手平移模式 (空白鍵、中鍵或手掌工具)
+    if (state.currentTool === 'hand' || e.button === 1 || isSpacePressed) {
       state.isPanning = true;
       state.panStart = { x: e.clientX - state.view.x, y: e.clientY - state.view.y };
+      els.canvasViewport.classList.remove('cursor-grab');
       els.canvasViewport.classList.add('cursor-grabbing');
       return;
     }
@@ -1379,10 +1452,16 @@
     }
   });
 
+  // 空白鍵平移畫布全域狀態 (Item 4)
+  let isSpacePressed = false;
+
   window.addEventListener('pointerup', () => {
     if (state.isPanning) {
       state.isPanning = false;
       els.canvasViewport.classList.remove('cursor-grabbing');
+      if (isSpacePressed || state.currentTool === 'hand') {
+        els.canvasViewport.classList.add('cursor-grab');
+      }
     }
 
     if (state.activeDrawing) {
@@ -1400,9 +1479,20 @@
     zoomAt(state.view.zoom * zoomFactor, e.clientX, e.clientY);
   }, { passive: false });
 
-  // 鍵盤 Delete / Backspace 刪除選取物件
+  // 鍵盤空白鍵拖曳與 Delete 刪除按鍵監聽 (Item 4)
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+
+    // 空白鍵按住準備拖曳 (Item 4)
+    if (e.code === 'Space' || e.key === ' ') {
+      e.preventDefault();
+      if (!isSpacePressed) {
+        isSpacePressed = true;
+        els.canvasViewport.classList.add('cursor-grab');
+      }
+      return;
+    }
+
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (state.selectedObjIds && state.selectedObjIds.length > 0) {
         const toDelete = [...state.selectedObjIds];
@@ -1413,6 +1503,18 @@
           }
         });
         deselectAll();
+      }
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space' || e.key === ' ') {
+      isSpacePressed = false;
+      if (!state.isPanning) {
+        els.canvasViewport.classList.remove('cursor-grab', 'cursor-grabbing');
+        if (state.currentTool === 'select') els.canvasViewport.classList.add('cursor-select');
+        else if (state.currentTool === 'hand') els.canvasViewport.classList.add('cursor-grab');
+        else if (state.currentTool === 'eraser') els.canvasViewport.classList.add('cursor-eraser');
       }
     }
   });
@@ -1797,6 +1899,37 @@
     switchCanvasAndPage(newId, 'page_1', true);
   };
 
+  // 刪除目前畫布 (Item 2)
+  if (els.btnDeleteCanvas) {
+    els.btnDeleteCanvas.onclick = () => {
+      const canvasIds = Object.keys(state.canvases);
+      if (canvasIds.length <= 1) {
+        flashToast('至少需保留 1 個主畫布，無法刪除！');
+        return;
+      }
+      const cur = state.canvases[state.activeCanvasId];
+      const curName = (cur && cur.name) || state.activeCanvasId;
+      if (!confirm(`確定要刪除畫布「${curName}」及其包含的所有分頁嗎？此操作無法還原。`)) return;
+
+      // 清除資料庫中該畫布的所有頁面
+      if (roomRef && cur && cur.pages) {
+        cur.pages.forEach(pId => {
+          roomRef.child('pages').child(`${state.activeCanvasId}_${pId}`).remove();
+        });
+      }
+
+      delete state.canvases[state.activeCanvasId];
+      const remainingIds = Object.keys(state.canvases);
+      const nextCanvasId = remainingIds[0];
+      const nextCanvas = state.canvases[nextCanvasId];
+      const nextPageId = (nextCanvas && nextCanvas.pages && nextCanvas.pages[0]) || 'page_1';
+
+      if (roomRef) roomRef.child('canvases').set(state.canvases);
+      flashToast(`已刪除畫布「${curName}」`);
+      switchCanvasAndPage(nextCanvasId, nextPageId, true);
+    };
+  }
+
   // 下拉選單切換畫布
   els.canvasSelect.onchange = () => {
     const cId = els.canvasSelect.value;
@@ -1899,25 +2032,353 @@
     els.btnConfirmGuide.onclick = () => els.guideModal.classList.remove('open');
   }
 
-  // 關閉白板按鈕 (透過 postMessage 通知父頁面切換或關閉)
-  els.btnCloseWhiteboard.onclick = () => {
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ type: 'CLOSE_WHITEBOARD' }, '*');
-    } else {
-      window.history.back();
+  // 關閉白板按鈕 (若存在時綁定)
+  if (els.btnCloseWhiteboard) {
+    els.btnCloseWhiteboard.onclick = () => {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'CLOSE_WHITEBOARD' }, '*');
+      } else {
+        window.history.back();
+      }
+    };
+  }
+
+  // ===== 右下角縮放與白板小地圖導航 (Item 5, 如圖 4) =====
+  let minimapExpanded = false;
+
+  function toggleMinimap(force) {
+    minimapExpanded = force !== undefined ? force : !minimapExpanded;
+    if (els.minimapBody) {
+      els.minimapBody.style.display = minimapExpanded ? 'block' : 'none';
     }
-  };
+    if (els.btnToggleMinimap) {
+      els.btnToggleMinimap.classList.toggle('expanded', minimapExpanded);
+    }
+    if (minimapExpanded) {
+      renderMinimap();
+    }
+  }
 
-  // 匯出當前畫布為 PNG 高畫質圖檔
-  els.btnExport.onclick = () => {
-    flashToast('正在生成高畫質匯出圖片...');
+  function renderMinimap() {
+    if (!minimapExpanded || !els.minimapCanvas) return;
+    const canvas = els.minimapCanvas;
+    const ctx = canvas.getContext('2d');
+    const cw = canvas.width;
+    const ch = canvas.height;
+
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, cw, ch);
+
+    const objs = Object.values(state.objects || {});
+    const vpRect = els.canvasViewport.getBoundingClientRect();
+    const vpWorldTL = screenToWorld(vpRect.left, vpRect.top);
+    const vpWorldBR = screenToWorld(vpRect.right, vpRect.bottom);
+
+    let minX = vpWorldTL.x;
+    let minY = vpWorldTL.y;
+    let maxX = vpWorldBR.x;
+    let maxY = vpWorldBR.y;
+
+    objs.forEach(o => {
+      const b = getObjBounds(o);
+      if (b.x < minX) minX = b.x;
+      if (b.y < minY) minY = b.y;
+      if (b.x + b.width > maxX) maxX = b.x + b.width;
+      if (b.y + b.height > maxY) maxY = b.y + b.height;
+    });
+
+    const pad = 200;
+    minX -= pad;
+    minY -= pad;
+    maxX += pad;
+    maxY += pad;
+
+    const spanW = Math.max(200, maxX - minX);
+    const spanH = Math.max(150, maxY - minY);
+    const scale = Math.min(cw / spanW, ch / spanH);
+
+    const toMiniX = (wx) => (wx - minX) * scale;
+    const toMiniY = (wy) => (wy - minY) * scale;
+
+    objs.forEach(o => {
+      const b = getObjBounds(o);
+      const mx = toMiniX(b.x);
+      const my = toMiniY(b.y);
+      const mw = Math.max(2, b.width * scale);
+      const mh = Math.max(2, b.height * scale);
+
+      if (o.type === 'sticky') {
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(mx, my, mw, mh);
+      } else if (o.type === 'image') {
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(mx, my, mw, mh);
+      } else {
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(mx, my, mw, mh);
+      }
+    });
+
+    const vmx = toMiniX(vpWorldTL.x);
+    const vmy = toMiniY(vpWorldTL.y);
+    const vmw = (vpWorldBR.x - vpWorldTL.x) * scale;
+    const vmh = (vpWorldBR.y - vpWorldTL.y) * scale;
+
+    if (els.minimapViewportRect) {
+      els.minimapViewportRect.style.left = Math.round(vmx) + 'px';
+      els.minimapViewportRect.style.top = Math.round(vmy) + 'px';
+      els.minimapViewportRect.style.width = Math.round(vmw) + 'px';
+      els.minimapViewportRect.style.height = Math.round(vmh) + 'px';
+    }
+
+    canvas._miniTransform = { minX, minY, scale };
+  }
+
+  function navigateByMinimap(e) {
+    const canvas = els.minimapCanvas;
+    if (!canvas || !canvas._miniTransform) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const { minX, minY, scale } = canvas._miniTransform;
+    const targetWorldX = minX + mx / scale;
+    const targetWorldY = minY + my / scale;
+
+    const vpRect = els.canvasViewport.getBoundingClientRect();
+    state.view.x = vpRect.width / 2 - targetWorldX * state.view.zoom;
+    state.view.y = vpRect.height / 2 - targetWorldY * state.view.zoom;
+    updateWorldTransform();
+  }
+
+  if (els.btnToggleMinimap) {
+    els.btnToggleMinimap.onclick = () => toggleMinimap();
+  }
+
+  if (els.minimapBody) {
+    els.minimapBody.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      navigateByMinimap(e);
+      function onMiniMove(me) {
+        navigateByMinimap(me);
+      }
+      function onMiniUp() {
+        window.removeEventListener('pointermove', onMiniMove);
+        window.removeEventListener('pointerup', onMiniUp);
+      }
+      window.addEventListener('pointermove', onMiniMove);
+      window.addEventListener('pointerup', onMiniUp);
+    });
+  }
+
+  // ===== 匯出與備份選單彈窗事件 (Item 6, 如圖 5) =====
+  if (els.btnExport && els.exportModal) {
+    els.btnExport.onclick = () => els.exportModal.classList.add('open');
+  }
+  if (els.btnCloseExportModal && els.exportModal) {
+    els.btnCloseExportModal.onclick = () => els.exportModal.classList.remove('open');
+  }
+  if (els.btnCancelExportModal && els.exportModal) {
+    els.btnCancelExportModal.onclick = () => els.exportModal.classList.remove('open');
+  }
+
+  if (els.btnExportPdf) els.btnExportPdf.onclick = exportCanvasToPdf;
+  if (els.btnExportPng) els.btnExportPng.onclick = exportCurrentPageToPng;
+  if (els.btnExportZip) els.btnExportZip.onclick = exportCanvasToZip;
+  if (els.btnExportJson) els.btnExportJson.onclick = exportCanvasToJson;
+
+  if (els.btnImportJson && els.jsonFileInput) {
+    els.btnImportJson.onclick = () => els.jsonFileInput.click();
+    els.jsonFileInput.onchange = async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        flashToast('正在讀取備份檔案...');
+        let jsonStr = '';
+        if (file.name.endsWith('.zip')) {
+          const JSZip = window.JSZip;
+          if (!JSZip) throw new Error('ZIP 解析庫未就緒');
+          const zip = await JSZip.loadAsync(file);
+          const dataFile = zip.file('whiteboard_data.json');
+          if (!dataFile) throw new Error('ZIP 壓縮檔中未找到 whiteboard_data.json');
+          jsonStr = await dataFile.async('text');
+        } else {
+          jsonStr = await file.text();
+        }
+
+        const data = JSON.parse(jsonStr);
+        if (!data || !data.pages) throw new Error('無效的白板備份資料');
+
+        const canvasName = (data.canvas && data.canvas.name) || '備份畫布';
+        if (confirm(`確定要匯入備份「${canvasName}」嗎？這將會更新目前畫布內容。`)) {
+          if (roomRef) {
+            Object.keys(data.pages).forEach(pId => {
+              const key = `${state.activeCanvasId}_${pId}`;
+              roomRef.child('pages').child(key).set(data.pages[pId]);
+            });
+            if (data.canvas && data.canvas.pages) {
+              const cur = state.canvases[state.activeCanvasId] || { id: state.activeCanvasId };
+              cur.pages = data.canvas.pages;
+              state.canvases[state.activeCanvasId] = cur;
+              roomRef.child('canvases').set(state.canvases);
+            }
+          }
+          flashToast('✅ 備份資料已成功匯入！');
+          if (els.exportModal) els.exportModal.classList.remove('open');
+          switchCanvasAndPage(state.activeCanvasId, state.activePageId, true);
+        }
+      } catch (err) {
+        alert('匯入失敗：' + err.message);
+      }
+      els.jsonFileInput.value = '';
+    };
+  }
+
+  // 1. 匯出多頁 PDF
+  async function exportCanvasToPdf() {
+    const curCanvas = state.canvases[state.activeCanvasId] || { name: '白板', pages: ['page_1'] };
+    const pages = curCanvas.pages || ['page_1'];
+    flashToast(`正在匯出多頁 PDF (${pages.length} 頁)...`);
+
+    const { jsPDF } = window.jspdf || {};
+    if (!jsPDF) {
+      flashToast('⚠️ jsPDF 函式庫未載入，請確認網路連線');
+      return;
+    }
+
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
+
+    for (let i = 0; i < pages.length; i++) {
+      const pId = pages[i];
+      let pObjs = {};
+      if (pId === state.activePageId) {
+        pObjs = state.objects;
+      } else if (roomRef) {
+        try {
+          const snap = await roomRef.child('pages').child(`${state.activeCanvasId}_${pId}`).child('objects').once('value');
+          pObjs = snap.val() || {};
+        } catch (e) {
+          pObjs = {};
+        }
+      }
+
+      const c = document.createElement('canvas');
+      await renderPageToCanvas(c, pObjs, 1920, 1080);
+      const dataUrl = c.toDataURL('image/jpeg', 0.9);
+      if (i > 0) pdf.addPage([1920, 1080], 'landscape');
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, 1920, 1080);
+    }
+
+    pdf.save(`${curCanvas.name}_所有頁面.pdf`);
+    flashToast('✅ PDF 已成功匯出！');
+    if (els.exportModal) els.exportModal.classList.remove('open');
+  }
+
+  // 2. 匯出當前頁面高畫質 PNG
+  async function exportCurrentPageToPng() {
+    flashToast('正在生成當前頁面高畫質圖片...');
     const curCanvas = state.canvases[state.activeCanvasId] || { name: '白板' };
-    const fileName = `${curCanvas.name}_${state.activePageId}_匯出.png`;
-
-    // 建立離線高解析度 canvas
+    const fileName = `${curCanvas.name}_${state.activePageId}_高畫質.png`;
     const exportCanvas = document.createElement('canvas');
-    const width = 2400;
-    const height = 1500;
+    await renderPageToCanvas(exportCanvas, state.objects, 2400, 1500);
+    downloadCanvasImage(exportCanvas, fileName);
+    if (els.exportModal) els.exportModal.classList.remove('open');
+  }
+
+  // 3. 匯出 ZIP 壓縮包
+  async function exportCanvasToZip() {
+    flashToast('正在打包 ZIP 壓縮備份...');
+    const JSZip = window.JSZip;
+    if (!JSZip) {
+      flashToast('⚠️ JSZip 函式庫未載入，請確認網路連線');
+      return;
+    }
+
+    const curCanvas = state.canvases[state.activeCanvasId] || { name: '白板', pages: ['page_1'] };
+    const pages = curCanvas.pages || ['page_1'];
+    const zip = new JSZip();
+
+    const allPagesData = {};
+    for (let i = 0; i < pages.length; i++) {
+      const pId = pages[i];
+      if (pId === state.activePageId) {
+        allPagesData[pId] = { objects: state.objects };
+      } else if (roomRef) {
+        try {
+          const snap = await roomRef.child('pages').child(`${state.activeCanvasId}_${pId}`).once('value');
+          allPagesData[pId] = snap.val() || { objects: {} };
+        } catch (e) {
+          allPagesData[pId] = { objects: {} };
+        }
+      }
+    }
+
+    const backupData = {
+      app: '即時互動白板',
+      version: '3.9.16',
+      exportTime: new Date().toISOString(),
+      canvasId: state.activeCanvasId,
+      canvas: curCanvas,
+      pages: allPagesData
+    };
+
+    zip.file('manifest.json', JSON.stringify({
+      appName: '即時互動白板',
+      canvasName: curCanvas.name,
+      pageCount: pages.length,
+      exportTime: backupData.exportTime
+    }, null, 2));
+
+    zip.file('whiteboard_data.json', JSON.stringify(backupData, null, 2));
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.download = `${curCanvas.name}_備份.zip`;
+    a.href = URL.createObjectURL(content);
+    a.click();
+    flashToast('✅ ZIP 壓縮備份檔已匯出！');
+    if (els.exportModal) els.exportModal.classList.remove('open');
+  }
+
+  // 4. 匯出 JSON 備份檔
+  async function exportCanvasToJson() {
+    const curCanvas = state.canvases[state.activeCanvasId] || { name: '白板', pages: ['page_1'] };
+    const pages = curCanvas.pages || ['page_1'];
+    const allPagesData = {};
+    for (let i = 0; i < pages.length; i++) {
+      const pId = pages[i];
+      if (pId === state.activePageId) {
+        allPagesData[pId] = { objects: state.objects };
+      } else if (roomRef) {
+        try {
+          const snap = await roomRef.child('pages').child(`${state.activeCanvasId}_${pId}`).once('value');
+          allPagesData[pId] = snap.val() || { objects: {} };
+        } catch (e) {
+          allPagesData[pId] = { objects: {} };
+        }
+      }
+    }
+
+    const backupData = {
+      app: '即時互動白板',
+      version: '3.9.16',
+      exportTime: new Date().toISOString(),
+      canvasId: state.activeCanvasId,
+      canvas: curCanvas,
+      pages: allPagesData
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.download = `${curCanvas.name}_備份.json`;
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    flashToast('✅ JSON 備份檔已匯出！');
+    if (els.exportModal) els.exportModal.classList.remove('open');
+  }
+
+  // 通用畫布頁面渲染至離線 Canvas
+  async function renderPageToCanvas(exportCanvas, pageObjects, width, height) {
     exportCanvas.width = width;
     exportCanvas.height = height;
     const ctx = exportCanvas.getContext('2d');
@@ -1935,13 +2396,24 @@
       }
     }
 
-    // 依序繪製當前頁面所有物件
-    const objs = Object.values(state.objects);
-    let loadedCount = 0;
+    const objs = Object.values(pageObjects || {});
+    // 預載圖片
+    const imgPromises = [];
+    objs.forEach(obj => {
+      if (obj.type === 'image' && obj.src) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        const p = new Promise(resolve => {
+          img.onload = () => { obj._loadedImg = img; resolve(); };
+          img.onerror = () => resolve();
+        });
+        img.src = obj.src;
+        imgPromises.push(p);
+      }
+    });
 
-    if (objs.length === 0) {
-      downloadCanvasImage(exportCanvas, fileName);
-      return;
+    if (imgPromises.length > 0) {
+      await Promise.all(imgPromises);
     }
 
     objs.forEach(obj => {
@@ -1981,11 +2453,11 @@
         lines.forEach((l, idx) => {
           ctx.fillText(l, obj.x + 12, obj.y + 32 + idx * 22);
         });
+      } else if (obj.type === 'image' && obj._loadedImg) {
+        ctx.drawImage(obj._loadedImg, obj.x, obj.y, obj.width, obj.height);
       }
     });
-
-    downloadCanvasImage(exportCanvas, fileName);
-  };
+  }
 
   function downloadCanvasImage(canvas, fileName) {
     const a = document.createElement('a');

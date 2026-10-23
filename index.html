@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.15</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.16</a>
         </p>
       </div>
       <div class="top-actions">
@@ -3504,12 +3504,41 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.15 -->
+        <!-- ver 3.9.16 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.15</span>
+              <span>🌟 ver 3.9.16</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">移除頂部關閉按鈕</span>
+              <span class="changelog-badge-tag">畫布與分頁刪除</span>
+              <span class="changelog-badge-tag">當前分頁淺藍色標示</span>
+              <span class="changelog-badge-tag">空白鍵拖曳畫布</span>
+              <span class="changelog-badge-tag">右下縮放與白板小地圖</span>
+              <span class="changelog-badge-tag">PDF/ZIP/JSON多功能匯出</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🚀 互動白板導航與匯出全方位升級：</strong>
+              <ul>
+                <li><strong>介面精簡去重複</strong>：刪除頂部「✕ 關閉」按鈕，統一由上方系統主功能分頁列切換，畫面乾淨明確。</li>
+                <li><strong>畫布與分頁自由刪除</strong>：分頁標籤右上角新增「×」快速刪除鈕；多畫布時自動出現「🗑️ 刪除畫布」按鈕，輕鬆管理多頁內容。</li>
+                <li><strong>當前頁數淺藍色視覺</strong>：目前所在的分頁標籤採用清爽淺藍色高對比主題，頁籤位置一目了然。</li>
+                <li><strong>空白鍵平移畫布（Spacebar Drag）</strong>：按住鍵盤空白鍵不放即可隨心所欲拖曳平移畫布，繪圖與排版極致流暢。</li>
+                <li><strong>右下角縮放與白板小地圖導航（Minimap）</strong>：將縮放控制移至右下角，並支援一鍵展開/收合白板縮圖總覽，點選縮圖即可快速跳轉至指定區塊！</li>
+                <li><strong>多格式匯出選單（PDF / ZIP / JSON / 圖檔）</strong>：匯出按鈕升級為整合式選單，支援「多頁 PDF 合併匯出」、「ZIP 壓縮備份包」、「PNG 高畫質圖檔」、「JSON 備份檔與還原」！</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.15 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>🌟 ver 3.9.15</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">物件懸停外框提示</span>

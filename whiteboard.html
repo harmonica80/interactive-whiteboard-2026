@@ -13,6 +13,10 @@
     }
   </script>
 
+  <!-- jsPDF & JSZip CDN (匯出多頁 PDF 與 ZIP 壓縮包) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -215,22 +219,64 @@
     }
 
     .page-tab-item {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       padding: 5px 12px;
       font-size: 13px;
       font-weight: 700;
       border-radius: 8px;
       border: 1px solid #fed7aa;
       background: #fff7ed;
-      color: var(--primary);
+      color: #ea580c;
       cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .page-tab-item:hover {
+      background: #ffedd5;
+      border-color: #f97316;
+    }
+
+    /* 目前所在頁數用淺藍色表示 (Item 3) */
+    .page-tab-item.active {
+      border: 1.5px solid #0284c7 !important;
+      background: #e0f2fe !important;
+      color: #0369a1 !important;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25) !important;
+    }
+
+    /* 頁數刪除小按鈕 (Item 2) */
+    .page-del-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.08);
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1;
+      margin-left: 2px;
       transition: all 0.15s;
     }
 
-    .page-tab-item.active {
-      border-color: var(--primary);
-      background: #ffedd5;
-      color: var(--primary-hover);
-      box-shadow: 0 1px 3px rgba(249,115,22,0.15);
+    .page-del-btn:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    .page-tab-item.active .page-del-btn {
+      background: rgba(2, 132, 199, 0.15);
+      color: #0369a1;
+    }
+
+    .page-tab-item.active .page-del-btn:hover {
+      background: #ef4444;
+      color: #ffffff;
     }
 
     /* 縮放控制組 */
@@ -989,6 +1035,145 @@
     .hidden-file-input {
       display: none;
     }
+
+    /* ===== 右下角縮放控制與白板物件導航視窗 (Item 5, 如圖 4) ===== */
+    .canvas-minimap-widget {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+      z-index: 35;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    .minimap-header {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 4px 6px;
+      background: #ffffff;
+    }
+
+    .btn-minimap-zoom {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border-color);
+      background: #f8fafc;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      transition: all 0.12s;
+    }
+
+    .btn-minimap-zoom:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+
+    .minimap-zoom-val {
+      min-width: 44px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .btn-minimap-toggle {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border-color);
+      background: #f8fafc;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      transition: all 0.15s;
+    }
+
+    .btn-minimap-toggle:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-minimap-toggle.expanded svg {
+      transform: rotate(90deg);
+    }
+
+    .minimap-body {
+      position: relative;
+      width: 200px;
+      height: 130px;
+      background: #f8fafc;
+      border-top: 1px solid var(--border-color);
+      cursor: crosshair;
+      overflow: hidden;
+    }
+
+    #minimapCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .minimap-viewport-rect {
+      position: absolute;
+      border: 1.5px solid #2563eb;
+      background: rgba(37, 99, 235, 0.15);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    /* ===== 匯出選單按鈕樣式 (Item 6, 如圖 5) ===== */
+    .btn-export-choice {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.18s;
+      border: 1px solid var(--border-color);
+    }
+    .btn-export-primary {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: #ffffff;
+      border: none;
+      box-shadow: 0 4px 12px rgba(249,115,22,0.3);
+    }
+    .btn-export-primary:hover {
+      background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(249,115,22,0.4);
+    }
+    .btn-export-secondary {
+      background: #ffffff;
+      color: #1e293b;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .btn-export-secondary:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -1008,14 +1193,11 @@
           <span>使用說明</span>
         </button>
       </div>
-      <button class="btn-close" id="btnCloseWhiteboard">
-        <span>✕ 關閉</span>
-      </button>
     </header>
 
-    <!-- 2. 次工具列 (畫布選擇、頁籤、縮放、權限開關) -->
+    <!-- 2. 次工具列 (畫布選擇、頁籤、權限開關) -->
     <div class="whiteboard-subbar">
-      <!-- 左側：畫布選擇與頁面 -->
+      <!-- 左側：畫布選擇與頁面 (Item 2 & 3) -->
       <div class="subbar-left">
         <div class="canvas-select-wrapper">
           <select class="canvas-select" id="canvasSelect">
@@ -1024,21 +1206,12 @@
           <span class="canvas-select-arrow">▼</span>
         </div>
         <button class="btn-pill" id="btnAddCanvas">+ 畫布</button>
+        <button class="btn-pill" id="btnDeleteCanvas" title="刪除目前畫布" style="display:none; color:#ef4444; border-color:#fecaca; background:#fef2f2;">🗑️ 刪除畫布</button>
 
         <div class="pages-tabs-wrapper" id="pagesTabs">
           <div class="page-tab-item active" data-page="page_1">頁 1</div>
         </div>
         <button class="btn-pill" id="btnAddPage">+ 頁</button>
-      </div>
-
-      <!-- 中間：縮放控制 -->
-      <div class="subbar-center">
-        <div class="zoom-group">
-          <button class="btn-zoom" id="btnZoomOut" title="縮小 (Ctrl + 滾輪)">−</button>
-          <span class="zoom-value" id="zoomVal" title="點擊重設 100%">100%</span>
-          <button class="btn-zoom" id="btnZoomIn" title="放大 (Ctrl + 滾輪)">+</button>
-          <button class="btn-zoom" id="btnZoomReset" title="自適應視角">⤢</button>
-        </div>
       </div>
 
       <!-- 右側：老師權限開關、匯出、參與者、結束 -->
@@ -1115,6 +1288,25 @@
           </div>
           <span class="action-divider"></span>
           <button class="action-btn btn-action-danger" id="btnActionDelete" title="刪除選取物件">🗑️ 刪除</button>
+        </div>
+
+        <!-- 右下角縮放控制與白板物件導航視窗 (Item 5, 如圖 4) -->
+        <div class="canvas-minimap-widget" id="canvasMinimapWidget">
+          <div class="minimap-header">
+            <button class="btn-minimap-zoom" id="btnZoomOut" title="縮小 (Ctrl + 滾輪)">−</button>
+            <span class="minimap-zoom-val" id="zoomVal" title="點擊重設 100%">100%</span>
+            <button class="btn-minimap-zoom" id="btnZoomIn" title="放大 (Ctrl + 滾輪)">+</button>
+            <button class="btn-minimap-zoom" id="btnZoomReset" title="自適應視角">⤢</button>
+            <button class="btn-minimap-toggle" id="btnToggleMinimap" title="展開/收合白板物件預覽 (如圖 4)">
+              <svg id="iconMinimapToggle" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+          <div class="minimap-body" id="minimapBody" style="display: none;">
+            <canvas id="minimapCanvas" width="200" height="130"></canvas>
+            <div id="minimapViewportRect" class="minimap-viewport-rect"></div>
+          </div>
         </div>
       </div>
 
@@ -1316,6 +1508,50 @@
     <!-- 隱藏檔案選取 Input -->
     <input type="file" id="imageFileInput" class="hidden-file-input" accept="image/*">
     <input type="file" id="pdfFileInput" class="hidden-file-input" accept="application/pdf">
+
+    <!-- 6. 匯出與備份選單彈窗 (Item 6, 如圖 5) -->
+    <div class="modal-overlay" id="exportModal">
+      <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span style="font-size: 18px;">💾</span>
+            <span>匯出 / 匯入</span>
+          </div>
+          <button class="btn-close" id="btnCloseExportModal">✕</button>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 14px;">
+          <!-- 1. 匯出目前畫布為 PDF (所有頁面) -->
+          <button class="btn-export-choice btn-export-primary" id="btnExportPdf">
+            <span style="font-size: 20px;">📄</span>
+            <span>匯出目前畫布為 PDF（所有頁面）</span>
+          </button>
+          <!-- 2. 匯出圖檔 (PNG) -->
+          <button class="btn-export-choice btn-export-secondary" id="btnExportPng">
+            <span style="font-size: 20px;">🖼️</span>
+            <span>匯出當前頁面為圖檔（PNG 高畫質）</span>
+          </button>
+          <!-- 3. 匯出 ZIP 壓縮的 JSON 格式 -->
+          <button class="btn-export-choice btn-export-secondary" id="btnExportZip">
+            <span style="font-size: 20px;">📦</span>
+            <span>匯出 ZIP 壓縮的 JSON 備份包</span>
+          </button>
+          <!-- 4. 匯出 JSON 備份 -->
+          <button class="btn-export-choice btn-export-secondary" id="btnExportJson">
+            <span style="font-size: 20px;">💾</span>
+            <span>匯出 JSON 備份檔</span>
+          </button>
+          <!-- 5. 匯入 JSON -->
+          <button class="btn-export-choice btn-export-secondary" id="btnImportJson">
+            <span style="font-size: 20px;">📁</span>
+            <span>匯入 JSON 備份</span>
+          </button>
+          <input type="file" id="jsonFileInput" class="hidden-file-input" accept=".json,.zip">
+        </div>
+        <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end;">
+          <button class="btn-secondary" id="btnCancelExportModal">關閉</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="js/whiteboard_core.js?v=3001"></script>
