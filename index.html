@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
   <link rel="stylesheet" href="css/style.css?v=392">
-  <link rel="stylesheet" href="css/presentation.css?v=3107">
+  <link rel="stylesheet" href="css/presentation.css?v=3108">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -33,7 +33,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.7</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.8</a>
         </p>
       </div>
       <div class="top-actions">
@@ -690,8 +690,9 @@
           <!-- 簡報控制功能往上移，在頂部排成同一行 (Item 5, 如圖 4) -->
           <div class="presentation-header-controls" id="presentationHeaderControls">
             <div class="presentation-nav-group">
-              <button type="button" class="presentation-tool-btn" id="btnSlidePrev" title="上一頁">◀ 上一頁</button>
-              <button type="button" class="presentation-tool-btn" id="btnSlideNext" title="下一頁">下一頁 ▶</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlideNew" title="建立新簡報（清空當前所有簡報頁面並建立全新簡報）">➕ 新簡報</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlidePrev" title="上一頁">◀</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlideNext" title="下一頁">▶</button>
               <span class="presentation-page-counter" id="txtSlidePageCounter">0 / 0</span>
               <!-- 圖 3：一般常見的九宮格圖示 -->
               <button type="button" class="presentation-tool-btn" id="btnSlideGridOverview" title="九宮格總覽快速跳頁">
@@ -710,10 +711,9 @@
             </div>
 
             <div class="presentation-tools-group">
-              <!-- 圖 2：標記工具提供幾種常用顏色切換 -->
+              <!-- 圖 2：標記工具提供幾種常用顏色切換 (項目 4: 移除標記按鈕前方的紅色圓點) -->
               <div class="presentation-pen-wrapper" style="position: relative; display: inline-flex; align-items: center;">
                 <button type="button" class="presentation-tool-btn" id="btnSlideToolPen" title="在簡報上畫重點，同步顯示給全班">
-                  <span class="presentation-pen-color-dot" id="penColorDot"></span>
                   <span>✏️ 標記</span>
                 </button>
                 <div class="presentation-pen-palette" id="presentationPenPalette" style="display: none;">
@@ -3703,12 +3703,37 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.10.7 -->
+        <!-- ver 3.10.8 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.10.7</span>
+              <span>🌟 ver 3.10.8</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">大顆 ○ 是非題</span>
+              <span class="changelog-badge-tag">純箭頭翻頁按鈕</span>
+              <span class="changelog-badge-tag">頂部「新簡報」功能</span>
+              <span class="changelog-badge-tag">去除標記前紅點</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🎯 簡報介面與作答符號視覺優化：</strong>
+              <ul>
+                <li><strong>是非題 ○ 放大醒目（圖 1）</strong>：是非題作答色塊之圓圈改採大尺寸飽滿符號（◯），字級大幅提升至 38px，與 ✕ 呈現完美對稱的醒目視覺！</li>
+                <li><strong>翻頁按鈕精簡為純箭頭（圖 2）</strong>：頂部控制列「上一頁/下一頁」去除冗餘中文字，改為簡約緊湊的「◀」與「▶」，大幅節省頂部空間。</li>
+                <li><strong>新增「新簡報」按鈕（圖 2）</strong>：於頂部控制列翻頁按鈕前方新增「➕ 新簡報」專屬功能按鈕，一鍵快速清空並建立全新投影片。</li>
+                <li><strong>標記按鈕去除前置紅圓點（圖 1）</strong>：依需求去除「✏️ 標記」按鈕前方的圓形紅點，讓工具列視覺風格更加一致俐落。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.10.7 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.10.7</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">外部連結層級修復</span>

@@ -156,6 +156,7 @@
 
         // 頂部整合控制列 (Item 5)
         headerControls: document.getElementById('presentationHeaderControls'),
+        btnSlideNew: document.getElementById('btnSlideNew'),
         btnPrev: document.getElementById('btnSlidePrev'),
         btnNext: document.getElementById('btnSlideNext'),
         pageCounter: document.getElementById('txtSlidePageCounter'),
@@ -282,7 +283,12 @@
         els.fileInputImage.onchange = (e) => this.handleImageSlideUpload(e);
       }
 
-      // 上一頁 / 下一頁
+      // 新建簡報 (圖 2)
+      if (els.btnSlideNew) {
+        els.btnSlideNew.onclick = () => this.createNewPresentation();
+      }
+
+      // 上一頁 / 下一頁 (圖 2: 純箭頭)
       if (els.btnPrev) els.btnPrev.onclick = () => this.prevSlide();
       if (els.btnNext) els.btnNext.onclick = () => this.nextSlide();
 
@@ -437,6 +443,7 @@
 
       // 控制工具在非授權學生端隱藏
       const ctrlDisplay = canControl ? 'inline-flex' : 'none';
+      if (els.btnSlideNew) els.btnSlideNew.style.display = ctrlDisplay;
       if (els.btnAddColor) els.btnAddColor.style.display = ctrlDisplay;
       if (els.btnAddImage) els.btnAddImage.style.display = ctrlDisplay;
       if (els.btnStartSync) els.btnStartSync.style.display = ctrlDisplay;
@@ -463,17 +470,17 @@
 
       // 圖 1: 學生端在老師簡報同步廣播時不能自行操作，若老師停止同步則可自行操作
       if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
-        if (els.btnPrevSlide) {
-          els.btnPrevSlide.disabled = true;
-          els.btnPrevSlide.style.opacity = '0.4';
-          els.btnPrevSlide.style.cursor = 'not-allowed';
-          els.btnPrevSlide.title = '跟隨老師同步中，由老師控制翻頁';
+        if (els.btnPrev) {
+          els.btnPrev.disabled = true;
+          els.btnPrev.style.opacity = '0.4';
+          els.btnPrev.style.cursor = 'not-allowed';
+          els.btnPrev.title = '跟隨老師同步中，由老師控制翻頁';
         }
-        if (els.btnNextSlide) {
-          els.btnNextSlide.disabled = true;
-          els.btnNextSlide.style.opacity = '0.4';
-          els.btnNextSlide.style.cursor = 'not-allowed';
-          els.btnNextSlide.title = '跟隨老師同步中，由老師控制翻頁';
+        if (els.btnNext) {
+          els.btnNext.disabled = true;
+          els.btnNext.style.opacity = '0.4';
+          els.btnNext.style.cursor = 'not-allowed';
+          els.btnNext.title = '跟隨老師同步中，由老師控制翻頁';
         }
         if (els.btnGridOverview) {
           els.btnGridOverview.disabled = true;
@@ -485,17 +492,17 @@
           els.thumbnailsList.classList.add('is-sync-locked');
         }
       } else {
-        if (els.btnPrevSlide) {
-          els.btnPrevSlide.disabled = false;
-          els.btnPrevSlide.style.opacity = '1';
-          els.btnPrevSlide.style.cursor = 'pointer';
-          els.btnPrevSlide.title = '上一頁';
+        if (els.btnPrev) {
+          els.btnPrev.disabled = false;
+          els.btnPrev.style.opacity = '1';
+          els.btnPrev.style.cursor = 'pointer';
+          els.btnPrev.title = '上一頁';
         }
-        if (els.btnNextSlide) {
-          els.btnNextSlide.disabled = false;
-          els.btnNextSlide.style.opacity = '1';
-          els.btnNextSlide.style.cursor = 'pointer';
-          els.btnNextSlide.title = '下一頁';
+        if (els.btnNext) {
+          els.btnNext.disabled = false;
+          els.btnNext.style.opacity = '1';
+          els.btnNext.style.cursor = 'pointer';
+          els.btnNext.title = '下一頁';
         }
         if (els.btnGridOverview) {
           els.btnGridOverview.disabled = false;
@@ -1015,6 +1022,40 @@
       if (this.isPresenting) {
         this.broadcastLiveState(false);
       }
+    }
+
+    // 建立新簡報 (圖 2: 清空當前簡報並建立全新投影片)
+    createNewPresentation() {
+      if (!this.canControlPresentation()) return;
+      if (this.slides.length > 0) {
+        if (!confirm('確定要建立新簡報嗎？\n這將清空目前的簡報頁面與隨堂作答記錄。')) {
+          return;
+        }
+      }
+      this.markAsHost();
+      if (this.isPresenting) {
+        this.stopSyncPresentation();
+      }
+
+      this.slides = [];
+      this.currentSlideIndex = 0;
+      this.annotations = {};
+      this.submissions = {};
+      this.myAnswers = {};
+      this.studentDrawStrokes = [];
+      this.selectedSubmissionIds.clear();
+
+      // 清除 Firebase 上的簡報與互動紀錄
+      if (typeof db !== 'undefined') {
+        db.ref('presentation/slides').remove().catch(() => {});
+        db.ref('presentation/annotations').remove().catch(() => {});
+        db.ref('presentation/submissions').remove().catch(() => {});
+        db.ref('presentation/laser').remove().catch(() => {});
+      }
+
+      // 自動建立一張空白預設純色簡報頁
+      this.addColorSlide('#1e293b');
+      this.notify('🎉 新簡報已建立', '已清空並建立全新簡報！可點擊「+ 純色頁」或「+ 圖片頁」開始編排。');
     }
 
     // 新增純色頁
@@ -1540,7 +1581,15 @@
             const cls = colorClasses[i % colorClasses.length];
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = `presentation-color-opt-btn ${cls} ${this.myAnswers[q.id] === label ? 'selected' : ''}`;
+            const isSelected = this.myAnswers[q.id] === label || 
+              (label === '◯' && this.myAnswers[q.id] === '○') || 
+              (label === '○' && this.myAnswers[q.id] === '◯');
+            btn.className = `presentation-color-opt-btn ${cls} ${isSelected ? 'selected' : ''}`;
+            if (label === '◯' || label === '○') {
+              btn.classList.add('is-circle-btn');
+            } else if (label === '✕' || label === '╳' || label === 'X' || label === 'x') {
+              btn.classList.add('is-cross-btn');
+            }
             btn.textContent = label;
             btn.onclick = () => {
               this.myAnswers[q.id] = label;
@@ -2348,7 +2397,7 @@
                 <select style="padding: 4px 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px;" onchange="window.presentationManager.updateQuestionOptStyle(${idx}, this.value)">
                   <option value="abcd" ${optStyle === 'abcd' ? 'selected' : ''}>A B C D</option>
                   <option value="1234" ${optStyle === '1234' ? 'selected' : ''}>1 2 3 4</option>
-                  <option value="ox" ${optStyle === 'ox' ? 'selected' : ''}>○ ╳ (是非)</option>
+                  <option value="ox" ${optStyle === 'ox' ? 'selected' : ''}>◯ ✕ (是非)</option>
                   <option value="cjk" ${optStyle === 'cjk' ? 'selected' : ''}>甲 乙 丙 丁</option>
                 </select>
               </div>
@@ -2388,7 +2437,7 @@
     getOptionLabels(optCount = 4, optStyle = 'abcd') {
       let labels = ['A', 'B', 'C', 'D', 'E', 'F'];
       if (optStyle === '1234') labels = ['1', '2', '3', '4', '5', '6'];
-      else if (optStyle === 'ox') labels = ['○', '╳'];
+      else if (optStyle === 'ox') labels = ['◯', '✕'];
       else if (optStyle === 'cjk') labels = ['甲', '乙', '丙', '丁', '戊', '己'];
       return labels.slice(0, Math.min(optCount, labels.length));
     }

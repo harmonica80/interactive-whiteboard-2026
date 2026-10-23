@@ -604,6 +604,14 @@
   background: #fee2e2;
 }
 
+#btnSlidePrev,
+#btnSlideNext {
+  min-width: 38px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .presentation-page-counter {
   font-size: 13px;
   font-weight: 700;
@@ -858,6 +866,19 @@
 .presentation-color-opt-btn.selected {
   border-color: #0f172a;
   box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.4);
+}
+
+/* 是非題大型符號 (圖 1: ○X 選項的大顆 ○ 與醒目 ✕) */
+.presentation-color-opt-btn.is-circle-btn {
+  font-size: 38px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+.presentation-color-opt-btn.is-cross-btn {
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
 }
 
 /* 一般選擇題清單 */
