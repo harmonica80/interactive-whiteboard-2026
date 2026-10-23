@@ -360,7 +360,10 @@
 
     for (const [key, lock] of Object.entries(lockedMap)) {
       if (!lock) continue;
-      if (key === myClientId || key === persistentUid || key === myName || lock.name === myName || lock.uid === persistentUid) {
+      const matchName = lock.name && myName && (lock.name.trim().toLowerCase() === myName.trim().toLowerCase());
+      const matchUid = lock.uid && persistentUid && (lock.uid === persistentUid || lock.uid === myClientId);
+      const matchKey = (key === persistentUid || key === myClientId || key === myName || (myName && key === myName.replace(/[.$#\[\]\/]/g, '_')));
+      if (matchName || matchUid || matchKey) {
         if (lock.until === -1 || lock.until > now) {
           activeLock = lock;
           break;
@@ -661,13 +664,50 @@
   // ===== 學生個別鎖定彈窗控制 (Item 8) =====
   let currentLockTarget = null; // { name, uid }
 
+  function unlockStudent(studentKey, studentName) {
+    const safeKey = studentKey ? studentKey.replace(/[.$#\[\]\/]/g, '_') : '';
+    const safeName = studentName ? studentName.replace(/[.$#\[\]\/]/g, '_') : '';
+
+    if (state.lockedStudents) {
+      if (studentKey) delete state.lockedStudents[studentKey];
+      if (studentName) delete state.lockedStudents[studentName];
+      if (safeKey) delete state.lockedStudents[safeKey];
+      if (safeName) delete state.lockedStudents[safeName];
+      Object.keys(state.lockedStudents).forEach(k => {
+        const l = state.lockedStudents[k];
+        if (l && (l.name === studentName || l.uid === studentKey)) {
+          delete state.lockedStudents[k];
+        }
+      });
+    }
+
+    if (roomRef) {
+      const updates = {};
+      if (studentKey) updates[studentKey] = null;
+      if (studentName) updates[studentName] = null;
+      if (safeKey) updates[safeKey] = null;
+      if (safeName) updates[safeName] = null;
+      Object.entries(state.lockedStudents || {}).forEach(([k, lock]) => {
+        if (lock && (lock.name === studentName || lock.uid === studentKey)) {
+          updates[k] = null;
+        }
+      });
+      roomRef.child('lockedStudents').update(updates).catch(console.error);
+    }
+
+    flashToast(`🔓 已解除 ${studentName} 的編輯限制`);
+    checkMyLockStatus();
+    renderParticipantsList();
+  }
+
   function openStudentLockModal(student) {
     currentLockTarget = student;
     if (els.lockStudentTargetName) els.lockStudentTargetName.textContent = student.name;
 
     const lockedMap = state.lockedStudents || {};
-    const key = student.uid || student.name;
-    const existingLock = lockedMap[key] || lockedMap[student.name];
+    const key = (student.uid || student.name || '').replace(/[.$#\[\]\/]/g, '_');
+    const safeName = (student.name || '').replace(/[.$#\[\]\/]/g, '_');
+    const existingLock = lockedMap[key] || lockedMap[safeName] || lockedMap[student.name];
     const isLocked = existingLock && (existingLock.until === -1 || existingLock.until > Date.now());
 
     if (els.lockStudentStatusBox) {
@@ -686,11 +726,17 @@
       }
     }
 
-    if (els.studentLockModal) els.studentLockModal.classList.add('active');
+    if (els.studentLockModal) {
+      els.studentLockModal.classList.add('open');
+      els.studentLockModal.classList.add('active');
+    }
   }
 
   function closeStudentLockModal() {
-    if (els.studentLockModal) els.studentLockModal.classList.remove('active');
+    if (els.studentLockModal) {
+      els.studentLockModal.classList.remove('open');
+      els.studentLockModal.classList.remove('active');
+    }
     currentLockTarget = null;
   }
 
@@ -784,11 +830,7 @@
           if (action === 'unlock') {
             const key = actionBtn.dataset.key;
             const name = actionBtn.dataset.name;
-            if (roomRef) {
-              roomRef.child('lockedStudents').child(key).remove();
-              if (key !== name) roomRef.child('lockedStudents').child(name).remove();
-              flashToast(`🔓 已解除 ${name} 的編輯限制`);
-            }
+            unlockStudent(key, name);
           } else {
             const uid = actionBtn.dataset.uid;
             const name = actionBtn.dataset.name;
@@ -1030,46 +1072,64 @@
     `;
   }
 
-  // 動態粗細漸變單色箭頭路徑計算 (Item 3, 如圖 3 - 單一顏色、流線軸身、尖端銳角)
+  // 動態粗細漸變單色箭頭路徑計算 (Item 3, 如圖 3 - 軸身厚實漸粗、尖端倒鉤三角比例協調)
   function getArrowPathData(x1, y1, x2, y2, strokeWidth = 4) {
     const dx = x2 - x1;
     const dy = y2 - y1;
     const len = Math.hypot(dx, dy);
-    if (len < 2) return '';
+    if (len < 3) return '';
 
     const ux = dx / len;
     const uy = dy / len;
     const nx = -uy;
     const ny = ux;
 
-    // 箭頭頂端銳角三角形與漸粗身部比例計算
-    const headLen = Math.min(50, Math.max(16, len * 0.28, strokeWidth * 3.6));
-    const headHalfW = Math.min(32, Math.max(10, headLen * 0.65, strokeWidth * 2.2));
-    const shaftEndW = Math.max(3.5, strokeWidth * 1.35);
-    const shaftStartW = Math.max(1.5, shaftEndW * 0.35);
+    // 依設定的 strokeWidth (2, 4, 8) 進行基礎縮放
+    const scale = Math.max(0.65, (strokeWidth || 4) / 4);
+
+    // 依長度決定箭頭尺寸，確保箭頭與軸身協調且短箭頭不超界
+    let headLen = 30 * scale;
+    if (len < headLen * 1.5) {
+      headLen = Math.max(10, len * 0.4);
+    }
+
+    const neckRatio = Math.min(1.0, headLen / (30 * scale));
+    // 軸身寬度 (如圖 3：尾端厚實約 6px，頸部大幅加粗至約 16px)
+    const shaftStartW = Math.max(2.5, 6 * scale * (neckRatio * 0.5 + 0.5));
+    const shaftEndW = Math.max(6, 16 * scale * (neckRatio * 0.5 + 0.5));
+
+    // 箭頭頂端兩側倒鉤寬度 (僅比頸部軸身向外多延伸約 6~7px，絕不大頭娃娃)
+    const headBarbFlare = Math.max(4.5, 7 * scale * neckRatio);
+    const headHalfW = (shaftEndW / 2) + headBarbFlare;
 
     const neckX = x2 - ux * headLen;
     const neckY = y2 - uy * headLen;
 
-    // 尾端起點兩翼 (細)
+    // 1. 尾端起點兩翼 (厚實 ~6px)
     const tLx = x1 - nx * (shaftStartW / 2);
     const tLy = y1 - ny * (shaftStartW / 2);
     const tRx = x1 + nx * (shaftStartW / 2);
     const tRy = y1 + ny * (shaftStartW / 2);
 
-    // 頸部軸身兩翼 (漸粗)
+    // 2. 頸部軸身兩翼 (厚實加粗 ~16px)
     const nLx = neckX - nx * (shaftEndW / 2);
     const nLy = neckY - ny * (shaftEndW / 2);
     const nRx = neckX + nx * (shaftEndW / 2);
     const nRy = neckY + ny * (shaftEndW / 2);
 
-    // 箭頭翼角兩翼 (尖角倒鉤)
+    // 3. 箭頭兩側倒鉤尖角
     const bLx = neckX - nx * headHalfW;
     const bLy = neckY - ny * headHalfW;
     const bRx = neckX + nx * headHalfW;
     const bRy = neckY + ny * headHalfW;
 
-    return `M ${tLx.toFixed(1)} ${tLy.toFixed(1)} L ${nLx.toFixed(1)} ${nLy.toFixed(1)} L ${bLx.toFixed(1)} ${bLy.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)} L ${bRx.toFixed(1)} ${bRy.toFixed(1)} L ${nRx.toFixed(1)} ${nRy.toFixed(1)} L ${tRx.toFixed(1)} ${tRy.toFixed(1)} Z`;
+    return `M ${tLx.toFixed(1)} ${tLy.toFixed(1)} ` +
+           `L ${nLx.toFixed(1)} ${nLy.toFixed(1)} ` +
+           `L ${bLx.toFixed(1)} ${bLy.toFixed(1)} ` +
+           `L ${x2.toFixed(1)} ${y2.toFixed(1)} ` +
+           `L ${bRx.toFixed(1)} ${bRy.toFixed(1)} ` +
+           `L ${nRx.toFixed(1)} ${nRy.toFixed(1)} ` +
+           `L ${tRx.toFixed(1)} ${tRy.toFixed(1)} Z`;
   }
 
   // 3. SVG 筆劃、矩形、圓形、箭頭渲染
@@ -1419,10 +1479,10 @@
       return { x: (obj.cx || 0) - rx, y: (obj.cy || 0) - ry, width: rx * 2, height: ry * 2 };
     }
     if (obj.type === 'arrow') {
-      const minX = Math.min(obj.x1 || 0, obj.x2 || 0);
-      const minY = Math.min(obj.y1 || 0, obj.y2 || 0);
-      const w = Math.max(10, Math.abs((obj.x2 || 0) - (obj.x1 || 0)));
-      const h = Math.max(10, Math.abs((obj.y2 || 0) - (obj.y1 || 0)));
+      const minX = Math.min(obj.x1 || 0, obj.x2 || 0) - 20;
+      const minY = Math.min(obj.y1 || 0, obj.y2 || 0) - 20;
+      const w = Math.max(25, Math.abs((obj.x2 || 0) - (obj.x1 || 0)) + 40);
+      const h = Math.max(25, Math.abs((obj.y2 || 0) - (obj.y1 || 0)) + 40);
       return { x: minX, y: minY, width: w, height: h };
     }
     if (obj.type === 'pen') {
@@ -2365,31 +2425,45 @@
       if (!isTeacherUser() || !currentLockTarget) return;
       const durSec = parseInt(btn.dataset.duration, 10);
       const until = durSec === -1 ? -1 : Date.now() + durSec * 1000;
-      const key = currentLockTarget.uid || currentLockTarget.name;
+      const key = (currentLockTarget.uid || currentLockTarget.name).replace(/[.$#\[\]\/]/g, '_');
+      const safeName = currentLockTarget.name.replace(/[.$#\[\]\/]/g, '_');
+
+      const lockObj = {
+        name: currentLockTarget.name,
+        uid: currentLockTarget.uid || '',
+        until: until,
+        lockedAt: Date.now()
+      };
+
+      state.lockedStudents = state.lockedStudents || {};
+      state.lockedStudents[key] = lockObj;
+      if (safeName) state.lockedStudents[safeName] = lockObj;
 
       if (roomRef) {
-        roomRef.child('lockedStudents').child(key).set({
-          name: currentLockTarget.name,
-          uid: currentLockTarget.uid || '',
-          until: until,
-          lockedAt: Date.now()
-        }).then(() => {
+        const updates = {};
+        updates[key] = lockObj;
+        if (safeName && safeName !== key) updates[safeName] = lockObj;
+        roomRef.child('lockedStudents').update(updates).then(() => {
           flashToast(`🔒 已鎖定 ${currentLockTarget.name} 的編輯權限 (${btn.textContent.trim()})`);
           closeStudentLockModal();
+          renderParticipantsList();
+        }).catch(err => {
+          console.error(err);
+          flashToast('鎖定更新出錯：' + err.message);
+          closeStudentLockModal();
         });
+      } else {
+        flashToast(`🔒 已鎖定 ${currentLockTarget.name} 的編輯權限 (${btn.textContent.trim()})`);
+        closeStudentLockModal();
+        renderParticipantsList();
       }
     };
   });
   if (els.btnUnlockStudentDirect) {
     els.btnUnlockStudentDirect.onclick = () => {
       if (!isTeacherUser() || !currentLockTarget) return;
-      const key = currentLockTarget.uid || currentLockTarget.name;
-      if (roomRef) {
-        roomRef.child('lockedStudents').child(key).remove();
-        if (key !== currentLockTarget.name) roomRef.child('lockedStudents').child(currentLockTarget.name).remove();
-        flashToast(`🔓 已解除 ${currentLockTarget.name} 的編輯限制`);
-        closeStudentLockModal();
-      }
+      unlockStudent(currentLockTarget.uid || currentLockTarget.name, currentLockTarget.name);
+      closeStudentLockModal();
     };
   }
 

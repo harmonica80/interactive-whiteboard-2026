@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.18</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.19</a>
         </p>
       </div>
       <div class="top-actions">
@@ -3504,12 +3504,34 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.18 -->
+        <!-- ver 3.9.19 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.18</span>
+              <span>🌟 ver 3.9.19</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">個別限制編輯彈窗修復</span>
+              <span class="changelog-badge-tag">精準雙重識別鎖定</span>
+              <span class="changelog-badge-tag">漸粗箭頭比例最佳化</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🎯 學生限制編輯修復與漸粗箭頭比例調校：</strong>
+              <ul>
+                <li><strong>學生限制編輯功能修復（圖 1）</strong>：修復限制編輯時間彈窗未正常顯示之問題，現在老師點擊學生旁的「🔒 限制編輯」即可正常呼叫時間選單（30秒至30分或永久鎖定），並透過 UID 與姓名雙重鍵值精準即時生效！</li>
+                <li><strong>漸粗箭頭粗細比例協調重構（圖 2 & 圖 3）</strong>：徹底解決箭頭細線搭配過大三角箭頭的比例失衡問題，重新以圖 3 為標準精算流線幾何：軸身厚實且朝頸部平滑加寬至 16px，頂端倒鉤箭頭依軸身比例自然外擴，呈現兼具厚實感與銳利度的專業流線箭頭！</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.18 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.9.18</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">畫布功能移至頂部列</span>
