@@ -521,19 +521,26 @@
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255,255,255,0.2);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .presentation-url-badge:hover {
   background: rgba(37, 99, 235, 0.95);
-  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  border-color: rgba(255,255,255,0.4);
+  /* 移除 transform，滑鼠懸停時完全維持在原位不產生位移跳動 (圖 1) */
 }
 
-.presentation-url-pos-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-.presentation-url-pos-top-left { top: 20px; left: 20px; }
-.presentation-url-pos-top-right { top: 20px; right: 20px; }
-.presentation-url-pos-bottom-left { bottom: 20px; left: 20px; }
-.presentation-url-pos-bottom-right { bottom: 20px; right: 20px; }
+.presentation-url-pos-center { top: 50%; left: 50%; transform: translate(-50%, -50%) !important; }
+.presentation-url-pos-center:hover { transform: translate(-50%, -50%) !important; }
+.presentation-url-pos-top-left { top: 20px; left: 20px; transform: none !important; }
+.presentation-url-pos-top-left:hover { transform: none !important; }
+.presentation-url-pos-top-right { top: 20px; right: 20px; transform: none !important; }
+.presentation-url-pos-top-right:hover { transform: none !important; }
+.presentation-url-pos-bottom-left { bottom: 20px; left: 20px; transform: none !important; }
+.presentation-url-pos-bottom-left:hover { transform: none !important; }
+.presentation-url-pos-bottom-right { bottom: 20px; right: 20px; transform: none !important; }
+.presentation-url-pos-bottom-right:hover { transform: none !important; }
 
 /* ===== 底部控制列 ===== */
 .presentation-bottom-bar {

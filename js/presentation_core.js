@@ -2322,7 +2322,17 @@
       const modal = this.els.modalSlideSettings;
       if (!modal) return;
 
-      document.getElementById('txtPresExternalUrl').value = slide.externalUrl || '';
+      const urlInput = document.getElementById('txtPresExternalUrl');
+      if (urlInput) {
+        urlInput.value = slide.externalUrl || '';
+        urlInput.onchange = () => {
+          const converted = this.convertYoutubeToEmbedUrl(urlInput.value);
+          if (converted && converted !== urlInput.value) {
+            urlInput.value = converted;
+            this.notify('網址自動轉換', '已自動將 YouTube 影片轉換為可嵌入播放網址！');
+          }
+        };
+      }
       document.getElementById('selPresUrlPosition').value = slide.urlPosition || 'center';
       document.getElementById('selPresDisplayMode').value = slide.displayMode || 'step';
 
@@ -2519,7 +2529,8 @@
       const slide = this.getCurrentSlide();
       if (!slide) return;
 
-      slide.externalUrl = (document.getElementById('txtPresExternalUrl').value || '').trim();
+      const rawUrl = (document.getElementById('txtPresExternalUrl').value || '').trim();
+      slide.externalUrl = this.convertYoutubeToEmbedUrl(rawUrl);
       slide.urlPosition = document.getElementById('selPresUrlPosition').value || 'center';
       slide.displayMode = document.getElementById('selPresDisplayMode').value || 'step';
       
@@ -2575,19 +2586,59 @@
       this.closeModal(this.els.modalGridOverview);
     }
 
+    // 自動將 YouTube / Google Drive 影片網址轉換為可嵌入播放格式 (Item 1)
+    convertYoutubeToEmbedUrl(rawUrl) {
+      if (!rawUrl || typeof rawUrl !== 'string') return '';
+      let url = rawUrl.trim();
+      if (!url) return '';
+
+      // 支援 Google Drive 檔案轉換為預覽嵌入
+      if (url.includes('drive.google.com/file/d/')) {
+        return url.replace(/\/view(\?.*)?$/, '/preview');
+      }
+
+      // 支援各種 YouTube 格式（watch?v=、youtu.be/、shorts/、embed/ 等）
+      const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+      if (ytMatch && ytMatch[1]) {
+        const videoId = ytMatch[1];
+        let timeParam = '';
+        const timeMatch = url.match(/[?&](?:t|start)=([0-9hms]+)/i);
+        if (timeMatch && timeMatch[1]) {
+          const tVal = timeMatch[1];
+          let seconds = 0;
+          if (/^\d+$/.test(tVal)) {
+            seconds = parseInt(tVal, 10);
+          } else {
+            const h = tVal.match(/(\d+)h/i);
+            const m = tVal.match(/(\d+)m/i);
+            const s = tVal.match(/(\d+)s/i);
+            if (h) seconds += parseInt(h[1], 10) * 3600;
+            if (m) seconds += parseInt(m[1], 10) * 60;
+            if (s) seconds += parseInt(s[1], 10);
+          }
+          if (seconds > 0) {
+            timeParam = `&start=${seconds}`;
+          }
+        }
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0${timeParam}`;
+      }
+      return url;
+    }
+
     // 開啟外部 URL 嵌入視窗
     openExternalUrlViewer() {
       const slide = this.getCurrentSlide();
       if (!slide || !slide.externalUrl) return;
 
+      const embedUrl = this.convertYoutubeToEmbedUrl(slide.externalUrl);
       const modal = this.els.modalIframeViewer;
       const iframe = this.els.iframeViewerFrame;
       if (!modal || !iframe) {
-        window.open(slide.externalUrl, '_blank');
+        window.open(embedUrl, '_blank');
         return;
       }
 
-      iframe.src = slide.externalUrl;
+      iframe.src = embedUrl;
       this.openModal(modal);
     }
 
