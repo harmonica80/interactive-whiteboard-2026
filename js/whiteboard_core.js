@@ -8,18 +8,19 @@
 
   // ===== 使用者身分與角色 =====
   const urlParams = new URLSearchParams(window.location.search);
-  const parentApp = (window.parent && window.parent.app) || null;
+  let isTeacherOverride = null;
 
-  const isTeacher = (
-    urlParams.get('role') === 'teacher' ||
-    urlParams.get('isAdmin') === '1' ||
-    (parentApp && parentApp.isAdmin) ||
-    false
-  );
+  function isTeacherUser() {
+    if (isTeacherOverride !== null) return isTeacherOverride;
+    const parentApp = (window.parent && window.parent.app) || null;
+    if (parentApp && parentApp.isAdmin) return true;
+    if (urlParams.get('role') === 'teacher' || urlParams.get('isAdmin') === '1') return true;
+    return false;
+  }
 
   const persistentUid = (
     urlParams.get('uid') ||
-    (parentApp && typeof parentApp.getUserId === 'function' && parentApp.getUserId()) ||
+    (window.parent && window.parent.app && typeof window.parent.app.getUserId === 'function' && window.parent.app.getUserId()) ||
     localStorage.getItem('whiteboard_uid') ||
     sessionStorage.getItem('whiteboard_uid') ||
     ('u_' + Math.random().toString(36).substring(2, 9))
@@ -30,15 +31,30 @@
   } catch (e) {}
 
   const myClientId = persistentUid;
-  const myPresenceKey = isTeacher ? ('teacher_' + persistentUid) : ('student_' + persistentUid);
+  const myPresenceKey = 'u_' + persistentUid;
 
-  const myName = (
+  let myName = (
     urlParams.get('name') ||
-    (parentApp && typeof parentApp.getCurrentUserName === 'function' && parentApp.getCurrentUserName()) ||
+    (window.parent && window.parent.app && typeof window.parent.app.getCurrentUserName === 'function' && window.parent.app.getCurrentUserName()) ||
     localStorage.getItem('user_nickname') ||
     localStorage.getItem('user_name') ||
-    (isTeacher ? '老師' : '同學')
+    (isTeacherUser() ? '老師' : '同學')
   ).trim();
+
+  // 監聽來自母頁面的身分與權限更新
+  window.addEventListener('message', (e) => {
+    if (!e.data) return;
+    if (e.data.type === 'UPDATE_ADMIN_STATUS') {
+      isTeacherOverride = !!e.data.isAdmin;
+      if (e.data.userName) {
+        myName = e.data.userName;
+      }
+      applySettingsUI();
+      if (typeof updateMyPresence === 'function') {
+        updateMyPresence();
+      }
+    }
+  });
 
   // ===== 狀態管理 =====
   const state = {
@@ -61,9 +77,17 @@
     currentStrokeWidth: 4,
     showAuthorBadge: true,
     view: { x: 0, y: 0, zoom: 1 },
-    selectedObjId: null,
+    selectedObjIds: [],
+    get selectedObjId() {
+      return (this.selectedObjIds && this.selectedObjIds[0]) || null;
+    },
+    set selectedObjId(id) {
+      this.selectedObjIds = id ? [id] : [];
+    },
     isPanning: false,
     panStart: { x: 0, y: 0 },
+    isMarqueeSelecting: false,
+    marqueeStart: { x: 0, y: 0 },
     activeDrawing: null,
     onlineUsers: {}
   };
@@ -118,13 +142,44 @@
     btnInsertImage: document.getElementById('btnInsertImage'),
     btnTrashCanvas: document.getElementById('btnTrashCanvas'),
     imageFileInput: document.getElementById('imageFileInput'),
-    pdfFileInput: document.getElementById('pdfFileInput')
+    pdfFileInput: document.getElementById('pdfFileInput'),
+    // Selection Marquee & Floating Action Bar
+    selectionMarquee: document.getElementById('selectionMarquee'),
+    selectionActionBar: document.getElementById('selectionActionBar'),
+    groupMultiAlign: document.getElementById('groupMultiAlign'),
+    btnLayerFront: document.getElementById('btnLayerFront'),
+    btnLayerForward: document.getElementById('btnLayerForward'),
+    btnLayerBackward: document.getElementById('btnLayerBackward'),
+    btnLayerBack: document.getElementById('btnLayerBack'),
+    btnAlignLeft: document.getElementById('btnAlignLeft'),
+    btnAlignCenter: document.getElementById('btnAlignCenter'),
+    btnAlignRight: document.getElementById('btnAlignRight'),
+    btnAlignTop: document.getElementById('btnAlignTop'),
+    btnAlignMiddle: document.getElementById('btnAlignMiddle'),
+    btnAlignBottom: document.getElementById('btnAlignBottom'),
+    btnDistributeH: document.getElementById('btnDistributeH'),
+    btnDistributeV: document.getElementById('btnDistributeV'),
+    btnActionDelete: document.getElementById('btnActionDelete')
   };
 
   // ===== Firebase 資料庫參照 =====
   let db = (window.parent && window.parent.db) || (window.firebase && firebase.database ? firebase.database() : null);
   let roomRef = null;
   let objectsRef = null;
+  let myPresenceRef = null;
+
+  function updateMyPresence() {
+    if (!myPresenceRef) return;
+    myPresenceRef.set({
+      id: myPresenceKey,
+      uid: persistentUid,
+      name: myName,
+      role: isTeacherUser() ? 'teacher' : 'student',
+      canvasId: state.activeCanvasId,
+      pageId: state.activePageId,
+      lastActive: firebase.database.ServerValue.TIMESTAMP
+    });
+  }
 
   function initFirebase() {
     if (!db && window.firebase && firebase.database) {
@@ -150,7 +205,7 @@
       applySettingsUI();
 
       // 若啟用了「全班跟隨老師視角」且當前使用者是學生，強制切換到老師當前頁
-      if (!isTeacher && state.settings.followTeacher) {
+      if (!isTeacherUser() && state.settings.followTeacher) {
         if (state.settings.activeCanvasId && state.settings.activePageId) {
           if (state.activeCanvasId !== state.settings.activeCanvasId || state.activePageId !== state.settings.activePageId) {
             switchCanvasAndPage(state.settings.activeCanvasId, state.settings.activePageId, false);
@@ -172,24 +227,13 @@
     roomRef.child('summon').on('value', (snap) => {
       const val = snap.val();
       if (!val || !val.ts) return;
-      if (!isTeacher && (Date.now() - val.ts < 5000)) {
+      if (!isTeacherUser() && (Date.now() - val.ts < 5000)) {
         switchCanvasAndPage(val.canvasId, val.pageId, false);
       }
     });
 
     // 4. 線上參與者 (Presence)
-    const myPresenceRef = roomRef.child('presence').child(myPresenceKey);
-    function updateMyPresence() {
-      myPresenceRef.set({
-        id: myPresenceKey,
-        uid: persistentUid,
-        name: myName,
-        role: isTeacher ? 'teacher' : 'student',
-        canvasId: state.activeCanvasId,
-        pageId: state.activePageId,
-        lastActive: firebase.database.ServerValue.TIMESTAMP
-      });
-    }
+    myPresenceRef = roomRef.child('presence').child(myPresenceKey);
     updateMyPresence();
     myPresenceRef.onDisconnect().remove();
 
@@ -274,6 +318,8 @@
       }
     }
 
+    const teacher = isTeacherUser();
+
     // 跟隨老師模式
     if (els.btnFollowMode) {
       if (state.settings.followTeacher) {
@@ -283,12 +329,12 @@
       } else {
         els.btnFollowMode.innerHTML = '<span>🕊️ 自由分組</span>';
         els.btnFollowMode.style.color = '#0284c7';
-        if (els.btnSummonAll && isTeacher) els.btnSummonAll.style.display = 'inline-flex';
+        if (els.btnSummonAll && teacher) els.btnSummonAll.style.display = 'inline-flex';
       }
     }
 
-    // 學生端非教師處理
-    if (!isTeacher) {
+    // 教師控場開關顯示與權限套用
+    if (!teacher) {
       if (els.btnToggleStudentEdit) els.btnToggleStudentEdit.style.display = 'none';
       if (els.btnToggleMoveOthers) els.btnToggleMoveOthers.style.display = 'none';
       if (els.btnFollowMode) els.btnFollowMode.style.display = 'none';
@@ -303,6 +349,15 @@
         els.readonlyBanner.style.display = 'none';
         disableDrawingTools(false);
       }
+    } else {
+      if (els.btnToggleStudentEdit) els.btnToggleStudentEdit.style.display = 'inline-flex';
+      if (els.btnToggleMoveOthers) els.btnToggleMoveOthers.style.display = 'inline-flex';
+      if (els.btnFollowMode) els.btnFollowMode.style.display = 'inline-flex';
+      if (els.btnSummonAll) els.btnSummonAll.style.display = state.settings.followTeacher ? 'none' : 'inline-flex';
+      if (els.btnClearOrEnd) els.btnClearOrEnd.style.display = 'inline-flex';
+
+      els.readonlyBanner.style.display = 'none';
+      disableDrawingTools(false);
     }
 
     // 作者標籤切換按鈕狀態
@@ -365,7 +420,8 @@
 
     // 清空目前畫面 DOM
     state.objects = {};
-    state.selectedObjId = null;
+    state.selectedObjIds = [];
+    if (typeof updateSelectionActionBar === 'function') updateSelectionActionBar();
     els.svgLayer.innerHTML = `
       <defs>
         <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -388,7 +444,7 @@
       });
 
       // 老師切換且開啟跟隨模式時，廣播給全班
-      if (isTeacher && broadcast && state.settings.followTeacher) {
+      if (isTeacherUser() && broadcast && state.settings.followTeacher) {
         roomRef.child('settings').update({
           activeCanvasId: state.activeCanvasId,
           activePageId: state.activePageId
@@ -460,6 +516,9 @@
   function updateWorldTransform() {
     els.canvasWorld.style.transform = `translate(${state.view.x}px, ${state.view.y}px) scale(${state.view.zoom})`;
     els.zoomVal.textContent = Math.round(state.view.zoom * 100) + '%';
+    if (typeof updateSelectionActionBar === 'function') {
+      updateSelectionActionBar();
+    }
   }
 
   function zoomAt(targetZoom, clientX, clientY) {
@@ -494,9 +553,22 @@
     };
   }
 
+  function worldToViewport(wx, wy) {
+    return {
+      x: wx * state.view.zoom + state.view.x,
+      y: wy * state.view.zoom + state.view.y
+    };
+  }
+
   // ===== 工具切換 =====
   function setTool(toolName) {
     state.currentTool = toolName;
+    if (toolName !== 'select') {
+      if (typeof deselectAll === 'function') deselectAll();
+      document.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+      document.querySelectorAll('.hover-svg-outline').forEach(el => el.classList.remove('hover-svg-outline'));
+    }
+
     const btns = els.floatingToolbar.querySelectorAll('.tool-btn[data-tool]');
     btns.forEach(b => {
       if (b.dataset.tool === toolName) {
@@ -514,7 +586,7 @@
 
   // ===== 權限檢查：是否可動該物件 =====
   function canModifyObject(obj) {
-    if (isTeacher) return true;
+    if (isTeacherUser()) return true;
     if (!state.settings.studentCanEdit) return false;
     if (state.settings.canMoveOthers) return true;
     // 嚴格模式：僅可動自己創建的物件
@@ -675,98 +747,140 @@
   }
 
   // ===== 物件拖曳與點選互動 (DOM & SVG) =====
-  function bindObjectInteraction(el, obj) {
-    el.addEventListener('pointerdown', (e) => {
-      if (e.target.tagName === 'A' || e.target.classList.contains('sticky-content')) return;
-      if (state.currentTool === 'eraser') {
-        e.stopPropagation();
-        deleteObject(obj.id);
-        return;
+  function setupHoverEffects(el, isSvg) {
+    el.addEventListener('pointerenter', () => {
+      if (state.currentTool === 'select' && !state.isMarqueeSelecting) {
+        if (isSvg) el.classList.add('hover-svg-outline');
+        else el.classList.add('hover-target-outline');
       }
-      if (state.currentTool !== 'select') return;
-
-      if (!canModifyObject(obj)) {
-        flashToast('⚠️ 老師已設定僅能移動自己建立的物件');
-        return;
-      }
-
-      e.stopPropagation();
-      selectObject(obj.id);
-
-      const startPos = screenToWorld(e.clientX, e.clientY);
-      const initX = obj.x;
-      const initY = obj.y;
-
-      function onMove(me) {
-        const cur = screenToWorld(me.clientX, me.clientY);
-        obj.x = initX + (cur.x - startPos.x);
-        obj.y = initY + (cur.y - startPos.y);
-        el.style.left = obj.x + 'px';
-        el.style.top = obj.y + 'px';
-      }
-
-      function onUp() {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-        pushObjectUpdate(obj);
-      }
-
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
+    });
+    el.addEventListener('pointerleave', () => {
+      if (isSvg) el.classList.remove('hover-svg-outline');
+      else el.classList.remove('hover-target-outline');
     });
   }
 
-  function bindSvgInteraction(el, obj) {
-    el.addEventListener('pointerdown', (e) => {
-      if (state.currentTool === 'eraser') {
-        e.stopPropagation();
-        deleteObject(obj.id);
-        return;
-      }
-      if (state.currentTool !== 'select') return;
-      if (!canModifyObject(obj)) {
-        flashToast('⚠️ 老師已設定僅能移動自己建立的物件');
-        return;
-      }
+  function handleObjectPointerDown(e, obj, el, isSvg) {
+    if (e.target.tagName === 'A' || e.target.classList.contains('sticky-content')) return;
 
+    if (state.currentTool === 'eraser') {
       e.stopPropagation();
-      selectObject(obj.id);
+      deleteObject(obj.id);
+      return;
+    }
+    if (state.currentTool !== 'select') return;
 
-      const startPos = screenToWorld(e.clientX, e.clientY);
-      const snapshot = JSON.parse(JSON.stringify(obj));
+    if (!canModifyObject(obj)) {
+      flashToast('⚠️ 老師已設定僅能移動自己建立的物件');
+      return;
+    }
 
-      function onMove(me) {
-        const cur = screenToWorld(me.clientX, me.clientY);
-        const dx = cur.x - startPos.x;
-        const dy = cur.y - startPos.y;
+    e.stopPropagation();
 
-        if (obj.type === 'pen') {
-          // 移動整個 path: 重組 d 字串
-          obj.d = translateSvgPath(snapshot.d, dx, dy);
-        } else if (obj.type === 'rect') {
-          obj.x = snapshot.x + dx;
-          obj.y = snapshot.y + dy;
-        } else if (obj.type === 'circle') {
-          obj.cx = snapshot.cx + dx;
-          obj.cy = snapshot.cy + dy;
-        } else if (obj.type === 'arrow') {
-          obj.x1 = snapshot.x1 + dx;
-          obj.y1 = snapshot.y1 + dy;
-          obj.x2 = snapshot.x2 + dx;
-          obj.y2 = snapshot.y2 + dy;
-        }
-        renderSvgElement(obj);
+    // 處理多選 (Shift 或 Ctrl 點選) 與單選
+    if (e.shiftKey || e.ctrlKey) {
+      if (state.selectedObjIds.includes(obj.id)) {
+        state.selectedObjIds = state.selectedObjIds.filter(id => id !== obj.id);
+      } else {
+        state.selectedObjIds.push(obj.id);
       }
-
-      function onUp() {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-        pushObjectUpdate(obj);
+    } else {
+      if (!state.selectedObjIds.includes(obj.id)) {
+        state.selectedObjIds = [obj.id];
       }
+    }
 
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
+    updateSelectionVisuals();
+    updateSelectionActionBar();
+
+    // 準備拖曳 (支援所有選取物件同動)
+    const startPos = screenToWorld(e.clientX, e.clientY);
+    const snapshots = {};
+    state.selectedObjIds.forEach(id => {
+      const o = state.objects[id];
+      if (o && canModifyObject(o)) {
+        snapshots[id] = JSON.parse(JSON.stringify(o));
+      }
     });
+
+    let hasMoved = false;
+
+    function onMove(me) {
+      hasMoved = true;
+      const cur = screenToWorld(me.clientX, me.clientY);
+      const dx = cur.x - startPos.x;
+      const dy = cur.y - startPos.y;
+
+      Object.keys(snapshots).forEach(id => {
+        const orig = snapshots[id];
+        const target = state.objects[id];
+        if (!target) return;
+
+        if (target.type === 'sticky' || target.type === 'image') {
+          target.x = Math.round(orig.x + dx);
+          target.y = Math.round(orig.y + dy);
+          const hEl = document.getElementById(`html_obj_${id}`);
+          if (hEl) {
+            hEl.style.left = target.x + 'px';
+            hEl.style.top = target.y + 'px';
+          }
+          const bEl = document.getElementById(`badge_obj_${id}`);
+          if (bEl) {
+            bEl.style.left = target.x + 'px';
+            bEl.style.top = (target.y - 20) + 'px';
+          }
+        } else if (target.type === 'rect') {
+          target.x = Math.round(orig.x + dx);
+          target.y = Math.round(orig.y + dy);
+          renderSvgElement(target);
+        } else if (target.type === 'circle') {
+          target.cx = Math.round(orig.cx + dx);
+          target.cy = Math.round(orig.cy + dy);
+          renderSvgElement(target);
+        } else if (target.type === 'arrow') {
+          target.x1 = Math.round(orig.x1 + dx);
+          target.y1 = Math.round(orig.y1 + dy);
+          target.x2 = Math.round(orig.x2 + dx);
+          target.y2 = Math.round(orig.y2 + dy);
+          renderSvgElement(target);
+        } else if (target.type === 'pen') {
+          target.d = translateSvgPath(orig.d, dx, dy);
+          if (orig.points) {
+            target.points = orig.points.map(p => ({ x: Math.round(p.x + dx), y: Math.round(p.y + dy) }));
+          }
+          renderSvgElement(target);
+        }
+      });
+
+      updateSelectionActionBar();
+    }
+
+    function onUp() {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+
+      if (hasMoved) {
+        Object.keys(snapshots).forEach(id => {
+          if (state.objects[id]) {
+            pushObjectUpdate(state.objects[id]);
+          }
+        });
+      }
+      updateSelectionActionBar();
+    }
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  function bindObjectInteraction(el, obj) {
+    setupHoverEffects(el, false);
+    el.addEventListener('pointerdown', (e) => handleObjectPointerDown(e, obj, el, false));
+  }
+
+  function bindSvgInteraction(el, obj) {
+    setupHoverEffects(el, true);
+    el.addEventListener('pointerdown', (e) => handleObjectPointerDown(e, obj, el, true));
   }
 
   function translateSvgPath(d, dx, dy) {
@@ -775,11 +889,304 @@
     });
   }
 
-  function selectObject(id) {
-    state.selectedObjId = id;
+  // ===== 選取管理與外觀視覺 =====
+  function selectObject(id, addToSelection) {
+    if (addToSelection) {
+      if (!state.selectedObjIds.includes(id)) state.selectedObjIds.push(id);
+    } else {
+      state.selectedObjIds = [id];
+    }
+    updateSelectionVisuals();
+    updateSelectionActionBar();
+  }
+
+  function deselectAll() {
+    state.selectedObjIds = [];
+    updateSelectionVisuals();
+    updateSelectionActionBar();
+  }
+
+  function updateSelectionVisuals() {
     document.querySelectorAll('.selected-border').forEach(el => el.classList.remove('selected-border'));
-    const el = document.getElementById(`html_obj_${id}`);
-    if (el) el.classList.add('selected-border');
+    document.querySelectorAll('.selected-svg-outline').forEach(el => el.classList.remove('selected-svg-outline'));
+
+    (state.selectedObjIds || []).forEach(id => {
+      const htmlEl = document.getElementById(`html_obj_${id}`);
+      if (htmlEl) htmlEl.classList.add('selected-border');
+      const svgEl = document.getElementById(`svg_obj_${id}`);
+      if (svgEl) svgEl.classList.add('selected-svg-outline');
+    });
+  }
+
+  // 計算物件的世界座標包圍盒 (Bounding Box)
+  function getObjBounds(obj) {
+    if (!obj) return { x: 0, y: 0, width: 0, height: 0 };
+    if (obj.type === 'sticky') {
+      return { x: obj.x || 0, y: obj.y || 0, width: obj.width || 210, height: obj.height || 140 };
+    }
+    if (obj.type === 'image') {
+      return { x: obj.x || 0, y: obj.y || 0, width: obj.width || 320, height: obj.height || 200 };
+    }
+    if (obj.type === 'rect') {
+      return { x: obj.x || 0, y: obj.y || 0, width: Math.max(5, obj.width || 0), height: Math.max(5, obj.height || 0) };
+    }
+    if (obj.type === 'circle') {
+      const rx = obj.rx || 10;
+      const ry = obj.ry || 10;
+      return { x: (obj.cx || 0) - rx, y: (obj.cy || 0) - ry, width: rx * 2, height: ry * 2 };
+    }
+    if (obj.type === 'arrow') {
+      const minX = Math.min(obj.x1 || 0, obj.x2 || 0);
+      const minY = Math.min(obj.y1 || 0, obj.y2 || 0);
+      const w = Math.max(10, Math.abs((obj.x2 || 0) - (obj.x1 || 0)));
+      const h = Math.max(10, Math.abs((obj.y2 || 0) - (obj.y1 || 0)));
+      return { x: minX, y: minY, width: w, height: h };
+    }
+    if (obj.type === 'pen') {
+      if (obj.points && obj.points.length > 0) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        obj.points.forEach(p => {
+          if (p.x < minX) minX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.x > maxX) maxX = p.x;
+          if (p.y > maxY) maxY = p.y;
+        });
+        return { x: minX, y: minY, width: Math.max(10, maxX - minX), height: Math.max(10, maxY - minY) };
+      }
+      const coords = (obj.d || '').match(/-?[\d.]+/g);
+      if (coords && coords.length >= 2) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (let i = 0; i < coords.length; i += 2) {
+          const px = parseFloat(coords[i]);
+          const py = parseFloat(coords[i + 1]);
+          if (!isNaN(px) && !isNaN(py)) {
+            if (px < minX) minX = px;
+            if (py < minY) minY = py;
+            if (px > maxX) maxX = px;
+            if (py > maxY) maxY = py;
+          }
+        }
+        if (minX !== Infinity) {
+          return { x: minX, y: minY, width: Math.max(10, maxX - minX), height: Math.max(10, maxY - minY) };
+        }
+      }
+    }
+    return { x: 0, y: 0, width: 20, height: 20 };
+  }
+
+  function intersectRect(r1, r2) {
+    return !(
+      r2.x > r1.x + r1.w ||
+      r2.x + r2.width < r1.x ||
+      r2.y > r1.y + r1.h ||
+      r2.y + r2.height < r1.y
+    );
+  }
+
+  function setObjPos(obj, newX, newY) {
+    const b = getObjBounds(obj);
+    const dx = newX - b.x;
+    const dy = newY - b.y;
+    moveObjDelta(obj, dx, dy);
+  }
+
+  function moveObjDelta(obj, dx, dy) {
+    if (obj.type === 'sticky' || obj.type === 'image' || obj.type === 'rect') {
+      obj.x = Math.round(obj.x + dx);
+      obj.y = Math.round(obj.y + dy);
+      if (obj.type === 'sticky' || obj.type === 'image') {
+        const hEl = document.getElementById(`html_obj_${obj.id}`);
+        if (hEl) {
+          hEl.style.left = obj.x + 'px';
+          hEl.style.top = obj.y + 'px';
+        }
+        const bEl = document.getElementById(`badge_obj_${obj.id}`);
+        if (bEl) {
+          bEl.style.left = obj.x + 'px';
+          bEl.style.top = (obj.y - 20) + 'px';
+        }
+      } else {
+        renderSvgElement(obj);
+      }
+    } else if (obj.type === 'circle') {
+      obj.cx = Math.round(obj.cx + dx);
+      obj.cy = Math.round(obj.cy + dy);
+      renderSvgElement(obj);
+    } else if (obj.type === 'arrow') {
+      obj.x1 = Math.round(obj.x1 + dx);
+      obj.y1 = Math.round(obj.y1 + dy);
+      obj.x2 = Math.round(obj.x2 + dx);
+      obj.y2 = Math.round(obj.y2 + dy);
+      renderSvgElement(obj);
+    } else if (obj.type === 'pen') {
+      obj.d = translateSvgPath(obj.d, dx, dy);
+      if (obj.points) {
+        obj.points.forEach(p => {
+          p.x = Math.round(p.x + dx);
+          p.y = Math.round(p.y + dy);
+        });
+      }
+      renderSvgElement(obj);
+    }
+  }
+
+  // 更新懸浮選取工具列位置 (Item 5 & 9)
+  function updateSelectionActionBar() {
+    if (!els.selectionActionBar) return;
+    const selectedIds = state.selectedObjIds || [];
+    if (selectedIds.length === 0) {
+      els.selectionActionBar.style.display = 'none';
+      return;
+    }
+
+    const objs = selectedIds.map(id => state.objects[id]).filter(Boolean);
+    if (objs.length === 0) {
+      els.selectionActionBar.style.display = 'none';
+      return;
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    objs.forEach(o => {
+      const b = getObjBounds(o);
+      if (b.x < minX) minX = b.x;
+      if (b.y < minY) minY = b.y;
+      if (b.x + b.width > maxX) maxX = b.x + b.width;
+      if (b.y + b.height > maxY) maxY = b.y + b.height;
+    });
+
+    const midX = (minX + maxX) / 2;
+    const topY = minY;
+    const vpPos = worldToViewport(midX, topY);
+
+    els.selectionActionBar.style.left = Math.round(vpPos.x) + 'px';
+    els.selectionActionBar.style.top = Math.round(vpPos.y - 14) + 'px';
+    els.selectionActionBar.style.display = 'flex';
+
+    if (els.groupMultiAlign) {
+      els.groupMultiAlign.style.display = objs.length > 1 ? 'inline-flex' : 'none';
+    }
+  }
+
+  // 調整物件圖層順序 (Item 5)
+  function reorderSelectedLayers(action) {
+    if (!state.selectedObjIds || state.selectedObjIds.length === 0) return;
+    const objs = state.selectedObjIds.map(id => state.objects[id]).filter(Boolean);
+    if (objs.length === 0) return;
+
+    objs.forEach(obj => {
+      if (!canModifyObject(obj)) return;
+      const htmlEl = document.getElementById(`html_obj_${obj.id}`);
+      const svgEl = document.getElementById(`svg_obj_${obj.id}`);
+      const el = htmlEl || svgEl;
+      if (!el || !el.parentElement) return;
+
+      const parent = el.parentElement;
+      if (action === 'front') {
+        parent.appendChild(el);
+      } else if (action === 'back') {
+        parent.insertBefore(el, parent.firstChild);
+      } else if (action === 'forward') {
+        if (el.nextSibling) {
+          parent.insertBefore(el.nextSibling, el);
+        }
+      } else if (action === 'backward') {
+        if (el.previousSibling) {
+          parent.insertBefore(el, el.previousSibling);
+        }
+      }
+
+      const allChildren = Array.from(parent.children);
+      obj.order = allChildren.indexOf(el);
+      pushObjectUpdate(obj);
+    });
+
+    flashToast(`已調整圖層順序`);
+    updateSelectionActionBar();
+  }
+
+  // 多物件對齊 (Item 9)
+  function alignSelectedObjects(alignType) {
+    const selectedObjs = (state.selectedObjIds || [])
+      .map(id => state.objects[id])
+      .filter(o => o && canModifyObject(o));
+
+    if (selectedObjs.length < 2) {
+      flashToast('請至少框選 2 個物件以進行對齊');
+      return;
+    }
+
+    const boxes = selectedObjs.map(o => ({ obj: o, ...getObjBounds(o) }));
+    const minX = Math.min(...boxes.map(b => b.x));
+    const maxX = Math.max(...boxes.map(b => b.x + b.width));
+    const minY = Math.min(...boxes.map(b => b.y));
+    const maxY = Math.max(...boxes.map(b => b.y + b.height));
+
+    boxes.forEach(b => {
+      let targetX = b.x;
+      let targetY = b.y;
+      if (alignType === 'left') targetX = minX;
+      else if (alignType === 'center') targetX = minX + (maxX - minX) / 2 - b.width / 2;
+      else if (alignType === 'right') targetX = maxX - b.width;
+      else if (alignType === 'top') targetY = minY;
+      else if (alignType === 'middle') targetY = minY + (maxY - minY) / 2 - b.height / 2;
+      else if (alignType === 'bottom') targetY = maxY - b.height;
+
+      setObjPos(b.obj, targetX, targetY);
+      pushObjectUpdate(b.obj);
+    });
+
+    updateSelectionActionBar();
+    flashToast('已完成物件對齊');
+  }
+
+  // 多物件平均分配間距 (Item 9)
+  function distributeSelectedObjects(direction) {
+    const selectedObjs = (state.selectedObjIds || [])
+      .map(id => state.objects[id])
+      .filter(o => o && canModifyObject(o));
+
+    if (selectedObjs.length < 3) {
+      flashToast('平均分配間距需要至少框選 3 個物件');
+      return;
+    }
+
+    const boxes = selectedObjs.map(o => ({ obj: o, ...getObjBounds(o) }));
+
+    if (direction === 'h') {
+      boxes.sort((a, b) => a.x - b.x);
+      const first = boxes[0];
+      const last = boxes[boxes.length - 1];
+      const totalSpan = (last.x + last.width) - first.x;
+      const totalWidths = boxes.reduce((acc, b) => acc + b.width, 0);
+      const totalGap = totalSpan - totalWidths;
+      const gap = totalGap / (boxes.length - 1);
+
+      let curX = first.x + first.width + gap;
+      for (let i = 1; i < boxes.length - 1; i++) {
+        setObjPos(boxes[i].obj, curX, boxes[i].y);
+        pushObjectUpdate(boxes[i].obj);
+        curX += boxes[i].width + gap;
+      }
+      flashToast('已完成水平均分間距');
+    } else {
+      boxes.sort((a, b) => a.y - b.y);
+      const first = boxes[0];
+      const last = boxes[boxes.length - 1];
+      const totalSpan = (last.y + last.height) - first.y;
+      const totalHeights = boxes.reduce((acc, b) => acc + b.height, 0);
+      const totalGap = totalSpan - totalHeights;
+      const gap = totalGap / (boxes.length - 1);
+
+      let curY = first.y + first.height + gap;
+      for (let i = 1; i < boxes.length - 1; i++) {
+        setObjPos(boxes[i].obj, boxes[i].x, curY);
+        pushObjectUpdate(boxes[i].obj);
+        curY += boxes[i].height + gap;
+      }
+      flashToast('已完成垂直均分間距');
+    }
+
+    updateSelectionActionBar();
   }
 
   // ===== 繪圖與手勢交互 (畫布事件) =====
@@ -793,7 +1200,7 @@
     }
 
     // 檢查學生編輯權限
-    if (!isTeacher && !state.settings.studentCanEdit) {
+    if (!isTeacherUser() && !state.settings.studentCanEdit) {
       flashToast('🔒 老師目前設定白板為唯讀狀態');
       return;
     }
@@ -876,10 +1283,64 @@
       createStickyNote(pos.x, pos.y, '雙擊編輯文字...');
       setTool('select');
     }
-    // 6. 選取模式點擊空白處取消選取
+    // 6. 選取模式：拖曳框選多個物件 (Marquee Drag Selection) 或點擊空白處取消選取
     else if (state.currentTool === 'select') {
-      state.selectedObjId = null;
-      document.querySelectorAll('.selected-border').forEach(el => el.classList.remove('selected-border'));
+      const isCanvasBackground = (
+        e.target === els.canvasViewport ||
+        e.target === els.canvasWorld ||
+        e.target === els.svgLayer ||
+        e.target === els.htmlLayer
+      );
+
+      if (isCanvasBackground) {
+        state.isMarqueeSelecting = true;
+        state.marqueeStart = screenToWorld(e.clientX, e.clientY);
+        if (!e.shiftKey && !e.ctrlKey) {
+          deselectAll();
+        }
+
+        function onMarqueeMove(me) {
+          if (!state.isMarqueeSelecting) return;
+          const cur = screenToWorld(me.clientX, me.clientY);
+          const minX = Math.min(state.marqueeStart.x, cur.x);
+          const minY = Math.min(state.marqueeStart.y, cur.y);
+          const w = Math.abs(cur.x - state.marqueeStart.x);
+          const h = Math.abs(cur.y - state.marqueeStart.y);
+
+          if (els.selectionMarquee) {
+            els.selectionMarquee.style.left = minX + 'px';
+            els.selectionMarquee.style.top = minY + 'px';
+            els.selectionMarquee.style.width = w + 'px';
+            els.selectionMarquee.style.height = h + 'px';
+            els.selectionMarquee.style.display = 'block';
+          }
+
+          const box = { x: minX, y: minY, w, h };
+          const newSelected = [];
+          Object.values(state.objects).forEach(obj => {
+            const ob = getObjBounds(obj);
+            if (intersectRect(box, ob)) {
+              newSelected.push(obj.id);
+            }
+          });
+          state.selectedObjIds = newSelected;
+          updateSelectionVisuals();
+        }
+
+        function onMarqueeUp() {
+          state.isMarqueeSelecting = false;
+          if (els.selectionMarquee) {
+            els.selectionMarquee.style.display = 'none';
+          }
+          window.removeEventListener('pointermove', onMarqueeMove);
+          window.removeEventListener('pointerup', onMarqueeUp);
+          updateSelectionVisuals();
+          updateSelectionActionBar();
+        }
+
+        window.addEventListener('pointermove', onMarqueeMove);
+        window.addEventListener('pointerup', onMarqueeUp);
+      }
     }
   });
 
@@ -943,13 +1404,15 @@
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
     if (e.key === 'Delete' || e.key === 'Backspace') {
-      if (state.selectedObjId && state.objects[state.selectedObjId]) {
-        const obj = state.objects[state.selectedObjId];
-        if (canModifyObject(obj)) {
-          deleteObject(obj.id);
-        } else {
-          flashToast('⚠️ 僅能刪除自己建立的物件');
-        }
+      if (state.selectedObjIds && state.selectedObjIds.length > 0) {
+        const toDelete = [...state.selectedObjIds];
+        toDelete.forEach(id => {
+          const obj = state.objects[id];
+          if (obj && canModifyObject(obj)) {
+            deleteObject(id);
+          }
+        });
+        deselectAll();
       }
     }
   });
@@ -957,7 +1420,7 @@
   // ===== 剪貼簿整合 (Ctrl+V 支援圖片與文字便利貼) =====
   window.addEventListener('paste', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
-    if (!isTeacher && !state.settings.studentCanEdit) {
+    if (!isTeacherUser() && !state.settings.studentCanEdit) {
       flashToast('🔒 老師目前已關閉學生編輯權限');
       return;
     }
@@ -1051,7 +1514,7 @@
   let selectedPdfPages = new Set();
 
   els.btnInsertPdf.onclick = () => {
-    if (!isTeacher && !state.settings.studentCanEdit) {
+    if (!isTeacherUser() && !state.settings.studentCanEdit) {
       flashToast('🔒 老師目前已關閉學生編輯權限');
       return;
     }
@@ -1202,7 +1665,7 @@
 
   // 插入本機圖片
   els.btnInsertImage.onclick = () => {
-    if (!isTeacher && !state.settings.studentCanEdit) {
+    if (!isTeacherUser() && !state.settings.studentCanEdit) {
       flashToast('🔒 老師目前已關閉學生編輯權限');
       return;
     }
@@ -1240,47 +1703,88 @@
   }
 
   // ===== 老師權限開關點擊事件 =====
-  if (isTeacher) {
+  if (els.btnToggleStudentEdit) {
     els.btnToggleStudentEdit.onclick = () => {
+      if (!isTeacherUser()) return;
       state.settings.studentCanEdit = !state.settings.studentCanEdit;
       applySettingsUI();
       if (roomRef) roomRef.child('settings').update({ studentCanEdit: state.settings.studentCanEdit });
     };
+  }
 
+  if (els.btnToggleMoveOthers) {
     els.btnToggleMoveOthers.onclick = () => {
+      if (!isTeacherUser()) return;
       state.settings.canMoveOthers = !state.settings.canMoveOthers;
       applySettingsUI();
       if (roomRef) roomRef.child('settings').update({ canMoveOthers: state.settings.canMoveOthers });
     };
+  }
 
+  if (els.btnFollowMode) {
     els.btnFollowMode.onclick = () => {
+      if (!isTeacherUser()) return;
       state.settings.followTeacher = !state.settings.followTeacher;
       applySettingsUI();
       if (roomRef) roomRef.child('settings').update({ followTeacher: state.settings.followTeacher });
     };
+  }
 
-    if (els.btnSummonAll) {
-      els.btnSummonAll.onclick = () => {
-        if (roomRef) {
-          roomRef.child('summon').set({
-            canvasId: state.activeCanvasId,
-            pageId: state.activePageId,
-            ts: firebase.database.ServerValue.TIMESTAMP
-          });
-          flashToast('📢 已發送廣播，正在將全班召集至當前頁面！');
-        }
-      };
-    }
+  if (els.btnSummonAll) {
+    els.btnSummonAll.onclick = () => {
+      if (!isTeacherUser()) return;
+      if (roomRef) {
+        roomRef.child('summon').set({
+          canvasId: state.activeCanvasId,
+          pageId: state.activePageId,
+          ts: firebase.database.ServerValue.TIMESTAMP
+        });
+        flashToast('📢 已發送廣播，正在將全班召集至當前頁面！');
+      }
+    };
   }
 
   // 作者姓名標籤開關
-  els.btnToggleAuthorBadge.onclick = () => {
-    state.showAuthorBadge = !state.showAuthorBadge;
-    applySettingsUI();
-    if (isTeacher && roomRef) {
-      roomRef.child('settings').update({ showAuthorBadge: state.showAuthorBadge });
-    }
-  };
+  if (els.btnToggleAuthorBadge) {
+    els.btnToggleAuthorBadge.onclick = () => {
+      state.showAuthorBadge = !state.showAuthorBadge;
+      applySettingsUI();
+      if (isTeacherUser() && roomRef) {
+        roomRef.child('settings').update({ showAuthorBadge: state.showAuthorBadge });
+      }
+    };
+  }
+
+  // ===== 選取操作與圖層、對齊按鈕綁定 (Item 5 & Item 9) =====
+  if (els.btnLayerFront) els.btnLayerFront.onclick = () => reorderSelectedLayers('front');
+  if (els.btnLayerForward) els.btnLayerForward.onclick = () => reorderSelectedLayers('forward');
+  if (els.btnLayerBackward) els.btnLayerBackward.onclick = () => reorderSelectedLayers('backward');
+  if (els.btnLayerBack) els.btnLayerBack.onclick = () => reorderSelectedLayers('back');
+
+  if (els.btnAlignLeft) els.btnAlignLeft.onclick = () => alignSelectedObjects('left');
+  if (els.btnAlignCenter) els.btnAlignCenter.onclick = () => alignSelectedObjects('center');
+  if (els.btnAlignRight) els.btnAlignRight.onclick = () => alignSelectedObjects('right');
+  if (els.btnAlignTop) els.btnAlignTop.onclick = () => alignSelectedObjects('top');
+  if (els.btnAlignMiddle) els.btnAlignMiddle.onclick = () => alignSelectedObjects('middle');
+  if (els.btnAlignBottom) els.btnAlignBottom.onclick = () => alignSelectedObjects('bottom');
+
+  if (els.btnDistributeH) els.btnDistributeH.onclick = () => distributeSelectedObjects('h');
+  if (els.btnDistributeV) els.btnDistributeV.onclick = () => distributeSelectedObjects('v');
+
+  if (els.btnActionDelete) {
+    els.btnActionDelete.onclick = () => {
+      if (!state.selectedObjIds || state.selectedObjIds.length === 0) return;
+      const toDelete = [...state.selectedObjIds];
+      toDelete.forEach(id => {
+        const obj = state.objects[id];
+        if (obj && canModifyObject(obj)) {
+          deleteObject(id);
+        }
+      });
+      deselectAll();
+      flashToast('🗑️ 已刪除選取物件');
+    };
+  }
 
   // 新增畫布
   els.btnAddCanvas.onclick = () => {
@@ -1321,7 +1825,7 @@
   // 清空或結束白板
   els.btnTrashCanvas.onclick = clearCurrentPage;
   els.btnClearOrEnd.onclick = () => {
-    if (!isTeacher) return;
+    if (!isTeacherUser()) return;
     if (confirm('確定要結束並清空白板當前畫布所有頁面內容嗎？')) {
       if (roomRef) {
         roomRef.child('pages').remove();
@@ -1331,7 +1835,7 @@
   };
 
   function clearCurrentPage() {
-    if (!isTeacher && !state.settings.studentCanEdit) return;
+    if (!isTeacherUser() && !state.settings.studentCanEdit) return;
     if (confirm('確定要清空當前頁面的所有內容嗎？')) {
       if (objectsRef) objectsRef.remove();
       state.objects = {};

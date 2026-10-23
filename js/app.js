@@ -1885,6 +1885,17 @@ class App {
       }
       this.updateWheelControlPanelVisibility();
     }
+
+    if (targetId === 'panel-whiteboard') {
+      const iframe = document.getElementById('whiteboardFrame');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+          type: 'UPDATE_ADMIN_STATUS',
+          isAdmin: !!this.isAdmin,
+          userName: this.getCurrentUserName() || (this.isAdmin ? '老師' : '同學')
+        }, '*');
+      }
+    }
     
     if (targetId === 'panel-admin') {
       this.adminPreviewingBuzz = false;
