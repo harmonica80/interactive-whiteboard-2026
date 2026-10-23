@@ -1525,8 +1525,8 @@
               <text x="6.8" y="16.8" font-size="4.8" font-weight="900" fill="#ffffff" stroke="none" letter-spacing="0.4">PDF</text>
             </svg>
           </button>
-          <!-- 11. 清空畫布 -->
-          <button class="tool-btn" id="btnTrashCanvas" title="清空當前頁面所有物件">
+          <!-- 11. 清空畫布 (納入「老師管理頁面」權限範圍，預設隱藏) -->
+          <button class="tool-btn" id="btnTrashCanvas" title="清空當前頁面所有物件" style="display: none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"/>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -1741,6 +1741,6 @@
     </div>
   </div>
 
-  <script src="js/whiteboard_core.js?v=3002"></script>
+  <script src="js/whiteboard_core.js?v=3003"></script>
 </body>
 </html>

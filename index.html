@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.19</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.20</a>
         </p>
       </div>
       <div class="top-actions">
@@ -661,7 +661,7 @@
       <!-- 互動白板 -->
       <div class="panel-card" id="panel-whiteboard">
         <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
-          <iframe id="whiteboardFrame" src="whiteboard.html?v=3001" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板"></iframe>
+          <iframe id="whiteboardFrame" src="whiteboard.html?v=3003" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板"></iframe>
         </div>
       </div>
 
@@ -3504,12 +3504,33 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.19 -->
+        <!-- ver 3.9.20 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.19</span>
+              <span>🌟 ver 3.9.20</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">垃圾桶權限納入頁面管理</span>
+              <span class="changelog-badge-tag">防止誤清空與惡意刪除</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🗑️ 畫布清空（垃圾桶）功能權限重構：</strong>
+              <ul>
+                <li><strong>納入「僅老師管頁面 / 學生可管頁面」控管</strong>：將左側工具列清空當前頁面之「垃圾桶」功能納入頁面管理權限範圍。預設情況下（僅老師管頁面），學生端將直接隱藏垃圾桶按鈕；即便學生處於「僅限自己物件」或「可動他人物件」狀態，也無法清空整面黑板，徹底杜絕學生誤刪或惡意破壞他人作品！</li>
+                <li><strong>多重防護與權限同步機制</strong>：若老師從頂部控制列開放「🔓 學生可管頁面」，學生端工具列才同步顯示垃圾桶圖示；在底層邏輯亦加入嚴密防護，非授權狀態即使觸發亦會即時提示阻擋，教學秩序更安心。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.19 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.9.19</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">個別限制編輯彈窗修復</span>
@@ -4842,7 +4863,7 @@ Python</pre>
         const isAdmin = window.app && window.app.isAdmin;
         const userName = window.app && window.app.getCurrentUserName ? window.app.getCurrentUserName() : '';
         const uid = window.app && window.app.getUserId ? window.app.getUserId() : '';
-        iframe.src = `whiteboard.html?v=3001&role=${isAdmin ? 'teacher' : 'student'}&name=${encodeURIComponent(userName)}&uid=${encodeURIComponent(uid)}`;
+        iframe.src = `whiteboard.html?v=3003&role=${isAdmin ? 'teacher' : 'student'}&name=${encodeURIComponent(userName)}&uid=${encodeURIComponent(uid)}`;
       }
     });
   </script>

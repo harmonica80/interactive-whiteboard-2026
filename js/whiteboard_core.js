@@ -522,6 +522,11 @@
       disableDrawingTools(false);
     }
 
+    // 垃圾桶清空功能 (納入「老師管理頁面」權限控制，僅老師或開放學生管頁面時可用，避免誤清空或惡意清空)
+    if (els.btnTrashCanvas) {
+      els.btnTrashCanvas.style.display = canManagePages() ? 'inline-flex' : 'none';
+    }
+
     // 作者標籤切換按鈕狀態
     if (els.btnToggleAuthorBadge) {
       if (state.showAuthorBadge) {
@@ -2559,12 +2564,24 @@
   };
 
   function clearCurrentPage() {
-    if (!isTeacherUser() && !state.settings.studentCanEdit) return;
+    if (!canManagePages()) {
+      flashToast('🔒 目前設定為「僅老師管頁面」，學生無法清空白板');
+      return;
+    }
+    if (!isTeacherUser() && !state.settings.studentCanEdit) {
+      flashToast('🔒 目前白板為唯讀狀態，無法清空白板');
+      return;
+    }
+    if (!isTeacherUser() && state.isIndividuallyLocked) {
+      flashToast('🔒 您目前已被老師個別限制編輯白板');
+      return;
+    }
     if (confirm('確定要清空當前頁面的所有內容嗎？')) {
       if (objectsRef) objectsRef.remove();
       state.objects = {};
       els.svgLayer.innerHTML = '';
       els.htmlLayer.innerHTML = '';
+      flashToast('🗑️ 當前頁面已清空');
     }
   }
 
