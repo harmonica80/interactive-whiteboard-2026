@@ -502,10 +502,11 @@
   transition: opacity 0.15s;
 }
 
-/* 外部 URL 懸浮按鈕 */
+/* 外部 URL 懸浮按鈕 (z-index 提高至 30，確保高於手繪作答畫布 22 可正常點按) */
 .presentation-url-badge {
   position: absolute;
-  z-index: 12;
+  z-index: 30;
+  pointer-events: auto !important;
   padding: 8px 14px;
   background: rgba(15, 23, 42, 0.85);
   color: #ffffff;

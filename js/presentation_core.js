@@ -20,6 +20,12 @@
       this.isPresenting = false; // 是否向全班同步廣播
       this.isRemoteBroadcastingActive = false; // 是否接收到他人主持廣播
       this.studentCanUsePresentation = false; // 預設僅老師可主控簡報 (Item 1)
+      this.localIsHost = false; // 本機是否為簡報主控/主持端 (老師端生命週期持久化)
+      try {
+        if (sessionStorage.getItem('wb_presentation_host') === 'true') {
+          this.localIsHost = true;
+        }
+      } catch (e) {}
       this.currentTool = 'none'; // 'none' | 'pen' | 'laser'
       
       // 標註筆選色 (圖 2) 與雷射筆狀態
@@ -39,7 +45,7 @@
       this.isTeacherCollapsed = false; // 老師端作答視窗收合狀態 (項目 2)
 
       // 學生端手繪作答狀態 (圖 3)
-      this.studentDrawColor = '#0f172a'; // 預設黑
+      this.studentDrawColor = '#ef4444'; // 預設紅
       this.studentDrawWidth = 4; // 預設中
       this.studentDrawStrokes = []; // 學生當前頁手繪筆劃
       this.isStudentDrawing = false;
@@ -65,10 +71,37 @@
       }
     }
 
-    // 檢查當前使用者是否具備教師身份 (嚴格依據登入狀態與 URL 參數判定)
+    // 標記本機為簡報主持端 (老師端生命週期持久化)
+    markAsHost() {
+      this.localIsHost = true;
+      try {
+        sessionStorage.setItem('wb_presentation_host', 'true');
+      } catch (e) {}
+      this.isRemoteBroadcastingActive = false;
+    }
+
+    // 檢查當前使用者是否具備教師身份 (嚴格依據登入狀態、主持狀態與 URL 參數判定)
     isTeacher() {
+      if (this.localIsHost) return true;
       if (window.app && window.app.isAdmin) return true;
-      if (window.teacherAuthManager && window.teacherAuthManager.isAuthenticated && window.teacherAuthManager.isAuthenticated()) return true;
+      try {
+        const raw = sessionStorage.getItem('wb_admin_session_v1');
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (data && data.isAdmin) return true;
+        }
+      } catch (e) {}
+      try {
+        if (sessionStorage.getItem('wb_presentation_host') === 'true') return true;
+      } catch (e) {}
+      if (window.teacherAuthManager) {
+        if (typeof window.teacherAuthManager.isAuthenticated === 'function' && window.teacherAuthManager.isAuthenticated()) return true;
+        if (window.teacherAuthManager.currentVerifiedTeacher) return true;
+      }
+      if (window.firebaseManager && typeof window.firebaseManager.getUserRole === 'function' && window.firebaseManager.getUserRole() === 'teacher') return true;
+      try {
+        if (localStorage.getItem('user_role') === 'teacher') return true;
+      } catch (e) {}
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('role') === 'teacher' || urlParams.get('isAdmin') === '1') return true;
       return false;
@@ -76,9 +109,10 @@
 
     // 檢查當前使用者是否有權限操作與控制簡報 (圖 2: 學生端在「僅老師進行」設定下不可控制)
     canControlPresentation() {
+      // 老師端/主控端隨時具備控制簡報權限
+      if (this.isTeacher() || this.localIsHost) return true;
       // 學生端在跟隨遠端廣播時一律不可操作主控工具
       if (this.isRemoteBroadcastingActive) return false;
-      if (this.isTeacher()) return true;
       return Boolean(this.studentCanUsePresentation);
     }
 
@@ -380,7 +414,7 @@
     // 權限 UI 更新 (圖 2: 學生端在「僅老師進行」設定下徹底隱藏主控功能)
     updatePermissionsUI() {
       const { els } = this;
-      const teacher = this.isTeacher() && !this.isRemoteBroadcastingActive;
+      const teacher = (this.isTeacher() || this.localIsHost) && (!this.isRemoteBroadcastingActive || this.localIsHost);
       const canControl = this.canControlPresentation();
 
       // 老師專用開關按鈕
@@ -428,7 +462,7 @@
       }
 
       // 圖 1: 學生端在老師簡報同步廣播時不能自行操作，若老師停止同步則可自行操作
-      if (this.isRemoteBroadcastingActive) {
+      if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
         if (els.btnPrevSlide) {
           els.btnPrevSlide.disabled = true;
           els.btnPrevSlide.style.opacity = '0.4';
@@ -611,15 +645,17 @@
         if (!isBroadcastingNow) {
           // 目前無有效廣播中
           this.isRemoteBroadcastingActive = false;
-          if (this.isPresenting && isAnotherHost) {
+          if (this.isPresenting && (isAnotherHost || !data.isPresenting)) {
             this.isPresenting = false;
           }
         } else {
           // 當前有活躍廣播
-          if (this.isTeacher()) {
-            if (data.hostUid === myUser.uid) {
+          const isMyBroadcast = Boolean((data.hostUid && data.hostUid === myUser.uid) || this.localIsHost);
+          if (this.isTeacher() || this.localIsHost || isMyBroadcast) {
+            if (isMyBroadcast || !data.hostUid || data.hostUid === myUser.uid) {
               this.isPresenting = true;
               this.isRemoteBroadcastingActive = false;
+              this.markAsHost();
             } else {
               // 另一位老師正在廣播
               this.isRemoteBroadcastingActive = true;
@@ -719,6 +755,7 @@
 
     // 開啟同步廣播
     startSyncPresentation() {
+      this.markAsHost();
       if (this.slides.length === 0) {
         this.notify('提示', '請先新增至少一頁簡報才能開始同步！');
         return;
@@ -749,11 +786,13 @@
       }
 
       this.updateSyncButtonUI();
+      this.updatePermissionsUI();
       this.notify('🎉 同步簡報已開啟', '全班學生畫面將自動同步顯示當前簡報！');
     }
 
     // 結束同步廣播 (圖 1：確實停止廣播並清理狀態)
     stopSyncPresentation() {
+      this.markAsHost();
       this.isPresenting = false;
       this.isRemoteBroadcastingActive = false;
 
@@ -772,6 +811,7 @@
 
       this.updateSyncButtonUI();
       this.updatePermissionsUI();
+      this.render();
       this.notify('🏁 同步簡報已結束', '已關閉學生跟隨同步。');
     }
 
@@ -926,7 +966,7 @@
 
     // 翻到下一頁 (圖 1: 同步廣播中鎖定學生端自行操作)
     nextSlide() {
-      if (this.isRemoteBroadcastingActive) {
+      if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
         this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
         return;
       }
@@ -938,7 +978,7 @@
 
     // 翻到上一頁
     prevSlide() {
-      if (this.isRemoteBroadcastingActive) {
+      if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
         this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
         return;
       }
@@ -950,7 +990,7 @@
 
     // 跳轉到指定頁
     goToSlide(index) {
-      if (this.isRemoteBroadcastingActive) {
+      if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
         this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
         return;
       }
@@ -979,6 +1019,7 @@
 
     // 新增純色頁
     addColorSlide(color = '#1e293b') {
+      this.markAsHost();
       const newSlide = {
         id: 'slide_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
         type: 'color',
@@ -992,6 +1033,7 @@
       };
       this.slides.push(newSlide);
       this.currentSlideIndex = this.slides.length - 1;
+      this.updatePermissionsUI();
       this.render();
       if (this.isPresenting) this.broadcastLiveState(true);
       this.notify('已新增', `已新增第 ${this.slides.length} 頁純色簡報頁面！`);
@@ -999,6 +1041,7 @@
 
     // 處理圖片頁上傳 (可多選)
     handleImageSlideUpload(e) {
+      this.markAsHost();
       const files = Array.from(e.target.files || []);
       if (files.length === 0) return;
 
@@ -1021,6 +1064,7 @@
           loadedCount++;
           if (loadedCount === files.length) {
             this.currentSlideIndex = this.slides.length - 1;
+            this.updatePermissionsUI();
             this.render();
             if (this.isPresenting) this.broadcastLiveState(true);
             this.notify('成功', `已新增 ${files.length} 張圖片簡報頁面！`);
@@ -1034,6 +1078,7 @@
 
     // 刪除指定頁面
     deleteSlide(index) {
+      this.markAsHost();
       if (!confirm(`確定要刪除第 ${index + 1} 頁嗎？`)) return;
 
       const deletedSlide = this.slides[index];
@@ -1133,7 +1178,7 @@
         const card = document.createElement('div');
         card.className = `presentation-thumbnail-card ${index === this.currentSlideIndex ? 'active' : ''}`;
         card.onclick = () => {
-          if (this.isRemoteBroadcastingActive) {
+          if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
             this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
             return;
           }
@@ -1290,7 +1335,7 @@
       const questions = Array.isArray(slide.questions) ? slide.questions : [];
       const mode = slide.displayMode || 'step';
       const hasQuestions = questions.length > 0;
-      const isTeacherUser = this.isTeacher() || (this.isPresenting && !this.isRemoteBroadcastingActive);
+      const isTeacherUser = this.isTeacher() || this.localIsHost || (this.isPresenting && !this.isRemoteBroadcastingActive);
 
       // 檢查非同步廣播作答權限 (需求 2：預設必須在同步廣播時才能作答，老師可設定是否允許非同步作答)
       const isAllowedToAnswer = isTeacherUser || this.isRemoteBroadcastingActive || Boolean(slide.allowAsyncAnswer);
@@ -1647,7 +1692,7 @@
         btn.onclick = () => {
           colorBtns.forEach(b => b.classList.remove('active-color'));
           btn.classList.add('active-color');
-          this.studentDrawColor = btn.dataset.color || '#0f172a';
+          this.studentDrawColor = btn.dataset.color || '#ef4444';
         };
       });
 
@@ -1694,7 +1739,7 @@
         const { rx, ry } = getRatioPos(e);
         this.isStudentDrawing = true;
         activeStroke = {
-          color: this.studentDrawColor || '#0f172a',
+          color: this.studentDrawColor || '#ef4444',
           width: this.studentDrawWidth || 4,
           points: [[rx, ry]]
         };
@@ -2219,6 +2264,7 @@
 
     // ===== 彈窗邏輯：本頁設定 (圖 5 + 多題擴充，修復 Item 2) =====
     openSlideSettingsModal() {
+      this.markAsHost();
       const slide = this.getCurrentSlide();
       if (!slide) {
         this.notify('提示', '請先新增簡報頁面後再進行設定。');
@@ -2348,6 +2394,7 @@
     }
 
     addQuestionItem() {
+      this.markAsHost();
       if (!this.tempQuestions) this.tempQuestions = [];
       this.tempQuestions.push({
         id: 'q_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
@@ -2419,6 +2466,7 @@
 
     // 儲存本頁設定
     saveSlideSettings() {
+      this.markAsHost();
       const slide = this.getCurrentSlide();
       if (!slide) return;
 
@@ -2432,6 +2480,7 @@
       slide.questions = this.tempQuestions || [];
 
       this.closeSlideSettingsModal();
+      this.updatePermissionsUI();
       this.render();
       if (this.isPresenting) this.broadcastLiveState(true);
       this.notify('儲存成功', '本頁互動設定已成功套用！');
@@ -2453,7 +2502,7 @@
         item.style.cursor = 'pointer';
         item.style.border = idx === this.currentSlideIndex ? '3px solid #06b6d4' : '1px solid #cbd5e1';
         item.onclick = () => {
-          if (this.isRemoteBroadcastingActive) {
+          if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
             this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。');
             return;
           }
