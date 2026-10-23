@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
   <link rel="stylesheet" href="css/style.css?v=392">
-  <link rel="stylesheet" href="css/presentation.css?v=3921">
+  <link rel="stylesheet" href="css/presentation.css?v=3102">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -33,7 +33,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.1</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.2</a>
         </p>
       </div>
       <div class="top-actions">
@@ -676,13 +676,36 @@
 
       <!-- 📽️ 同步互動簡報 (Synchronized Interactive Presentation) -->
       <div class="panel-card presentation-panel-card" id="panel-presentation">
-        <!-- 頂部導航列 -->
+        <!-- 頂部導航與控制列 (圖 4：控制功能移至頂部排成同一行，圖 2：移除關閉按鈕) -->
         <div class="presentation-header">
-          <div class="presentation-title-group">
+          <div class="presentation-header-left">
             <span class="presentation-main-title">📽️ 同步簡報</span>
-            <span class="presentation-live-badge" id="presentationLiveBadge" style="display: none;">同步廣播中</span>
+            <span class="presentation-live-badge" id="presentationLiveBadge" style="display: none;">● 同步廣播中</span>
+            <!-- 老師決定是否開放學生操作簡報 (圖 4 & Item 1，預設僅老師) -->
+            <button type="button" class="presentation-perm-btn is-inactive" id="btnToggleStudentPresentation" style="display: none;" title="點擊切換是否開放學生自由操作簡報">
+              <span>🔒 僅老師進行</span>
+            </button>
           </div>
-          <button type="button" class="presentation-btn-close" id="btnClosePresentation" title="返回其他分頁">✕ 關閉</button>
+
+          <!-- 簡報控制功能往上移，在頂部排成同一行 (Item 5, 如圖 4) -->
+          <div class="presentation-header-controls" id="presentationHeaderControls">
+            <div class="presentation-nav-group">
+              <button type="button" class="presentation-tool-btn" id="btnSlidePrev" title="上一頁">◀ 上一頁</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlideNext" title="下一頁">下一頁 ▶</button>
+              <span class="presentation-page-counter" id="txtSlidePageCounter">0 / 0</span>
+              <button type="button" class="presentation-tool-btn" id="btnSlideGridOverview" title="九宮格總覽快速跳頁">■</button>
+            </div>
+
+            <div class="presentation-tools-group">
+              <button type="button" class="presentation-tool-btn" id="btnSlideToolPen" title="在簡報上畫重點，同步顯示給全班">✏️ 標記</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlideToolLaser" title="發光雷射筆，滑鼠移動即時同步全班視線">🔴 雷射筆</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlideClearAnnotations" title="清除本頁標記">清除標記</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlideFullscreen" title="進入/退出全螢幕">🗖 最大化</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlideSettings" title="設定外部 URL 與多題互動">⚙️ 本頁設定</button>
+              <button type="button" class="presentation-tool-btn purple" id="btnSlideImportExport" title="匯入 PDF / 匯入匯出 JSON 備份">📁 匯入 / 匯出</button>
+              <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答紀錄">重置提交</button>
+            </div>
+          </div>
         </div>
 
         <!-- 主工作區 (左欄、中欄、右欄) -->
@@ -704,7 +727,7 @@
             <div class="presentation-thumbnails-container" id="presentationThumbnailsList"></div>
           </aside>
 
-          <!-- 中央展示區：16:9 簡報投影幕與工具列 -->
+          <!-- 中央展示區：16:9 簡報投影幕 (下方無多餘控制列，展示面積更大) -->
           <main class="presentation-center-area">
             <div class="presentation-stage-wrapper" id="presentationStageWrapper">
               <div class="presentation-screen" id="presentationScreen">
@@ -719,8 +742,23 @@
                 <!-- 繪圖標註層 (老師手繪同步) -->
                 <canvas class="presentation-annotation-canvas" id="presentationAnnotationCanvas"></canvas>
 
-                <!-- 光暈雷射筆點 (老師雷射筆同步) -->
-                <div class="presentation-laser-dot" id="presentationLaserDot"></div>
+                <!-- 光暈雷射筆點 (如圖 3：半透明黃色圓圈 + 點擊指針手勢) -->
+                <div class="presentation-laser-dot" id="presentationLaserDot">
+                  <svg viewBox="0 0 100 100" width="68" height="68" style="overflow: visible; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.3));">
+                    <!-- 半透明黃色圓圈光暈 (圖 3) -->
+                    <circle cx="36" cy="36" r="32" fill="rgba(250, 204, 21, 0.42)" stroke="rgba(234, 179, 8, 0.75)" stroke-width="2.5"/>
+                    <!-- 放射狀光芒線 (圖 3) -->
+                    <line x1="36" y1="11" x2="36" y2="19" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="18" y1="18" x2="24" y2="24" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="54" y1="18" x2="48" y2="24" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="11" y1="36" x2="19" y2="36" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="18" y1="54" x2="24" y2="48" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+                    <!-- 指標指尖手勢 (圖 3) -->
+                    <path d="M 36 36 L 47 47 C 49 49, 52 49, 54 47 C 56 45, 56 42, 54 40 L 51 37 C 53 37, 56 36, 56 34 C 56 32, 54 30, 51 30 L 48 30 C 50 29, 52 27, 52 25 C 52 23, 50 21, 47 21 L 42 21 L 42 14 C 42 11, 39 9, 36 9 C 33 9, 30 11, 30 14 L 30 33 L 26 28 C 24 26, 21 26, 19 28 C 17 30, 17 33, 19 35 L 28 46 C 31 51, 35 55, 41 55 L 48 55 C 53 55, 57 51, 57 46 L 57 41" 
+                          transform="translate(6, 6)"
+                          fill="#ffffff" stroke="#0f172a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
 
                 <!-- 外部 URL 懸浮圖示 -->
                 <a href="javascript:void(0)" class="presentation-url-badge" id="presentationUrlBadge" style="display: none;" title="開啟本頁連結">
@@ -729,26 +767,6 @@
 
                 <!-- 學生端作答卡片 / 浮動表情回饋條容器 -->
                 <div id="presentationStudentInteractionArea"></div>
-              </div>
-            </div>
-
-            <!-- 下方控制列 -->
-            <div class="presentation-bottom-bar" id="presentationBottomBar">
-              <div class="presentation-bottom-left">
-                <button type="button" class="presentation-tool-btn" id="btnSlidePrev" title="上一頁">◀ 上一頁</button>
-                <button type="button" class="presentation-tool-btn" id="btnSlideNext" title="下一頁">下一頁 ▶</button>
-                <span class="presentation-page-counter" id="txtSlidePageCounter">0 / 0</span>
-                <button type="button" class="presentation-tool-btn" id="btnSlideGridOverview" title="九宮格總覽快速跳頁">■</button>
-              </div>
-
-              <div class="presentation-bottom-right">
-                <button type="button" class="presentation-tool-btn" id="btnSlideToolPen" title="在簡報上畫重點，同步顯示給全班">✏️ 標記</button>
-                <button type="button" class="presentation-tool-btn" id="btnSlideToolLaser" title="發光雷射筆，滑鼠移動即時同步全班視線">🔴 雷射筆</button>
-                <button type="button" class="presentation-tool-btn" id="btnSlideClearAnnotations" title="清除本頁標記">清除標記</button>
-                <button type="button" class="presentation-tool-btn" id="btnSlideFullscreen" title="進入/退出全螢幕">🗖 最大化</button>
-                <button type="button" class="presentation-tool-btn" id="btnSlideSettings" title="設定外部 URL 與多題互動">⚙️ 本頁設定</button>
-                <button type="button" class="presentation-tool-btn purple" id="btnSlideImportExport" title="匯入 PDF / 匯入匯出 JSON 備份">📁 匯入 / 匯出</button>
-                <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答紀錄">重置提交</button>
               </div>
             </div>
           </main>
@@ -3608,12 +3626,38 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.10.1 -->
+        <!-- ver 3.10.2 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.10.1</span>
+              <span>🌟 ver 3.10.2</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">簡報老師權限控管</span>
+              <span class="changelog-badge-tag">控制列上移整合成單一行</span>
+              <span class="changelog-badge-tag">本頁設定與匯入匯出修復</span>
+              <span class="changelog-badge-tag">手勢光芒雷射筆</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🎯 同步簡報權限控管、介面排版整合與互動優化（5 大項目）：</strong>
+              <ul>
+                <li><strong>老師專屬權限控制（項目 1）</strong>：同步簡報操作由老師決定是否開放學生操作，預設僅老師可操作與切換。老師可隨時透過頂部「🔒 僅老師進行 / 🔓 學生可操作」即時授權或收回。</li>
+                <li><strong>修復「⚙️ 本頁設定」與「📁 匯入 / 匯出」彈窗（圖 1）</strong>：修復彈窗在特定樣式下未能完全呼叫開啟的問題，現在點擊即可順暢彈出多題互動編輯器與 PDF/JSON 匯入匯出面板。</li>
+                <li><strong>移除冗餘關閉按鈕（圖 2）</strong>：移除簡報卡片頂部右側的「✕ 關閉」按鈕，統一由上方主選單自由切換分頁，簡潔無干擾。</li>
+                <li><strong>擬真手勢光芒雷射筆（圖 3）</strong>：雷射筆升級為半透明黃色圓圈光芒與黑邊白底點擊手勢指標，滑鼠移動精準定位教學焦點，全班同步更醒目生動。</li>
+                <li><strong>簡報控制列上移至頂部整合成單一行（圖 4）</strong>：將翻頁、九宮格、標記筆、雷射筆、本頁設定等全數控制鈕由底部移至頂部標題列排成同一行，下方投影畫布面積最大化。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.10.1 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.10.1</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">同步簡報上移頂部主選單</span>
@@ -4377,7 +4421,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
   <script src="js/word_cloud.js?v=392"></script>
-  <script src="js/presentation_core.js?v=3921"></script>
+  <script src="js/presentation_core.js?v=3102"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

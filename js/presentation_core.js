@@ -1,13 +1,12 @@
 /**
  * ==========================================================================
  * 📽️ 同步互動簡報核心模組 (Synchronized Interactive Presentation Core)
- * 修正版：
- * 1. 預設開啟全功能主控操作（免額外登入密碼即可新增純色/圖片、匯入 PDF、手繪與雷射筆）
- * 2. 16:9 簡報投影視區採用多功能 div 容器，支援純色底與高解析背景圖片無縫切換
- * 3. 即時手繪標記 (紅線筆劃) 與發光雷射筆 (紅色光暈) 支援即時繪製與同步廣播
- * 4. 完整的 PDF 逐頁解析預覽勾選匯入 (圖 3)、JSON 備份與還原
- * 5. 本頁多題互動設定 (圖 5) 支援色塊選擇、文字選擇題、簡答心得、1~5星評分與心情浮動條
- * 6. 即時提交側欄統計與 CSV 完整回應匯出
+ * 更新亮點：
+ * 1. 權限管控 (Item 1)：由老師端開關「🔒 僅老師進行 / 🔓 學生可操作」，預設僅老師主控。
+ * 2. 修復彈窗失效 (Item 2)：修復「本頁設定」與「匯入/匯出」之 .modal-overlay.active 顯現邏輯。
+ * 3. 移除關閉按鈕 (Item 3)：依要求徹底移除頂部 redundant 關閉按鈕。
+ * 4. 半透明黃色圓圈 + 點擊手勢指針雷射筆 (Item 4，參照圖 3)。
+ * 5. 簡報控制功能往上移並整合為同一行 (Item 5，參照圖 4)。
  * ==========================================================================
  */
 (function (global) {
@@ -20,6 +19,7 @@
       this.currentSlideIndex = 0;
       this.isPresenting = false; // 是否向全班同步廣播
       this.isRemoteBroadcastingActive = false; // 是否接收到他人主持廣播
+      this.studentCanUsePresentation = false; // 預設僅老師可主控簡報 (Item 1)
       this.currentTool = 'none'; // 'none' | 'pen' | 'laser'
       
       // 標註與雷射筆狀態
@@ -52,11 +52,21 @@
       }
     }
 
-    // 檢查當前是否為老師/主控端（預設允許本機操作全部簡報創作功能）
+    // 檢查當前使用者是否具備教師身份
     isTeacher() {
       if (window.app && window.app.isAdmin) return true;
-      // 若當前沒有其他人在遠端廣播主控，則本機使用者即擁有主控權限
-      return !this.isRemoteBroadcastingActive;
+      if (window.teacherAuthManager && window.teacherAuthManager.isAuthenticated && window.teacherAuthManager.isAuthenticated()) return true;
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('role') === 'teacher' || urlParams.get('isAdmin') === '1') return true;
+      // 若當前沒有遠端廣播且本機有自訂簡報，亦視為主控者
+      if (!this.isRemoteBroadcastingActive && this.slides.length > 0) return true;
+      return false;
+    }
+
+    // 檢查當前使用者是否有權限操作與控制簡報 (Item 1)
+    canControlPresentation() {
+      if (this.isTeacher()) return true;
+      return Boolean(this.studentCanUsePresentation);
     }
 
     // 取得當前使用者資訊
@@ -72,6 +82,7 @@
       this.cacheElements();
       this.bindEvents();
       this.initFirebase();
+      this.updatePermissionsUI();
       this.render();
     }
 
@@ -84,6 +95,7 @@
         btnAddImage: document.getElementById('btnAddImageSlide'),
         thumbnailsList: document.getElementById('presentationThumbnailsList'),
         fileInputImage: document.getElementById('inputPresentationImageFile'),
+        btnToggleStudentPresentation: document.getElementById('btnToggleStudentPresentation'),
         
         // 投影幕視區
         stageWrapper: document.getElementById('presentationStageWrapper'),
@@ -95,7 +107,8 @@
         urlBadge: document.getElementById('presentationUrlBadge'),
         liveBadge: document.getElementById('presentationLiveBadge'),
 
-        // 底部工具列
+        // 頂部整合控制列 (Item 5)
+        headerControls: document.getElementById('presentationHeaderControls'),
         btnPrev: document.getElementById('btnSlidePrev'),
         btnNext: document.getElementById('btnSlideNext'),
         pageCounter: document.getElementById('txtSlidePageCounter'),
@@ -107,7 +120,6 @@
         btnSettings: document.getElementById('btnSlideSettings'),
         btnImportExport: document.getElementById('btnSlideImportExport'),
         btnResetSubmissions: document.getElementById('btnSlideResetSubmissions'),
-        btnClosePresentation: document.getElementById('btnClosePresentation'),
 
         // 右側即時提交欄
         rightSidebar: document.getElementById('presentationRightSidebar'),
@@ -130,17 +142,36 @@
       };
     }
 
-    // 綁定各項點擊與滑鼠互動
+    // 彈窗通用開啟與關閉輔助函數 (解決 Item 2: .modal-overlay.active 問題)
+    openModal(modal) {
+      if (!modal) return;
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+    }
+
+    closeModal(modal) {
+      if (!modal) return;
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+
+    // 綁定點擊與滑鼠互動
     bindEvents() {
       const { els } = this;
       if (!els.panel) return;
 
-      // 關閉按鈕 -> 切換回提問區或上一個分頁
-      if (els.btnClosePresentation) {
-        els.btnClosePresentation.onclick = () => {
-          if (window.app && window.app.switchToTab) {
-            window.app.switchToTab('panel-questions');
+      // 老師端切換學生權限按鈕 (Item 1)
+      if (els.btnToggleStudentPresentation) {
+        els.btnToggleStudentPresentation.onclick = () => {
+          if (!this.isTeacher()) return;
+          this.studentCanUsePresentation = !this.studentCanUsePresentation;
+          this.updatePermissionsUI();
+          if (typeof db !== 'undefined') {
+            db.ref('presentation/settings').update({
+              studentCanUsePresentation: this.studentCanUsePresentation
+            }).catch(() => {});
           }
+          this.notify('權限更新', this.studentCanUsePresentation ? '已開放學生可自主操作簡報！' : '已設定為僅老師進行簡報。');
         };
       }
 
@@ -180,12 +211,12 @@
         els.btnFullscreen.onclick = () => this.toggleFullscreen();
       }
 
-      // 匯入/匯出按鈕
+      // 匯入/匯出按鈕 (Item 2)
       if (els.btnImportExport) {
         els.btnImportExport.onclick = () => this.openImportExportModal();
       }
 
-      // 本頁設定按鈕
+      // 本頁設定按鈕 (Item 2)
       if (els.btnSettings) {
         els.btnSettings.onclick = () => this.openSlideSettingsModal();
       }
@@ -221,6 +252,7 @@
       presTabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
           setTimeout(() => {
+            this.updatePermissionsUI();
             this.updateCanvasDimensions();
             this.render();
           }, 60);
@@ -246,6 +278,57 @@
           this.prevSlide();
         }
       });
+    }
+
+    // 權限 UI 更新 (Item 1)
+    updatePermissionsUI() {
+      const { els } = this;
+      const teacher = this.isTeacher();
+      const canControl = this.canControlPresentation();
+
+      // 老師專用開關按鈕
+      if (els.btnToggleStudentPresentation) {
+        if (teacher) {
+          els.btnToggleStudentPresentation.style.display = 'inline-flex';
+          if (this.studentCanUsePresentation) {
+            els.btnToggleStudentPresentation.classList.add('is-active');
+            els.btnToggleStudentPresentation.classList.remove('is-inactive');
+            els.btnToggleStudentPresentation.innerHTML = '<span>🔓 學生可操作</span>';
+          } else {
+            els.btnToggleStudentPresentation.classList.remove('is-active');
+            els.btnToggleStudentPresentation.classList.add('is-inactive');
+            els.btnToggleStudentPresentation.innerHTML = '<span>🔒 僅老師進行</span>';
+          }
+        } else {
+          els.btnToggleStudentPresentation.style.display = 'none';
+        }
+      }
+
+      // 控制工具在非授權學生端隱藏
+      const ctrlDisplay = canControl ? 'inline-flex' : 'none';
+      if (els.btnAddColor) els.btnAddColor.style.display = ctrlDisplay;
+      if (els.btnAddImage) els.btnAddImage.style.display = ctrlDisplay;
+      if (els.btnStartSync) els.btnStartSync.style.display = ctrlDisplay;
+      if (els.btnToolPen) els.btnToolPen.style.display = ctrlDisplay;
+      if (els.btnToolLaser) els.btnToolLaser.style.display = ctrlDisplay;
+      if (els.btnClearAnnotations) els.btnClearAnnotations.style.display = ctrlDisplay;
+      if (els.btnSettings) els.btnSettings.style.display = ctrlDisplay;
+      if (els.btnImportExport) els.btnImportExport.style.display = ctrlDisplay;
+      if (els.btnResetSubmissions) els.btnResetSubmissions.style.display = ctrlDisplay;
+      if (els.rightSidebar) els.rightSidebar.style.display = canControl ? 'flex' : 'none';
+
+      // 若非授權學生且老師未廣播時，畫面呈現提示
+      if (!canControl && !this.isPresenting) {
+        if (els.emptyHint) {
+          els.emptyHint.innerHTML = `
+            <span style="font-size: 38px;">🔒</span>
+            <span style="font-weight: 700; color: #64748b; font-size: 16px;">目前設定為「僅老師進行簡報」</span>
+            <span style="font-size: 13px; color: #94a3b8;">請等待老師開啟同步簡報或開放操作權限</span>
+          `;
+          els.emptyHint.style.display = 'flex';
+        }
+        if (els.screenBg) els.screenBg.style.display = 'none';
+      }
     }
 
     // 更新標註畫布的尺寸使其與螢幕精確對齊
@@ -277,7 +360,7 @@
       };
 
       const onPointerDown = (e) => {
-        if (this.currentTool === 'none') return;
+        if (this.currentTool === 'none' || !this.canControlPresentation()) return;
         this.updateCanvasDimensions();
         const { rx, ry } = getRatioPos(e);
 
@@ -296,7 +379,7 @@
       };
 
       const onPointerMove = (e) => {
-        if (this.currentTool === 'none') return;
+        if (this.currentTool === 'none' || !this.canControlPresentation()) return;
         const { rx, ry } = getRatioPos(e);
 
         if (this.currentTool === 'laser') {
@@ -354,6 +437,17 @@
 
       const presRef = db.ref('presentation');
 
+      // 0. 監聽全域權限設定 (Item 1)
+      presRef.child('settings').on('value', (snap) => {
+        const val = snap.val();
+        if (val) {
+          if (typeof val.studentCanUsePresentation === 'boolean') {
+            this.studentCanUsePresentation = val.studentCanUsePresentation;
+            this.updatePermissionsUI();
+          }
+        }
+      });
+
       // 1. 監聽簡報同步狀態與當前頁
       presRef.child('live').on('value', (snap) => {
         const data = snap.val();
@@ -361,7 +455,7 @@
 
         const myUser = this.getUserInfo();
         const isAnotherHost = data.hostUid && data.hostUid !== myUser.uid;
-        this.isRemoteBroadcastingActive = Boolean(data.isPresenting && isAnotherHost && !window.app?.isAdmin);
+        this.isRemoteBroadcastingActive = Boolean(data.isPresenting && isAnotherHost && !this.isTeacher());
 
         if (this.isRemoteBroadcastingActive) {
           this.isPresenting = true;
@@ -375,6 +469,7 @@
           this.isPresenting = false;
         }
         this.updateSyncButtonUI();
+        this.updatePermissionsUI();
       });
 
       // 2. 監聽全體簡報頁面 (當收到遠端老師同步時)
@@ -506,7 +601,7 @@
       }
     }
 
-    // 更新雷射筆外觀座標 (光暈紅點)
+    // 更新雷射筆外觀座標 (圖 3：半透明黃色圓圈 + 點擊手勢指針)
     updateLaserPointer(rx, ry, active) {
       const dot = this.els.laserDot;
       if (!dot) return;
@@ -716,7 +811,21 @@
       // 簡報畫面渲染
       if (!slide) {
         if (els.screenBg) els.screenBg.style.display = 'none';
-        if (els.emptyHint) els.emptyHint.style.display = 'flex';
+        if (els.emptyHint) {
+          if (!this.canControlPresentation() && !this.isPresenting) {
+            els.emptyHint.innerHTML = `
+              <span style="font-size: 38px;">🔒</span>
+              <span style="font-weight: 700; color: #64748b; font-size: 16px;">目前設定為「僅老師進行簡報」</span>
+              <span style="font-size: 13px; color: #94a3b8;">請等待老師開啟同步簡報或開放操作權限</span>
+            `;
+          } else {
+            els.emptyHint.innerHTML = `
+              <span style="font-size: 36px;">📽️</span>
+              <span>從左側新增頁面開始建立簡報</span>
+            `;
+          }
+          els.emptyHint.style.display = 'flex';
+        }
         if (els.urlBadge) els.urlBadge.style.display = 'none';
       } else {
         if (els.emptyHint) els.emptyHint.style.display = 'none';
@@ -774,16 +883,18 @@
 
         card.innerHTML += `<div class="presentation-thumbnail-badge">${index + 1}</div>`;
 
-        // 刪除按鈕
-        const delBtn = document.createElement('button');
-        delBtn.className = 'presentation-thumbnail-del';
-        delBtn.innerHTML = '✕';
-        delBtn.title = '刪除此頁';
-        delBtn.onclick = (e) => {
-          e.stopPropagation();
-          this.deleteSlide(index);
-        };
-        card.appendChild(delBtn);
+        // 刪除按鈕 (僅授權主控者可見)
+        if (this.canControlPresentation()) {
+          const delBtn = document.createElement('button');
+          delBtn.className = 'presentation-thumbnail-del';
+          delBtn.innerHTML = '✕';
+          delBtn.title = '刪除此頁';
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.deleteSlide(index);
+          };
+          card.appendChild(delBtn);
+        }
 
         container.appendChild(card);
       });
@@ -809,7 +920,7 @@
         submissionsList.innerHTML = `
           <div class="presentation-submissions-empty">
             本頁未設定互動。<br>
-            <span style="font-size: 11px; opacity: 0.8;">可點擊下方「⚙️ 本頁設定」新增選擇題、心得或心情回饋。</span>
+            <span style="font-size: 11px; opacity: 0.8;">可點擊頂部「⚙️ 本頁設定」新增選擇題、心得或心情回饋。</span>
           </div>
         `;
         if (submissionsStats) {
@@ -859,7 +970,7 @@
       if (!area) return;
       area.innerHTML = '';
 
-      // 當前處於廣播主控端時不顯示作答浮窗
+      // 當前處於廣播主控端時不顯示學生作答浮窗
       if (this.isPresenting && !this.isRemoteBroadcastingActive) return;
 
       const slide = this.getCurrentSlide();
@@ -1095,15 +1206,13 @@
       }
     }
 
-    // ===== 彈窗邏輯：匯入 / 匯出 (圖 3) =====
+    // ===== 彈窗邏輯：匯入 / 匯出 (圖 3，修復 Item 2) =====
     openImportExportModal() {
-      const modal = this.els.modalImportExport;
-      if (modal) modal.style.display = 'flex';
+      this.openModal(this.els.modalImportExport);
     }
 
     closeImportExportModal() {
-      const modal = this.els.modalImportExport;
-      if (modal) modal.style.display = 'none';
+      this.closeModal(this.els.modalImportExport);
     }
 
     // 觸發 PDF 上傳 (使用 pdf.js 逐頁解析)
@@ -1143,7 +1252,7 @@
       if (!modal || !container || !this.currentPdfDoc) return;
 
       container.innerHTML = '';
-      modal.style.display = 'flex';
+      this.openModal(modal);
       const numPages = this.currentPdfDoc.numPages;
 
       for (let i = 1; i <= numPages; i++) {
@@ -1195,8 +1304,7 @@
     }
 
     closePdfPickerModal() {
-      const modal = this.els.modalPdfPicker;
-      if (modal) modal.style.display = 'none';
+      this.closeModal(this.els.modalPdfPicker);
       this.currentPdfDoc = null;
     }
 
@@ -1297,7 +1405,7 @@
       input.click();
     }
 
-    // ===== 彈窗邏輯：本頁設定 (圖 5 + 多題擴充) =====
+    // ===== 彈窗邏輯：本頁設定 (圖 5 + 多題擴充，修復 Item 2) =====
     openSlideSettingsModal() {
       const slide = this.getCurrentSlide();
       if (!slide) {
@@ -1314,12 +1422,11 @@
       this.tempQuestions = JSON.parse(JSON.stringify(slide.questions || []));
       this.renderQuestionsBuilderList();
 
-      modal.style.display = 'flex';
+      this.openModal(modal);
     }
 
     closeSlideSettingsModal() {
-      const modal = this.els.modalSlideSettings;
-      if (modal) modal.style.display = 'none';
+      this.closeModal(this.els.modalSlideSettings);
     }
 
     // 渲染本頁多題互動建構清單
@@ -1447,12 +1554,11 @@
         container.appendChild(item);
       });
 
-      modal.style.display = 'flex';
+      this.openModal(modal);
     }
 
     closeGridOverviewModal() {
-      const modal = this.els.modalGridOverview;
-      if (modal) modal.style.display = 'none';
+      this.closeModal(this.els.modalGridOverview);
     }
 
     // 開啟外部 URL 嵌入視窗
@@ -1468,13 +1574,13 @@
       }
 
       iframe.src = slide.externalUrl;
-      modal.style.display = 'flex';
+      this.openModal(modal);
     }
 
     closeExternalUrlViewer() {
       const modal = this.els.modalIframeViewer;
       const iframe = this.els.iframeViewerFrame;
-      if (modal) modal.style.display = 'none';
+      this.closeModal(modal);
       if (iframe) iframe.src = 'about:blank';
     }
 

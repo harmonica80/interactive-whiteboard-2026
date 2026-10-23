@@ -60,30 +60,75 @@
   }
 }
 
-/* 頂部導航標題列 */
+/* 頂部導航與控制列 (圖 4：整合為單一行) */
 .presentation-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  padding: 8px 16px;
   background: #ffffff;
   border-bottom: 1px solid var(--border-color);
   z-index: 10;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.presentation-title-group {
+.presentation-header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .presentation-main-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: #1e293b;
   display: flex;
   align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.presentation-perm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.presentation-perm-btn.is-active {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+.presentation-perm-btn:hover {
+  filter: brightness(0.96);
+}
+
+.presentation-header-controls {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.presentation-nav-group,
+.presentation-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .presentation-live-badge {
@@ -96,6 +141,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .presentation-live-badge::before {
@@ -111,26 +157,6 @@
   0% { transform: scale(0.9); opacity: 0.7; }
   50% { transform: scale(1.3); opacity: 1; }
   100% { transform: scale(0.9); opacity: 0.7; }
-}
-
-.presentation-btn-close {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.presentation-btn-close:hover {
-  background: #e2e8f0;
-  color: #0f172a;
 }
 
 /* 工作區三欄佈局 (左側頁面列表、中間簡報視區、右側即時提交) */
@@ -362,19 +388,14 @@
   cursor: crosshair;
 }
 
-/* 雷射筆發光效果 */
+/* 雷射筆發光效果 (如圖 3：半透明黃色圓圈 + 點擊指針手勢) */
 .presentation-laser-dot {
   position: absolute;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ff2a2a 0%, #ff4b4b 60%, rgba(255, 0, 0, 0) 100%);
-  box-shadow: 0 0 16px 6px rgba(255, 0, 0, 0.8), 0 0 30px 10px rgba(255, 50, 50, 0.5);
   pointer-events: none;
-  transform: translate(-50%, -50%);
+  transform: translate(-36px, -36px);
   z-index: 15;
   display: none;
-  transition: opacity 0.2s;
+  transition: opacity 0.15s;
 }
 
 /* 外部 URL 懸浮按鈕 */
@@ -919,4 +940,12 @@
     border-left: none;
     border-top: 1px solid var(--border-color);
   }
+}
+
+/* 確保簡報專用彈窗能正常顯現 (修復 .modal-overlay.active opacity/visibility) */
+.modal-overlay.active {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 10000 !important;
 }
