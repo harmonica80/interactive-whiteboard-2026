@@ -55,6 +55,7 @@
       this.currentPdfDoc = null;
       this.selectedPdfPages = new Set();
       this.tempQuestions = [];
+      this.tempExternalLinks = [];
 
       // DOM 元素快取
       this.els = {};
@@ -152,6 +153,7 @@
         annotationCanvas: document.getElementById('presentationAnnotationCanvas'),
         laserDot: document.getElementById('presentationLaserDot'),
         urlBadge: document.getElementById('presentationUrlBadge'),
+        urlBadgesContainer: document.getElementById('presentationUrlBadgesContainer'),
         liveBadge: document.getElementById('presentationLiveBadge'),
 
         // 頂部整合控制列 (Item 5)
@@ -1066,8 +1068,11 @@
         type: 'color',
         bgColor: color,
         bgUrl: '',
+        externalLinks: [],
         externalUrl: '',
+        externalUrlTitle: '',
         urlPosition: 'center',
+        urlTarget: 'iframe',
         displayMode: 'step',
         allowAsyncAnswer: false,
         questions: []
@@ -1096,8 +1101,11 @@
             type: 'image',
             bgColor: '#0f172a',
             bgUrl: event.target.result,
+            externalLinks: [],
             externalUrl: '',
+            externalUrlTitle: '',
             urlPosition: 'center',
+            urlTarget: 'iframe',
             displayMode: 'step',
             allowAsyncAnswer: false,
             questions: []
@@ -1172,6 +1180,10 @@
           els.emptyHint.style.display = 'flex';
         }
         if (els.urlBadge) els.urlBadge.style.display = 'none';
+        if (els.urlBadgesContainer) {
+          els.urlBadgesContainer.style.display = 'none';
+          els.urlBadgesContainer.innerHTML = '';
+        }
       } else {
         if (els.emptyHint) els.emptyHint.style.display = 'none';
         if (els.screenBg) {
@@ -1185,15 +1197,8 @@
           }
         }
 
-        // 外部 URL 懸浮圖示
-        if (els.urlBadge) {
-          if (slide.externalUrl && slide.externalUrl.trim()) {
-            els.urlBadge.style.display = 'inline-flex';
-            els.urlBadge.className = `presentation-url-badge presentation-url-pos-${slide.urlPosition || 'center'}`;
-          } else {
-            els.urlBadge.style.display = 'none';
-          }
-        }
+        // 外部 URL 懸浮按鈕清單 (最多 3 個)
+        this.renderExternalUrlBadges(slide);
       }
 
       // 更新畫布尺寸並重繪
@@ -2237,8 +2242,11 @@
           type: 'image',
           bgColor: '#0f172a',
           bgUrl: imgDataUrl,
+          externalLinks: [],
           externalUrl: '',
+          externalUrlTitle: '',
           urlPosition: 'center',
+          urlTarget: 'iframe',
           displayMode: 'step',
           allowAsyncAnswer: false,
           questions: []
@@ -2322,19 +2330,27 @@
       const modal = this.els.modalSlideSettings;
       if (!modal) return;
 
-      const urlInput = document.getElementById('txtPresExternalUrl');
-      if (urlInput) {
-        urlInput.value = slide.externalUrl || '';
-        urlInput.onchange = () => {
-          const converted = this.convertYoutubeToEmbedUrl(urlInput.value);
-          if (converted && converted !== urlInput.value) {
-            urlInput.value = converted;
-            this.notify('網址自動轉換', '已自動將 YouTube 影片轉換為可嵌入播放網址！');
-          }
-        };
+      // 初始化外部連結清單暫存 (相容舊版 externalUrl)
+      if (Array.isArray(slide.externalLinks) && slide.externalLinks.length > 0) {
+        this.tempExternalLinks = JSON.parse(JSON.stringify(slide.externalLinks));
+      } else if (slide.externalUrl && slide.externalUrl.trim()) {
+        this.tempExternalLinks = [{
+          title: slide.externalUrlTitle || '外部連結 1',
+          url: slide.externalUrl.trim()
+        }];
+      } else {
+        this.tempExternalLinks = [];
       }
-      document.getElementById('selPresUrlPosition').value = slide.urlPosition || 'center';
-      document.getElementById('selPresDisplayMode').value = slide.displayMode || 'step';
+      this.renderExternalLinksConfigList();
+
+      const selUrlPos = document.getElementById('selPresUrlPosition');
+      if (selUrlPos) selUrlPos.value = slide.urlPosition || 'center';
+
+      const selUrlTarget = document.getElementById('selPresUrlTarget');
+      if (selUrlTarget) selUrlTarget.value = slide.urlTarget || 'iframe';
+
+      const selDisplay = document.getElementById('selPresDisplayMode');
+      if (selDisplay) selDisplay.value = slide.displayMode || 'step';
 
       const selAsync = document.getElementById('selPresAllowAsyncAnswer');
       if (selAsync) selAsync.value = slide.allowAsyncAnswer ? 'true' : 'false';
@@ -2347,6 +2363,111 @@
 
     closeSlideSettingsModal() {
       this.closeModal(this.els.modalSlideSettings);
+    }
+
+    // 渲染本頁外部連結設定清單 (需求 1: 最多可設定 3 個外部連結，並可自訂名稱)
+    renderExternalLinksConfigList() {
+      const container = document.getElementById('presExternalLinksList');
+      const addBtn = document.getElementById('btnAddExternalLink');
+      if (!container) return;
+
+      container.innerHTML = '';
+      if (!Array.isArray(this.tempExternalLinks)) {
+        this.tempExternalLinks = [];
+      }
+
+      if (this.tempExternalLinks.length >= 3) {
+        if (addBtn) addBtn.style.display = 'none';
+      } else {
+        if (addBtn) addBtn.style.display = 'inline-flex';
+      }
+
+      if (this.tempExternalLinks.length === 0) {
+        container.innerHTML = `
+          <div style="color: #94a3b8; font-size: 12px; padding: 6px 0; font-style: italic;">
+            尚未設定外部連結，點擊上方「➕ 新增連結」即可加入（最多 3 個）。
+          </div>
+        `;
+        return;
+      }
+
+      this.tempExternalLinks.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.gap = '8px';
+        row.style.alignItems = 'center';
+        row.style.background = '#f8fafc';
+        row.style.padding = '8px';
+        row.style.borderRadius = '8px';
+        row.style.border = '1px solid #e2e8f0';
+
+        row.innerHTML = `
+          <div style="flex: 0 0 110px;">
+            <input type="text" placeholder="連結名稱" value="${this.escapeHtml(item.title || '')}"
+              oninput="window.presentationManager.updateExternalLinkTitle(${idx}, this.value)"
+              style="width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 12px;">
+          </div>
+          <div style="flex: 1;">
+            <input type="url" placeholder="https://..." value="${this.escapeHtml(item.url || '')}"
+              oninput="window.presentationManager.updateExternalLinkUrl(${idx}, this.value)"
+              onblur="window.presentationManager.onExternalLinkUrlBlur(${idx}, this.value)"
+              style="width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 12px;">
+          </div>
+          <button type="button" onclick="window.presentationManager.deleteExternalLinkItem(${idx})"
+            title="刪除此連結"
+            style="border: none; background: #fee2e2; color: #ef4444; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: bold; flex-shrink: 0;">
+            ✕
+          </button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    addExternalLinkItem() {
+      this.markAsHost();
+      if (!Array.isArray(this.tempExternalLinks)) {
+        this.tempExternalLinks = [];
+      }
+      if (this.tempExternalLinks.length >= 3) {
+        this.notify('提示', '每頁簡報最多設定 3 個外部連結。');
+        return;
+      }
+      this.tempExternalLinks.push({
+        title: `外部連結 ${this.tempExternalLinks.length + 1}`,
+        url: ''
+      });
+      this.renderExternalLinksConfigList();
+    }
+
+    deleteExternalLinkItem(idx) {
+      this.markAsHost();
+      if (Array.isArray(this.tempExternalLinks) && this.tempExternalLinks[idx] !== undefined) {
+        this.tempExternalLinks.splice(idx, 1);
+        this.renderExternalLinksConfigList();
+      }
+    }
+
+    updateExternalLinkTitle(idx, val) {
+      if (Array.isArray(this.tempExternalLinks) && this.tempExternalLinks[idx]) {
+        this.tempExternalLinks[idx].title = val;
+      }
+    }
+
+    updateExternalLinkUrl(idx, val) {
+      if (Array.isArray(this.tempExternalLinks) && this.tempExternalLinks[idx]) {
+        this.tempExternalLinks[idx].url = val;
+      }
+    }
+
+    onExternalLinkUrlBlur(idx, val) {
+      if (Array.isArray(this.tempExternalLinks) && this.tempExternalLinks[idx]) {
+        const converted = this.convertYoutubeToEmbedUrl(val);
+        if (converted && converted !== val) {
+          this.tempExternalLinks[idx].url = converted;
+          this.renderExternalLinksConfigList();
+          this.notify('網址自動轉換', '已自動將 YouTube 影片轉換為可嵌入播放網址！');
+        }
+      }
     }
 
     // 渲染本頁多題互動建構清單 (圖 2: 選擇題選項設定、圖 3: 手繪標記作答)
@@ -2523,16 +2644,38 @@
       }
     }
 
-    // 儲存本頁設定
+    // 儲存本頁設定 (需求 1 & 2: 外部連結最多 3 個、自訂名稱、開啟方式)
     saveSlideSettings() {
       this.markAsHost();
       const slide = this.getCurrentSlide();
       if (!slide) return;
 
-      const rawUrl = (document.getElementById('txtPresExternalUrl').value || '').trim();
-      slide.externalUrl = this.convertYoutubeToEmbedUrl(rawUrl);
-      slide.urlPosition = document.getElementById('selPresUrlPosition').value || 'center';
-      slide.displayMode = document.getElementById('selPresDisplayMode').value || 'step';
+      const cleanLinks = [];
+      if (Array.isArray(this.tempExternalLinks)) {
+        this.tempExternalLinks.slice(0, 3).forEach((link, i) => {
+          const rawUrl = (link.url || '').trim();
+          if (rawUrl) {
+            cleanLinks.push({
+              title: (link.title || '').trim() || `外部連結 ${i + 1}`,
+              url: this.convertYoutubeToEmbedUrl(rawUrl)
+            });
+          }
+        });
+      }
+
+      slide.externalLinks = cleanLinks;
+      // 向後相容舊版單一外部網址屬性
+      slide.externalUrl = cleanLinks.length > 0 ? cleanLinks[0].url : '';
+      slide.externalUrlTitle = cleanLinks.length > 0 ? cleanLinks[0].title : '';
+
+      const selUrlPos = document.getElementById('selPresUrlPosition');
+      slide.urlPosition = selUrlPos ? selUrlPos.value : 'center';
+
+      const selUrlTarget = document.getElementById('selPresUrlTarget');
+      slide.urlTarget = selUrlTarget ? selUrlTarget.value : 'iframe';
+
+      const selDisplay = document.getElementById('selPresDisplayMode');
+      slide.displayMode = selDisplay ? selDisplay.value : 'step';
       
       const selAsync = document.getElementById('selPresAllowAsyncAnswer');
       slide.allowAsyncAnswer = selAsync ? (selAsync.value === 'true') : false;
@@ -2544,6 +2687,67 @@
       this.render();
       if (this.isPresenting) this.broadcastLiveState(true);
       this.notify('儲存成功', '本頁互動設定已成功套用！');
+    }
+
+    // 渲染本頁外部 URL 懸浮按鈕清單 (支援最多 3 個連結按鈕並排)
+    renderExternalUrlBadges(slide) {
+      const container = this.els.urlBadgesContainer || document.getElementById('presentationUrlBadgesContainer');
+      if (!container) return;
+
+      if (!slide) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+      }
+
+      let links = [];
+      if (Array.isArray(slide.externalLinks) && slide.externalLinks.length > 0) {
+        links = slide.externalLinks.filter(l => l && l.url && l.url.trim());
+      } else if (slide.externalUrl && slide.externalUrl.trim()) {
+        links = [{
+          title: slide.externalUrlTitle || '開啟外部連結',
+          url: slide.externalUrl.trim()
+        }];
+      }
+
+      if (links.length === 0) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+      }
+
+      const pos = slide.urlPosition || 'center';
+      const target = slide.urlTarget || 'iframe';
+
+      container.className = `presentation-url-badges-container presentation-url-pos-${pos}`;
+      container.style.display = 'inline-flex';
+      container.innerHTML = '';
+
+      links.forEach((link, idx) => {
+        const titleText = (link.title && link.title.trim()) ? link.title.trim() : (links.length > 1 ? `連結 ${idx + 1}` : '開啟外部連結');
+        const badge = document.createElement('a');
+        badge.href = 'javascript:void(0)';
+        badge.className = 'presentation-url-badge';
+        badge.title = `${titleText} (${target === 'blank' ? '開新分頁瀏覽' : '頁面內嵌入開啟'})`;
+        badge.innerHTML = `🔗 <span>${this.escapeHtml(titleText)}</span>`;
+        badge.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handleOpenExternalLink(link.url, titleText, target);
+        };
+        container.appendChild(badge);
+      });
+    }
+
+    // 點擊外部連結按鈕處理 (需求 2: 支援在頁面內 iframe 或開新分頁開啟)
+    handleOpenExternalLink(rawUrl, title, targetMode) {
+      if (!rawUrl) return;
+      const embedUrl = this.convertYoutubeToEmbedUrl(rawUrl);
+      if (targetMode === 'blank') {
+        window.open(embedUrl, '_blank');
+      } else {
+        this.openExternalUrlViewer(embedUrl, title);
+      }
     }
 
     // 縮圖九宮格總覽彈窗
@@ -2626,13 +2830,31 @@
     }
 
     // 開啟外部 URL 嵌入視窗
-    openExternalUrlViewer() {
+    openExternalUrlViewer(customUrl, customTitle) {
       const slide = this.getCurrentSlide();
-      if (!slide || !slide.externalUrl) return;
+      let targetUrl = customUrl;
+      let displayTitle = customTitle;
 
-      const embedUrl = this.convertYoutubeToEmbedUrl(slide.externalUrl);
+      if (!targetUrl) {
+        if (slide && Array.isArray(slide.externalLinks) && slide.externalLinks.length > 0) {
+          targetUrl = slide.externalLinks[0].url;
+          displayTitle = slide.externalLinks[0].title;
+        } else if (slide && slide.externalUrl) {
+          targetUrl = slide.externalUrl;
+          displayTitle = slide.externalUrlTitle || '外部連結';
+        }
+      }
+
+      if (!targetUrl) return;
+
+      const embedUrl = this.convertYoutubeToEmbedUrl(targetUrl);
       const modal = this.els.modalIframeViewer;
       const iframe = this.els.iframeViewerFrame;
+      const titleEl = document.getElementById('txtPresIframeViewerTitle');
+      if (titleEl) {
+        titleEl.textContent = `🔗 ${displayTitle || '外部網頁瀏覽'}`;
+      }
+
       if (!modal || !iframe) {
         window.open(embedUrl, '_blank');
         return;

@@ -502,13 +502,25 @@
   transition: opacity 0.15s;
 }
 
-/* 外部 URL 懸浮按鈕 (z-index 提高至 30，確保高於手繪作答畫布 22 可正常點按) */
-.presentation-url-badge {
+/* 外部 URL 懸浮容器與按鈕 (z-index 提高至 30，確保高於手繪作答畫布 22 可正常點按；支援最多 3 個連結) */
+.presentation-url-badges-container {
   position: absolute;
   z-index: 30;
   pointer-events: auto !important;
-  padding: 8px 14px;
-  background: rgba(15, 23, 42, 0.85);
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  max-width: 90%;
+}
+
+.presentation-url-badge {
+  position: relative;
+  z-index: 30;
+  pointer-events: auto !important;
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.88);
   color: #ffffff;
   border-radius: 20px;
   font-size: 13px;
@@ -517,17 +529,18 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
   backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.25);
   cursor: pointer;
   transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  user-select: none;
 }
 
 .presentation-url-badge:hover {
   background: rgba(37, 99, 235, 0.95);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-  border-color: rgba(255,255,255,0.4);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  border-color: rgba(255,255,255,0.5);
   /* 移除 transform，滑鼠懸停時完全維持在原位不產生位移跳動 (圖 1) */
 }
 
