@@ -25,7 +25,7 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.17</a>
+          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.9.18</a>
         </p>
       </div>
       <div class="top-actions">
@@ -3504,12 +3504,34 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.9.17 -->
+        <!-- ver 3.9.18 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.9.17</span>
+              <span>🌟 ver 3.9.18</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">畫布功能移至頂部列</span>
+              <span class="changelog-badge-tag">消除水平捲軸</span>
+              <span class="changelog-badge-tag">工具列空間極大化</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>🖥️ 互動白板頂部工具列空間配置重構：</strong>
+              <ul>
+                <li><strong>畫布控制項上移至主標題列（圖 1）</strong>：將「主白板下拉選單」、「+ 畫布」與「🗑️ 刪除畫布」移至頂部標題列右側（緊鄰使用說明旁），有效利用原本留白的寬裕空間。</li>
+                <li><strong>大幅釋放次工具列寬度</strong>：次工具列左側僅保留分頁標籤與增頁鈕，大幅節省超過 260px 水平空間，在各種筆電螢幕與分割視窗下皆不再出現多餘的水平捲軸，操作流暢寬敞！</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.9.17 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.9.17</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">還原/重做 (Ctrl+Z)</span>

@@ -86,6 +86,15 @@
       color: var(--text-main);
     }
 
+    .topbar-canvas-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 14px;
+      padding-left: 14px;
+      border-left: 1px solid var(--border-color);
+    }
+
     .btn-help-guide {
       display: inline-flex;
       align-items: center;
@@ -1285,7 +1294,7 @@
 </head>
 <body>
   <div id="app">
-    <!-- 1. 頂部標題列 -->
+    <!-- 1. 頂部標題與畫布管理列 -->
     <header class="whiteboard-topbar">
       <div class="topbar-title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1299,22 +1308,25 @@
           <span style="color:#ef4444; font-weight:900;">?</span>
           <span>使用說明</span>
         </button>
+
+        <!-- 畫布選擇與管理控制項 (依圖 1 往上移至標題列右側，減少下方控制列出現水平捲軸的機會) -->
+        <div class="topbar-canvas-group">
+          <div class="canvas-select-wrapper">
+            <select class="canvas-select" id="canvasSelect">
+              <option value="main">主白板</option>
+            </select>
+            <span class="canvas-select-arrow">▼</span>
+          </div>
+          <button class="btn-pill" id="btnAddCanvas">+ 畫布</button>
+          <button class="btn-pill" id="btnDeleteCanvas" title="刪除目前畫布" style="display:none; color:#ef4444; border-color:#fecaca; background:#fef2f2;">🗑️ 刪除畫布</button>
+        </div>
       </div>
     </header>
 
-    <!-- 2. 次工具列 (畫布選擇、頁籤、權限開關) -->
+    <!-- 2. 次工具列 (分頁標籤、權限開關) -->
     <div class="whiteboard-subbar">
-      <!-- 左側：畫布選擇與頁面 (Item 2 & 3) -->
+      <!-- 左側：分頁標籤與增頁 -->
       <div class="subbar-left">
-        <div class="canvas-select-wrapper">
-          <select class="canvas-select" id="canvasSelect">
-            <option value="main">主白板</option>
-          </select>
-          <span class="canvas-select-arrow">▼</span>
-        </div>
-        <button class="btn-pill" id="btnAddCanvas">+ 畫布</button>
-        <button class="btn-pill" id="btnDeleteCanvas" title="刪除目前畫布" style="display:none; color:#ef4444; border-color:#fecaca; background:#fef2f2;">🗑️ 刪除畫布</button>
-
         <div class="pages-tabs-wrapper" id="pagesTabs">
           <div class="page-tab-item active" data-page="page_1">頁 1</div>
         </div>
