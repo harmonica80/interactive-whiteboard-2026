@@ -10817,6 +10817,11 @@ class App {
       const data = event.data;
       if (!data || typeof data !== 'object') return;
 
+      if (data.type === 'CLOSE_WHITEBOARD') {
+        this.switchToTab('panel-questions');
+        return;
+      }
+
       if (data.type === 'TLDRAW_LOCAL_CHANGE' && data.snapshot) {
         const cleanOutgoing = this.sanitizeTldrawPayload(data.snapshot);
         if (!cleanOutgoing) return;
@@ -18343,6 +18348,7 @@ function resetAll() {
     db.ref('quiz/presence').remove(), // 徹底清除在線與快取紀錄，避免舊名稱殘留
     db.ref('whiteboard').remove(),
     db.ref('whiteboard_room').remove(),
+    db.ref('whiteboard_v2').remove(),
     db.ref('system/quotaStats/classStorageMap').child(classKey).set(0),
     db.ref('quiz/resetTimestamp').set(Date.now()) // 廣播重設事件至所有在線學生客戶端
   ];

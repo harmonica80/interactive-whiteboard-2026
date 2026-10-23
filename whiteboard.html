@@ -3,848 +3,1158 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>tldraw 互動白板</title>
-  
-  <!-- tldraw CSS (tldraw 2.1.4 LTS 黃金穩定版) -->
-  <link rel="stylesheet" href="https://esm.sh/tldraw@2.1.4/tldraw.css">
+  <title>同步共編白板</title>
+
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="js/firebase-config.js"></script>
 
   <style>
-    html, body {
+    :root {
+      --primary: #f97316;
+      --primary-hover: #ea580c;
+      --primary-light: #fff7ed;
+      --primary-border: #fdba74;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --border-color: #e5e7eb;
+      --bg-topbar: #ffffff;
+      --bg-canvas: #f8fafc;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --sticky-bg: #fef08a;
+      --sticky-border: #facc15;
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      touch-action: none;
-      background-color: #f8f9fa;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-canvas);
+      color: var(--text-main);
     }
-    #root {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-    /* 電腦端 (Desktop > 768px)：完全保留 tldraw 100% 原生原始樣式與大小 */
 
-    /* 僅針對行動裝置 (Mobile <= 768px) 進行精細化微調 */
-    @media (max-width: 768px) {
-      /* 1. 工具列外框：強制以絕對定位懸浮於底部中央，防止被裁切，右側留出 40px 塞入 custom-style-toggle-btn */
-      .tlui-toolbar, [class*="tlui-toolbar"], .tl-toolbar {
-        position: absolute !important;
-        bottom: 12px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        margin: 0 !important;
-        padding-top: 3px !important;
-        padding-bottom: 3px !important;
-        padding-left: 6px !important;
-        padding-right: 40px !important;
-        box-sizing: border-box !important;
-        height: 38px !important;
-        min-height: unset !important;
-        width: max-content !important;
-        z-index: 999 !important;
-      }
-
-      /* 2. 按鈕輕量固定尺寸 (32px)，縮小間距，確保 6 個基本按鈕緊湊並排於白框內 */
-      .tlui-toolbar button, [class*="tlui-toolbar"] button, .tlui-button {
-        height: 32px !important;
-        min-height: 32px !important;
-        max-height: 32px !important;
-        width: 32px !important;
-        min-width: 32px !important;
-        max-width: 32px !important;
-        margin: 0 1px !important;
-        padding: 2px !important;
-        box-sizing: border-box !important;
-        flex-shrink: 0 !important;
-      }
-
-      /* 3. 原生浮動圓圈選單按鈕：使用絕對定位物理偏置強行嵌入置中工具列的右側內部 */
-      .tlui-style-panel__toggle, [class*="style-panel__toggle"], [class*="style-panel"] button {
-        position: absolute !important;
-        bottom: 15px !important;
-        left: calc(50% + 98px) !important;
-        transform: translateX(-50%) !important;
-        width: 32px !important;
-        height: 32px !important;
-        min-width: 32px !important;
-        min-height: 32px !important;
-        border-radius: 8px !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-        margin: 0 !important;
-        padding: 2px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        z-index: 1001 !important;
-        cursor: pointer !important;
-      }
-
-      /* 4. 按鈕 svg 圖示大小適中 */
-      .tlui-toolbar svg, [class*="tlui-toolbar"] svg, 
-      .tlui-style-panel__toggle svg, [class*="style-panel__toggle"] svg, [class*="style-panel"] button svg {
-        width: 16px !important;
-        height: 16px !important;
-      }
-    }
-    .loading-container {
+    #app {
       display: flex;
       flex-direction: column;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* ===== 頂部標題列 ===== */
+    .whiteboard-topbar {
+      height: 48px;
+      background: var(--bg-topbar);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .topbar-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .topbar-title svg {
+      width: 20px;
+      height: 20px;
+      color: #ef4444;
+    }
+
+    .btn-close {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 4px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-close:hover {
+      background: #f3f4f6;
+      color: var(--text-main);
+    }
+
+    /* ===== 次工具列 (畫布切換、頁數、縮放、權限開關) ===== */
+    .whiteboard-subbar {
+      min-height: 48px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 16px;
+      flex-shrink: 0;
+      gap: 12px;
+      overflow-x: auto;
+      z-index: 25;
+    }
+
+    .subbar-left, .subbar-center, .subbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* 下拉選單與畫布標籤 */
+    .canvas-select-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .canvas-select {
+      appearance: none;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 6px 28px 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      outline: none;
+      min-width: 95px;
+    }
+
+    .canvas-select:focus {
+      border-color: var(--primary);
+    }
+
+    .canvas-select-arrow {
+      position: absolute;
+      right: 8px;
+      pointer-events: none;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .btn-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-pill:hover {
+      background: #f9fafb;
+      border-color: #d1d5db;
+    }
+
+    /* 頁籤清單 */
+    .pages-tabs-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .page-tab-item {
+      padding: 5px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
+      border: 1px solid #fed7aa;
+      background: #fff7ed;
+      color: var(--primary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .page-tab-item.active {
+      border-color: var(--primary);
+      background: #ffedd5;
+      color: var(--primary-hover);
+      box-shadow: 0 1px 3px rgba(249,115,22,0.15);
+    }
+
+    /* 縮放控制組 */
+    .zoom-group {
+      display: inline-flex;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 2px;
+    }
+
+    .btn-zoom {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .btn-zoom:hover {
+      background: #f3f4f6;
+    }
+
+    .zoom-value {
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 48px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    /* 權限切換膠囊開關 (如圖 1 亮橘色) */
+    .btn-toggle-perm {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-toggle-perm.is-active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary-hover);
+      box-shadow: 0 1px 3px rgba(249, 115, 22, 0.25);
+    }
+
+    .btn-toggle-perm.is-inactive {
+      background: #f3f4f6;
+      color: var(--text-muted);
+      border-color: var(--border-color);
+    }
+
+    .btn-danger {
+      background: #ef4444 !important;
+      color: #ffffff !important;
+      border-color: #dc2626 !important;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626 !important;
+    }
+
+    /* ===== 主畫布區域與視角容器 ===== */
+    .whiteboard-main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    #canvasViewport {
+      width: 100%;
       height: 100%;
-      color: #666;
-      font-size: 16px;
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      cursor: crosshair;
+      touch-action: none;
     }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(0, 122, 255, 0.1);
-      border-left-color: #007aff;
+
+    #canvasViewport.cursor-select {
+      cursor: default;
+    }
+
+    #canvasViewport.cursor-grab {
+      cursor: grab !important;
+    }
+
+    #canvasViewport.cursor-grabbing {
+      cursor: grabbing !important;
+    }
+
+    #canvasViewport.cursor-eraser {
+      cursor: cell;
+    }
+
+    /* 畫布網格背景 */
+    .grid-bg {
+      background-size: 24px 24px;
+      background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px);
+    }
+
+    /* 包含縮放與平移的空間容器 */
+    #canvasWorld {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    /* SVG 繪圖層 (筆劃、形狀、箭頭) */
+    #svgLayer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    #svgLayer * {
+      pointer-events: auto;
+    }
+
+    /* HTML 物件層 (便利貼、圖片、PDF 頁面、作者標籤) */
+    #htmlLayer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: visible;
+    }
+
+    /* ===== 物件作者姓名標籤 (如圖 1 橘色小膠囊) ===== */
+    .obj-author-badge {
+      position: absolute;
+      top: -22px;
+      left: 0;
+      background: #f97316;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      z-index: 10;
+      line-height: 1.4;
+    }
+
+    /* 便利貼 (Sticky Note) */
+    .board-sticky-note {
+      position: absolute;
+      width: 200px;
+      min-height: 140px;
+      background: var(--sticky-bg);
+      border: 1px solid var(--sticky-border);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #333333;
+      cursor: move;
+      outline: none;
+      word-break: break-word;
+      transition: box-shadow 0.15s;
+    }
+
+    .board-sticky-note:focus-within {
+      box-shadow: 0 0 0 2px var(--primary), 0 6px 18px rgba(0,0,0,0.12);
+    }
+
+    .board-sticky-note .sticky-content {
+      width: 100%;
+      min-height: 110px;
+      outline: none;
+      user-select: text;
+    }
+
+    .board-sticky-note a {
+      color: #0284c7;
+      text-decoration: underline;
+      cursor: pointer;
+      word-break: break-all;
+    }
+
+    /* 圖片與 PDF 頁面卡片 */
+    .board-image-item {
+      position: absolute;
+      cursor: move;
+      border-radius: 6px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      display: inline-block;
+    }
+
+    .board-image-item img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+      pointer-events: none;
+    }
+
+    /* 選取框與變形邊界 (Selection Handle) */
+    .selected-border {
+      outline: 2px dashed var(--primary) !important;
+      outline-offset: 3px;
+    }
+
+    .resize-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #ffffff;
+      border: 2px solid var(--primary);
       border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 12px;
+      z-index: 20;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+
+    .resize-handle.handle-br {
+      right: -6px;
+      bottom: -6px;
+      cursor: se-resize;
+    }
+
+    /* ===== 左側浮動膠囊工具列 (如圖 1) ===== */
+    .floating-toolbar {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 20;
+    }
+
+    .toolbar-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 36px);
+      gap: 6px;
+    }
+
+    .tool-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: #4b5563;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tool-btn:hover {
+      background: #f3f4f6;
+      color: var(--text-main);
+    }
+
+    .tool-btn.active {
+      background: var(--primary) !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 6px rgba(249,115,22,0.3);
+    }
+
+    .tool-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* 工具列下方：顏色與粗細選擇 */
+    .toolbar-styles {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-color);
+      align-items: center;
+    }
+
+    .color-btn-wrapper {
+      position: relative;
+    }
+
+    .color-current-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 1px #d1d5db;
+      cursor: pointer;
+      background: #1e293b;
+    }
+
+    .stroke-size-select {
+      width: 60px;
+      padding: 3px 4px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: #ffffff;
+      cursor: pointer;
+      outline: none;
+      text-align: center;
+    }
+
+    /* 顏色快選浮窗 */
+    .color-palette-popover {
+      position: absolute;
+      left: 100%;
+      top: 0;
+      margin-left: 10px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      padding: 8px;
+      display: none;
+      grid-template-columns: repeat(4, 24px);
+      gap: 6px;
+      z-index: 30;
+    }
+
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.1s;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.15);
+    }
+
+    /* ===== 右側參與者名單抽屜 (圖 1 右側) ===== */
+    .participants-drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 280px;
+      background: #ffffff;
+      border-left: 1px solid var(--border-color);
+      box-shadow: -4px 0 16px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      z-index: 25;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .participants-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #4c1d95;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .drawer-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .drawer-user-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .user-list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #f8fafc;
+      font-size: 13px;
+    }
+
+    .user-info-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .user-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .user-role-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .role-teacher {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .role-student {
+      background: #e0f2fe;
+      color: #0284c7;
+    }
+
+    /* ===== PDF 選擇頁面彈出對話框 (圖 2) ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 95%;
+      max-width: 1050px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pdf-select-toolbar {
+      padding: 10px 24px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .badge-count {
+      padding: 3px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 12px;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .pdf-thumbnail-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .pdf-page-card {
+      position: relative;
+      background: #ffffff;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s;
+      aspect-ratio: 16/9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pdf-page-card:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+    }
+
+    .pdf-page-card.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-border);
+    }
+
+    .pdf-page-card canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .page-index-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      backdrop-filter: blur(2px);
+    }
+
+    .page-check-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      font-size: 14px;
+      font-weight: 900;
+      transition: all 0.15s;
+    }
+
+    .pdf-page-card.selected .page-check-badge {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .modal-footer {
+      padding: 14px 24px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      background: #ffffff;
+    }
+
+    .btn-secondary {
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      background: #f3f4f6;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .btn-primary {
+      padding: 8px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(249,115,22,0.3);
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* 唯讀/不可編輯遮罩提示 */
+    .readonly-banner {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 41, 59, 0.9);
+      color: #ffffff;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      pointer-events: none;
+      z-index: 15;
+      display: none;
+    }
+
+    /* 隱藏原生檔案上傳 input */
+    .hidden-file-input {
+      display: none;
     }
   </style>
-
-  <!-- Import Maps for ES Modules (tldraw 2.1.4 LTS 黃金穩定版 + React 18 鎖定) -->
-  <script type="importmap">
-  {
-    "imports": {
-      "react": "https://esm.sh/react@18.3.1",
-      "react-dom": "https://esm.sh/react-dom@18.3.1",
-      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-      "tldraw": "https://esm.sh/tldraw@2.1.4?deps=react@18.3.1,react-dom@18.3.1"
-    }
-  }
-  </script>
 </head>
 <body>
-  <div id="root">
-    <div class="loading-container">
-      <div class="spinner"></div>
-      <div>正在載入 tldraw 互動白板...</div>
+  <div id="app">
+    <!-- 1. 頂部標題列 -->
+    <header class="whiteboard-topbar">
+      <div class="topbar-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          <path d="M2 2l7.586 7.586"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+        <span>同步白板</span>
+      </div>
+      <button class="btn-close" id="btnCloseWhiteboard">
+        <span>✕ 關閉</span>
+      </button>
+    </header>
+
+    <!-- 2. 次工具列 (畫布選擇、頁籤、縮放、權限開關) -->
+    <div class="whiteboard-subbar">
+      <!-- 左側：畫布選擇與頁面 -->
+      <div class="subbar-left">
+        <div class="canvas-select-wrapper">
+          <select class="canvas-select" id="canvasSelect">
+            <option value="main">主白板</option>
+          </select>
+          <span class="canvas-select-arrow">▼</span>
+        </div>
+        <button class="btn-pill" id="btnAddCanvas">+ 畫布</button>
+
+        <div class="pages-tabs-wrapper" id="pagesTabs">
+          <div class="page-tab-item active" data-page="page_1">頁 1</div>
+        </div>
+        <button class="btn-pill" id="btnAddPage">+ 頁</button>
+      </div>
+
+      <!-- 中間：縮放控制 -->
+      <div class="subbar-center">
+        <div class="zoom-group">
+          <button class="btn-zoom" id="btnZoomOut" title="縮小 (Ctrl + 滾輪)">−</button>
+          <span class="zoom-value" id="zoomVal" title="點擊重設 100%">100%</span>
+          <button class="btn-zoom" id="btnZoomIn" title="放大 (Ctrl + 滾輪)">+</button>
+          <button class="btn-zoom" id="btnZoomReset" title="自適應視角">⤢</button>
+        </div>
+      </div>
+
+      <!-- 右側：老師權限開關、匯出、參與者、結束 -->
+      <div class="subbar-right">
+        <!-- 老師專屬權限開關 (學生端會隱藏或唯讀) -->
+        <button class="btn-toggle-perm is-active" id="btnToggleStudentEdit" title="設定學生是否可以編輯畫布">
+          <span>🔒 學生可編輯</span>
+        </button>
+        <button class="btn-toggle-perm is-active" id="btnToggleMoveOthers" title="設定學生是否可移動別人的物件">
+          <span>👥 可動他人物件</span>
+        </button>
+
+        <!-- 視角模式 (全班跟隨 / 自由分組) -->
+        <button class="btn-pill" id="btnFollowMode" title="切換全班跟隨老師視角或自由分組">
+          <span>🎯 全班跟隨</span>
+        </button>
+        <button class="btn-pill" id="btnSummonAll" style="display:none; color:var(--primary); font-weight:bold;" title="召集所有學生回目前畫面">
+          <span>📢 召集全班</span>
+        </button>
+
+        <button class="btn-pill" id="btnExport" title="匯出高畫質圖片">
+          <span>匯出</span>
+        </button>
+        <button class="btn-pill" id="btnToggleDrawer" title="開啟參與者名單">
+          <span>👥</span>
+        </button>
+        <button class="btn-pill" id="btnFullscreen" title="全螢幕切換">
+          <span>🔲 全螢幕</span>
+        </button>
+        <button class="btn-pill btn-danger" id="btnClearOrEnd" title="清空或結束白板">
+          <span>💥 結束白板</span>
+        </button>
+      </div>
     </div>
+
+    <!-- 3. 主畫布與工具列區域 -->
+    <main class="whiteboard-main">
+      <!-- 畫布平移與縮放視窗 -->
+      <div id="canvasViewport" class="grid-bg">
+        <div id="canvasWorld">
+          <!-- 向量繪圖層 (SVG) -->
+          <svg id="svgLayer" width="10000" height="10000">
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#f97316"/>
+              </marker>
+            </defs>
+          </svg>
+          <!-- HTML 互動層 (便利貼、圖片、作者標籤) -->
+          <div id="htmlLayer"></div>
+        </div>
+      </div>
+
+      <!-- 左側直立浮動膠囊工具列 (如圖 1) -->
+      <aside class="floating-toolbar" id="floatingToolbar">
+        <div class="toolbar-grid">
+          <!-- 1. 選取 / 移動 -->
+          <button class="tool-btn active" data-tool="select" title="選取與移動物件 (V)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3l7 18 3-7 7-3L3 3z"/>
+            </svg>
+          </button>
+          <!-- 2. 手繪畫筆 -->
+          <button class="tool-btn" data-tool="pen" title="自由手繪筆刷 (P)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+            </svg>
+          </button>
+          <!-- 3. 矩形 -->
+          <button class="tool-btn" data-tool="rect" title="矩形方框 (R)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            </svg>
+          </button>
+          <!-- 4. 圓形 / 橢圓 -->
+          <button class="tool-btn" data-tool="circle" title="圓形或橢圓 (O)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+            </svg>
+          </button>
+          <!-- 5. 箭頭直線 -->
+          <button class="tool-btn" data-tool="arrow" title="箭頭指示線 (A)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="19" x2="19" y2="5"/>
+              <polyline points="10 5 19 5 19 14"/>
+            </svg>
+          </button>
+          <!-- 6. 便利貼 (Sticky Note) -->
+          <button class="tool-btn" data-tool="sticky" title="便利貼 (S)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </button>
+          <!-- 7. 抓手平移 -->
+          <button class="tool-btn" data-tool="hand" title="平移畫布 (按住空白鍵或 H)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
+              <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/>
+              <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/>
+              <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.83l1.76 1.77"/>
+            </svg>
+          </button>
+          <!-- 8. 橡皮擦 -->
+          <button class="tool-btn" data-tool="eraser" title="橡皮擦 (E)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z"/>
+              <path d="M11 17L17 11"/>
+            </svg>
+          </button>
+          <!-- 9. 插入圖片 -->
+          <button class="tool-btn" id="btnInsertImage" title="插入圖片 (或直接 Ctrl+V)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </button>
+          <!-- 10. 插入 PDF (圖 2) -->
+          <button class="tool-btn" id="btnInsertPdf" title="插入 PDF 檔案並自由選頁">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <text x="7" y="18" font-size="7" font-weight="900" fill="currentColor">PDF</text>
+            </svg>
+          </button>
+          <!-- 11. 清空畫布 -->
+          <button class="tool-btn" id="btnTrashCanvas" title="清空當前頁面所有物件">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+          <!-- 12. 作者姓名標籤顯示開關 (圖 1 人像膠囊) -->
+          <button class="tool-btn active" id="btnToggleAuthorBadge" title="切換是否在物件上顯示作者姓名">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 顏色與線條粗細設定 -->
+        <div class="toolbar-styles">
+          <div class="color-btn-wrapper">
+            <div class="color-current-dot" id="colorCurrentDot" title="選擇筆刷與形狀顏色"></div>
+            <!-- 顏色快選盤 -->
+            <div class="color-palette-popover" id="colorPalette">
+              <div class="color-swatch" style="background:#1e293b;" data-color="#1e293b"></div>
+              <div class="color-swatch" style="background:#ef4444;" data-color="#ef4444"></div>
+              <div class="color-swatch" style="background:#f97316;" data-color="#f97316"></div>
+              <div class="color-swatch" style="background:#eab308;" data-color="#eab308"></div>
+              <div class="color-swatch" style="background:#10b981;" data-color="#10b981"></div>
+              <div class="color-swatch" style="background:#06b6d4;" data-color="#06b6d4"></div>
+              <div class="color-swatch" style="background:#3b82f6;" data-color="#3b82f6"></div>
+              <div class="color-swatch" style="background:#8b5cf6;" data-color="#8b5cf6"></div>
+            </div>
+          </div>
+          <select class="stroke-size-select" id="strokeSizeSelect" title="筆刷粗細">
+            <option value="2">細</option>
+            <option value="4" selected>中</option>
+            <option value="8">粗</option>
+          </select>
+        </div>
+      </aside>
+
+      <!-- 唯讀提示 Banner -->
+      <div class="readonly-banner" id="readonlyBanner">
+        🔒 老師目前已關閉學生編輯權限（僅供檢視）
+      </div>
+
+      <!-- 右側參與者抽屜 (圖 1 右側) -->
+      <aside class="participants-drawer" id="participantsDrawer">
+        <div class="drawer-header">
+          <div class="drawer-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span>參與者 (<span id="userCount">1</span>)</span>
+          </div>
+          <div class="drawer-desc">
+            物件權限開關位於上方工具列（🔒 學生可編輯 / 👥 可動他人物件）。
+          </div>
+        </div>
+        <div class="drawer-user-list" id="userList">
+          <!-- 在線使用者項目 -->
+        </div>
+      </aside>
+    </main>
+
+    <!-- 4. 插入 PDF 自由選頁 Modal (圖 2) -->
+    <div class="modal-overlay" id="pdfModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>📄 選擇要插入的 PDF 頁面</span>
+            <span style="font-weight:normal; color:var(--text-muted); font-size:15px;">（共 <span id="pdfTotalPages">0</span> 頁）</span>
+          </div>
+          <button class="btn-close" id="btnClosePdfModal">✕</button>
+        </div>
+        <div class="pdf-select-toolbar">
+          <label class="checkbox-label">
+            <input type="checkbox" id="pdfSelectAll" checked style="accent-color: var(--primary); width:16px; height:16px;">
+            <span>全選</span>
+          </label>
+          <span class="badge-count" id="pdfSelectedBadge">已選 0 頁</span>
+        </div>
+        <div class="pdf-thumbnail-grid" id="pdfThumbnailGrid">
+          <!-- 動態載入縮圖卡片 -->
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="btnCancelPdf">取消</button>
+          <button class="btn-primary" id="btnConfirmInsertPdf">插入選取頁面</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 隱藏檔案選取 Input -->
+    <input type="file" id="imageFileInput" class="hidden-file-input" accept="image/*">
+    <input type="file" id="pdfFileInput" class="hidden-file-input" accept="application/pdf">
   </div>
 
-  <script>
-    // 載入超時防禦救援機制
-    setTimeout(function() {
-      if (!window.editorInstanceRef) {
-        var root = document.getElementById('root');
-        if (root && root.querySelector('.loading-container')) {
-          root.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#666;font-size:15px;padding:20px;text-align:center;"><div style="font-size:32px;margin-bottom:12px;">💡</div><div style="font-weight:bold;margin-bottom:8px;">白板正在完成初始化...</div><div style="font-size:13px;color:#888;margin-bottom:16px;">如持續轉圈，請點擊下方按鈕刷新</div><button onclick="window.location.reload()" style="padding:8px 18px;background:#007aff;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,122,255,0.3);">重新載入白板</button></div>';
-        }
-      }
-    }, 8000);
-  </script>
-
-  <script type="module">
-    import React from 'react';
-    import { createRoot } from 'react-dom/client';
-    import { Tldraw } from 'tldraw';
-
-    let editorInstance = null;
-    let isApplyingRemote = false;
-    let pendingRemoteSnapshot = null;
-
-    window.whiteboardSnapshotDiagnostics = {
-      loadedCount: 0,
-      recoveredCount: 0,
-      rejectedCount: 0,
-      droppedRecordCount: 0,
-      validationFailures: 0
-    };
-
-    // 2.1.4 預設合規 Schema 備援，確保 migrateStoreSnapshot 100% 讀得到相容 schemaVersion
-    const DEFAULT_2_1_4_SCHEMA = {
-      schemaVersion: 1,
-      storeVersion: 4,
-      recordVersions: {
-        asset: { version: 1, subTypeVersion: 1 },
-        camera: { version: 1 },
-        document: { version: 2 },
-        instance: { version: 22 },
-        instance_page_state: { version: 5 },
-        page: { version: 1 },
-        shape: { version: 3, subTypeVersion: 1 },
-        instance_presence: { version: 5 },
-        pointer: { version: 1 }
-      }
-    };
-
-    const ALLOWED_DOCUMENT_RECORD_TYPES = new Set(['document', 'page', 'shape', 'asset']);
-
-    function isPlainObject(val) {
-      return Boolean(val) && typeof val === 'object' && !Array.isArray(val);
-    }
-
-    function sanitizeRecord(record) {
-      if (!isPlainObject(record)) return null;
-      if (typeof record.id !== 'string' || !record.id.trim()) return null;
-      if (typeof record.typeName !== 'string' || !ALLOWED_DOCUMENT_RECORD_TYPES.has(record.typeName)) {
-        return null;
-      }
-      if (!record.id.startsWith(record.typeName + ':')) {
-        return null;
-      }
-
-      const cloned = { ...record };
-      if (!isPlainObject(cloned.meta)) {
-        cloned.meta = {};
-      }
-
-      if (cloned.typeName === 'document') {
-        if (cloned.id !== 'document:document') return null;
-        if (typeof cloned.gridSize !== 'number' || !Number.isFinite(cloned.gridSize)) {
-          cloned.gridSize = 10;
-        }
-        if (typeof cloned.name !== 'string') {
-          cloned.name = '';
-        }
-        return cloned;
-      }
-
-      if (cloned.typeName === 'page') {
-        if (typeof cloned.name !== 'string' || !cloned.name) {
-          cloned.name = 'Page 1';
-        }
-        if (typeof cloned.index !== 'string' || !cloned.index) {
-          cloned.index = 'a1';
-        }
-        return cloned;
-      }
-
-      if (cloned.typeName === 'asset') {
-        if (typeof cloned.type !== 'string' || !cloned.type) return null;
-        if (!isPlainObject(cloned.props)) return null;
-        if (cloned.type === 'image' || cloned.type === 'video') {
-          const w = Number(cloned.props.w);
-          const h = Number(cloned.props.h);
-          if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
-            return null;
-          }
-          if (typeof cloned.props.src !== 'string' && cloned.props.src !== null) {
-            return null;
-          }
-        }
-        return cloned;
-      }
-
-      if (cloned.typeName === 'shape') {
-        if (typeof cloned.type !== 'string' || !cloned.type) return null;
-        if (typeof cloned.parentId !== 'string' || !cloned.parentId) {
-          cloned.parentId = 'page:page';
-        }
-        if (typeof cloned.index !== 'string' || !cloned.index) {
-          cloned.index = 'a1';
-        }
-        if (!isPlainObject(cloned.props)) return null;
-
-        cloned.x = (typeof cloned.x === 'number' && Number.isFinite(cloned.x)) ? cloned.x : 0;
-        cloned.y = (typeof cloned.y === 'number' && Number.isFinite(cloned.y)) ? cloned.y : 0;
-        cloned.rotation = (typeof cloned.rotation === 'number' && Number.isFinite(cloned.rotation)) ? cloned.rotation : 0;
-        cloned.isLocked = Boolean(cloned.isLocked);
-        cloned.opacity = (typeof cloned.opacity === 'number' && Number.isFinite(cloned.opacity) && cloned.opacity >= 0 && cloned.opacity <= 1)
-          ? cloned.opacity
-          : 1;
-
-        const cleanProps = { ...cloned.props };
-        if (cloned.type === 'text' && cleanProps.font === 'draw') {
-          cleanProps.font = 'sans';
-        }
-        if (cloned.type === 'image') {
-          const w = Number(cleanProps.w);
-          const h = Number(cleanProps.h);
-          if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
-            return null;
-          }
-        }
-        cloned.props = cleanProps;
-        return cloned;
-      }
-
-      return null;
-    }
-
-    function normalizeSchema(rawSchema, fallbackSchema) {
-      if (!isPlainObject(rawSchema)) return fallbackSchema;
-      if (rawSchema.schemaVersion !== fallbackSchema.schemaVersion) return fallbackSchema;
-      if (typeof rawSchema.storeVersion !== 'number' || rawSchema.storeVersion > fallbackSchema.storeVersion || rawSchema.storeVersion < 1) {
-        return fallbackSchema;
-      }
-      if (!isPlainObject(rawSchema.recordVersions)) return fallbackSchema;
-
-      for (const [recType, verObj] of Object.entries(fallbackSchema.recordVersions || {})) {
-        const rawVer = rawSchema.recordVersions[recType];
-        if (!isPlainObject(rawVer) || typeof rawVer.version !== 'number') {
-          return fallbackSchema;
-        }
-        if (rawVer.version > verObj.version) {
-          return fallbackSchema;
-        }
-      }
-      return rawSchema;
-    }
-
-    // 快照全自動防禦、轉換與淨化過濾器 (Sanitizer) - 100% 歸一化為 2.1.4 Store-level 快照
-    function sanitizeSnapshot(snapshot) {
-      let parsed = snapshot;
-      if (typeof parsed === 'string') {
-        try {
-          parsed = JSON.parse(parsed);
-        } catch (e) {
-          window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
-          return null;
-        }
-      }
-      if (!isPlainObject(parsed)) {
-        window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
-        return null;
-      }
-
-      let rawStore = null;
-      let rawSchema = null;
-
-      // 情況 A：原生 2.1.4 Store-level 結構 { store: {...}, schema: {...} }
-      if (isPlainObject(parsed.store)) {
-        rawStore = parsed.store;
-        rawSchema = parsed.schema;
-      } 
-      // 情況 B：舊雙層包裝結構 { document: { store: {...}, schema: {...} } }
-      else if (isPlainObject(parsed.document) && isPlainObject(parsed.document.store)) {
-        rawStore = parsed.document.store;
-        rawSchema = parsed.document.schema || parsed.schema;
-      }
-
-      if (!isPlainObject(rawStore)) {
-        window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
-        return null;
-      }
-
-      // 嚴格淨化過濾 Store 裡面的各個 record
-      const cleanStore = {};
-      for (const key in rawStore) {
-        if (!Object.prototype.hasOwnProperty.call(rawStore, key)) continue;
-        const candidate = rawStore[key];
-        if (isPlainObject(candidate) && typeof candidate.typeName === 'string' && !ALLOWED_DOCUMENT_RECORD_TYPES.has(candidate.typeName)) {
-          continue;
-        }
-        const sanitized = sanitizeRecord(candidate);
-        if (sanitized) {
-          cleanStore[sanitized.id] = sanitized;
-        } else {
-          window.whiteboardSnapshotDiagnostics.droppedRecordCount += 1;
-          console.warn('[Snapshot Sanitizer] Skipped invalid record:', key, candidate);
-        }
-      }
-
-      const fallbackSchema = (editorInstance && editorInstance.store && editorInstance.store.schema) 
-        ? editorInstance.store.schema.serialize() 
-        : DEFAULT_2_1_4_SCHEMA;
-
-      return {
-        store: cleanStore,
-        schema: normalizeSchema(rawSchema, fallbackSchema)
-      };
-    }
-
-    window.sanitizeWhiteboardSnapshot = sanitizeSnapshot;
-
-    function applySnapshotSafely(rawSnapshot) {
-      if (!editorInstance || !editorInstance.store) {
-        pendingRemoteSnapshot = rawSnapshot;
-        return false;
-      }
-
-      const cleanSnapshot = sanitizeSnapshot(rawSnapshot);
-      if (!cleanSnapshot || !isPlainObject(cleanSnapshot.store)) {
-        console.warn('[Snapshot Guard] Rejected invalid or empty snapshot');
-        return false;
-      }
-
-      const fallbackSchema = (editorInstance.store.schema && typeof editorInstance.store.schema.serialize === 'function')
-        ? editorInstance.store.schema.serialize()
-        : DEFAULT_2_1_4_SCHEMA;
-
-      try {
-        if (typeof editorInstance.store.loadSnapshot === 'function') {
-          editorInstance.store.loadSnapshot(cleanSnapshot);
-        } else if (typeof editorInstance.loadSnapshot === 'function') {
-          editorInstance.loadSnapshot(cleanSnapshot);
-        }
-        window.whiteboardSnapshotDiagnostics.loadedCount += 1;
-        return true;
-      } catch (stage1Err) {
-        console.warn('[Snapshot Guard] Stage 1 loadSnapshot failed, retrying with runtime schema:', stage1Err);
-      }
-
-      try {
-        const runtimeSnapshot = {
-          store: cleanSnapshot.store,
-          schema: fallbackSchema
-        };
-        if (typeof editorInstance.store.loadSnapshot === 'function') {
-          editorInstance.store.loadSnapshot(runtimeSnapshot);
-        } else if (typeof editorInstance.loadSnapshot === 'function') {
-          editorInstance.loadSnapshot(runtimeSnapshot);
-        }
-        window.whiteboardSnapshotDiagnostics.recoveredCount += 1;
-        return true;
-      } catch (stage2Err) {
-        console.warn('[Snapshot Guard] Stage 2 loadSnapshot failed, falling back to per-record isolation:', stage2Err);
-      }
-
-      try {
-        const records = Object.values(cleanSnapshot.store);
-        const order = { document: 1, page: 2, asset: 3, shape: 4 };
-        records.sort((a, b) => (order[a.typeName] || 99) - (order[b.typeName] || 99));
-
-        const applyRecords = () => {
-          const existingShapes = typeof editorInstance.getCurrentPageShapeIds === 'function'
-            ? Array.from(editorInstance.getCurrentPageShapeIds())
-            : [];
-          const incomingIds = new Set(records.map((r) => r.id));
-          const toRemove = existingShapes.filter((id) => !incomingIds.has(id));
-          if (toRemove.length > 0 && typeof editorInstance.store.remove === 'function') {
-            try { editorInstance.store.remove(toRemove); } catch (_) {}
-          }
-          for (const rec of records) {
-            try {
-              editorInstance.store.put([rec]);
-            } catch (recErr) {
-              window.whiteboardSnapshotDiagnostics.droppedRecordCount += 1;
-              console.warn('[Snapshot Guard] Isolated & skipped corrupted record:', rec.id, recErr);
-            }
-          }
-        };
-
-        if (typeof editorInstance.store.mergeRemoteChanges === 'function') {
-          editorInstance.store.mergeRemoteChanges(applyRecords);
-        } else {
-          applyRecords();
-        }
-        window.whiteboardSnapshotDiagnostics.recoveredCount += 1;
-        return true;
-      } catch (stage3Err) {
-        window.whiteboardSnapshotDiagnostics.rejectedCount += 1;
-        console.error('[Snapshot Guard] All 3 stages failed to apply snapshot:', stage3Err);
-        return false;
-      }
-    }
-
-    function App() {
-      const [canUndo, setCanUndo] = React.useState(false);
-      const [canRedo, setCanRedo] = React.useState(false);
-
-      const handleMount = (editor) => {
-        editorInstance = editor;
-        window.editorInstanceRef = editor;
-        console.log('tldraw initialized successfully!');
-        
-        // 初始狀態
-        setCanUndo(editor.getCanUndo());
-        setCanRedo(editor.getCanRedo());
-
-        // 核心 Safe Validation Failure 放行器（避免 redaction 爆破）
-        try {
-          if (editor.store && editor.store.schema) {
-            editor.store.schema.onValidationFailure = ({ error, phase, record, recordBefore }) => {
-              window.whiteboardSnapshotDiagnostics.validationFailures += 1;
-              console.warn('[tldraw Validation Safeguarded]:', {
-                error: error ? (error.message || error) : 'unknown',
-                phase,
-                recordId: record ? record.id : undefined,
-                recordTypeName: record ? record.typeName : undefined,
-                recordBeforeTypeName: recordBefore ? recordBefore.typeName : undefined
-              });
-              const repaired = sanitizeRecord(record) || sanitizeRecord(recordBefore);
-              if (repaired) return repaired;
-              if (record && typeof record === 'object') return record;
-              if (recordBefore && typeof recordBefore === 'object') return recordBefore;
-              return { id: 'document:document', typeName: 'document', gridSize: 10, name: '', meta: {} };
-            };
-          }
-        } catch (e) {
-          console.warn('Failed to attach safe onValidationFailure:', e);
-        }
-
-        // 註冊 tldraw 內建正宗 ExternalContentHandler (貼上與拖放檔案)
-        try {
-          if (typeof editor.registerExternalContentHandler === 'function') {
-            editor.registerExternalContentHandler('files', async ({ files, point }) => {
-              for (const file of files) {
-                if (file.type && file.type.startsWith('image/')) {
-                  const reader = new FileReader();
-                  reader.onload = async (e) => {
-                    const dataUrl = e.target.result;
-                    if (!dataUrl) return;
-                    const img = new Image();
-                    img.onload = async () => {
-                      const w = img.width || 400;
-                      const h = img.height || 300;
-                      const assetId = `asset:${Math.random().toString(36).substring(2, 11)}`;
-                      const shapeId = `shape:${Math.random().toString(36).substring(2, 11)}`;
-                      const p = point || (editor.getViewportPageBounds ? editor.getViewportPageBounds().center : { x: 200, y: 200 });
-
-                      if (typeof editor.createAssets === 'function' && typeof editor.createShapes === 'function') {
-                        await editor.createAssets([{
-                          id: assetId,
-                          typeName: 'asset',
-                          type: 'image',
-                          props: {
-                            name: file.name || 'clipboard-image.png',
-                            src: dataUrl,
-                            w: w,
-                            h: h,
-                            mimeType: file.type || 'image/png',
-                            isAnimated: false
-                          },
-                          meta: {}
-                        }]);
-
-                        await editor.createShapes([{
-                          id: shapeId,
-                          type: 'image',
-                          x: p.x - w / 2,
-                          y: p.y - h / 2,
-                          props: {
-                            w: w,
-                            h: h,
-                            assetId: assetId
-                          }
-                        }]);
-
-                        if (typeof editor.setSelectedShapes === 'function') {
-                          editor.setSelectedShapes([shapeId]);
-                        }
-                      }
-                    };
-                    img.src = dataUrl;
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }
-            });
-          }
-        } catch (err) {
-          console.warn('registerExternalContentHandler registration warning:', err);
-        }
-
-        // 核心剪貼簿圖片貼上全自動接管 (Base64 Data URL Clipboard Guard)
-        const handleImagePaste = async (clipboardEvent) => {
-          try {
-            const clipboardData = clipboardEvent.clipboardData || window.clipboardData;
-            if (!clipboardData) return;
-
-            let imageFile = null;
-            if (clipboardData.files && clipboardData.files.length > 0) {
-              for (let i = 0; i < clipboardData.files.length; i++) {
-                if (clipboardData.files[i].type && clipboardData.files[i].type.startsWith('image/')) {
-                  imageFile = clipboardData.files[i];
-                  break;
-                }
-              }
-            }
-            if (!imageFile && clipboardData.items) {
-              for (let i = 0; i < clipboardData.items.length; i++) {
-                const item = clipboardData.items[i];
-                if (item.type && item.type.startsWith('image/')) {
-                  imageFile = item.getAsFile();
-                  break;
-                }
-              }
-            }
-
-            if (imageFile) {
-              clipboardEvent.preventDefault();
-              clipboardEvent.stopPropagation();
-
-              if (!editorInstance) return;
-
-              const reader = new FileReader();
-              reader.onload = async (evt) => {
-                const dataUrl = evt.target.result;
-                if (!dataUrl) return;
-
-                const img = new Image();
-                img.onload = async () => {
-                  try {
-                    const width = img.width || 400;
-                    const height = img.height || 300;
-                    const assetId = `asset:${Math.random().toString(36).substring(2, 11)}`;
-                    const shapeId = `shape:${Math.random().toString(36).substring(2, 11)}`;
-
-                    const viewportBounds = typeof editorInstance.getViewportPageBounds === 'function' ? editorInstance.getViewportPageBounds() : null;
-                    const centerPoint = viewportBounds ? viewportBounds.center : { x: 200, y: 200 };
-
-                    if (typeof editorInstance.createAssets === 'function' && typeof editorInstance.createShapes === 'function') {
-                      await editorInstance.createAssets([{
-                        id: assetId,
-                        typeName: 'asset',
-                        type: 'image',
-                        props: {
-                          name: imageFile.name || 'clipboard-image.png',
-                          src: dataUrl,
-                          w: width,
-                          h: height,
-                          mimeType: imageFile.type || 'image/png',
-                          isAnimated: false
-                        },
-                        meta: {}
-                      }]);
-
-                      await editorInstance.createShapes([{
-                        id: shapeId,
-                        type: 'image',
-                        x: centerPoint.x - width / 2,
-                        y: centerPoint.y - height / 2,
-                        props: {
-                          w: width,
-                          h: height,
-                          assetId: assetId
-                        }
-                      }]);
-
-                      if (typeof editorInstance.setSelectedShapes === 'function') {
-                        editorInstance.setSelectedShapes([shapeId]);
-                      }
-                    }
-                  } catch (err) {
-                    console.error('Pasted image injection failed:', err);
-                  }
-                };
-                img.src = dataUrl;
-              };
-              reader.readAsDataURL(imageFile);
-            }
-          } catch (err) {
-            console.warn('Paste event handler warning:', err);
-          }
-        };
-
-        window.addEventListener('paste', handleImagePaste, true);
-
-        // 監聽使用者在白板上的畫筆/文字/圖片/物件變動 (scope: 'document')
-        let debounceTimer = null;
-        editor.store.listen((entry) => {
-          // 動態同步 Undo/Redo 狀態
-          setCanUndo(editor.getCanUndo());
-          setCanRedo(editor.getCanRedo());
-
-          if (!isApplyingRemote) {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-              try {
-                const rawSnapshot = editor.store ? editor.store.getSnapshot() : null;
-                const snapshot = rawSnapshot ? (sanitizeSnapshot(rawSnapshot) || rawSnapshot) : null;
-                if (snapshot && window.parent && window.parent !== window) {
-                  window.parent.postMessage({
-                    type: 'TLDRAW_LOCAL_CHANGE',
-                    snapshot: snapshot
-                  }, '*');
-                }
-              } catch (err) {
-                console.error('Failed to capture local tldraw change:', err);
-              }
-            }, 300);
-          }
-        }, { scope: 'document' });
-
-        if (pendingRemoteSnapshot) {
-          const queuedSnapshot = pendingRemoteSnapshot;
-          pendingRemoteSnapshot = null;
-          try {
-            isApplyingRemote = true;
-            applySnapshotSafely(queuedSnapshot);
-          } finally {
-            setTimeout(() => { isApplyingRemote = false; }, 300);
-          }
-        }
-
-        // 通知父視窗已準備就緒
-        if (window.parent && window.parent !== window) {
-          window.parent.postMessage({ type: 'TLDRAW_READY' }, '*');
-        }
-      };
-
-      // 使用穩定且不因時序誤判的 userAgent 偵測，徹底將行動端與電腦端隔離，還原電腦端右側樣式面板
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-      // 核心 UI 組件配置：傳入 Toast: () => null 徹底拔除並禁用引發 react-toast.mjs 崩潰之原廠 ToastProvider
-      const tldrawComponents = {
-        Toast: () => null,
-        ...(isMobile ? {
-          MainMenu: null,
-          PageMenu: null,
-          NavigationPanel: null,
-          HelpMenu: null,
-          QuickActions: null // 隱藏底部原廠 Undo/Redo，防止遮擋重疊
-        } : {})
-      };
-
-      // 手機版在頂部右上角渲染一個精緻、小巧、半透明的復原/重做按鈕組
-      const customControls = isMobile ? React.createElement('div', {
-        style: {
-          position: 'absolute',
-          top: '8px',
-          right: '8px',
-          zIndex: 1000,
-          display: 'flex',
-          gap: '6px',
-          alignItems: 'center',
-          pointerEvents: 'auto'
-        }
-      }, [
-        React.createElement('button', {
-          key: 'undo',
-          onClick: () => { if (editorInstance) editorInstance.undo(); },
-          disabled: !canUndo,
-          style: {
-            padding: '6px 10px',
-            fontSize: '13px',
-            background: 'rgba(255, 255, 255, 0.9)',
-            border: '1px solid rgba(0,0,0,0.15)',
-            borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            cursor: 'pointer',
-            opacity: canUndo ? 1 : 0.4,
-            pointerEvents: canUndo ? 'auto' : 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontWeight: 'bold',
-            color: '#333'
-          }
-        }, '↩️ 復原'),
-        React.createElement('button', {
-          key: 'redo',
-          onClick: () => { if (editorInstance) editorInstance.redo(); },
-          disabled: !canRedo,
-          style: {
-            padding: '6px 10px',
-            fontSize: '13px',
-            background: 'rgba(255, 255, 255, 0.9)',
-            border: '1px solid rgba(0,0,0,0.15)',
-            borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            cursor: 'pointer',
-            opacity: canRedo ? 1 : 0.4,
-            pointerEvents: canRedo ? 'auto' : 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontWeight: 'bold',
-            color: '#333'
-          }
-        }, '↪️ 重做'),
-        React.createElement('span', {
-          key: 'ver',
-          style: {
-            fontSize: '9px',
-            color: '#999',
-            background: 'rgba(255,255,255,0.7)',
-            padding: '2px 4px',
-            borderRadius: '4px',
-            border: '1px solid rgba(0,0,0,0.1)',
-            fontWeight: 'bold',
-            userSelect: 'none'
-          }
-        }, 'v1.4.6')
-      ]) : null;
-
-      const tldrawProps = {
-        key: 'tldraw',
-        onMount: handleMount,
-        components: tldrawComponents,
-        forceMobile: isMobile // 強制在行動端使用原生折疊式的 Mobile UI，以提供帶有 ^ 箭頭的樣式與面板按鈕
-      };
-
-      return React.createElement(React.Fragment, null, [
-        React.createElement(Tldraw, tldrawProps),
-        customControls
-      ]);
-    }
-
-    // 監聽來自父視窗的 postMessage 通訊
-    window.addEventListener('message', async (event) => {
-      const data = event.data;
-      if (!data || typeof data !== 'object') return;
-
-      switch (data.type) {
-        case 'GET_TLDRAW_SNAPSHOT':
-          if (editorInstance && editorInstance.store) {
-            try {
-              const rawSnapshot = typeof editorInstance.store.getSnapshot === 'function' 
-                ? editorInstance.store.getSnapshot() 
-                : (editorInstance.getSnapshot ? editorInstance.getSnapshot() : null);
-              const snapshot = rawSnapshot ? (sanitizeSnapshot(rawSnapshot) || rawSnapshot) : null;
-              window.parent.postMessage({
-                type: 'TLDRAW_SNAPSHOT_RESPONSE',
-                requestId: data.requestId,
-                snapshot: snapshot
-              }, '*');
-            } catch (err) {
-              console.error('Failed to get tldraw snapshot:', err);
-              window.parent.postMessage({
-                type: 'TLDRAW_SNAPSHOT_RESPONSE',
-                requestId: data.requestId,
-                error: err.message
-              }, '*');
-            }
-          }
-          break;
-
-        case 'LOAD_TLDRAW_SNAPSHOT':
-          if (!data.snapshot) break;
-          if (!editorInstance || !editorInstance.store) {
-            pendingRemoteSnapshot = data.snapshot;
-            break;
-          }
-          try {
-            isApplyingRemote = true;
-            const loaded = applySnapshotSafely(data.snapshot);
-            if (loaded) {
-              console.log('tldraw remote snapshot sanitized and loaded successfully');
-            } else {
-              console.warn('Received invalid snapshot format, skipped loading to prevent crash');
-            }
-          } catch (err) {
-            console.error('Failed to load tldraw snapshot safely:', err);
-          } finally {
-            setTimeout(() => { isApplyingRemote = false; }, 300);
-          }
-          break;
-
-        case 'CLEAR_TLDRAW':
-          if (editorInstance) {
-            try {
-              editorInstance.selectAll();
-              const selectedIds = editorInstance.getSelectedShapeIds();
-              if (selectedIds && selectedIds.length > 0) {
-                editorInstance.deleteShapes(selectedIds);
-              }
-            } catch (err) {
-              console.error('Failed to clear tldraw:', err);
-            }
-          }
-          break;
-      }
-    });
-
-    // 渲染頁面
-    const rootElement = document.getElementById('root');
-    const root = createRoot(rootElement);
-    root.render(React.createElement(App));
-
-  </script>
+  <script src="js/whiteboard_core.js?v=3000"></script>
 </body>
 </html>
