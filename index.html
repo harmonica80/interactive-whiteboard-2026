@@ -107,11 +107,11 @@
         </div>
       </div>
 
-      <!-- ⚠️ 提醒訊息：若老師註冊後還未設定專屬密碼，在此顯示即將失效提醒 (圖 2 紅框位置) -->
-      <div id="defaultPasswordWarningBanner" class="default-pwd-warning-banner" style="display: none; align-items: center; gap: 8px; background: rgba(255, 149, 0, 0.12); border: 1.5px solid rgba(255, 149, 0, 0.35); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: #b45309; font-weight: 600; cursor: pointer; transition: all 0.2s ease; margin: 0 auto; box-shadow: 0 2px 6px rgba(0,0,0,0.03);" onclick="window.app && window.app.openTeacherSecuritySettingsFromBanner()" title="點擊立即前往設定專屬密碼與安全自救">
-        <span style="font-size: 15px;">⚠️</span>
-        <span id="txtDefaultPasswordWarning">提醒：您尚未設定專屬密碼，若未在 <strong>--</strong> 前設定好，預設密碼將失效！</span>
-        <button type="button" style="background: #f59e0b; color: white; border: none; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+      <!-- ⚠️ 提醒訊息：若老師註冊後還未設定專屬密碼，在已登入管理後台時顯示即將失效提醒 -->
+      <div id="defaultPasswordWarningBanner" class="default-pwd-warning-banner" style="display: none; align-items: center; gap: 6px; background: rgba(255, 149, 0, 0.12); border: 1.5px solid rgba(255, 149, 0, 0.35); border-radius: 20px; padding: 3px 10px; font-size: 12.5px; color: #b45309; font-weight: 600; cursor: pointer; transition: all 0.2s ease; margin: 0 auto; box-shadow: 0 2px 6px rgba(0,0,0,0.03); white-space: nowrap; flex-shrink: 0;" onclick="window.app && window.app.openTeacherSecuritySettingsFromBanner()" title="點擊立即前往設定專屬密碼與安全自救">
+        <span style="font-size: 14px; flex-shrink: 0;">⚠️</span>
+        <span id="txtDefaultPasswordWarning">您尚未設定專屬密碼，若未在 <strong>--</strong> 前設定好，預設密碼將失效！</span>
+        <button type="button" style="background: #f59e0b; color: white; border: none; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); white-space: nowrap; flex-shrink: 0; margin-left: 2px;">
           立即設定 ➔
         </button>
       </div>
@@ -5026,7 +5026,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=381"></script>
-  <script src="js/app.js?v=404"></script>
+  <script src="js/app.js?v=405"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>

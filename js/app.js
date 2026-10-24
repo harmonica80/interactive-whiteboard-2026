@@ -17189,17 +17189,15 @@ class App {
       `;
 
       const dateStr = cls.createdAt ? new Date(cls.createdAt).toLocaleDateString() : '';
+      const displayName = cls.name ? cls.name : cls.code;
 
       card.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <span style="font-weight: bold; font-size: 14px; color: var(--accent-color); background: rgba(0, 122, 255, 0.1); padding: 3px 8px; border-radius: 6px;">
-            ${cls.code}
-          </span>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 220px;">
           <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">
-            ${cls.name !== cls.code ? cls.name : ''}
+            ${displayName}
           </span>
-          ${isCurrent ? '<span style="font-size: 14px; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">目前所在</span>' : ''}
-          <span style="font-size: 14px; color: var(--text-secondary);">${dateStr}</span>
+          ${isCurrent ? '<span style="font-size: 13px; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">目前所在</span>' : ''}
+          <span style="font-size: 13px; color: var(--text-secondary);">${dateStr}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <button type="button" class="class-action-btn" onclick="window.app.adminSwitchToClass('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="立即切換至此班級">
@@ -17221,12 +17219,19 @@ class App {
   }
 
   /**
-   * 檢查並更新頂部「未設定專屬密碼提醒橫幅」 (圖 2 紅框處)
+   * 檢查並更新頂部「未設定專屬密碼提醒橫幅」
+   * 僅在已登入管理後台的狀態下才顯示，學生端或未登入後台者一律不顯示
    */
   async checkDefaultPasswordBanner() {
     const banner = document.getElementById('defaultPasswordWarningBanner');
     const txt = document.getElementById('txtDefaultPasswordWarning');
     if (!banner || !txt) return;
+
+    // 依需求：此提醒訊息僅在已登入管理後台狀態下顯示
+    if (!this.isAdmin) {
+      banner.style.display = 'none';
+      return;
+    }
 
     if (!window.teacherAuthManager || typeof window.teacherAuthManager.getTeacherSecurityStatus !== 'function') {
       banner.style.display = 'none';
@@ -17253,12 +17258,12 @@ class App {
         banner.style.background = 'rgba(255, 59, 48, 0.12)';
         banner.style.borderColor = 'rgba(255, 59, 48, 0.35)';
         banner.style.color = '#dc2626';
-        txt.innerHTML = `⚠️ 初始預設密碼已於 <strong>${dateStr}</strong> 失效！請立即設定專屬密碼`;
+        txt.innerHTML = `初始預設密碼已於 <strong>${dateStr}</strong> 失效！請立即設定專屬密碼`;
       } else {
         banner.style.background = 'rgba(255, 149, 0, 0.12)';
         banner.style.borderColor = 'rgba(255, 149, 0, 0.35)';
         banner.style.color = '#b45309';
-        txt.innerHTML = `⚠️ 提醒：您尚未設定專屬密碼，若未在 <strong>${dateStr}</strong> 前設定好，預設密碼將失效！`;
+        txt.innerHTML = `您尚未設定專屬密碼，若未在 <strong>${dateStr}</strong> 前設定好，預設密碼將失效！`;
       }
 
       banner.style.display = 'inline-flex';
