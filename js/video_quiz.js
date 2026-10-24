@@ -423,6 +423,8 @@
 
       if (window.app && window.app.isAdmin) {
         this.setAdminState(true);
+      } else {
+        this.setAdminState(false);
       }
     }
 
@@ -565,12 +567,23 @@
       this.renderEditorQuizList();
       this.updateAdminBroadcastUI(this.lastSession);
       this.renderSyncTeacherControls();
+      if (!this.isTeacher) {
+        const syncContainer = document.getElementById('vqSyncTeacherControls');
+        if (syncContainer) { syncContainer.style.display = 'none'; syncContainer.innerHTML = ''; }
+        const selfContainer = document.getElementById('vqSelfTeacherControls');
+        if (selfContainer) { selfContainer.style.display = 'none'; selfContainer.innerHTML = ''; }
+      }
     }
 
     // 當切換進入「影片出題測驗」分頁時的觸發邏輯
     onTabEnter() {
       if (this.isTeacher || window.app?.isAdmin) {
         this.renderSyncTeacherControls();
+      } else {
+        const syncContainer = document.getElementById('vqSyncTeacherControls');
+        if (syncContainer) { syncContainer.style.display = 'none'; syncContainer.innerHTML = ''; }
+        const selfContainer = document.getElementById('vqSelfTeacherControls');
+        if (selfContainer) { selfContainer.style.display = 'none'; selfContainer.innerHTML = ''; }
       }
       if (this.lastSession && this.lastSession.status !== 'idle') {
         const studentNotice = document.getElementById('vqSyncStudentIdleNotice');
@@ -596,13 +609,20 @@
               }
             }
           } else {
-            // 學生端：在全班同步模式下不建立播放器，由老師於大螢幕統一播放，同學端展示導引提示
+            // 學生端：在全班同步模式下顯示該則影片，但不要自動播放
             const quiz = this.lastSession.quizData || (this.quizzes || []).find(q => q.id === this.lastSession.quizId);
-            this.renderStudentSyncWaitingScreen(quiz);
+            if (quiz && quiz.videoUrl) {
+              this.activeQuiz = quiz;
+              this.setupPlayer('vqSyncPlayerContainer', quiz.videoUrl, () => {
+                this.pauseVideo();
+              });
+            } else if (quiz) {
+              this.renderStudentSyncWaitingScreen(quiz);
+            }
           }
         }
 
-        if (this.lastSession.status === 'question' && this.lastSession.currentQuestion && !this.isTeacher) {
+        if (this.lastSession.status === 'question' && this.lastSession.currentQuestion && !this.isTeacher && !window.app?.isAdmin) {
           this.showQuestionOverlay(this.lastSession.currentQuestion, false);
         }
       }
@@ -1110,6 +1130,11 @@
                   } else if (this.activeQuiz && this.activeQuiz.startTime > 0) {
                     this.seekTo(this.activeQuiz.startTime);
                   }
+                  // 同步模式下的學生端：嚴格保持靜音與暫停，絕不自動播放音訊或影片
+                  if (containerId === 'vqSyncPlayerContainer' && !this.isTeacher && !window.app?.isAdmin) {
+                    try { if (typeof this.ytPlayer.mute === 'function') this.ytPlayer.mute(); } catch (e) {}
+                    try { if (typeof this.ytPlayer.pauseVideo === 'function') this.ytPlayer.pauseVideo(); } catch (e) {}
+                  }
                   if (typeof onReadyCallback === 'function') onReadyCallback(this);
                 },
                 onStateChange: (event) => {
@@ -1137,7 +1162,11 @@
         const videoEl = document.createElement('video');
         videoEl.src = videoUrl;
         videoEl.controls = true;
+        videoEl.autoplay = false;
         videoEl.playsInline = true;
+        if (containerId === 'vqSyncPlayerContainer' && !this.isTeacher && !window.app?.isAdmin) {
+          videoEl.muted = true;
+        }
         videoEl.style.width = '100%';
         videoEl.style.height = '100%';
         videoEl.style.objectFit = 'contain';
@@ -1862,9 +1891,20 @@
         quizDescEl.textContent = session.quizData.description;
       }
 
-      // 若當前使用者為管理員或老師，顯示控制列
+      // 若當前使用者為管理員或老師，顯示控制列；學生端確保嚴格隱藏並清空教師控制列（含出題時間軸）
       if (this.isTeacher || window.app?.isAdmin) {
         this.renderSyncTeacherControls();
+      } else {
+        const syncContainer = document.getElementById('vqSyncTeacherControls');
+        if (syncContainer) {
+          syncContainer.style.display = 'none';
+          syncContainer.innerHTML = '';
+        }
+        const selfContainer = document.getElementById('vqSelfTeacherControls');
+        if (selfContainer) {
+          selfContainer.style.display = 'none';
+          selfContainer.innerHTML = '';
+        }
       }
 
       // 檢查是否處於「影片出題測驗」分頁
@@ -1887,9 +1927,25 @@
         if (session.status === 'waiting' || session.status === 'playing' || session.status === 'question') {
           const quiz = session.quizData || (this.quizzes || []).find(q => q.id === session.quizId);
           if (quiz) {
+            const isQuizChanged = !this.activeQuiz || this.activeQuiz.id !== quiz.id || this.activeQuiz.currentSubQuizIndex !== session.currentSubQuizIndex;
             this.activeQuiz = quiz;
-            // 學生端在統一引導播放模式下，不載入本地影音串流（由教師端大螢幕統一播放），展示同步等待導引卡片
-            if (isVideoQuizActive) {
+
+            // 學生端：在全班同步模式下顯示該則影片，但不要自動播放
+            if (isVideoQuizActive && quiz.videoUrl) {
+              const currentVideoUrl = (this.playerType === 'youtube' && this.ytPlayer && typeof this.ytPlayer.getVideoUrl === 'function')
+                ? this.ytPlayer.getVideoUrl()
+                : (this.html5Player ? this.html5Player.src : null);
+              const ytId = this.extractYoutubeId(quiz.videoUrl);
+              const isDifferentYT = ytId && currentVideoUrl && !currentVideoUrl.includes(ytId);
+
+              if (!this.playerType || !this.isPlayerReady || isQuizChanged || isDifferentYT) {
+                this.setupPlayer('vqSyncPlayerContainer', quiz.videoUrl, () => {
+                  this.pauseVideo();
+                });
+              } else {
+                this.pauseVideo();
+              }
+            } else if (isVideoQuizActive && !quiz.videoUrl) {
               this.renderStudentSyncWaitingScreen(quiz);
             }
           }
