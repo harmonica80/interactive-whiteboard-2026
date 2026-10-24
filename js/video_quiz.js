@@ -51,9 +51,9 @@
       ]
     },
     {
-      id: 'vq_chinese_culture',
-      title: '📜 國文與成語典故：歷史故事與智慧啟示',
-      description: '從經典歷史典故中學習成語智慧與修身哲理。',
+      id: 'vq_eye_cells',
+      title: '👁️ 生物科普：眼睛中的視錐細胞與視桿細胞的作用是？',
+      description: '探索眼睛感光細胞的奧秘，了解負責彩色視覺的視錐細胞與暗光視覺的視桿細胞！',
       videoUrl: 'https://www.youtube.com/watch?v=lGbrMl8PAYA',
       videoType: 'youtube',
       youtubeId: 'lGbrMl8PAYA',
@@ -61,57 +61,55 @@
       questions: [
         {
           id: 'qc_1',
-          time: 30,
-          timeFormatted: '00:30',
+          time: 25,
+          timeFormatted: '00:25',
           type: 'single',
-          prompt: '成語「臥薪嘗膽」主要用來比喻什麼精神？',
-          options: ['隨遇而安', '刻苦自勵，發憤圖強', '自不量力', '好逸惡勞'],
-          correctAnswer: '刻苦自勵，發憤圖強',
-          explanation: '越王勾踐戰敗後臥薪嘗膽、忍辱負重，最終成功復國。比喻刻苦自勵，奮發圖強。',
+          prompt: '視網膜上的「視錐細胞」主要負責什麼生理功能？',
+          options: ['負責色彩視覺與強光下的清晰影像', '負責暗光下的黑白模糊輪廓', '調節眼球水晶體的厚薄曲度', '分泌眼淚保持眼角膜濕潤'],
+          correctAnswer: '負責色彩視覺與強光下的清晰影像',
+          explanation: '視錐細胞（錐狀細胞）主要集中於視網膜黃斑部，對強光敏感，負責高解析度影像與紅、綠、藍彩色視覺。',
           points: 10
         },
         {
           id: 'qc_2',
-          time: 75,
-          timeFormatted: '01:15',
+          time: 60,
+          timeFormatted: '01:00',
           type: 'multiple',
-          prompt: '下列哪些成語典故的主角出自《三國演義》或三國時期？（複選題）',
-          options: ['三顧茅廬', '草船借箭', '完璧歸趙', '鞠躬盡瘁'],
-          correctAnswer: ['三顧茅廬', '草船借箭', '鞠躬盡瘁'],
-          explanation: '「完璧歸趙」主角為戰國時期的藺相如；其餘三者皆為三國時期劉備與諸葛亮之典故。',
+          prompt: '關於「視桿細胞（桿狀細胞）」的特性，下列哪些敘述正確？（複選題）',
+          options: ['對弱光極為敏感，是夜間暗視覺的主力', '無法分辨色彩，僅能感知明暗與黑白輪廓', '缺乏維生素 A 會影響其視紫質合成導致夜盲症', '主要負責辨識鮮豔細緻的色彩'],
+          correctAnswer: ['對弱光極為敏感，是夜間暗視覺的主力', '無法分辨色彩，僅能感知明暗與黑白輪廓', '缺乏維生素 A 會影響其視紫質合成導致夜盲症'],
+          explanation: '視桿細胞靈敏度極高，在微弱光線下即可感光，但無法分辨顏色；缺乏維生素A會導致視紫質不足，引發夜盲症。',
           points: 10
         },
         {
           id: 'qc_3',
-          time: 120,
-          timeFormatted: '02:00',
-          type: 'text',
-          prompt: '【問答題】在日常學習或生活中，您會如何實踐「擇善固執」的態度？請簡述您的看法。',
-          options: [],
-          correctAnswer: '在認清正確且善良的目標後，不隨波逐流，堅持努力到底。',
-          explanation: '「擇善固執」出自《中庸》，指選擇合宜善道並堅定遵循實踐。',
+          time: 94,
+          timeFormatted: '01:34',
+          type: 'matching',
+          prompt: '請問「色盲」與「夜盲」分別是哪一個細胞有問題？',
+          options: ['色盲', '夜盲'],
+          matchOptions: ['視錐細胞', '視桿細胞'],
+          pairs: [
+            { left: '色盲', right: '視錐細胞' },
+            { left: '夜盲', right: '視桿細胞' }
+          ],
+          correctAnswer: {
+            '色盲': '視錐細胞',
+            '夜盲': '視桿細胞'
+          },
+          explanation: '視錐細胞主要作用：負責彩色視覺與清晰的細節；視桿細胞主要作用：負責暗光視覺與黑白輪廓。色盲與視錐細胞異常有關，夜盲則與視桿細胞異常有關。',
           points: 10
         },
         {
           id: 'qc_4',
-          time: 150,
-          timeFormatted: '02:30',
-          type: 'matching',
-          prompt: '【成語連連看】請將下列成語典故與其對應的關鍵主角配對：',
-          options: ['臥薪嚐膽', '完璧歸趙', '四面楚歌'],
-          matchOptions: ['勾踐', '藺相如', '項羽'],
-          pairs: [
-            { left: '臥薪嚐膽', right: '勾踐' },
-            { left: '完璧歸趙', right: '藺相如' },
-            { left: '四面楚歌', right: '項羽' }
-          ],
-          correctAnswer: {
-            '臥薪嚐膽': '勾踐',
-            '完璧歸趙': '藺相如',
-            '四面楚歌': '項羽'
-          },
-          explanation: '臥薪嚐膽為越王勾踐、完璧歸趙為趙國藺相如、四面楚歌為楚霸王項羽。',
-          points: 15
+          time: 135,
+          timeFormatted: '02:15',
+          type: 'text',
+          prompt: '【問答題】請簡述：為什麼從明亮室外走進昏暗電影院時，一開始會看不清，過一會兒卻能看清周遭輪廓（暗適應現象）？',
+          options: [],
+          correctAnswer: '強光下視紫質大量分解，進入暗處後視桿細胞需要時間重新合成視紫質以恢復暗視覺。',
+          explanation: '由亮入暗時，視錐細胞失去作用，視桿細胞需要數分鐘重新合成「視紫質」恢復感光能力，此生理過程稱為「暗適應」。',
+          points: 10
         }
       ]
     }
@@ -121,16 +119,16 @@
     {
       id: 'cset_comprehensive_default',
       name: '綜合影音複習測驗組',
-      quizIds: ['vq_science_solar', 'vq_chinese_culture'],
+      quizIds: ['vq_science_solar', 'vq_eye_cells'],
       createdAt: 1725550000000,
-      totalQuestions: 6
+      totalQuestions: 7
     },
     {
       id: 'cset_interdisciplinary_default',
       name: '跨學科精選測驗組',
-      quizIds: ['vq_chinese_culture', 'vq_science_solar'],
+      quizIds: ['vq_eye_cells', 'vq_science_solar'],
       createdAt: 1789574400000,
-      totalQuestions: 6
+      totalQuestions: 7
     }
   ];
 
@@ -201,6 +199,18 @@
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            // 自動升級：若包含舊版「國文與成語典故」，替換為「眼睛中的視錐細胞與視桿細胞的作用是？」
+            const hasLegacyChinese = parsed.some(q => q && (q.id === 'vq_chinese_culture' || (q.title && q.title.includes('國文與成語典故'))));
+            if (hasLegacyChinese) {
+              const updated = parsed.map(q => {
+                if (q && (q.id === 'vq_chinese_culture' || (q.title && q.title.includes('國文與成語典故')))) {
+                  return JSON.parse(JSON.stringify(DEFAULT_VIDEO_QUIZZES[1]));
+                }
+                return q;
+              });
+              localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
+              return updated;
+            }
             return parsed;
           }
         }
@@ -235,6 +245,13 @@
       const defaultSet2 = existingDefault2
         ? JSON.parse(JSON.stringify(existingDefault2))
         : JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS[1]));
+
+      if (defaultSet1 && Array.isArray(defaultSet1.quizIds)) {
+        defaultSet1.quizIds = defaultSet1.quizIds.map(id => id === 'vq_chinese_culture' ? 'vq_eye_cells' : id);
+      }
+      if (defaultSet2 && Array.isArray(defaultSet2.quizIds)) {
+        defaultSet2.quizIds = defaultSet2.quizIds.map(id => id === 'vq_chinese_culture' ? 'vq_eye_cells' : id);
+      }
 
       if (!Array.isArray(list) || list.length === 0) {
         return [defaultSet1, defaultSet2];
@@ -562,19 +579,26 @@
         if (activeWrapper) activeWrapper.style.display = 'block';
 
         if (!this.playerType || !this.isPlayerReady) {
-          if (this.lastSession.quizData) {
-            this.activeQuiz = this.lastSession.quizData;
-            this.setupPlayer('vqSyncPlayerContainer', this.lastSession.quizData.videoUrl, () => {
-              if (this.lastSession.status === 'playing' && (this.isTeacher || window.app?.isAdmin)) this.playVideo();
-            });
-          } else if (this.lastSession.quizId) {
-            const matched = (this.quizzes || []).find(q => q.id === this.lastSession.quizId);
-            if (matched) {
-              this.activeQuiz = matched;
-              this.setupPlayer('vqSyncPlayerContainer', matched.videoUrl, () => {
-                if (this.lastSession.status === 'playing' && (this.isTeacher || window.app?.isAdmin)) this.playVideo();
+          if (this.isTeacher || window.app?.isAdmin) {
+            // 教師端：建立播放器統一播放
+            if (this.lastSession.quizData) {
+              this.activeQuiz = this.lastSession.quizData;
+              this.setupPlayer('vqSyncPlayerContainer', this.lastSession.quizData.videoUrl, () => {
+                if (this.lastSession.status === 'playing') this.playVideo();
               });
+            } else if (this.lastSession.quizId) {
+              const matched = (this.quizzes || []).find(q => q.id === this.lastSession.quizId);
+              if (matched) {
+                this.activeQuiz = matched;
+                this.setupPlayer('vqSyncPlayerContainer', matched.videoUrl, () => {
+                  if (this.lastSession.status === 'playing') this.playVideo();
+                });
+              }
             }
+          } else {
+            // 學生端：在全班同步模式下不建立播放器，由老師於大螢幕統一播放，同學端展示導引提示
+            const quiz = this.lastSession.quizData || (this.quizzes || []).find(q => q.id === this.lastSession.quizId);
+            this.renderStudentSyncWaitingScreen(quiz);
           }
         }
 
@@ -1757,6 +1781,42 @@
       this.playVideo();
     }
 
+    // 學生端於「統一引導播放」模式下專屬等待畫面（由授課老師大螢幕統一播放，同學端無需本地播放與載入影音）
+    renderStudentSyncWaitingScreen(quizData) {
+      const container = document.getElementById('vqSyncPlayerContainer');
+      if (!container) return;
+
+      const quizId = (quizData && quizData.id) ? quizData.id : 'unknown';
+      if (container.getAttribute('data-waiting-quiz-id') === quizId && container.querySelector('.vq-student-waiting-card')) {
+        return;
+      }
+      container.setAttribute('data-waiting-quiz-id', quizId);
+
+      this.destroyPlayer();
+      this.isPlayerReady = false;
+
+      const title = quizData?.title || '影片出題測驗';
+      container.innerHTML = `
+        <div class="vq-student-waiting-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; height: 100%; background: linear-gradient(135deg, rgba(0, 122, 255, 0.04), rgba(88, 86, 214, 0.08)); border-radius: 12px; border: 1.5px dashed var(--accent-color); padding: 28px 20px; text-align: center; box-sizing: border-box;">
+          <div style="font-size: 52px; margin-bottom: 12px; line-height: 1;">🎬</div>
+          <div style="font-size: 18px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px;">
+            由授課老師統一設定與引導播放
+          </div>
+          <div style="font-size: 15px; font-weight: 600; color: var(--accent-color); margin-bottom: 12px; max-width: 520px; word-break: break-word;">
+            《${this.escapeHtml(title)}》
+          </div>
+          <div style="font-size: 13.5px; color: var(--text-secondary); max-width: 480px; line-height: 1.6; margin-bottom: 18px;">
+            📺 影片由老師在教室前方大螢幕統一引導播放，請專注觀看大螢幕！<br>
+            ✨ 當影片播放至指定出題時間點時，互動題目將會<strong>自動同步在此彈出</strong>供您作答。
+          </div>
+          <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(52, 199, 89, 0.15); color: #16a34a; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid rgba(52, 199, 89, 0.3);">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 6px #16a34a;"></span>
+            全班同步連線中・等待出題...
+          </div>
+        </div>
+      `;
+    }
+
     // 處理遠端廣播更新 (學生端與老師端同步)
     handleRemoteSessionUpdate(session) {
       this.lastSession = session;
@@ -1781,6 +1841,8 @@
         if (studentTopInfo) studentTopInfo.innerHTML = '';
         const ctrls = document.getElementById('vqSyncTeacherControls');
         if (ctrls) ctrls.style.display = 'none';
+        const syncContainer = document.getElementById('vqSyncPlayerContainer');
+        if (syncContainer) syncContainer.removeAttribute('data-waiting-quiz-id');
         return;
       }
 
@@ -1823,21 +1885,12 @@
         }
 
         if (session.status === 'waiting' || session.status === 'playing' || session.status === 'question') {
-          if (session.quizData) {
-            if (!this.activeQuiz || this.activeQuiz.id !== session.quizData.id || this.activeQuiz.currentSubQuizIndex !== session.currentSubQuizIndex) {
-              this.activeQuiz = session.quizData;
-              // 學生端只接收題目，不需本地播放；若為影音影片亦不自動搶播
-              if (isVideoQuizActive && session.quizData?.videoUrl) {
-                this.setupPlayer('vqSyncPlayerContainer', session.quizData.videoUrl);
-              }
-            }
-          } else if (session.quizId) {
-            const matched = (this.quizzes || []).find(q => q.id === session.quizId);
-            if (matched && (!this.activeQuiz || this.activeQuiz.id !== matched.id)) {
-              this.activeQuiz = matched;
-              if (isVideoQuizActive && matched.videoUrl) {
-                this.setupPlayer('vqSyncPlayerContainer', matched.videoUrl);
-              }
+          const quiz = session.quizData || (this.quizzes || []).find(q => q.id === session.quizId);
+          if (quiz) {
+            this.activeQuiz = quiz;
+            // 學生端在統一引導播放模式下，不載入本地影音串流（由教師端大螢幕統一播放），展示同步等待導引卡片
+            if (isVideoQuizActive) {
+              this.renderStudentSyncWaitingScreen(quiz);
             }
           }
         }
@@ -3582,6 +3635,16 @@
       if (modal) modal.style.display = 'none';
     }
 
+    openMatchingHelpModal() {
+      const modal = document.getElementById('modalVqMatchingHelp');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    closeMatchingHelpModal() {
+      const modal = document.getElementById('modalVqMatchingHelp');
+      if (modal) modal.style.display = 'none';
+    }
+
     updateQuestionEditorTypeFields() {
       const type = document.getElementById('vqQuestionTypeSelect')?.value || 'single';
       this.renderQuestionOptionsEditor(type);
@@ -3598,6 +3661,9 @@
       const ansLabel = document.getElementById('vqAnswerFieldLabel');
       const ansInput = document.getElementById('vqQuestionAnswerInput');
       if (!container) return;
+
+      const matchingHelpBtn = document.getElementById('vqMatchingHelpBtn');
+      if (matchingHelpBtn) matchingHelpBtn.style.display = (type === 'matching') ? 'inline-flex' : 'none';
 
       if (type === 'text') {
         if (optGroup) optGroup.style.display = 'none';
@@ -3618,7 +3684,7 @@
           addBtn.textContent = '➕ 新增配對';
         }
         if (helpHint) {
-          helpHint.innerHTML = '💡 每組配對兩側皆可獨立切換「📝 文字」或「🖼️ 圖片」；支援上傳電腦圖檔或剪貼簿貼上圖片。';
+          helpHint.innerHTML = '💡 每組橫列「左側 🔗 右側」直接對應即為正確解答；學生端作答時右側選項將由系統自動隨機打散洗牌。<a href="javascript:void(0)" onclick="window.videoQuiz.openMatchingHelpModal()" style="color: var(--accent-color); font-weight: bold; margin-left: 6px; text-decoration: underline;">📖 點此查看圖文出題說明</a>';
         }
 
         // 解析配對資料

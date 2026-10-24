@@ -5031,7 +5031,7 @@ Python</pre>
   <script src="js/app.js?v=406"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
-  <script src="js/video_quiz.js?v=380"></script>
+  <script src="js/video_quiz.js?v=381"></script>
   <script src="js/word_cloud.js?v=395"></script>
   <script src="js/presentation_core.js?v=3114"></script>
   
@@ -5999,9 +5999,14 @@ Python</pre>
       <div id="vqOptionsFieldGroup" style="margin-bottom: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
           <label id="vqOptionsLabel" style="font-size: 12px; font-weight: bold; margin: 0;">選項設定（支援文字與圖片）：</label>
-          <button type="button" id="vqAddOptionBtn" onclick="window.videoQuiz && window.videoQuiz.addOptionRow()" class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 4px;">
-            ➕ 新增選項
-          </button>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <button type="button" id="vqMatchingHelpBtn" onclick="window.videoQuiz && window.videoQuiz.openMatchingHelpModal()" style="display: none; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 6px; border: 1px solid rgba(0,122,255,0.3); background: rgba(0,122,255,0.1); color: var(--accent-color); cursor: pointer; align-items: center; gap: 4px;" title="查看配對題出題與正確答案設定說明">
+              ❓ 正解設定說明
+            </button>
+            <button type="button" id="vqAddOptionBtn" onclick="window.videoQuiz && window.videoQuiz.addOptionRow()" class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 4px;">
+              ➕ 新增選項
+            </button>
+          </div>
         </div>
         
         <!-- 視覺化選項清單容器 (支援單選、複選、配對題的文字與圖片切換、上傳、剪貼簿貼上) -->
@@ -6039,6 +6044,88 @@ Python</pre>
   </div>
 
 
+
+  <!-- 影片測驗：配對題正解設定與使用說明彈窗 -->
+  <div id="modalVqMatchingHelp" class="video-quiz-overlay" style="display: none; z-index: 10001; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div class="video-quiz-card" style="max-width: 580px; width: 92%; padding: 22px 24px; position: relative; max-height: 85vh; overflow-y: auto;">
+      <button type="button" onclick="window.videoQuiz && window.videoQuiz.closeMatchingHelpModal()" style="position: absolute; right: 16px; top: 16px; background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--text-secondary); line-height: 1;">✕</button>
+      
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <span style="font-size: 24px;">🔗</span>
+        <h3 style="margin: 0; font-size: 17px; color: var(--text-primary); font-weight: bold;">配對題（連連看）出題與正確答案設定說明</h3>
+      </div>
+
+      <!-- 核心解說 1: 水平對應即為答案 -->
+      <div style="background: rgba(0, 122, 255, 0.08); border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+        <div style="font-weight: bold; font-size: 13.5px; color: var(--accent-color); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+          <span>🎯</span> 如何設定「正確答案」？
+        </div>
+        <div style="font-size: 13px; color: var(--text-primary); line-height: 1.6;">
+          出題時，<strong>每一橫列中您所填寫的「左側 🔗 右側」，系統就會自動判定為一組標準正確解答</strong>！您不需要另外點擊任何「設為正解」按鈕，出題時直接水平左右對應填寫即可。
+        </div>
+      </div>
+
+      <!-- 視覺圖文對比圖解 -->
+      <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 14px;">
+        <div style="font-size: 12.5px; font-weight: bold; color: var(--text-secondary); margin-bottom: 8px;">📋 出題 vs 學生作答 運作機制圖解：</div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
+          <!-- 出題端畫面 -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div style="font-size: 12px; font-weight: bold; color: var(--accent-color); margin-bottom: 8px; text-align: center;">老師出題時（同一列＝解答）</div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,122,255,0.06); padding: 5px 8px; border-radius: 6px;">
+                <span>左1: <strong>色盲</strong></span>
+                <span style="color: var(--accent-color); font-weight: bold;">🔗</span>
+                <span>右1: <strong>視錐細胞</strong></span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,122,255,0.06); padding: 5px 8px; border-radius: 6px;">
+                <span>左2: <strong>夜盲</strong></span>
+                <span style="color: var(--accent-color); font-weight: bold;">🔗</span>
+                <span>右2: <strong>視桿細胞</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 學生端畫面 -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div style="font-size: 12px; font-weight: bold; color: #16a34a; margin-bottom: 8px; text-align: center;">學生作答時（右側自動隨機洗牌）</div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(52,199,89,0.08); padding: 5px 8px; border-radius: 6px;">
+                <span>左側: <strong>色盲</strong></span>
+                <span style="color: #888; font-size: 11px;">(拉線) ➔</span>
+                <span>右側: <strong>視桿細胞</strong> 🔀</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(52,199,89,0.08); padding: 5px 8px; border-radius: 6px;">
+                <span>左側: <strong>夜盲</strong></span>
+                <span style="color: #888; font-size: 11px;">(拉線) ➔</span>
+                <span>右側: <strong>視錐細胞</strong> 🔀</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 8px; text-align: center;">
+          💡 學生必須將「色盲」拖曳連線至「視錐細胞」、「夜盲」連至「視桿細胞」，完全正確才能得分！
+        </div>
+      </div>
+
+      <!-- 核心解說 2 & 3: 彈性擴充與圖文支援 -->
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; color: var(--text-primary); margin-bottom: 16px;">
+        <div style="display: flex; gap: 8px; align-items: flex-start;">
+          <span style="color: #f59e0b; font-size: 15px; flex-shrink: 0;">➕</span>
+          <div><strong>自由增減題數</strong>：點擊「＋ 新增配對」即可擴充第 3 組、第 4 組配對項目；點擊右側紅色 ✕ 可刪除該組。</div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: flex-start;">
+          <span style="color: #34c759; font-size: 15px; flex-shrink: 0;">🖼️</span>
+          <div><strong>支援文字與圖片混搭</strong>：左側與右側皆可獨立切換為「🖼️ 圖片」，支援電腦選檔上傳或剪貼簿直接 Ctrl+V 貼上圖檔，適合出圖文連連看！</div>
+        </div>
+      </div>
+
+      <div style="text-align: right;">
+        <button type="button" onclick="window.videoQuiz && window.videoQuiz.closeMatchingHelpModal()" style="background: var(--accent-color); color: white; border: none; padding: 7px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">我知道了</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 影片測驗：題庫匯入彈窗 -->
   <div id="vqImportModal" class="video-quiz-overlay" style="z-index: 2600;">
