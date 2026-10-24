@@ -398,6 +398,11 @@
       cursor: cell;
     }
 
+    #canvasViewport.cursor-eraser .board-sticky-note .sticky-content {
+      pointer-events: none !important;
+      user-select: none !important;
+    }
+
     /* 畫布網格背景 */
     .grid-bg {
       background-size: 24px 24px;
@@ -530,21 +535,131 @@
       cursor: se-resize;
     }
 
-    /* ===== 左側浮動膠囊工具列 (如圖 1) ===== */
+    /* ===== 左側浮動膠囊工具列 (如圖 1，支援往左收合與拖曳移動) ===== */
     .floating-toolbar {
       position: absolute;
-      left: 16px;
+      left: 14px;
       top: 50%;
       transform: translateY(-50%);
       background: #ffffff;
       border: 1px solid var(--border-color);
       border-radius: 20px;
       box-shadow: 0 6px 24px rgba(0,0,0,0.12);
-      padding: 10px 8px;
+      padding: 8px 8px 10px 8px;
       display: flex;
       flex-direction: column;
       gap: 6px;
-      z-index: 20;
+      z-index: 25;
+      transition: left 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+    }
+
+    .floating-toolbar.is-dragging {
+      transition: none !important;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+    }
+
+    .floating-toolbar.is-collapsed {
+      left: 0 !important;
+      transform: translate(-100%, -50%) !important;
+    }
+
+    .floating-toolbar.is-custom-pos.is-collapsed {
+      left: 0 !important;
+      transform: translateX(-100%) !important;
+    }
+
+    .toolbar-drag-handle {
+      width: 100%;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      color: #9ca3af;
+      font-size: 12px;
+      letter-spacing: 2px;
+      border-radius: 8px;
+      background: #f8fafc;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .toolbar-drag-handle:active {
+      cursor: grabbing;
+      background: #f1f5f9;
+      color: var(--primary);
+    }
+
+    .toolbar-collapse-tab {
+      position: absolute;
+      right: -24px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 48px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-left: none;
+      border-radius: 0 10px 10px 0;
+      box-shadow: 4px 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 800;
+      z-index: 26;
+      padding: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .toolbar-collapse-tab:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    @media (max-width: 768px), (max-height: 680px) {
+      .floating-toolbar {
+        left: 8px;
+        padding: 6px 6px 8px 6px;
+        gap: 4px;
+        border-radius: 16px;
+      }
+      .toolbar-grid {
+        grid-template-columns: repeat(2, 30px) !important;
+        gap: 4px !important;
+      }
+      .tool-btn {
+        width: 30px !important;
+        height: 30px !important;
+        border-radius: 8px !important;
+      }
+      .tool-btn svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+      .toolbar-styles {
+        gap: 4px !important;
+        padding-top: 4px !important;
+      }
+      .color-current-dot {
+        width: 20px !important;
+        height: 20px !important;
+      }
+      .stroke-size-select {
+        width: 54px !important;
+        padding: 2px !important;
+        font-size: 11px !important;
+      }
+      .toolbar-history {
+        padding-top: 4px !important;
+        gap: 4px !important;
+      }
+      .tool-btn-history {
+        width: 26px !important;
+        height: 24px !important;
+      }
     }
 
     .toolbar-grid {
@@ -1442,8 +1557,10 @@
         </div>
       </div>
 
-      <!-- 左側直立浮動膠囊工具列 (如圖 1) -->
+      <!-- 左側直立浮動膠囊工具列 (如圖 1，支援往左收合與按住頂部拖曳移動) -->
       <aside class="floating-toolbar" id="floatingToolbar">
+        <div class="toolbar-drag-handle" id="toolbarDragHandle" title="按住可拖曳移動工具列位置">⋮⋮</div>
+        <button type="button" class="toolbar-collapse-tab" id="btnToggleFloatingToolbar" title="往左收合 / 展開工具列">◀</button>
         <div class="toolbar-grid">
           <!-- 1. 選取 / 移動 -->
           <button class="tool-btn active" data-tool="select" title="選取與移動物件 (V)">
@@ -1741,6 +1858,6 @@
     </div>
   </div>
 
-  <script src="js/whiteboard_core.js?v=3004"></script>
+  <script src="js/whiteboard_core.js?v=3005"></script>
 </body>
 </html>

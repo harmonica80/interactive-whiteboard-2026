@@ -1300,15 +1300,48 @@
     }
   }
 
-  function handleObjectPointerDown(e, obj, el, isSvg) {
-    if (e.target.tagName === 'A' || e.target.classList.contains('sticky-content')) return;
+  function eraseObjectByObj(obj) {
+    if (!obj || !state.objects[obj.id]) return false;
+    if (!isStudentAllowedToEdit()) {
+      flashToast(state.isIndividuallyLocked ? '🚫 您目前已被老師限制編輯白板' : '🔒 老師目前設定白板為唯讀狀態');
+      return false;
+    }
+    if (!canModifyObject(obj)) {
+      flashToast('⚠️ 老師已設定僅能刪除自己建立的物件');
+      return false;
+    }
+    pushHistoryAction({ type: 'delete', objects: [JSON.parse(JSON.stringify(obj))] });
+    deleteObject(obj.id);
+    return true;
+  }
 
+  function eraseAtPoint(clientX, clientY) {
+    if (!isStudentAllowedToEdit()) return;
+    const pos = screenToWorld(clientX, clientY);
+    const pad = 10 / (state.view.zoom || 1);
+    const hitBox = { x: pos.x - pad, y: pos.y - pad, w: pad * 2, h: pad * 2 };
+    Object.values(state.objects).forEach(obj => {
+      if (!obj || !canModifyObject(obj)) return;
+      const ob = getObjBounds(obj);
+      if (intersectRect(hitBox, ob)) {
+        eraseObjectByObj(obj);
+      }
+    });
+  }
+
+  function handleObjectPointerDown(e, obj, el, isSvg) {
     if (state.currentTool === 'eraser') {
+      e.preventDefault();
       e.stopPropagation();
-      pushHistoryAction({ type: 'delete', objects: [JSON.parse(JSON.stringify(obj))] });
-      deleteObject(obj.id);
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      state.isErasing = true;
+      eraseObjectByObj(obj);
       return;
     }
+
+    if (e.target.tagName === 'A' || e.target.classList.contains('sticky-content')) return;
     if (state.currentTool !== 'select') return;
 
     if (!canModifyObject(obj)) {
@@ -1914,6 +1947,11 @@
       createStickyNote(pos.x, pos.y, '雙擊編輯文字...');
       setTool('select');
     }
+    // 5b. 橡皮擦 (Eraser) - 點選或滑過即擦除物件 (含便利貼)
+    else if (state.currentTool === 'eraser') {
+      state.isErasing = true;
+      eraseAtPoint(e.clientX, e.clientY);
+    }
     // 6. 選取模式：拖曳框選多個物件 (Marquee Drag Selection) 或點擊空白處取消選取
     else if (state.currentTool === 'select') {
       const isCanvasBackground = (
@@ -1984,6 +2022,11 @@
       return;
     }
 
+    if (state.isErasing && state.currentTool === 'eraser') {
+      eraseAtPoint(e.clientX, e.clientY);
+      return;
+    }
+
     if (!state.activeDrawing) return;
     const pos = screenToWorld(e.clientX, e.clientY);
     const d = state.activeDrawing;
@@ -2015,6 +2058,9 @@
   let isSpacePressed = false;
 
   window.addEventListener('pointerup', () => {
+    if (state.isErasing) {
+      state.isErasing = false;
+    }
     if (state.isPanning) {
       state.isPanning = false;
       els.canvasViewport.classList.remove('cursor-grabbing');
@@ -3161,6 +3207,90 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // ===== 浮動工具列：往左收合 / 展開 & 按住自由拖曳移動 =====
+  function initFloatingToolbarControls() {
+    const toolbar = document.getElementById('floatingToolbar');
+    const toggleBtn = document.getElementById('btnToggleFloatingToolbar');
+    const dragHandle = document.getElementById('toolbarDragHandle');
+    if (!toolbar) return;
+
+    let savedLeftBeforeCollapse = null;
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isCollapsed = toolbar.classList.toggle('is-collapsed');
+        toggleBtn.textContent = isCollapsed ? '▶' : '◀';
+        toggleBtn.title = isCollapsed ? '展開白板工具列' : '往左收合工具列';
+        if (isCollapsed) {
+          if (toolbar.classList.contains('is-custom-pos')) {
+            savedLeftBeforeCollapse = toolbar.style.left;
+            toolbar.style.left = '0px';
+          }
+        } else {
+          if (toolbar.classList.contains('is-custom-pos') && savedLeftBeforeCollapse !== null) {
+            toolbar.style.left = savedLeftBeforeCollapse;
+          }
+        }
+      });
+    }
+
+    if (dragHandle) {
+      let isDraggingToolbar = false;
+      let dragOffsetX = 0;
+      let dragOffsetY = 0;
+
+      dragHandle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (toolbar.classList.contains('is-collapsed')) {
+          toolbar.classList.remove('is-collapsed');
+          if (toggleBtn) toggleBtn.textContent = '◀';
+        }
+        const parent = toolbar.offsetParent || document.querySelector('.whiteboard-main') || document.body;
+        const parentRect = parent.getBoundingClientRect();
+        const rect = toolbar.getBoundingClientRect();
+
+        toolbar.classList.add('is-custom-pos', 'is-dragging');
+        toolbar.style.left = (rect.left - parentRect.left) + 'px';
+        toolbar.style.top = (rect.top - parentRect.top) + 'px';
+
+        isDraggingToolbar = true;
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+        if (dragHandle.setPointerCapture) {
+          try { dragHandle.setPointerCapture(e.pointerId); } catch (_) {}
+        }
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDraggingToolbar) return;
+        const parent = toolbar.offsetParent || document.querySelector('.whiteboard-main') || document.body;
+        const parentRect = parent.getBoundingClientRect();
+        const tbWidth = toolbar.offsetWidth || 50;
+        const tbHeight = toolbar.offsetHeight || 280;
+
+        let newLeft = e.clientX - parentRect.left - dragOffsetX;
+        let newTop = e.clientY - parentRect.top - dragOffsetY;
+
+        newLeft = Math.max(4, Math.min(parentRect.width - tbWidth - 4, newLeft));
+        newTop = Math.max(4, Math.min(parentRect.height - tbHeight - 4, newTop));
+
+        toolbar.style.left = Math.round(newLeft) + 'px';
+        toolbar.style.top = Math.round(newTop) + 'px';
+        savedLeftBeforeCollapse = toolbar.style.left;
+      });
+
+      const endToolbarDrag = () => {
+        if (!isDraggingToolbar) return;
+        isDraggingToolbar = false;
+        toolbar.classList.remove('is-dragging');
+      };
+      window.addEventListener('pointerup', endToolbarDrag);
+      window.addEventListener('pointercancel', endToolbarDrag);
+    }
+  }
+
   // ===== 初始化啟動 =====
   window.addEventListener('DOMContentLoaded', () => {
     initFirebase();
@@ -3168,6 +3298,7 @@
     renderPagesTabs();
     applySettingsUI();
     setTool('select');
+    initFloatingToolbarControls();
   });
 
 })();
