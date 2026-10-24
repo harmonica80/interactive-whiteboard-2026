@@ -1138,6 +1138,23 @@
     }
 
     /**
+     * 預覽/隱藏教師系統代碼 (唯讀識別碼)
+     * 按住眼睛圖示顯示，放開後隱藏
+     * @param {boolean} show - 是否顯示明文
+     */
+    peekTeacherId(show) {
+      const idInput = document.getElementById('secTeacherIdDisplay');
+      if (!idInput) return;
+      if (show) {
+        idInput.type = 'text';
+        idInput.style.letterSpacing = 'normal';
+      } else {
+        idInput.type = 'password';
+        idInput.style.letterSpacing = '2px';
+      }
+    }
+
+    /**
      * 渲染後台「F. 教師身分與密碼安全設定」管理面板
      */
     async renderSecurityPanel() {

@@ -3,6 +3,8 @@ class Quiz {
   constructor() {
     this.currentQuiz = null;
     this.historyBank = {};
+    this.chartType = 'bar'; // 'bar' | 'pie' | 'line'
+    this.currentAnswers = {};
     this.quizRef = db.ref('quiz/current');
     this.answersRef = db.ref('quiz/answers');
     this.historyRef = db.ref('quiz/history');
@@ -14,6 +16,13 @@ class Quiz {
     this.quizRef.on('value', (snapshot) => {
       const prevActive = this.currentQuiz?.active;
       this.currentQuiz = snapshot.val();
+      if (this.currentQuiz && this.currentQuiz.chartType) {
+        this.chartType = this.currentQuiz.chartType;
+        const radios = document.querySelectorAll('input[name="quizChartTypeRadio"]');
+        radios.forEach(r => {
+          r.checked = (r.value === this.currentQuiz.chartType);
+        });
+      }
       this.updateUI();
 
       // 當老師發起選擇題測驗時，學生端比照專注力測驗，自動切換至測驗分頁無需學生手動點選按鈕
@@ -43,6 +52,22 @@ class Quiz {
       this.renderQuizHistoryUI();
     });
   }
+
+  setChartType(type) {
+    if (!['bar', 'pie', 'line'].includes(type)) type = 'bar';
+    this.chartType = type;
+    const radios = document.querySelectorAll('input[name="quizChartTypeRadio"]');
+    radios.forEach(r => {
+      r.checked = (r.value === type);
+    });
+    if (this.currentQuiz) {
+      if (this.currentQuiz.active) {
+        this.updateResults(this.currentAnswers || {});
+      } else {
+        this.showFinalResults();
+      }
+    }
+  }
   
   startQuiz(question, options, quizType = 'single', extraData = {}) {
     if (!question || options.length < 2) {
@@ -53,11 +78,16 @@ class Quiz {
     // 自動停止搶答與專注力測驗
     db.ref('quiz/buzzGame').set(null);
     db.ref('quiz/focusGame/status').set('idle');
+
+    const selectedChartRadio = document.querySelector('input[name="quizChartTypeRadio"]:checked');
+    const selectedChartType = selectedChartRadio ? selectedChartRadio.value : (this.chartType || 'bar');
+    this.chartType = selectedChartType;
     
     const quizData = {
       question: question,
       options: options,
       quizType: quizType, // 'single', 'multiple', 或 'matching'
+      chartType: selectedChartType,
       startTime: Date.now(),
       active: true
     };
@@ -424,7 +454,187 @@ class Quiz {
     }
   }
   
+  renderResultsVisualization(items, totalVoters, isFinal = false, quizType = 'single') {
+    const chartType = this.chartType || this.currentQuiz?.chartType || 'bar';
+    const totalVotesSum = items.reduce((sum, it) => sum + (it.count || 0), 0);
+    const CHART_COLORS = ['#007aff', '#34c759', '#ff9500', '#ff2d55', '#5856d6', '#af52de', '#00c7be', '#ffcc00', '#5ac8fa', '#ff3b30'];
+
+    // 頂部狀態與即時圖表切換工具列
+    let html = `
+      <div style="padding: 10px 14px; background: var(--bg-input); border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <div style="font-weight: bold; color: var(--text-primary); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+            <span>${isFinal ? '🏆 最終結果' : '📊 即時作答統計'}</span>
+            <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">(${quizType === 'matching' ? '配對題' : (quizType === 'multiple' ? '複選題' : '單選題')})</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+            總計 ${totalVoters} 人作答${totalVotesSum !== totalVoters && totalVotesSum > 0 ? ` (累計得票 ${totalVotesSum} 票)` : ''}
+          </div>
+        </div>
+        <div style="display: inline-flex; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 2px; gap: 2px; align-items: center;">
+          <button type="button" onclick="window.quiz && window.quiz.setChartType('bar')" title="長條圖" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; background: ${chartType === 'bar' ? 'var(--accent-color)' : 'transparent'}; color: ${chartType === 'bar' ? '#fff' : 'var(--text-secondary)'};">📊 長條圖</button>
+          <button type="button" onclick="window.quiz && window.quiz.setChartType('pie')" title="圓餅圖" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; background: ${chartType === 'pie' ? '#ff9500' : 'transparent'}; color: ${chartType === 'pie' ? '#fff' : 'var(--text-secondary)'};">🥧 圓餅圖</button>
+          <button type="button" onclick="window.quiz && window.quiz.setChartType('line')" title="折線圖" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; background: ${chartType === 'line' ? '#34c759' : 'transparent'}; color: ${chartType === 'line' ? '#fff' : 'var(--text-secondary)'};">📈 折線圖</button>
+        </div>
+      </div>
+    `;
+
+    if (totalVoters === 0) {
+      html += `<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 20px 0;">尚無人作答</div>`;
+      return html;
+    }
+
+    if (chartType === 'pie') {
+      // 🥧 圓餅圖 / 環形圖 (SVG + 圖例)
+      const CX = 90, CY = 90, R = 75, r = 38;
+      let currentAngle = -Math.PI / 2;
+      let slicesSvg = '';
+
+      if (totalVotesSum === 0) {
+        slicesSvg = `<circle cx="${CX}" cy="${CY}" r="${(R + r) / 2}" fill="none" stroke="var(--border-color)" stroke-width="${R - r}" stroke-dasharray="4,4" />`;
+      } else {
+        const singleWinner = items.find(it => it.count === totalVotesSum);
+        if (singleWinner) {
+          const color = CHART_COLORS[items.indexOf(singleWinner) % CHART_COLORS.length];
+          slicesSvg = `<circle cx="${CX}" cy="${CY}" r="${(R + r) / 2}" fill="none" stroke="${color}" stroke-width="${R - r}" />`;
+        } else {
+          items.forEach((it, idx) => {
+            if (it.count <= 0) return;
+            const sliceAngle = (it.count / totalVotesSum) * 2 * Math.PI;
+            const nextAngle = currentAngle + sliceAngle;
+            const x1 = CX + R * Math.cos(currentAngle);
+            const y1 = CY + R * Math.sin(currentAngle);
+            const x2 = CX + R * Math.cos(nextAngle);
+            const y2 = CY + R * Math.sin(nextAngle);
+            const x3 = CX + r * Math.cos(nextAngle);
+            const y3 = CY + r * Math.sin(nextAngle);
+            const x4 = CX + r * Math.cos(currentAngle);
+            const y4 = CY + r * Math.sin(currentAngle);
+            const largeArc = sliceAngle > Math.PI ? 1 : 0;
+            const color = CHART_COLORS[idx % CHART_COLORS.length];
+            const d = `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${x3.toFixed(2)} ${y3.toFixed(2)} A ${r} ${r} 0 ${largeArc} 0 ${x4.toFixed(2)} ${y4.toFixed(2)} Z`;
+            slicesSvg += `<path d="${d}" fill="${color}" stroke="var(--bg-card)" stroke-width="2"><title>${this.escapeHtml(it.label)}: ${it.count}票 (${Math.round((it.count / totalVotesSum) * 100)}%)</title></path>`;
+            currentAngle = nextAngle;
+          });
+        }
+      }
+
+      html += `
+        <div style="display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+          <div style="flex-shrink: 0; width: 180px; height: 180px;">
+            <svg viewBox="0 0 180 180" width="180" height="180" style="overflow: visible; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06));">
+              ${slicesSvg}
+              <text x="${CX}" y="${CY - 4}" text-anchor="middle" font-size="16" font-weight="bold" fill="var(--text-primary)">${totalVoters}</text>
+              <text x="${CX}" y="${CY + 14}" text-anchor="middle" font-size="11" fill="var(--text-secondary)">人作答</text>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px;">
+            ${items.map((it, idx) => {
+              const color = CHART_COLORS[idx % CHART_COLORS.length];
+              const pct = totalVotesSum > 0 ? Math.round((it.count / totalVotesSum) * 100) : 0;
+              return `
+                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; gap: 8px; padding: 4px 6px; border-radius: 6px; background: rgba(0,0,0,0.02);">
+                  <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <span style="display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: ${color}; flex-shrink: 0;"></span>
+                    ${it.isImg ? `<img src="${it.image}" style="width: 22px; height: 22px; border-radius: 4px; object-fit: cover; flex-shrink: 0;">` : ''}
+                    <span style="font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(it.label)}">${this.escapeHtml(it.label)}</span>
+                  </div>
+                  <span style="font-weight: bold; color: var(--text-secondary); white-space: nowrap; font-size: 12px;">${it.count} 人 (${pct}%)</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    } else if (chartType === 'line') {
+      // 📈 折線圖 (SVG 面積折線圖)
+      const W = 460, H = 200;
+      const ml = 35, mr = 25, mt = 25, mb = 45;
+      const plotW = W - ml - mr;
+      const plotH = H - mt - mb;
+      const maxVal = Math.max(...items.map(it => it.count), 1);
+      const stepX = items.length > 1 ? plotW / (items.length - 1) : plotW / 2;
+
+      const pts = items.map((it, idx) => {
+        const x = items.length === 1 ? ml + plotW / 2 : ml + idx * stepX;
+        const y = mt + plotH - (it.count / maxVal) * plotH;
+        return { x, y, it, idx };
+      });
+
+      const polyPoints = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      const areaPoints = `${pts[0].x.toFixed(1)},${(mt + plotH).toFixed(1)} ${polyPoints} ${pts[pts.length - 1].x.toFixed(1)},${(mt + plotH).toFixed(1)}`;
+
+      html += `
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; overflow-x: auto;">
+          <svg viewBox="0 0 ${W} ${H}" style="width: 100%; height: auto; min-width: 320px; display: block; overflow: visible;">
+            <defs>
+              <linearGradient id="quizLineGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#34c759" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#34c759" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <line x1="${ml}" y1="${mt}" x2="${ml + plotW}" y2="${mt}" stroke="var(--border-color)" stroke-dasharray="3,3" opacity="0.6"/>
+            <text x="${ml - 6}" y="${mt + 4}" text-anchor="end" font-size="10" fill="var(--text-secondary)">${maxVal}</text>
+
+            <line x1="${ml}" y1="${mt + plotH / 2}" x2="${ml + plotW}" y2="${mt + plotH / 2}" stroke="var(--border-color)" stroke-dasharray="3,3" opacity="0.4"/>
+            <text x="${ml - 6}" y="${mt + plotH / 2 + 3}" text-anchor="end" font-size="10" fill="var(--text-secondary)">${Math.round(maxVal / 2)}</text>
+
+            <line x1="${ml}" y1="${mt + plotH}" x2="${ml + plotW}" y2="${mt + plotH}" stroke="var(--border-color)" opacity="0.8"/>
+            <text x="${ml - 6}" y="${mt + plotH + 3}" text-anchor="end" font-size="10" fill="var(--text-secondary)">0</text>
+
+            <polygon points="${areaPoints}" fill="url(#quizLineGrad)"/>
+            <polyline points="${polyPoints}" fill="none" stroke="#34c759" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+            ${pts.map(p => {
+              const pct = totalVotesSum > 0 ? Math.round((p.it.count / totalVotesSum) * 100) : 0;
+              const shortLabel = p.it.label.length > 6 ? p.it.label.substring(0, 5) + '…' : p.it.label;
+              return `
+                <g>
+                  <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#ffffff" stroke="#34c759" stroke-width="3"/>
+                  <text x="${p.x.toFixed(1)}" y="${(p.y - 9).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="bold" fill="var(--text-primary)">
+                    ${p.it.count} (${pct}%)
+                  </text>
+                  <text x="${p.x.toFixed(1)}" y="${(mt + plotH + 18).toFixed(1)}" text-anchor="middle" font-size="11" fill="var(--text-secondary)">
+                    ${this.escapeHtml(shortLabel)}
+                  </text>
+                </g>
+              `;
+            }).join('')}
+          </svg>
+        </div>
+      `;
+    } else {
+      // 📊 長條圖 (預設)
+      html += `
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${items.map((it, idx) => {
+            const isImg = it.isImg;
+            const pct = totalVoters > 0 ? (it.count / totalVoters * 100) : 0;
+            const displayPct = Math.round(pct);
+            const color = it.color || CHART_COLORS[idx % CHART_COLORS.length];
+            return `
+              <div class="result-bar" style="align-items: center; margin-bottom: 4px;">
+                <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(it.label)}">
+                  ${isImg ? `<img src="${it.image}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">` : ''}
+                  <span>${this.escapeHtml(it.label)}</span>
+                </div>
+                <div class="result-progress">
+                  <div class="result-fill" style="width: ${pct}%; background: ${color};">
+                    ${it.count} (${displayPct}%)
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    return html;
+  }
+  
   updateResults(answers) {
+    this.currentAnswers = answers || {};
     const resultsContainer = document.getElementById('quizResults');
     if (!resultsContainer) return;
     if (!this.currentQuiz) {
@@ -433,7 +643,7 @@ class Quiz {
     }
     if (!this.currentQuiz.active) return;
 
-    const totalVoters = Object.keys(answers).length;
+    const totalVoters = Object.keys(this.currentAnswers).length;
 
     if (this.currentQuiz.quizType === 'matching') {
       const pairs = this.currentQuiz.pairs || (this.currentQuiz.options || []).map((opt, i) => ({
@@ -441,37 +651,21 @@ class Quiz {
         right: this.currentQuiz.matchOptions?.[i] || ''
       }));
 
-      const pairCorrectCounts = pairs.map(p => {
+      const items = pairs.map((p) => {
         let count = 0;
-        Object.values(answers).forEach(ans => {
+        Object.values(this.currentAnswers).forEach(ans => {
           if (ans && typeof ans === 'object' && ans[p.left] === p.right) {
             count++;
           }
         });
-        return count;
+        return {
+          label: `${p.left} 🔗 ${p.right}`,
+          count: count,
+          isImg: false
+        };
       });
 
-      resultsContainer.innerHTML = `
-        <div style="margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">
-          已回答: ${totalVoters} 人 (配對連連看計票)
-        </div>
-        ${pairs.map((p, i) => {
-          const cnt = pairCorrectCounts[i];
-          const pct = totalVoters > 0 ? Math.round((cnt / totalVoters) * 100) : 0;
-          return `
-            <div class="result-bar" style="align-items: center; margin-bottom: 8px;">
-              <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto; font-size: 13px;" title="${this.escapeHtml(p.left)} 🔗 ${this.escapeHtml(p.right)}">
-                <span>${this.escapeHtml(p.left)} 🔗 ${this.escapeHtml(p.right)}</span>
-              </div>
-              <div class="result-progress">
-                <div class="result-fill" style="width: ${pct}%; background: #5856d6;">
-                  ${cnt}人 (${pct}%)
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      `;
+      resultsContainer.innerHTML = this.renderResultsVisualization(items, totalVoters, false, 'matching');
       return;
     }
     
@@ -480,7 +674,7 @@ class Quiz {
     if (optionCount === 0) return;
     const counts = new Array(optionCount).fill(0);
     
-    Object.values(answers).forEach(answer => {
+    Object.values(this.currentAnswers).forEach(answer => {
       if (Array.isArray(answer)) {
         answer.forEach(idx => {
           if (idx >= 0 && idx < optionCount) counts[idx]++;
@@ -489,29 +683,19 @@ class Quiz {
         counts[answer]++;
       }
     });
-    
-    resultsContainer.innerHTML = `
-      <div style="margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">
-        已回答: ${totalVoters} 人 ${this.currentQuiz.quizType === 'multiple' ? '(複選計票)' : ''}
-      </div>
-      ${quizOpts.map((opt, i) => {
-        const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
-        const optText = this.getOptionLabel(opt, `選項 ${i + 1}`);
-        return `
-          <div class="result-bar" style="align-items: center;">
-            <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(optText)}">
-              ${isImg ? `<img src="${opt.image}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">` : ''}
-              <span>${this.escapeHtml(optText)}</span>
-            </div>
-            <div class="result-progress">
-              <div class="result-fill" style="width: ${totalVoters > 0 ? (counts[i] / totalVoters * 100) : 0}%">
-                ${counts[i]}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('')}
-    `;
+
+    const items = quizOpts.map((opt, i) => {
+      const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+      const optText = this.getOptionLabel(opt, `選項 ${i + 1}`);
+      return {
+        label: optText,
+        count: counts[i],
+        isImg: isImg,
+        image: isImg ? opt.image : null
+      };
+    });
+
+    resultsContainer.innerHTML = this.renderResultsVisualization(items, totalVoters, false, this.currentQuiz.quizType || 'single');
   }
   
   showFinalResults() {
@@ -527,46 +711,29 @@ class Quiz {
         resultsContainer.innerHTML = '';
         return;
       }
-      const answers = snapshot.val() || {};
-      const totalVoters = Object.keys(answers).length;
+      this.currentAnswers = snapshot.val() || {};
+      const totalVoters = Object.keys(this.currentAnswers).length;
 
       if (this.currentQuiz.quizType === 'matching') {
         const pairs = this.currentQuiz.pairs || (this.currentQuiz.options || []).map((opt, i) => ({
           left: typeof opt === 'object' ? opt.text : opt,
           right: this.currentQuiz.matchOptions?.[i] || ''
         }));
-        const pairCorrectCounts = pairs.map(p => {
+        const items = pairs.map((p) => {
           let count = 0;
-          Object.values(answers).forEach(ans => {
+          Object.values(this.currentAnswers).forEach(ans => {
             if (ans && typeof ans === 'object' && ans[p.left] === p.right) {
               count++;
             }
           });
-          return count;
+          return {
+            label: `✅ ${p.left} 🔗 ${p.right}`,
+            count: count,
+            isImg: false
+          };
         });
 
-        resultsContainer.innerHTML = `
-          <div style="padding: 10px; background: var(--bg-input); border-radius: 10px; margin-bottom: 10px;">
-            <div style="font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">📊 最終結果 (配對題連連看)</div>
-            <div style="font-size: 12px; color: var(--text-secondary);">總計 ${totalVoters} 人作答</div>
-          </div>
-          ${pairs.map((p, i) => {
-            const cnt = pairCorrectCounts[i];
-            const pct = totalVoters > 0 ? Math.round((cnt / totalVoters) * 100) : 0;
-            return `
-              <div class="result-bar" style="align-items: center; margin-bottom: 8px;">
-                <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto; font-size: 13px;">
-                  <span style="color: var(--success-color); font-weight: bold;">✅ ${this.escapeHtml(p.left)} 🔗 ${this.escapeHtml(p.right)}</span>
-                </div>
-                <div class="result-progress">
-                  <div class="result-fill" style="width: ${pct}%; background: #5856d6;">
-                    ${cnt} (${pct}%)
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        `;
+        resultsContainer.innerHTML = this.renderResultsVisualization(items, totalVoters, true, 'matching');
         return;
       }
 
@@ -578,7 +745,7 @@ class Quiz {
       }
       const counts = new Array(optionCount).fill(0);
       
-      Object.values(answers).forEach(answer => {
+      Object.values(this.currentAnswers).forEach(answer => {
         if (Array.isArray(answer)) {
           answer.forEach(idx => {
             if (idx >= 0 && idx < optionCount) counts[idx]++;
@@ -587,35 +754,19 @@ class Quiz {
           counts[answer]++;
         }
       });
-      
-      if (totalVoters === 0) {
-        resultsContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 13px;">無人作答</div>';
-        return;
-      }
-      
-      resultsContainer.innerHTML = `
-        <div style="padding: 10px; background: var(--bg-input); border-radius: 10px; margin-bottom: 10px;">
-          <div style="font-weight: bold; color: var(--text-primary); margin-bottom: 4px;">📊 最終結果</div>
-          <div style="font-size: 12px; color: var(--text-secondary);">總計 ${totalVoters} 人作答 ${this.currentQuiz.quizType === 'multiple' ? '(複選題)' : ''}</div>
-        </div>
-        ${quizOpts.map((opt, i) => {
-          const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
-          const optText = this.getOptionLabel(opt, `選項 ${i + 1}`);
-          return `
-            <div class="result-bar" style="align-items: center;">
-              <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(optText)}">
-                ${isImg ? `<img src="${opt.image}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">` : ''}
-                <span>${this.escapeHtml(optText)}</span>
-              </div>
-              <div class="result-progress">
-                <div class="result-fill" style="width: ${totalVoters > 0 ? (counts[i] / totalVoters * 100) : 0}%">
-                  ${counts[i]} (${totalVoters > 0 ? Math.round(counts[i] / totalVoters * 100) : 0}%)
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      `;
+
+      const items = quizOpts.map((opt, i) => {
+        const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+        const optText = this.getOptionLabel(opt, `選項 ${i + 1}`);
+        return {
+          label: optText,
+          count: counts[i],
+          isImg: isImg,
+          image: isImg ? opt.image : null
+        };
+      });
+
+      resultsContainer.innerHTML = this.renderResultsVisualization(items, totalVoters, true, this.currentQuiz.quizType || 'single');
     });
   }
 

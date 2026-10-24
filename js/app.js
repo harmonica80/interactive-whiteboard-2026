@@ -11850,8 +11850,8 @@ class App {
         html += `
           <label style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; user-select: none; transition: background 0.15s, border-color 0.15s;">
             <input type="checkbox" class="focus-song-quiz-tag-cb" value="${tag}" ${isChecked ? 'checked' : ''} onchange="window.app && window.app.onSongQuizTagCheckboxChange()">
-            <span style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🏷️ ${tag}</span>
-            <span style="font-size: 11px; color: var(--text-secondary); margin-left: auto;">(${count}首)</span>
+            <span style="font-weight: 600; color: var(--text-primary); white-space: nowrap; flex-shrink: 0;">🏷️ ${tag}</span>
+            <span style="font-size: 11px; color: var(--text-secondary); margin-left: auto; white-space: nowrap; flex-shrink: 0; padding-left: 6px;">(${count}首)</span>
           </label>
         `;
       });
@@ -16867,6 +16867,10 @@ class App {
         // 渲染目前已上傳的 48 格預覽
         if (previewSection && previewGrid) {
           previewSection.style.display = 'block';
+          const pTitle = document.getElementById('adminClassAvatarPreviewTitle');
+          const pSub = document.getElementById('adminClassAvatarPreviewSub');
+          if (pTitle) pTitle.textContent = '👀 目前班級專屬頭像（自訂 48 格圖鑑）：';
+          if (pSub) pSub.textContent = '使用老師上傳之班級專屬角色圖鑑';
           let html = '';
           for (let i = 0; i < 48; i++) {
             const col = i % 8;
@@ -16874,7 +16878,7 @@ class App {
             const x = ((col / 7) * 100).toFixed(2);
             const y = ((row / 5) * 100).toFixed(2);
             html += `
-              <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="角色 #${i + 1}">
+              <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="專屬角色 #${i + 1}">
                 <span style="width: 100%; height: 100%; display: block; border-radius: 50%; background-image: url('${data.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
               </div>
             `;
@@ -16888,7 +16892,26 @@ class App {
           badge.style.color = '#28a745';
         }
         if (resetBtn) resetBtn.style.display = 'none';
-        if (previewSection) previewSection.style.display = 'none';
+
+        // 渲染系統預設 96 款可愛生物頭像圖鑑
+        if (previewSection && previewGrid) {
+          previewSection.style.display = 'block';
+          const pTitle = document.getElementById('adminClassAvatarPreviewTitle');
+          const pSub = document.getElementById('adminClassAvatarPreviewSub');
+          if (pTitle) pTitle.textContent = '👀 目前班級使用頭像（系統預設 96 款可愛生物）：';
+          if (pSub) pSub.textContent = '含「萌寵奇幻 48 款」與「森林海洋 48 款」共 96 款圖鑑';
+          let html = '';
+          for (let i = 0; i < 96; i++) {
+            const avatar = this.CUTE_AVATARS[i] || { name: `可愛生物 #${i + 1}`, emoji: '🐾' };
+            const pos = this.getAvatarPositionStyle(i);
+            html += `
+              <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="${avatar.emoji} ${avatar.name} (#${i + 1})">
+                <span class="cute-avatar-icon" style="width: 100%; height: 100%; border-radius: 50%; ${pos}"></span>
+              </div>
+            `;
+          }
+          previewGrid.innerHTML = html;
+        }
       }
     } catch (e) {
       console.warn('檢查班級頭像狀態失敗:', e);
@@ -17007,6 +17030,10 @@ class App {
 
     if (previewSection && previewGrid) {
       previewSection.style.display = 'block';
+      const pTitle = document.getElementById('adminClassAvatarPreviewTitle');
+      const pSub = document.getElementById('adminClassAvatarPreviewSub');
+      if (pTitle) pTitle.textContent = '👀 待儲存頭像切分即時預覽（共 48 格）：';
+      if (pSub) pSub.textContent = '請檢視無誤後點擊上方「💾 儲存並套用班級頭像」';
       let html = '';
       for (let i = 0; i < total; i++) {
         const col = i % cols;
