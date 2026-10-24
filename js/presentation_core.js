@@ -57,6 +57,13 @@
       this.tempQuestions = [];
       this.tempExternalLinks = [];
       this.tempFloatingEmojis = ['👍', '💡', '❓', '❤️', '👏', '😂'];
+      this.customFloatingEmojis = [];
+
+      // 行動裝置雙指縮放與平移簡報畫面狀態 (Item 6)
+      this.slideZoom = 1;
+      this.slidePanX = 0;
+      this.slidePanY = 0;
+      this.isSlidePinching = false;
 
       // DOM 元素快取
       this.els = {};
@@ -579,10 +586,9 @@
         }
       }
 
-      const rect = screen.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        const w = Math.round(rect.width);
-        const h = Math.round(rect.height);
+      const w = screen.clientWidth || Math.round( screen.getBoundingClientRect().width );
+      const h = screen.clientHeight || Math.round( screen.getBoundingClientRect().height );
+      if (w > 0 && h > 0) {
         if (annotationCanvas.width !== w || annotationCanvas.height !== h) {
           annotationCanvas.width = w;
           annotationCanvas.height = h;
@@ -599,21 +605,78 @@
       }
     }
 
-    // 畫布繪圖與雷射筆滑鼠/觸控事件
+    // 套用簡報畫面的雙指縮放與平移 Transform (Item 6)
+    applySlideZoomTransform() {
+      const { screen, screenBg, annotationCanvas, studentDrawCanvas } = this.els;
+      if (!screen) return;
+      const targets = [screenBg, annotationCanvas, studentDrawCanvas].filter(Boolean);
+      if (this.slideZoom <= 1.02) {
+        this.slideZoom = 1;
+        this.slidePanX = 0;
+        this.slidePanY = 0;
+        targets.forEach(el => {
+          el.style.transformOrigin = '0 0';
+          el.style.transform = '';
+        });
+      } else {
+        const w = screen.clientWidth || 320;
+        const h = screen.clientHeight || 180;
+        const minX = w - w * this.slideZoom;
+        const minY = h - h * this.slideZoom;
+        this.slidePanX = Math.min(0, Math.max(minX, this.slidePanX));
+        this.slidePanY = Math.min(0, Math.max(minY, this.slidePanY));
+        const tf = `translate(${this.slidePanX}px, ${this.slidePanY}px) scale(${this.slideZoom})`;
+        targets.forEach(el => {
+          el.style.transformOrigin = '0 0';
+          el.style.transform = tf;
+        });
+      }
+    }
+
+    resetSlideZoom() {
+      this.slideZoom = 1;
+      this.slidePanX = 0;
+      this.slidePanY = 0;
+      this.applySlideZoomTransform();
+    }
+
+    // 畫布繪圖與雷射筆滑鼠/觸控事件 (同時支援行動裝置雙指縮放簡報畫面)
     bindCanvasEvents() {
       const { screen, annotationCanvas } = this.els;
       if (!screen || !annotationCanvas) return;
+
+      let isOneFingerPanning = false;
+      let panLastPt = { x: 0, y: 0 };
+      let pinchStartDist = 0;
+      let pinchStartZoom = 1;
+      let pinchLastMid = { x: 0, y: 0 };
+
+      const getDistAndMid = (t0, t1) => {
+        const dx = t1.clientX - t0.clientX;
+        const dy = t1.clientY - t0.clientY;
+        return {
+          dist: Math.hypot(dx, dy) || 1,
+          midX: (t0.clientX + t1.clientX) / 2,
+          midY: (t0.clientY + t1.clientY) / 2
+        };
+      };
 
       const getRatioPos = (e) => {
         const rect = screen.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const rx = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        const ry = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+        const zoom = this.slideZoom || 1;
+        const panX = this.slidePanX || 0;
+        const panY = this.slidePanY || 0;
+        const localX = (clientX - rect.left - panX) / zoom;
+        const localY = (clientY - rect.top - panY) / zoom;
+        const rx = Math.max(0, Math.min(1, localX / rect.width));
+        const ry = Math.max(0, Math.min(1, localY / rect.height));
         return { rx, ry };
       };
 
       const onPointerDown = (e) => {
+        if (this.isSlidePinching) return;
         if (this.currentTool === 'none' || !this.canControlPresentation()) return;
         this.updateCanvasDimensions();
         const { rx, ry } = getRatioPos(e);
@@ -633,6 +696,7 @@
       };
 
       const onPointerMove = (e) => {
+        if (this.isSlidePinching) return;
         if (this.currentTool === 'none' || !this.canControlPresentation()) return;
         const { rx, ry } = getRatioPos(e);
 
@@ -672,14 +736,84 @@
       screen.addEventListener('mouseleave', onPointerLeave);
 
       screen.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length >= 2) {
+          e.preventDefault();
+          this.isSlidePinching = true;
+          isOneFingerPanning = false;
+          if (this.isDrawing && this.currentStroke && this.currentStroke.points.length <= 5) {
+            this.isDrawing = false;
+            this.currentStroke = null;
+            this.redrawAnnotations();
+          }
+          if (this.isStudentDrawing && this.studentDrawStrokes && this.studentDrawStrokes.length > 0) {
+            const lastS = this.studentDrawStrokes[this.studentDrawStrokes.length - 1];
+            if (lastS && lastS.points && lastS.points.length <= 5) {
+              this.studentDrawStrokes.pop();
+              this.redrawStudentDrawCanvas();
+            }
+            this.isStudentDrawing = false;
+          }
+          const info = getDistAndMid(e.touches[0], e.touches[1]);
+          pinchStartDist = info.dist;
+          pinchStartZoom = this.slideZoom || 1;
+          pinchLastMid = { x: info.midX, y: info.midY };
+          return;
+        }
+        const slide = this.getCurrentSlide();
+        const isDrawModeActive = slide && Array.isArray(slide.questions) && slide.questions.some(q => q.type === 'draw');
+        if (this.slideZoom > 1.02 && this.currentTool === 'none' && !isDrawModeActive && e.touches && e.touches.length === 1) {
+          isOneFingerPanning = true;
+          panLastPt = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          return;
+        }
         if (this.currentTool !== 'none') e.preventDefault();
         onPointerDown(e);
       }, { passive: false });
+
       screen.addEventListener('touchmove', (e) => {
+        if (this.isSlidePinching && e.touches && e.touches.length >= 2) {
+          e.preventDefault();
+          const info = getDistAndMid(e.touches[0], e.touches[1]);
+          const rect = screen.getBoundingClientRect();
+          const cx = info.midX - rect.left;
+          const cy = info.midY - rect.top;
+
+          this.slidePanX += (info.midX - pinchLastMid.x);
+          this.slidePanY += (info.midY - pinchLastMid.y);
+          pinchLastMid = { x: info.midX, y: info.midY };
+
+          const newZoom = Math.max(1, Math.min(4, pinchStartZoom * (info.dist / pinchStartDist)));
+          const factor = newZoom / (this.slideZoom || 1);
+          this.slidePanX = cx - (cx - this.slidePanX) * factor;
+          this.slidePanY = cy - (cy - this.slidePanY) * factor;
+          this.slideZoom = newZoom;
+          this.applySlideZoomTransform();
+          return;
+        }
+        if (isOneFingerPanning && e.touches && e.touches.length === 1 && this.slideZoom > 1.02) {
+          e.preventDefault();
+          const dx = e.touches[0].clientX - panLastPt.x;
+          const dy = e.touches[0].clientY - panLastPt.y;
+          panLastPt = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          this.slidePanX += dx;
+          this.slidePanY += dy;
+          this.applySlideZoomTransform();
+          return;
+        }
         if (this.currentTool !== 'none') e.preventDefault();
         onPointerMove(e);
       }, { passive: false });
-      screen.addEventListener('touchend', onPointerUp, { passive: true });
+
+      screen.addEventListener('touchend', (e) => {
+        if (!e.touches || e.touches.length === 0) {
+          isOneFingerPanning = false;
+          if (this.isSlidePinching) {
+            setTimeout(() => { this.isSlidePinching = false; }, 60);
+          }
+          this.applySlideZoomTransform();
+        }
+        onPointerUp();
+      }, { passive: true });
     }
 
     // 初始化 Firebase 同步監聽
@@ -1077,6 +1211,7 @@
       this.currentStudentQuestionIndex = 0;
       this.isFloatingDrawerOpen = false;
       this.studentDrawStrokes = [];
+      this.resetSlideZoom();
       if (this.els.studentDrawCanvas) {
         const ctx = this.els.studentDrawCanvas.getContext('2d');
         ctx.clearRect(0, 0, this.els.studentDrawCanvas.width, this.els.studentDrawCanvas.height);
@@ -1369,8 +1504,8 @@
 
       submissionsList.innerHTML = '';
 
-      // 檢查本頁是否包含手繪作答題或有提交手繪圖檔
-      const isDrawQuestion = slide.questions.some(q => q.type === 'draw');
+      // 檢查本頁是否包含手繪作答題或有提交手繪圖檔 (防呆：floating 模式下 slide.questions 可能為 undefined)
+      const isDrawQuestion = Array.isArray(slide.questions) && slide.questions.some(q => q.type === 'draw');
 
       subEntries.slice().reverse().forEach(([uid, sub]) => {
         if (isDrawQuestion || sub.drawDataUrl) {
@@ -1530,9 +1665,10 @@
         emojis.forEach(emo => {
           const btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = 'presentation-reaction-btn';
+          const isTextItem = Array.from(String(emo)).length > 2 || /[\u4e00-\u9fa5a-zA-Z0-9]/.test(String(emo));
+          btn.className = `presentation-reaction-btn ${isTextItem ? 'is-custom-text' : ''}`;
           btn.textContent = emo;
-          btn.title = `點擊送出 ${emo} 心情回饋`;
+          btn.title = `點擊送出「${emo}」回饋`;
           btn.onclick = () => this.submitStudentAnswer({ reaction: emo });
           bar.appendChild(btn);
         });
@@ -1834,14 +1970,20 @@
         const rect = screen.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const rx = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        const ry = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+        const zoom = this.slideZoom || 1;
+        const panX = this.slidePanX || 0;
+        const panY = this.slidePanY || 0;
+        const localX = (clientX - rect.left - panX) / zoom;
+        const localY = (clientY - rect.top - panY) / zoom;
+        const rx = Math.max(0, Math.min(1, localX / rect.width));
+        const ry = Math.max(0, Math.min(1, localY / rect.height));
         return { rx, ry };
       };
 
       let activeStroke = null;
 
       const onPointerDown = (e) => {
+        if (this.isSlidePinching || (e.touches && e.touches.length >= 2)) return;
         const slide = this.getCurrentSlide();
         if (!slide || !slide.questions || !slide.questions.some(q => q.type === 'draw')) return;
         this.updateCanvasDimensions();
@@ -1857,6 +1999,7 @@
       };
 
       const onPointerMove = (e) => {
+        if (this.isSlidePinching || (e.touches && e.touches.length >= 2)) return;
         if (!this.isStudentDrawing || !activeStroke) return;
         const { rx, ry } = getRatioPos(e);
         const prevPt = activeStroke.points[activeStroke.points.length - 1];
@@ -2439,10 +2582,29 @@
       if (!grid) return;
       grid.innerHTML = '';
 
-      const allCandidateEmojis = ['👍', '💡', '❓', '❤️', '👏', '😂', '🎉', '🤔', '😮', '🔥', '✅', '🆘'];
+      // 預設 16 款常用表情符號 + 老師自訂加入的表情或文字 (Item 7A)
+      const default16Emojis = [
+        '👍', '💡', '❓', '❤️', '👏', '😂', '🎉', '🤔',
+        '😮', '🔥', '✅', '🆘', '🙌', '💯', '🤩', '🙏'
+      ];
       if (!Array.isArray(this.tempFloatingEmojis) || this.tempFloatingEmojis.length === 0) {
         this.tempFloatingEmojis = ['👍', '💡', '❓', '❤️', '👏', '😂'];
       }
+      if (!Array.isArray(this.customFloatingEmojis)) {
+        this.customFloatingEmojis = [];
+      }
+
+      const allCandidateEmojis = [...default16Emojis];
+      this.customFloatingEmojis.forEach(item => {
+        if (item && !allCandidateEmojis.includes(item)) {
+          allCandidateEmojis.push(item);
+        }
+      });
+      this.tempFloatingEmojis.forEach(item => {
+        if (item && !allCandidateEmojis.includes(item)) {
+          allCandidateEmojis.push(item);
+        }
+      });
 
       allCandidateEmojis.forEach(emo => {
         const isChecked = this.tempFloatingEmojis.includes(emo);
@@ -2457,14 +2619,100 @@
           border: 2px solid ${isChecked ? '#0ea5e9' : '#cbd5e1'};
           background: ${isChecked ? '#e0f2fe' : '#ffffff'};
           color: ${isChecked ? '#0369a1' : '#64748b'};
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.15s ease;
         `;
-        btn.innerHTML = `<span>${emo}</span><span style="font-size: 12px;">${isChecked ? '✓' : ''}</span>`;
+        btn.innerHTML = `<span>${this.escapeHtml(emo)}</span><span style="font-size: 12px;">${isChecked ? '✓' : ''}</span>`;
         btn.onclick = () => this.toggleFloatingEmoji(emo);
         grid.appendChild(btn);
+      });
+
+      this.renderStandardEmojiLibrary();
+    }
+
+    addCustomFloatingEmoji() {
+      this.markAsHost();
+      const input = document.getElementById('inputCustomFloatingEmoji');
+      if (!input) return;
+      const val = (input.value || '').trim();
+      if (!val) {
+        this.notify('提示', '請先輸入要新增的文字或表情符號！');
+        return;
+      }
+      if (!Array.isArray(this.customFloatingEmojis)) {
+        this.customFloatingEmojis = [];
+      }
+      if (!this.customFloatingEmojis.includes(val)) {
+        this.customFloatingEmojis.push(val);
+      }
+      if (!Array.isArray(this.tempFloatingEmojis)) {
+        this.tempFloatingEmojis = [];
+      }
+      if (!this.tempFloatingEmojis.includes(val)) {
+        this.tempFloatingEmojis.push(val);
+      }
+      input.value = '';
+      this.renderFloatingEmojiPicker();
+      this.notify('已新增', `已將「${val}」加入浮動表情條並勾選啟用！`);
+    }
+
+    toggleStandardEmojiLibrary() {
+      const lib = document.getElementById('presStandardEmojiLibrary');
+      if (!lib) return;
+      const isHidden = lib.style.display === 'none' || !lib.style.display;
+      lib.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) {
+        this.renderStandardEmojiLibrary();
+      }
+    }
+
+    renderStandardEmojiLibrary() {
+      const libGrid = document.getElementById('presStandardEmojiLibraryGrid');
+      if (!libGrid) return;
+      libGrid.innerHTML = '';
+
+      const standardEmojis = [
+        '😀', '😄', '😁', '😆', '😅', '🤣', '😊', '😇', '🙂', '😉', '😍', '🥰',
+        '😘', '😎', '🤓', '🧐', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥',
+        '😮', '🤐', '😯', '😪', '😫', '🥱', '😴', '😌', '😛', '😜', '😝', '🤤',
+        '😒', '😓', '😔', '😕', '🙃', '🫠', '🫡', '🫢', '🫣', '🫤', '🫨', '🤯',
+        '😳', '🥺', '😢', '😭', '😱', '😖', '😣', '😞', '😟', '😤', '😡', '🤬',
+        '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👋', '🤚', '🖐️', '✋',
+        '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪', '🧠', '👀', '❤️', '🧡',
+        '💛', '💚', '💙', '💜', '💖', '💯', '💥', '💫', '⭐', '🌟', '✨', '⚡',
+        '🔥', '🎉', '🎊', '🎈', '🏆', '🥇', '🎯', '💡', '❓', '❔', '❗', '❕',
+        '✅', '☑️', '❌', '⭕', '🆘', '🆗', '🆙', '🆕', '🆒', '🆓', '➕', '➖'
+      ];
+
+      standardEmojis.forEach(emo => {
+        const isSelected = Array.isArray(this.tempFloatingEmojis) && this.tempFloatingEmojis.includes(emo);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.title = isSelected ? `點擊取消「${emo}」` : `點擊加入並勾選「${emo}」`;
+        btn.style.cssText = `
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
+          border: 1.5px solid ${isSelected ? '#0284c7' : '#e2e8f0'};
+          background: ${isSelected ? '#e0f2fe' : '#f8fafc'};
+          font-size: 18px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 0.12s;
+        `;
+        btn.textContent = emo;
+        btn.onclick = () => {
+          if (!Array.isArray(this.customFloatingEmojis)) this.customFloatingEmojis = [];
+          if (!this.customFloatingEmojis.includes(emo)) {
+            this.customFloatingEmojis.push(emo);
+          }
+          this.toggleFloatingEmoji(emo);
+        };
+        libGrid.appendChild(btn);
       });
     }
 

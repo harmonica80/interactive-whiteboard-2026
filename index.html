@@ -2,10 +2,10 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=396">
-  <link rel="stylesheet" href="css/presentation.css?v=3112">
+  <link rel="stylesheet" href="css/style.css?v=397">
+  <link rel="stylesheet" href="css/presentation.css?v=3113">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -664,7 +664,7 @@
       <!-- 互動白板 -->
       <div class="panel-card" id="panel-whiteboard">
         <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
-          <iframe id="whiteboardFrame" src="whiteboard.html?v=3003" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板"></iframe>
+          <iframe id="whiteboardFrame" src="whiteboard.html?v=3004" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板"></iframe>
         </div>
       </div>
 
@@ -790,8 +790,8 @@
                   <option value="8">粗</option>
                 </select>
                 <div class="presentation-draw-actions">
-                  <button type="button" class="presentation-tool-btn" id="btnStudentDrawClear" title="清空手繪筆劃">🗑️ 清空</button>
-                  <button type="button" class="presentation-tool-btn active-green" id="btnStudentDrawSubmit" title="提交作答">🚀 提交作答</button>
+                  <button type="button" class="presentation-tool-btn" id="btnStudentDrawClear" title="清空手繪筆劃">🗑️<span class="draw-btn-text"> 清空</span></button>
+                  <button type="button" class="presentation-tool-btn active-green" id="btnStudentDrawSubmit" title="提交作答">🚀<span class="draw-btn-text"> 提交作答</span></button>
                 </div>
               </div>
 
@@ -4945,12 +4945,12 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=396"></script>
+  <script src="js/app.js?v=397"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
-  <script src="js/word_cloud.js?v=392"></script>
-  <script src="js/presentation_core.js?v=3112"></script>
+  <script src="js/word_cloud.js?v=393"></script>
+  <script src="js/presentation_core.js?v=3113"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -6548,11 +6548,30 @@ Python</pre>
         <div id="presFloatingEmojiConfigSection" style="display: none; background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 10px; padding: 12px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
             <label style="font-size: 13px; font-weight: 700; color: #0369a1;">
-              😊 設定浮動表情條要出現的表情符號
+              😊 設定浮動表情條要出現的表情符號或文字（預設 16 款，可自訂新增）
             </label>
             <span style="font-size: 11px; color: #0284c7;">點擊切換啟用狀態（此模式專供表情互動，不新增題目）</span>
           </div>
-          <div id="presFloatingEmojiPickerGrid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+          <div id="presFloatingEmojiPickerGrid" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;"></div>
+
+          <!-- 老師自訂輸入文字或從系統標準表情符號挑選 -->
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding-top: 8px; border-top: 1px dashed #7dd3fc;">
+            <input type="text" id="inputCustomFloatingEmoji" maxlength="8" placeholder="輸入自訂文字或表情 (如：懂了、太快、🌟)..."
+              onkeydown="if(event.key==='Enter'){event.preventDefault(); window.presentationManager && window.presentationManager.addCustomFloatingEmoji();}"
+              style="flex: 1; min-width: 170px; padding: 6px 10px; border: 1.5px solid #7dd3fc; border-radius: 8px; font-size: 12px; background: #ffffff;">
+            <button type="button" class="presentation-tool-btn active" onclick="window.presentationManager && window.presentationManager.addCustomFloatingEmoji()" style="padding: 6px 12px; font-size: 12px;">
+              ➕ 新增自訂項目
+            </button>
+            <button type="button" class="presentation-tool-btn" onclick="window.presentationManager && window.presentationManager.toggleStandardEmojiLibrary()" style="padding: 6px 12px; font-size: 12px; background: #ffffff; border: 1.5px solid #0284c7; color: #0369a1;">
+              😀 從標準表情庫挑選
+            </button>
+          </div>
+
+          <!-- 系統標準表情符號庫展開面板 -->
+          <div id="presStandardEmojiLibrary" style="display: none; margin-top: 8px; padding: 10px; background: #ffffff; border: 1px solid #bae6fd; border-radius: 8px; max-height: 150px; overflow-y: auto;">
+            <div style="font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 600;">點擊下方任一系統標準表情符號，即可直接加入並勾選顯示：</div>
+            <div id="presStandardEmojiLibraryGrid" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+          </div>
         </div>
 
         <!-- 多題互動題目列表 (非浮動表情條模式時顯示) -->

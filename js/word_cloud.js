@@ -31,9 +31,143 @@
       this.customMaskCanvas = null;
       this.customMaskCtx = null;
       this.knownSubmissionKeys = new Set();
+      this.wcZoom = 1;
+      this.wcPanX = 0;
+      this.wcPanY = 0;
       
       this.initFirebaseListeners();
       this.initClipboardPasteListener();
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => this.initCanvasPinchZoom());
+      } else {
+        this.initCanvasPinchZoom();
+      }
+    }
+
+    // 取得目前使用者正確顯示名稱 (修正文字雲提交時顯示為「匿名同學」的問題)
+    getCurrentStudentName() {
+      const nameFromApp = (window.app && typeof window.app.getCurrentUserName === 'function')
+        ? window.app.getCurrentUserName()
+        : (window.app?.currentUserName || '');
+      const clean = (
+        nameFromApp ||
+        (window.ClassRoomManager && typeof window.ClassRoomManager.getUserName === 'function' && window.ClassRoomManager.getUserName()) ||
+        localStorage.getItem('user_nickname') ||
+        localStorage.getItem('user_name') ||
+        localStorage.getItem('comment_nickname') ||
+        ''
+      ).trim();
+      return clean || (window.app?.isAdmin ? '老師' : '同學');
+    }
+
+    getCurrentStudentId() {
+      return (
+        (window.app && typeof window.app.getUserId === 'function' && window.app.getUserId()) ||
+        window.app?.currentUserId ||
+        localStorage.getItem('wb_user_uid') ||
+        ''
+      );
+    }
+
+    // 支援行動裝置雙指縮放與平移文字雲畫布 (Item 10)
+    initCanvasPinchZoom() {
+      const wrapper = document.getElementById('wcCanvasWrapper');
+      const canvas = document.getElementById('wordCloudCanvas');
+      if (!wrapper || !canvas || wrapper._wcPinchBound) return;
+      wrapper._wcPinchBound = true;
+      wrapper.style.overflow = 'hidden';
+      wrapper.style.position = 'relative';
+      canvas.style.transformOrigin = '0 0';
+
+      let isPinching = false;
+      let isOneFingerPanning = false;
+      let pinchStartDist = 0;
+      let pinchStartZoom = 1;
+      let pinchLastMid = { x: 0, y: 0 };
+      let panLastPt = { x: 0, y: 0 };
+
+      const applyTransform = () => {
+        if (this.wcZoom <= 1.02) {
+          this.wcZoom = 1;
+          this.wcPanX = 0;
+          this.wcPanY = 0;
+          canvas.style.transform = '';
+          wrapper.style.touchAction = 'pan-y';
+        } else {
+          const w = wrapper.clientWidth || 340;
+          const h = wrapper.clientHeight || 300;
+          const minX = w - w * this.wcZoom;
+          const minY = h - h * this.wcZoom;
+          this.wcPanX = Math.min(0, Math.max(minX, this.wcPanX));
+          this.wcPanY = Math.min(0, Math.max(minY, this.wcPanY));
+          canvas.style.transform = `translate(${this.wcPanX}px, ${this.wcPanY}px) scale(${this.wcZoom})`;
+          wrapper.style.touchAction = 'none';
+        }
+      };
+
+      const getDistAndMid = (t0, t1) => {
+        const dx = t1.clientX - t0.clientX;
+        const dy = t1.clientY - t0.clientY;
+        return {
+          dist: Math.hypot(dx, dy) || 1,
+          midX: (t0.clientX + t1.clientX) / 2,
+          midY: (t0.clientY + t1.clientY) / 2
+        };
+      };
+
+      wrapper.addEventListener('touchstart', (e) => {
+        if (e.touches.length >= 2) {
+          e.preventDefault();
+          isPinching = true;
+          isOneFingerPanning = false;
+          const info = getDistAndMid(e.touches[0], e.touches[1]);
+          pinchStartDist = info.dist;
+          pinchStartZoom = this.wcZoom || 1;
+          pinchLastMid = { x: info.midX, y: info.midY };
+        } else if (e.touches.length === 1 && this.wcZoom > 1.02) {
+          isOneFingerPanning = true;
+          panLastPt = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+      }, { passive: false });
+
+      wrapper.addEventListener('touchmove', (e) => {
+        if (isPinching && e.touches.length >= 2) {
+          e.preventDefault();
+          const info = getDistAndMid(e.touches[0], e.touches[1]);
+          const rect = wrapper.getBoundingClientRect();
+          const cx = info.midX - rect.left;
+          const cy = info.midY - rect.top;
+
+          this.wcPanX += (info.midX - pinchLastMid.x);
+          this.wcPanY += (info.midY - pinchLastMid.y);
+          pinchLastMid = { x: info.midX, y: info.midY };
+
+          const newZoom = Math.max(1, Math.min(4, pinchStartZoom * (info.dist / pinchStartDist)));
+          const factor = newZoom / this.wcZoom;
+          this.wcPanX = cx - (cx - this.wcPanX) * factor;
+          this.wcPanY = cy - (cy - this.wcPanY) * factor;
+          this.wcZoom = newZoom;
+          applyTransform();
+        } else if (isOneFingerPanning && e.touches.length === 1 && this.wcZoom > 1.02) {
+          e.preventDefault();
+          const dx = e.touches[0].clientX - panLastPt.x;
+          const dy = e.touches[0].clientY - panLastPt.y;
+          panLastPt = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          this.wcPanX += dx;
+          this.wcPanY += dy;
+          applyTransform();
+        }
+      }, { passive: false });
+
+      wrapper.addEventListener('touchend', (e) => {
+        if (!e.touches || e.touches.length < 2) {
+          isPinching = false;
+        }
+        if (!e.touches || e.touches.length === 0) {
+          isOneFingerPanning = false;
+          applyTransform();
+        }
+      });
     }
 
     // 初始化 Firebase 監聽
@@ -228,7 +362,7 @@
         active: true,
         accepting: true, // 是否持續接收作答
         timestamp: firebase.database.ServerValue.TIMESTAMP,
-        creator: window.app?.currentUserName || '老師'
+        creator: this.getCurrentStudentName() || '老師'
       };
 
       // 每次發布全新活動或新一輪時，徹底清除舊提交紀錄與隱藏名單，確保全班同學皆可重新提交
@@ -384,8 +518,8 @@
       // 清除過濾多餘符號，長度限制
       const cleanWord = rawText.replace(/[\r\n\t]+/g, ' ').substring(0, this.maxWordLength);
 
-      const studentName = window.app?.currentUserName || '匿名同學';
-      const studentId = window.app?.currentUserId || (navigator.userAgent + '_' + (studentName));
+      const studentName = this.getCurrentStudentName();
+      const studentId = this.getCurrentStudentId() || (navigator.userAgent + '_' + (studentName));
       
       // 正確判定提交限制：若設定為 0 代表不限次數；避免 0 || 1 誤判為 1
       const limit = (this.activeActivity && this.activeActivity.limitPerStudent !== undefined)
@@ -429,7 +563,7 @@
         word: cleanWord,
         user: studentName,
         userId: studentId,
-        avatar: window.app?.currentUserAvatar || null,
+        avatar: (window.app && typeof window.app.getCurrentUserAvatar === 'function' ? window.app.getCurrentUserAvatar() : window.app?.currentUserAvatar) || null,
         timestamp: firebase.database.ServerValue.TIMESTAMP
       };
 
@@ -779,8 +913,8 @@
           wordInput.placeholder = '老師已鎖定作答，目前暫停輸入...';
         } else {
           // 計算當前學生在此輪有效提交次數
-          const studentName = window.app?.currentUserName || '匿名同學';
-          const studentId = window.app?.currentUserId || '';
+          const studentName = this.getCurrentStudentName();
+          const studentId = this.getCurrentStudentId();
           let myCount = 0;
           const roundStartTs = act.roundTimestamp || act.timestamp || 0;
           for (const key in this.submissions) {
@@ -935,11 +1069,14 @@
     renderCanvas() {
       const canvas = document.getElementById('wordCloudCanvas');
       if (!canvas) return;
+      this.initCanvasPinchZoom();
 
-      const rect = canvas.getBoundingClientRect();
+      const wrapper = document.getElementById('wcCanvasWrapper');
       const dpr = window.devicePixelRatio || 1;
-      const width = Math.max(340, Math.floor(rect.width || 750));
-      const height = Math.max(300, Math.floor(rect.height || 480));
+      const layoutW = canvas.clientWidth || (wrapper ? wrapper.clientWidth : 0) || 750;
+      const layoutH = canvas.clientHeight || (wrapper ? wrapper.clientHeight : 0) || 480;
+      const width = Math.max(340, Math.floor(layoutW));
+      const height = Math.max(300, Math.floor(layoutH));
 
       canvas.width = width * dpr;
       canvas.height = height * dpr;

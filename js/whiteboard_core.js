@@ -1750,8 +1750,77 @@
     updateSelectionActionBar();
   }
 
-  // ===== 繪圖與手勢交互 (畫布事件) =====
+  // ===== 繪圖與手勢交互 (畫布事件，支援行動裝置雙指縮放與平移) =====
+  let isPinching = false;
+  let pinchStartDist = 0;
+  let pinchStartZoom = 1;
+  let pinchLastMid = { x: 0, y: 0 };
+
+  function getTouchDistAndMid(t0, t1) {
+    const dx = t1.clientX - t0.clientX;
+    const dy = t1.clientY - t0.clientY;
+    return {
+      dist: Math.hypot(dx, dy) || 1,
+      midX: (t0.clientX + t1.clientX) / 2,
+      midY: (t0.clientY + t1.clientY) / 2
+    };
+  }
+
+  els.canvasViewport.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches.length >= 2) {
+      e.preventDefault();
+      isPinching = true;
+      state.isPanning = false;
+      state.isMarqueeSelecting = false;
+      if (els.selectionMarquee) els.selectionMarquee.style.display = 'none';
+
+      // 若第一指剛觸碰瞬間觸發了未完成的短筆劃，取消該誤觸筆劃
+      if (state.activeDrawing) {
+        const tempId = state.activeDrawing.id;
+        const pts = state.activeDrawing.points;
+        if (!pts || pts.length <= 6) {
+          delete state.objects[tempId];
+          const el = document.getElementById('svg_' + tempId);
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        } else {
+          pushObjectUpdate(state.activeDrawing);
+        }
+        state.activeDrawing = null;
+      }
+
+      const info = getTouchDistAndMid(e.touches[0], e.touches[1]);
+      pinchStartDist = info.dist;
+      pinchStartZoom = state.view.zoom;
+      pinchLastMid = { x: info.midX, y: info.midY };
+    }
+  }, { passive: false });
+
+  els.canvasViewport.addEventListener('touchmove', (e) => {
+    if (isPinching && e.touches && e.touches.length >= 2) {
+      e.preventDefault();
+      const info = getTouchDistAndMid(e.touches[0], e.touches[1]);
+      const dx = info.midX - pinchLastMid.x;
+      const dy = info.midY - pinchLastMid.y;
+      state.view.x += dx;
+      state.view.y += dy;
+      pinchLastMid = { x: info.midX, y: info.midY };
+
+      const targetZoom = pinchStartZoom * (info.dist / pinchStartDist);
+      zoomAt(targetZoom, info.midX, info.midY);
+    }
+  }, { passive: false });
+
+  window.addEventListener('touchend', (e) => {
+    if (isPinching && (!e.touches || e.touches.length === 0)) {
+      setTimeout(() => { isPinching = false; }, 60);
+    }
+  });
+  window.addEventListener('touchcancel', () => {
+    isPinching = false;
+  });
+
   els.canvasViewport.addEventListener('pointerdown', (e) => {
+    if (isPinching) return;
     // 抓手平移模式 (空白鍵、中鍵或手掌工具)
     if (state.currentTool === 'hand' || e.button === 1 || isSpacePressed) {
       state.isPanning = true;
@@ -1907,6 +1976,7 @@
   });
 
   window.addEventListener('pointermove', (e) => {
+    if (isPinching) return;
     if (state.isPanning) {
       state.view.x = e.clientX - state.panStart.x;
       state.view.y = e.clientY - state.panStart.y;

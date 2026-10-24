@@ -771,14 +771,25 @@
   background: transparent;
   border: none;
   font-size: 24px;
+  color: #ffffff;
+  font-weight: 700;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 50%;
-  transition: transform 0.15s;
+  border-radius: 999px;
+  transition: transform 0.15s, background-color 0.15s;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   position: relative;
+}
+
+.presentation-reaction-btn.is-custom-text {
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 5px 12px;
+  line-height: 1.2;
 }
 
 .presentation-reaction-btn:hover {
@@ -1446,11 +1457,16 @@
     font-size: 12px !important;
   }
   .presentation-draw-actions {
-    gap: 5px !important;
+    gap: 6px !important;
   }
   .presentation-draw-actions .presentation-tool-btn {
-    padding: 4px 9px !important;
-    font-size: 12px !important;
+    padding: 5px 10px !important;
+    font-size: 14px !important;
+    min-width: 34px;
+    justify-content: center;
+  }
+  .presentation-draw-actions .draw-btn-text {
+    display: none !important;
   }
   .presentation-student-interaction-area {
     width: 100%;
