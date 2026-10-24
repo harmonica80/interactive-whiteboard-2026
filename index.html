@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=394">
+  <link rel="stylesheet" href="css/style.css?v=395">
   <link rel="stylesheet" href="css/presentation.css?v=3110">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -28,7 +28,7 @@
         <div class="header-title-container">
           <h1 class="header-title">📚 即時互動白板</h1>
           <button class="menu-tab teacher-share-top-btn desktop-only" data-target="panel-teacher-shares" title="教師分享">📢 教師分享</button>
-          <button type="button" id="btnLoginSharesNotice" class="desktop-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none;" title="查看最新課堂公告">🔔 公告 (<span id="txtLoginSharesNoticeCount">0</span>)</button>
+          <button type="button" id="btnLoginSharesNotice" class="desktop-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" title="查看最新課堂公告">🔔 公告 (<span id="txtLoginSharesNoticeCount">0</span>)</button>
           <button class="menu-tab presentation-top-btn desktop-only" data-target="panel-presentation" title="同步簡報">📽️ 同步簡報</button>
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -4949,7 +4949,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=394"></script>
+  <script src="js/app.js?v=395"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
@@ -6369,11 +6369,6 @@ Python</pre>
           <span class="fab-item-icon">🛠️</span>
           <span class="fab-item-text">建立自己的白板</span>
         </button>
-        <a href="https://harmonica80.blogspot.com/" target="_blank" rel="noopener noreferrer" class="fab-quick-menu-item" onclick="window.app && window.app.toggleQuickInfoMenu(false)">
-          <span class="fab-item-icon">🌐</span>
-          <span class="fab-item-text">述文老師學習網</span>
-          <span class="fab-item-arrow">↗</span>
-        </a>
         <button type="button" class="fab-quick-menu-item" onclick="window.app && window.app.openChangelogModal(); window.app && window.app.toggleQuickInfoMenu(false)">
           <span class="fab-item-icon">📄</span>
           <span class="fab-item-text">版本更新歷程</span>

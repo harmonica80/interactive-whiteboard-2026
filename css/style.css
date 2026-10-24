@@ -137,12 +137,13 @@ body {
 .desktop-only {
   display: inline-block !important;
 }
-.desktop-only[style*="display: none"],
-.desktop-only[style*="display:none"],
-.wf-hidden {
+.mobile-only {
   display: none !important;
 }
-.mobile-only {
+.wf-hidden,
+.desktop-only.wf-hidden,
+.mobile-only.wf-hidden,
+.presentation-top-btn.wf-hidden {
   display: none !important;
 }
 

@@ -8510,13 +8510,8 @@ class App {
     const mobileBtn = document.getElementById('mobileLoginSharesNoticeBtn');
 
     if (desktopBtn) {
-      if (count > 0) {
-        desktopBtn.style.display = 'inline-flex';
-        desktopBtn.innerHTML = `🔔 公告 (<span id="txtLoginSharesNoticeCount">${count}</span>)`;
-      } else {
-        desktopBtn.style.display = 'none';
-        desktopBtn.innerHTML = `🔔 公告 (<span id="txtLoginSharesNoticeCount">0</span>)`;
-      }
+      desktopBtn.style.display = 'inline-flex';
+      desktopBtn.innerHTML = `🔔 公告 (<span id="txtLoginSharesNoticeCount">${count}</span>)`;
     }
 
     if (mobileBtn) {
