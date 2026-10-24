@@ -178,7 +178,7 @@
   <div class="guide-container">
     <div class="guide-header">
       <h1>📚 教師專屬建置與連線指南</h1>
-      <p>只需要 3 分鐘簡單 4 步驟，立刻為您的班級建立免費專屬的即時互動白板！</p>
+      <p>只需 5 個簡單步驟，立刻為您的班級建立免費專屬的即時互動白板，並設定教師專屬密碼與安全自救機制！</p>
     </div>
 
     <!-- 步驟 1 -->
@@ -316,17 +316,58 @@
         </div>
       </div>
     </div>
+
+    <!-- 步驟 5：登入管理後台與設定專屬密碼 -->
+    <div class="step-card" style="border-left: 6px solid #4f46e5; padding: 24px; margin-bottom: 36px; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+      <div class="step-title" style="font-size: 19px; font-weight: bold; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="step-num" style="background: #4f46e5; color: white; border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(79,70,229,0.3);">5</span>
+          <span style="color: var(--text-primary); font-size: 19px; font-weight: 800;">登入管理後台並設定「教師專屬安全密碼」</span>
+        </div>
+        <span style="font-size: 12px; background: rgba(79,70,229,0.1); color: #4f46e5; border: 1px solid rgba(79,70,229,0.25); padding: 3px 10px; border-radius: 6px; font-weight: bold;">🛡️ 資安防護核心</span>
+      </div>
+
+      <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.6; padding-left: 42px;">
+        為維護班級測驗與學生資料安全，白板採用新一代 SHA-256 加密防護體系。完成建置後，請依循以下 3 階段完成專屬身分綁定：
+      </p>
+
+      <!-- 圖檔導引流程圖 -->
+      <div style="margin-left: 42px; margin-bottom: 20px;" class="step-img-box">
+        <img src="images/guide/step12_security_guide.svg" alt="步驟5 教師專屬安全設定流程" class="step-img" style="max-width: 100%; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
+      </div>
+
+      <ol style="font-size: 14px; margin: 0 0 16px 0; padding-left: 64px; color: var(--text-primary); line-height: 1.8;">
+        <li style="margin-bottom: 12px;">
+          <strong>首次進入管理後台</strong>：點選白板畫面右上角的「<span style="color: var(--accent-color); font-weight: bold;">⚙️ 管理後台</span>」按鈕。首次登入時可使用初始預設密碼 <code>1234</code> 進入（享有自首次啟用起算一週／7 天寬限期）；登入後請及早設定專屬密碼與安全自救問題。
+        </li>
+        <li style="margin-bottom: 12px;">
+          <strong>前往 F 項目設定專屬密碼</strong>：登入後，請於「班級管理」選單點選「<span style="color: #4f46e5; font-weight: bold;">F. 教師身分與密碼安全設定</span>」。在此自訂您的專屬管理密碼（至少 4 碼）。<strong>一旦設定完成，舊預設密碼即刻失效</strong>，避免他人任意進入。
+        </li>
+        <li style="margin-bottom: 12px;">
+          <strong>填寫安全提示與自救問題</strong>：強烈建議設定「密碼提示」與「安全自救問題」（例如：第一所任教學校）。若日後遺忘密碼，不需外部 Email，點選登入畫面的「❓ 忘記密碼？」即可回答題目秒自救重設！
+        </li>
+        <li style="margin-bottom: 8px;">
+          <strong>一組密碼，所有班級白板通用</strong>：同位老師所建立或綁定的多個班級白板，均自動共用您所設定的專屬密碼，免除記誦多組密碼的負擔。
+        </li>
+      </ol>
+
+      <div style="margin-left: 42px; background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text-primary); line-height: 1.6;">
+        <strong style="color: #16a34a;">💡 貼心防護小提醒：</strong>
+        本系統內建防暴力破解機制（連續輸錯 5 次將自動鎖定 3 分鐘）。若您連安全提問答案也遺忘，可聯絡系統管理員使用「系統超級救援金鑰」進行強制重設。
+      </div>
+    </div>
   </div>
 
   <script>
     const SECURITY_RULES_JSON = `{
   "rules": {
-    ".read": "now < 1893456000000",
-    ".write": "now < 1893456000000"
+    ".read": "now < 4891468800000",
+    ".write": "now < 4891468800000"
   }
 }`;
 
-    document.getElementById('rulesCodeText').textContent = SECURITY_RULES_JSON;
+    const rulesElem = document.getElementById('rulesCodeText');
+    if (rulesElem) rulesElem.textContent = SECURITY_RULES_JSON;
 
     function copySecurityRules() {
       navigator.clipboard.writeText(SECURITY_RULES_JSON).then(() => {
@@ -334,6 +375,49 @@
       }).catch(err => {
         alert('請手動選取程式碼框中的內容進行複製');
       });
+    }
+
+    async function fetchShortUrlWithFallbacks(longUrl) {
+      const enc = encodeURIComponent(longUrl);
+
+      // 服務 1：is.gd (原生支援 CORS, 回傳 JSON)
+      try {
+        const res = await fetch(`https://is.gd/create.php?format=json&url=${enc}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.shorturl) return data.shorturl.trim();
+        }
+      } catch (err1) {
+        console.warn('is.gd 短網址產生失敗，嘗試 v.gd 備援:', err1);
+      }
+
+      // 服務 2：v.gd (原生支援 CORS, 回傳 JSON)
+      try {
+        const res = await fetch(`https://v.gd/create.php?format=json&url=${enc}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.shorturl) return data.shorturl.trim();
+        }
+      } catch (err2) {
+        console.warn('v.gd 短網址產生失敗，嘗試 TinyURL 代理備援:', err2);
+      }
+
+      // 服務 3：TinyURL 經由 allorigins 代理轉發
+      try {
+        const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${enc}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.contents && data.contents.startsWith('http')) {
+            return data.contents.trim();
+          }
+        }
+      } catch (err3) {
+        console.warn('TinyURL 代理短網址產生失敗:', err3);
+      }
+
+      throw new Error('所有短網址服務皆無法連線');
     }
 
     function generateLinks() {
@@ -363,14 +447,16 @@
       const qrShortDiv = document.getElementById('qrcode-short');
       
       qrDiv.innerHTML = '';
-      new QRCode(qrDiv, {
-        text: finalShareUrl,
-        width: 180,
-        height: 180,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
-      });
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(qrDiv, {
+          text: finalShareUrl,
+          width: 180,
+          height: 180,
+          colorDark : "#000000",
+          colorLight : "#ffffff",
+          correctLevel : QRCode.CorrectLevel.H
+        });
+      }
 
       // 重置短網址 QR Code 空間為載入狀態
       if (qrShortDiv) {
@@ -386,9 +472,6 @@
         shortInput.value = "正在產生短網址...";
         if (btnCopyShort) btnCopyShort.disabled = true;
 
-        const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(finalShareUrl)}`;
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
-
         const renderShortQr = (shortUrl) => {
           shortInput.value = shortUrl;
           if (btnCopyShort) btnCopyShort.disabled = false;
@@ -396,48 +479,29 @@
             qrShortDiv.innerHTML = '';
             qrShortDiv.style.border = 'none';
             qrShortDiv.style.background = 'transparent';
-            new QRCode(qrShortDiv, {
-              text: shortUrl,
-              width: 180,
-              height: 180,
-              colorDark : "#000000",
-              colorLight : "#ffffff",
-              correctLevel : QRCode.CorrectLevel.H
-            });
+            if (typeof QRCode !== 'undefined') {
+              new QRCode(qrShortDiv, {
+                text: shortUrl,
+                width: 180,
+                height: 180,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+              });
+            }
           }
         };
 
-        fetch(proxyUrl)
-          .then(res => {
-            if (!res.ok) throw new Error("HTTP error");
-            return res.json();
-          })
-          .then(data => {
-            if (data && data.contents) {
-              const shortUrl = data.contents.trim();
-              renderShortQr(shortUrl);
-            } else {
-              throw new Error("Invalid format");
-            }
+        fetchShortUrlWithFallbacks(finalShareUrl)
+          .then(shortUrl => {
+            renderShortQr(shortUrl);
           })
           .catch(err => {
-            console.warn("Failed to generate short URL via proxy, trying fallback direct fetch:", err);
-            fetch(tinyUrlApi)
-              .then(res => {
-                if (!res.ok) throw new Error("HTTP error");
-                return res.text();
-              })
-              .then(text => {
-                const shortUrl = text.trim();
-                renderShortQr(shortUrl);
-              })
-              .catch(err2 => {
-                console.error("All short URL service fallbacks failed:", err2);
-                shortInput.value = "短網址產生失敗，請複製上方長網址";
-                if (qrShortDiv) {
-                  qrShortDiv.innerHTML = '產生失敗';
-                }
-              });
+            console.error("所有短網址服務皆失敗:", err);
+            shortInput.value = "短網址產生失敗，請複製上方長網址";
+            if (qrShortDiv) {
+              qrShortDiv.innerHTML = '<div style="color: #ef4444; font-size: 13px; font-weight: bold;">產生失敗<br><span style="font-size: 11px; color: #888; font-weight: normal;">請直接使用左側長連結</span></div>';
+            }
           });
       }
     }

@@ -17172,14 +17172,17 @@ class App {
           ${isCurrent ? '<span style="font-size: 14px; background: var(--success-color); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">目前所在</span>' : ''}
           <span style="font-size: 14px; color: var(--text-secondary);">${dateStr}</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <button type="button" class="class-action-btn" onclick="window.app.adminSwitchToClass('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="立即切換至此班級">
             🚀 進入此班
+          </button>
+          <button type="button" class="class-action-btn" onclick="window.app.openClassInviteModal('${cls.code}')" style="font-size: 14px; padding: 4px 8px; background: rgba(0, 122, 255, 0.1); color: var(--accent-color); border: 1px solid rgba(0, 122, 255, 0.3); font-weight: bold;" title="開啟此班專屬長短網址與 QR Code 邀請彈窗">
+            📱 邀請與 QRCode
           </button>
           <button type="button" class="class-action-btn" onclick="window.app.adminOpenEditClassModal('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="修改班級代碼與名稱">
             ✏️ 編輯
           </button>
-          <button type="button" class="class-action-btn btn-share-link" onclick="window.app.copyClassInviteLink('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="複製學生邀請連結">
+          <button type="button" class="class-action-btn btn-share-link" onclick="window.app.copyClassInviteLink('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="複製學生長網址邀請連結">
             📋 複製連結
           </button>
           <button type="button" class="class-action-btn btn-exit-class" onclick="window.app.adminDeleteClass('${cls.code}', '${cls.name}')" style="font-size: 14px; padding: 4px 8px;" title="刪除班級與清除其佔用空間">
@@ -17188,6 +17191,120 @@ class App {
         </div>
       `;
       container.appendChild(card);
+    });
+
+    // 同步更新班級即時分享與 QR Code 專區下拉選單
+    const shareSelect = document.getElementById('adminShareClassSelect');
+    if (shareSelect) {
+      const prevVal = shareSelect.value;
+      shareSelect.innerHTML = '';
+      if (!list || list.length === 0) {
+        shareSelect.innerHTML = '<option value="">尚無開課班級</option>';
+        this.updateAdminShareCard(null);
+      } else {
+        list.forEach(cls => {
+          const opt = document.createElement('option');
+          opt.value = cls.code;
+          opt.textContent = cls.name && cls.name !== cls.code ? `${cls.code} (${cls.name})` : cls.code;
+          shareSelect.appendChild(opt);
+        });
+        const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+          ? window.ClassRoomManager.getActiveClassCode()
+          : (window.currentClassCode || '');
+        const targetVal = (prevVal && list.some(c => c.code === prevVal))
+          ? prevVal
+          : ((currentCode && list.some(c => c.code === currentCode)) ? currentCode : list[0].code);
+        shareSelect.value = targetVal;
+        this.updateAdminShareCard(targetVal);
+      }
+    }
+  }
+
+  onAdminShareClassSelectChange(classCode) {
+    this.updateAdminShareCard(classCode);
+  }
+
+  adminOpenSelectedClassInviteModal() {
+    const sel = document.getElementById('adminShareClassSelect');
+    const code = sel ? sel.value : null;
+    this.openClassInviteModal(code);
+  }
+
+  async updateAdminShareCard(classCode) {
+    const shareCard = document.getElementById('adminClassShareCard');
+    if (!shareCard) return;
+
+    if (!classCode) {
+      shareCard.style.display = 'none';
+      return;
+    }
+    shareCard.style.display = 'block';
+
+    let shareUrl = window.location.href;
+    try {
+      const urlObj = new URL(window.location.href);
+      urlObj.searchParams.set('class', classCode);
+      urlObj.searchParams.delete('room');
+      shareUrl = urlObj.toString();
+    } catch (e) {
+      shareUrl = window.location.href;
+    }
+
+    const inputLong = document.getElementById('adminShareTxtLong');
+    if (inputLong) inputLong.value = shareUrl;
+
+    const qrLong = document.getElementById('adminShareQrLong');
+    if (qrLong) {
+      this.renderQrCodeTo(qrLong, shareUrl, 108);
+    }
+
+    const inputShort = document.getElementById('adminShareTxtShort');
+    const btnShort = document.getElementById('adminShareBtnCopyShort');
+    const qrShort = document.getElementById('adminShareQrShort');
+
+    if (inputShort) {
+      inputShort.value = '';
+      inputShort.placeholder = '短網址產生中...';
+    }
+    if (btnShort) {
+      btnShort.disabled = true;
+      btnShort.style.opacity = '0.6';
+    }
+    if (qrShort) {
+      qrShort.innerHTML = '<span style="font-size:11px; color:#888;">產生中...</span>';
+    }
+
+    try {
+      const shortUrl = await this.fetchShortUrlWithFallbacks(shareUrl);
+      if (inputShort) inputShort.value = shortUrl;
+      if (btnShort) {
+        btnShort.disabled = false;
+        btnShort.style.opacity = '1';
+      }
+      if (qrShort) {
+        this.renderQrCodeTo(qrShort, shortUrl, 108);
+      }
+    } catch (err) {
+      console.warn('班級管理分享卡片短網址失敗:', err);
+      if (inputShort) inputShort.value = '短網址產生失敗，請複製長網址';
+      if (qrShort) qrShort.innerHTML = '<span style="font-size:11px; color:#ef4444;">產生失敗</span>';
+    }
+  }
+
+  adminCopyShareUrl(type = 'short') {
+    const isShort = type === 'short';
+    const input = isShort
+      ? document.getElementById('adminShareTxtShort')
+      : document.getElementById('adminShareTxtLong');
+    if (!input || !input.value || input.value.includes('產生中') || input.value.includes('失敗')) {
+      this.showNotification('⚠️ 無法複製', '目前尚無有效的網址可複製！');
+      return;
+    }
+    const label = isShort ? '專屬短網址' : '班級長連結';
+    navigator.clipboard.writeText(input.value).then(() => {
+      this.showNotification('📋 複製成功', `${label}已成功複製至剪貼簿！`);
+    }).catch(() => {
+      prompt(`請手動複製${label}：`, input.value);
     });
   }
 
@@ -18014,7 +18131,7 @@ class App {
     throw new Error('所有短網址服務皆無法連線');
   }
 
-  async openClassInviteModal() {
+  async openClassInviteModal(targetCode = null) {
     this.toggleQuickInfoMenu(false);
     const modal = document.getElementById('modalClassInvite');
     if (!modal) {
@@ -18022,9 +18139,11 @@ class App {
       return;
     }
 
-    const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
-      ? window.ClassRoomManager.getActiveClassCode()
-      : (window.currentClassCode || '');
+    const currentCode = (targetCode !== null && targetCode !== undefined && targetCode !== '')
+      ? targetCode
+      : ((window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+          ? window.ClassRoomManager.getActiveClassCode()
+          : (window.currentClassCode || ''));
 
     const txtCode = document.getElementById('txtInviteClassCode');
     if (txtCode) {
