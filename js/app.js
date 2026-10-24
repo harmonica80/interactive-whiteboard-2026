@@ -19656,15 +19656,12 @@ function generateLinks() {
     qrShortDiv.style.background = '#fafafa';
   }
 
-  // 自動產生短網址
+  // 自動產生短網址 (支援 is.gd、v.gd 與 TinyURL 多重服務備援)
   const shortInput = document.getElementById('shortUrl');
   const btnCopyShort = document.getElementById('btnCopyShort');
   if (shortInput) {
     shortInput.value = "正在產生短網址...";
     if (btnCopyShort) btnCopyShort.disabled = true;
-
-    const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(finalShareUrl)}`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
 
     const renderShortQr = (shortUrl) => {
       shortInput.value = shortUrl;
@@ -19686,37 +19683,60 @@ function generateLinks() {
       }
     };
 
-    fetch(proxyUrl)
-      .then(res => {
-        if (!res.ok) throw new Error("HTTP error");
-        return res.json();
-      })
-      .then(data => {
-        if (data && data.contents) {
-          const shortUrl = data.contents.trim();
-          renderShortQr(shortUrl);
-        } else {
-          throw new Error("Invalid format");
+    const fetchShortUrlWithFallbacks = async (longUrl) => {
+      const enc = encodeURIComponent(longUrl);
+
+      // 服務 1：is.gd (原生支援 CORS, 回傳 JSON)
+      try {
+        const res = await fetch(`https://is.gd/create.php?format=json&url=${enc}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.shorturl) return data.shorturl.trim();
         }
+      } catch (err1) {
+        console.warn('is.gd 短網址產生失敗，嘗試 v.gd 備援:', err1);
+      }
+
+      // 服務 2：v.gd (原生支援 CORS, 回傳 JSON)
+      try {
+        const res = await fetch(`https://v.gd/create.php?format=json&url=${enc}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.shorturl) return data.shorturl.trim();
+        }
+      } catch (err2) {
+        console.warn('v.gd 短網址產生失敗，嘗試 TinyURL 代理備援:', err2);
+      }
+
+      // 服務 3：TinyURL 經由 allorigins 代理轉發
+      try {
+        const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${enc}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.contents && data.contents.startsWith('http')) {
+            return data.contents.trim();
+          }
+        }
+      } catch (err3) {
+        console.warn('TinyURL 代理短網址產生失敗:', err3);
+      }
+
+      throw new Error('所有短網址服務皆無法連線');
+    };
+
+    fetchShortUrlWithFallbacks(finalShareUrl)
+      .then(shortUrl => {
+        renderShortQr(shortUrl);
       })
       .catch(err => {
-        console.warn("Failed to generate short URL via proxy, trying fallback direct fetch:", err);
-        fetch(tinyUrlApi)
-          .then(res => {
-            if (!res.ok) throw new Error("HTTP error");
-            return res.text();
-          })
-          .then(text => {
-            const shortUrl = text.trim();
-            renderShortQr(shortUrl);
-          })
-          .catch(err2 => {
-            console.error("All short URL service fallbacks failed:", err2);
-            shortInput.value = "短網址產生失敗，請複製上方長網址";
-            if (qrShortDiv) {
-              qrShortDiv.innerHTML = '產生失敗';
-            }
-          });
+        console.error('所有短網址備援皆失敗:', err);
+        shortInput.value = "短網址產生失敗，請複製上方長網址";
+        if (btnCopyShort) btnCopyShort.disabled = true;
+        if (qrShortDiv) {
+          qrShortDiv.innerHTML = '<div style="color: #ef4444; font-size: 13px; font-weight: bold;">產生失敗<br><span style="font-size: 11px; color: #888; font-weight: normal;">請直接使用左側長連結</span></div>';
+        }
       });
   }
 

@@ -17,7 +17,7 @@
   // 預設與系統保留常數
   const DEFAULT_PASSWORD_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'; // '1234'
   const MASTER_RECOVERY_KEY_HASH = 'bf7b231fe2ede9055ca1ccaaaf585ba9e162b25703c543edf1335c4dd4a1d8df'; // 'WHITEBOARD_MASTER_2026_RESCUE'
-  const DEFAULT_PASSWORD_EXPIRY_TIMESTAMP = 1793462399000; // 2026-10-31 23:59:59 (GMT+8) 預設密碼落日退場期限
+  const DEFAULT_PASSWORD_GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 預設密碼 1234 寬限期：7 天 (自啟用/初次登入起算 1 週)
   
   const STORAGE_KEYS = {
     ACTIVE_TEACHER: 'wb_active_teacher_id',
@@ -36,19 +36,38 @@
     }
 
     /**
-     * 檢查預設密碼 1234 是否已過期 (2026/10/31 23:59:59 之後退場停用)
+     * 取得預設密碼 1234 的過期時間戳記 (自首次登入/啟用起算 7 天 / 一週)
      */
-    isDefaultPasswordExpired() {
-      return Date.now() > DEFAULT_PASSWORD_EXPIRY_TIMESTAMP;
+    getDefaultPasswordExpiryTimestamp(profile) {
+      const baseTime = (profile && (profile.defaultPasswordCreatedAt || profile.createdAt)) || this._getFallbackInitTime();
+      return baseTime + DEFAULT_PASSWORD_GRACE_PERIOD_MS;
+    }
+
+    _getFallbackInitTime() {
+      let t = parseInt(localStorage.getItem('wb_default_pwd_init_ts'), 10);
+      if (!t || isNaN(t)) {
+        t = Date.now();
+        try { localStorage.setItem('wb_default_pwd_init_ts', String(t)); } catch (e) {}
+      }
+      return t;
     }
 
     /**
-     * 取得預設密碼距離 2026/10/31 停用尚餘天數
+     * 檢查預設密碼 1234 是否已過期 (超過首次登入起算之一週寬限期)
      */
-    getDefaultPasswordRemainingDays() {
-      const diff = DEFAULT_PASSWORD_EXPIRY_TIMESTAMP - Date.now();
+    isDefaultPasswordExpired(profile) {
+      const expiry = this.getDefaultPasswordExpiryTimestamp(profile);
+      return Date.now() > expiry;
+    }
+
+    /**
+     * 取得預設密碼距離一週寬限期尚餘天數
+     */
+    getDefaultPasswordRemainingDays(profile) {
+      const expiry = this.getDefaultPasswordExpiryTimestamp(profile);
+      const diff = expiry - Date.now();
       if (diff <= 0) return 0;
-      return Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
     }
 
     /**
@@ -283,6 +302,7 @@
       } catch (e) {}
 
       // 3. 預設初始資料
+      const now = Date.now();
       return {
         teacherId: teacherId,
         name: localStorage.getItem(STORAGE_KEYS.ACTIVE_TEACHER_NAME) || '授課老師',
@@ -291,7 +311,8 @@
         recoveryQuestion: '',
         recoveryAnswerHash: '',
         isDefault: true,
-        createdAt: Date.now()
+        defaultPasswordCreatedAt: now,
+        createdAt: now
       };
     }
 
@@ -309,6 +330,7 @@
         passwordHint: data.passwordHint !== undefined ? data.passwordHint : (existing.passwordHint || ''),
         recoveryQuestion: data.recoveryQuestion !== undefined ? data.recoveryQuestion : (existing.recoveryQuestion || ''),
         recoveryAnswerHash: data.recoveryAnswerHash !== undefined ? data.recoveryAnswerHash : (existing.recoveryAnswerHash || ''),
+        defaultPasswordCreatedAt: data.defaultPasswordCreatedAt !== undefined ? data.defaultPasswordCreatedAt : (existing.defaultPasswordCreatedAt || Date.now()),
         updatedAt: Date.now(),
         createdAt: existing.createdAt || Date.now()
       };
@@ -372,17 +394,7 @@
         };
       }
 
-      // 3. 檢查系統預設密碼之落日過期狀態 (2026/10/31 23:59:59 停用)
-      if (inputHash === DEFAULT_PASSWORD_HASH && this.isDefaultPasswordExpired()) {
-        return {
-          success: false,
-          locked: false,
-          isExpiredDefault: true,
-          message: '⛔ 系統安全政策：系統預設密碼已於 2026/10/31 23:59 正式退場停用！為保障課堂安全，請點選下方「忘記密碼？」使用安全提問或超級救援金鑰重設專屬密碼。'
-        };
-      }
-
-      // 4. 判斷當前環境（班級課堂 vs 公共課堂）
+      // 3. 判斷當前環境（班級課堂 vs 公共課堂）
       const classCode = window.currentClassCode;
       let targetTeacherId = null;
 
@@ -396,12 +408,12 @@
         const expectedHash = teacherProfile.passwordHash || DEFAULT_PASSWORD_HASH;
 
         // 若班級設定仍為預設密碼且已過期，阻擋存取
-        if (expectedHash === DEFAULT_PASSWORD_HASH && this.isDefaultPasswordExpired()) {
+        if (expectedHash === DEFAULT_PASSWORD_HASH && this.isDefaultPasswordExpired(teacherProfile)) {
           return {
             success: false,
             locked: false,
             isExpiredDefault: true,
-            message: '⛔ 系統安全政策：此班級管理密碼仍為系統預設密碼，已於 2026/10/31 正式停用！請點選下方「忘記密碼？」進行自救重設。'
+            message: '⛔ 系統安全政策：此班級管理密碼仍為初始預設密碼 1234，已超過一週（7天）寬限期並正式停用！請點選下方「忘記密碼？」進行安全自救重設。'
           };
         }
 
@@ -409,12 +421,19 @@
           this.clearLockout();
           this.setActiveTeacher(teacherProfile.teacherId, teacherProfile.name);
           this.currentVerifiedTeacher = teacherProfile;
+          const isDef = expectedHash === DEFAULT_PASSWORD_HASH;
+          if (isDef && !teacherProfile.defaultPasswordCreatedAt) {
+            teacherProfile.defaultPasswordCreatedAt = Date.now();
+            this.saveTeacherProfile(teacherProfile.teacherId, teacherProfile).catch(() => {});
+          }
           return {
             success: true,
             teacher: teacherProfile,
-            isDefault: expectedHash === DEFAULT_PASSWORD_HASH,
-            remainingDays: this.getDefaultPasswordRemainingDays(),
-            message: '管理員密碼驗證成功！'
+            isDefault: isDef,
+            remainingDays: this.getDefaultPasswordRemainingDays(teacherProfile),
+            message: isDef
+              ? `管理員驗證成功！（目前使用初始預設密碼 1234，一週寬限期尚餘 ${this.getDefaultPasswordRemainingDays(teacherProfile)} 天，請及早更換）`
+              : '管理員密碼驗證成功！'
           };
         }
 
@@ -496,15 +515,28 @@
         }
 
         // 最後比對系統預設密碼 (僅在當前帳號尚未設定過專屬密碼且未過期時允許)
-        if (isSelfDefault && inputHash === DEFAULT_PASSWORD_HASH && !this.isDefaultPasswordExpired()) {
+        if (isSelfDefault && inputHash === DEFAULT_PASSWORD_HASH) {
+          if (this.isDefaultPasswordExpired(activeProfile)) {
+            return {
+              success: false,
+              locked: false,
+              isExpiredDefault: true,
+              message: '⛔ 系統安全政策：初始預設密碼 1234 已超過一週（7天）寬限期並正式停用！為保障課堂安全，請點選下方「忘記密碼？」使用安全提問或超級救援金鑰設定專屬密碼。'
+            };
+          }
           this.clearLockout();
           this.currentVerifiedTeacher = activeProfile;
+          if (!activeProfile.defaultPasswordCreatedAt) {
+            activeProfile.defaultPasswordCreatedAt = Date.now();
+            this.saveTeacherProfile(activeProfile.teacherId, activeProfile).catch(() => {});
+          }
+          const remDays = this.getDefaultPasswordRemainingDays(activeProfile);
           return {
             success: true,
             teacher: activeProfile,
             isDefault: true,
-            remainingDays: this.getDefaultPasswordRemainingDays(),
-            message: '密碼正確（目前使用系統預設密碼）'
+            remainingDays: remDays,
+            message: `密碼正確！（目前使用初始預設密碼 1234，一週寬限期尚餘 ${remDays} 天，請及早更換）`
           };
         }
       }
@@ -653,8 +685,8 @@
       if (newPassword.length < 4) {
         throw new Error('新密碼長度至少需 4 碼！');
       }
-      if (newPassword.trim() === '1234' && this.isDefaultPasswordExpired()) {
-        throw new Error('系統預設密碼已於 2026/10/31 正式退場停用，請設定一組專屬自訂新密碼！');
+      if (newPassword.trim() === '1234' && this.isDefaultPasswordExpired(profile)) {
+        throw new Error('初始預設密碼 1234 已超過 7 天（一週）寬限期，請自訂一組專屬新密碼！');
       }
 
       const profile = await this.getTeacherProfile(teacherId);
@@ -689,8 +721,8 @@
       if (newPassword.length < 4) {
         throw new Error('新密碼長度至少需 4 碼！');
       }
-      if (newPassword.trim() === '1234' && this.isDefaultPasswordExpired()) {
-        throw new Error('系統預設密碼已於 2026/10/31 正式退場停用，請設定一組專屬自訂新密碼！');
+      if (newPassword.trim() === '1234' && this.isDefaultPasswordExpired(profile)) {
+        throw new Error('初始預設密碼 1234 已超過 7 天（一週）寬限期，請自訂一組專屬新密碼！');
       }
 
       const masterKeyHash = await this.sha256(masterKey.trim());
@@ -762,13 +794,14 @@
         }
 
         let statusBadge = '';
+        const targetProfile = hasCustomPassword ? null : (ownerId ? await this.getTeacherProfile(ownerId) : await this.getTeacherProfile(this.getActiveTeacherId()));
         if (hasCustomPassword) {
           statusBadge = `<div style="margin-top: 6px; font-size: 11px; color: #16a34a; background: rgba(52,199,89,0.1); border: 1px solid rgba(52,199,89,0.35); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">🛡️ 已啟用教師專屬安全密碼保護</div>`;
-        } else if (this.isDefaultPasswordExpired()) {
-          statusBadge = `<div style="margin-top: 6px; font-size: 11px; color: #dc2626; background: rgba(255,59,48,0.08); border: 1px solid rgba(255,59,48,0.25); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⛔ 若您使用預設密碼，已於 10/31 退場停用</div>`;
+        } else if (this.isDefaultPasswordExpired(targetProfile)) {
+          statusBadge = `<div style="margin-top: 6px; font-size: 11px; color: #dc2626; background: rgba(255,59,48,0.08); border: 1px solid rgba(255,59,48,0.25); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⛔ 初始預設密碼 1234 已超過 7 天寬限期，已停用</div>`;
         } else {
-          const remDays = this.getDefaultPasswordRemainingDays();
-          statusBadge = `<div style="margin-top: 6px; font-size: 11px; color: #d97706; background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⏳ 若您使用預設密碼，將於10/31停用(剩餘 ${remDays} 天)</div>`;
+          const remDays = this.getDefaultPasswordRemainingDays(targetProfile);
+          statusBadge = `<div style="margin-top: 6px; font-size: 11px; color: #d97706; background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: bold;">⏳ 初始預設密碼 1234 寬限期剩餘 ${remDays} 天，請儘速設定專屬密碼</div>`;
         }
 
         subInfo.innerHTML = `${infoText}<br>${statusBadge}`;
@@ -1081,11 +1114,11 @@
       const isDefault = !profile.passwordHash || profile.passwordHash === DEFAULT_PASSWORD_HASH;
       if (statusBadge) {
         if (isDefault) {
-          if (this.isDefaultPasswordExpired()) {
-            statusBadge.innerHTML = `<span style="background: rgba(255, 59, 48, 0.15); color: #dc2626; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(255, 59, 48, 0.4); display: inline-flex; align-items: center; gap: 4px;">⛔ 系統預設密碼已於 10/31 退場停用 — 必須設定專屬密碼！</span>`;
+          if (this.isDefaultPasswordExpired(profile)) {
+            statusBadge.innerHTML = `<span style="background: rgba(255, 59, 48, 0.15); color: #dc2626; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(255, 59, 48, 0.4); display: inline-flex; align-items: center; gap: 4px;">⛔ 初始預設密碼 1234 已超過 7 天寬限期 — 必須設定專屬密碼！</span>`;
           } else {
-            const remDays = this.getDefaultPasswordRemainingDays();
-            statusBadge.innerHTML = `<span style="background: rgba(255, 149, 0, 0.15); color: #d97706; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(255, 149, 0, 0.4); display: inline-flex; align-items: center; gap: 4px;">⚠️ 仍使用系統預設密碼 — 將於 10/31 停用（剩餘 ${remDays} 天），請儘速修改！</span>`;
+            const remDays = this.getDefaultPasswordRemainingDays(profile);
+            statusBadge.innerHTML = `<span style="background: rgba(255, 149, 0, 0.15); color: #d97706; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(255, 149, 0, 0.4); display: inline-flex; align-items: center; gap: 4px;">⚠️ 目前使用初始預設密碼 1234 — 寬限期剩餘 ${remDays} 天，請儘速修改！</span>`;
           }
         } else {
           statusBadge.innerHTML = `<span style="background: rgba(52, 199, 89, 0.15); color: #16a34a; padding: 4px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(52, 199, 89, 0.4); display: inline-flex; align-items: center; gap: 4px;">🛡️ 已啟用專屬安全密碼 (SHA-256 加密守護中)</span>`;
@@ -1192,7 +1225,7 @@
           return;
         }
         if (p1 === '1234' && this.isDefaultPasswordExpired()) {
-          window.app.showNotification('密碼不合規', '系統預設密碼已於 2026/10/31 正式退場停用，不可再設定為預設密碼！請使用其他自訂密碼。');
+          window.app.showNotification('密碼不合規', '初始預設密碼 1234 已超過一週寬限期，不可再設定為預設密碼！請使用其他自訂專屬密碼。');
           return;
         }
         updateData.passwordHash = await this.sha256(p1);
@@ -1219,22 +1252,18 @@
     }
 
     /**
-     * 重設為系統預設密碼 (僅在 2026/10/31 前有效)
+     * 重設為系統預設密碼 (自重設起重新給予 7 天寬限期)
      */
     async resetToDefaultPassword() {
-      if (this.isDefaultPasswordExpired()) {
-        window.app.showNotification('⛔ 無法恢復預設密碼', '系統預設密碼已於 2026/10/31 正式退場停用，系統已全面禁止使用預設密碼。請直接在上方欄位設定專屬新密碼！');
-        return;
-      }
       const teacherId = this.getActiveTeacherId();
       await this.saveTeacherProfile(teacherId, {
         passwordHash: DEFAULT_PASSWORD_HASH,
         passwordHint: '',
         recoveryQuestion: '',
-        recoveryAnswerHash: ''
+        recoveryAnswerHash: '',
+        defaultPasswordCreatedAt: Date.now()
       });
-      const days = this.getDefaultPasswordRemainingDays();
-      window.app.showNotification('🔄 已重設為預設', `密碼已恢復為系統預設密碼。提醒：此預設密碼將於 10/31 停用（剩餘 ${days} 天），請務必及時設定專屬安全密碼。`);
+      window.app.showNotification('🔄 已重設為預設', '密碼已恢復為預設密碼 1234（寬限期 7 天）。請務必及時設定專屬安全密碼與自救問題。');
       this.renderSecurityPanel();
     }
   }
