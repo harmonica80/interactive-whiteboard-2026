@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
   <link rel="stylesheet" href="css/style.css?v=395">
-  <link rel="stylesheet" href="css/presentation.css?v=3110">
+  <link rel="stylesheet" href="css/presentation.css?v=3111">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -795,7 +795,7 @@
                 </select>
                 <div class="presentation-draw-actions">
                   <button type="button" class="presentation-tool-btn" id="btnStudentDrawClear" title="清空手繪筆劃">🗑️ 清空</button>
-                  <button type="button" class="presentation-tool-btn active-green" id="btnStudentDrawSubmit" title="送出作品">🚀 送出</button>
+                  <button type="button" class="presentation-tool-btn active-green" id="btnStudentDrawSubmit" title="提交作答">🚀 提交作答</button>
                 </div>
               </div>
 
@@ -834,10 +834,10 @@
 
                 <!-- 外部 URL 懸浮容器 (支援最多 3 個連結按鈕) -->
                 <div class="presentation-url-badges-container presentation-url-pos-center" id="presentationUrlBadgesContainer" style="display: none;"></div>
-
-                <!-- 學生端作答卡片 / 浮動表情回饋條容器 (圖 1 & 圖 2) -->
-                <div id="presentationStudentInteractionArea"></div>
               </div>
+
+              <!-- 學生端作答卡片 / 浮動表情回饋條容器 (移出簡報投影幕內，避免行動裝置上遭裁切) -->
+              <div id="presentationStudentInteractionArea" class="presentation-student-interaction-area"></div>
             </div>
           </main>
 
@@ -4954,7 +4954,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
   <script src="js/word_cloud.js?v=392"></script>
-  <script src="js/presentation_core.js?v=3106"></script>
+  <script src="js/presentation_core.js?v=3111"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -6527,10 +6527,10 @@ Python</pre>
           <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">
             學生端互動呈現方式
           </label>
-          <select id="selPresDisplayMode" style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+          <select id="selPresDisplayMode" onchange="window.presentationManager && window.presentationManager.onDisplayModeChange(this.value)" style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
             <option value="step">分步卡片模式（一次一題，引導學生依序作答）</option>
             <option value="scroll">整頁展開捲動模式（一次呈現多題）</option>
-            <option value="floating">輕量浮動表情條（不遮擋簡報，可展開作答多題）</option>
+            <option value="floating">輕量浮動表情條（自訂表情回饋，不新增題目避免遮擋）</option>
           </select>
         </div>
 
@@ -6548,8 +6548,19 @@ Python</pre>
           </div>
         </div>
 
-        <!-- 多題互動題目列表 -->
-        <div>
+        <!-- 輕量浮動表情條設定區塊 (當選擇 floating 模式時顯示，不允許新增題目) -->
+        <div id="presFloatingEmojiConfigSection" style="display: none; background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 10px; padding: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 700; color: #0369a1;">
+              😊 設定浮動表情條要出現的表情符號
+            </label>
+            <span style="font-size: 11px; color: #0284c7;">點擊切換啟用狀態（此模式專供表情互動，不新增題目）</span>
+          </div>
+          <div id="presFloatingEmojiPickerGrid" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+        </div>
+
+        <!-- 多題互動題目列表 (非浮動表情條模式時顯示) -->
+        <div id="presQuestionsBuilderSection">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
             <label style="font-size: 13px; font-weight: 700; color: #1e293b;">
               本頁互動題目 (可自訂多題)

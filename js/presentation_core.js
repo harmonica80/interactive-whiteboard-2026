@@ -56,6 +56,7 @@
       this.selectedPdfPages = new Set();
       this.tempQuestions = [];
       this.tempExternalLinks = [];
+      this.tempFloatingEmojis = ['👍', '💡', '❓', '❤️', '👏', '😂'];
 
       // DOM 元素快取
       this.els = {};
@@ -405,6 +406,29 @@
         }
       });
 
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+          if (this.els.panel && (this.els.panel.classList.contains('active') || this.els.panel.style.display !== 'none')) {
+            this.updateCanvasDimensions();
+            this.render();
+          }
+        }, 120);
+        setTimeout(() => {
+          if (this.els.panel && (this.els.panel.classList.contains('active') || this.els.panel.style.display !== 'none')) {
+            this.updateCanvasDimensions();
+          }
+        }, 380);
+      });
+
+      if (typeof ResizeObserver !== 'undefined' && this.els.stageWrapper) {
+        this._stageResizeObserver = new ResizeObserver(() => {
+          if (this.els.panel && (this.els.panel.classList.contains('active') || this.els.panel.style.display !== 'none')) {
+            this.updateCanvasDimensions();
+          }
+        });
+        this._stageResizeObserver.observe(this.els.stageWrapper);
+      }
+
       // 鍵盤左右鍵快捷切換頁面
       window.addEventListener('keydown', (e) => {
         if (!els.panel || !els.panel.classList.contains('active')) return;
@@ -518,20 +542,58 @@
       }
     }
 
-    // 更新標註畫布的尺寸使其與螢幕精確對齊
+    // 更新標註畫布的尺寸使其與螢幕精確對齊 (修正行動裝置橫向與直向維持嚴格 16:9 比例，並確保翻頁時重繪清除舊標記)
     updateCanvasDimensions() {
-      const { screen, annotationCanvas, studentDrawCanvas } = this.els;
+      const { stageWrapper, screen, annotationCanvas, studentDrawCanvas } = this.els;
       if (!screen || !annotationCanvas) return;
+
+      if (stageWrapper) {
+        const style = window.getComputedStyle(stageWrapper);
+        const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+        const padY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+        const availW = Math.max(0, stageWrapper.clientWidth - padX);
+        const availH = Math.max(0, stageWrapper.clientHeight - padY);
+        const isMobile = window.innerWidth <= 900;
+        const isLandscape = window.innerWidth > window.innerHeight;
+
+        if (availW > 0) {
+          let targetW = availW;
+          let targetH = Math.round(availW * 9 / 16);
+
+          if (!isMobile && availH > 40) {
+            const maxH = Math.max(120, availH - 12);
+            if (targetH > maxH) {
+              targetH = maxH;
+              targetW = Math.round(targetH * 16 / 9);
+            }
+          } else if (isMobile && isLandscape) {
+            const maxLandscapeH = Math.max(140, Math.min(availH > 80 ? availH - 8 : window.innerHeight - 100, window.innerHeight - 96));
+            if (targetH > maxLandscapeH) {
+              targetH = maxLandscapeH;
+              targetW = Math.round(targetH * 16 / 9);
+            }
+          }
+
+          screen.style.width = `${targetW}px`;
+          screen.style.height = `${targetH}px`;
+        }
+      }
+
       const rect = screen.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
-        if (annotationCanvas.width !== rect.width || annotationCanvas.height !== rect.height) {
-          annotationCanvas.width = rect.width;
-          annotationCanvas.height = rect.height;
-          this.redrawAnnotations();
+        const w = Math.round(rect.width);
+        const h = Math.round(rect.height);
+        if (annotationCanvas.width !== w || annotationCanvas.height !== h) {
+          annotationCanvas.width = w;
+          annotationCanvas.height = h;
         }
-        if (studentDrawCanvas && (studentDrawCanvas.width !== rect.width || studentDrawCanvas.height !== rect.height)) {
-          studentDrawCanvas.width = rect.width;
-          studentDrawCanvas.height = rect.height;
+        this.redrawAnnotations();
+
+        if (studentDrawCanvas) {
+          if (studentDrawCanvas.width !== w || studentDrawCanvas.height !== h) {
+            studentDrawCanvas.width = w;
+            studentDrawCanvas.height = h;
+          }
           this.redrawStudentDrawCanvas();
         }
       }
@@ -681,7 +743,7 @@
             }
             if (typeof data.currentSlideIndex === 'number' && data.currentSlideIndex !== this.currentSlideIndex) {
               this.currentSlideIndex = data.currentSlideIndex;
-              this.render();
+              this.onSlideChanged();
             }
           }
         }
@@ -1019,9 +1081,13 @@
         const ctx = this.els.studentDrawCanvas.getContext('2d');
         ctx.clearRect(0, 0, this.els.studentDrawCanvas.width, this.els.studentDrawCanvas.height);
       }
+      if (this.els.annotationCanvas) {
+        const actx = this.els.annotationCanvas.getContext('2d');
+        actx.clearRect(0, 0, this.els.annotationCanvas.width, this.els.annotationCanvas.height);
+      }
       this.selectedSubmissionIds.clear();
       this.render();
-      if (this.isPresenting) {
+      if (this.isPresenting && !this.isRemoteBroadcastingActive) {
         this.broadcastLiveState(false);
       }
     }
@@ -1269,7 +1335,7 @@
         return;
       }
 
-      const hasQuestions = slide.questions && slide.questions.length > 0;
+      const hasQuestions = (slide.questions && slide.questions.length > 0) || slide.displayMode === 'floating';
       const pageSubs = (this.submissions && this.submissions[slide.id]) || {};
       const subEntries = Object.entries(pageSubs);
 
@@ -1450,7 +1516,7 @@
       const mySub = this.submissions[slide.id]?.[userInfo.uid];
       const isSubmitted = Boolean(mySub);
 
-      // 1. 浮動表情回饋條 (Floating Mode 或置底即時表情)
+      // 1. 浮動表情回饋條 (Floating Mode：僅顯示老師勾選設定的表情符號，不附加題目作答)
       if (mode === 'floating') {
         const wrap = document.createElement('div');
         wrap.className = 'presentation-floating-drawer-wrap';
@@ -1458,7 +1524,9 @@
         const bar = document.createElement('div');
         bar.className = 'presentation-floating-reaction-bar';
 
-        const emojis = ['👍', '💡', '❓', '❤️', '👏', '😂'];
+        const emojis = (Array.isArray(slide.floatingEmojis) && slide.floatingEmojis.length > 0)
+          ? slide.floatingEmojis
+          : ['👍', '💡', '❓', '❤️', '👏', '😂'];
         emojis.forEach(emo => {
           const btn = document.createElement('button');
           btn.type = 'button';
@@ -1469,30 +1537,8 @@
           bar.appendChild(btn);
         });
         wrap.appendChild(bar);
-
-        // 若本頁有自訂題目，提供展開/收合作答按鈕
-        if (hasQuestions) {
-          const drawerBtn = document.createElement('button');
-          drawerBtn.type = 'button';
-          drawerBtn.className = 'presentation-floating-drawer-btn';
-          drawerBtn.innerHTML = `
-            <span>📝</span>
-            <span>${this.isFloatingDrawerOpen ? '收合作答' : `互動作答 (${questions.length} 題)`}</span>
-            ${isSubmitted ? '<span style="color: #6ee7b7; font-size: 11px;">(已交)</span>' : ''}
-          `;
-          drawerBtn.onclick = () => {
-            this.isFloatingDrawerOpen = !this.isFloatingDrawerOpen;
-            this.renderStudentInteraction();
-          };
-          wrap.appendChild(drawerBtn);
-        }
-
         area.appendChild(wrap);
-
-        // 若收合狀態且為 floating 模式，則作答卡片不顯示
-        if (!this.isFloatingDrawerOpen && hasQuestions) {
-          return;
-        }
+        return;
       }
 
       // 2. 題目作答對話框 (Step 模式、Scroll 模式、或 Floating 展開時)
@@ -1570,7 +1616,9 @@
       // 渲染題目函數
       const renderQuestionBlock = (q, displayIndex) => {
         const qContainer = document.createElement('div');
-        qContainer.innerHTML = `<div class="presentation-student-q-title">${displayIndex + 1}. ${this.escapeHtml(q.title || '請作答')}</div>`;
+        if (q.type !== 'draw') {
+          qContainer.innerHTML = `<div class="presentation-student-q-title">${displayIndex + 1}. ${this.escapeHtml(q.title || '請作答')}</div>`;
+        }
 
         // 快速色塊選擇題 (圖 2: 支援設定選項數量 2~6 與色塊標籤樣式)
         if (q.type === 'quick_choice') {
@@ -1605,7 +1653,7 @@
           });
           qContainer.appendChild(grid);
         }
-        // 手繪標記作答題 (圖 3)
+        // 手繪標記作答題 (圖 5: 移除題幹標題與下方重複按鈕，說明文字指向畫面上方「提交作答」)
         else if (q.type === 'draw') {
           const drawNotice = document.createElement('div');
           drawNotice.style.background = '#e0f2fe';
@@ -1618,7 +1666,7 @@
           drawNotice.style.textAlign = 'center';
           drawNotice.innerHTML = `
             🎨 <b>手繪標記作答模式</b><br>
-            請直接於簡報畫布上手繪作答，完成後點擊畫面下方「🚀 提交作答」送出！
+            請直接於簡報畫布上手繪作答, 完成後點擊畫面上方「提交作答」送出!
           `;
           qContainer.appendChild(drawNotice);
         }
@@ -1701,7 +1749,7 @@
             this.renderStudentInteraction();
           };
           footer.appendChild(nextBtn);
-        } else {
+        } else if (questions[qIdx].type !== 'draw') {
           const submitBtn = document.createElement('button');
           submitBtn.type = 'button';
           submitBtn.className = 'presentation-tool-btn active';
@@ -1716,23 +1764,30 @@
           footer.appendChild(submitBtn);
         }
       } else {
-        // scroll 模式或 floating 展開模式：展示全部題目
+        // scroll 模式：展示全部題目
         questions.forEach((q, index) => {
           body.appendChild(renderQuestionBlock(q, index));
         });
 
-        const submitBtn = document.createElement('button');
-        submitBtn.type = 'button';
-        submitBtn.className = 'presentation-tool-btn active';
-        submitBtn.textContent = isSubmitted ? '重新送出' : '🚀 送出全部答案';
-        submitBtn.onclick = () => {
-          if (Object.keys(this.myAnswers).length === 0 && !hasDrawQuestion) {
-            this.notify('提示', '請先選擇或填寫答案再送出喔！');
-            return;
-          }
-          this.submitStudentAnswer(this.myAnswers);
-        };
-        footer.appendChild(submitBtn);
+        const hasNonDrawQuestion = questions.some(q => q.type !== 'draw');
+        if (hasNonDrawQuestion) {
+          const submitBtn = document.createElement('button');
+          submitBtn.type = 'button';
+          submitBtn.className = 'presentation-tool-btn active';
+          submitBtn.textContent = isSubmitted ? '重新送出' : '🚀 送出全部答案';
+          submitBtn.onclick = () => {
+            if (Object.keys(this.myAnswers).length === 0 && !hasDrawQuestion) {
+              this.notify('提示', '請先選擇或填寫答案再送出喔！');
+              return;
+            }
+            this.submitStudentAnswer(this.myAnswers);
+          };
+          footer.appendChild(submitBtn);
+        }
+      }
+
+      if (footer.children.length === 0) {
+        footer.style.display = 'none';
       }
     }
 
@@ -2355,10 +2410,80 @@
       const selAsync = document.getElementById('selPresAllowAsyncAnswer');
       if (selAsync) selAsync.value = slide.allowAsyncAnswer ? 'true' : 'false';
 
+      this.tempFloatingEmojis = (Array.isArray(slide.floatingEmojis) && slide.floatingEmojis.length > 0)
+        ? [...slide.floatingEmojis]
+        : ['👍', '💡', '❓', '❤️', '👏', '😂'];
+
       this.tempQuestions = JSON.parse(JSON.stringify(slide.questions || []));
       this.renderQuestionsBuilderList();
+      this.onDisplayModeChange(slide.displayMode || 'step');
 
       this.openModal(modal);
+    }
+
+    onDisplayModeChange(mode) {
+      const emojiSection = document.getElementById('presFloatingEmojiConfigSection');
+      const questionsSection = document.getElementById('presQuestionsBuilderSection');
+      if (mode === 'floating') {
+        if (emojiSection) emojiSection.style.display = 'block';
+        if (questionsSection) questionsSection.style.display = 'none';
+        this.renderFloatingEmojiPicker();
+      } else {
+        if (emojiSection) emojiSection.style.display = 'none';
+        if (questionsSection) questionsSection.style.display = 'block';
+      }
+    }
+
+    renderFloatingEmojiPicker() {
+      const grid = document.getElementById('presFloatingEmojiPickerGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const allCandidateEmojis = ['👍', '💡', '❓', '❤️', '👏', '😂', '🎉', '🤔', '😮', '🔥', '✅', '🆘'];
+      if (!Array.isArray(this.tempFloatingEmojis) || this.tempFloatingEmojis.length === 0) {
+        this.tempFloatingEmojis = ['👍', '💡', '❓', '❤️', '👏', '😂'];
+      }
+
+      allCandidateEmojis.forEach(emo => {
+        const isChecked = this.tempFloatingEmojis.includes(emo);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.style.cssText = `
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 999px;
+          border: 2px solid ${isChecked ? '#0ea5e9' : '#cbd5e1'};
+          background: ${isChecked ? '#e0f2fe' : '#ffffff'};
+          color: ${isChecked ? '#0369a1' : '#64748b'};
+          font-size: 16px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        `;
+        btn.innerHTML = `<span>${emo}</span><span style="font-size: 12px;">${isChecked ? '✓' : ''}</span>`;
+        btn.onclick = () => this.toggleFloatingEmoji(emo);
+        grid.appendChild(btn);
+      });
+    }
+
+    toggleFloatingEmoji(emo) {
+      this.markAsHost();
+      if (!Array.isArray(this.tempFloatingEmojis)) {
+        this.tempFloatingEmojis = ['👍', '💡', '❓', '❤️', '👏', '😂'];
+      }
+      const idx = this.tempFloatingEmojis.indexOf(emo);
+      if (idx >= 0) {
+        if (this.tempFloatingEmojis.length <= 1) {
+          this.notify('提示', '請至少保留 1 個表情符號！');
+          return;
+        }
+        this.tempFloatingEmojis.splice(idx, 1);
+      } else {
+        this.tempFloatingEmojis.push(emo);
+      }
+      this.renderFloatingEmojiPicker();
     }
 
     closeSlideSettingsModal() {
@@ -2509,7 +2634,9 @@
               <option value="rating" ${q.type === 'rating' ? 'selected' : ''}>評分 (1~5 星級)</option>
             </select>
           </div>
-          <input type="text" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" placeholder="輸入題幹或題目說明..." value="${this.escapeHtml(q.title || '')}" oninput="window.presentationManager.updateQuestionTitle(${idx}, this.value)">
+          ${q.type !== 'draw' ? `
+            <input type="text" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" placeholder="輸入題幹或題目說明..." value="${this.escapeHtml(q.title || '')}" oninput="window.presentationManager.updateQuestionTitle(${idx}, this.value)">
+          ` : ''}
           
           ${q.type === 'quick_choice' ? `
             <div style="display: flex; gap: 8px; flex-wrap: wrap; background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px dashed #cbd5e1;">
@@ -2680,7 +2807,15 @@
       const selAsync = document.getElementById('selPresAllowAsyncAnswer');
       slide.allowAsyncAnswer = selAsync ? (selAsync.value === 'true') : false;
 
-      slide.questions = this.tempQuestions || [];
+      slide.floatingEmojis = (Array.isArray(this.tempFloatingEmojis) && this.tempFloatingEmojis.length > 0)
+        ? [...this.tempFloatingEmojis]
+        : ['👍', '💡', '❓', '❤️', '👏', '😂'];
+
+      if (slide.displayMode === 'floating') {
+        slide.questions = [];
+      } else {
+        slide.questions = this.tempQuestions || [];
+      }
 
       this.closeSlideSettingsModal();
       this.updatePermissionsUI();

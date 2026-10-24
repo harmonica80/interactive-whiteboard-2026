@@ -444,6 +444,7 @@
   width: 100%;
   max-width: 1100px;
   aspect-ratio: 16 / 9;
+  flex-shrink: 0;
   background: #0f172a;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
@@ -751,16 +752,15 @@
 /* ===== 學生端互動作答介面 ===== */
 /* A. 浮動表情回饋條 (Floating Reaction Bar) */
 .presentation-floating-reaction-bar {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 30px;
   padding: 6px 14px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 12px;
   z-index: 25;
   backdrop-filter: blur(8px);
@@ -1385,8 +1385,14 @@
 
 /* RWD 行動裝置調適 */
 @media (max-width: 900px) {
+  .presentation-panel-card {
+    height: auto !important;
+    min-height: calc(100vh - 100px);
+    overflow: visible !important;
+  }
   .presentation-workspace {
     flex-direction: column;
+    overflow: visible !important;
   }
   .presentation-left-sidebar {
     width: 100%;
@@ -1403,6 +1409,50 @@
   .presentation-thumbnail-card {
     width: 120px;
     height: 68px;
+  }
+  .presentation-center-area {
+    overflow: visible !important;
+  }
+  .presentation-stage-wrapper {
+    justify-content: flex-start !important;
+    padding: 12px 10px 30px 10px !important;
+    gap: 12px;
+    overflow: visible !important;
+  }
+  .presentation-student-interaction-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .presentation-student-dialog {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin-top: 4px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+  .presentation-student-dialog-body {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .presentation-collapsed-pill {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+    margin-top: 4px;
+  }
+  .presentation-floating-drawer-wrap {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin-top: 4px;
+    max-width: 100%;
   }
   .presentation-right-sidebar {
     width: 100%;
