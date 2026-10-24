@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=393">
+  <link rel="stylesheet" href="css/style.css?v=394">
   <link rel="stylesheet" href="css/presentation.css?v=3110">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -132,7 +132,7 @@
         <button class="menu-tab" data-target="panel-lucky-wheel">🎡 隨機抽人</button>
         <button class="menu-tab" data-target="panel-word-cloud">☁️ 即時文字雲</button>
         <button class="menu-tab" data-target="panel-whiteboard">🎨 互動白板</button>
-        <button class="menu-tab" data-target="panel-focus-game">🧠 專注力遊戲</button>
+        <button class="menu-tab" data-target="panel-focus-game">🧠 專注力測驗</button>
       </div>
       <button class="nav-scroll-btn right-scroll-btn" id="menuScrollRight" title="向右查看更多選單">▶</button>
     </div>
@@ -642,7 +642,7 @@
         </div>
       </div>
 
-      <!-- 專注力遊戲 -->
+      <!-- 專注力測驗 -->
       <div class="panel-card" id="panel-focus-game">
         <div class="panel-body">
           <!-- 遊戲大廳面板，平常沒開始時顯示 -->
@@ -650,7 +650,7 @@
             <!-- 學生視角 lobby -->
             <div id="studentGameLobby" style="text-align: center; padding: 24px;">
               <div style="font-size: 48px; margin-bottom: 12px;">🧠</div>
-              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-primary); font-weight: bold;">專注力遊戲大廳</h3>
+              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-primary); font-weight: bold;">專注力測驗大廳</h3>
               <p style="color: var(--text-secondary); font-size: 14px;">等待老師發起專注力活動... 請保持此頁面開啟喔！</p>
             </div>
             
@@ -1207,7 +1207,7 @@
                       <img src="images/admin_icons/class_sound.svg" width="64" height="64" alt="測驗與互動音效設定">
                     </div>
                     <div class="admin-feature-card-title">D. 測驗與互動音效設定</div>
-                    <div class="admin-feature-card-desc">自訂教學互動（專注力遊戲、隨堂測驗、影片出題等）的答對與答錯音效，支援即時試聽。</div>
+                    <div class="admin-feature-card-desc">自訂教學互動（專注力測驗、隨堂測驗、影片出題等）的答對與答錯音效，支援即時試聽。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
@@ -2181,9 +2181,6 @@
                   💡 老師可在此勾選開啟用到的教學功能模組。關閉的功能將<strong>自前台主選單中隱藏</strong>，後台相關管理卡片也會同步隱藏，讓課堂畫面更專注精簡！
                 </p>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <button type="button" class="preset-btn" onclick="window.app && window.app.setAllWhiteboardFeatures(true)" style="background: rgba(0,122,255,0.1); color: var(--accent-color); border: 1px solid var(--accent-color); padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;">
-                    ✅ 一鍵全選啟用
-                  </button>
                   <button type="button" class="preset-btn" onclick="window.app && window.app.resetWhiteboardFeaturesDefault()" style="background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;">
                     🔄 恢復預設全開
                   </button>
@@ -2300,11 +2297,11 @@
                   </label>
                 </div>
 
-                <!-- 專注力遊戲 -->
+                <!-- 專注力測驗 -->
                 <div class="whiteboard-feature-card" data-feature-key="panel-focus-game">
                   <div class="wf-card-info">
-                    <div class="wf-card-title">🧠 專注力遊戲</div>
-                    <div class="wf-card-desc">舒爾特方格、翻牌記憶、字力測驗與十字選字遊戲</div>
+                    <div class="wf-card-title">🧠 專注力測驗</div>
+                    <div class="wf-card-desc">舒爾特方格、翻牌記憶、字力測驗與十字選字測驗</div>
                   </div>
                   <label class="ios-switch">
                     <input type="checkbox" id="wfToggle_panel-focus-game" checked onchange="window.app && window.app.onWhiteboardFeatureToggle('panel-focus-game', this.checked)">
@@ -2332,18 +2329,6 @@
                   </div>
                   <label class="ios-switch">
                     <input type="checkbox" id="wfToggle_reactionDock" checked onchange="window.app && window.app.onWhiteboardFeatureToggle('reactionDock', this.checked)">
-                    <span class="ios-switch-slider"></span>
-                  </label>
-                </div>
-
-                <!-- 教師分享 -->
-                <div class="whiteboard-feature-card" data-feature-key="teacherShares">
-                  <div class="wf-card-info">
-                    <div class="wf-card-title">📢 教師分享</div>
-                    <div class="wf-card-desc">前台頂部最新消息公告與課程進度教材下載</div>
-                  </div>
-                  <label class="ios-switch">
-                    <input type="checkbox" id="wfToggle_teacherShares" checked onchange="window.app && window.app.onWhiteboardFeatureToggle('teacherShares', this.checked)">
                     <span class="ios-switch-slider"></span>
                   </label>
                 </div>
@@ -2885,10 +2870,10 @@
             </div>
           </div>
 
-          <!-- 專注力遊戲管理區 -->
+          <!-- 專注力測驗管理區 -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminFocusGameSection">
             <div class="admin-section-header">
-              <h3>🧠 專注力遊戲管理</h3>
+              <h3>🧠 專注力測驗管理</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3578,125 +3563,137 @@
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
-              <!-- 新建分享資料夾 -->
-              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                <input type="text" id="newShareFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新分享資料夾名稱（如：課堂講義）...">
-                <button class="preset-btn" onclick="window.app.adminCreateShareFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+              <!-- 子頁籤導覽列：分成「資料夾清單管理」與「分享內容管理」兩個子頁籤 -->
+              <div class="admin-subtabs-nav" id="shareAdminSubTabs">
+                <button type="button" class="admin-subtab-btn active" id="btnSubTabShareFolders" onclick="window.app && window.app.switchShareAdminSubTab('folders')">📁 資料夾清單管理</button>
+                <button type="button" class="admin-subtab-btn" id="btnSubTabShareItems" onclick="window.app && window.app.switchShareAdminSubTab('items')">📢 分享內容管理</button>
               </div>
 
-              <!-- 分享資料夾清單 -->
-              <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">資料夾清單：</div>
-              <div id="adminShareFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-                <!-- 渲染資料夾 -->
+              <!-- 子頁籤 1: 資料夾清單管理 (圖 2 上方紅框) -->
+              <div id="shareAdminSubTabPaneFolders" class="admin-subtab-pane">
+                <!-- 新建分享資料夾 -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                  <input type="text" id="newShareFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新分享資料夾名稱（如：課堂講義）...">
+                  <button class="preset-btn" onclick="window.app.adminCreateShareFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+                </div>
+
+                <!-- 分享資料夾清單 -->
+                <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">資料夾清單：</div>
+                <div id="adminShareFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                  <!-- 渲染資料夾 -->
+                </div>
               </div>
 
-              <!-- 新增分享內容區 -->
-              <div class="share-creation-box" style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 16px;">
-                <div style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-primary);">➕ 新增分享內容</div>
-                
-                <!-- 類型切換按鈕 -->
-                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                  <button class="preset-btn active-share-type" id="shareTypeBtnText" onclick="window.app.switchShareFormType('text')" style="flex: 1; min-width: 72px; padding: 6px; font-size: 13px; font-weight: bold;">💬 文字</button>
-                  <button class="preset-btn" id="shareTypeBtnImage" onclick="window.app.switchShareFormType('image')" style="flex: 1; min-width: 72px; padding: 6px; font-size: 13px;">🖼️ 圖片</button>
-                  <button class="preset-btn" id="shareTypeBtnLink" onclick="window.app.switchShareFormType('link')" style="flex: 1; min-width: 72px; padding: 6px; font-size: 13px;">🔗 網址</button>
-                  <button class="preset-btn" id="shareTypeBtnFile" onclick="window.app.switchShareFormType('file')" style="flex: 1; min-width: 86px; padding: 6px; font-size: 13px;">📎 附件檔案</button>
-                </div>
+              <!-- 子頁籤 2: 分享內容管理 (圖 2 下方紅框) -->
+              <div id="shareAdminSubTabPaneItems" class="admin-subtab-pane" style="display: none;">
+                <!-- 新增分享內容區 -->
+                <div class="share-creation-box" style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 16px;">
+                  <div style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-primary);">➕ 新增分享內容</div>
+                  
+                  <!-- 類型切換按鈕 -->
+                  <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <button class="preset-btn active-share-type" id="shareTypeBtnText" onclick="window.app.switchShareFormType('text')" style="flex: 1; min-width: 72px; padding: 6px; font-size: 13px; font-weight: bold;">💬 文字</button>
+                    <button class="preset-btn" id="shareTypeBtnImage" onclick="window.app.switchShareFormType('image')" style="flex: 1; min-width: 72px; padding: 6px; font-size: 13px;">🖼️ 圖片</button>
+                    <button class="preset-btn" id="shareTypeBtnLink" onclick="window.app.switchShareFormType('link')" style="flex: 1; min-width: 72px; padding: 6px; font-size: 13px;">🔗 網址</button>
+                    <button class="preset-btn" id="shareTypeBtnFile" onclick="window.app.switchShareFormType('file')" style="flex: 1; min-width: 86px; padding: 6px; font-size: 13px;">📎 附件檔案</button>
+                  </div>
 
-                <!-- 動態表單欄位 -->
-                <div id="shareFormFields">
-                  <!-- 文字輸入欄位 -->
-                  <div id="shareFieldText">
-                    <textarea id="shareInputText" class="question-input" style="width: 100%; height: 80px; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入要分享給學生的文字訊息（亦可搭配下方附加檔案一起發佈）..."></textarea>
-                  </div>
-                  <!-- 圖片選擇欄位 -->
-                  <div id="shareFieldImage" style="display: none;">
-                    <div id="shareImageUploadZone" class="upload-zone" style="min-height: 80px; padding: 12px; cursor: pointer; text-align: center;">
-                      <div style="font-size: 24px; margin-bottom: 4px;">📁</div>
-                      <div style="font-size: 12px;">點擊或拖曳圖片檔至此（限制 5MB）</div>
-                      <div id="shareImageFilename" style="font-size: 11px; color: var(--accent-color); margin-top: 4px; font-weight: bold;"></div>
+                  <!-- 動態表單欄位 -->
+                  <div id="shareFormFields">
+                    <!-- 文字輸入欄位 -->
+                    <div id="shareFieldText">
+                      <textarea id="shareInputText" class="question-input" style="width: 100%; height: 80px; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入要分享給學生的文字訊息（亦可搭配下方附加檔案一起發佈）..."></textarea>
                     </div>
-                    <input type="file" id="shareImageFileInput" accept="image/*" style="display: none;">
+                    <!-- 圖片選擇欄位 -->
+                    <div id="shareFieldImage" style="display: none;">
+                      <div id="shareImageUploadZone" class="upload-zone" style="min-height: 80px; padding: 12px; cursor: pointer; text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 4px;">📁</div>
+                        <div style="font-size: 12px;">點擊或拖曳圖片檔至此（限制 5MB）</div>
+                        <div id="shareImageFilename" style="font-size: 11px; color: var(--accent-color); margin-top: 4px; font-weight: bold;"></div>
+                      </div>
+                      <input type="file" id="shareImageFileInput" accept="image/*" style="display: none;">
+                    </div>
+                    <!-- 網址輸入欄位 -->
+                    <div id="shareFieldLink" style="display: none;">
+                      <input type="text" id="shareInputLinkTitle" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="連結標題（例如：Google 首頁，選填）">
+                      <input type="url" id="shareInputLinkUrl" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入連結網址（如 https://google.com）">
+                    </div>
+                    <!-- 純附件檔案說明欄位 -->
+                    <div id="shareFieldFile" style="display: none;">
+                      <input type="text" id="shareInputFileTitle" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="教材/附件標題或說明（選填，若留空將自動使用檔案名稱）">
+                    </div>
                   </div>
-                  <!-- 網址輸入欄位 -->
-                  <div id="shareFieldLink" style="display: none;">
-                    <input type="text" id="shareInputLinkTitle" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="連結標題（例如：Google 首頁，選填）">
-                    <input type="url" id="shareInputLinkUrl" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入連結網址（如 https://google.com）">
-                  </div>
-                  <!-- 純附件檔案說明欄位 -->
-                  <div id="shareFieldFile" style="display: none;">
-                    <input type="text" id="shareInputFileTitle" class="question-input" style="width: 100%; margin-bottom: 8px; padding: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="教材/附件標題或說明（選填，若留空將自動使用檔案名稱）">
-                  </div>
-                </div>
 
-                <!-- 教師分享通用附件上傳區（最多 3 個檔案，單檔上限 6MB，獨立儲存點擊才下載） -->
-                <div id="shareAttachmentsZone" class="share-attachments-zone">
-                  <div class="share-attachments-header">
-                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                      <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">📎 附加檔案（點擊才下載）</span>
-                      <span style="font-size: 11.5px; color: var(--text-secondary);">最多 <strong>3 個檔案</strong>，單檔上限 <strong>6 MB</strong>（總計可達 18 MB，獨立節點儲存不塞車）</span>
+                  <!-- 教師分享通用附件上傳區（最多 3 個檔案，單檔上限 6MB，獨立儲存點擊才下載） -->
+                  <div id="shareAttachmentsZone" class="share-attachments-zone">
+                    <div class="share-attachments-header">
+                      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">📎 附加檔案（點擊才下載）</span>
+                        <span style="font-size: 11.5px; color: var(--text-secondary);">最多 <strong>3 個檔案</strong>，單檔上限 <strong>6 MB</strong>（總計可達 18 MB，獨立節點儲存不塞車）</span>
+                      </div>
+                      <button type="button" id="btnSelectShareAttachments" class="attachment-select-btn small" onclick="window.app && window.app.triggerShareAttachmentSelect()">
+                        ➕ 選擇檔案 (<span id="shareSelectedAttachmentCount">0</span>/3)
+                      </button>
+                      <input type="file" id="shareAttachmentFileInput" multiple style="display: none;" onchange="window.app && window.app.handleShareAttachmentSelect(event)">
                     </div>
-                    <button type="button" id="btnSelectShareAttachments" class="attachment-select-btn small" onclick="window.app && window.app.triggerShareAttachmentSelect()">
-                      ➕ 選擇檔案 (<span id="shareSelectedAttachmentCount">0</span>/3)
+                    <div id="shareAttachmentPreviewList" class="attachment-selected-list" style="display: none; margin-top: 8px;"></div>
+                  </div>
+
+                  <!-- 選擇所屬分頁與資料夾 -->
+                  <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">所屬分頁：</label>
+                      <select id="shareInputCategory" style="margin: 0; padding: 7px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 13px;" onchange="window.app?.onShareInputCategoryChange?.(this.value)">
+                        <option value="news" selected>📢 最新消息</option>
+                        <option value="materials">📚 課程進度與教材</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">歸類到資料夾：</label>
+                      <select id="shareFolderSelect" class="folder-select" style="margin: 0; padding: 7px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 13px;">
+                        <option value="">📁 未分類</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- 於登入時顯示選項 -->
+                  <div style="margin-top: 12px; padding: 10px 14px; background: rgba(255, 45, 85, 0.06); border: 1px dashed rgba(255, 45, 85, 0.3); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: bold; color: #ff2d55; margin: 0;">
+                      <input type="checkbox" id="shareInputShowOnLogin" style="width: 18px; height: 18px; cursor: pointer; accent-color: #ff2d55;">
+                      <span>🔔 於登入時顯示（同學一登入教室即自動彈出提示）</span>
+                    </label>
+                    <button type="button" class="preset-btn" onclick="window.app && window.app.previewLoginSharesModal()" style="font-size: 12px; padding: 4px 10px; background: transparent; color: #ff2d55; border: 1px solid #ff2d55; border-radius: 6px; cursor: pointer;" title="預覽學生登入時看到的彈出公告畫面">
+                      👁️ 預覽公告畫面
                     </button>
-                    <input type="file" id="shareAttachmentFileInput" multiple style="display: none;" onchange="window.app && window.app.handleShareAttachmentSelect(event)">
                   </div>
-                  <div id="shareAttachmentPreviewList" class="attachment-selected-list" style="display: none; margin-top: 8px;"></div>
+
+                  <button class="preset-btn" id="btnSubmitTeacherShare" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 14px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
                 </div>
 
-                <!-- 選擇所屬分頁與資料夾 -->
-                <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                  <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">所屬分頁：</label>
-                    <select id="shareInputCategory" style="margin: 0; padding: 7px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 13px;" onchange="window.app?.onShareInputCategoryChange?.(this.value)">
-                      <option value="news" selected>📢 最新消息</option>
-                      <option value="materials">📚 課程進度與教材</option>
-                    </select>
-                  </div>
-                  <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">歸類到資料夾：</label>
-                    <select id="shareFolderSelect" class="folder-select" style="margin: 0; padding: 7px 10px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 13px;">
-                      <option value="">📁 未分類</option>
-                    </select>
-                  </div>
+                <!-- 分享內容批次管理與列表 -->
+                <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
+                  <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次歸類分享：</span>
+                  <span style="font-size: 12px; color: var(--text-secondary);">已選 📢 <strong id="batchShareSelectCount">0</strong> 項</span>
+                  <select id="batchShareCategorySelect" style="margin: 0; font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);">
+                    <option value="">🏷️ 變更分頁 (維持原樣)</option>
+                    <option value="news">📢 設為最新消息</option>
+                    <option value="materials">📚 設為課程進度與教材</option>
+                  </select>
+                  <select id="batchShareFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
+                    <option value="">📁 移出資料夾 (未分類)</option>
+                  </select>
+                  <button class="preset-btn" onclick="window.app.applyBatchShareArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸類</button>
                 </div>
 
-                <!-- 於登入時顯示選項 -->
-                <div style="margin-top: 12px; padding: 10px 14px; background: rgba(255, 45, 85, 0.06); border: 1px dashed rgba(255, 45, 85, 0.3); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: bold; color: #ff2d55; margin: 0;">
-                    <input type="checkbox" id="shareInputShowOnLogin" style="width: 18px; height: 18px; cursor: pointer; accent-color: #ff2d55;">
-                    <span>🔔 於登入時顯示（同學一登入教室即自動彈出提示）</span>
+                <div id="adminSharesContainer" class="grouped-folders-container"></div>
+
+                <!-- 全選與刪除 -->
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px;">
+                  <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
+                    <input type="checkbox" id="selectAllShares" onchange="window.app.toggleSelectAllShares(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選分享項目
                   </label>
-                  <button type="button" class="preset-btn" onclick="window.app && window.app.previewLoginSharesModal()" style="font-size: 12px; padding: 4px 10px; background: transparent; color: #ff2d55; border: 1px solid #ff2d55; border-radius: 6px; cursor: pointer;" title="預覽學生登入時看到的彈出公告畫面">
-                    👁️ 預覽公告畫面
-                  </button>
+                  <button class="preset-btn" onclick="window.app.deleteSelectedShares()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
                 </div>
-
-                <button class="preset-btn" id="btnSubmitTeacherShare" onclick="window.app.submitTeacherShare()" style="width: 100%; margin-top: 14px; background: var(--accent-color); color: white; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">發佈分享</button>
-              </div>
-
-              <!-- 分享內容批次管理與列表 -->
-              <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
-                <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次歸類分享：</span>
-                <span style="font-size: 12px; color: var(--text-secondary);">已選 📢 <strong id="batchShareSelectCount">0</strong> 項</span>
-                <select id="batchShareCategorySelect" style="margin: 0; font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);">
-                  <option value="">🏷️ 變更分頁 (維持原樣)</option>
-                  <option value="news">📢 設為最新消息</option>
-                  <option value="materials">📚 設為課程進度與教材</option>
-                </select>
-                <select id="batchShareFolderSelect" class="folder-select" style="margin: 0; font-size: 12px; padding: 4px 8px;">
-                  <option value="">📁 移出資料夾 (未分類)</option>
-                </select>
-                <button class="preset-btn" onclick="window.app.applyBatchShareArchive()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">確定歸類</button>
-              </div>
-
-              <div id="adminSharesContainer" class="grouped-folders-container"></div>
-
-              <!-- 全選與刪除 -->
-              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px;">
-                <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">
-                  <input type="checkbox" id="selectAllShares" onchange="window.app.toggleSelectAllShares(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選分享項目
-                </label>
-                <button class="preset-btn" onclick="window.app.deleteSelectedShares()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
               </div>
             </div>
           </div>
@@ -3942,7 +3939,7 @@
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">右下角 FAB 燈泡快捷選單</span>
               <span class="changelog-badge-tag">教室邀請與 QR Code</span>
-              <span class="changelog-badge-tag">後台白板功能模組啟用設定</span>
+              <span class="changelog-badge-tag">後台功能模組啟用設定</span>
               <span class="changelog-badge-tag">群組與內容雙子頁籤管理</span>
             </div>
           </div>
@@ -3954,15 +3951,15 @@
                 <li><strong>教室邀請光箱</strong>：提供專屬班級代碼、邀請網址一鍵複製與高畫質 QR Code 大圖，方便老師大螢幕投影供學生掃描連線。</li>
               </ul>
             </li>
-            <li><strong>🎛️ 後台白板功能啟用設定：</strong>
+            <li><strong>🎛️ 後台功能模組啟用設定：</strong>
               <ul>
-                <li>老師可在後台班級管理中，自由決定開啟或關閉特定教學模組（提問區、圖片、影片、測驗、轉盤、文字雲、專注力遊戲、教師分享等）。</li>
+                <li>老師可在後台班級管理中，自由決定開啟或關閉特定教學模組（圖片、影片、測驗、轉盤、文字雲、互動白板、同步簡報、專注力測驗等，提問區為系統必備固定開啟）。</li>
                 <li>未啟用之功能前台選單自動隱藏，後台對應功能卡片與捷徑選單同步隱藏，讓課堂畫面更專注精簡。</li>
               </ul>
             </li>
-            <li><strong>📁 提問、圖片、影片管理雙子頁籤重構：</strong>
+            <li><strong>📁 提問、圖片、影片與教師分享雙子頁籤重構：</strong>
               <ul>
-                <li>後台「提問管理」、「圖片管理」、「影片管理」全面升級為「群組清單管理」與「內容管理」雙子頁籤切換，介面清晰簡潔，大幅減少頁面滾動負擔。</li>
+                <li>後台「提問管理」、「圖片管理」、「影片管理」與「教師分享管理」全面升級為「群組/資料夾清單管理」與「內容管理」雙子頁籤切換，介面清晰簡潔，大幅減少頁面滾動負擔。</li>
               </ul>
             </li>
           </ul>
@@ -4952,7 +4949,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=392"></script>
+  <script src="js/app.js?v=394"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>

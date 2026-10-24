@@ -137,6 +137,11 @@ body {
 .desktop-only {
   display: inline-block !important;
 }
+.desktop-only[style*="display: none"],
+.desktop-only[style*="display:none"],
+.wf-hidden {
+  display: none !important;
+}
 .mobile-only {
   display: none !important;
 }

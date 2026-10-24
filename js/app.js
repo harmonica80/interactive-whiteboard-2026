@@ -11868,8 +11868,8 @@ class App {
     
     this.showConfirmModal(
       '🧠',
-      '確定要結束專注力遊戲嗎？',
-      '這會關閉所有學生的遊戲 Overlay。',
+      '確定要結束專注力測驗嗎？',
+      '這會關閉所有學生的測驗畫面。',
       () => {
         db.ref('quiz/focusGame/status').set('idle').then(() => {
           this.resetFocusGameLocalState();
@@ -17970,6 +17970,25 @@ class App {
     }
   }
 
+  switchShareAdminSubTab(tab) {
+    const btnFolders = document.getElementById('btnSubTabShareFolders');
+    const btnItems = document.getElementById('btnSubTabShareItems');
+    const paneFolders = document.getElementById('shareAdminSubTabPaneFolders');
+    const paneItems = document.getElementById('shareAdminSubTabPaneItems');
+
+    if (tab === 'folders') {
+      if (btnFolders) btnFolders.classList.add('active');
+      if (btnItems) btnItems.classList.remove('active');
+      if (paneFolders) paneFolders.style.display = 'block';
+      if (paneItems) paneItems.style.display = 'none';
+    } else {
+      if (btnFolders) btnFolders.classList.remove('active');
+      if (btnItems) btnItems.classList.add('active');
+      if (paneFolders) paneFolders.style.display = 'none';
+      if (paneItems) paneItems.style.display = 'block';
+    }
+  }
+
   // ===== 功能模組啟用設定 =====
   initWhiteboardFeatures() {
     this.whiteboardFeatures = {
@@ -17982,10 +18001,9 @@ class App {
       'panel-word-cloud': true,
       'panel-whiteboard': true,    // 🎨 互動白板
       'panel-presentation': true,  // 📽️ 同步簡報
-      'panel-focus-game': true,    // 🧠 專注力遊戲（預設開啟）
+      'panel-focus-game': true,    // 🧠 專注力測驗（預設開啟）
       'gameBuzz': true,
-      'reactionDock': true,
-      'teacherShares': true
+      'reactionDock': true
     };
 
     // 從 localStorage 讀取快取
@@ -17998,11 +18016,17 @@ class App {
           Object.assign(this.whiteboardFeatures, parsed);
         }
       }
+      // 專注力測驗預設改為啟用之一次性遷移
+      if (!localStorage.getItem('wb_features_focus_default_v2')) {
+        this.whiteboardFeatures['panel-focus-game'] = true;
+        localStorage.setItem('wb_features_focus_default_v2', '1');
+      }
     } catch (e) {}
 
     // 提問區固定必須開啟，清理已刪除項目
     this.whiteboardFeatures['panel-questions'] = true;
     delete this.whiteboardFeatures['panel-guide'];
+    delete this.whiteboardFeatures['teacherShares'];
 
     // 初次套用可見性
     this.applyWhiteboardFeatureVisibility(this.whiteboardFeatures);
@@ -18017,6 +18041,7 @@ class App {
           this.whiteboardFeatures = Object.assign({}, this.whiteboardFeatures, val);
           this.whiteboardFeatures['panel-questions'] = true;
           delete this.whiteboardFeatures['panel-guide'];
+          delete this.whiteboardFeatures['teacherShares'];
           this.applyWhiteboardFeatureVisibility(this.whiteboardFeatures);
           this.renderWhiteboardFeaturesAdminUI();
         }
@@ -18028,6 +18053,7 @@ class App {
     if (!this.whiteboardFeatures) return;
     this.whiteboardFeatures['panel-questions'] = true;
     delete this.whiteboardFeatures['panel-guide'];
+    delete this.whiteboardFeatures['teacherShares'];
 
     Object.keys(this.whiteboardFeatures).forEach(key => {
       const toggle = document.getElementById(`wfToggle_${key}`);
@@ -18081,10 +18107,9 @@ class App {
       'panel-word-cloud': true,
       'panel-whiteboard': true,    // 🎨 互動白板
       'panel-presentation': true,  // 📽️ 同步簡報
-      'panel-focus-game': true,    // 🧠 專注力遊戲（預設開啟）
+      'panel-focus-game': true,    // 🧠 專注力測驗（預設開啟）
       'gameBuzz': true,
-      'reactionDock': true,
-      'teacherShares': true
+      'reactionDock': true
     };
     this.renderWhiteboardFeaturesAdminUI();
   }
@@ -18093,6 +18118,7 @@ class App {
     if (!this.whiteboardFeatures) return;
     this.whiteboardFeatures['panel-questions'] = true; // 提問區固定開啟
     delete this.whiteboardFeatures['panel-guide'];
+    delete this.whiteboardFeatures['teacherShares'];
 
     const code = window.currentClassCode;
     try {
@@ -18112,9 +18138,10 @@ class App {
   applyWhiteboardFeatureVisibility(features) {
     if (!features || typeof features !== 'object') return;
 
-    // 確保提問區始終開啟，移除已廢棄指引頁籤
+    // 確保提問區始終開啟，移除已廢棄項目
     features['panel-questions'] = true;
     delete features['panel-guide'];
+    delete features['teacherShares'];
 
     // 1. 前台主選單功能頁籤顯示/隱藏
     const menuTabKeys = [
@@ -18131,16 +18158,24 @@ class App {
       }
     });
 
-    // 同步簡報頂部按鈕 (前台頂部)
+    // 同步簡報頂部按鈕 (前台最上方按鈕，需覆蓋 .desktop-only / .mobile-only 的 !important)
     const presBtns = document.querySelectorAll('.presentation-top-btn');
+    const isPresEnabled = features['panel-presentation'] !== false;
     presBtns.forEach(b => {
-      b.style.display = features['panel-presentation'] !== false ? '' : 'none';
+      if (isPresEnabled) {
+        b.classList.remove('wf-hidden');
+        b.style.removeProperty('display');
+      } else {
+        b.classList.add('wf-hidden');
+        b.style.setProperty('display', 'none', 'important');
+      }
     });
 
-    // 教師分享按鈕
+    // 教師分享按鈕固定顯示（已自功能開關移除）
     const teacherShareBtns = document.querySelectorAll('.teacher-share-top-btn');
     teacherShareBtns.forEach(b => {
-      b.style.display = features['teacherShares'] !== false ? '' : 'none';
+      b.classList.remove('wf-hidden');
+      b.style.removeProperty('display');
     });
 
     // 右下角即時互動表情列
@@ -18188,10 +18223,10 @@ class App {
       }
     });
 
-    // 後台教師分享區塊 (adminCatBlock5)
+    // 後台教師分享區塊 (adminCatBlock5) 固定顯示
     const shareCat = document.getElementById('adminCatBlock5');
     if (shareCat) {
-      shareCat.style.display = features['teacherShares'] !== false ? '' : 'none';
+      shareCat.style.display = '';
     }
   }
 }
