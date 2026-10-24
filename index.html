@@ -634,6 +634,26 @@
                 </div>
               </div>
             </div>
+
+            <!-- 教師專屬：文字雲歷史紀錄庫 (可重複使用與複製到其他班級) -->
+            <div class="wc-teacher-only" id="wcFrontHistoryCard" style="display: none; margin-top: 14px; padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                <h4 style="margin: 0; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  📚 文字雲歷史紀錄庫 <span id="wcFrontHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 筆)</span>
+                </h4>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.saveCurrentToHistory(true, true)" style="font-size: 12px; font-weight: bold;">
+                    💾 將目前文字雲存入歷史庫
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="window.app?.openAdminFeature('gameWordCloud')" style="font-size: 12px; font-weight: bold;">
+                    ⚙️ 出題與歷史管理
+                  </button>
+                </div>
+              </div>
+              <div id="wcFrontHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;">
+                <div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史紀錄（發布文字雲題目後將自動保存，方便後續重複使用或複製至其他班級）</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -664,7 +684,7 @@
       <!-- 互動白板 -->
       <div class="panel-card" id="panel-whiteboard">
         <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
-          <iframe id="whiteboardFrame" src="whiteboard.html?v=3005" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板"></iframe>
+          <iframe id="whiteboardFrame" src="whiteboard.html?v=3006" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板"></iframe>
         </div>
       </div>
 
@@ -1666,6 +1686,12 @@
                     <input type="checkbox" id="chkCopyVideoQuiz" style="cursor: pointer;">
                     <span>🎬 影片測驗組合</span>
                     <span id="badgeCopyVideoQuizCount" style="font-size: 14px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 10px; margin-left: auto;">0組</span>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 8px 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
+                    <input type="checkbox" id="chkCopyWordCloud" style="cursor: pointer;">
+                    <span>☁️ 文字雲題庫</span>
+                    <span id="badgeCopyWordCloudCount" style="font-size: 14px; background: rgba(0,122,255,0.1); color: var(--accent-color); padding: 2px 6px; border-radius: 10px; margin-left: auto;">0題</span>
                   </label>
                 </div>
                 <div style="margin-top: 8px; font-size: 14px; color: var(--text-secondary);">
@@ -3357,12 +3383,35 @@
                   <button type="button" class="btn btn-primary" onclick="window.wordCloud?.publishActivity()" style="flex: 2; min-width: 200px; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 8px;">
                     🚀 發布 / 更新文字雲題目 (全班同步開動)
                   </button>
+                  <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.saveCurrentToHistory(true, true)" style="flex: 1; min-width: 140px; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; color: var(--accent-color); border-color: rgba(37,99,235,0.35);">
+                    💾 儲存至歷史題庫
+                  </button>
                   <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.stopActivity()" style="flex: 1; min-width: 120px; padding: 12px; font-size: 14px; border-radius: 8px; color: #ef4444; border-color: rgba(239,68,68,0.3);">
                     🛑 結束文字雲
                   </button>
                   <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.clearSubmissions()" style="flex: 1; min-width: 120px; padding: 12px; font-size: 14px; border-radius: 8px; color: #ef4444; border-color: rgba(239,68,68,0.3);">
                     🗑️ 清空所有提交
                   </button>
+                </div>
+              </div>
+
+              <!-- 📚 文字雲歷史紀錄庫 (可重複使用與複製到其他班級) -->
+              <div style="margin-top: 16px; padding: 18px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                  <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                    📚 文字雲歷史紀錄庫 <span id="wcHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 筆)</span>
+                  </h4>
+                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" onclick="window.wordCloud?.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
+                      🗑️ 清空歷史紀錄庫
+                    </button>
+                  </div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+                  💡 發布過的文字雲題目與成果皆會自動保留於此，可隨時「🚀 重新發起」、「📝 載入修改」、「👁️ 回顧成果」或「📤 複製到其他班級」使用！
+                </div>
+                <div id="wcHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto;">
+                  <div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史紀錄（發布題目後將自動保存）</div>
                 </div>
               </div>
             </div>
@@ -4945,11 +4994,11 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=397"></script>
+  <script src="js/app.js?v=398"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
-  <script src="js/word_cloud.js?v=393"></script>
+  <script src="js/word_cloud.js?v=394"></script>
   <script src="js/presentation_core.js?v=3113"></script>
   
   <!-- 問題彈出視窗 -->

@@ -273,11 +273,12 @@ window.ClassRoomManager = {
       teacherShares: 0,
       teacherShareFolders: 0,
       quiz: 0,
-      videoQuizSets: 0
+      videoQuizSets: 0,
+      wordCloud: 0
     };
 
     try {
-      const [qSnap, qfSnap, imgSnap, imgfSnap, vidSnap, vidfSnap, tsSnap, tsfSnap, qzSnap, vqSnap] = await Promise.all([
+      const [qSnap, qfSnap, imgSnap, imgfSnap, vidSnap, vidfSnap, tsSnap, tsfSnap, qzSnap, vqSnap, wcSnap] = await Promise.all([
         rawRef(getPath('questions')).once('value'),
         rawRef(getPath('quiz/questionFolders')).once('value'),
         rawRef(getPath('images')).once('value'),
@@ -287,7 +288,8 @@ window.ClassRoomManager = {
         rawRef(getPath('teacherShares')).once('value'),
         rawRef(getPath('quiz/teacherShareFolders')).once('value'),
         rawRef(getPath('quiz/history')).once('value'),
-        rawRef(getPath('quiz/videoQuizCustomSets')).once('value')
+        rawRef(getPath('quiz/videoQuizCustomSets')).once('value'),
+        rawRef(getPath('quiz/wordCloud/history')).once('value')
       ]);
 
       const countVal = (val) => {
@@ -306,6 +308,7 @@ window.ClassRoomManager = {
       counts.teacherShareFolders = countVal(tsfSnap.val());
       counts.quiz = countVal(qzSnap.val());
       counts.videoQuizSets = countVal(vqSnap.val());
+      counts.wordCloud = countVal(wcSnap.val());
     } catch (err) {
       console.warn('getModuleCounts error:', err);
     }
@@ -313,15 +316,15 @@ window.ClassRoomManager = {
     return counts;
   },
 
-  // 跨班複製核心方法（支援提問、圖片、影片、教師分享、選擇題庫、影片測驗組合與分類資料夾）
+  // 跨班複製核心方法（支援提問、圖片、影片、教師分享、選擇題庫、影片測驗組合、文字雲題庫與分類資料夾）
   async copyModuleData({
     sourceCode = '',
     targetCodes = [],
-    modules = { questions: true, images: true, videos: true, teacherShares: true, quiz: true, videoQuiz: true },
+    modules = { questions: true, images: true, videos: true, teacherShares: true, quiz: true, videoQuiz: true, wordCloud: true },
     copyMode = 'append' // 'append' | 'overwrite'
   }) {
     const sCode = this.sanitizeClassCode(sourceCode);
-    const targets = (targetCodes || []).map(c => this.sanitizeClassCode(c)).filter(Boolean);
+    const targets = (targetCodes || []).map(c => this.sanitizeClassCode(c));
     if (!targets.length) throw new Error('請至少選擇一個目標班級！');
 
     const srcPath = (p) => sCode ? `classes/${sCode}/${p}` : p;
@@ -352,6 +355,9 @@ window.ClassRoomManager = {
     if (modules.videoQuiz) {
       readPromises.videoQuizCustomSets = rawRef(srcPath('quiz/videoQuizCustomSets')).once('value');
       readPromises.videoQuizzes = rawRef(srcPath('quiz/videoQuizzes')).once('value');
+    }
+    if (modules.wordCloud) {
+      readPromises.wordCloudHistory = rawRef(srcPath('quiz/wordCloud/history')).once('value');
     }
 
     const srcData = {};
@@ -641,6 +647,33 @@ window.ClassRoomManager = {
         }
       }
 
+      // G. 處理文字雲歷史題庫 (quiz/wordCloud/history; 排除學生作答紀錄)
+      if (modules.wordCloud) {
+        const srcWcHistory = toArray(srcData.wordCloudHistory).map(w => {
+          const cleaned = { ...w };
+          delete cleaned.savedSubmissions;
+          delete cleaned.savedWords;
+          delete cleaned.totalSubmissions;
+          return cleaned;
+        });
+
+        if (copyMode === 'overwrite') {
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/wordCloud/history')).set(toMap(srcWcHistory)));
+        } else {
+          const existSnap = await rawRef(tgtPath(tCode, 'quiz/wordCloud/history')).once('value');
+          const existWc = toArray(existSnap.val());
+
+          srcWcHistory.forEach(w => {
+            const duplicate = existWc.some(ew => ew.title === w.title && (ew.imageUrl || null) === (w.imageUrl || null));
+            if (!duplicate) {
+              const newId = `wch_copy_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+              existWc.push({ ...w, id: newId, createdAt: Date.now() });
+            }
+          });
+          writePromises.push(rawRef(tgtPath(tCode, 'quiz/wordCloud/history')).set(toMap(existWc)));
+        }
+      }
+
       await Promise.all(writePromises);
       results.push(tCode);
     }
@@ -854,6 +887,17 @@ window.ClassRoomManager = {
       if (!itemData && window.videoQuiz && window.videoQuiz.quizzes) {
         itemData = window.videoQuiz.quizzes.find(q => q && q.id === itemId);
       }
+    } else if (moduleType === 'wordCloud') {
+      const snap = await rawRef(srcPath(`quiz/wordCloud/history/${itemId}`)).once('value');
+      itemData = snap.val();
+      if (!itemData) {
+        const pSnap = await rawRef(srcPath('quiz/wordCloud/history')).once('value');
+        const pVal = pSnap.val();
+        if (pVal) itemData = pVal[itemId];
+      }
+      if (!itemData && window.wordCloud && window.wordCloud.historyBank) {
+        itemData = window.wordCloud.historyBank[itemId];
+      }
     }
 
     if (!itemData) {
@@ -969,6 +1013,16 @@ window.ClassRoomManager = {
           existQuizzes.unshift(cleanedQuiz);
         }
         await rawRef(tgtPath(tCode, 'quiz/videoQuizzes')).set(toMap(existQuizzes));
+      } else if (moduleType === 'wordCloud') {
+        const newWcItem = {
+          ...itemData,
+          id: newId,
+          createdAt: Date.now()
+        };
+        delete newWcItem.savedSubmissions;
+        delete newWcItem.savedWords;
+        delete newWcItem.totalSubmissions;
+        await rawRef(tgtPath(tCode, `quiz/wordCloud/history/${newId}`)).set(newWcItem);
       }
 
       copiedTargets.push(tCode);

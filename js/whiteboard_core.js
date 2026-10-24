@@ -3207,17 +3207,19 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // ===== 浮動工具列：往左收合 / 展開 & 按住自由拖曳移動 =====
+  // ===== 浮動工具列：往左收合 / 展開 & 按住自由拖曳移動 (電腦版與行動裝置通用) =====
   function initFloatingToolbarControls() {
     const toolbar = document.getElementById('floatingToolbar');
     const toggleBtn = document.getElementById('btnToggleFloatingToolbar');
     const dragHandle = document.getElementById('toolbarDragHandle');
-    if (!toolbar) return;
+    if (!toolbar || toolbar._controlsBound) return;
+    toolbar._controlsBound = true;
 
     let savedLeftBeforeCollapse = null;
 
     if (toggleBtn) {
       toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         const isCollapsed = toolbar.classList.toggle('is-collapsed');
         toggleBtn.textContent = isCollapsed ? '▶' : '◀';
@@ -3235,61 +3237,75 @@
       });
     }
 
+    let isDraggingToolbar = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    const startToolbarDrag = (e) => {
+      // 只允許左鍵或觸控拖曳
+      if (e.button !== undefined && e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (toolbar.classList.contains('is-collapsed')) {
+        toolbar.classList.remove('is-collapsed');
+        if (toggleBtn) toggleBtn.textContent = '◀';
+      }
+
+      const parent = toolbar.offsetParent || document.querySelector('.whiteboard-main') || document.body;
+      const parentRect = parent.getBoundingClientRect();
+      const rect = toolbar.getBoundingClientRect();
+      const startLeft = rect.left - parentRect.left;
+      const startTop = rect.top - parentRect.top;
+
+      toolbar.classList.add('is-custom-pos', 'is-dragging');
+      toolbar.style.left = Math.round(startLeft) + 'px';
+      toolbar.style.top = Math.round(startTop) + 'px';
+
+      isDraggingToolbar = true;
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+    };
+
     if (dragHandle) {
-      let isDraggingToolbar = false;
-      let dragOffsetX = 0;
-      let dragOffsetY = 0;
-
-      dragHandle.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (toolbar.classList.contains('is-collapsed')) {
-          toolbar.classList.remove('is-collapsed');
-          if (toggleBtn) toggleBtn.textContent = '◀';
-        }
-        const parent = toolbar.offsetParent || document.querySelector('.whiteboard-main') || document.body;
-        const parentRect = parent.getBoundingClientRect();
-        const rect = toolbar.getBoundingClientRect();
-
-        toolbar.classList.add('is-custom-pos', 'is-dragging');
-        toolbar.style.left = (rect.left - parentRect.left) + 'px';
-        toolbar.style.top = (rect.top - parentRect.top) + 'px';
-
-        isDraggingToolbar = true;
-        dragOffsetX = e.clientX - rect.left;
-        dragOffsetY = e.clientY - rect.top;
-        if (dragHandle.setPointerCapture) {
-          try { dragHandle.setPointerCapture(e.pointerId); } catch (_) {}
-        }
-      });
-
-      window.addEventListener('pointermove', (e) => {
-        if (!isDraggingToolbar) return;
-        const parent = toolbar.offsetParent || document.querySelector('.whiteboard-main') || document.body;
-        const parentRect = parent.getBoundingClientRect();
-        const tbWidth = toolbar.offsetWidth || 50;
-        const tbHeight = toolbar.offsetHeight || 280;
-
-        let newLeft = e.clientX - parentRect.left - dragOffsetX;
-        let newTop = e.clientY - parentRect.top - dragOffsetY;
-
-        newLeft = Math.max(4, Math.min(parentRect.width - tbWidth - 4, newLeft));
-        newTop = Math.max(4, Math.min(parentRect.height - tbHeight - 4, newTop));
-
-        toolbar.style.left = Math.round(newLeft) + 'px';
-        toolbar.style.top = Math.round(newTop) + 'px';
-        savedLeftBeforeCollapse = toolbar.style.left;
-      });
-
-      const endToolbarDrag = () => {
-        if (!isDraggingToolbar) return;
-        isDraggingToolbar = false;
-        toolbar.classList.remove('is-dragging');
-      };
-      window.addEventListener('pointerup', endToolbarDrag);
-      window.addEventListener('pointercancel', endToolbarDrag);
+      dragHandle.addEventListener('pointerdown', startToolbarDrag);
     }
+
+    // 電腦版與行動裝置也可直接按住工具列空白背景處拖曳移動
+    toolbar.addEventListener('pointerdown', (e) => {
+      if (e.target === toolbar || e.target.classList.contains('toolbar-grid') || e.target.classList.contains('toolbar-styles') || e.target.classList.contains('toolbar-history')) {
+        startToolbarDrag(e);
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDraggingToolbar) return;
+      const parent = toolbar.offsetParent || document.querySelector('.whiteboard-main') || document.body;
+      const parentRect = parent.getBoundingClientRect();
+      const tbWidth = toolbar.offsetWidth || 50;
+      const tbHeight = toolbar.offsetHeight || 280;
+
+      let newLeft = e.clientX - parentRect.left - dragOffsetX;
+      let newTop = e.clientY - parentRect.top - dragOffsetY;
+
+      newLeft = Math.max(4, Math.min(parentRect.width - tbWidth - 4, newLeft));
+      newTop = Math.max(4, Math.min(parentRect.height - tbHeight - 4, newTop));
+
+      toolbar.style.left = Math.round(newLeft) + 'px';
+      toolbar.style.top = Math.round(newTop) + 'px';
+      savedLeftBeforeCollapse = toolbar.style.left;
+    });
+
+    const endToolbarDrag = () => {
+      if (!isDraggingToolbar) return;
+      isDraggingToolbar = false;
+      toolbar.classList.remove('is-dragging');
+    };
+    window.addEventListener('pointerup', endToolbarDrag);
+    window.addEventListener('pointercancel', endToolbarDrag);
   }
+
+  initFloatingToolbarControls();
 
   // ===== 初始化啟動 =====
   window.addEventListener('DOMContentLoaded', () => {

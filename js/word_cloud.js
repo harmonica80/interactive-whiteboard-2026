@@ -31,6 +31,7 @@
       this.customMaskCanvas = null;
       this.customMaskCtx = null;
       this.knownSubmissionKeys = new Set();
+      this.historyBank = {};
       this.wcZoom = 1;
       this.wcPanX = 0;
       this.wcPanY = 0;
@@ -247,6 +248,12 @@
         this.hiddenWords = set;
         this.recalculateAndRender();
       });
+
+      // 監聽文字雲歷史題庫 (保留歷史紀錄供後續重複使用與跨班級複製)
+      db.ref('quiz/wordCloud/history').on('value', (snapshot) => {
+        this.historyBank = snapshot.val() || {};
+        this.renderHistoryListUI();
+      });
     }
 
     // 支援直接於網頁或出題區 Ctrl + V 貼上截圖
@@ -342,23 +349,335 @@
       if (adminInput) adminInput.value = '';
     }
 
-    // 發布或開啟新一輪文字雲活動
-    publishActivity(isNewRound = false) {
-      if (!window.app?.isAdmin) return;
+    // 儲存目前文字雲題目與成果至歷史題庫
+    saveCurrentToHistory(includeSubmissionsSnapshot = true, showToast = false) {
+      if (!window.app?.isAdmin || typeof db === 'undefined') return null;
 
       const titleInput = document.getElementById('adminWcQuestionTitleInput') || document.getElementById('wcQuestionTitleInput');
-      const title = (titleInput?.value || '').trim() || '即時互動文字雲';
+      const rawInputTitle = (titleInput?.value || '').trim();
+      const act = this.activeActivity;
+      const title = rawInputTitle || (act && act.title) || '即時互動文字雲';
+      const imageUrl = this.uploadedImageUrl || (act && act.imageUrl) || null;
+
+      const limitSelect = document.getElementById('adminWcLimitSelect') || document.getElementById('wcLimitSelect');
+      const limit = (limitSelect && limitSelect.value !== undefined)
+        ? parseInt(limitSelect.value, 10)
+        : (act && act.limitPerStudent !== undefined ? parseInt(act.limitPerStudent, 10) : 1);
+
+      // 尋找是否已有同標題與同圖片的歷史紀錄，避免重複洗版
+      let targetKey = (act && act.historyId && this.historyBank[act.historyId]) ? act.historyId : null;
+      if (!targetKey) {
+        const existingKey = Object.keys(this.historyBank || {}).find(k => {
+          const item = this.historyBank[k];
+          return item && item.title === title && (item.imageUrl || null) === (imageUrl || null);
+        });
+        if (existingKey) targetKey = existingKey;
+      }
+      if (!targetKey) {
+        targetKey = 'wch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+      }
+
+      const prevRecord = this.historyBank[targetKey] || {};
+      const currentSubCount = Object.keys(this.submissions || {}).length;
+      const topWordsSnapshot = (this.wordsData || []).slice(0, 30).map(w => ({
+        word: w.word,
+        count: w.count,
+        isFocused: Boolean(w.isFocused)
+      }));
+
+      const record = {
+        ...prevRecord,
+        id: targetKey,
+        title: title,
+        imageUrl: imageUrl,
+        limitPerStudent: limit,
+        wordOrientation: this.wordOrientation || (act && act.wordOrientation) || 'mixed',
+        cloudShape: this.cloudShape || (act && act.cloudShape) || 'circle',
+        customMaskUrl: this.customMaskUrl || (act && act.customMaskUrl) || null,
+        createdAt: Date.now()
+      };
+
+      if (includeSubmissionsSnapshot && currentSubCount > 0) {
+        record.totalSubmissions = currentSubCount;
+        record.savedWords = topWordsSnapshot;
+        record.savedSubmissions = JSON.parse(JSON.stringify(this.submissions));
+      }
+
+      this.historyBank[targetKey] = record;
+      db.ref('quiz/wordCloud/history/' + targetKey).set(record).then(() => {
+        if (showToast) {
+          window.app?.showNotification('💾 已儲存', `文字雲「${title}」已保存至歷史紀錄庫！可隨時重複使用或複製至其他班級。`);
+        }
+      }).catch(err => {
+        if (showToast) {
+          window.app?.showNotification('錯誤', '儲存歷史紀錄失敗: ' + err.message);
+        }
+      });
+
+      this.renderHistoryListUI();
+      return targetKey;
+    }
+
+    // 渲染文字雲歷史紀錄庫 UI (後台與前台同步顯示)
+    renderHistoryListUI() {
+      const adminListEl = document.getElementById('wcHistoryList');
+      const frontListEl = document.getElementById('wcFrontHistoryList');
+      const adminCountEl = document.getElementById('wcHistoryCount');
+      const frontCountEl = document.getElementById('wcFrontHistoryCount');
+
+      const keys = Object.keys(this.historyBank || {});
+      if (adminCountEl) adminCountEl.textContent = `(${keys.length} 筆)`;
+      if (frontCountEl) frontCountEl.textContent = `(${keys.length} 筆)`;
+
+      if (keys.length === 0) {
+        const emptyHtml = '<div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史紀錄（發布題目後將自動保存，方便後續重複使用或複製至其他班級）</div>';
+        if (adminListEl) adminListEl.innerHTML = emptyHtml;
+        if (frontListEl) frontListEl.innerHTML = emptyHtml;
+        return;
+      }
+
+      const sortedKeys = keys.sort((a, b) => (this.historyBank[b]?.createdAt || 0) - (this.historyBank[a]?.createdAt || 0));
+      const shapeLabels = {
+        circle: '⭕圓形',
+        rectangle: '⬛矩形',
+        cloud: '☁️白雲',
+        heart: '❤️愛心',
+        star: '⭐星形',
+        custom: '🖼️自訂'
+      };
+
+      const html = sortedKeys.map(key => {
+        const item = this.historyBank[key];
+        if (!item) return '';
+        const hasImg = Boolean(item.imageUrl);
+        const badgeText = hasImg ? '🖼️ 圖文題' : '📝 文字題';
+        const badgeBg = hasImg ? 'rgba(139,92,246,0.12)' : 'rgba(37,99,235,0.1)';
+        const badgeColor = hasImg ? '#7c3aed' : 'var(--accent-color)';
+        const limitVal = item.limitPerStudent !== undefined ? parseInt(item.limitPerStudent, 10) : 1;
+        const limitText = limitVal === 0 ? '不限次數' : `每人限 ${limitVal} 次`;
+        const shapeText = shapeLabels[item.cloudShape || 'circle'] || '⭕圓形';
+        const topPreview = Array.isArray(item.savedWords) && item.savedWords.length > 0
+          ? `熱門詞：${item.savedWords.slice(0, 5).map(w => `${w.word}(${w.count})`).join('、')}（共 ${item.totalSubmissions || item.savedWords.length} 則）`
+          : '尚未有作答快照（可直接載入或發布）';
+        const hasSnapshot = Boolean((item.savedSubmissions && Object.keys(item.savedSubmissions).length > 0) || (Array.isArray(item.savedWords) && item.savedWords.length > 0));
+
+        return `
+          <div class="wc-history-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px;">
+              ${hasImg ? `<img src="${item.imageUrl}" style="width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); flex-shrink: 0; cursor: pointer;" onclick="window.app?.zoomShareImage('${item.imageUrl}')" title="點擊預覽題目圖片">` : ''}
+              <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex: 1;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
+                  <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(item.title || '即時互動文字雲')}</span>
+                  <span style="font-size: 11px; color: var(--text-secondary); background: var(--bg-input); padding: 1px 6px; border-radius: 6px;">${limitText} ‧ ${shapeText}</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                  ${this.escapeHtml(topPreview)}
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" style="padding: 4px 8px; font-size: 11.5px; color: var(--accent-color); font-weight: bold;" title="複製此文字雲題目到其他班級">📤 複製他班</button>
+              ${hasSnapshot ? `<button type="button" class="btn btn-secondary" onclick="window.wordCloud?.reviewHistorySnapshot('${key}')" style="padding: 4px 8px; font-size: 11.5px; color: #8b5cf6; font-weight: bold;" title="在畫布上回顧此次文字雲成果">👁️ 回顧成果</button>` : ''}
+              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.loadFromHistory('${key}', false)" style="padding: 4px 8px; font-size: 11.5px; font-weight: bold;" title="帶入此題設定到出題框">📝 載入</button>
+              <button type="button" class="btn btn-primary" onclick="window.wordCloud?.loadFromHistory('${key}', true)" style="padding: 4px 9px; font-size: 11.5px; font-weight: bold;" title="立即以此題開啟新一輪文字雲">🚀 重新發起</button>
+              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.deleteHistoryItem('${key}')" style="padding: 4px 8px; font-size: 11.5px; color: var(--danger-color);" title="刪除此筆歷史紀錄">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (adminListEl) adminListEl.innerHTML = html;
+      if (frontListEl) frontListEl.innerHTML = html;
+    }
+
+    // 從歷史紀錄載入設定或直接重新發起新一輪
+    loadFromHistory(key, autoPublish = false) {
+      if (!window.app?.isAdmin) return;
+      const item = this.historyBank && this.historyBank[key];
+      if (!item) {
+        window.app?.showNotification('提示', '找不到該筆歷史紀錄！');
+        return;
+      }
+
+      const adminTitleInput = document.getElementById('adminWcQuestionTitleInput');
+      if (adminTitleInput) adminTitleInput.value = item.title || '';
+      const frontTitleInput = document.getElementById('wcQuestionTitleInput');
+      if (frontTitleInput) frontTitleInput.value = item.title || '';
+
+      this.uploadedImageUrl = item.imageUrl || null;
+      this.renderQuestionImagePreview(this.uploadedImageUrl);
+
+      const limit = item.limitPerStudent !== undefined ? parseInt(item.limitPerStudent, 10) : 1;
+      this.maxSubmissionsPerStudent = limit;
+      const adminLimitSel = document.getElementById('adminWcLimitSelect');
+      if (adminLimitSel) adminLimitSel.value = String(limit);
+      const frontLimitSel = document.getElementById('wcLimitSelect');
+      if (frontLimitSel) frontLimitSel.value = String(limit);
+
+      if (item.wordOrientation) {
+        this.wordOrientation = item.wordOrientation;
+        const ao = document.getElementById('adminWcOrientationSelect');
+        if (ao) ao.value = item.wordOrientation;
+        const fo = document.getElementById('wcOrientationSelect');
+        if (fo) fo.value = item.wordOrientation;
+      }
+      if (item.cloudShape) {
+        this.cloudShape = item.cloudShape;
+        const as = document.getElementById('adminWcShapeSelect');
+        if (as) as.value = item.cloudShape;
+        const fs = document.getElementById('wcShapeSelect');
+        if (fs) fs.value = item.cloudShape;
+      }
+      if (item.customMaskUrl) {
+        this.setCustomMaskFromUrl(item.customMaskUrl);
+      }
+
+      if (autoPublish) {
+        this.publishActivity(false, key);
+      } else {
+        window.app?.showNotification('📝 已載入', `已帶入歷史題目「${item.title}」，確認後點擊「發布」即可開動！`);
+      }
+    }
+
+    // 回顧歷史文字雲成果快照 (展示於畫布與排行榜上，並保持鎖定作答狀態)
+    reviewHistorySnapshot(key) {
+      if (!window.app?.isAdmin || typeof db === 'undefined') return;
+      const item = this.historyBank && this.historyBank[key];
+      if (!item) return;
+
+      let restoredSubs = {};
+      if (item.savedSubmissions && Object.keys(item.savedSubmissions).length > 0) {
+        restoredSubs = item.savedSubmissions;
+      } else if (Array.isArray(item.savedWords) && item.savedWords.length > 0) {
+        let idx = 0;
+        item.savedWords.forEach(w => {
+          const c = Math.max(1, parseInt(w.count, 10) || 1);
+          for (let i = 0; i < c; i++) {
+            restoredSubs['restored_' + (++idx)] = {
+              word: w.word,
+              user: '歷史紀錄',
+              timestamp: Date.now()
+            };
+          }
+        });
+      }
+
+      const payload = {
+        sessionId: 'wc_review_' + Date.now(),
+        historyId: key,
+        title: item.title || '即時互動文字雲',
+        imageUrl: item.imageUrl || null,
+        limitPerStudent: item.limitPerStudent !== undefined ? parseInt(item.limitPerStudent, 10) : 1,
+        wordOrientation: item.wordOrientation || 'mixed',
+        cloudShape: item.cloudShape || 'circle',
+        customMaskUrl: item.customMaskUrl || null,
+        active: true,
+        accepting: false,
+        timestamp: Date.now(),
+        creator: this.getCurrentStudentName() || '老師'
+      };
+
+      Promise.all([
+        db.ref('quiz/wordCloud/active').set(payload),
+        db.ref('quiz/wordCloud/submissions').set(restoredSubs),
+        db.ref('quiz/wordCloud/hiddenWords').remove()
+      ]).then(() => {
+        window.app?.switchToTab('panel-word-cloud');
+        window.app?.showNotification('👁️ 歷史成果回顧', `已載入「${item.title}」的歷史文字雲成果（目前為鎖定觀看狀態，點擊「恢復作答」可讓學生繼續補充）。`);
+      });
+    }
+
+    // 刪除單筆文字雲歷史紀錄
+    deleteHistoryItem(key) {
+      if (!window.app?.isAdmin || !key) return;
+      const item = this.historyBank && this.historyBank[key];
+      const title = (item && item.title) || '此筆文字雲紀錄';
+      window.app?.showConfirmModal(
+        '🗑️',
+        `確定要刪除「${title}」嗎？`,
+        '刪除後將無法從歷史紀錄庫中再次載入此題目。',
+        () => {
+          delete this.historyBank[key];
+          db.ref('quiz/wordCloud/history/' + key).remove().then(() => {
+            this.renderHistoryListUI();
+            window.app?.showNotification('成功', '已刪除該筆文字雲歷史紀錄！');
+          });
+        }
+      );
+    }
+
+    // 清空全部文字雲歷史紀錄庫
+    clearHistoryBank() {
+      if (!window.app?.isAdmin) return;
+      if (!this.historyBank || Object.keys(this.historyBank).length === 0) {
+        window.app?.showNotification('提示', '目前文字雲歷史紀錄庫已經是空的！');
+        return;
+      }
+      window.app?.showConfirmModal(
+        '🗑️',
+        '確定要清空全部文字雲歷史紀錄庫嗎？',
+        '這將移除本班所有保存的文字雲歷史題目與成果，此動作無法復原。',
+        () => {
+          this.historyBank = {};
+          db.ref('quiz/wordCloud/history').remove().then(() => {
+            this.renderHistoryListUI();
+            window.app?.showNotification('成功', '已清空文字雲歷史紀錄庫！');
+          });
+        }
+      );
+    }
+
+    // 發布或開啟新一輪文字雲活動
+    publishActivity(isNewRound = false, explicitHistoryKey = null) {
+      if (!window.app?.isAdmin) return;
+
+      // 若上一輪有學生提交的詞彙，先自動歸檔保存至歷史紀錄，確保成果不遺失
+      if (this.activeActivity && Object.keys(this.submissions || {}).length > 0) {
+        this.saveCurrentToHistory(true, false);
+      }
+
+      const titleInput = document.getElementById('adminWcQuestionTitleInput') || document.getElementById('wcQuestionTitleInput');
+      const title = (titleInput?.value || '').trim() || (this.activeActivity && this.activeActivity.title) || '即時互動文字雲';
 
       const limitSelect = document.getElementById('adminWcLimitSelect') || document.getElementById('wcLimitSelect');
       const limit = (limitSelect && limitSelect.value !== undefined) ? parseInt(limitSelect.value, 10) : 1;
 
       const sessionId = 'wc_' + Date.now();
 
-      const payload = {
-        sessionId: sessionId,
+      // 自動將此次出題設定存入歷史紀錄庫
+      let historyId = explicitHistoryKey;
+      if (!historyId) {
+        const existingKey = Object.keys(this.historyBank || {}).find(k => {
+          const item = this.historyBank[k];
+          return item && item.title === title && (item.imageUrl || null) === (this.uploadedImageUrl || null);
+        });
+        historyId = existingKey || ('wch_' + Date.now());
+      }
+
+      const historyRecord = {
+        ...(this.historyBank[historyId] || {}),
+        id: historyId,
         title: title,
         imageUrl: this.uploadedImageUrl || null,
         limitPerStudent: limit,
+        wordOrientation: this.wordOrientation || 'mixed',
+        cloudShape: this.cloudShape || 'circle',
+        customMaskUrl: this.customMaskUrl || null,
+        createdAt: Date.now()
+      };
+      this.historyBank[historyId] = historyRecord;
+      db.ref('quiz/wordCloud/history/' + historyId).set(historyRecord);
+
+      const payload = {
+        sessionId: sessionId,
+        historyId: historyId,
+        title: title,
+        imageUrl: this.uploadedImageUrl || null,
+        limitPerStudent: limit,
+        wordOrientation: this.wordOrientation || 'mixed',
+        cloudShape: this.cloudShape || 'circle',
+        customMaskUrl: this.customMaskUrl || null,
         active: true,
         accepting: true, // 是否持續接收作答
         timestamp: firebase.database.ServerValue.TIMESTAMP,
@@ -469,10 +788,11 @@
       window.app?.showConfirmModal(
         '☁️',
         '確定要結束文字雲活動嗎？',
-        '結束後學生端將不再顯示作答視窗，但本次文字雲成果畫面仍會保留。',
+        '結束後學生端將不再顯示作答視窗，本次文字雲題目與成果也會自動保存至歷史紀錄庫。',
         () => {
+          this.saveCurrentToHistory(true, false);
           db.ref('quiz/wordCloud/active/active').set(false).then(() => {
-            window.app?.showNotification('成功', '即時文字雲活動已結束！');
+            window.app?.showNotification('成功', '即時文字雲活動已結束，並已自動保存至歷史紀錄庫！');
           });
         }
       );
@@ -484,8 +804,11 @@
       window.app?.showConfirmModal(
         '🗑️',
         '確定要清空所有學生提交的詞彙嗎？',
-        '這將重設文字雲畫布並清除所有詞頻統計，此動作無法復原。',
+        '這將重設文字雲畫布並清除目前詞頻統計（清空前會自動將目前成果備份至歷史紀錄庫）。',
         () => {
+          if (Object.keys(this.submissions || {}).length > 0) {
+            this.saveCurrentToHistory(true, false);
+          }
           db.ref('quiz/wordCloud/submissions').remove().then(() => {
             db.ref('quiz/wordCloud/hiddenWords').remove();
             this.submissions = {};

@@ -1984,6 +1984,22 @@ class App {
         ]
       },
       {
+        key: 'thinking_spark',
+        category: '😍 表情與課堂氛圍互動',
+        title: '✨ 課堂共鳴與靈感火花',
+        shortTitle: '課堂共鳴火花',
+        collapsedIcon: '✨',
+        desc: '老師分享精采故事、趣味知識或腦力激盪時，學生即時送出大開眼界、恍然大悟、筆記中與想分享！',
+        showBtnLabel: true,
+        items: [
+          { emoji: '🤯', floatEmoji: '🤯', btnLabel: '大開眼界', floatBadge: '🤯 大開眼界！', title: '🤯 腦洞大開 / 超震撼' },
+          { emoji: '💡', floatEmoji: '💡', btnLabel: '學到了', floatBadge: '💡 恍然大悟！', title: '💡 原來如此 / 學到了' },
+          { emoji: '✍️', floatEmoji: '✍️', btnLabel: '筆記中', floatBadge: '✍️ 重點筆記中', title: '✍️ 趕快記下來' },
+          { emoji: '🤩', floatEmoji: '🤩', btnLabel: '太酷了', floatBadge: '🤩 超級酷！', title: '🤩 太酷了吧' },
+          { emoji: '🙋', floatEmoji: '🙋', btnLabel: '想分享', floatBadge: '🙋 我有想法！', title: '🙋 我想舉手分享' }
+        ]
+      },
+      {
         key: 'star_rating',
         category: '⭐ 星級評等與學習狀態回報',
         title: '⭐ 1 ～ 5 顆星評等',
@@ -2028,6 +2044,22 @@ class App {
           { emoji: '⏳', floatEmoji: '⏳', btnLabel: '進行中', floatBadge: '⏳ 努力進行中', title: '⏳ 正在進行中' },
           { emoji: '🆘', floatEmoji: '🆘', btnLabel: '需要幫忙', floatBadge: '🆘 需要老師幫忙', title: '🆘 卡關了，需要幫忙' },
           { emoji: '😵‍💫', floatEmoji: '😵‍💫', btnLabel: '恍神中', floatBadge: '😵‍💫 恍神中', title: '😵‍💫 不小心恍神中' }
+        ]
+      },
+      {
+        key: 'confidence_energy',
+        category: '⭐ 星級評等與學習狀態回報',
+        title: '🔋 學習信心與能量狀態',
+        shortTitle: '學習信心與狀態',
+        collapsedIcon: '🔋',
+        desc: '測驗前、單元總結或長時段課程中，讓學生即時回報目前的作答信心度與學習精神狀態。',
+        showBtnLabel: true,
+        items: [
+          { emoji: '💪', floatEmoji: '💪', btnLabel: '信心滿滿', floatBadge: '💪 準備好了！', title: '💪 信心滿滿 / 沒問題' },
+          { emoji: '🔋', floatEmoji: '🔋', btnLabel: '電力滿格', floatBadge: '🔋 精神百倍', title: '🔋 精神飽滿 / 專注中' },
+          { emoji: '😬', floatEmoji: '😬', btnLabel: '有點緊張', floatBadge: '😬 有點小緊張', title: '😬 稍微有點緊張' },
+          { emoji: '🪫', floatEmoji: '🪫', btnLabel: '快沒電了', floatBadge: '🪫 需要充個電', title: '🪫 有點累 / 快沒電了' },
+          { emoji: '☕', floatEmoji: '☕', btnLabel: '想休息', floatBadge: '☕ 敲碗休息一下', title: '☕ 希望稍微休息一下' }
         ]
       },
       {
@@ -17466,6 +17498,7 @@ class App {
     const bShares = document.getElementById('badgeCopyTeacherSharesCount');
     const bQuiz = document.getElementById('badgeCopyQuizCount');
     const bVideoQuiz = document.getElementById('badgeCopyVideoQuizCount');
+    const bWordCloud = document.getElementById('badgeCopyWordCloudCount');
 
     if (bQuestions) bQuestions.textContent = '計算中...';
     if (bImages) bImages.textContent = '計算中...';
@@ -17473,6 +17506,7 @@ class App {
     if (bShares) bShares.textContent = '計算中...';
     if (bQuiz) bQuiz.textContent = '計算中...';
     if (bVideoQuiz) bVideoQuiz.textContent = '計算中...';
+    if (bWordCloud) bWordCloud.textContent = '計算中...';
 
     try {
       if (window.ClassRoomManager && typeof window.ClassRoomManager.getModuleCounts === 'function') {
@@ -17483,6 +17517,7 @@ class App {
         if (bShares) bShares.textContent = `${counts.teacherShares || 0}則${counts.teacherShareFolders ? ` (${counts.teacherShareFolders}夾)` : ''}`;
         if (bQuiz) bQuiz.textContent = `${counts.quiz || 0}題`;
         if (bVideoQuiz) bVideoQuiz.textContent = `${counts.videoQuizSets || 0}組`;
+        if (bWordCloud) bWordCloud.textContent = `${counts.wordCloud || 0}題`;
       }
     } catch (e) {
       console.warn('refreshCopySourceCounts error:', e);
@@ -17490,7 +17525,7 @@ class App {
   }
 
   toggleSelectAllCopyModules(forcedState = undefined) {
-    const chkIds = ['chkCopyQuestions', 'chkCopyImages', 'chkCopyVideos', 'chkCopyTeacherShares', 'chkCopyQuiz', 'chkCopyVideoQuiz'];
+    const chkIds = ['chkCopyQuestions', 'chkCopyImages', 'chkCopyVideos', 'chkCopyTeacherShares', 'chkCopyQuiz', 'chkCopyVideoQuiz', 'chkCopyWordCloud'];
     const chks = chkIds.map(id => document.getElementById(id)).filter(Boolean);
     const anyUnchecked = chks.some(c => !c.checked);
     const targetState = forcedState !== undefined ? forcedState : anyUnchecked;
@@ -17514,7 +17549,8 @@ class App {
       videos: Boolean(document.getElementById('chkCopyVideos')?.checked),
       teacherShares: Boolean(document.getElementById('chkCopyTeacherShares')?.checked),
       quiz: Boolean(document.getElementById('chkCopyQuiz')?.checked),
-      videoQuiz: Boolean(document.getElementById('chkCopyVideoQuiz')?.checked)
+      videoQuiz: Boolean(document.getElementById('chkCopyVideoQuiz')?.checked),
+      wordCloud: Boolean(document.getElementById('chkCopyWordCloud')?.checked)
     };
 
     const hasAnyModule = Object.values(modules).some(Boolean);
@@ -17770,6 +17806,18 @@ class App {
       if (vq) {
         const qCount = (vq.questions || []).length;
         previewTitle = `🎬 ${vq.title || '影片測驗'}（包含 ${qCount} 道題目）`;
+      }
+    } else if (moduleType === 'wordCloud') {
+      typeName = '文字雲題目';
+      badgeText = '☁️ 文字雲';
+      let wc = null;
+      if (window.wordCloud && window.wordCloud.historyBank) {
+        wc = window.wordCloud.historyBank[itemId];
+      }
+      if (wc) {
+        const limitVal = wc.limitPerStudent !== undefined ? parseInt(wc.limitPerStudent, 10) : 1;
+        const limitText = limitVal === 0 ? '不限次數' : `每人限 ${limitVal} 次`;
+        previewTitle = `【${wc.imageUrl ? '圖文題' : '文字題'}】${wc.title || '即時互動文字雲'}（${limitText}）`;
       }
     }
 

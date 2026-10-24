@@ -553,9 +553,14 @@
       transition: left 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
     }
 
+    .floating-toolbar.is-custom-pos {
+      transform: none;
+    }
+
     .floating-toolbar.is-dragging {
       transition: none !important;
       box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+      user-select: none;
     }
 
     .floating-toolbar.is-collapsed {
@@ -570,23 +575,30 @@
 
     .toolbar-drag-handle {
       width: 100%;
-      height: 16px;
+      height: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: grab;
-      color: #9ca3af;
-      font-size: 12px;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 700;
       letter-spacing: 2px;
       border-radius: 8px;
-      background: #f8fafc;
+      background: #f1f5f9;
       touch-action: none;
       user-select: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .toolbar-drag-handle:hover {
+      background: #e2e8f0;
+      color: var(--primary);
     }
 
     .toolbar-drag-handle:active {
       cursor: grabbing;
-      background: #f1f5f9;
+      background: #ffedd5;
       color: var(--primary);
     }
 
@@ -1858,6 +1870,6 @@
     </div>
   </div>
 
-  <script src="js/whiteboard_core.js?v=3005"></script>
+  <script src="js/whiteboard_core.js?v=3006"></script>
 </body>
 </html>
