@@ -54,9 +54,9 @@
       id: 'vq_eye_cells',
       title: '👁️ 生物科普：眼睛中的視錐細胞與視桿細胞的作用是？',
       description: '探索眼睛感光細胞的奧秘，了解負責彩色視覺的視錐細胞與暗光視覺的視桿細胞！',
-      videoUrl: 'https://www.youtube.com/watch?v=lGbrMl8PAYA',
+      videoUrl: 'https://www.youtube.com/watch?v=J4BJB48jdfw',
       videoType: 'youtube',
-      youtubeId: 'lGbrMl8PAYA',
+      youtubeId: 'J4BJB48jdfw',
       createdAt: 1725550100000,
       questions: [
         {
@@ -199,15 +199,25 @@
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            // 自動升級：若包含舊版「國文與成語典故」，替換為「眼睛中的視錐細胞與視桿細胞的作用是？」
-            const hasLegacyChinese = parsed.some(q => q && (q.id === 'vq_chinese_culture' || (q.title && q.title.includes('國文與成語典故'))));
-            if (hasLegacyChinese) {
-              const updated = parsed.map(q => {
-                if (q && (q.id === 'vq_chinese_culture' || (q.title && q.title.includes('國文與成語典故')))) {
-                  return JSON.parse(JSON.stringify(DEFAULT_VIDEO_QUIZZES[1]));
+            let needsUpdate = false;
+            const updated = parsed.map(q => {
+              if (!q) return q;
+              // 自動升級：若包含舊版「國文與成語典故」，替換為「眼睛中的視錐細胞與視桿細胞的作用是？」
+              if (q.id === 'vq_chinese_culture' || (q.title && q.title.includes('國文與成語典故'))) {
+                needsUpdate = true;
+                return JSON.parse(JSON.stringify(DEFAULT_VIDEO_QUIZZES[1]));
+              }
+              // 自動修正：確保「眼睛中的視錐細胞與視桿細胞的作用是？」在各教室與本機皆使用正確的 Youtube 網址
+              if (q.id === 'vq_eye_cells' || (q.title && q.title.includes('視錐細胞與視桿細胞'))) {
+                if (q.youtubeId !== 'J4BJB48jdfw' || q.videoUrl !== 'https://www.youtube.com/watch?v=J4BJB48jdfw') {
+                  needsUpdate = true;
+                  q.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
+                  q.youtubeId = 'J4BJB48jdfw';
                 }
-                return q;
-              });
+              }
+              return q;
+            });
+            if (needsUpdate) {
               localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
               return updated;
             }
@@ -333,14 +343,32 @@
         });
       }
 
-      // 監聽線上題庫同步
+      // 監聽線上題庫同步 (各教室線上同步)
       if (this.quizzesRef) {
         this.quizzesRef.on('value', (snapshot) => {
           const val = snapshot.val();
           if (val && typeof val === 'object') {
             const list = Object.values(val);
             if (list.length > 0) {
-              this.quizzes = list;
+              let firebaseNeedsUpdate = false;
+              this.quizzes = list.map(q => {
+                if (!q) return q;
+                if (q.id === 'vq_chinese_culture' || (q.title && q.title.includes('國文與成語典故'))) {
+                  firebaseNeedsUpdate = true;
+                  return JSON.parse(JSON.stringify(DEFAULT_VIDEO_QUIZZES[1]));
+                }
+                if (q.id === 'vq_eye_cells' || (q.title && q.title.includes('視錐細胞與視桿細胞'))) {
+                  if (q.youtubeId !== 'J4BJB48jdfw' || q.videoUrl !== 'https://www.youtube.com/watch?v=J4BJB48jdfw') {
+                    firebaseNeedsUpdate = true;
+                    q.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
+                    q.youtubeId = 'J4BJB48jdfw';
+                  }
+                }
+                return q;
+              });
+              if (firebaseNeedsUpdate && (this.isTeacher || window.app?.isAdmin)) {
+                this.saveQuizzes();
+              }
               this.renderQuizSelector();
               this.renderEditorQuizList();
             }
@@ -1418,6 +1446,12 @@
 
       // 確保同步資料乾淨
       const cleanQuiz = JSON.parse(JSON.stringify(quiz));
+      if (cleanQuiz.id === 'vq_eye_cells' || (cleanQuiz.title && cleanQuiz.title.includes('視錐細胞與視桿細胞'))) {
+        cleanQuiz.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
+        cleanQuiz.youtubeId = 'J4BJB48jdfw';
+        quiz.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
+        quiz.youtubeId = 'J4BJB48jdfw';
+      }
 
       // 設定 Firebase 同步廣播狀態
       const sessionData = {
@@ -1848,6 +1882,12 @@
 
     // 處理遠端廣播更新 (學生端與老師端同步)
     handleRemoteSessionUpdate(session) {
+      if (session && session.quizData && (session.quizData.id === 'vq_eye_cells' || (session.quizData.title && session.quizData.title.includes('視錐細胞與視桿細胞')))) {
+        if (session.quizData.youtubeId !== 'J4BJB48jdfw' || session.quizData.videoUrl !== 'https://www.youtube.com/watch?v=J4BJB48jdfw') {
+          session.quizData.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
+          session.quizData.youtubeId = 'J4BJB48jdfw';
+        }
+      }
       this.lastSession = session;
       this.updateAdminBroadcastUI(session);
       if (window.app && typeof window.app.updateAdminActiveActivitiesUI === 'function') {
@@ -2114,6 +2154,10 @@
         }
       }
       if (!quiz) return;
+      if (quiz.id === 'vq_eye_cells' || (quiz.title && quiz.title.includes('視錐細胞與視桿細胞'))) {
+        quiz.videoUrl = 'https://www.youtube.com/watch?v=J4BJB48jdfw';
+        quiz.youtubeId = 'J4BJB48jdfw';
+      }
       this.activeQuiz = quiz;
       this.isTeacher = !!(window.app?.isAdmin || this.isTeacher);
       this.triggeredQuestions.clear();
