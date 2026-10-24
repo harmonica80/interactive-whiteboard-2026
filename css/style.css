@@ -7972,6 +7972,25 @@ body {
   background: rgba(0, 0, 0, 0.05);
 }
 
+/* 教室邀請與 QR Code 光箱彈窗 (確保全平台正常顯示) */
+#modalClassInvite {
+  z-index: 10015 !important;
+}
+
+#modalClassInvite.active {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+#modalClassInvite.active .modal-card,
+#modalClassInvite.active .modal-content {
+  transform: scale(1) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
 /* ==========================================================================
    後台群組管理與清單子頁籤導覽列 (需求 4)
    ========================================================================== */

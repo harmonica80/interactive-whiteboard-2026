@@ -33,7 +33,6 @@
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
-          <a href="javascript:void(0)" id="appVersionBadge" class="app-version-badge" onclick="window.app && window.app.openChangelogModal ? window.app.openChangelogModal() : null" style="color: #ff3b30; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; margin-left: 4px; text-shadow: 0 1px 2px rgba(255,59,48,0.15);" title="點擊查看版本更新重點歷程">ver 3.10.11</a>
         </p>
       </div>
       <div class="top-actions">
@@ -134,7 +133,6 @@
         <button class="menu-tab" data-target="panel-word-cloud">☁️ 即時文字雲</button>
         <button class="menu-tab" data-target="panel-whiteboard">🎨 互動白板</button>
         <button class="menu-tab" data-target="panel-focus-game" style="display: none;">🧠 專注力遊戲</button>
-        <button class="menu-tab" data-target="panel-guide" style="border-left: 1px solid var(--border-color); border-radius: 0 10px 10px 0;">📖 建立自己的白板</button>
       </div>
       <button class="nav-scroll-btn right-scroll-btn" id="menuScrollRight" title="向右查看更多選單">▶</button>
     </div>
@@ -6396,8 +6394,8 @@ Python</pre>
   </div>
 
   <!-- 教室邀請連結與 QR Code 光箱彈窗 -->
-  <div id="modalClassInvite" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10015;">
-    <div class="modal-card" style="width: 92%; max-width: 480px; text-align: center; border-radius: 20px; padding: 24px; position: relative; box-shadow: 0 16px 40px rgba(0,0,0,0.2);">
+  <div id="modalClassInvite" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10015;" onclick="if(event.target===this) window.app && window.app.closeClassInviteModal()">
+    <div class="modal-content modal-card" style="width: 92%; max-width: 480px; text-align: center; border-radius: 20px; padding: 24px; position: relative; box-shadow: 0 16px 40px rgba(0,0,0,0.2); background: var(--bg-card, #ffffff);">
       <button type="button" onclick="window.app && window.app.closeClassInviteModal()" style="position: absolute; top: 16px; right: 16px; border: none; background: rgba(0,0,0,0.06); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">✕</button>
       <div style="font-size: 36px; margin-bottom: 6px;">📱</div>
       <h3 style="margin: 0 0 8px 0; font-size: 19px; color: var(--text-primary); font-weight: 700;">此教室/白板邀請連結與 QR Code</h3>

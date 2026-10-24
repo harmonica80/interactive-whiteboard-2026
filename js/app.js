@@ -17827,7 +17827,10 @@ class App {
   openClassInviteModal() {
     this.toggleQuickInfoMenu(false);
     const modal = document.getElementById('modalClassInvite');
-    if (!modal) return;
+    if (!modal) {
+      console.warn('modalClassInvite not found');
+      return;
+    }
 
     const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
       ? window.ClassRoomManager.getActiveClassCode()
@@ -17838,7 +17841,7 @@ class App {
       txtCode.textContent = currentCode ? currentCode : '開放白板 (未綁定班級)';
     }
 
-    // 計算分享網址
+    // 計算分享網址 (支援班級代碼與一次性教室)
     let shareUrl = window.location.href;
     try {
       const urlObj = new URL(window.location.href);
@@ -17847,35 +17850,51 @@ class App {
         urlObj.searchParams.delete('room');
       }
       shareUrl = urlObj.toString();
-    } catch (e) {}
+    } catch (e) {
+      shareUrl = window.location.href;
+    }
 
     const inputUrl = document.getElementById('txtInviteShareUrl');
     if (inputUrl) {
       inputUrl.value = shareUrl;
     }
 
-    // 繪製 QR Code
+    // 繪製 QR Code (優先使用 QRCode.js，並具備 API 備援圖)
     const qrDiv = document.getElementById('inviteModalQrCode');
     if (qrDiv) {
       qrDiv.innerHTML = '';
+      let rendered = false;
       if (typeof QRCode !== 'undefined') {
-        new QRCode(qrDiv, {
-          text: shareUrl,
-          width: 190,
-          height: 190,
-          colorDark: '#000000',
-          colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.H
-        });
+        try {
+          new QRCode(qrDiv, {
+            text: shareUrl,
+            width: 190,
+            height: 190,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+          });
+          rendered = true;
+        } catch (qrErr) {
+          console.warn('QRCode library error, using fallback:', qrErr);
+        }
+      }
+      if (!rendered) {
+        const encoded = encodeURIComponent(shareUrl);
+        qrDiv.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=${encoded}" alt="QR Code" style="width: 190px; height: 190px; display: block; border-radius: 8px;">`;
       }
     }
 
+    modal.classList.add('active');
     modal.style.display = 'flex';
   }
 
   closeClassInviteModal() {
     const modal = document.getElementById('modalClassInvite');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
   }
 
   copyInviteUrl() {
@@ -19582,11 +19601,28 @@ window.closeChangelogModal = function() {
   }
 };
 
+// 全域教室邀請光箱控制函式
+window.openClassInviteModal = function() {
+  if (window.app && typeof window.app.openClassInviteModal === 'function') {
+    window.app.openClassInviteModal();
+  }
+};
+
+window.closeClassInviteModal = function() {
+  if (window.app && typeof window.app.closeClassInviteModal === 'function') {
+    window.app.closeClassInviteModal();
+  }
+};
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' || e.keyCode === 27) {
     const changelogModal = document.getElementById('changelogModal');
     if (changelogModal && changelogModal.classList.contains('active')) {
       window.closeChangelogModal();
+    }
+    const inviteModal = document.getElementById('modalClassInvite');
+    if (inviteModal && inviteModal.classList.contains('active')) {
+      window.closeClassInviteModal();
     }
   }
 });
