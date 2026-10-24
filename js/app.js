@@ -181,6 +181,8 @@ class App {
     this.bindTldrawRealtimeSync();
     this.checkSecurityRuleExpiry();
     this.initClassRoomUI();
+    this.initFabQuickInfo();
+    this.initWhiteboardFeatures();
     if (window.timerMusicManager) {
       window.timerMusicManager.updateDropdown();
     }
@@ -5136,6 +5138,12 @@ class App {
         category: '班級管理',
         icon: 'images/admin_icons/class_security.svg'
       },
+      whiteboardFeatures: {
+        id: 'adminWhiteboardFeaturesSection',
+        title: 'G. 白板功能模組啟用設定',
+        category: '班級管理',
+        icon: 'images/admin_icons/system_reset.svg'
+      },
       classReaction: {
         id: 'adminReactionSettingsSection',
         title: 'D. 即時互動回饋設定',
@@ -5231,6 +5239,7 @@ class App {
       classSound: 'adminCatBlock1',
       systemReset: 'adminCatBlock1',
       classSecurity: 'adminCatBlock1',
+      whiteboardFeatures: 'adminCatBlock1',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
@@ -5299,6 +5308,10 @@ class App {
         }
       }
       this.renderAdminShares();
+    }
+
+    if (featureKey === 'whiteboardFeatures') {
+      this.renderWhiteboardFeaturesAdminUI();
     }
 
     // 班級管理專屬資料初始化
@@ -17788,6 +17801,355 @@ class App {
         btn.disabled = false;
         btn.textContent = '🚀 確認複製';
       }
+    }
+  }
+
+  // ===== 右下角快捷資訊與資源 (FAB 💡, 需求 1 & 2) =====
+  toggleQuickInfoMenu(force) {
+    const menu = document.getElementById('fabQuickInfoMenu');
+    if (!menu) return;
+    const shouldOpen = force !== undefined ? force : (menu.style.display === 'none' || !menu.style.display);
+    menu.style.display = shouldOpen ? 'flex' : 'none';
+  }
+
+  initFabQuickInfo() {
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('fabQuickInfoContainer');
+      const menu = document.getElementById('fabQuickInfoMenu');
+      if (container && menu && menu.style.display !== 'none') {
+        if (!container.contains(e.target)) {
+          menu.style.display = 'none';
+        }
+      }
+    });
+  }
+
+  openClassInviteModal() {
+    this.toggleQuickInfoMenu(false);
+    const modal = document.getElementById('modalClassInvite');
+    if (!modal) return;
+
+    const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    const txtCode = document.getElementById('txtInviteClassCode');
+    if (txtCode) {
+      txtCode.textContent = currentCode ? currentCode : '開放白板 (未綁定班級)';
+    }
+
+    // 計算分享網址
+    let shareUrl = window.location.href;
+    try {
+      const urlObj = new URL(window.location.href);
+      if (currentCode) {
+        urlObj.searchParams.set('class', currentCode);
+        urlObj.searchParams.delete('room');
+      }
+      shareUrl = urlObj.toString();
+    } catch (e) {}
+
+    const inputUrl = document.getElementById('txtInviteShareUrl');
+    if (inputUrl) {
+      inputUrl.value = shareUrl;
+    }
+
+    // 繪製 QR Code
+    const qrDiv = document.getElementById('inviteModalQrCode');
+    if (qrDiv) {
+      qrDiv.innerHTML = '';
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(qrDiv, {
+          text: shareUrl,
+          width: 190,
+          height: 190,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      }
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  closeClassInviteModal() {
+    const modal = document.getElementById('modalClassInvite');
+    if (modal) modal.style.display = 'none';
+  }
+
+  copyInviteUrl() {
+    const inputUrl = document.getElementById('txtInviteShareUrl');
+    if (!inputUrl || !inputUrl.value) return;
+    navigator.clipboard.writeText(inputUrl.value).then(() => {
+      this.showNotification('📋 複製成功', '教室邀請連結已成功複製至剪貼簿！');
+    }).catch(() => {
+      prompt('請手動複製邀請連結：', inputUrl.value);
+    });
+  }
+
+  navigateToGuideTab() {
+    this.toggleQuickInfoMenu(false);
+    this.switchToTab('panel-guide');
+  }
+
+  // ===== 後台群組管理與清單雙子頁籤切換 (需求 4) =====
+  switchQaAdminSubTab(tab) {
+    const btnGroups = document.getElementById('btnSubTabQaGroups');
+    const btnItems = document.getElementById('btnSubTabQaItems');
+    const paneGroups = document.getElementById('qaAdminSubTabPaneGroups');
+    const paneItems = document.getElementById('qaAdminSubTabPaneItems');
+
+    if (tab === 'groups') {
+      if (btnGroups) btnGroups.classList.add('active');
+      if (btnItems) btnItems.classList.remove('active');
+      if (paneGroups) paneGroups.style.display = 'block';
+      if (paneItems) paneItems.style.display = 'none';
+    } else {
+      if (btnGroups) btnGroups.classList.remove('active');
+      if (btnItems) btnItems.classList.add('active');
+      if (paneGroups) paneGroups.style.display = 'none';
+      if (paneItems) paneItems.style.display = 'block';
+    }
+  }
+
+  switchImgAdminSubTab(tab) {
+    const btnGroups = document.getElementById('btnSubTabImgGroups');
+    const btnItems = document.getElementById('btnSubTabImgItems');
+    const paneGroups = document.getElementById('imgAdminSubTabPaneGroups');
+    const paneItems = document.getElementById('imgAdminSubTabPaneItems');
+
+    if (tab === 'groups') {
+      if (btnGroups) btnGroups.classList.add('active');
+      if (btnItems) btnItems.classList.remove('active');
+      if (paneGroups) paneGroups.style.display = 'block';
+      if (paneItems) paneItems.style.display = 'none';
+    } else {
+      if (btnGroups) btnGroups.classList.remove('active');
+      if (btnItems) btnItems.classList.add('active');
+      if (paneGroups) paneGroups.style.display = 'none';
+      if (paneItems) paneItems.style.display = 'block';
+    }
+  }
+
+  switchVidAdminSubTab(tab) {
+    const btnGroups = document.getElementById('btnSubTabVidGroups');
+    const btnItems = document.getElementById('btnSubTabVidItems');
+    const paneGroups = document.getElementById('vidAdminSubTabPaneGroups');
+    const paneItems = document.getElementById('vidAdminSubTabPaneItems');
+
+    if (tab === 'groups') {
+      if (btnGroups) btnGroups.classList.add('active');
+      if (btnItems) btnItems.classList.remove('active');
+      if (paneGroups) paneGroups.style.display = 'block';
+      if (paneItems) paneItems.style.display = 'none';
+    } else {
+      if (btnGroups) btnGroups.classList.remove('active');
+      if (btnItems) btnItems.classList.add('active');
+      if (paneGroups) paneGroups.style.display = 'none';
+      if (paneItems) paneItems.style.display = 'block';
+    }
+  }
+
+  // ===== 白板功能模組啟用設定 (需求 3) =====
+  initWhiteboardFeatures() {
+    this.whiteboardFeatures = {
+      'panel-questions': true,
+      'panel-images': true,
+      'panel-videos': true,
+      'panel-video-quiz': true,
+      'panel-quiz': true,
+      'panel-lucky-wheel': true,
+      'panel-word-cloud': true,
+      'panel-whiteboard': true,
+      'panel-focus-game': false,
+      'gameBuzz': true,
+      'reactionDock': true,
+      'teacherShares': true,
+      'panel-guide': true
+    };
+
+    // 從 localStorage 讀取快取
+    try {
+      const code = window.currentClassCode || 'default';
+      const cached = localStorage.getItem('wb_features_' + code) || localStorage.getItem('wb_features_default');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          Object.assign(this.whiteboardFeatures, parsed);
+        }
+      }
+    } catch (e) {}
+
+    // 初次套用可見性
+    this.applyWhiteboardFeatureVisibility(this.whiteboardFeatures);
+
+    // 監聽 Firebase 同步
+    if (typeof db !== 'undefined') {
+      const code = window.currentClassCode;
+      const refPath = code ? `classes/${code}/whiteboardFeatures` : 'settings/whiteboardFeatures';
+      db.ref(refPath).on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val && typeof val === 'object') {
+          this.whiteboardFeatures = Object.assign({}, this.whiteboardFeatures, val);
+          this.applyWhiteboardFeatureVisibility(this.whiteboardFeatures);
+          this.renderWhiteboardFeaturesAdminUI();
+        }
+      });
+    }
+  }
+
+  renderWhiteboardFeaturesAdminUI() {
+    if (!this.whiteboardFeatures) return;
+    Object.keys(this.whiteboardFeatures).forEach(key => {
+      const toggle = document.getElementById(`wfToggle_${key}`);
+      if (toggle) {
+        toggle.checked = this.whiteboardFeatures[key] !== false;
+      }
+      const card = document.querySelector(`.whiteboard-feature-card[data-feature-key="${key}"]`);
+      if (card) {
+        if (this.whiteboardFeatures[key] === false) {
+          card.classList.add('disabled');
+        } else {
+          card.classList.remove('disabled');
+        }
+      }
+    });
+  }
+
+  onWhiteboardFeatureToggle(key, isChecked) {
+    if (!this.whiteboardFeatures) this.whiteboardFeatures = {};
+    this.whiteboardFeatures[key] = isChecked;
+    const card = document.querySelector(`.whiteboard-feature-card[data-feature-key="${key}"]`);
+    if (card) {
+      if (!isChecked) card.classList.add('disabled');
+      else card.classList.remove('disabled');
+    }
+  }
+
+  setAllWhiteboardFeatures(val) {
+    if (!this.whiteboardFeatures) this.whiteboardFeatures = {};
+    Object.keys(this.whiteboardFeatures).forEach(k => {
+      this.whiteboardFeatures[k] = val;
+    });
+    this.renderWhiteboardFeaturesAdminUI();
+  }
+
+  resetWhiteboardFeaturesDefault() {
+    this.whiteboardFeatures = {
+      'panel-questions': true,
+      'panel-images': true,
+      'panel-videos': true,
+      'panel-video-quiz': true,
+      'panel-quiz': true,
+      'panel-lucky-wheel': true,
+      'panel-word-cloud': true,
+      'panel-whiteboard': true,
+      'panel-focus-game': false,
+      'gameBuzz': true,
+      'reactionDock': true,
+      'teacherShares': true,
+      'panel-guide': true
+    };
+    this.renderWhiteboardFeaturesAdminUI();
+  }
+
+  async saveWhiteboardFeaturesSettings() {
+    if (!this.whiteboardFeatures) return;
+    // 檢查是否全關：至少保留互動白板
+    const anyEnabled = Object.values(this.whiteboardFeatures).some(v => v === true);
+    if (!anyEnabled) {
+      this.whiteboardFeatures['panel-whiteboard'] = true;
+      this.renderWhiteboardFeaturesAdminUI();
+      this.showNotification('提示', '已為您自動保留「互動白板」功能，避免所有功能全關！');
+    }
+
+    const code = window.currentClassCode;
+    try {
+      localStorage.setItem('wb_features_' + (code || 'default'), JSON.stringify(this.whiteboardFeatures));
+      if (typeof db !== 'undefined') {
+        const refPath = code ? `classes/${code}/whiteboardFeatures` : 'settings/whiteboardFeatures';
+        await db.ref(refPath).set(this.whiteboardFeatures);
+      }
+      this.applyWhiteboardFeatureVisibility(this.whiteboardFeatures);
+      this.showNotification('儲存成功', '白板功能模組啟用設定已成功儲存並同步！');
+    } catch (e) {
+      console.error('saveWhiteboardFeaturesSettings error:', e);
+      this.showNotification('儲存完成', '白板功能設定已套用至本機！');
+    }
+  }
+
+  applyWhiteboardFeatureVisibility(features) {
+    if (!features || typeof features !== 'object') return;
+
+    // 1. 前台主選單功能頁籤顯示/隱藏
+    const menuTabKeys = [
+      'panel-questions', 'panel-images', 'panel-videos',
+      'panel-video-quiz', 'panel-quiz', 'panel-lucky-wheel',
+      'panel-word-cloud', 'panel-whiteboard', 'panel-focus-game', 'panel-guide'
+    ];
+
+    menuTabKeys.forEach(key => {
+      const btn = document.querySelector(`.menu-tab[data-target="${key}"]`);
+      if (btn) {
+        const isEnabled = features[key] !== false;
+        btn.style.display = isEnabled ? '' : 'none';
+      }
+    });
+
+    // 教師分享按鈕
+    const teacherShareBtns = document.querySelectorAll('.teacher-share-top-btn');
+    teacherShareBtns.forEach(b => {
+      b.style.display = features['teacherShares'] !== false ? '' : 'none';
+    });
+
+    // 右下角即時互動表情列
+    const reactionDock = document.getElementById('liveReactionDock');
+    if (reactionDock) {
+      reactionDock.style.display = features['reactionDock'] !== false ? '' : 'none';
+    }
+
+    // 若目前所在的頁籤被關閉，自動切換至第一個開啟的頁籤
+    const currentTab = this.activeTabId;
+    if (features[currentTab] === false) {
+      for (const key of menuTabKeys) {
+        if (features[key] !== false) {
+          this.switchToTab(key);
+          break;
+        }
+      }
+    }
+
+    // 2. 後台功能卡片與捷徑下拉選單顯示/隱藏
+    const adminFeatureMap = [
+      { feat: 'panel-questions', adminKey: 'qaMgmt' },
+      { feat: 'panel-images', adminKey: 'imgMgmt' },
+      { feat: 'panel-videos', adminKey: 'vidMgmt' },
+      { feat: 'panel-video-quiz', adminKey: 'quizVideo' },
+      { feat: 'panel-quiz', adminKey: 'quizChoice' },
+      { feat: 'panel-lucky-wheel', adminKey: 'gameWheel' },
+      { feat: 'panel-word-cloud', adminKey: 'gameWordCloud' },
+      { feat: 'panel-focus-game', adminKey: 'gameFocus' },
+      { feat: 'gameBuzz', adminKey: 'gameBuzz' },
+      { feat: 'reactionDock', adminKey: 'classReaction' }
+    ];
+
+    adminFeatureMap.forEach(item => {
+      const isEnabled = features[item.feat] !== false;
+      const card = document.querySelector(`.admin-feature-card[onclick*="'${item.adminKey}'"]`);
+      if (card) {
+        card.style.display = isEnabled ? '' : 'none';
+      }
+      const opt = document.querySelector(`#adminQuickSwitchSelect option[value="${item.adminKey}"]`);
+      if (opt) {
+        opt.style.display = isEnabled ? '' : 'none';
+      }
+    });
+
+    // 後台教師分享區塊 (adminCatBlock5)
+    const shareCat = document.getElementById('adminCatBlock5');
+    if (shareCat) {
+      shareCat.style.display = features['teacherShares'] !== false ? '' : 'none';
     }
   }
 }
