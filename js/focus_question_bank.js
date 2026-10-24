@@ -114,6 +114,31 @@
       this.editingIndex = -1;
     }
 
+    // 解析歌單標籤字串或陣列為乾淨標籤陣列
+    parseSongTags(raw) {
+      if (!raw) return [];
+      if (Array.isArray(raw)) {
+        return raw.map(t => String(t).trim()).filter(Boolean);
+      }
+      if (typeof raw === 'string') {
+        return raw.split(/[,，、/|]+/).map(t => t.trim()).filter(Boolean);
+      }
+      return [];
+    }
+
+    // 點擊快捷標籤時切換/增減歌曲標籤
+    toggleSongQuizTag(tag) {
+      const input = document.getElementById('qb_input_tag');
+      if (!input) return;
+      let tags = this.parseSongTags(input.value);
+      if (tags.includes(tag)) {
+        tags = tags.filter(t => t !== tag);
+      } else {
+        tags.push(tag);
+      }
+      input.value = tags.join(', ');
+    }
+
     // 取得指定單元的原廠預設題庫
     getDefaultPool(type) {
       if (type === 'songQuiz') {
@@ -153,6 +178,41 @@
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            if (type === 'songQuiz') {
+              const defaults = this.getDefaultPool('songQuiz');
+              const existingIds = new Set(parsed.map(s => s.id || s.title));
+              let updated = false;
+              defaults.forEach(def => {
+                const key = def.id || def.title;
+                if (!existingIds.has(key)) {
+                  parsed.push(def);
+                  updated = true;
+                }
+              });
+              const defMap = new Map();
+              defaults.forEach(d => {
+                if (d.id) defMap.set(d.id, d);
+                if (d.title) defMap.set(d.title, d);
+              });
+              parsed.forEach(item => {
+                const def = defMap.get(item.id) || defMap.get(item.title);
+                if (def && def.tag && def.tag !== item.tag) {
+                  const defTags = this.parseSongTags(def.tags || def.tag);
+                  const curTags = this.parseSongTags(item.tags || item.tag);
+                  const combined = Array.from(new Set([...curTags, ...defTags]));
+                  if (combined.length !== curTags.length) {
+                    item.tag = combined.join(', ');
+                    item.tags = combined;
+                    updated = true;
+                  }
+                }
+              });
+              if (updated) {
+                try {
+                  localStorage.setItem(this.STORAGE_PREFIX + type, JSON.stringify(parsed));
+                } catch (e) {}
+              }
+            }
             return parsed;
           }
         }
@@ -303,7 +363,9 @@
       if (type === 'songQuiz') {
         const title = (item.title || item.name || '').trim();
         const artist = (item.artist || item.singer || '').trim();
-        const tag = (item.tag || item.category || '懷舊經典').trim();
+        const rawTag = item.tags || item.tag || item.category || '懷舊經典';
+        const tags = this.parseSongTags(rawTag);
+        const tag = tags.join(', ') || '精選歌單';
         const youtubeUrl = (item.youtubeUrl || item.url || '').trim();
         let youtubeId = (item.youtubeId || '').trim();
         if (!youtubeId && youtubeUrl) {
@@ -331,7 +393,8 @@
         const clue = (item.clue || item.hint || item.description || '').trim();
         return {
           id: item.id || `song_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-          tag: tag || '精選歌單',
+          tag,
+          tags: tags.length > 0 ? tags : [tag],
           title,
           artist,
           youtubeUrl: youtubeUrl || (youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : ''),
@@ -360,7 +423,8 @@
         .map((item, idx) => ({ ...this.normalizeItem(type, item), _originalIndex: idx }))
         .filter((norm) => {
           if (type === 'songQuiz' && selectedTag !== 'all') {
-            if (norm.tag !== selectedTag) return false;
+            const itemTags = norm.tags || this.parseSongTags(norm.tag);
+            if (!itemTags.includes(selectedTag)) return false;
           }
           if (!q) return true;
 
@@ -870,7 +934,12 @@
       const tags = new Set();
       pool.forEach(raw => {
         const item = this.normalizeItem(type, raw);
-        if (item.tag) tags.add(item.tag);
+        if (type === 'songQuiz') {
+          const itemTags = item.tags || this.parseSongTags(item.tag);
+          itemTags.forEach(t => { if (t) tags.add(t); });
+        } else {
+          if (item.tag) tags.add(item.tag);
+        }
       });
       return Array.from(tags);
     }
@@ -894,7 +963,11 @@
         const currentTag = (this.selectedTagFilters && this.selectedTagFilters.songQuiz) || 'all';
         let html = `<option value="all" ${currentTag === 'all' ? 'selected' : ''}>🏷️ 全部標籤歌單 (全部 ${this.getPool('songQuiz').length} 首)</option>`;
         tags.forEach(tag => {
-          const count = this.getPool('songQuiz').filter(raw => this.normalizeItem('songQuiz', raw).tag === tag).length;
+          const count = this.getPool('songQuiz').filter(raw => {
+            const item = this.normalizeItem('songQuiz', raw);
+            const itemTags = item.tags || this.parseSongTags(item.tag);
+            return itemTags.includes(tag);
+          }).length;
           html += `<option value="${tag}" ${currentTag === tag ? 'selected' : ''}>🏷️ ${tag} (${count} 首)</option>`;
         });
         select.innerHTML = html;
@@ -1013,6 +1086,8 @@
             </div>
           `;
         } else if (type === 'songQuiz') {
+          const itemTags = (item.tags && item.tags.length > 0) ? item.tags : this.parseSongTags(item.tag);
+          const tagBadgesHtml = itemTags.map(t => `<span style="background: rgba(16,185,129,0.12); color: #10b981; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;">🏷️ ${this.highlightText(t, query)}</span>`).join(' ');
           contentHtml = `
             <div style="display: flex; align-items: center; gap: 14px;">
               <div style="width: 48px; height: 48px; border-radius: 50%; background: #1f2937; border: 2px solid #374151; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
@@ -1020,7 +1095,7 @@
               </div>
               <div style="flex: 1; min-width: 0;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
-                  <span style="background: rgba(16,185,129,0.12); color: #10b981; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;">🏷️ ${this.highlightText(item.tag, query)}</span>
+                  ${tagBadgesHtml}
                   <span style="font-weight: bold; font-size: 15px; color: var(--text-primary);">
                     ${displayIdx + 1}. ${this.highlightText(item.title, query)}
                   </span>
@@ -1248,20 +1323,23 @@
         const opts = item.options || [title, '', '', ''];
         const clue = item.clue || '';
 
+        const quickCategories = [
+          '古典音樂', '經典台語', '台灣五年級', '台灣六年級', '台灣七年級',
+          '台灣八年級', '台灣九年級', '經典日劇', '經典韓劇', '動漫神曲',
+          '童謠兒歌', '80~90年代西洋經典情歌', '歷年經典國片主題曲'
+        ];
+        const quickBtnsHtml = quickCategories.map(cat => `
+          <button type="button" onclick="window.focusQB && window.focusQB.toggleSongQuizTag('${cat}')" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ ${cat}</button>
+        `).join('');
+
         fieldsHtml = `
           <div style="margin-bottom: 12px;">
-            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">標籤分組 (可自訂或點擊快捷標籤) *</label>
-            <div style="display:flex; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='古典音樂'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 古典音樂</button>
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣五年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣五年級</button>
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣六年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣六年級</button>
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣七年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣七年級</button>
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣八年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣八年級</button>
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='台灣九年級'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 台灣九年級</button>
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='動漫神曲'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 動漫神曲</button>
-              <button type="button" onclick="document.getElementById('qb_input_tag').value='童謠兒歌'" style="padding:3px 8px; font-size:11px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-card); cursor:pointer;">🏷️ 童謠兒歌</button>
+            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">標籤分組 (可自訂或點擊快捷標籤切換/多選) *</label>
+            <div style="display:flex; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
+              ${quickBtnsHtml}
             </div>
-            <input type="text" id="qb_input_tag" value="${tag}" placeholder="例如：古典音樂、台灣五年級、台灣六年級 等" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            <input type="text" id="qb_input_tag" value="${tag}" placeholder="例如：經典台語, 台灣六年級 (可用逗號設定多個標籤)" class="question-input" style="width:100%; box-sizing:border-box; margin:0; padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary);">
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">💡 提示：點擊上方按鈕可快速切換或增減標籤，支援單首歌曲設定多個分類標籤（以逗號分隔）</div>
           </div>
           <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
             <div>
@@ -1430,7 +1508,9 @@
             searchWord: word
           };
         } else if (type === 'songQuiz') {
-          const tag = document.getElementById('qb_input_tag')?.value.trim() || '精選歌單';
+          const rawTagInput = document.getElementById('qb_input_tag')?.value.trim() || '精選歌單';
+          const tags = this.parseSongTags(rawTagInput);
+          const tag = tags.join(', ') || '精選歌單';
           const title = document.getElementById('qb_input_songTitle')?.value.trim();
           const artist = document.getElementById('qb_input_artist')?.value.trim() || '';
           const youtubeUrl = document.getElementById('qb_input_youtubeUrl')?.value.trim();
@@ -1456,6 +1536,7 @@
           questionData = {
             id: `song_${Date.now()}`,
             tag,
+            tags: tags.length > 0 ? tags : [tag],
             title,
             artist,
             youtubeUrl,

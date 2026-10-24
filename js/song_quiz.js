@@ -143,7 +143,7 @@
     );
 
     const isPlaying = state.isPlayingAudio;
-    const tagBadge = question.tag || game.selectedTag || '精選歌單';
+    const tagBadge = question.tag || (Array.isArray(question.tags) ? question.tags.join(', ') : '') || game.selectedTag || '精選歌單';
 
     // 四選一選項按鈕
     const optionsHtml = (question.options || []).map((option, optIdx) => {
@@ -689,7 +689,7 @@
     }
 
     const isPlaying = roundStatus === 'playing';
-    const tagBadge = question.tag || game.selectedTag || '精選歌單';
+    const tagBadge = question.tag || (Array.isArray(question.tags) ? question.tags.join(', ') : '') || game.selectedTag || '精選歌單';
 
     // 頂部題號與資訊
     const headerHtml = `

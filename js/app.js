@@ -11602,7 +11602,10 @@ class App {
       let pool = rawPool.map((item) => window.focusQB ? window.focusQB.normalizeItem('songQuiz', item) : item);
       // 若非全選所有標籤，過濾符合勾選之歌曲
       if (selectedTags.length < allTags.length) {
-        pool = pool.filter(item => selectedTags.includes(item.tag));
+        pool = pool.filter(item => {
+          const itemTags = item.tags || (item.tag ? item.tag.split(/[,，、/|]+/).map(t => t.trim()).filter(Boolean) : []);
+          return itemTags.some(t => selectedTags.includes(t));
+        });
       }
       if (pool.length === 0) {
         this.showNotification('錯誤', `所勾選的標籤【${selectedTags.join('、')}】中目前無題目，請至題庫管理中心新增題目或勾選其他標籤！`);
@@ -11811,7 +11814,11 @@ class App {
     } else if (selected.length === allTags.length) {
       summaryEl.innerHTML = `<span style="color: var(--accent-color); font-weight: bold;">✅ 已全選所有標籤 (共 ${allTags.length} 個分類，${pool.length} 首歌曲可供隨機抽題)</span>`;
     } else {
-      const filteredCount = pool.filter(raw => selected.includes(window.focusQB.normalizeItem('songQuiz', raw).tag)).length;
+      const filteredCount = pool.filter(raw => {
+        const item = window.focusQB.normalizeItem('songQuiz', raw);
+        const itemTags = item.tags || (item.tag ? item.tag.split(/[,，、/|]+/).map(t => t.trim()).filter(Boolean) : []);
+        return itemTags.some(t => selected.includes(t));
+      }).length;
       summaryEl.innerHTML = `<span style="color: var(--accent-color); font-weight: bold;">✅ 已勾選 ${selected.length} 個標籤：${selected.join('、')} (共 ${filteredCount} 首歌曲可供隨機抽題)</span>`;
     }
 
@@ -11845,7 +11852,11 @@ class App {
     if (container) {
       let html = '';
       tags.forEach(tag => {
-        const count = pool.filter(raw => window.focusQB.normalizeItem('songQuiz', raw).tag === tag).length;
+        const count = pool.filter(raw => {
+          const item = window.focusQB.normalizeItem('songQuiz', raw);
+          const itemTags = item.tags || (item.tag ? item.tag.split(/[,，、/|]+/).map(t => t.trim()).filter(Boolean) : []);
+          return itemTags.includes(tag);
+        }).length;
         const isChecked = currentSelected.includes(tag);
         html += `
           <label style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; user-select: none; transition: background 0.15s, border-color 0.15s;">
@@ -11861,7 +11872,11 @@ class App {
     if (select) {
       let selectHtml = `<option value="all">🏷️ 全部歌單 (隨機抽題，共 ${pool.length} 首)</option>`;
       tags.forEach(tag => {
-        const count = pool.filter(raw => window.focusQB.normalizeItem('songQuiz', raw).tag === tag).length;
+        const count = pool.filter(raw => {
+          const item = window.focusQB.normalizeItem('songQuiz', raw);
+          const itemTags = item.tags || (item.tag ? item.tag.split(/[,，、/|]+/).map(t => t.trim()).filter(Boolean) : []);
+          return itemTags.includes(tag);
+        }).length;
         selectHtml += `<option value="${tag}">🏷️ ${tag} (${count} 首)</option>`;
       });
       select.innerHTML = selectHtml;
