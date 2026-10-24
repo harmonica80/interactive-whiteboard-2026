@@ -5504,6 +5504,17 @@ body {
   color: var(--accent-color);
 }
 
+.teacher-quick-broadcast-btn {
+  background: rgba(0, 122, 255, 0.1);
+  border: 1.5px solid var(--accent-color);
+  color: var(--accent-color);
+}
+
+.teacher-quick-broadcast-btn:hover {
+  background: var(--accent-color);
+  color: #ffffff;
+}
+
 .teacher-quick-bar-right {
   display: flex;
   align-items: center;

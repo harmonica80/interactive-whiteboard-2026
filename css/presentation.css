@@ -1135,23 +1135,24 @@
   touch-action: none;
 }
 
-/* 學生端手繪工具列 (圖 2: 移至畫面上方，固定為單一橫向工具條) */
+/* 學生端手繪工具列 (圖 2: 移至畫面上方，支援行動裝置自適應完整顯示不裁切) */
 .presentation-student-draw-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   background: #ffffff;
   border: 1.5px solid #cbd5e1;
   border-radius: 9999px;
-  padding: 6px 18px;
+  padding: 6px 16px;
   margin-bottom: 8px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   white-space: nowrap;
   z-index: 24;
   width: fit-content;
   max-width: 100%;
+  box-sizing: border-box;
 }
 
 .presentation-draw-hint {
@@ -1418,6 +1419,38 @@
     padding: 12px 10px 30px 10px !important;
     gap: 12px;
     overflow: visible !important;
+  }
+  .presentation-student-draw-bar {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 14px !important;
+    padding: 6px 8px !important;
+    gap: 6px 8px !important;
+    margin-bottom: 2px !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    box-sizing: border-box !important;
+  }
+  .presentation-draw-hint {
+    display: none !important;
+  }
+  .presentation-draw-colors {
+    gap: 6px !important;
+  }
+  .presentation-draw-color-btn {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .presentation-draw-width-select {
+    padding: 3px 6px !important;
+    font-size: 12px !important;
+  }
+  .presentation-draw-actions {
+    gap: 5px !important;
+  }
+  .presentation-draw-actions .presentation-tool-btn {
+    padding: 4px 9px !important;
+    font-size: 12px !important;
   }
   .presentation-student-interaction-area {
     width: 100%;

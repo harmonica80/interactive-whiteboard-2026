@@ -22,6 +22,7 @@ class App {
     this.currentTeacherShareSubTab = 'news';
     this.pageStartTime = Date.now();
     this.lastWheelActiveTimestamp = Date.now();
+    this.lastBroadcastTabTimestamp = Date.now();
     this.selectedSongQuizTags = null;
     // 初始化狀態快取
     this.questions = [];
@@ -1870,11 +1871,6 @@ class App {
       this.updateWheelControlPanelVisibility();
       this.applyWheelMode(this.wheelMode || 'wheel', true);
       this.drawWheelLocal();
-      if (this.isAdmin) {
-        const activeRef = db.ref('quiz/luckyWheel/active');
-        activeRef.set({ active: true, timestamp: Date.now() });
-        activeRef.onDisconnect().set({ active: false, timestamp: Date.now() });
-      }
     } else if (this.isAdmin && this.previousTabId === 'panel-lucky-wheel') {
       const activeRef = db.ref('quiz/luckyWheel/active');
       activeRef.set({ active: false, timestamp: Date.now() });
@@ -5615,6 +5611,31 @@ class App {
 
     const pillsHtml = [];
 
+    const tabShortcut = tabFeatureShortcutMap[currentTab];
+    if (tabShortcut && (!activeItems || !activeItems.some(a => a.key === tabShortcut.key))) {
+      pillsHtml.push(`
+        <button type="button" class="teacher-quick-tab-shortcut" onclick="window.app.openAdminFeature('${tabShortcut.key}')">
+          ${tabShortcut.label}
+        </button>
+      `);
+    }
+
+    const broadcastableTabs = [
+      'panel-questions',
+      'panel-images',
+      'panel-videos',
+      'panel-lucky-wheel',
+      'panel-word-cloud',
+      'panel-whiteboard'
+    ];
+    if (broadcastableTabs.includes(currentTab)) {
+      pillsHtml.push(`
+        <button type="button" class="teacher-quick-tab-shortcut teacher-quick-broadcast-btn" onclick="window.app.broadcastTabToClass('${currentTab}')" title="按下後全班同學畫面同步切換至此頁面">
+          📢 全班廣播
+        </button>
+      `);
+    }
+
     if (Array.isArray(activeItems) && activeItems.length > 0) {
       activeItems.forEach(item => {
         pillsHtml.push(`
@@ -5628,16 +5649,47 @@ class App {
       });
     }
 
-    const tabShortcut = tabFeatureShortcutMap[currentTab];
-    if (tabShortcut && (!activeItems || !activeItems.some(a => a.key === tabShortcut.key))) {
-      pillsHtml.push(`
-        <button type="button" class="teacher-quick-tab-shortcut" onclick="window.app.openAdminFeature('${tabShortcut.key}')">
-          ${tabShortcut.label}
-        </button>
-      `);
+    activeListEl.innerHTML = pillsHtml.join('');
+  }
+
+  /**
+   * 老師將當前前台功能頁（提問區、圖片分享、影片分享、隨機抽人、文字雲、互動白板）廣播給全班同學，使同學畫面同步切換
+   */
+  broadcastTabToClass(tabId) {
+    if (!this.isAdmin) return;
+    const targetTab = tabId || this.activeTabId || 'panel-questions';
+    const tabNames = {
+      'panel-questions': '💬 提問區',
+      'panel-images': '🖼️ 圖片分享',
+      'panel-videos': '🎥 影片分享',
+      'panel-lucky-wheel': '🎡 隨機抽人',
+      'panel-word-cloud': '☁️ 即時文字雲',
+      'panel-whiteboard': '🎨 互動白板'
+    };
+    const label = tabNames[targetTab] || '指定頁面';
+    const now = Date.now();
+
+    db.ref('classroom/broadcastTab').set({
+      tabId: targetTab,
+      timestamp: now
+    });
+
+    if (targetTab === 'panel-lucky-wheel') {
+      const activeRef = db.ref('quiz/luckyWheel/active');
+      activeRef.set({ active: true, timestamp: now });
+      activeRef.onDisconnect().set({ active: false, timestamp: Date.now() });
+      this.showNotification('📢 全班廣播成功', '已將「🎡 隨機抽人」畫面同步廣播至全班同學端！');
+      return;
     }
 
-    activeListEl.innerHTML = pillsHtml.join('');
+    if (targetTab === 'panel-word-cloud') {
+      if (window.wordCloud && typeof window.wordCloud.broadcastToClass === 'function') {
+        window.wordCloud.broadcastToClass();
+        return;
+      }
+    }
+
+    this.showNotification('📢 全班廣播成功', `已通知全班同學畫面同步切換至「${label}」！`);
   }
 
   quickStopFocusGame() {
@@ -14503,6 +14555,33 @@ class App {
         // 若為管理員且發現資料庫中遺留超過 1 分鐘的陳舊 active 狀態，自動清除重置
         if (!val.timestamp || (now - val.timestamp > 60000)) {
           db.ref('quiz/luckyWheel/active').set({ active: false, timestamp: now }).catch(() => {});
+        }
+      }
+    });
+
+    // 監聽老師全班分頁廣播 (提問區、圖片分享、影片分享、隨機抽人、文字雲、互動白板)
+    db.ref('classroom/broadcastTab').on('value', (snapshot) => {
+      const val = snapshot.val();
+      if (!val || !val.tabId || !val.timestamp) return;
+
+      const now = Date.now();
+      const isRecent = (now - val.timestamp < 12000);
+      const isNewBroadcast = val.timestamp > (this.lastBroadcastTabTimestamp || this.pageStartTime);
+
+      if (isRecent && isNewBroadcast && !this.isAdmin) {
+        this.lastBroadcastTabTimestamp = val.timestamp;
+        const tabNames = {
+          'panel-questions': '💬 提問區',
+          'panel-images': '🖼️ 圖片分享',
+          'panel-videos': '🎥 影片分享',
+          'panel-lucky-wheel': '🎡 隨機抽人',
+          'panel-word-cloud': '☁️ 即時文字雲',
+          'panel-whiteboard': '🎨 互動白板'
+        };
+        const label = tabNames[val.tabId] || '指定頁面';
+        if (this.activeTabId !== val.tabId) {
+          this.switchToTab(val.tabId);
+          this.showNotification('📢 老師全班廣播', `老師已將全班畫面同步切換至「${label}」！`);
         }
       }
     });

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=395">
-  <link rel="stylesheet" href="css/presentation.css?v=3111">
+  <link rel="stylesheet" href="css/style.css?v=396">
+  <link rel="stylesheet" href="css/presentation.css?v=3112">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -491,7 +491,6 @@
               <div class="control-actions" style="display: flex; gap: 8px; margin-top: 8px;">
                 <button class="btn btn-secondary" onclick="window.app.shuffleWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔀 隨機打亂</button>
                 <button class="btn btn-secondary" onclick="window.app.sortWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔤 排序名單</button>
-                <button class="btn btn-secondary" onclick="window.app.broadcastWheelToClass()" style="flex: 1; padding: 8px; font-size: 13px; background: rgba(0,122,255,0.08); border-color: var(--accent-color); color: var(--accent-color); font-weight: bold;" title="立即讓全班同學端畫面切換顯示抽人畫面">📢 廣播全班</button>
               </div>
               
               <div class="control-options" style="margin: 12px 0;">
@@ -563,7 +562,6 @@
                   <option value="3">每人 3 次</option>
                   <option value="0">不限次數</option>
                 </select>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.broadcastToClass()" title="廣播全班同步切換至文字雲">📢 廣播全班</button>
                 <button type="button" class="btn btn-secondary btn-sm" id="wcBtnToggleAccept" onclick="window.wordCloud?.toggleAccepting()">⏸️ 停止作答</button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.restartOrNewRound()" title="重設次數並清空畫布，開始新一輪">🔄 新一輪</button>
                 <select id="wcOrientationSelect" class="btn btn-secondary btn-sm" onchange="window.wordCloud?.changeOrientation(this.value)" title="設定文字方向 (橫式/直式/交錯/傾斜)" style="padding: 4px 8px; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
@@ -582,8 +580,6 @@
                   <option value="custom">🖼️ 自訂遮罩...</option>
                 </select>
                 <input type="file" id="wcCustomMaskInput" accept="image/*" style="display: none;" onchange="window.wordCloud?.uploadCustomMask(this.files[0])">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('wcCustomMaskInput').click()" title="上傳自訂遮罩圖案">🖼️ 自訂形狀</button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.switchPalette()" title="更換文字雲色系">🎨 切換色系</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="window.wordCloud?.exportPng()" title="下載文字雲成果圖">💾 匯出 PNG</button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="window.app?.openAdminFeature('gameWordCloud')" title="進入文字雲管理後台">⚙️ 出題設定</button>
               </div>
@@ -4949,12 +4945,12 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=395"></script>
+  <script src="js/app.js?v=396"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
   <script src="js/word_cloud.js?v=392"></script>
-  <script src="js/presentation_core.js?v=3111"></script>
+  <script src="js/presentation_core.js?v=3112"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -6431,7 +6427,7 @@ Python</pre>
           💡 <strong>推薦</strong>：把現成的簡報（PowerPoint / Google 簡報）另存為 <strong>PDF</strong> 上傳，逐頁勾選後即可直接設為簡報內容。
         </div>
 
-        <button type="button" class="presentation-btn-gradient-pdf" onclick="window.presentationManager.triggerPdfUpload()">
+        <button type="button" class="presentation-btn-modal-action" onclick="window.presentationManager.triggerPdfUpload()">
           📄 上傳 PDF 設為簡報內容（逐頁勾選）
         </button>
 
