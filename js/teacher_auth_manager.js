@@ -838,6 +838,52 @@
       }
     }
 
+    /**
+     * 取得當前班級或本機老師的專屬密碼設定狀態 (供頂部橫幅或 UI 即時偵測)
+     */
+    async getTeacherSecurityStatus() {
+      const classCode = window.currentClassCode;
+      let hasCustomPassword = false;
+      let targetProfile = null;
+      let ownerId = null;
+
+      if (classCode) {
+        ownerId = await this.getCurrentClassOwnerTeacherId();
+        if (ownerId) {
+          targetProfile = await this.getTeacherProfile(ownerId);
+          if (targetProfile) {
+            hasCustomPassword = Boolean(targetProfile.passwordHash && targetProfile.passwordHash !== DEFAULT_PASSWORD_HASH);
+          }
+        }
+      }
+
+      if (!hasCustomPassword) {
+        const activeId = this.getActiveTeacherId();
+        const activeProfile = await this.getTeacherProfile(activeId);
+        if (activeProfile && activeProfile.passwordHash && activeProfile.passwordHash !== DEFAULT_PASSWORD_HASH) {
+          hasCustomPassword = true;
+          targetProfile = activeProfile;
+        } else {
+          const available = await this.getAvailableTeachersForRecovery();
+          const customTeacher = available.find(t => t.isCustomPassword);
+          if (customTeacher) {
+            hasCustomPassword = true;
+            targetProfile = customTeacher;
+          } else {
+            targetProfile = targetProfile || activeProfile;
+          }
+        }
+      }
+
+      return {
+        hasCustomPassword,
+        targetProfile,
+        isExpired: this.isDefaultPasswordExpired(targetProfile),
+        remainingDays: this.getDefaultPasswordRemainingDays(targetProfile),
+        expiryTimestamp: this.getDefaultPasswordExpiryTimestamp(targetProfile)
+      };
+    }
+
     _startLockoutCountdown(seconds) {
       if (this.lockoutTimer) clearInterval(this.lockoutTimer);
       let rem = seconds;

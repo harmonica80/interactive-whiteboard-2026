@@ -16354,6 +16354,7 @@ class App {
   async saveTeacherSecuritySettings() {
     if (window.teacherAuthManager) {
       await window.teacherAuthManager.saveSecurityPanelSettings();
+      await this.checkDefaultPasswordBanner();
     }
   }
 
@@ -16365,6 +16366,7 @@ class App {
       async () => {
         if (window.teacherAuthManager) {
           await window.teacherAuthManager.resetToDefaultPassword();
+          await this.checkDefaultPasswordBanner();
         }
       }
     );
@@ -17182,9 +17184,6 @@ class App {
           <button type="button" class="class-action-btn" onclick="window.app.adminOpenEditClassModal('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="修改班級代碼與名稱">
             ✏️ 編輯
           </button>
-          <button type="button" class="class-action-btn btn-share-link" onclick="window.app.copyClassInviteLink('${cls.code}')" style="font-size: 14px; padding: 4px 8px;" title="複製學生長網址邀請連結">
-            📋 複製連結
-          </button>
           <button type="button" class="class-action-btn btn-exit-class" onclick="window.app.adminDeleteClass('${cls.code}', '${cls.name}')" style="font-size: 14px; padding: 4px 8px;" title="刪除班級與清除其佔用空間">
             🗑️ 刪除
           </button>
@@ -17192,120 +17191,65 @@ class App {
       `;
       container.appendChild(card);
     });
+  }
 
-    // 同步更新班級即時分享與 QR Code 專區下拉選單
-    const shareSelect = document.getElementById('adminShareClassSelect');
-    if (shareSelect) {
-      const prevVal = shareSelect.value;
-      shareSelect.innerHTML = '';
-      if (!list || list.length === 0) {
-        shareSelect.innerHTML = '<option value="">尚無開課班級</option>';
-        this.updateAdminShareCard(null);
+  /**
+   * 檢查並更新頂部「未設定專屬密碼提醒橫幅」 (圖 2 紅框處)
+   */
+  async checkDefaultPasswordBanner() {
+    const banner = document.getElementById('defaultPasswordWarningBanner');
+    const txt = document.getElementById('txtDefaultPasswordWarning');
+    if (!banner || !txt) return;
+
+    if (!window.teacherAuthManager || typeof window.teacherAuthManager.getTeacherSecurityStatus !== 'function') {
+      banner.style.display = 'none';
+      return;
+    }
+
+    try {
+      const secStatus = await window.teacherAuthManager.getTeacherSecurityStatus();
+      if (secStatus.hasCustomPassword) {
+        // 已設定專屬密碼 -> 隱藏提醒橫幅
+        banner.style.display = 'none';
+        return;
+      }
+
+      // 未設定專屬密碼 -> 格式化計算到期日 (YYYY/MM/DD)
+      const expiryTs = secStatus.expiryTimestamp;
+      const dObj = new Date(expiryTs);
+      const y = dObj.getFullYear();
+      const m = String(dObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dObj.getDate()).padStart(2, '0');
+      const dateStr = `${y}/${m}/${d}`;
+
+      if (secStatus.isExpired) {
+        banner.style.background = 'rgba(255, 59, 48, 0.12)';
+        banner.style.borderColor = 'rgba(255, 59, 48, 0.35)';
+        banner.style.color = '#dc2626';
+        txt.innerHTML = `⚠️ 初始預設密碼已於 <strong>${dateStr}</strong> 失效！請立即設定專屬密碼`;
       } else {
-        list.forEach(cls => {
-          const opt = document.createElement('option');
-          opt.value = cls.code;
-          opt.textContent = cls.name && cls.name !== cls.code ? `${cls.code} (${cls.name})` : cls.code;
-          shareSelect.appendChild(opt);
-        });
-        const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
-          ? window.ClassRoomManager.getActiveClassCode()
-          : (window.currentClassCode || '');
-        const targetVal = (prevVal && list.some(c => c.code === prevVal))
-          ? prevVal
-          : ((currentCode && list.some(c => c.code === currentCode)) ? currentCode : list[0].code);
-        shareSelect.value = targetVal;
-        this.updateAdminShareCard(targetVal);
+        banner.style.background = 'rgba(255, 149, 0, 0.12)';
+        banner.style.borderColor = 'rgba(255, 149, 0, 0.35)';
+        banner.style.color = '#b45309';
+        txt.innerHTML = `⚠️ 提醒：您尚未設定專屬密碼，若未在 <strong>${dateStr}</strong> 前設定好，預設密碼將失效！`;
       }
-    }
-  }
 
-  onAdminShareClassSelectChange(classCode) {
-    this.updateAdminShareCard(classCode);
-  }
-
-  adminOpenSelectedClassInviteModal() {
-    const sel = document.getElementById('adminShareClassSelect');
-    const code = sel ? sel.value : null;
-    this.openClassInviteModal(code);
-  }
-
-  async updateAdminShareCard(classCode) {
-    const shareCard = document.getElementById('adminClassShareCard');
-    if (!shareCard) return;
-
-    if (!classCode) {
-      shareCard.style.display = 'none';
-      return;
-    }
-    shareCard.style.display = 'block';
-
-    let shareUrl = window.location.href;
-    try {
-      const urlObj = new URL(window.location.href);
-      urlObj.searchParams.set('class', classCode);
-      urlObj.searchParams.delete('room');
-      shareUrl = urlObj.toString();
+      banner.style.display = 'inline-flex';
     } catch (e) {
-      shareUrl = window.location.href;
-    }
-
-    const inputLong = document.getElementById('adminShareTxtLong');
-    if (inputLong) inputLong.value = shareUrl;
-
-    const qrLong = document.getElementById('adminShareQrLong');
-    if (qrLong) {
-      this.renderQrCodeTo(qrLong, shareUrl, 108);
-    }
-
-    const inputShort = document.getElementById('adminShareTxtShort');
-    const btnShort = document.getElementById('adminShareBtnCopyShort');
-    const qrShort = document.getElementById('adminShareQrShort');
-
-    if (inputShort) {
-      inputShort.value = '';
-      inputShort.placeholder = '短網址產生中...';
-    }
-    if (btnShort) {
-      btnShort.disabled = true;
-      btnShort.style.opacity = '0.6';
-    }
-    if (qrShort) {
-      qrShort.innerHTML = '<span style="font-size:11px; color:#888;">產生中...</span>';
-    }
-
-    try {
-      const shortUrl = await this.fetchShortUrlWithFallbacks(shareUrl);
-      if (inputShort) inputShort.value = shortUrl;
-      if (btnShort) {
-        btnShort.disabled = false;
-        btnShort.style.opacity = '1';
-      }
-      if (qrShort) {
-        this.renderQrCodeTo(qrShort, shortUrl, 108);
-      }
-    } catch (err) {
-      console.warn('班級管理分享卡片短網址失敗:', err);
-      if (inputShort) inputShort.value = '短網址產生失敗，請複製長網址';
-      if (qrShort) qrShort.innerHTML = '<span style="font-size:11px; color:#ef4444;">產生失敗</span>';
+      console.warn('檢查預設密碼提醒橫幅錯誤:', e);
+      banner.style.display = 'none';
     }
   }
 
-  adminCopyShareUrl(type = 'short') {
-    const isShort = type === 'short';
-    const input = isShort
-      ? document.getElementById('adminShareTxtShort')
-      : document.getElementById('adminShareTxtLong');
-    if (!input || !input.value || input.value.includes('產生中') || input.value.includes('失敗')) {
-      this.showNotification('⚠️ 無法複製', '目前尚無有效的網址可複製！');
-      return;
+  openTeacherSecuritySettingsFromBanner() {
+    if (this.isAdmin) {
+      this.switchToTab('panel-admin');
+      if (typeof this.openAdminFeature === 'function') {
+        this.openAdminFeature('classSecurity');
+      }
+    } else {
+      this.openAdminPasswordModal();
     }
-    const label = isShort ? '專屬短網址' : '班級長連結';
-    navigator.clipboard.writeText(input.value).then(() => {
-      this.showNotification('📋 複製成功', `${label}已成功複製至剪貼簿！`);
-    }).catch(() => {
-      prompt(`請手動複製${label}：`, input.value);
-    });
   }
 
   async adminSwitchToClass(code) {
@@ -19184,6 +19128,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       window.app.updateAdminActiveActivitiesUI();
     }
+    setTimeout(() => {
+      if (window.app && typeof window.app.checkDefaultPasswordBanner === 'function') {
+        window.app.checkDefaultPasswordBanner();
+      }
+    }, 600);
   } catch (err) {
     console.error("CRITICAL RUNTIME ERROR:", err);
     alert("載入錯誤: " + err.message + "\n" + err.stack);
@@ -19218,10 +19167,12 @@ async function submitAdminPassword() {
 
       if (res.isDefault) {
         const days = res.remainingDays !== undefined ? res.remainingDays : (window.teacherAuthManager ? window.teacherAuthManager.getDefaultPasswordRemainingDays() : 0);
-        window.app.showNotification('⚠️ 預設密碼落日提醒', `已登入管理員！目前仍使用系統預設密碼，此密碼將於 2026/10/31 23:59 正式退場停用（僅剩 ${days} 天）！請儘速至「班級管理 > F. 教師身分與密碼安全設定」修改為專屬密碼。`);
+        window.app.showNotification('⚠️ 預設密碼即將失效提醒', `已登入管理員！目前仍使用系統預設密碼，新註冊後一週內須設定專屬密碼（寬限期僅剩 ${days} 天）！請儘速至「班級管理 > F. 教師身分與密碼安全設定」修改為專屬密碼。`);
       } else {
         window.app.showNotification('🎉 驗證成功', res.message || '已進入管理員模式！');
       }
+
+      window.app.checkDefaultPasswordBanner();
 
       if (typeof window.app.checkTimerExpiry === 'function') {
         window.app.checkTimerExpiry();
@@ -19252,11 +19203,11 @@ async function submitAdminPassword() {
   } else {
     // 容錯備援舊邏輯
     if (pwd === '1234') {
-      if (Date.now() > 1793462399000) {
+      if (window.teacherAuthManager && window.teacherAuthManager.isDefaultPasswordExpired()) {
         const errBox = document.getElementById('adminPasswordErrorMsg');
         if (errBox) {
           errBox.style.display = 'block';
-          errBox.innerHTML = '⛔ 系統預設密碼已於 2026/10/31 正式退場停用！請使用自訂密碼或忘記密碼自救。';
+          errBox.innerHTML = '⛔ 初始預設密碼已超過一週（7天）寬限期並已失效！請使用專屬密碼或忘記密碼自救。';
         }
         return;
       }
@@ -19271,6 +19222,7 @@ async function submitAdminPassword() {
       window.app.renderFirebaseQuotaBanners();
       window.app.scheduleCurrentClassStorageSync();
       window.app.showNotification('成功', '已進入管理員模式！');
+      window.app.checkDefaultPasswordBanner();
     } else {
       const errBox = document.getElementById('adminPasswordErrorMsg');
       if (errBox) {
@@ -19308,6 +19260,9 @@ function logoutAdmin(isAutoIdleLogout = false) {
   const volBtn = document.getElementById('timerVolumeBtn');
   if (volBtn) volBtn.style.display = 'none';
   window.app.playAudio('none');
+  if (window.app && typeof window.app.checkDefaultPasswordBanner === 'function') {
+    window.app.checkDefaultPasswordBanner();
+  }
 }
 
 // ===== 管理員編輯提問（含附件刪除、更換與新增） =====
