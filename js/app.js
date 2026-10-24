@@ -5140,7 +5140,7 @@ class App {
       },
       whiteboardFeatures: {
         id: 'adminWhiteboardFeaturesSection',
-        title: 'G. 白板功能模組啟用設定',
+        title: 'G. 功能模組啟用設定',
         category: '班級管理',
         icon: 'images/admin_icons/system_reset.svg'
       },
@@ -17970,22 +17970,22 @@ class App {
     }
   }
 
-  // ===== 白板功能模組啟用設定 (需求 3) =====
+  // ===== 功能模組啟用設定 =====
   initWhiteboardFeatures() {
     this.whiteboardFeatures = {
-      'panel-questions': true,
+      'panel-questions': true,     // 固定開啟（核心必備）
       'panel-images': true,
       'panel-videos': true,
       'panel-video-quiz': true,
       'panel-quiz': true,
       'panel-lucky-wheel': true,
       'panel-word-cloud': true,
-      'panel-whiteboard': true,
-      'panel-focus-game': false,
+      'panel-whiteboard': true,    // 🎨 互動白板
+      'panel-presentation': true,  // 📽️ 同步簡報
+      'panel-focus-game': true,    // 🧠 專注力遊戲（預設開啟）
       'gameBuzz': true,
       'reactionDock': true,
-      'teacherShares': true,
-      'panel-guide': true
+      'teacherShares': true
     };
 
     // 從 localStorage 讀取快取
@@ -18000,6 +18000,10 @@ class App {
       }
     } catch (e) {}
 
+    // 提問區固定必須開啟，清理已刪除項目
+    this.whiteboardFeatures['panel-questions'] = true;
+    delete this.whiteboardFeatures['panel-guide'];
+
     // 初次套用可見性
     this.applyWhiteboardFeatureVisibility(this.whiteboardFeatures);
 
@@ -18011,6 +18015,8 @@ class App {
         const val = snapshot.val();
         if (val && typeof val === 'object') {
           this.whiteboardFeatures = Object.assign({}, this.whiteboardFeatures, val);
+          this.whiteboardFeatures['panel-questions'] = true;
+          delete this.whiteboardFeatures['panel-guide'];
           this.applyWhiteboardFeatureVisibility(this.whiteboardFeatures);
           this.renderWhiteboardFeaturesAdminUI();
         }
@@ -18020,10 +18026,18 @@ class App {
 
   renderWhiteboardFeaturesAdminUI() {
     if (!this.whiteboardFeatures) return;
+    this.whiteboardFeatures['panel-questions'] = true;
+    delete this.whiteboardFeatures['panel-guide'];
+
     Object.keys(this.whiteboardFeatures).forEach(key => {
       const toggle = document.getElementById(`wfToggle_${key}`);
       if (toggle) {
-        toggle.checked = this.whiteboardFeatures[key] !== false;
+        if (key === 'panel-questions') {
+          toggle.checked = true;
+          toggle.disabled = true;
+        } else {
+          toggle.checked = this.whiteboardFeatures[key] !== false;
+        }
       }
       const card = document.querySelector(`.whiteboard-feature-card[data-feature-key="${key}"]`);
       if (card) {
@@ -18037,6 +18051,7 @@ class App {
   }
 
   onWhiteboardFeatureToggle(key, isChecked) {
+    if (key === 'panel-questions') return; // 提問區固定開啟，不可關閉
     if (!this.whiteboardFeatures) this.whiteboardFeatures = {};
     this.whiteboardFeatures[key] = isChecked;
     const card = document.querySelector(`.whiteboard-feature-card[data-feature-key="${key}"]`);
@@ -18051,37 +18066,33 @@ class App {
     Object.keys(this.whiteboardFeatures).forEach(k => {
       this.whiteboardFeatures[k] = val;
     });
+    this.whiteboardFeatures['panel-questions'] = true; // 提問區固定開啟
     this.renderWhiteboardFeaturesAdminUI();
   }
 
   resetWhiteboardFeaturesDefault() {
     this.whiteboardFeatures = {
-      'panel-questions': true,
+      'panel-questions': true,     // 固定開啟（核心必備）
       'panel-images': true,
       'panel-videos': true,
       'panel-video-quiz': true,
       'panel-quiz': true,
       'panel-lucky-wheel': true,
       'panel-word-cloud': true,
-      'panel-whiteboard': true,
-      'panel-focus-game': false,
+      'panel-whiteboard': true,    // 🎨 互動白板
+      'panel-presentation': true,  // 📽️ 同步簡報
+      'panel-focus-game': true,    // 🧠 專注力遊戲（預設開啟）
       'gameBuzz': true,
       'reactionDock': true,
-      'teacherShares': true,
-      'panel-guide': true
+      'teacherShares': true
     };
     this.renderWhiteboardFeaturesAdminUI();
   }
 
   async saveWhiteboardFeaturesSettings() {
     if (!this.whiteboardFeatures) return;
-    // 檢查是否全關：至少保留互動白板
-    const anyEnabled = Object.values(this.whiteboardFeatures).some(v => v === true);
-    if (!anyEnabled) {
-      this.whiteboardFeatures['panel-whiteboard'] = true;
-      this.renderWhiteboardFeaturesAdminUI();
-      this.showNotification('提示', '已為您自動保留「互動白板」功能，避免所有功能全關！');
-    }
+    this.whiteboardFeatures['panel-questions'] = true; // 提問區固定開啟
+    delete this.whiteboardFeatures['panel-guide'];
 
     const code = window.currentClassCode;
     try {
@@ -18091,21 +18102,25 @@ class App {
         await db.ref(refPath).set(this.whiteboardFeatures);
       }
       this.applyWhiteboardFeatureVisibility(this.whiteboardFeatures);
-      this.showNotification('儲存成功', '白板功能模組啟用設定已成功儲存並同步！');
+      this.showNotification('儲存成功', '功能模組啟用設定已成功儲存並同步！');
     } catch (e) {
       console.error('saveWhiteboardFeaturesSettings error:', e);
-      this.showNotification('儲存完成', '白板功能設定已套用至本機！');
+      this.showNotification('儲存完成', '功能模組設定已套用至本機！');
     }
   }
 
   applyWhiteboardFeatureVisibility(features) {
     if (!features || typeof features !== 'object') return;
 
+    // 確保提問區始終開啟，移除已廢棄指引頁籤
+    features['panel-questions'] = true;
+    delete features['panel-guide'];
+
     // 1. 前台主選單功能頁籤顯示/隱藏
     const menuTabKeys = [
       'panel-questions', 'panel-images', 'panel-videos',
       'panel-video-quiz', 'panel-quiz', 'panel-lucky-wheel',
-      'panel-word-cloud', 'panel-whiteboard', 'panel-focus-game', 'panel-guide'
+      'panel-word-cloud', 'panel-whiteboard', 'panel-focus-game'
     ];
 
     menuTabKeys.forEach(key => {
@@ -18114,6 +18129,12 @@ class App {
         const isEnabled = features[key] !== false;
         btn.style.display = isEnabled ? '' : 'none';
       }
+    });
+
+    // 同步簡報頂部按鈕 (前台頂部)
+    const presBtns = document.querySelectorAll('.presentation-top-btn');
+    presBtns.forEach(b => {
+      b.style.display = features['panel-presentation'] !== false ? '' : 'none';
     });
 
     // 教師分享按鈕
@@ -18130,7 +18151,9 @@ class App {
 
     // 若目前所在的頁籤被關閉，自動切換至第一個開啟的頁籤
     const currentTab = this.activeTabId;
-    if (features[currentTab] === false) {
+    const isCurrentTabDisabled = (currentTab === 'panel-presentation' && features['panel-presentation'] === false) ||
+                                 (features[currentTab] === false);
+    if (isCurrentTabDisabled) {
       for (const key of menuTabKeys) {
         if (features[key] !== false) {
           this.switchToTab(key);

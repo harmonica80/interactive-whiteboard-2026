@@ -132,7 +132,7 @@
         <button class="menu-tab" data-target="panel-lucky-wheel">🎡 隨機抽人</button>
         <button class="menu-tab" data-target="panel-word-cloud">☁️ 即時文字雲</button>
         <button class="menu-tab" data-target="panel-whiteboard">🎨 互動白板</button>
-        <button class="menu-tab" data-target="panel-focus-game" style="display: none;">🧠 專注力遊戲</button>
+        <button class="menu-tab" data-target="panel-focus-game">🧠 專注力遊戲</button>
       </div>
       <button class="nav-scroll-btn right-scroll-btn" id="menuScrollRight" title="向右查看更多選單">▶</button>
     </div>
@@ -1231,13 +1231,13 @@
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- G. 白板功能模組啟用設定 (需求 3) -->
+                  <!-- G. 功能模組啟用設定 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('whiteboardFeatures')">
                     <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
                       🎛️
                     </div>
-                    <div class="admin-feature-card-title">G. 白板功能模組啟用設定</div>
-                    <div class="admin-feature-card-desc">自訂各教學功能模組啟用狀態（提問、圖片、影片、測驗、抽人、文字雲、白板、專注力等），未啟用之功能前台選單與後台總覽皆自動隱藏。</div>
+                    <div class="admin-feature-card-title">G. 功能模組啟用設定</div>
+                    <div class="admin-feature-card-desc">自訂各教學功能模組啟用狀態（提問、圖片、影片、測驗、抽人、文字雲、白板、同步簡報、專注力等），未啟用之功能前台選單與後台總覽皆自動隱藏。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
                 </div>
@@ -1447,7 +1447,7 @@
                     <option value="classSound">D. 測驗與互動音效設定</option>
                     <option value="systemReset">E. 系統重設與備份管理</option>
                     <option value="classSecurity">F. 教師身分與密碼安全設定</option>
-                    <option value="whiteboardFeatures">G. 白板功能模組啟用設定</option>
+                    <option value="whiteboardFeatures">G. 功能模組啟用設定</option>
                   </optgroup>
                   <optgroup label="測驗出題管理">
                     <option value="quizChoice">A. 選擇題測驗</option>
@@ -2169,10 +2169,10 @@
             </div>
           </div>
 
-          <!-- G. 白板功能模組啟用設定 (需求 3: 老師自訂開啟/關閉功能模組，未啟用者前台選單與後台總覽同步隱藏) -->
+          <!-- G. 功能模組啟用設定 -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminWhiteboardFeaturesSection">
             <div class="admin-section-header">
-              <h3>🎛️ G. 白板功能模組啟用設定</h3>
+              <h3>🎛️ G. 功能模組啟用設定</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -2192,15 +2192,15 @@
 
               <!-- 功能模組開關卡片清單 -->
               <div id="whiteboardFeatureToggleContainer" class="whiteboard-feature-toggle-grid">
-                <!-- 提問區 -->
+                <!-- 提問區 (核心功能，固定開啟) -->
                 <div class="whiteboard-feature-card" data-feature-key="panel-questions">
                   <div class="wf-card-info">
-                    <div class="wf-card-title">💬 提問區</div>
-                    <div class="wf-card-desc">前台學生即時留言提問、附檔、標註解答與後台分組歸檔</div>
+                    <div class="wf-card-title">💬 提問區 <span style="font-size: 11px; background: rgba(0,122,255,0.15); color: var(--accent-color); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold;">核心必備</span></div>
+                    <div class="wf-card-desc">前台學生即時留言提問、附檔、標註解答與後台分組歸檔（系統必備項目，固定開啟）</div>
                   </div>
                   <label class="ios-switch">
-                    <input type="checkbox" id="wfToggle_panel-questions" checked onchange="window.app && window.app.onWhiteboardFeatureToggle('panel-questions', this.checked)">
-                    <span class="ios-switch-slider"></span>
+                    <input type="checkbox" id="wfToggle_panel-questions" checked disabled>
+                    <span class="ios-switch-slider" style="cursor: not-allowed; opacity: 0.65;"></span>
                   </label>
                 </div>
 
@@ -2276,14 +2276,26 @@
                   </label>
                 </div>
 
-                <!-- 互動白板與簡報 -->
+                <!-- 互動白板 -->
                 <div class="whiteboard-feature-card" data-feature-key="panel-whiteboard">
                   <div class="wf-card-info">
-                    <div class="wf-card-title">🎨 互動白板與簡報</div>
-                    <div class="wf-card-desc">白板手繪、幾何圖形、便利貼與多頁同步簡報系統</div>
+                    <div class="wf-card-title">🎨 互動白板</div>
+                    <div class="wf-card-desc">前台主選單互動白板、手繪塗鴉、幾何圖形與便利貼板</div>
                   </div>
                   <label class="ios-switch">
                     <input type="checkbox" id="wfToggle_panel-whiteboard" checked onchange="window.app && window.app.onWhiteboardFeatureToggle('panel-whiteboard', this.checked)">
+                    <span class="ios-switch-slider"></span>
+                  </label>
+                </div>
+
+                <!-- 同步簡報 -->
+                <div class="whiteboard-feature-card" data-feature-key="panel-presentation">
+                  <div class="wf-card-info">
+                    <div class="wf-card-title">📽️ 同步簡報</div>
+                    <div class="wf-card-desc">前台頂部多頁同步簡報展示、翻頁廣播與全螢幕播放系統</div>
+                  </div>
+                  <label class="ios-switch">
+                    <input type="checkbox" id="wfToggle_panel-presentation" checked onchange="window.app && window.app.onWhiteboardFeatureToggle('panel-presentation', this.checked)">
                     <span class="ios-switch-slider"></span>
                   </label>
                 </div>
@@ -2332,18 +2344,6 @@
                   </div>
                   <label class="ios-switch">
                     <input type="checkbox" id="wfToggle_teacherShares" checked onchange="window.app && window.app.onWhiteboardFeatureToggle('teacherShares', this.checked)">
-                    <span class="ios-switch-slider"></span>
-                  </label>
-                </div>
-
-                <!-- 建立自己的白板 -->
-                <div class="whiteboard-feature-card" data-feature-key="panel-guide">
-                  <div class="wf-card-info">
-                    <div class="wf-card-title">📖 建立自己的白板</div>
-                    <div class="wf-card-desc">前台主選單「建立自己的白板」新手教學指引頁籤</div>
-                  </div>
-                  <label class="ios-switch">
-                    <input type="checkbox" id="wfToggle_panel-guide" checked onchange="window.app && window.app.onWhiteboardFeatureToggle('panel-guide', this.checked)">
                     <span class="ios-switch-slider"></span>
                   </label>
                 </div>
