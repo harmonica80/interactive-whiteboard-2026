@@ -9,13 +9,80 @@ const firebaseConfig = {
   appId: "1:473141473085:web:091f760eb2ab737f385f54"
 };
 
-// 支援透過 URL 參數動態載入自訂的 Firebase Database URL (供不同老師分流使用，無需重新架站)
-const urlParams = new URLSearchParams(window.location.search);
-const customDbUrl = urlParams.get('dbUrl');
+// ===== 方案 A：白板資料庫網址安全遮蔽工具 (WbSecurityHelper) =====
+window.WbSecurityHelper = {
+  SALT: 'OpEnCoDe_Wb2026_SeCuRe_SaLt',
 
-if (customDbUrl) {
-  // 如果 URL 帶有 dbUrl 參數，覆蓋預設的 databaseURL
-  firebaseConfig.databaseURL = decodeURIComponent(customDbUrl);
+  // 將明文 Database URL 編碼為無特徵的 URL-Safe 安全代碼 (完全隱藏資料庫網址與專案名稱)
+  encodeDbUrl(url) {
+    if (!url || typeof url !== 'string') return '';
+    const cleanUrl = url.trim().replace(/\/+$/, '');
+    try {
+      const utf8 = new TextEncoder().encode(cleanUrl);
+      const salt = new TextEncoder().encode(this.SALT);
+      const obf = new Uint8Array(utf8.length);
+      for (let i = 0; i < utf8.length; i++) {
+        obf[i] = utf8[i] ^ salt[i % salt.length];
+      }
+      let bin = '';
+      for (let i = 0; i < obf.length; i++) {
+        bin += String.fromCharCode(obf[i]);
+      }
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    } catch (e) {
+      console.warn('DbUrl 編碼遮蔽失敗:', e);
+      return encodeURIComponent(cleanUrl);
+    }
+  },
+
+  // 將安全代碼還原為真實 Database URL (具備向下相容能力)
+  decodeDbUrl(token) {
+    if (!token || typeof token !== 'string') return '';
+    token = token.trim();
+    if (token.startsWith('https://') || token.startsWith('http://')) {
+      return token;
+    }
+    try {
+      let b64 = token.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) {
+        b64 += '=';
+      }
+      const bin = atob(b64);
+      const obf = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) {
+        obf[i] = bin.charCodeAt(i);
+      }
+      const salt = new TextEncoder().encode(this.SALT);
+      const res = new Uint8Array(obf.length);
+      for (let i = 0; i < obf.length; i++) {
+        res[i] = obf[i] ^ salt[i % salt.length];
+      }
+      const restored = new TextDecoder().decode(res);
+      if (restored.startsWith('https://') || restored.startsWith('http://')) {
+        return restored;
+      }
+      return '';
+    } catch (e) {
+      console.warn('DbUrl 解碼還原失敗:', e);
+      return '';
+    }
+  }
+};
+
+// 支援透過 URL 參數動態載入自訂的 Firebase Database URL (供不同老師分流使用，無需重新架站)
+// 雙軌向下相容：新版加密安全代碼 (?sid=...) 與 舊版明文網址 (?dbUrl=...)
+const urlParams = new URLSearchParams(window.location.search);
+const customSid = urlParams.get('sid') || urlParams.get('b') || urlParams.get('dbKey');
+const legacyDbUrl = urlParams.get('dbUrl');
+
+if (customSid && window.WbSecurityHelper) {
+  const decodedUrl = window.WbSecurityHelper.decodeDbUrl(customSid);
+  if (decodedUrl) {
+    firebaseConfig.databaseURL = decodedUrl;
+  }
+} else if (legacyDbUrl) {
+  // 如果傳入的是舊版 dbUrl 參數，覆蓋預設的 databaseURL
+  firebaseConfig.databaseURL = decodeURIComponent(legacyDbUrl);
 }
 
 // 班級代碼與智慧雙軌管理器 (ClassRoomManager)

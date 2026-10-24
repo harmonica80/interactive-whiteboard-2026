@@ -239,8 +239,10 @@
               </button>
               <pre style="margin: 0; white-space: pre-wrap; word-break: break-all; font-family: inherit; font-size: 13.5px;"><span style="color: #e2e8f0;">{</span>
   <span style="color: #60a5fa; font-weight: bold;">"rules"</span><span style="color: #e2e8f0;">: {</span>
-    <span style="color: #38bdf8; font-weight: bold;">".read"</span><span style="color: #e2e8f0;">:</span> <span style="color: #fde047;">"now &lt; 4891468800000"</span><span style="color: #e2e8f0;">,</span>
-    <span style="color: #38bdf8; font-weight: bold;">".write"</span><span style="color: #e2e8f0;">:</span> <span style="color: #fde047;">"now &lt; 4891468800000"</span>
+    <span style="color: #a78bfa; font-weight: bold;">"$node"</span><span style="color: #e2e8f0;">: {</span>
+      <span style="color: #38bdf8; font-weight: bold;">".read"</span><span style="color: #e2e8f0;">:</span> <span style="color: #fde047;">"now &lt; 4891468800000"</span><span style="color: #e2e8f0;">,</span>
+      <span style="color: #38bdf8; font-weight: bold;">".write"</span><span style="color: #e2e8f0;">:</span> <span style="color: #fde047;">"now &lt; 4891468800000"</span>
+    <span style="color: #e2e8f0;">}</span>
   <span style="color: #e2e8f0;">}</span>
 <span style="color: #e2e8f0;">}</span></pre>
             </div>
@@ -359,10 +361,72 @@
   </div>
 
   <script>
+    // ===== 方案 A：白板資料庫網址安全遮蔽工具 (WbSecurityHelper) =====
+    const WbSecurityHelper = {
+      SALT: 'OpEnCoDe_Wb2026_SeCuRe_SaLt',
+
+      // 將明文 Database URL 編碼為無特徵的 URL-Safe 安全代碼 (完全隱藏資料庫網址與專案名稱)
+      encodeDbUrl(url) {
+        if (!url || typeof url !== 'string') return '';
+        const cleanUrl = url.trim().replace(/\/+$/, '');
+        try {
+          const utf8 = new TextEncoder().encode(cleanUrl);
+          const salt = new TextEncoder().encode(this.SALT);
+          const obf = new Uint8Array(utf8.length);
+          for (let i = 0; i < utf8.length; i++) {
+            obf[i] = utf8[i] ^ salt[i % salt.length];
+          }
+          let bin = '';
+          for (let i = 0; i < obf.length; i++) {
+            bin += String.fromCharCode(obf[i]);
+          }
+          return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        } catch (e) {
+          console.warn('DbUrl 編碼遮蔽失敗:', e);
+          return encodeURIComponent(cleanUrl);
+        }
+      },
+
+      // 將安全代碼還原為真實 Database URL (具備向下相容能力)
+      decodeDbUrl(token) {
+        if (!token || typeof token !== 'string') return '';
+        token = token.trim();
+        if (token.startsWith('https://') || token.startsWith('http://')) {
+          return token;
+        }
+        try {
+          let b64 = token.replace(/-/g, '+').replace(/_/g, '/');
+          while (b64.length % 4) {
+            b64 += '=';
+          }
+          const bin = atob(b64);
+          const obf = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) {
+            obf[i] = bin.charCodeAt(i);
+          }
+          const salt = new TextEncoder().encode(this.SALT);
+          const res = new Uint8Array(obf.length);
+          for (let i = 0; i < obf.length; i++) {
+            res[i] = obf[i] ^ salt[i % salt.length];
+          }
+          const restored = new TextDecoder().decode(res);
+          if (restored.startsWith('https://') || restored.startsWith('http://')) {
+            return restored;
+          }
+          return '';
+        } catch (e) {
+          console.warn('DbUrl 解碼還原失敗:', e);
+          return '';
+        }
+      }
+    };
+
     const SECURITY_RULES_JSON = `{
   "rules": {
-    ".read": "now < 4891468800000",
-    ".write": "now < 4891468800000"
+    "$node": {
+      ".read": "now < 4891468800000",
+      ".write": "now < 4891468800000"
+    }
   }
 }`;
 
@@ -438,7 +502,9 @@
       const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
       const whiteboardUrl = `${baseUrl}/index.html`;
 
-      const finalShareUrl = `${whiteboardUrl}?dbUrl=${encodeURIComponent(dbUrl)}`;
+      // 方案 A：採用無特徵的加密安全代碼 (?sid=...)，完全隱藏真實資料庫網址與專案名稱
+      const secureToken = WbSecurityHelper.encodeDbUrl(dbUrl);
+      const finalShareUrl = `${whiteboardUrl}?sid=${secureToken}`;
 
       document.getElementById('shareUrl').value = finalShareUrl;
       document.getElementById('resultArea').style.display = 'block';

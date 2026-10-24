@@ -19779,8 +19779,10 @@ service cloud.firestore {
 
 const SECURITY_RULES_JSON = `{
   "rules": {
-    ".read": "now < 4891468800000",
-    ".write": "now < 4891468800000"
+    "$node": {
+      ".read": "now < 4891468800000",
+      ".write": "now < 4891468800000"
+    }
   }
 }`;
 
@@ -19826,7 +19828,9 @@ function generateLinks() {
   const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
   const whiteboardUrl = `${baseUrl}/index.html`;
 
-  const finalShareUrl = `${whiteboardUrl}?dbUrl=${encodeURIComponent(dbUrl)}`;
+  // 方案 A：採用無特徵的加密安全代碼 (?sid=...)，完全隱藏真實資料庫網址與專案名稱
+  const secureToken = window.WbSecurityHelper ? window.WbSecurityHelper.encodeDbUrl(dbUrl) : encodeURIComponent(dbUrl);
+  const finalShareUrl = window.WbSecurityHelper ? `${whiteboardUrl}?sid=${secureToken}` : `${whiteboardUrl}?dbUrl=${encodeURIComponent(dbUrl)}`;
 
   const shareInput = document.getElementById('shareUrl');
   if (shareInput) shareInput.value = finalShareUrl;

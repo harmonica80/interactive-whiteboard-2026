@@ -547,9 +547,9 @@ class Quiz {
         </div>
       `;
     } else if (chartType === 'line') {
-      // 📈 折線圖 (SVG 面積折線圖)
-      const W = 460, H = 200;
-      const ml = 35, mr = 25, mt = 25, mb = 45;
+      // 📈 折線圖 (SVG 面積折線圖 - 調整比例與文字樣式，與長條圖文字尺寸一致)
+      const W = 860, H = 220;
+      const ml = 45, mr = 35, mt = 28, mb = 40;
       const plotW = W - ml - mr;
       const plotH = H - mt - mb;
       const maxVal = Math.max(...items.map(it => it.count), 1);
@@ -565,42 +565,47 @@ class Quiz {
       const areaPoints = `${pts[0].x.toFixed(1)},${(mt + plotH).toFixed(1)} ${polyPoints} ${pts[pts.length - 1].x.toFixed(1)},${(mt + plotH).toFixed(1)}`;
 
       html += `
-        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; overflow-x: auto;">
-          <svg viewBox="0 0 ${W} ${H}" style="width: 100%; height: auto; min-width: 320px; display: block; overflow: visible;">
-            <defs>
-              <linearGradient id="quizLineGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#34c759" stop-opacity="0.35"/>
-                <stop offset="100%" stop-color="#34c759" stop-opacity="0.02"/>
-              </linearGradient>
-            </defs>
-            <line x1="${ml}" y1="${mt}" x2="${ml + plotW}" y2="${mt}" stroke="var(--border-color)" stroke-dasharray="3,3" opacity="0.6"/>
-            <text x="${ml - 6}" y="${mt + 4}" text-anchor="end" font-size="10" fill="var(--text-secondary)">${maxVal}</text>
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 18px; overflow-x: auto;">
+          <div style="max-width: 860px; margin: 0 auto; width: 100%;">
+            <svg viewBox="0 0 ${W} ${H}" style="width: 100%; height: auto; max-height: 240px; display: block; overflow: visible; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;">
+              <defs>
+                <linearGradient id="quizLineGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#34c759" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#34c759" stop-opacity="0.02"/>
+                </linearGradient>
+              </defs>
+              <!-- 橫向網格線與 Y 軸標籤 -->
+              <line x1="${ml}" y1="${mt}" x2="${ml + plotW}" y2="${mt}" stroke="var(--border-color)" stroke-dasharray="3,3" opacity="0.6"/>
+              <text x="${ml - 8}" y="${mt + 4}" text-anchor="end" font-size="12" fill="var(--text-secondary)">${maxVal}</text>
 
-            <line x1="${ml}" y1="${mt + plotH / 2}" x2="${ml + plotW}" y2="${mt + plotH / 2}" stroke="var(--border-color)" stroke-dasharray="3,3" opacity="0.4"/>
-            <text x="${ml - 6}" y="${mt + plotH / 2 + 3}" text-anchor="end" font-size="10" fill="var(--text-secondary)">${Math.round(maxVal / 2)}</text>
+              <line x1="${ml}" y1="${mt + plotH / 2}" x2="${ml + plotW}" y2="${mt + plotH / 2}" stroke="var(--border-color)" stroke-dasharray="3,3" opacity="0.4"/>
+              <text x="${ml - 8}" y="${mt + plotH / 2 + 4}" text-anchor="end" font-size="12" fill="var(--text-secondary)">${Math.round(maxVal / 2)}</text>
 
-            <line x1="${ml}" y1="${mt + plotH}" x2="${ml + plotW}" y2="${mt + plotH}" stroke="var(--border-color)" opacity="0.8"/>
-            <text x="${ml - 6}" y="${mt + plotH + 3}" text-anchor="end" font-size="10" fill="var(--text-secondary)">0</text>
+              <line x1="${ml}" y1="${mt + plotH}" x2="${ml + plotW}" y2="${mt + plotH}" stroke="var(--border-color)" opacity="0.8"/>
+              <text x="${ml - 8}" y="${mt + plotH + 4}" text-anchor="end" font-size="12" fill="var(--text-secondary)">0</text>
 
-            <polygon points="${areaPoints}" fill="url(#quizLineGrad)"/>
-            <polyline points="${polyPoints}" fill="none" stroke="#34c759" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- 漸層面積與折線 -->
+              <polygon points="${areaPoints}" fill="url(#quizLineGrad)"/>
+              <polyline points="${polyPoints}" fill="none" stroke="#34c759" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 
-            ${pts.map(p => {
-              const pct = totalVotesSum > 0 ? Math.round((p.it.count / totalVotesSum) * 100) : 0;
-              const shortLabel = p.it.label.length > 6 ? p.it.label.substring(0, 5) + '…' : p.it.label;
-              return `
-                <g>
-                  <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#ffffff" stroke="#34c759" stroke-width="3"/>
-                  <text x="${p.x.toFixed(1)}" y="${(p.y - 9).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="bold" fill="var(--text-primary)">
-                    ${p.it.count} (${pct}%)
-                  </text>
-                  <text x="${p.x.toFixed(1)}" y="${(mt + plotH + 18).toFixed(1)}" text-anchor="middle" font-size="11" fill="var(--text-secondary)">
-                    ${this.escapeHtml(shortLabel)}
-                  </text>
-                </g>
-              `;
-            }).join('')}
-          </svg>
+              <!-- 數據點與標籤 (字型大小調整為 13px/14px，與長條圖保持一致) -->
+              ${pts.map(p => {
+                const pct = totalVotesSum > 0 ? Math.round((p.it.count / totalVotesSum) * 100) : 0;
+                const shortLabel = p.it.label.length > 10 ? p.it.label.substring(0, 9) + '…' : p.it.label;
+                return `
+                  <g>
+                    <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#ffffff" stroke="#34c759" stroke-width="2.5"/>
+                    <text x="${p.x.toFixed(1)}" y="${(p.y - 8).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="bold" fill="var(--text-primary)">
+                      ${p.it.count} (${pct}%)
+                    </text>
+                    <text x="${p.x.toFixed(1)}" y="${(mt + plotH + 20).toFixed(1)}" text-anchor="middle" font-size="14" font-weight="500" fill="var(--text-primary)">
+                      ${this.escapeHtml(shortLabel)}
+                    </text>
+                  </g>
+                `;
+              }).join('')}
+            </svg>
+          </div>
         </div>
       `;
     } else {
