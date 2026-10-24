@@ -17946,7 +17946,75 @@ class App {
     });
   }
 
-  openClassInviteModal() {
+  renderQrCodeTo(container, text, size = 160) {
+    if (!container) return;
+    container.innerHTML = '';
+    let rendered = false;
+    if (typeof QRCode !== 'undefined') {
+      try {
+        new QRCode(container, {
+          text: text,
+          width: size,
+          height: size,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+        rendered = true;
+      } catch (qrErr) {
+        console.warn('QRCode library error, using fallback:', qrErr);
+      }
+    }
+    if (!rendered) {
+      const encoded = encodeURIComponent(text);
+      container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}" alt="QR Code" style="width: ${size}px; height: ${size}px; display: block; border-radius: 8px;">`;
+    }
+  }
+
+  async fetchShortUrlWithFallbacks(longUrl) {
+    const enc = encodeURIComponent(longUrl);
+
+    // 服務 1：is.gd (原生支援 CORS, 回傳 JSON)
+    try {
+      const res = await fetch(`https://is.gd/create.php?format=json&url=${enc}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.shorturl) return data.shorturl.trim();
+      }
+    } catch (err1) {
+      console.warn('is.gd 短網址產生失敗，嘗試 v.gd 備援:', err1);
+    }
+
+    // 服務 2：v.gd (原生支援 CORS, 回傳 JSON)
+    try {
+      const res = await fetch(`https://v.gd/create.php?format=json&url=${enc}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.shorturl) return data.shorturl.trim();
+      }
+    } catch (err2) {
+      console.warn('v.gd 短網址產生失敗，嘗試 TinyURL 代理備援:', err2);
+    }
+
+    // 服務 3：TinyURL 經由 allorigins 代理轉發
+    try {
+      const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${enc}`;
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
+      const res = await fetch(proxyUrl);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.contents && data.contents.startsWith('http')) {
+          return data.contents.trim();
+        }
+      }
+    } catch (err3) {
+      console.warn('TinyURL 代理短網址產生失敗:', err3);
+    }
+
+    throw new Error('所有短網址服務皆無法連線');
+  }
+
+  async openClassInviteModal() {
     this.toggleQuickInfoMenu(false);
     const modal = document.getElementById('modalClassInvite');
     if (!modal) {
@@ -17981,34 +18049,54 @@ class App {
       inputUrl.value = shareUrl;
     }
 
-    // 繪製 QR Code (優先使用 QRCode.js，並具備 API 備援圖)
+    const inputShort = document.getElementById('txtInviteShortUrl');
+    const btnCopyShort = document.getElementById('btnInviteCopyShort');
+    if (inputShort) {
+      inputShort.value = '';
+      inputShort.placeholder = '短網址產生中...';
+    }
+    if (btnCopyShort) {
+      btnCopyShort.disabled = true;
+      btnCopyShort.style.opacity = '0.6';
+    }
+
+    // 繪製原始長網址 QR Code
     const qrDiv = document.getElementById('inviteModalQrCode');
     if (qrDiv) {
-      qrDiv.innerHTML = '';
-      let rendered = false;
-      if (typeof QRCode !== 'undefined') {
-        try {
-          new QRCode(qrDiv, {
-            text: shareUrl,
-            width: 190,
-            height: 190,
-            colorDark: '#000000',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.H
-          });
-          rendered = true;
-        } catch (qrErr) {
-          console.warn('QRCode library error, using fallback:', qrErr);
-        }
-      }
-      if (!rendered) {
-        const encoded = encodeURIComponent(shareUrl);
-        qrDiv.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=${encoded}" alt="QR Code" style="width: 190px; height: 190px; display: block; border-radius: 8px;">`;
-      }
+      this.renderQrCodeTo(qrDiv, shareUrl, 160);
+    }
+
+    // 短網址 QR Code 提示載入中
+    const qrShortDiv = document.getElementById('inviteModalShortQrCode');
+    if (qrShortDiv) {
+      qrShortDiv.innerHTML = '<div style="font-size: 13px; color: var(--text-secondary); text-align: center; padding: 12px;">⚡ 短網址產生中...</div>';
     }
 
     modal.classList.add('active');
     modal.style.display = 'flex';
+
+    // 異步取得短網址並渲染
+    try {
+      const shortUrl = await this.fetchShortUrlWithFallbacks(shareUrl);
+      if (inputShort) {
+        inputShort.value = shortUrl;
+      }
+      if (btnCopyShort) {
+        btnCopyShort.disabled = false;
+        btnCopyShort.style.opacity = '1';
+      }
+      if (qrShortDiv) {
+        this.renderQrCodeTo(qrShortDiv, shortUrl, 160);
+      }
+    } catch (err) {
+      console.warn('邀請彈窗短網址產生失敗:', err);
+      if (inputShort) {
+        inputShort.value = '短網址產生失敗，請複製長網址';
+      }
+      if (qrShortDiv) {
+        qrShortDiv.innerHTML = '<div style="color: #ef4444; font-size: 12px; font-weight: bold; text-align: center; padding: 12px;">產生失敗<br><span style="font-size: 11px; color: #888; font-weight: normal;">請直接使用長連結</span></div>';
+      }
+    }
   }
 
   closeClassInviteModal() {
@@ -18019,13 +18107,21 @@ class App {
     }
   }
 
-  copyInviteUrl() {
-    const inputUrl = document.getElementById('txtInviteShareUrl');
-    if (!inputUrl || !inputUrl.value) return;
+  copyInviteUrl(type = 'long') {
+    const isShort = type === 'short';
+    const inputUrl = isShort
+      ? document.getElementById('txtInviteShortUrl')
+      : document.getElementById('txtInviteShareUrl');
+
+    if (!inputUrl || !inputUrl.value || inputUrl.value.includes('產生中') || inputUrl.value.includes('失敗')) {
+      this.showNotification('⚠️ 無法複製', '目前尚無有效的網址可複製！');
+      return;
+    }
+    const label = isShort ? '專屬短網址' : '教室長連結';
     navigator.clipboard.writeText(inputUrl.value).then(() => {
-      this.showNotification('📋 複製成功', '教室邀請連結已成功複製至剪貼簿！');
+      this.showNotification('📋 複製成功', `${label}已成功複製至剪貼簿！`);
     }).catch(() => {
-      prompt('請手動複製邀請連結：', inputUrl.value);
+      prompt(`請手動複製${label}：`, inputUrl.value);
     });
   }
 
@@ -19684,46 +19780,17 @@ function generateLinks() {
     };
 
     const fetchShortUrlWithFallbacks = async (longUrl) => {
+      if (window.app && typeof window.app.fetchShortUrlWithFallbacks === 'function') {
+        return await window.app.fetchShortUrlWithFallbacks(longUrl);
+      }
       const enc = encodeURIComponent(longUrl);
-
-      // 服務 1：is.gd (原生支援 CORS, 回傳 JSON)
-      try {
-        const res = await fetch(`https://is.gd/create.php?format=json&url=${enc}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.shorturl) return data.shorturl.trim();
-        }
-      } catch (err1) {
-        console.warn('is.gd 短網址產生失敗，嘗試 v.gd 備援:', err1);
+      // 備援直接呼叫 is.gd
+      const res = await fetch(`https://is.gd/create.php?format=json&url=${enc}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.shorturl) return data.shorturl.trim();
       }
-
-      // 服務 2：v.gd (原生支援 CORS, 回傳 JSON)
-      try {
-        const res = await fetch(`https://v.gd/create.php?format=json&url=${enc}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.shorturl) return data.shorturl.trim();
-        }
-      } catch (err2) {
-        console.warn('v.gd 短網址產生失敗，嘗試 TinyURL 代理備援:', err2);
-      }
-
-      // 服務 3：TinyURL 經由 allorigins 代理轉發
-      try {
-        const tinyUrlApi = `https://tinyurl.com/api-create.php?url=${enc}`;
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tinyUrlApi)}`;
-        const res = await fetch(proxyUrl);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.contents && data.contents.startsWith('http')) {
-            return data.contents.trim();
-          }
-        }
-      } catch (err3) {
-        console.warn('TinyURL 代理短網址產生失敗:', err3);
-      }
-
-      throw new Error('所有短網址服務皆無法連線');
+      throw new Error('短網址服務暫時無法連線');
     };
 
     fetchShortUrlWithFallbacks(finalShareUrl)
