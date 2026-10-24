@@ -340,7 +340,7 @@
       for (const key in rawStore) {
         if (!Object.prototype.hasOwnProperty.call(rawStore, key)) continue;
         const candidate = rawStore[key];
-        // 靜默忽略遠端暫態 session 紀錄 (instance, pointer, camera, instance_presence, instance_page_state)
+        // 靜默忽略遠端暫態 session 記錄 (instance, pointer, camera, instance_presence, instance_page_state)
         if (isPlainObject(candidate) && typeof candidate.typeName === 'string' && !ALLOWED_DOCUMENT_RECORD_TYPES.has(candidate.typeName)) {
           continue;
         }

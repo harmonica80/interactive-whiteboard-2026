@@ -1342,7 +1342,7 @@ class Quiz {
     if (window.app) window.app.showNotification('成功', '已載入此題至出題框！');
   }
 
-  // 刪除單題歷史紀錄 (新增彈窗確認動作)
+  // 刪除單題歷史記錄 (新增彈窗確認動作)
   deleteQuizHistoryItem(key) {
     const item = this.historyBank[key];
     const qText = item ? item.question : '';

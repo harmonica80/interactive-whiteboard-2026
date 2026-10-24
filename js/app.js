@@ -3143,7 +3143,7 @@ class App {
           }).catch(() => {});
         }
         if (typeof this.showNotification === 'function') {
-          this.showNotification('課堂通知', '老師已清除課堂資料，已為您清除名稱紀錄！');
+          this.showNotification('課堂通知', '老師已清除課堂資料，已為您清除名稱記錄！');
         }
       }
     });
@@ -14992,8 +14992,8 @@ class App {
     const adminList = document.getElementById('adminWheelHistoryList');
     const frontList = document.getElementById('wheelHistoryList');
     if (adminList && frontList) {
-      if (frontList.children.length === 0 || frontList.textContent.includes('尚無紀錄')) {
-        adminList.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</div>';
+      if (frontList.children.length === 0 || frontList.textContent.includes('尚無記錄')) {
+        adminList.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無記錄</div>';
       } else {
         adminList.innerHTML = '';
         Array.from(frontList.children).forEach(li => {
@@ -15625,7 +15625,7 @@ class App {
       if (lblWinner) lblWinner.textContent = winnerName;
     }
     
-    // 寫入歷史紀錄
+    // 寫入歷史記錄
     if (winnerName) {
       this.addWheelHistory(winnerName);
     }
@@ -15639,7 +15639,7 @@ class App {
   addWheelHistory(winnerName) {
     const list = document.getElementById('wheelHistoryList');
     if (list) {
-      if (list.children.length === 1 && list.children[0].textContent.includes('尚無紀錄')) {
+      if (list.children.length === 1 && list.children[0].textContent.includes('尚無記錄')) {
         list.innerHTML = '';
       }
       
@@ -15654,7 +15654,7 @@ class App {
 
     const adminList = document.getElementById('adminWheelHistoryList');
     if (adminList) {
-      if (adminList.children.length === 1 && adminList.textContent.includes('尚無紀錄')) {
+      if (adminList.children.length === 1 && adminList.textContent.includes('尚無記錄')) {
         adminList.innerHTML = '';
       }
       const item = document.createElement('div');
@@ -15679,7 +15679,7 @@ class App {
         if (list) {
           Array.from(list.querySelectorAll('li span:first-child')).forEach(el => {
             const name = el.textContent.trim();
-            if (name && name !== '尚無紀錄') historyItems.push(name);
+            if (name && name !== '尚無記錄') historyItems.push(name);
           });
         }
         const set = new Set([...this.wheelNames, ...historyItems]);
@@ -15706,11 +15706,11 @@ class App {
 
     const list = document.getElementById('wheelHistoryList');
     if (list) {
-      list.innerHTML = '<li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</li>';
+      list.innerHTML = '<li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無記錄</li>';
     }
     const adminList = document.getElementById('adminWheelHistoryList');
     if (adminList) {
-      adminList.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</div>';
+      adminList.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無記錄</div>';
     }
     const banner = document.getElementById('wheelWinnerDisplay');
     if (banner) {
@@ -17225,7 +17225,7 @@ class App {
   async adminDeleteClass(code, name) {
     if (!code) return;
     const displayName = name && name !== code ? `${name} (${code})` : code;
-    const confirmMsg = `確定要刪除班級【${displayName}】嗎？\n\n⚠️ 警告：這將徹底刪除此班級的註冊資料，並清空該班級的白板板書、發問與測驗紀錄，釋放資料庫空間！\n\n此動作無法復原，是否確定？`;
+    const confirmMsg = `確定要刪除班級【${displayName}】嗎？\n\n⚠️ 警告：這將徹底刪除此班級的註冊資料，並清空該班級的白板板書、發問與測驗記錄，釋放資料庫空間！\n\n此動作無法復原，是否確定？`;
     if (!confirm(confirmMsg)) return;
 
     try {
@@ -18917,7 +18917,7 @@ function resetAll() {
     db.ref('quiz/videoQuizSettings').remove(),
     db.ref('quiz/videoQuizAnswers').remove(),
     db.ref('quiz/students').remove(),
-    db.ref('quiz/presence').remove(), // 徹底清除在線與快取紀錄，避免舊名稱殘留
+    db.ref('quiz/presence').remove(), // 徹底清除在線與快取記錄，避免舊名稱殘留
     db.ref('whiteboard').remove(),
     db.ref('whiteboard_room').remove(),
     db.ref('whiteboard_v2').remove(),
@@ -18926,7 +18926,7 @@ function resetAll() {
   ];
 
   if (isOneOff) {
-    // 一次性課堂清除資料時，一併清除本機學生名稱紀錄
+    // 一次性課堂清除資料時，一併清除本機學生名稱記錄
     localStorage.removeItem('user_nickname');
     localStorage.removeItem('user_name');
     localStorage.removeItem('comment_nickname');

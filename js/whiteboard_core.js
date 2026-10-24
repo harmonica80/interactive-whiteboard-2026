@@ -1215,7 +1215,7 @@
     });
   }
 
-  // ===== 歷史紀錄還原 / 重做 (Item 1, Ctrl + Z / Ctrl + Y) =====
+  // ===== 歷史記錄還原 / 重做 (Item 1, Ctrl + Z / Ctrl + Y) =====
   let undoStack = [];
   let redoStack = [];
   let isApplyingHistory = false;

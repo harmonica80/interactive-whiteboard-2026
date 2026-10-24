@@ -1358,7 +1358,7 @@
       this.handledEventIds = new Set();
       this.isQuestionOverlayShowing = false;
 
-      // 清除前次作答紀錄
+      // 清除前次作答記錄
       if (this.answersRef) {
         this.answersRef.remove();
       }
@@ -1469,7 +1469,7 @@
       // 向後拖曳 (回溯或重播)
       if (isBackward) {
         if (this.allowStudentRepeat) {
-          // 已勾選：重新經過題目時間時可以再次出題，清除當前時間點之後的已觸發紀錄
+          // 已勾選：重新經過題目時間時可以再次出題，清除當前時間點之後的已觸發記錄
           for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
             if (q.time >= currentTime - 0.5) {
@@ -1477,7 +1477,7 @@
             }
           }
         } else {
-          // 未勾選：同一輪測驗已出過的題目不再自動出現，保留觸發紀錄
+          // 未勾選：同一輪測驗已出過的題目不再自動出現，保留觸發記錄
         }
         this.lastMediaTime = currentTime;
         return;
@@ -1816,7 +1816,7 @@
           isVideoQuizActive = true;
         }
 
-        // 場次切換檢查：若切換不同測驗場次，重設去重紀錄
+        // 場次切換檢查：若切換不同測驗場次，重設去重記錄
         if (session.sessionId && this.lastHandledSessionId !== session.sessionId) {
           this.lastHandledSessionId = session.sessionId;
           this.handledEventIds = new Set();

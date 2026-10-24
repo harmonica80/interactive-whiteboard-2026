@@ -418,7 +418,7 @@ test.describe('Focus Question Bank & Music Manager Tests', () => {
 
     expect(clearCheck.ok).toBe(true)
     expect(clearCheck.beforeClear).toBe(1)
-    expect(clearCheck.afterClear).toContain('尚無紀錄')
+    expect(clearCheck.afterClear).toContain('尚無記錄')
   })
 
   test('Clearing wheel history restores original names and adds picked students back', async ({ page }) => {

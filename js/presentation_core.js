@@ -1248,7 +1248,7 @@
       this.studentDrawStrokes = [];
       this.selectedSubmissionIds.clear();
 
-      // 清除 Firebase 上的簡報與互動紀錄
+      // 清除 Firebase 上的簡報與互動記錄
       if (typeof db !== 'undefined') {
         db.ref('presentation/slides').remove().catch(() => {});
         db.ref('presentation/annotations').remove().catch(() => {});
@@ -2245,18 +2245,18 @@
       }
     }
 
-    // 重設本頁提交紀錄
+    // 重設本頁提交記錄
     resetSubmissions() {
       const slide = this.getCurrentSlide();
       if (!slide) return;
 
-      if (confirm('確定要清空本頁所有同學的作答提交紀錄嗎？')) {
+      if (confirm('確定要清空本頁所有同學的作答提交記錄嗎？')) {
         if (typeof db !== 'undefined') {
           db.ref(`presentation/submissions/${slide.id}`).remove().catch(() => {});
         }
         delete this.submissions[slide.id];
         this.renderSubmissionsSidebar();
-        this.notify('已重置', '本頁作答紀錄已清空！');
+        this.notify('已重置', '本頁作答記錄已清空！');
       }
     }
 
@@ -2268,7 +2268,7 @@
       const entries = Object.values(pageSubs);
 
       if (entries.length === 0) {
-        this.notify('提示', '目前本頁尚無任何提交紀錄可下載。');
+        this.notify('提示', '目前本頁尚無任何提交記錄可下載。');
         return;
       }
 

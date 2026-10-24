@@ -249,7 +249,7 @@
         this.recalculateAndRender();
       });
 
-      // 監聽文字雲歷史題庫 (保留歷史紀錄供後續重複使用與跨班級複製)
+      // 監聽文字雲歷史題庫 (保留歷史記錄供後續重複使用與跨班級複製)
       db.ref('quiz/wordCloud/history').on('value', (snapshot) => {
         this.historyBank = snapshot.val() || {};
         this.renderHistoryListUI();
@@ -364,7 +364,7 @@
         ? parseInt(limitSelect.value, 10)
         : (act && act.limitPerStudent !== undefined ? parseInt(act.limitPerStudent, 10) : 1);
 
-      // 尋找是否已有同標題與同圖片的歷史紀錄，避免重複洗版
+      // 尋找是否已有同標題與同圖片的歷史記錄，避免重複洗版
       let targetKey = (act && act.historyId && this.historyBank[act.historyId]) ? act.historyId : null;
       if (!targetKey) {
         const existingKey = Object.keys(this.historyBank || {}).find(k => {
@@ -406,11 +406,11 @@
       this.historyBank[targetKey] = record;
       db.ref('quiz/wordCloud/history/' + targetKey).set(record).then(() => {
         if (showToast) {
-          window.app?.showNotification('💾 已儲存', `文字雲「${title}」已保存至歷史紀錄庫！可隨時重複使用或複製至其他班級。`);
+          window.app?.showNotification('💾 已儲存', `文字雲「${title}」已保存至歷史記錄庫！可隨時重複使用或複製至其他班級。`);
         }
       }).catch(err => {
         if (showToast) {
-          window.app?.showNotification('錯誤', '儲存歷史紀錄失敗: ' + err.message);
+          window.app?.showNotification('錯誤', '儲存歷史記錄失敗: ' + err.message);
         }
       });
 
@@ -418,7 +418,7 @@
       return targetKey;
     }
 
-    // 渲染文字雲歷史紀錄庫 UI (後台與前台同步顯示)
+    // 渲染文字雲歷史記錄庫 UI (後台與前台同步顯示)
     renderHistoryListUI() {
       const adminListEl = document.getElementById('wcHistoryList');
       const frontListEl = document.getElementById('wcFrontHistoryList');
@@ -430,7 +430,7 @@
       if (frontCountEl) frontCountEl.textContent = `(${keys.length} 筆)`;
 
       if (keys.length === 0) {
-        const emptyHtml = '<div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史紀錄（發布題目後將自動保存，方便後續重複使用或複製至其他班級）</div>';
+        const emptyHtml = '<div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史記錄（發布題目後將自動保存，方便後續重複使用或複製至其他班級）</div>';
         if (adminListEl) adminListEl.innerHTML = emptyHtml;
         if (frontListEl) frontListEl.innerHTML = emptyHtml;
         return;
@@ -481,7 +481,7 @@
               ${hasSnapshot ? `<button type="button" class="btn btn-secondary" onclick="window.wordCloud?.reviewHistorySnapshot('${key}')" style="padding: 4px 8px; font-size: 11.5px; color: #8b5cf6; font-weight: bold;" title="在畫布上回顧此次文字雲成果">👁️ 回顧成果</button>` : ''}
               <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.loadFromHistory('${key}', false)" style="padding: 4px 8px; font-size: 11.5px; font-weight: bold;" title="帶入此題設定到出題框">📝 載入</button>
               <button type="button" class="btn btn-primary" onclick="window.wordCloud?.loadFromHistory('${key}', true)" style="padding: 4px 9px; font-size: 11.5px; font-weight: bold;" title="立即以此題開啟新一輪文字雲">🚀 重新發起</button>
-              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.deleteHistoryItem('${key}')" style="padding: 4px 8px; font-size: 11.5px; color: var(--danger-color);" title="刪除此筆歷史紀錄">✕</button>
+              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.deleteHistoryItem('${key}')" style="padding: 4px 8px; font-size: 11.5px; color: var(--danger-color);" title="刪除此筆歷史記錄">✕</button>
             </div>
           </div>
         `;
@@ -491,12 +491,12 @@
       if (frontListEl) frontListEl.innerHTML = html;
     }
 
-    // 從歷史紀錄載入設定或直接重新發起新一輪
+    // 從歷史記錄載入設定或直接重新發起新一輪
     loadFromHistory(key, autoPublish = false) {
       if (!window.app?.isAdmin) return;
       const item = this.historyBank && this.historyBank[key];
       if (!item) {
-        window.app?.showNotification('提示', '找不到該筆歷史紀錄！');
+        window.app?.showNotification('提示', '找不到該筆歷史記錄！');
         return;
       }
 
@@ -556,7 +556,7 @@
           for (let i = 0; i < c; i++) {
             restoredSubs['restored_' + (++idx)] = {
               word: w.word,
-              user: '歷史紀錄',
+              user: '歷史記錄',
               timestamp: Date.now()
             };
           }
@@ -588,41 +588,41 @@
       });
     }
 
-    // 刪除單筆文字雲歷史紀錄
+    // 刪除單筆文字雲歷史記錄
     deleteHistoryItem(key) {
       if (!window.app?.isAdmin || !key) return;
       const item = this.historyBank && this.historyBank[key];
-      const title = (item && item.title) || '此筆文字雲紀錄';
+      const title = (item && item.title) || '此筆文字雲記錄';
       window.app?.showConfirmModal(
         '🗑️',
         `確定要刪除「${title}」嗎？`,
-        '刪除後將無法從歷史紀錄庫中再次載入此題目。',
+        '刪除後將無法從歷史記錄庫中再次載入此題目。',
         () => {
           delete this.historyBank[key];
           db.ref('quiz/wordCloud/history/' + key).remove().then(() => {
             this.renderHistoryListUI();
-            window.app?.showNotification('成功', '已刪除該筆文字雲歷史紀錄！');
+            window.app?.showNotification('成功', '已刪除該筆文字雲歷史記錄！');
           });
         }
       );
     }
 
-    // 清空全部文字雲歷史紀錄庫
+    // 清空全部文字雲歷史記錄庫
     clearHistoryBank() {
       if (!window.app?.isAdmin) return;
       if (!this.historyBank || Object.keys(this.historyBank).length === 0) {
-        window.app?.showNotification('提示', '目前文字雲歷史紀錄庫已經是空的！');
+        window.app?.showNotification('提示', '目前文字雲歷史記錄庫已經是空的！');
         return;
       }
       window.app?.showConfirmModal(
         '🗑️',
-        '確定要清空全部文字雲歷史紀錄庫嗎？',
+        '確定要清空全部文字雲歷史記錄庫嗎？',
         '這將移除本班所有保存的文字雲歷史題目與成果，此動作無法復原。',
         () => {
           this.historyBank = {};
           db.ref('quiz/wordCloud/history').remove().then(() => {
             this.renderHistoryListUI();
-            window.app?.showNotification('成功', '已清空文字雲歷史紀錄庫！');
+            window.app?.showNotification('成功', '已清空文字雲歷史記錄庫！');
           });
         }
       );
@@ -632,7 +632,7 @@
     publishActivity(isNewRound = false, explicitHistoryKey = null) {
       if (!window.app?.isAdmin) return;
 
-      // 若上一輪有學生提交的詞彙，先自動歸檔保存至歷史紀錄，確保成果不遺失
+      // 若上一輪有學生提交的詞彙，先自動歸檔保存至歷史記錄，確保成果不遺失
       if (this.activeActivity && Object.keys(this.submissions || {}).length > 0) {
         this.saveCurrentToHistory(true, false);
       }
@@ -645,7 +645,7 @@
 
       const sessionId = 'wc_' + Date.now();
 
-      // 自動將此次出題設定存入歷史紀錄庫
+      // 自動將此次出題設定存入歷史記錄庫
       let historyId = explicitHistoryKey;
       if (!historyId) {
         const existingKey = Object.keys(this.historyBank || {}).find(k => {
@@ -684,7 +684,7 @@
         creator: this.getCurrentStudentName() || '老師'
       };
 
-      // 每次發布全新活動或新一輪時，徹底清除舊提交紀錄與隱藏名單，確保全班同學皆可重新提交
+      // 每次發布全新活動或新一輪時，徹底清除舊提交記錄與隱藏名單，確保全班同學皆可重新提交
       db.ref('quiz/wordCloud/submissions').remove();
       db.ref('quiz/wordCloud/hiddenWords').remove();
       this.submissions = {};
@@ -788,11 +788,11 @@
       window.app?.showConfirmModal(
         '☁️',
         '確定要結束文字雲活動嗎？',
-        '結束後學生端將不再顯示作答視窗，本次文字雲題目與成果也會自動保存至歷史紀錄庫。',
+        '結束後學生端將不再顯示作答視窗，本次文字雲題目與成果也會自動保存至歷史記錄庫。',
         () => {
           this.saveCurrentToHistory(true, false);
           db.ref('quiz/wordCloud/active/active').set(false).then(() => {
-            window.app?.showNotification('成功', '即時文字雲活動已結束，並已自動保存至歷史紀錄庫！');
+            window.app?.showNotification('成功', '即時文字雲活動已結束，並已自動保存至歷史記錄庫！');
           });
         }
       );
@@ -804,7 +804,7 @@
       window.app?.showConfirmModal(
         '🗑️',
         '確定要清空所有學生提交的詞彙嗎？',
-        '這將重設文字雲畫布並清除目前詞頻統計（清空前會自動將目前成果備份至歷史紀錄庫）。',
+        '這將重設文字雲畫布並清除目前詞頻統計（清空前會自動將目前成果備份至歷史記錄庫）。',
         () => {
           if (Object.keys(this.submissions || {}).length > 0) {
             this.saveCurrentToHistory(true, false);

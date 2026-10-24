@@ -532,7 +532,7 @@
                   <button type="button" class="btn btn-secondary" onclick="window.app.clearWheelHistory()" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;" title="清除抽中記錄並重設">🗑️ 清除記錄</button>
                 </div>
                 <ul id="wheelHistoryList" style="list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto;">
-                  <li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</li>
+                  <li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無記錄</li>
                 </ul>
               </div>
             </div>
@@ -635,11 +635,11 @@
               </div>
             </div>
 
-            <!-- 教師專屬：文字雲歷史紀錄庫 (可重複使用與複製到其他班級) -->
+            <!-- 教師專屬：文字雲歷史記錄庫 (可重複使用與複製到其他班級) -->
             <div class="wc-teacher-only" id="wcFrontHistoryCard" style="display: none; margin-top: 14px; padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
                 <h4 style="margin: 0; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                  📚 文字雲歷史紀錄庫 <span id="wcFrontHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 筆)</span>
+                  📚 文字雲歷史記錄庫 <span id="wcFrontHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 筆)</span>
                 </h4>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                   <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.saveCurrentToHistory(true, true)" style="font-size: 12px; font-weight: bold;">
@@ -651,7 +651,7 @@
                 </div>
               </div>
               <div id="wcFrontHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;">
-                <div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史紀錄（發布文字雲題目後將自動保存，方便後續重複使用或複製至其他班級）</div>
+                <div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史記錄（發布文字雲題目後將自動保存，方便後續重複使用或複製至其他班級）</div>
               </div>
             </div>
           </div>
@@ -745,7 +745,7 @@
               <button type="button" class="presentation-tool-btn" id="btnSlideFullscreen" title="進入/退出全螢幕">🗖 最大化</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideSettings" title="設定外部 URL 與多題互動">⚙️ 本頁設定</button>
               <button type="button" class="presentation-tool-btn purple" id="btnSlideImportExport" title="匯入 PDF / 匯入匯出 JSON 備份">📁 匯入 / 匯出</button>
-              <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答紀錄">重置提交</button>
+              <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答記錄">重置提交</button>
             </div>
           </div>
         </div>
@@ -857,7 +857,7 @@
             </div>
           </main>
 
-          <!-- 右側邊欄：即時提交紀錄 (圖 4) -->
+          <!-- 右側邊欄：即時提交記錄 (圖 4) -->
           <aside class="presentation-right-sidebar" id="presentationRightSidebar">
             <div class="presentation-right-header">
               <span>📥 即時提交</span>
@@ -870,7 +870,7 @@
             <div class="presentation-submissions-footer-actions">
               <span class="presentation-selected-count-badge" id="txtSelectedCountBadge">已選 0</span>
               <button type="button" class="presentation-sub-footer-btn" id="btnCompareSubmissions" title="對比選取同學的作答成果">🆚 比較</button>
-              <button type="button" class="presentation-sub-footer-btn" id="btnDownloadResponses" title="下載本頁提交紀錄 CSV">⬇ 下載回應</button>
+              <button type="button" class="presentation-sub-footer-btn" id="btnDownloadResponses" title="下載本頁提交記錄 CSV">⬇ 下載回應</button>
             </div>
           </aside>
         </div>
@@ -1213,7 +1213,7 @@
                       <img src="images/admin_icons/class_copy.svg" width="64" height="64" alt="跨班教材與測驗複製">
                     </div>
                     <div class="admin-feature-card-title">C. 跨班教材與測驗複製</div>
-                    <div class="admin-feature-card-desc">多班級一鍵同步教材、影片與題庫，自動排除個人紀錄。</div>
+                    <div class="admin-feature-card-desc">多班級一鍵同步教材、影片與題庫，自動排除個人記錄。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
@@ -1734,7 +1734,7 @@
 
               <!-- 提示訊息 -->
               <div style="background: rgba(52,199,89,0.08); border-left: 3px solid #34c759; padding: 8px 12px; border-radius: 4px; font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
-                🛡️ <strong>安全保護機制</strong>：複製過程會自動排除學生的作答紀錄、成績與表情反應，確保每個目標班級皆為乾淨的測驗與學習環境。
+                🛡️ <strong>安全保護機制</strong>：複製過程會自動排除學生的作答記錄、成績與表情反應，確保每個目標班級皆為乾淨的測驗與學習環境。
               </div>
             </div>
           </div>
@@ -3298,7 +3298,7 @@
                   </button>
                 </div>
                 <div id="adminWheelHistoryList" style="max-height: 160px; overflow-y: auto; padding: 8px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-color); font-size: 13px;">
-                  <div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無紀錄</div>
+                  <div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無記錄</div>
                 </div>
               </div>
 
@@ -3395,15 +3395,15 @@
                 </div>
               </div>
 
-              <!-- 📚 文字雲歷史紀錄庫 (可重複使用與複製到其他班級) -->
+              <!-- 📚 文字雲歷史記錄庫 (可重複使用與複製到其他班級) -->
               <div style="margin-top: 16px; padding: 18px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                   <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                    📚 文字雲歷史紀錄庫 <span id="wcHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 筆)</span>
+                    📚 文字雲歷史記錄庫 <span id="wcHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 筆)</span>
                   </h4>
                   <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <button type="button" onclick="window.wordCloud?.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
-                      🗑️ 清空歷史紀錄庫
+                      🗑️ 清空歷史記錄庫
                     </button>
                   </div>
                 </div>
@@ -3411,7 +3411,7 @@
                   💡 發布過的文字雲題目與成果皆會自動保留於此，可隨時「🚀 重新發起」、「📝 載入修改」、「👁️ 回顧成果」或「📤 複製到其他班級」使用！
                 </div>
                 <div id="wcHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto;">
-                  <div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史紀錄（發布題目後將自動保存）</div>
+                  <div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史記錄（發布題目後將自動保存）</div>
                 </div>
               </div>
             </div>
@@ -3761,7 +3761,7 @@
           加入或切換專屬班級
         </h3>
         <p class="desktop-only" style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
-          請輸入老師已登記開課的班級代碼。多次上課請使用同一個代碼，板書與課堂紀錄將完整延續！
+          請輸入老師已登記開課的班級代碼。多次上課請使用同一個代碼，板書與課堂記錄將完整延續！
         </p>
       </div>
 
@@ -4747,7 +4747,7 @@
                 <li><strong>翻牌抽卡</strong>：3D 命運卡牌陣列，洗牌動畫、金色翻轉高光與幸運者揭曉。</li>
                 <li><strong>幸運抽籤筒</strong>：朱紅祥雲竹籤筒，劇烈搖籤碰撞音效與大吉之籤彈出。</li>
                 <li><strong>閃電極速抽</strong>：60FPS 高刷新率賽博龐克動態掃描，降頻脈衝鎖定得獎學生。</li>
-                <li><strong>全面整合</strong>：5 種模式皆共用線上名單一鍵匯入、隨機打亂、排序、不重複抽人及歷史中獎紀錄。</li>
+                <li><strong>全面整合</strong>：5 種模式皆共用線上名單一鍵匯入、隨機打亂、排序、不重複抽人及歷史中獎記錄。</li>
               </ul>
             </li>
             <li><strong>☁️ 即時互動文字雲系統全新上線：</strong>
@@ -4989,17 +4989,17 @@ Python</pre>
   <script src="js/teacher_auth_manager.js?v=380"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
-  <script src="js/song_quiz_pool.js?v=380"></script>
+  <script src="js/song_quiz_pool.js?v=381"></script>
   <script src="js/focus_question_bank.js?v=380"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=380"></script>
-  <script src="js/app.js?v=398"></script>
+  <script src="js/app.js?v=399"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=380"></script>
   <script src="js/video_quiz.js?v=380"></script>
-  <script src="js/word_cloud.js?v=394"></script>
-  <script src="js/presentation_core.js?v=3113"></script>
+  <script src="js/word_cloud.js?v=395"></script>
+  <script src="js/presentation_core.js?v=3114"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -6357,7 +6357,7 @@ Python</pre>
       </div>
 
       <div style="background: rgba(52, 199, 89, 0.08); border-left: 3px solid #34c759; padding: 8px 12px; border-radius: 4px; font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
-        🛡️ <strong>安全保護</strong>：複製過去後將自動排除學生的作答紀錄、愛心按讚數歸零，為目標班級提供乾淨的教學教材！
+        🛡️ <strong>安全保護</strong>：複製過去後將自動排除學生的作答記錄、愛心按讚數歸零，為目標班級提供乾淨的教學教材！
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 14px;">

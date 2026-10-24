@@ -213,7 +213,7 @@ window.ClassRoomManager = {
       await rawRef(`registered_classes/${sanitizedNew}`).set(newClassData);
       await rawRef(`registered_classes/${sanitizedOld}`).remove();
 
-      // 更新本機歷史紀錄
+      // 更新本機歷史記錄
       try {
         let history = this.getClassHistory();
         history = history.map(c => c === sanitizedOld ? sanitizedNew : c);
@@ -647,7 +647,7 @@ window.ClassRoomManager = {
         }
       }
 
-      // G. 處理文字雲歷史題庫 (quiz/wordCloud/history; 排除學生作答紀錄)
+      // G. 處理文字雲歷史題庫 (quiz/wordCloud/history; 排除學生作答記錄)
       if (modules.wordCloud) {
         const srcWcHistory = toArray(srcData.wordCloudHistory).map(w => {
           const cleaned = { ...w };

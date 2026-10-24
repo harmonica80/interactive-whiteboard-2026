@@ -114,7 +114,7 @@
 - 修改項目：
   1. **後台班級管理與測驗出題卡片說明精準修正 (`index.html`)**：
      - 班級管理卡片 A 說明修正為：「建立開課班級代碼、編輯班級資訊。」
-     - 班級管理卡片 C 說明修正為：「多班級一鍵同步教材、影片與題庫，自動排除個人紀錄。」
+     - 班級管理卡片 C 說明修正為：「多班級一鍵同步教材、影片與題庫，自動排除個人記錄。」
      - 測驗出題卡片 A 說明修正為：「建立單選、複選、圖文配對題，題目支援文字、圖片與 Youtube 影片、Google雲端硬碟音檔。」
      - 測驗出題卡片 B 說明修正為：「支援一段影片出多個題目，題型包括單選、複選與圖文配對，且可將多段影片群組成「測驗組合」，一起進行測驗。」
   2. **後台教學互動管理新增「C. 抽人轉盤」全功能區塊 (`index.html`, `js/app.js`, `images/admin_icons/game_wheel.svg`)**：
@@ -125,7 +125,7 @@
        - 前往轉盤畫面、廣播全班同步轉盤、立即啟動旋轉三合一快捷操作列。
        - 轉盤名單編輯、線上名單一鍵匯入、打亂、排序、清空與人數即時統計。
        - 不重複抽人開關、轉盤色系風格下拉選單、旋轉音效風格下拉選單。
-       - 歷史抽中紀錄即時清單與一鍵清除復原名單功能。
+       - 歷史抽中記錄即時清單與一鍵清除復原名單功能。
      - `js/app.js` 全面整合 Firebase 即時雙向同步與 `syncAdminWheelUI` 狀態綁定。
   3. **行動裝置頂部選單按鈕名稱精簡化 (`index.html`, `css/style.css`, `js/app.js`)**：
      - 行動端學生姓名與頭像設定引導按鈕名稱由「👤 設定名稱」精簡為「👤 設定」，並在 CSS 中配置 `flex-shrink: 0 !important;` 與 `white-space: nowrap !important;`，徹底解決窄螢幕下文字被擠壓截斷為「👤 設定名...」之問題。
@@ -356,7 +356,7 @@
 - 影響檔案：`index.html`, `css/style.css`, `package.json`, `js/app.js`, `SYSTEM_LOG.md`, `scripts/verify-video-quiz.mjs`, `scripts/verify-song-quiz.mjs`。
 - 修改項目：
   1. **手機版隱藏班級切換對話框冗長說明文字 (`index.html`)**：
-     - **成因排查**：在手機螢幕高度有限的裝置上開啟「加入或切換專屬班級」對話框時，頂部的說明文字（「請輸入老師已登記開課的班級代碼。多次上課請使用同一個代碼，板書與課堂紀錄將完整延續！」）佔用了過多直向高度，導致底部的「🚀 進入班級課堂」與「🌱 返回免代碼一次性課堂」按鈕被推擠至螢幕外緣甚至無法完整看見。
+     - **成因排查**：在手機螢幕高度有限的裝置上開啟「加入或切換專屬班級」對話框時，頂部的說明文字（「請輸入老師已登記開課的班級代碼。多次上課請使用同一個代碼，板書與課堂記錄將完整延續！」）佔用了過多直向高度，導致底部的「🚀 進入班級課堂」與「🌱 返回免代碼一次性課堂」按鈕被推擠至螢幕外緣甚至無法完整看見。
      - **修復方案**：為該說明文字段落加上 `.desktop-only` 類別，在手機端自動隱藏不顯示，電腦版與平板端則繼續保留說明。
   2. **手機版班級切換對話框尺寸與間距緊湊化 (`css/style.css`)**：
      - 在 `@media (max-width: 768px)` 中，將 `.class-modal-card` 內距由 `26px` 縮減為 `16px 18px`，標題間距與圖示尺寸適度微調，並加上 `max-height: 90vh !important; overflow-y: auto !important;`。
@@ -753,7 +753,7 @@
      - 新增 `getSelectedSongQuizTags()`、`onSongQuizTagCheckboxChange()`、`setAllSongQuizTags(selectAll)` 與 `updateSongQuizTagSummary()` 方法。
      - 預設全選所有標籤（112 首歌曲），老師可自由勾選單一分類（如僅古典音樂 20 首）、勾選任意多個分類（如五年級 + 六年級共 40 首）、或全選。
      - 在 `startFocusGame()` 中嚴格判定勾選狀態：若老師取消勾選所有標籤，發起遊戲時會主動跳出防呆提示「請先勾選歌單標籤，至少勾選一個出題歌單」，避免空題目局發生。
-     - Firebase 同步紀錄所選標籤資訊（全選記錄為 `'all'`，單選記錄單一標籤名稱，多選記錄如 `'古典音樂、台灣五年級'`），學生端與大螢幕題目標籤皆精準對應個別題目的原屬分類。
+     - Firebase 同步記錄所選標籤資訊（全選記錄為 `'all'`，單選記錄單一標籤名稱，多選記錄如 `'古典音樂、台灣五年級'`），學生端與大螢幕題目標籤皆精準對應個別題目的原屬分類。
   3. **版本號嚴格遞增至 `ver 3.3.0`**：
      - 依規範由 `ver 3.2.9` 嚴格遞增 `+0.01` 升至 **`ver 3.3.0`**。
      - 更新 `package.json`、`index.html`（版本標籤與快取破除 `?v=330`）、`app.js`（`this.APP_VERSION = '3.3.0'`），並通過 50+ 項 `scripts/verify-song-quiz.mjs` 與 72+ 項 `scripts/verify-video-quiz.mjs` 自動化檢查。
@@ -1337,7 +1337,7 @@
 - 修改項目：專注力遊戲新增「求救提示」按鈕。
 - 行為：使用者按提示後，系統會高亮下一個應點擊的數字。
 - 計分：每使用一次提示會將完成時間增加 5 秒。
-- 資料紀錄：排行榜結果會寫入 `helpCount` 與 `penaltySeconds`，方便日後查詢提示使用狀況。
+- 資料記錄：排行榜結果會寫入 `helpCount` 與 `penaltySeconds`，方便日後查詢提示使用狀況。
 - 影響檔案：`index.html`, `js/app.js`, `css/style.css`。
 - 備註：程式碼中已加入 `OpenCode 修改` 註解，方便 Antigravity 或其他 AI 接手辨識修改來源。
 
@@ -1345,7 +1345,7 @@
 - 修改項目：專注力遊戲新增第一版「位置序列記憶」與「反向模式」。
 - 行為：老師可在管理後台選擇位置序列記憶，設定序列長度與是否反向作答；系統會將同一組位置序列寫入 Firebase，學生觀看閃爍後依序或反向點回。
 - 計分：完成時間會寫入排行榜；點錯會加時 3 秒並記錄 `mistakes`。
-- 資料紀錄：排行榜結果會寫入 `gameType`, `reverseMode`, `mistakes`, `helpCount`, `penaltySeconds`。
+- 資料記錄：排行榜結果會寫入 `gameType`, `reverseMode`, `mistakes`, `helpCount`, `penaltySeconds`。
 - 同步保護：新增本地遊戲 key，避免其他學生完成造成 Firebase `results` 更新時，重置尚在作答學生的遊戲畫面。
 - 影響檔案：`index.html`, `js/app.js`, `css/style.css`。
 - 備註：程式碼中已加入 `OpenCode 修改` 註解，方便 Antigravity 或其他 AI 接手辨識修改來源。
@@ -2479,7 +2479,7 @@
 - 版本：依規定版本號增加 `+0.01`，由 `ver 3.0.6` 升級為 **`ver 3.0.7`**。
 - 修改項目：
   1. **Firebase 智慧雙軌透明路由 (Transparent Proxy Routing)**：
-     - 在 `js/firebase-config.js` 引入 `window.ClassRoomManager`，負責班級代碼標準化、URL 參數（`?class=`/`?room=`）解析、`localStorage` 狀態記憶與歷史紀錄維護。
+     - 在 `js/firebase-config.js` 引入 `window.ClassRoomManager`，負責班級代碼標準化、URL 參數（`?class=`/`?room=`）解析、`localStorage` 狀態記憶與歷史記錄維護。
      - 封裝 `db.ref` 支援雙軌自動分流：未設定班級代碼時（一次性課堂），100% 維持原有路徑（零破壞、完美相容既有資料）；指定班級代碼時，自動無縫隔離至 `classes/{classCode}/...`。
   2. **課堂模式與班級狀態列 (Class Mode Bar)**：
      - 頂部增設狀態列，一次性模式下顯示「🌱 一次性課堂（免代碼公開空間）」與「🔑 輸入班級代碼」按鈕。
