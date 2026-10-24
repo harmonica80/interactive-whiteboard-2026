@@ -7853,7 +7853,7 @@ body {
   position: absolute;
   bottom: 58px;
   right: 0;
-  width: 255px;
+  width: 275px;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
   border-radius: 18px;

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>即時互動白板 - 課堂互動系統</title>
-  <link rel="stylesheet" href="css/style.css?v=397">
-  <link rel="stylesheet" href="css/presentation.css?v=3113">
+  <link rel="stylesheet" href="css/style.css?v=398">
+  <link rel="stylesheet" href="css/presentation.css?v=3114">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -117,9 +117,9 @@
       </div>
 
       <div class="class-mode-actions">
-        <!-- 專屬班級專用按鈕 -->
-        <button type="button" class="class-action-btn btn-share-link" id="btnShareClassLink" style="display: none;" onclick="window.app.shareClassLink()" title="複製專屬邀請連結傳給學生">
-          📋 複製班級連結
+        <!-- 教室/班級邀請連結按鈕 (支援一次性與專屬班級) -->
+        <button type="button" class="class-action-btn btn-share-link" id="btnShareClassLink" onclick="window.app && window.app.openClassInviteModal()" title="開啟此教室/班級邀請連結與 QR Code">
+          🔗 邀請連結
         </button>
         <button type="button" class="class-action-btn btn-exit-class" id="btnExitClass" style="display: none;" onclick="window.app.exitClassRoom()" title="離開此班級，返回免代碼的一次性課堂">
           🚪 退出班級
@@ -755,15 +755,33 @@
               <button type="button" class="presentation-tool-btn" id="btnSlideFullscreen" title="進入/退出全螢幕">🗖 最大化</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideSettings" title="設定外部 URL 與多題互動">⚙️ 本頁設定</button>
               <button type="button" class="presentation-tool-btn purple" id="btnSlideImportExport" title="匯入 PDF / 匯入匯出 JSON 備份">📁 匯入 / 匯出</button>
-              <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答記錄">重置提交</button>
+              <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答記錄">重置回應</button>
             </div>
           </div>
         </div>
 
         <!-- 主工作區 (左欄、中欄、右欄) -->
-        <div class="presentation-workspace">
-          <!-- 左側邊欄：頁面縮圖與新增控制 -->
+        <div class="presentation-workspace" id="presentationWorkspace">
+          <!-- 縮圖收合時之展開快捷按鈕 (老師與學生端皆支援) -->
+          <button type="button" class="presentation-sidebar-expand-pill expand-left" id="btnExpandLeftSidebar" onclick="window.presentationManager && window.presentationManager.toggleLeftSidebar(true)" title="展開簡報縮圖清單" style="display: none;">
+            <span>📑 縮圖 ▶</span>
+          </button>
+
+          <!-- 即時回應收合時之展開快捷按鈕 (僅老師端具控制權時可展開) -->
+          <button type="button" class="presentation-sidebar-expand-pill expand-right" id="btnExpandRightSidebar" onclick="window.presentationManager && window.presentationManager.toggleRightSidebar(true)" title="展開即時回應面板" style="display: none;">
+            <span>◀ 📥 即時回應</span>
+          </button>
+
+          <!-- 左側邊欄：頁面縮圖與新增控制 (可收合) -->
           <aside class="presentation-left-sidebar" id="presentationLeftSidebar">
+            <div class="presentation-sidebar-header" id="presentationLeftSidebarHeader">
+              <span class="presentation-sidebar-header-title">
+                <span>📑</span> 簡報縮圖
+              </span>
+              <button type="button" class="presentation-sidebar-toggle-btn" id="btnCollapseLeftSidebar" onclick="window.presentationManager && window.presentationManager.toggleLeftSidebar(false)" title="收合簡報縮圖以加大簡報空間">
+                ◀ 收合
+              </button>
+            </div>
             <button type="button" class="presentation-btn-start" id="btnStartSyncPresentation">
               <span>🎉 開始同步簡報</span>
             </button>
@@ -867,20 +885,25 @@
             </div>
           </main>
 
-          <!-- 右側邊欄：即時提交記錄 (圖 4) -->
+          <!-- 右側邊欄：即時回應記錄 (可收合) -->
           <aside class="presentation-right-sidebar" id="presentationRightSidebar">
             <div class="presentation-right-header">
-              <span>📥 即時提交</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span>📥 即時回應</span>
+              </div>
+              <button type="button" class="presentation-sidebar-toggle-btn" id="btnCollapseRightSidebar" onclick="window.presentationManager && window.presentationManager.toggleRightSidebar(false)" title="收合即時回應面板以加大簡報空間">
+                收合 ▶
+              </button>
             </div>
             <div id="presentationSubmissionsStats" style="margin-bottom: 6px;"></div>
             <div class="presentation-submissions-body" id="presentationSubmissionsList">
               <div class="presentation-submissions-empty">本頁未設定互動。</div>
             </div>
-            <!-- 圖 4 底欄：已選計數、比較與下載按鈕 -->
+            <!-- 底欄：已選計數、比較與下載按鈕 -->
             <div class="presentation-submissions-footer-actions">
               <span class="presentation-selected-count-badge" id="txtSelectedCountBadge">已選 0</span>
               <button type="button" class="presentation-sub-footer-btn" id="btnCompareSubmissions" title="對比選取同學的作答成果">🆚 比較</button>
-              <button type="button" class="presentation-sub-footer-btn" id="btnDownloadResponses" title="下載本頁提交記錄 CSV">⬇ 下載回應</button>
+              <button type="button" class="presentation-sub-footer-btn" id="btnDownloadResponses" title="下載本頁回應記錄 CSV">⬇ 下載回應</button>
             </div>
           </aside>
         </div>
@@ -2407,15 +2430,28 @@
                   </p>
                 </div>
 
-                <!-- 啟用/停用開關 -->
-                <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-secondary); padding: 10px 16px; border-radius: 12px; border: 1px solid var(--border-color);">
-                  <label for="reactionEnabledToggle" style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; margin: 0;">
-                    <input type="checkbox" id="reactionEnabledToggle" checked onchange="window.app.toggleReactionEnabled(this.checked)" style="width: 20px; height: 20px; accent-color: #ec4899; cursor: pointer;">
-                    <div>
-                      <div style="font-size: 14px; font-weight: 800; color: var(--text-primary);">啟用全班即時互動回饋列</div>
-                      <div id="reactionEnabledStatusText" style="font-size: 12px; color: #10b981; font-weight: 600;">目前狀態：已開啟（全班顯示）</div>
-                    </div>
-                  </label>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <!-- 是否顯示同學姓名開關 (預設為顯示) -->
+                  <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-secondary); padding: 10px 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <label for="reactionShowNameToggle" style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; margin: 0;">
+                      <input type="checkbox" id="reactionShowNameToggle" checked onchange="window.app && window.app.toggleReactionShowName(this.checked)" style="width: 20px; height: 20px; accent-color: #007aff; cursor: pointer;">
+                      <div>
+                        <div style="font-size: 14px; font-weight: 800; color: var(--text-primary);">是否顯示同學姓名</div>
+                        <div id="reactionShowNameStatusText" style="font-size: 12px; color: #10b981; font-weight: 600;">目前狀態：已開啟（顯示姓名）</div>
+                      </div>
+                    </label>
+                  </div>
+
+                  <!-- 啟用/停用開關 -->
+                  <div style="display: flex; align-items: center; gap: 12px; background: var(--bg-secondary); padding: 10px 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <label for="reactionEnabledToggle" style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; margin: 0;">
+                      <input type="checkbox" id="reactionEnabledToggle" checked onchange="window.app.toggleReactionEnabled(this.checked)" style="width: 20px; height: 20px; accent-color: #ec4899; cursor: pointer;">
+                      <div>
+                        <div style="font-size: 14px; font-weight: 800; color: var(--text-primary);">啟用全班即時互動回饋列</div>
+                        <div id="reactionEnabledStatusText" style="font-size: 12px; color: #10b981; font-weight: 600;">目前狀態：已開啟（全班顯示）</div>
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -5028,12 +5064,12 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=382"></script>
-  <script src="js/app.js?v=407"></script>
+  <script src="js/app.js?v=408"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=381"></script>
   <script src="js/video_quiz.js?v=383"></script>
   <script src="js/word_cloud.js?v=395"></script>
-  <script src="js/presentation_core.js?v=3114"></script>
+  <script src="js/presentation_core.js?v=3115"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -6527,10 +6563,6 @@ Python</pre>
         <button type="button" class="fab-quick-menu-close" onclick="window.app && window.app.toggleQuickInfoMenu(false)">✕</button>
       </div>
       <div class="fab-quick-menu-items">
-        <button type="button" class="fab-quick-menu-item" onclick="window.app && window.app.openClassInviteModal()">
-          <span class="fab-item-icon">🔗</span>
-          <span class="fab-item-text">此教室邀請連結與 QRCode</span>
-        </button>
         <button type="button" class="fab-quick-menu-item" onclick="window.app && window.app.navigateToGuideTab()">
           <span class="fab-item-icon">🛠️</span>
           <span class="fab-item-text">建立自己的白板</span>
@@ -6539,6 +6571,14 @@ Python</pre>
           <span class="fab-item-icon">📄</span>
           <span class="fab-item-text">版本更新歷程</span>
         </button>
+      </div>
+      <div class="fab-quick-menu-license" style="padding: 10px 8px 6px 8px; border-top: 1px solid var(--border-color, rgba(0,0,0,0.08)); font-size: 11px; color: var(--text-secondary, #64748b); line-height: 1.5; text-align: left;">
+        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hant" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-bottom: 6px; text-decoration: none;" title="創用 CC 姓名標示-非商業性-相同方式分享 4.0 國際 授權條款">
+          <img src="images/cc-by-nc-sa.png" alt="CC BY-NC-SA 4.0" style="border: 0; width: 88px; height: 31px; display: block; border-radius: 4px;" />
+        </a>
+        <div style="font-size: 11px; color: var(--text-secondary, #64748b);">
+          本網站文章用「<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hant" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color, #007aff); text-decoration: underline; font-weight: 600;">創用 CC 姓名標示-非商業性-相同方式分享 4.0 國際 授權條款</a>」授權。
+        </div>
       </div>
       <div class="fab-quick-menu-footer">
         <a href="https://www.youtube.com/@harmonica80" target="_blank" rel="noopener noreferrer" class="fab-footer-link-btn" title="述文老師 YouTube 教學頻道">

@@ -486,7 +486,23 @@
       if (els.btnSettings) els.btnSettings.style.display = ctrlDisplay;
       if (els.btnImportExport) els.btnImportExport.style.display = ctrlDisplay;
       if (els.btnResetSubmissions) els.btnResetSubmissions.style.display = ctrlDisplay;
-      if (els.rightSidebar) els.rightSidebar.style.display = canControl ? 'flex' : 'none';
+      const expandRight = document.getElementById('btnExpandRightSidebar');
+      if (els.rightSidebar) {
+        if (!canControl) {
+          els.rightSidebar.style.display = 'none';
+          if (expandRight) expandRight.style.display = 'none';
+        } else {
+          els.rightSidebar.style.display = 'flex';
+          if (expandRight) {
+            expandRight.style.display = els.rightSidebar.classList.contains('is-collapsed') ? 'inline-flex' : 'none';
+          }
+        }
+      }
+      const expandLeft = document.getElementById('btnExpandLeftSidebar');
+      const leftSidebar = document.getElementById('presentationLeftSidebar');
+      if (leftSidebar && expandLeft) {
+        expandLeft.style.display = leftSidebar.classList.contains('is-collapsed') ? 'inline-flex' : 'none';
+      }
 
       // 若非授權學生且老師未廣播時，畫面呈現提示
       if (!canControl && !this.isPresenting) {
@@ -1484,21 +1500,21 @@
         if (submissionsStats) {
           let totalAll = 0;
           Object.values(this.submissions || {}).forEach(page => totalAll += Object.keys(page).length);
-          submissionsStats.textContent = `全體提交：${totalAll}`;
+          submissionsStats.textContent = `全體回應：${totalAll}`;
         }
         if (txtSelectedCountBadge) txtSelectedCountBadge.textContent = '已選 0';
         return;
       }
 
       if (submissionsStats) {
-        submissionsStats.textContent = `${subEntries.length} 則提交`;
+        submissionsStats.textContent = `${subEntries.length} 則回應`;
       }
       if (txtSelectedCountBadge) {
         txtSelectedCountBadge.textContent = `已選 ${this.selectedSubmissionIds.size}`;
       }
 
       if (subEntries.length === 0) {
-        submissionsList.innerHTML = '<div class="presentation-submissions-empty">目前尚未有同學提交作答...</div>';
+        submissionsList.innerHTML = '<div class="presentation-submissions-empty">目前尚未有同學提交回應...</div>';
         return;
       }
 
@@ -2163,7 +2179,7 @@
 
       const selectedList = Object.entries(pageSubs).filter(([uid, sub]) => this.selectedSubmissionIds.has(uid) && sub.drawDataUrl);
       if (selectedList.length === 0) {
-        this.notify('提示', '請先在右側「即時提交」清單勾選要比較的同學手繪作品！');
+        this.notify('提示', '請先在右側「即時回應」清單勾選要比較的同學手繪作品！');
         return;
       }
 
@@ -2250,7 +2266,7 @@
       const slide = this.getCurrentSlide();
       if (!slide) return;
 
-      if (confirm('確定要清空本頁所有同學的作答提交記錄嗎？')) {
+      if (confirm('確定要清空本頁所有同學的作答回應記錄嗎？')) {
         if (typeof db !== 'undefined') {
           db.ref(`presentation/submissions/${slide.id}`).remove().catch(() => {});
         }
@@ -2312,6 +2328,48 @@
       } else {
         document.exitFullscreen();
       }
+    }
+
+    // 收合 / 展開左側簡報縮圖側欄（教師端與學生端皆支援）
+    toggleLeftSidebar(expand = null) {
+      const sidebar = document.getElementById('presentationLeftSidebar');
+      const expandBtn = document.getElementById('btnExpandLeftSidebar');
+      if (!sidebar) return;
+      const isCurrentlyCollapsed = sidebar.classList.contains('is-collapsed');
+      const shouldExpand = expand !== null ? Boolean(expand) : isCurrentlyCollapsed;
+
+      if (shouldExpand) {
+        sidebar.classList.remove('is-collapsed');
+        if (expandBtn) expandBtn.style.display = 'none';
+      } else {
+        sidebar.classList.add('is-collapsed');
+        if (expandBtn) expandBtn.style.display = 'inline-flex';
+      }
+
+      setTimeout(() => this.updateCanvasDimensions(), 60);
+      setTimeout(() => this.updateCanvasDimensions(), 280);
+    }
+
+    // 收合 / 展開右側即時回應側欄（教師端支援）
+    toggleRightSidebar(expand = null) {
+      const sidebar = document.getElementById('presentationRightSidebar');
+      const expandBtn = document.getElementById('btnExpandRightSidebar');
+      if (!sidebar) return;
+      const isCurrentlyCollapsed = sidebar.classList.contains('is-collapsed');
+      const shouldExpand = expand !== null ? Boolean(expand) : isCurrentlyCollapsed;
+
+      if (shouldExpand) {
+        sidebar.classList.remove('is-collapsed');
+        if (expandBtn) expandBtn.style.display = 'none';
+      } else {
+        sidebar.classList.add('is-collapsed');
+        if (expandBtn && this.canControlPresentation()) {
+          expandBtn.style.display = 'inline-flex';
+        }
+      }
+
+      setTimeout(() => this.updateCanvasDimensions(), 60);
+      setTimeout(() => this.updateCanvasDimensions(), 280);
     }
 
     // ===== 彈窗邏輯：匯入 / 匯出 (圖 3，修復 Item 2) =====

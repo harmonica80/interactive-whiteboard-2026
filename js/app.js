@@ -2190,6 +2190,7 @@ class App {
       if (val && typeof val === 'object') {
         this.reactionSettings = {
           enabled: val.enabled !== false,
+          showStudentName: val.showStudentName !== false,
           activePreset: val.activePreset || 'classic',
           presetMaxPerSec: (val.presetMaxPerSec && typeof val.presetMaxPerSec === 'object') ? val.presetMaxPerSec : {},
           customItems: Array.isArray(val.customItems) && val.customItems.length >= 2
@@ -2199,6 +2200,7 @@ class App {
       } else {
         this.reactionSettings = {
           enabled: true,
+          showStudentName: true,
           activePreset: 'classic',
           presetMaxPerSec: {},
           customItems: this.getDefaultCustomReactionItems()
@@ -2430,17 +2432,20 @@ class App {
       bubble.appendChild(badgeEl);
     }
 
-    // 暱稱標籤
-    const nameEl = document.createElement('div');
-    nameEl.className = 'floating-reaction-name';
+    // 暱稱標籤（依教師設定是否顯示同學姓名，預設為顯示）
+    const showName = !this.reactionSettings || this.reactionSettings.showStudentName !== false;
+    if (showName) {
+      const nameEl = document.createElement('div');
+      nameEl.className = 'floating-reaction-name';
 
-    // 如果有頭像且為合法 ID，加上微型大頭貼
-    const avatarHtml = (typeof this.renderAvatarHtml === 'function')
-      ? this.renderAvatarHtml(avatar, 14)
-      : '';
-    nameEl.innerHTML = `${avatarHtml}<span>${this.escapeHtml(userName || '同學')}</span>`;
+      // 如果有頭像且為合法 ID，加上微型大頭貼
+      const avatarHtml = (typeof this.renderAvatarHtml === 'function')
+        ? this.renderAvatarHtml(avatar, 14)
+        : '';
+      nameEl.innerHTML = `${avatarHtml}<span>${this.escapeHtml(userName || '同學')}</span>`;
 
-    bubble.appendChild(nameEl);
+      bubble.appendChild(nameEl);
+    }
     item.appendChild(bubble);
     overlay.appendChild(item);
 
@@ -2526,6 +2531,17 @@ class App {
         ? '目前狀態：已開啟（全班右下角顯示互動列）'
         : '目前狀態：已關閉（全班隱藏互動列）';
       statusTextEl.style.color = enabled ? '#10b981' : '#ef4444';
+    }
+
+    const showName = !this.reactionSettings || this.reactionSettings.showStudentName !== false;
+    const showNameToggle = document.getElementById('reactionShowNameToggle');
+    const showNameStatus = document.getElementById('reactionShowNameStatusText');
+    if (showNameToggle) showNameToggle.checked = showName;
+    if (showNameStatus) {
+      showNameStatus.textContent = showName
+        ? '目前狀態：已開啟（顯示姓名）'
+        : '目前狀態：已關閉（匿名互動）';
+      showNameStatus.style.color = showName ? '#10b981' : '#f59e0b';
     }
 
     const activePreset = this.getActiveReactionPresetData();
@@ -2786,6 +2802,7 @@ class App {
     if (!this.reactionSettings) {
       this.reactionSettings = {
         enabled: true,
+        showStudentName: true,
         activePreset: 'classic',
         presetMaxPerSec: {},
         customItems: this.getDefaultCustomReactionItems()
@@ -2797,10 +2814,26 @@ class App {
     this.saveReactionSettings(true);
   }
 
+  toggleReactionShowName(show) {
+    if (!this.reactionSettings) {
+      this.reactionSettings = {
+        enabled: true,
+        showStudentName: true,
+        activePreset: 'classic',
+        presetMaxPerSec: {},
+        customItems: this.getDefaultCustomReactionItems()
+      };
+    }
+    this.reactionSettings.showStudentName = Boolean(show);
+    this.updateReactionSettingsUI();
+    this.saveReactionSettings(true);
+  }
+
   saveReactionSettings(silent = false) {
     if (!this.db || !this.reactionSettings) return;
     const payload = {
       enabled: this.reactionSettings.enabled !== false,
+      showStudentName: this.reactionSettings.showStudentName !== false,
       activePreset: this.reactionSettings.activePreset || 'classic',
       presetMaxPerSec: (this.reactionSettings.presetMaxPerSec && typeof this.reactionSettings.presetMaxPerSec === 'object')
         ? this.reactionSettings.presetMaxPerSec
@@ -2828,6 +2861,7 @@ class App {
   resetReactionSettingsToDefault() {
     this.reactionSettings = {
       enabled: true,
+      showStudentName: true,
       activePreset: 'classic',
       presetMaxPerSec: {},
       customItems: this.getDefaultCustomReactionItems()
@@ -16557,7 +16591,7 @@ class App {
       // 一次性課堂模式
       if (modeOneOff) modeOneOff.style.display = 'inline-flex';
       if (modeClass) modeClass.style.display = 'none';
-      if (btnShare) btnShare.style.display = 'none';
+      if (btnShare) btnShare.style.display = 'inline-flex';
       if (btnExit) btnExit.style.display = 'none';
       if (btnActionText) btnActionText.textContent = '輸入班級代碼';
 
@@ -16777,22 +16811,7 @@ class App {
   }
 
   shareClassLink() {
-    const code = window.currentClassCode;
-    if (!code) {
-      this.showNotification('提示', '目前處於一次性課堂，無專屬班級代碼可分享。');
-      return;
-    }
-
-    const shareUrl = new URL(window.location.href);
-    shareUrl.searchParams.set('class', code);
-    shareUrl.searchParams.delete('room');
-    const finalUrl = shareUrl.toString();
-
-    navigator.clipboard.writeText(finalUrl).then(() => {
-      this.showNotification('📋 複製成功', `已複製【${code}】班級邀請連結！發送此連結給學生，點開即可直接進入該班專屬白板。`);
-    }).catch(() => {
-      prompt('請手動複製下列班級邀請連結：', finalUrl);
-    });
+    this.openClassInviteModal();
   }
 
   // ===== 管理後台：班級管理與開課管制業務 =====
