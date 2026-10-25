@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=1">
   <link rel="shortcut icon" href="favicon.ico?v=1">
   <link rel="apple-touch-icon" href="favicon.png?v=1">
-  <link rel="stylesheet" href="css/style.css?v=403">
+  <link rel="stylesheet" href="css/style.css?v=404">
   <link rel="stylesheet" href="css/presentation.css?v=3114">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -2789,34 +2789,90 @@
               </div>
               <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="display: none; margin-top: 10px; padding: 12px; width: 100%; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color);">結束測驗</button>
 
-              <!-- 5. 📚 歷次題目庫 (支援全選、拖曳排序與勾選 TXT 匯出) -->
+              <!-- 5. 選擇題測驗雙頁籤：歷次題目庫 與 題庫管理 (圖 2) -->
               <div id="quizHistorySection" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                  <h4 style="font-size: 14px; color: var(--text-primary); margin: 0; font-weight: bold; display: flex; align-items: center; gap: 6px;">
-                    <span>📚 歷次題目庫</span> <span id="quizHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 題)</span>
-                    <span style="font-size: 11.5px; color: var(--text-secondary); font-weight: normal;">（支援 ☰ 拖曳調整順序）</span>
-                  </h4>
-                  <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-secondary" onclick="window.quiz.exportSelectedQuizBankTxt()" style="padding: 4px 10px; font-size: 12px; font-weight: bold;">
-                      📥 匯出選取題目 TXT
-                    </button>
-                  </div>
-                </div>
-
-                <!-- 批次勾選列 -->
-                <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 12px;">
-                  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: bold; color: var(--text-secondary);">
-                    <input type="checkbox" id="chkSelectAllQuiz" onchange="window.quiz.toggleSelectAllHistory(this.checked)" style="cursor: pointer;">
-                    <span>全選 / 全不選</span>
-                  </label>
-                  <button type="button" onclick="window.quiz.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
-                    🗑️ 清空歷次題庫
+                <!-- 雙頁籤導覽列 (圖 2 需求 1) -->
+                <div class="admin-subtabs-nav" id="quizAdminSubTabs" style="margin-bottom: 14px;">
+                  <button type="button" class="admin-subtab-btn active" id="btnSubTabQuizHistory" onclick="window.quiz && window.quiz.switchHistorySubTab('history')">
+                    📚 歷次題目庫
+                  </button>
+                  <button type="button" class="admin-subtab-btn" id="btnSubTabQuizBank" onclick="window.quiz && window.quiz.switchHistorySubTab('bank')">
+                    📁 題庫管理
                   </button>
                 </div>
 
-                <!-- 歷史題目清單 -->
-                <div id="quizHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
-                  <!-- 動態渲染歷史題目項目 -->
+                <!-- 頁籤 1: 歷次題目庫 -->
+                <div id="quizSubTabPaneHistory" class="admin-subtab-pane">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <h4 style="font-size: 14px; color: var(--text-primary); margin: 0; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                      <span>📚 歷次題目庫</span> <span id="quizHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 題)</span>
+                      <span style="font-size: 11.5px; color: var(--text-secondary); font-weight: normal;">（支援 ☰ 拖曳調整順序）</span>
+                    </h4>
+                    <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                      <button type="button" class="btn btn-secondary" onclick="window.quiz.exportSelectedQuizBankTxt()" style="padding: 4px 10px; font-size: 12px; font-weight: bold;">
+                        📥 匯出選取題目 TXT
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 批次勾選列 -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 12px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: bold; color: var(--text-secondary);">
+                      <input type="checkbox" id="chkSelectAllQuiz" onchange="window.quiz.toggleSelectAllHistory(this.checked)" style="cursor: pointer;">
+                      <span>全選 / 全不選</span>
+                    </label>
+                    <button type="button" onclick="window.quiz.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
+                      🗑️ 清空歷次題庫
+                    </button>
+                  </div>
+
+                  <!-- 歷史題目清單 -->
+                  <div id="quizHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
+                    <!-- 動態渲染歷史題目項目 -->
+                  </div>
+                </div>
+
+                <!-- 頁籤 2: 題庫管理 (圖 1，題庫管理跟影片題一樣) -->
+                <div id="quizSubTabPaneBank" class="admin-subtab-pane" style="display: none;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                    <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                      <span>📁 題庫管理與出題工具</span>
+                      <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">（可透過 ☰ 圖示拖曳調整題目排序）</span>
+                    </h4>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                      <button type="button" class="action-btn" onclick="window.quiz.openCreateNewQuiz()" style="background: #5856d6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="在上方出題框建立新題目">
+                        ➕ 建立新測驗
+                      </button>
+                      <button type="button" class="action-btn" onclick="openQuizFormatModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看題庫格式規範">
+                        📋 範例格式說明
+                      </button>
+                      <button type="button" class="action-btn" onclick="window.quiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
+                        ⬇️ 範例檔 (JSON)
+                      </button>
+                      <button type="button" class="action-btn" onclick="window.quiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
+                        ⬇️ 範例檔 (CSV)
+                      </button>
+                      <button type="button" class="action-btn" onclick="window.quiz.exportQuizzesJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有題目匯出為 JSON 備份檔">
+                        📤 匯出 JSON
+                      </button>
+                      <button type="button" class="action-btn" onclick="window.quiz.exportQuizzesCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有題目匯出為 CSV 試算表檔">
+                        📤 匯出 CSV
+                      </button>
+                      <button type="button" class="action-btn" onclick="document.getElementById('quizBankFileInput').click()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON、CSV 或 TXT 題庫檔案">
+                        📥 匯入題庫
+                      </button>
+                      <input type="file" id="quizBankFileInput" accept=".json,.csv,.txt" style="display: none;" onchange="window.quiz.importQuizBankUnifiedFile(event)">
+                    </div>
+                  </div>
+
+                  <!-- 關鍵字搜尋與題目列表 -->
+                  <div style="margin-bottom: 10px;">
+                    <input type="text" id="quizBankSearchInput" class="question-input" oninput="window.quiz.filterBankQuestions(this.value)" placeholder="🔍 搜尋題庫題目、選項內容..." style="width: 100%; box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+                  </div>
+
+                  <div id="quizBankListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto;">
+                    <!-- 動態渲染題庫管理列表 -->
+                  </div>
                 </div>
               </div>
             </div>
@@ -5142,18 +5198,27 @@
     </div>
   </div>
 
-  <!-- 題目庫 TXT 純文字檔範例格式說明對話框 -->
+  <!-- 題目庫範例格式說明對話框 (支援 TXT / JSON / CSV 三格式) -->
   <div id="quizFormatModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 580px; width: 90%; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;">
+    <div class="modal-content" style="max-width: 640px; width: 92%; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;">
       <button onclick="closeQuizFormatModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer;">✕</button>
       <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-        📄 題目庫純文字檔 (.txt) 格式說明
+        📋 選擇題測驗題庫格式說明（支援 TXT / JSON / CSV）
       </h3>
-      <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
-        您可以使用任何記事本，將題目寫成簡單的純文字檔格式！<strong>第 1 行為題目</strong>，<strong>第 2 行填單選或複選</strong>，<strong>第 3 行起每行一個選項</strong>。題目間以 <code>---</code> 或空行分隔：
-      </p>
 
-      <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 240px; line-height: 1.4;">
+      <!-- 格式切換頁籤 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+        <button type="button" class="preset-btn active" id="tabQuizFormatTxt" onclick="window.quiz && window.quiz.switchFormatGuideTab('txt')" style="padding: 6px 14px; font-size: 12.5px; font-weight: bold;">📄 TXT 純文字</button>
+        <button type="button" class="preset-btn" id="tabQuizFormatJson" onclick="window.quiz && window.quiz.switchFormatGuideTab('json')" style="padding: 6px 14px; font-size: 12.5px; font-weight: bold;">💻 JSON 格式</button>
+        <button type="button" class="preset-btn" id="tabQuizFormatCsv" onclick="window.quiz && window.quiz.switchFormatGuideTab('csv')" style="padding: 6px 14px; font-size: 12.5px; font-weight: bold;">📊 CSV 試算表</button>
+      </div>
+
+      <!-- TXT 說明 -->
+      <div id="quizFormatGuidePaneTxt">
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">
+          最簡單直觀的文字檔格式！<strong>第 1 行為題目</strong>，<strong>第 2 行填「單選」或「複選」或「配對」</strong>，<strong>第 3 行起每行一個選項</strong>。題目間以 <code>---</code> 分隔：
+        </p>
+        <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 200px; line-height: 1.4;">
 您對今天的課堂內容滿意度如何？
 單選
 ⭐ 1 星
@@ -5170,12 +5235,50 @@ HTML
 CSS
 JavaScript
 Python</pre>
+        <div style="margin-top: 10px;">
+          <button type="button" class="action-btn" onclick="window.quiz.exportQuizBankTxt()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">⬇️ 下載 TXT 範例檔</button>
+        </div>
+      </div>
 
-      <div style="display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="window.quiz.exportQuizBankTxt()" style="padding: 8px 14px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">
-          ⬇️ 下載範例題目檔 (sample_quiz_bank.txt)
-        </button>
-        <button class="btn btn-secondary" onclick="closeQuizFormatModal()" style="padding: 8px 14px; font-size: 13px;">
+      <!-- JSON 說明 -->
+      <div id="quizFormatGuidePaneJson" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">
+          標準 JSON 陣列結構，支援 <code>single</code>（單選）、<code>multiple</code>（複選）與 <code>matching</code>（配對題）：
+        </p>
+        <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 200px; line-height: 1.4;">
+[
+  {
+    "question": "您對今天的課堂內容滿意度如何？",
+    "quizType": "single",
+    "options": ["⭐ 1 星", "⭐⭐ 2 星", "⭐⭐⭐ 3 星", "⭐⭐⭐⭐ 4 星", "⭐⭐⭐⭐⭐ 5 星"]
+  },
+  {
+    "question": "請問下列哪些是網頁開發的三大核心語言？",
+    "quizType": "multiple",
+    "options": ["HTML", "CSS", "JavaScript", "Python"]
+  }
+]</pre>
+        <div style="margin-top: 10px;">
+          <button type="button" class="action-btn" onclick="window.quiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">⬇️ 下載 JSON 範例檔</button>
+        </div>
+      </div>
+
+      <!-- CSV 說明 -->
+      <div id="quizFormatGuidePaneCsv" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">
+          可用 Excel 或 Google 試算表直接編輯並另存為 UTF-8 CSV。欄位順序：<strong>題目問句、題型（單選/複選/配對）、選項（分號區隔）、標準答案</strong>：
+        </p>
+        <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 200px; line-height: 1.4;">
+題目問句,題型(單選/複選/配對),選項(以分號;區隔),標準答案/配對
+"您對今天的課堂內容滿意度如何？","單選","⭐ 1 星;⭐⭐ 2 星;⭐⭐⭐ 3 星;⭐⭐⭐⭐ 4 星;⭐⭐⭐⭐⭐ 5 星",""
+"請問下列哪些是網頁開發的三大核心語言？","複選","HTML;CSS;JavaScript;Python","HTML;CSS;JavaScript"</pre>
+        <div style="margin-top: 10px;">
+          <button type="button" class="action-btn" onclick="window.quiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">⬇️ 下載 CSV 範例檔</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 14px;">
+        <button class="btn btn-secondary" onclick="closeQuizFormatModal()" style="padding: 8px 18px; font-size: 13px;">
           關閉
         </button>
       </div>
@@ -5195,8 +5298,8 @@ Python</pre>
   <script src="js/focus_question_bank.js?v=381"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
-  <script src="js/quiz.js?v=383"></script>
-  <script src="js/app.js?v=411"></script>
+  <script src="js/quiz.js?v=384"></script>
+  <script src="js/app.js?v=412"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=381"></script>
   <script src="js/video_quiz.js?v=387"></script>

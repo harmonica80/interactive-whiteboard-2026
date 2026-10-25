@@ -50,6 +50,7 @@ class Quiz {
     this.historyRef.on('value', (snapshot) => {
       this.historyBank = snapshot.val() || {};
       this.renderQuizHistoryUI();
+      this.renderQuizBankListUI();
     });
   }
 
@@ -973,6 +974,528 @@ class Quiz {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  }
+
+  // 切換題目庫子頁籤 (歷次題目庫 vs 題庫管理)
+  switchHistorySubTab(tab) {
+    const btnHistory = document.getElementById('btnSubTabQuizHistory');
+    const btnBank = document.getElementById('btnSubTabQuizBank');
+    const paneHistory = document.getElementById('quizSubTabPaneHistory');
+    const paneBank = document.getElementById('quizSubTabPaneBank');
+
+    if (tab === 'history') {
+      if (btnHistory) btnHistory.classList.add('active');
+      if (btnBank) btnBank.classList.remove('active');
+      if (paneHistory) paneHistory.style.display = 'block';
+      if (paneBank) paneBank.style.display = 'none';
+      this.renderQuizHistoryUI();
+    } else {
+      if (btnHistory) btnHistory.classList.remove('active');
+      if (btnBank) btnBank.classList.add('active');
+      if (paneHistory) paneHistory.style.display = 'none';
+      if (paneBank) paneBank.style.display = 'block';
+      this.renderQuizBankListUI();
+    }
+  }
+
+  // 切換格式說明對話框頁籤 (TXT / JSON / CSV)
+  switchFormatGuideTab(format) {
+    const tabTxt = document.getElementById('tabQuizFormatTxt');
+    const tabJson = document.getElementById('tabQuizFormatJson');
+    const tabCsv = document.getElementById('tabQuizFormatCsv');
+    const paneTxt = document.getElementById('quizFormatGuidePaneTxt');
+    const paneJson = document.getElementById('quizFormatGuidePaneJson');
+    const paneCsv = document.getElementById('quizFormatGuidePaneCsv');
+
+    if (tabTxt) tabTxt.classList.toggle('active', format === 'txt');
+    if (tabJson) tabJson.classList.toggle('active', format === 'json');
+    if (tabCsv) tabCsv.classList.toggle('active', format === 'csv');
+
+    if (paneTxt) paneTxt.style.display = format === 'txt' ? 'block' : 'none';
+    if (paneJson) paneJson.style.display = format === 'json' ? 'block' : 'none';
+    if (paneCsv) paneCsv.style.display = format === 'csv' ? 'block' : 'none';
+  }
+
+  // 快捷建立新測驗：捲動並聚焦至上方出題區
+  openCreateNewQuiz() {
+    const section = document.getElementById('quizQuestionEditor') || document.getElementById('quizQuestion');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      section.focus();
+      const parent = section.closest('.panel-body') || section.parentElement;
+      if (parent) {
+        parent.style.transition = 'box-shadow 0.3s ease';
+        parent.style.boxShadow = '0 0 0 3px var(--accent-color)';
+        setTimeout(() => { parent.style.boxShadow = ''; }, 1200);
+      }
+    }
+    if (window.app) {
+      window.app.showNotification('💡 建立新測驗', '請在上方出題框輸入題目內容與選項，點選「🚀 開始測驗」！');
+    }
+  }
+
+  // 題庫管理搜尋過濾
+  filterBankQuestions(query) {
+    this.bankSearchQuery = (query || '').trim();
+    this.renderQuizBankListUI();
+  }
+
+  // 渲染題庫管理清單 (圖 1 樣式)
+  renderQuizBankListUI() {
+    const listContainer = document.getElementById('quizBankListContainer');
+    if (!listContainer) return;
+
+    const keys = Object.keys(this.historyBank || {});
+    if (keys.length === 0) {
+      listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 24px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">目前題庫無題目。您可以點選上方「➕ 建立新測驗」出題，或點選「📥 匯入題庫」匯入題庫檔案！</div>';
+      return;
+    }
+
+    const query = (this.bankSearchQuery || '').toLowerCase();
+
+    // 依 order 排序
+    const sortedKeys = keys.sort((a, b) => {
+      const itemA = this.historyBank[a];
+      const itemB = this.historyBank[b];
+      const orderA = typeof itemA.order === 'number' ? itemA.order : null;
+      const orderB = typeof itemB.order === 'number' ? itemB.order : null;
+      if (orderA !== null && orderB !== null) return orderA - orderB;
+      if (orderA !== null) return -1;
+      if (orderB !== null) return 1;
+      return (itemB.createdAt || 0) - (itemA.createdAt || 0);
+    });
+
+    const filteredKeys = sortedKeys.filter(k => {
+      if (!query) return true;
+      const q = this.historyBank[k];
+      if (!q) return false;
+      const qText = (q.question || '').toLowerCase();
+      let optText = '';
+      if (q.quizType === 'matching' && Array.isArray(q.pairs)) {
+        optText = q.pairs.map(p => `${p.left} ${p.right}`).join(' ').toLowerCase();
+      } else if (Array.isArray(q.options)) {
+        optText = q.options.map(opt => typeof opt === 'object' ? (opt.text || '') : String(opt)).join(' ').toLowerCase();
+      }
+      return qText.includes(query) || optText.includes(query);
+    });
+
+    if (filteredKeys.length === 0) {
+      listContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 18px; background: var(--bg-card); border-radius: 10px;">查無符合「${this.escapeHtml(this.bankSearchQuery)}」的題目</div>`;
+      return;
+    }
+
+    listContainer.innerHTML = filteredKeys.map((key) => {
+      const q = this.historyBank[key];
+      const isMultiple = q.quizType === 'multiple';
+      const isMatching = q.quizType === 'matching';
+      const badgeText = isMatching ? '🔗 配對' : (isMultiple ? '☑️ 複選' : '🔘 單選');
+      const badgeBg = isMatching ? 'rgba(88,86,214,0.1)' : 'rgba(0,122,255,0.1)';
+      const badgeColor = isMatching ? '#5856d6' : 'var(--accent-color)';
+
+      let optionsStr = '';
+      if (isMatching && q.pairs && q.pairs.length > 0) {
+        optionsStr = q.pairs.map(p => `${p.left} = ${p.right}`).join(' | ');
+      } else {
+        optionsStr = (q.options || []).map((opt, i) => this.getOptionLabel(opt, `選項 ${i + 1}`)).join(' | ');
+      }
+      const questionText = (q.question || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() || (q.question || '');
+
+      return `
+        <div class="quiz-history-item draggable-quiz-bank-item" draggable="true" data-history-key="${key}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 10px; gap: 10px; cursor: grab; transition: transform 0.15s, box-shadow 0.15s;">
+          <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+            <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 16px; user-select: none; flex-shrink: 0;" title="按住拖曳調整題目順序">☰</span>
+            <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; min-width: 0; flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
+                <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(questionText)}</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                選項：${this.escapeHtml(optionsStr)}
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
+            <button type="button" class="action-btn" onclick="window.quiz.loadQuizFromHistory('${key}')" style="background: var(--accent-color); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="帶入此題到出題框">🚀 載入出題</button>
+            <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級題庫">📤 複製</button>
+            <button type="button" class="btn btn-secondary" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--danger-color);" title="刪除此題">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    this.initQuizBankDragAndDrop();
+  }
+
+  // 題庫管理卡片拖曳排序
+  initQuizBankDragAndDrop() {
+    const container = document.getElementById('quizBankListContainer');
+    if (!container) return;
+
+    const cards = container.querySelectorAll('.draggable-quiz-bank-item');
+    cards.forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        if (['INPUT', 'BUTTON', 'SELECT', 'A', 'TEXTAREA'].includes(e.target.tagName)) {
+          e.preventDefault();
+          return;
+        }
+        e.dataTransfer.effectAllowed = 'move';
+        card.classList.add('dragging-bank-item');
+        card.style.opacity = '0.5';
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging-bank-item');
+        card.style.opacity = '1';
+
+        const currentCards = [...container.querySelectorAll('.draggable-quiz-bank-item')];
+        const orderedKeys = currentCards.map(c => c.getAttribute('data-history-key')).filter(Boolean);
+
+        const updates = {};
+        orderedKeys.forEach((key, idx) => {
+          if (this.historyBank[key]) {
+            this.historyBank[key].order = idx;
+            updates[`${key}/order`] = idx;
+          }
+        });
+
+        if (this.historyRef && Object.keys(updates).length > 0) {
+          this.historyRef.update(updates).catch(err => {
+            console.warn('Failed to update quiz bank order in Firebase', err);
+          });
+        }
+
+        if (window.app) {
+          window.app.showNotification('📋 排序已更新', '題庫排序已成功調整！');
+        }
+      });
+    });
+
+    if (container._dragOverHandler) {
+      container.removeEventListener('dragover', container._dragOverHandler);
+    }
+
+    container._dragOverHandler = (e) => {
+      e.preventDefault();
+      const dragging = container.querySelector('.dragging-bank-item');
+      if (!dragging) return;
+
+      const siblings = [...container.querySelectorAll('.draggable-quiz-bank-item:not(.dragging-bank-item)')];
+      const nextSibling = siblings.find(sibling => {
+        const box = sibling.getBoundingClientRect();
+        return e.clientY <= box.top + box.height / 2;
+      });
+
+      if (nextSibling) {
+        container.insertBefore(dragging, nextSibling);
+      } else {
+        container.appendChild(dragging);
+      }
+    };
+
+    container.addEventListener('dragover', container._dragOverHandler);
+  }
+
+  // 下載題庫 JSON 範例格式檔
+  downloadSampleTemplateJSON() {
+    const templateData = [
+      {
+        question: "您對今天的課堂內容滿意度如何？",
+        quizType: "single",
+        options: ["⭐ 1 星", "⭐⭐ 2 星", "⭐⭐⭐ 3 星", "⭐⭐⭐⭐ 4 星", "⭐⭐⭐⭐⭐ 5 星"]
+      },
+      {
+        question: "請問下列哪些是網頁前端開發的三大核心語言？",
+        quizType: "multiple",
+        options: ["HTML", "CSS", "JavaScript", "Python"]
+      },
+      {
+        question: "請將下列國家與其首都進行配對：",
+        quizType: "matching",
+        pairs: [
+          { left: "台灣", right: "台北" },
+          { left: "日本", right: "東京" },
+          { left: "法國", right: "巴黎" }
+        ],
+        options: ["台灣", "日本", "法國"],
+        matchOptions: ["台北", "東京", "巴黎"]
+      }
+    ];
+
+    const blob = new Blob([JSON.stringify(templateData, null, 2)], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'choice_quiz_template.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (window.app) window.app.showNotification('成功', '已下載選擇測驗 JSON 範例格式檔！');
+  }
+
+  // 下載題庫 CSV 範例格式檔
+  downloadSampleTemplateCSV() {
+    let csv = '\uFEFF題目問句,題型(單選/複選/配對),選項(以分號;區隔),標準答案/配對\r\n';
+    csv += '"您對今天的課堂內容滿意度如何？","單選","⭐ 1 星;⭐⭐ 2 星;⭐⭐⭐ 3 星;⭐⭐⭐⭐ 4 星;⭐⭐⭐⭐⭐ 5 星",""\r\n';
+    csv += '"請問下列哪些是網頁前端開發的三大核心語言？","複選","HTML;CSS;JavaScript;Python","HTML;CSS;JavaScript"\r\n';
+    csv += '"請將下列國家與其首都進行配對","配對","台灣=台北;日本=東京;法國=巴黎",""\r\n';
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'choice_quiz_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (window.app) window.app.showNotification('成功', '已下載選擇測驗 CSV 範例格式檔！');
+  }
+
+  // 匯出全部題庫備份 (JSON)
+  exportQuizzesJSON() {
+    const keys = Object.keys(this.historyBank || {});
+    if (keys.length === 0) {
+      if (window.app) window.app.showNotification('提示', '題庫目前沒有任何題目可供匯出！');
+      return;
+    }
+    const list = keys.map(k => this.historyBank[k]).filter(Boolean);
+    const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quiz_bank_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (window.app) window.app.showNotification('成功', `已順利匯出全部 ${list.length} 道選擇測驗題目 (JSON)！`);
+  }
+
+  // 匯出全部題庫備份 (CSV)
+  exportQuizzesCSV() {
+    const keys = Object.keys(this.historyBank || {});
+    if (keys.length === 0) {
+      if (window.app) window.app.showNotification('提示', '題庫目前沒有任何題目可供匯出！');
+      return;
+    }
+    let csv = '\uFEFF題目問句,題型(單選/複選/配對),選項(以分號;區隔),標準答案/配對\r\n';
+    keys.forEach(k => {
+      const q = this.historyBank[k];
+      if (!q) return;
+      const question = (q.question || '').replace(/"/g, '""');
+      const typeStr = q.quizType === 'matching' ? '配對' : (q.quizType === 'multiple' ? '複選' : '單選');
+      let optStr = '';
+      if (q.quizType === 'matching' && Array.isArray(q.pairs)) {
+        optStr = q.pairs.map(p => `${p.left}=${p.right}`).join(';');
+      } else if (Array.isArray(q.options)) {
+        optStr = q.options.map(opt => typeof opt === 'object' ? (opt.text || '') : String(opt)).join(';');
+      }
+      optStr = optStr.replace(/"/g, '""');
+      const ans = (Array.isArray(q.correctAnswer) ? q.correctAnswer.join(';') : (q.correctAnswer ? JSON.stringify(q.correctAnswer) : '')).replace(/"/g, '""');
+      csv += `"${question}","${typeStr}","${optStr}","${ans}"\r\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quiz_bank_backup_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (window.app) window.app.showNotification('成功', `已順利匯出全部 ${keys.length} 道選擇測驗題目 (CSV)！`);
+  }
+
+  // 統一匯入題庫檔案 (支援 .json / .csv / .txt)
+  importQuizBankUnifiedFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileName = (file.name || '').toLowerCase();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const textContent = e.target.result;
+        let questions = [];
+
+        if (fileName.endsWith('.json') || (textContent.trim().startsWith('[') && textContent.trim().endsWith(']'))) {
+          try {
+            questions = JSON.parse(textContent);
+          } catch (err) {
+            console.warn('JSON parse failed, will fallback', err);
+          }
+        }
+
+        if (questions.length === 0 && (fileName.endsWith('.csv') || textContent.includes(','))) {
+          questions = this.parseQuizCSV(textContent);
+        }
+
+        if (questions.length === 0) {
+          questions = this.parseQuizTXT(textContent);
+        }
+
+        if (questions.length === 0) {
+          if (window.app) window.app.showNotification('錯誤', '匯入失敗：格式無法解析，請參考範例格式說明！');
+          return;
+        }
+
+        questions.forEach(q => {
+          this.saveToHistoryBank(q.question, q.options, q.quizType, q);
+        });
+
+        // 重新渲染兩個頁籤
+        this.renderQuizHistoryUI();
+        this.renderQuizBankListUI();
+
+        // 自動帶入第一題到出題框
+        const q0 = questions[0];
+        if (q0 && q0.question) {
+          const editor = document.getElementById('quizQuestionEditor');
+          if (editor) editor.innerHTML = q0.question;
+          const qInput = document.getElementById('quizQuestion');
+          if (qInput) qInput.value = q0.question;
+        }
+
+        if (window.app) {
+          window.app.showNotification('成功', `已成功解析並匯入 ${questions.length} 道題目至題庫！第一題已帶入出題框。`);
+        }
+      } catch (err) {
+        if (window.app) window.app.showNotification('錯誤', '解析檔案失敗：' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  // 解析 CSV 題目
+  parseQuizCSV(csvText) {
+    if (!csvText) return [];
+    if (csvText.charCodeAt(0) === 0xFEFF) {
+      csvText = csvText.slice(1);
+    }
+    const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+    if (lines.length <= 1) return [];
+
+    const questions = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      const cells = [];
+      let cell = '';
+      let inQuotes = false;
+      for (let j = 0; j < line.length; j++) {
+        const c = line[j];
+        if (c === '"') {
+          if (inQuotes && line[j + 1] === '"') {
+            cell += '"';
+            j++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (c === ',' && !inQuotes) {
+          cells.push(cell.trim());
+          cell = '';
+        } else {
+          cell += c;
+        }
+      }
+      cells.push(cell.trim());
+
+      const question = cells[0];
+      if (!question) continue;
+
+      const typeStr = (cells[1] || '').toLowerCase();
+      let quizType = 'single';
+      if (typeStr.includes('配') || typeStr.includes('match') || typeStr.includes('連')) {
+        quizType = 'matching';
+      } else if (typeStr.includes('複') || typeStr.includes('multi')) {
+        quizType = 'multiple';
+      }
+
+      const rawOptions = (cells[2] || '').split(/[;；]/).map(o => o.trim()).filter(Boolean);
+      const answerStr = (cells[3] || '').trim();
+
+      if (quizType === 'matching') {
+        const pairs = [];
+        const pairSource = rawOptions.length > 0 ? rawOptions : answerStr.split(/[;；]/).map(o => o.trim()).filter(Boolean);
+        pairSource.forEach(pStr => {
+          const parts = pStr.split(/[=＝]/);
+          if (parts.length >= 2) {
+            pairs.push({ left: parts[0].trim(), right: parts.slice(1).join('=').trim() });
+          }
+        });
+        if (pairs.length >= 2) {
+          questions.push({
+            question,
+            quizType,
+            options: pairs.map(p => p.left),
+            matchOptions: pairs.map(p => p.right),
+            pairs,
+            correctAnswer: pairs.reduce((acc, p) => { acc[p.left] = p.right; return acc; }, {})
+          });
+        }
+      } else {
+        if (rawOptions.length >= 2) {
+          questions.push({
+            question,
+            quizType,
+            options: rawOptions
+          });
+        }
+      }
+    }
+    return questions;
+  }
+
+  // 解析 TXT 題目格式
+  parseQuizTXT(textContent) {
+    if (!textContent) return [];
+    const questions = [];
+    const blocks = textContent.split(/\n\s*---\s*\n|\n\s*\n\s*\n/).map(b => b.trim()).filter(Boolean);
+    blocks.forEach(block => {
+      const lines = block.split(/\r?\n/).map(l => l.trim()).filter(l => l !== '' && l !== '---');
+      if (lines.length >= 3) {
+        const question = lines[0];
+        const typeStr = lines[1];
+        let quizType = 'single';
+        if (typeStr.includes('配對') || typeStr.includes('連') || typeStr.toLowerCase().includes('match')) {
+          quizType = 'matching';
+        } else if (typeStr.includes('複') || typeStr.toLowerCase().includes('multi')) {
+          quizType = 'multiple';
+        }
+
+        const rawOptions = lines.slice(2);
+        if (quizType === 'matching') {
+          const pairs = [];
+          rawOptions.forEach(optLine => {
+            const parts = optLine.split(/[=＝]/);
+            if (parts.length >= 2) {
+              const left = parts[0].trim();
+              const right = parts.slice(1).join('=').trim();
+              if (left && right) pairs.push({ left, right });
+            }
+          });
+          if (pairs.length >= 2) {
+            questions.push({
+              question,
+              quizType,
+              options: pairs.map(p => p.left),
+              matchOptions: pairs.map(p => p.right),
+              pairs,
+              correctAnswer: pairs.reduce((acc, p) => { acc[p.left] = p.right; return acc; }, {})
+            });
+          }
+        } else if (rawOptions.length >= 2) {
+          questions.push({
+            question,
+            quizType,
+            options: rawOptions
+          });
+        }
+      }
+    });
+    return questions;
   }
 
   // 執行編輯器指令
