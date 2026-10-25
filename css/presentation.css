@@ -1231,6 +1231,24 @@
   max-height: 82vh;
 }
 
+/* 全螢幕模式下的彈窗層級保證 (解決全螢幕下本頁設定被遮擋問題) */
+.presentation-panel-card:fullscreen .modal-overlay,
+.presentation-panel-card:-webkit-full-screen .modal-overlay {
+  z-index: 100000 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+/* 全螢幕作用中的按鈕醒目樣式 */
+.presentation-tool-btn.is-fullscreen-active {
+  background: var(--accent-color, #2563eb) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
 /* 更多色塊選項樣式 (圖 2: 5~6 個選項支援) */
 .presentation-color-opt-btn.opt-purple { background: #8b5cf6; }
 .presentation-color-opt-btn.opt-pink { background: #ec4899; }

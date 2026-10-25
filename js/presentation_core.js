@@ -217,9 +217,13 @@
       };
     }
 
-    // 彈窗通用開啟與關閉輔助函數 (解決 Item 2: .modal-overlay.active 問題)
+    // 彈窗通用開啟與關閉輔助函數 (解決全螢幕層級與 .modal-overlay.active 問題)
     openModal(modal) {
       if (!modal) return;
+      const fsEl = document.fullscreenElement;
+      if (fsEl && !fsEl.contains(modal)) {
+        fsEl.appendChild(modal);
+      }
       modal.classList.add('active');
       modal.style.display = 'flex';
     }
@@ -348,6 +352,10 @@
       if (els.btnFullscreen) {
         els.btnFullscreen.onclick = () => this.toggleFullscreen();
       }
+
+      // 監聽全螢幕狀態切換事件，自動同步更新「最大化」/「恢復為視窗」按鈕文字與狀態
+      document.addEventListener('fullscreenchange', () => this.updateFullscreenButtonUI());
+      document.addEventListener('webkitfullscreenchange', () => this.updateFullscreenButtonUI());
 
       // 匯入/匯出按鈕 (Item 2)
       if (els.btnImportExport) {
@@ -2465,17 +2473,43 @@
       URL.revokeObjectURL(url);
     }
 
+    // 更新全螢幕切換按鈕文字與狀態 (項目 1-A：最大化 <-> 恢復為視窗)
+    updateFullscreenButtonUI() {
+      const btn = this.els.btnFullscreen || document.getElementById('btnSlideFullscreen');
+      if (!btn) return;
+      const isFullscreen = Boolean(
+        document.fullscreenElement && (
+          document.fullscreenElement === this.els.panel ||
+          (this.els.panel && this.els.panel.contains(document.fullscreenElement))
+        )
+      );
+
+      if (isFullscreen) {
+        btn.innerHTML = '🗗 恢復為視窗';
+        btn.title = '點擊結束最大化全螢幕，恢復為一般視窗 (或按 Esc)';
+        btn.classList.add('is-fullscreen-active');
+      } else {
+        btn.innerHTML = '🗖 最大化';
+        btn.title = '進入全螢幕最大化簡報';
+        btn.classList.remove('is-fullscreen-active');
+      }
+    }
+
     // 全螢幕切換
     toggleFullscreen() {
       const panel = this.els.panel;
       if (!panel) return;
 
       if (!document.fullscreenElement) {
-        panel.requestFullscreen().catch(err => {
+        panel.requestFullscreen().then(() => {
+          this.updateFullscreenButtonUI();
+        }).catch(err => {
           console.error('Fullscreen request error:', err);
         });
       } else {
-        document.exitFullscreen();
+        document.exitFullscreen().then(() => {
+          this.updateFullscreenButtonUI();
+        }).catch(() => {});
       }
     }
 
