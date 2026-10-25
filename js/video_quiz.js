@@ -3202,28 +3202,51 @@
       this.initCustomSetDragAndDrop();
     }
 
-    // 開啟編輯測驗組合名稱彈窗
+    // 開啟編輯測驗組合彈窗 (支援修改名稱、增修組合內影片與關鍵字搜尋)
     openEditCustomSetNameModal(setId) {
-      const set = (this.customSets || []).find(s => s.id === setId);
-      if (!set) return;
-      this.editingCustomSetId = setId;
+      const set = setId ? (this.customSets || []).find(s => s.id === setId) : null;
+      this.editingCustomSetId = set ? set.id : null;
+      this.editingCustomSetQuizIds = set && Array.isArray(set.quizIds)
+        ? [...set.quizIds]
+        : (this.selectedQuizIds && this.selectedQuizIds.size > 0 ? Array.from(this.selectedQuizIds) : []);
+      this.editingCustomSetSearchQuery = '';
+
+      const modalTitle = document.getElementById('vqEditCustomSetModalTitle');
+      if (modalTitle) {
+        modalTitle.textContent = set ? '✏️ 編輯測驗組合與影片清單' : '🌟 建立新測驗組合';
+      }
 
       const input = document.getElementById('vqEditCustomSetNameInput');
       if (input) {
-        input.value = set.name || '';
+        input.value = set ? (set.name || '') : (this.editingCustomSetQuizIds.length > 0 ? `測驗組合 (${this.editingCustomSetQuizIds.length}部影片)` : '新測驗組合');
       }
+
+      const searchInput = document.getElementById('vqCustomSetSearchQuizInput');
+      if (searchInput) {
+        searchInput.value = '';
+      }
+
+      this.renderEditCustomSetUI();
+
       const modal = document.getElementById('vqEditCustomSetNameModal');
       if (modal) {
         modal.style.display = 'flex';
-        setTimeout(() => { if (input) { input.focus(); input.select(); } }, 50);
+        setTimeout(() => {
+          if (input) {
+            input.focus();
+            input.select();
+          }
+        }, 50);
       } else {
-        const newName = prompt('請輸入新的測驗組合名稱：', set.name);
-        if (newName && newName.trim() && newName.trim() !== set.name) {
-          set.name = newName.trim();
+        const newName = prompt('請輸入新的測驗組合名稱：', set ? set.name : '新測驗組合');
+        if (newName && newName.trim()) {
+          if (set) {
+            set.name = newName.trim();
+          }
           this.saveCustomSets();
           this.renderCustomSetsList();
           this.renderQuizSelector();
-          if (window.app) window.app.showNotification('成功', `已將測驗組合更名為「${set.name}」！`);
+          if (window.app) window.app.showNotification('成功', `已將測驗組合更名為「${newName.trim()}」！`);
         }
       }
     }
@@ -3233,14 +3256,156 @@
       const modal = document.getElementById('vqEditCustomSetNameModal');
       if (modal) modal.style.display = 'none';
       this.editingCustomSetId = null;
+      this.editingCustomSetQuizIds = [];
+      this.editingCustomSetSearchQuery = '';
     }
 
-    // 確認編輯測驗組合名稱
-    confirmEditCustomSetName() {
-      if (!this.editingCustomSetId) return;
-      const set = (this.customSets || []).find(s => s.id === this.editingCustomSetId);
-      if (!set) return;
+    // 渲染編輯組合中的影片與候選影片清單 (增修組合中的影片)
+    renderEditCustomSetUI() {
+      // 1. 渲染目前組合收錄的影片清單
+      const currentContainer = document.getElementById('vqEditCustomSetCurrentList');
+      const statsBadge = document.getElementById('vqEditCustomSetStatsBadge');
 
+      const currentQuizzes = (this.editingCustomSetQuizIds || [])
+        .map(qid => (this.quizzes || []).find(q => q.id === qid))
+        .filter(Boolean);
+
+      const totalCount = currentQuizzes.length;
+      const totalQ = currentQuizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0);
+
+      if (statsBadge) {
+        statsBadge.textContent = `共 ${totalCount} 部影片 · ${totalQ} 題`;
+      }
+
+      if (currentContainer) {
+        if (totalCount === 0) {
+          currentContainer.innerHTML = `
+            <div style="text-align: center; padding: 18px; color: var(--text-muted); font-size: 13px; background: var(--bg-input); border-radius: 8px; border: 1px dashed var(--border-color);">
+              尚未加入任何影片，請從下方搜尋並加入單題測驗！
+            </div>
+          `;
+        } else {
+          currentContainer.innerHTML = currentQuizzes.map((quiz, idx) => `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                <span style="font-size: 12px; font-weight: bold; color: var(--text-muted); width: 20px; text-align: center; flex-shrink: 0;">${idx + 1}.</span>
+                <span style="font-size: 15px; flex-shrink: 0;">${quiz.sourceType === 'mp4' ? '🎬' : '🌐'}</span>
+                <div style="min-width: 0; flex: 1;">
+                  <div style="font-size: 13px; font-weight: bold; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${this.escapeHtml(quiz.title || '')}">
+                    ${this.escapeHtml(quiz.title || '未命名測驗')}
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-secondary);">
+                    ${quiz.subject || '全科'} · 共 ${quiz.questions?.length || 0} 題
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <button type="button" onclick="window.videoQuiz.moveQuizInEditingCustomSet('${quiz.id}', -1)" ${idx === 0 ? 'disabled style="opacity: 0.3; cursor: not-allowed; padding: 4px 8px; font-size: 11px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-card);"' : 'style="cursor: pointer; padding: 4px 8px; font-size: 11px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-card);"'} title="上移">▲</button>
+                <button type="button" onclick="window.videoQuiz.moveQuizInEditingCustomSet('${quiz.id}', 1)" ${idx === totalCount - 1 ? 'disabled style="opacity: 0.3; cursor: not-allowed; padding: 4px 8px; font-size: 11px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-card);"' : 'style="cursor: pointer; padding: 4px 8px; font-size: 11px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-card);"'} title="下移">▼</button>
+                <button type="button" onclick="window.videoQuiz.removeQuizFromEditingCustomSet('${quiz.id}')" title="移出組合" style="padding: 4px 10px; font-size: 11.5px; background: rgba(255,59,48,0.1); color: #ff3b30; border: 1px solid rgba(255,59,48,0.3); border-radius: 5px; cursor: pointer; font-weight: bold;">🗑️ 移出</button>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      // 2. 渲染搜尋候選清單
+      this.renderEditCustomSetCandidates();
+    }
+
+    // 渲染搜尋候選清單 (透過搜尋找到單題影片加入)
+    renderEditCustomSetCandidates() {
+      const candidateContainer = document.getElementById('vqEditCustomSetCandidateList');
+      if (!candidateContainer) return;
+
+      const q = (this.editingCustomSetSearchQuery || '').toLowerCase();
+      const allQuizzes = this.quizzes || [];
+
+      const filtered = allQuizzes.filter(quiz => {
+        if (!q) return true;
+        const title = (quiz.title || '').toLowerCase();
+        const subject = (quiz.subject || '').toLowerCase();
+        const desc = (quiz.description || '').toLowerCase();
+        return title.includes(q) || subject.includes(q) || desc.includes(q);
+      });
+
+      if (filtered.length === 0) {
+        candidateContainer.innerHTML = `
+          <div style="text-align: center; padding: 18px; color: var(--text-muted); font-size: 12.5px; background: var(--bg-input); border-radius: 8px;">
+            無符合「${this.escapeHtml(this.editingCustomSetSearchQuery)}」的單題測驗
+          </div>
+        `;
+        return;
+      }
+
+      candidateContainer.innerHTML = filtered.map(quiz => {
+        const isAdded = (this.editingCustomSetQuizIds || []).includes(quiz.id);
+        return `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+              <span style="font-size: 15px; flex-shrink: 0;">${quiz.sourceType === 'mp4' ? '🎬' : '🌐'}</span>
+              <div style="min-width: 0; flex: 1;">
+                <div style="font-size: 13px; font-weight: bold; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${this.escapeHtml(quiz.title || '')}">
+                  ${this.escapeHtml(quiz.title || '未命名測驗')}
+                </div>
+                <div style="font-size: 11px; color: var(--text-secondary);">
+                  ${quiz.subject || '全科'} · 共 ${quiz.questions?.length || 0} 題
+                </div>
+              </div>
+            </div>
+            <div style="flex-shrink: 0;">
+              ${isAdded ? `
+                <span style="font-size: 11.5px; color: var(--text-muted); background: var(--bg-card); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); display: inline-flex; align-items: center; gap: 3px;">
+                  ✓ 已在組合中
+                </span>
+              ` : `
+                <button type="button" onclick="window.videoQuiz.addQuizToEditingCustomSet('${quiz.id}')" style="padding: 5px 12px; font-size: 12px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+                  ➕ 加入
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 組合編輯：搜尋關鍵字過濾
+    filterCandidateQuizzesForCustomSet(query) {
+      this.editingCustomSetSearchQuery = (query || '').trim();
+      this.renderEditCustomSetCandidates();
+    }
+
+    // 組合編輯：將單題影片加入目前組合
+    addQuizToEditingCustomSet(quizId) {
+      if (!this.editingCustomSetQuizIds) this.editingCustomSetQuizIds = [];
+      if (!this.editingCustomSetQuizIds.includes(quizId)) {
+        this.editingCustomSetQuizIds.push(quizId);
+        this.renderEditCustomSetUI();
+      }
+    }
+
+    // 組合編輯：將影片從組合中移出
+    removeQuizFromEditingCustomSet(quizId) {
+      if (!this.editingCustomSetQuizIds) return;
+      this.editingCustomSetQuizIds = this.editingCustomSetQuizIds.filter(id => id !== quizId);
+      this.renderEditCustomSetUI();
+    }
+
+    // 組合編輯：調整影片在組合中的順序
+    moveQuizInEditingCustomSet(quizId, direction) {
+      if (!this.editingCustomSetQuizIds) return;
+      const idx = this.editingCustomSetQuizIds.indexOf(quizId);
+      if (idx === -1) return;
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= this.editingCustomSetQuizIds.length) return;
+      const temp = this.editingCustomSetQuizIds[idx];
+      this.editingCustomSetQuizIds[idx] = this.editingCustomSetQuizIds[targetIdx];
+      this.editingCustomSetQuizIds[targetIdx] = temp;
+      this.renderEditCustomSetUI();
+    }
+
+    // 確認編輯測驗組合 (儲存名稱與增修影片)
+    confirmEditCustomSetName() {
       const input = document.getElementById('vqEditCustomSetNameInput');
       const newName = input ? input.value.trim() : '';
       if (!newName) {
@@ -3248,14 +3413,60 @@
         return;
       }
 
-      set.name = newName;
+      let quizIdsToSave = [];
+      if (this.editingCustomSetQuizIds && this.editingCustomSetQuizIds.length > 0) {
+        quizIdsToSave = [...this.editingCustomSetQuizIds];
+      } else if (this.editingCustomSetId) {
+        const existing = (this.customSets || []).find(s => s.id === this.editingCustomSetId);
+        if (existing && Array.isArray(existing.quizIds)) {
+          quizIdsToSave = [...existing.quizIds];
+        }
+      }
+
+      if (quizIdsToSave.length === 0) {
+        if (window.app) window.app.showNotification('提示', '請至少加入一部單題測驗影片到組合中！');
+        return;
+      }
+
+      const selectedQuizzes = quizIdsToSave
+        .map(qid => (this.quizzes || []).find(q => q.id === qid))
+        .filter(Boolean);
+
+      const totalQuestions = selectedQuizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0);
+
+      if (this.editingCustomSetId) {
+        // 修改現有組合
+        const set = (this.customSets || []).find(s => s.id === this.editingCustomSetId);
+        if (set) {
+          set.name = newName;
+          set.quizIds = quizIdsToSave;
+          set.quizTitles = selectedQuizzes.map(q => q.title || '');
+          set.quizCount = selectedQuizzes.length;
+          set.totalQuestions = totalQuestions;
+          set.updatedAt = Date.now();
+        }
+      } else {
+        // 新增自訂組合
+        const newSet = {
+          id: 'set_' + Date.now(),
+          name: newName,
+          quizIds: quizIdsToSave,
+          quizTitles: selectedQuizzes.map(q => q.title || ''),
+          quizCount: selectedQuizzes.length,
+          totalQuestions: totalQuestions,
+          createdAt: Date.now()
+        };
+        if (!this.customSets) this.customSets = [];
+        this.customSets.unshift(newSet);
+      }
+
       this.saveCustomSets();
       this.closeEditCustomSetNameModal();
       this.renderCustomSetsList();
       this.renderQuizSelector();
 
       if (window.app) {
-        window.app.showNotification('成功', `已更新測驗組合名稱為「${newName}」！`);
+        window.app.showNotification('成功', `已成功儲存測驗組合「${newName}」（含 ${selectedQuizzes.length} 部影片）！`);
       }
     }
 
@@ -3441,7 +3652,6 @@
 
     renderEditorQuizList() {
       const container = document.getElementById('vqAdminEditorQuizList');
-      const otherContainer = document.getElementById('vqEditorQuizList');
       const paginationContainer = document.getElementById('vqAdminPaginationContainer');
 
       // 1. 影片搜尋過濾 (需求 b)
@@ -3558,12 +3768,12 @@
 
               <!-- 題目預覽列表 (可收合，預設為收合 需求 3-B) -->
               <div style="background: var(--bg-input); border-radius: 10px; padding: 10px 14px; border: 1px solid var(--border-color); margin-top: 8px;">
-                <div onclick="window.videoQuiz.togglePreviewCollapse('${quiz.id}')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                <div onclick="window.videoQuiz.togglePreviewCollapse(this, event, '${quiz.id}')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">
                       📌 影片題目預覽（共 ${questions.length} 題）
                     </span>
-                    <span id="vqPreviewArrow_${quiz.id}" style="font-size: 11.5px; color: var(--accent-color); font-weight: bold; background: rgba(0,122,255,0.08); padding: 2px 8px; border-radius: 6px;">
+                    <span id="vqPreviewArrow_${quiz.id}" class="vq-preview-arrow" style="font-size: 11.5px; color: var(--accent-color); font-weight: bold; background: rgba(0,122,255,0.08); padding: 2px 8px; border-radius: 6px;">
                       ▼ 展開預覽
                     </span>
                   </div>
@@ -3571,7 +3781,7 @@
                     點擊右上角「✏️ 編輯題目」進入完整頁面出題與微調
                   </span>
                 </div>
-                <div id="vqPreviewContent_${quiz.id}" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+                <div id="vqPreviewContent_${quiz.id}" class="vq-preview-content" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
                   ${questionsPreview}
                 </div>
               </div>
@@ -3581,7 +3791,6 @@
       }
 
       if (container) container.innerHTML = html;
-      if (otherContainer) otherContainer.innerHTML = html;
 
       // 4. 渲染分頁導覽控制列 (需求 b)
       if (paginationContainer) {
@@ -3646,11 +3855,33 @@
     /**
      * 切換題目預覽收合與展開 (需求 3-B)
      */
-    togglePreviewCollapse(quizId) {
-      const content = document.getElementById(`vqPreviewContent_${quizId}`);
-      const arrow = document.getElementById(`vqPreviewArrow_${quizId}`);
+    togglePreviewCollapse(triggerEl, ev, quizId) {
+      if (ev && ev.stopPropagation) {
+        ev.stopPropagation();
+      }
+      if (typeof triggerEl === 'string' && !quizId) {
+        quizId = triggerEl;
+        triggerEl = null;
+      }
+
+      let content = null;
+      let arrow = null;
+
+      if (triggerEl && triggerEl.closest) {
+        const card = triggerEl.closest('.draggable-quiz-card') || triggerEl.parentElement;
+        if (card) {
+          content = card.querySelector('.vq-preview-content') || (quizId ? card.querySelector(`#vqPreviewContent_${quizId}`) : null);
+          arrow = card.querySelector('.vq-preview-arrow') || (quizId ? card.querySelector(`#vqPreviewArrow_${quizId}`) : null);
+        }
+      }
+
+      if (!content && quizId) {
+        content = document.getElementById(`vqPreviewContent_${quizId}`);
+        arrow = document.getElementById(`vqPreviewArrow_${quizId}`);
+      }
+
       if (!content) return;
-      const isHidden = content.style.display === 'none';
+      const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
       if (isHidden) {
         content.style.display = 'block';
         if (arrow) arrow.textContent = '▲ 收合預覽';
