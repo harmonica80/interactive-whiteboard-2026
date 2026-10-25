@@ -2124,7 +2124,7 @@ class Quiz {
 
   // 開啟題庫題目編輯彈窗
   openEditBankQuestionModal(key) {
-    const item = this.historyBank[key];
+    const item = this.historyBank && this.historyBank[key];
     if (!item) {
       if (window.app) window.app.showNotification('提示', '找不到該題目！');
       return;
@@ -2146,13 +2146,17 @@ class Quiz {
     if (rad) rad.checked = true;
 
     this.onEditBankQuizTypeChange(type, item);
+    modal.classList.add('active');
     modal.style.display = 'flex';
   }
 
   // 關閉題庫題目編輯彈窗
   closeEditBankQuestionModal() {
     const modal = document.getElementById('quizBankQuestionEditModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
     this.editingBankQuestionKey = null;
   }
 

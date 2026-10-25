@@ -15193,18 +15193,31 @@ class App {
   }
 
   changeWheelSound(styleIndex) {
-    if (!this.isAdmin) return;
-    this.wheelSoundStyle = styleIndex;
-    if (this.soundEffects) this.soundEffects.style = styleIndex;
-    db.ref('quiz/luckyWheel/soundStyle').set(styleIndex);
-    // 預覽：播放該音效風格之代表音效讓老師即時試聽
-    if (this.soundEffects) {
-      this.soundEffects.init();
-      if (this.soundEffects.ctx && this.soundEffects.ctx.state === 'suspended') {
-        this.soundEffects.ctx.resume();
-      }
-      this.soundEffects.playPreview(styleIndex);
+    const sIdx = typeof styleIndex === 'number' && !isNaN(styleIndex) ? styleIndex : 0;
+    this.wheelSoundStyle = sIdx;
+    if (this.soundEffects) this.soundEffects.style = sIdx;
+    if (this.isAdmin && typeof db !== 'undefined') {
+      db.ref('quiz/luckyWheel/soundStyle').set(sIdx);
     }
+    // 同步前台與後台的下拉選單數值
+    const sel = document.getElementById('selWheelSound');
+    if (sel && parseInt(sel.value, 10) !== sIdx) sel.value = String(sIdx);
+    const adminSel = document.getElementById('adminSelWheelSound');
+    if (adminSel && parseInt(adminSel.value, 10) !== sIdx) adminSel.value = String(sIdx);
+
+    this.previewCurrentWheelSound(sIdx);
+  }
+
+  previewCurrentWheelSound(styleIndex = null) {
+    let sIdx = styleIndex;
+    if (sIdx === null || isNaN(sIdx)) {
+      const sel = document.getElementById('adminSelWheelSound') || document.getElementById('selWheelSound');
+      sIdx = sel ? parseInt(sel.value, 10) : (this.wheelSoundStyle || 0);
+    }
+    if (!this.soundEffects) {
+      this.soundEffects = new WheelSoundEffects();
+    }
+    this.soundEffects.playPreview(sIdx);
   }
 
   changeWheelColor(themeIndex) {
@@ -19008,13 +19021,204 @@ class WheelSoundEffects {
     }
   }
   
-  // ── 播放預覽音 (當教師切換音效風格時) ──
-  playPreview(styleIndex) {
+  // ── 播放預覽音 (當教師切換音效風格或點選試聽時) ──
+  async playPreview(styleIndex) {
     try {
       this.init();
       if (!this.ctx) return;
-      this.setStyle(styleIndex);
-      this.playTick();
+      if (this.ctx.state === 'suspended') {
+        await this.ctx.resume();
+      }
+      this.stopMusic();
+      const style = typeof styleIndex === 'number' && !isNaN(styleIndex) ? styleIndex : (this.style || 0);
+      this.setStyle(style);
+      const now = this.ctx.currentTime;
+
+      switch (style) {
+        case 1: { // 🎮 熱血電玩：8-Bit 像素升級樂句 (Level-Up Fanfare)
+          const notes = [
+            { f: 523.25, t: 0.00, d: 0.08 },
+            { f: 659.25, t: 0.08, d: 0.08 },
+            { f: 783.99, t: 0.16, d: 0.08 },
+            { f: 1046.5, t: 0.24, d: 0.18 },
+            { f: 880.00, t: 0.44, d: 0.10 },
+            { f: 1046.5, t: 0.56, d: 0.45 }
+          ];
+          notes.forEach(n => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(n.f, now + n.t);
+            gain.gain.setValueAtTime(0.085, now + n.t);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + n.t);
+            osc.stop(now + n.t + n.d);
+          });
+          break;
+        }
+
+        case 2: { // 🥁 緊張鼓滾：懸疑連擊與結尾金屬鈸聲
+          for (let i = 0; i < 6; i++) {
+            const nBuf = this.createNoiseBuffer(0.035);
+            if (nBuf) {
+              const snare = this.ctx.createBufferSource();
+              snare.buffer = nBuf;
+              const filter = this.ctx.createBiquadFilter();
+              filter.type = 'bandpass';
+              filter.frequency.value = 1300 + i * 80;
+              const sGain = this.ctx.createGain();
+              sGain.gain.setValueAtTime(0.05 + i * 0.02, now + i * 0.06);
+              sGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.035);
+              snare.connect(filter);
+              filter.connect(sGain);
+              sGain.connect(this.ctx.destination);
+              snare.start(now + i * 0.06);
+            }
+          }
+          const cBuf = this.createNoiseBuffer(0.65);
+          if (cBuf) {
+            const cymbal = this.ctx.createBufferSource();
+            cymbal.buffer = cBuf;
+            const cFlt = this.ctx.createBiquadFilter();
+            cFlt.type = 'highpass';
+            cFlt.frequency.value = 4000;
+            const cGain = this.ctx.createGain();
+            cGain.gain.setValueAtTime(0.20, now + 0.40);
+            cGain.gain.exponentialRampToValueAtTime(0.001, now + 1.05);
+            cymbal.connect(cFlt);
+            cFlt.connect(cGain);
+            cGain.connect(this.ctx.destination);
+            cymbal.start(now + 0.40);
+          }
+          break;
+        }
+
+        case 3: { // 🎺 傳奇史詩：電影感銅管號角齊鳴 (G4-G4-C5-E5-G5!)
+          const epicMotif = [
+            { f: 392.00, t: 0.00, d: 0.12 },
+            { f: 392.00, t: 0.14, d: 0.12 },
+            { f: 523.25, t: 0.28, d: 0.35 },
+            { f: 659.25, t: 0.65, d: 0.16 },
+            { f: 783.99, t: 0.82, d: 0.65 }
+          ];
+          epicMotif.forEach(n => {
+            const o1 = this.ctx.createOscillator();
+            const o2 = this.ctx.createOscillator();
+            const flt = this.ctx.createBiquadFilter();
+            const gn = this.ctx.createGain();
+            flt.type = 'lowpass';
+            flt.frequency.setValueAtTime(2000, now + n.t);
+            flt.Q.value = 2.0;
+            o1.type = 'sawtooth';
+            o2.type = 'sawtooth';
+            o1.frequency.setValueAtTime(n.f, now + n.t);
+            o2.frequency.setValueAtTime(n.f * 1.006, now + n.t);
+            gn.gain.setValueAtTime(0.095, now + n.t);
+            gn.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+            o1.connect(flt);
+            o2.connect(flt);
+            flt.connect(gn);
+            gn.connect(this.ctx.destination);
+            o1.start(now + n.t);
+            o2.start(now + n.t);
+            o1.stop(now + n.t + n.d);
+            o2.stop(now + n.t + n.d);
+          });
+          break;
+        }
+
+        case 4: { // 🚀 賽博電音：Future Synthwave 掃頻與能量波
+          const osc = this.ctx.createOscillator();
+          const flt = this.ctx.createBiquadFilter();
+          const gn = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(1320, now + 0.35);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.7);
+          flt.type = 'lowpass';
+          flt.frequency.setValueAtTime(600, now);
+          flt.frequency.exponentialRampToValueAtTime(2600, now + 0.35);
+          gn.gain.setValueAtTime(0.12, now);
+          gn.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+          osc.connect(flt);
+          flt.connect(gn);
+          gn.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.85);
+          break;
+        }
+
+        case 5: { // 🎰 幸運賭城：拉霸連環鈴聲與金幣掉落
+          [0, 0.12, 0.24].forEach(dt => {
+            const bell = this.ctx.createOscillator();
+            const bGain = this.ctx.createGain();
+            bell.type = 'sine';
+            bell.frequency.setValueAtTime(1760, now + dt);
+            bGain.gain.setValueAtTime(0.12, now + dt);
+            bGain.gain.exponentialRampToValueAtTime(0.001, now + dt + 0.3);
+            bell.connect(bGain);
+            bGain.connect(this.ctx.destination);
+            bell.start(now + dt);
+            bell.stop(now + dt + 0.3);
+          });
+          for (let i = 0; i < 5; i++) {
+            const coin = this.ctx.createOscillator();
+            const cGain = this.ctx.createGain();
+            coin.type = 'triangle';
+            const f = 1400 + i * 180;
+            const t = now + 0.32 + i * 0.08;
+            coin.frequency.setValueAtTime(f, t);
+            cGain.gain.setValueAtTime(0.08, t);
+            cGain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+            coin.connect(cGain);
+            cGain.connect(this.ctx.destination);
+            coin.start(t);
+            coin.stop(t + 0.14);
+          }
+          break;
+        }
+
+        case 6: { // ⚔️ 英雄出征：號角行軍進行曲
+          const heroNotes = [
+            { f: 293.66, t: 0.0, d: 0.12 },
+            { f: 369.99, t: 0.12, d: 0.12 },
+            { f: 440.00, t: 0.24, d: 0.12 },
+            { f: 587.33, t: 0.36, d: 0.55 }
+          ];
+          heroNotes.forEach(n => {
+            const o = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            o.type = 'triangle';
+            o.frequency.setValueAtTime(n.f, now + n.t);
+            g.gain.setValueAtTime(0.12, now + n.t);
+            g.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+            o.connect(g);
+            g.connect(this.ctx.destination);
+            o.start(now + n.t);
+            o.stop(now + n.t + n.d);
+          });
+          break;
+        }
+
+        case 0:
+        default: { // 🎹 歡樂盛典：大調躍動和弦琶音
+          [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+            const o = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(f, now + i * 0.11);
+            g.gain.setValueAtTime(0.12, now + i * 0.11);
+            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.11 + 0.7);
+            o.connect(g);
+            g.connect(this.ctx.destination);
+            o.start(now + i * 0.11);
+            o.stop(now + i * 0.11 + 0.7);
+          });
+          break;
+        }
+      }
     } catch(e) {}
   }
 
