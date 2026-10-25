@@ -475,11 +475,11 @@
     if (els.btnFollowMode) {
       if (state.settings.followTeacher) {
         els.btnFollowMode.innerHTML = '<span>🎯 全班跟隨</span>';
-        els.btnFollowMode.style.color = 'var(--primary)';
+        els.btnFollowMode.classList.add('active');
         if (els.btnSummonAll) els.btnSummonAll.style.display = 'none';
       } else {
         els.btnFollowMode.innerHTML = '<span>🕊️ 自由分組</span>';
-        els.btnFollowMode.style.color = '#0284c7';
+        els.btnFollowMode.classList.remove('active');
         if (els.btnSummonAll && teacher) els.btnSummonAll.style.display = 'inline-flex';
       }
     }

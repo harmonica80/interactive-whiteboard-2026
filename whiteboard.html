@@ -98,22 +98,22 @@
     .btn-help-guide {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       margin-left: 12px;
-      padding: 4px 10px;
+      padding: 6px 12px;
       font-size: 13px;
-      font-weight: 700;
-      color: #ef4444;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
+      font-weight: 600;
+      color: #334155;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
       border-radius: 8px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
     }
 
     .btn-help-guide:hover {
-      background: #fee2e2;
-      border-color: #fca5a5;
+      background: #f1f5f9;
+      border-color: #94a3b8;
     }
 
     .topbar-title svg {
@@ -175,26 +175,32 @@
     .canvas-select {
       appearance: none;
       background: #ffffff;
-      border: 1px solid var(--border-color);
+      border: 1px solid #cbd5e1;
       border-radius: 8px;
       padding: 6px 28px 6px 12px;
       font-size: 13px;
       font-weight: 600;
-      color: var(--text-main);
+      color: #334155;
       cursor: pointer;
       outline: none;
       min-width: 95px;
+      transition: all 0.15s ease;
+    }
+
+    .canvas-select:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
     }
 
     .canvas-select:focus {
-      border-color: var(--primary);
+      border-color: #0284c7;
     }
 
     .canvas-select-arrow {
       position: absolute;
       right: 8px;
       pointer-events: none;
-      color: var(--text-muted);
+      color: #64748b;
       font-size: 11px;
     }
 
@@ -202,22 +208,41 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 6px;
       padding: 6px 12px;
       font-size: 13px;
       font-weight: 600;
       border-radius: 8px;
-      border: 1px solid var(--border-color);
+      border: 1px solid #cbd5e1;
       background: #ffffff;
-      color: var(--text-main);
+      color: #334155;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
       white-space: nowrap;
+      user-select: none;
     }
 
     .btn-pill:hover {
-      background: #f9fafb;
-      border-color: #d1d5db;
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .btn-pill.active,
+    .btn-pill.is-fullscreen-active {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      border-color: #0284c7 !important;
+    }
+
+    .btn-pill.purple {
+      background: #9333ea;
+      color: #ffffff;
+      border-color: #9333ea;
+    }
+
+    .btn-pill.purple:hover {
+      background: #7e22ce;
+      border-color: #7e22ce;
     }
 
     /* 頁籤清單 */
@@ -232,29 +257,29 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 12px;
+      padding: 6px 12px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
       border-radius: 8px;
-      border: 1px solid #fed7aa;
-      background: #fff7ed;
-      color: #ea580c;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
       user-select: none;
     }
 
     .page-tab-item:hover {
-      background: #ffedd5;
-      border-color: #f97316;
+      background: #f1f5f9;
+      border-color: #94a3b8;
     }
 
-    /* 目前所在頁數用淺藍色表示 (Item 3) */
+    /* 目前所在頁數採用同步簡報啟用藍 */
     .page-tab-item.active {
-      border: 1.5px solid #0284c7 !important;
-      background: #e0f2fe !important;
-      color: #0369a1 !important;
-      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25) !important;
+      border: 1px solid #0284c7 !important;
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      box-shadow: none !important;
     }
 
     /* 頁數刪除小按鈕 (Item 2) */
@@ -279,8 +304,8 @@
     }
 
     .page-tab-item.active .page-del-btn {
-      background: rgba(2, 132, 199, 0.15);
-      color: #0369a1;
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
     }
 
     .page-tab-item.active .page-del-btn:hover {
@@ -326,42 +351,55 @@
       cursor: pointer;
     }
 
-    /* 權限切換膠囊開關 (如圖 1 亮橘色) */
+    /* 權限切換開關與危險操作按鈕 (與同步簡報按鈕樣式一致) */
     .btn-toggle-perm {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
-      padding: 6px 14px;
+      padding: 6px 12px;
       font-size: 13px;
       font-weight: 600;
       border-radius: 8px;
       cursor: pointer;
-      border: 1px solid transparent;
-      transition: all 0.2s;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      transition: all 0.15s ease;
       white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn-toggle-perm:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
     }
 
     .btn-toggle-perm.is-active {
-      background: var(--primary);
+      background: #0284c7;
       color: #ffffff;
-      border-color: var(--primary-hover);
-      box-shadow: 0 1px 3px rgba(249, 115, 22, 0.25);
+      border-color: #0284c7;
+    }
+
+    .btn-toggle-perm.is-active:hover {
+      background: #0369a1;
+      border-color: #0369a1;
     }
 
     .btn-toggle-perm.is-inactive {
-      background: #f3f4f6;
-      color: var(--text-muted);
-      border-color: var(--border-color);
+      background: #ffffff;
+      color: #334155;
+      border-color: #cbd5e1;
     }
 
     .btn-danger {
-      background: #ef4444 !important;
-      color: #ffffff !important;
-      border-color: #dc2626 !important;
+      color: #dc2626 !important;
+      border-color: #fca5a5 !important;
+      background: #fff5f5 !important;
     }
 
     .btn-danger:hover {
-      background: #dc2626 !important;
+      background: #fee2e2 !important;
     }
 
     /* ===== 主畫布區域與視角容器 ===== */
@@ -1446,7 +1484,7 @@
             <span class="canvas-select-arrow">▼</span>
           </div>
           <button class="btn-pill" id="btnAddCanvas">+ 畫布</button>
-          <button class="btn-pill" id="btnDeleteCanvas" title="刪除目前畫布" style="display:none; color:#ef4444; border-color:#fecaca; background:#fef2f2;">🗑️ 刪除畫布</button>
+          <button class="btn-pill btn-danger" id="btnDeleteCanvas" title="刪除目前畫布" style="display:none;">🗑️ 刪除畫布</button>
         </div>
       </div>
     </header>
@@ -1479,13 +1517,13 @@
         <button class="btn-pill" id="btnFollowMode" title="切換全班跟隨老師視角或自由分組">
           <span>🎯 全班跟隨</span>
         </button>
-        <button class="btn-pill" id="btnSummonAll" style="display:none; color:var(--primary); font-weight:bold;" title="召集所有學生回目前畫面">
+        <button class="btn-pill active" id="btnSummonAll" style="display:none;" title="召集所有學生回目前畫面">
           <span>📢 召集全班</span>
         </button>
 
         <!-- 匯入 / 匯出 (Item 6, 如圖 5) -->
-        <button class="btn-pill" id="btnExport" title="匯入與匯出畫布資料">
-          <span>匯入/匯出</span>
+        <button class="btn-pill purple" id="btnExport" title="匯入與匯出畫布資料">
+          <span>📁 匯入 / 匯出</span>
         </button>
         <button class="btn-pill" id="btnToggleDrawer" title="開啟參與者名單">
           <span>👥</span>
@@ -1891,6 +1929,6 @@
 
   </div>
 
-  <script src="js/whiteboard_core.js?v=3008"></script>
+  <script src="js/whiteboard_core.js?v=3009"></script>
 </body>
 </html>

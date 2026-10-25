@@ -6823,7 +6823,7 @@ body {
    隨機抽人五大模式 (Picker Modes: Wheel, Slot, Card, Fortune Stick, Speed Flash)
    ========================================================================== */
 
-/* 模式切換頂部標籤列 */
+/* 模式切換頂部標籤列 (與同步簡報按鈕樣式一致) */
 .picker-mode-bar {
   display: flex;
   align-items: center;
@@ -6831,40 +6831,34 @@ body {
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 20px;
-  padding: 6px;
-  background: var(--bg-input);
-  border-radius: 30px;
-  border: 1px solid var(--border-color);
-  max-width: 620px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .picker-mode-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 13.5px;
-  font-weight: bold;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.15s ease;
 }
 
 .picker-mode-btn:hover {
-  color: var(--text-primary);
-  background: rgba(0, 122, 255, 0.08);
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .picker-mode-btn.active {
-  background: var(--accent-color);
-  color: white;
-  box-shadow: 0 3px 10px rgba(0, 122, 255, 0.35);
-  transform: translateY(-1px);
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
 }
 
 .picker-mode-icon {
@@ -8170,7 +8164,8 @@ body {
 
 
 /* 確保文字雲選單與按鈕套用同步簡報按鈕樣式時外觀一致 */
-#panel-word-cloud select.presentation-tool-btn {
+#panel-word-cloud select.presentation-tool-btn,
+#panel-lucky-wheel select.presentation-tool-btn {
   height: 33px;
   padding: 4px 10px;
   background-color: #ffffff;

@@ -345,25 +345,25 @@
       <!-- 隨機抽人 (5種模式) -->
       <div class="panel-card" id="panel-lucky-wheel">
         <div class="panel-body">
-          <!-- 頂部抽籤模式切換列 (5 大抽人模式) -->
+          <!-- 頂部抽籤模式切換列 (5 大抽人模式，統一採用同步簡報按鈕樣式) -->
           <div class="picker-mode-bar" id="pickerModeBar">
-            <button type="button" class="picker-mode-btn active" data-mode="wheel" onclick="window.app.changeWheelMode('wheel')">
+            <button type="button" class="picker-mode-btn presentation-tool-btn active" data-mode="wheel" onclick="window.app.changeWheelMode('wheel')">
               <span class="picker-mode-icon">🎡</span>
               <span class="picker-mode-name">經典轉盤</span>
             </button>
-            <button type="button" class="picker-mode-btn" data-mode="slot" onclick="window.app.changeWheelMode('slot')">
+            <button type="button" class="picker-mode-btn presentation-tool-btn" data-mode="slot" onclick="window.app.changeWheelMode('slot')">
               <span class="picker-mode-icon">🎰</span>
               <span class="picker-mode-name">老虎機</span>
             </button>
-            <button type="button" class="picker-mode-btn" data-mode="card" onclick="window.app.changeWheelMode('card')">
+            <button type="button" class="picker-mode-btn presentation-tool-btn" data-mode="card" onclick="window.app.changeWheelMode('card')">
               <span class="picker-mode-icon">🃏</span>
               <span class="picker-mode-name">翻牌抽卡</span>
             </button>
-            <button type="button" class="picker-mode-btn" data-mode="stick" onclick="window.app.changeWheelMode('stick')">
+            <button type="button" class="picker-mode-btn presentation-tool-btn" data-mode="stick" onclick="window.app.changeWheelMode('stick')">
               <span class="picker-mode-icon">🎋</span>
               <span class="picker-mode-name">幸運籤筒</span>
             </button>
-            <button type="button" class="picker-mode-btn" data-mode="flash" onclick="window.app.changeWheelMode('flash')">
+            <button type="button" class="picker-mode-btn presentation-tool-btn" data-mode="flash" onclick="window.app.changeWheelMode('flash')">
               <span class="picker-mode-icon">⚡</span>
               <span class="picker-mode-name">閃電極速</span>
             </button>
@@ -479,7 +479,7 @@
               <!-- 抽籤模式下拉切換 -->
               <div class="control-group" style="margin-bottom: 12px;">
                 <label for="selWheelMode" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎮 抽籤類型模式：</label>
-                <select id="selWheelMode" onchange="window.app.changeWheelMode(this.value)" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: bold;">
+                <select id="selWheelMode" class="presentation-tool-btn" onchange="window.app.changeWheelMode(this.value)" style="width: 100%; justify-content: flex-start;">
                   <option value="wheel">🎡 經典大轉盤</option>
                   <option value="slot">🎰 老虎機滾輪</option>
                   <option value="card">🃏 翻牌抽卡</option>
@@ -491,10 +491,10 @@
               <div class="control-group">
                 <label for="wheelNamesInput" style="font-weight: bold; font-size: 14px;">名單列表 (每行一人)：</label>
                 <div style="display: flex; gap: 6px; margin-top: 6px; margin-bottom: 6px;">
-                  <button class="btn btn-secondary" onclick="window.app.importOnlineUsersToWheel()" style="flex: 1; padding: 6px 10px; font-size: 12px; background: rgba(52,199,89,0.1); border-color: #34c759; color: #167a31; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 4px;" title="自動匯入目前在線上的所有同學名稱">
+                  <button type="button" class="presentation-tool-btn" onclick="window.app.importOnlineUsersToWheel()" style="flex: 1;" title="自動匯入目前在線上的所有同學名稱">
                     👥 匯入線上名單
                   </button>
-                  <button class="btn btn-secondary" onclick="document.getElementById('wheelNamesInput').value=''; document.getElementById('wheelNamesInput').dispatchEvent(new Event('input'));" style="flex: 1; padding: 6px 10px; font-size: 12px;" title="清空名單列表重新輸入">
+                  <button type="button" class="presentation-tool-btn danger" onclick="document.getElementById('wheelNamesInput').value=''; document.getElementById('wheelNamesInput').dispatchEvent(new Event('input'));" style="flex: 1;" title="清空名單列表重新輸入">
                     🗑️ 清空名單
                   </button>
                 </div>
@@ -502,8 +502,8 @@
               </div>
               
               <div class="control-actions" style="display: flex; gap: 8px; margin-top: 8px;">
-                <button class="btn btn-secondary" onclick="window.app.shuffleWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔀 隨機打亂</button>
-                <button class="btn btn-secondary" onclick="window.app.sortWheelNames()" style="flex: 1; padding: 8px; font-size: 13px;">🔤 排序名單</button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app.shuffleWheelNames()" style="flex: 1;">🔀 隨機打亂</button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app.sortWheelNames()" style="flex: 1;">🔤 排序名單</button>
               </div>
               
               <div class="control-options" style="margin: 12px 0;">
@@ -515,7 +515,7 @@
 
               <div class="control-group" style="margin: 12px 0;">
                 <label for="selWheelColor" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎨 轉盤色系風格：</label>
-                <select id="selWheelColor" onchange="window.app.changeWheelColor(parseInt(this.value))" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer;">
+                <select id="selWheelColor" class="presentation-tool-btn" onchange="window.app.changeWheelColor(parseInt(this.value))" style="width: 100%; justify-content: flex-start;">
                   <option value="0">🍭 馬卡龍 Macaron</option>
                   <option value="1">🎪 遊樂場 Playground</option>
                   <option value="2">🧊 冰巖 Ice & Slate</option>
@@ -529,9 +529,9 @@
               <div class="control-group" style="margin: 12px 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                   <label for="selWheelSound" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); margin: 0;">🎵 音效風格：</label>
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="window.app && window.app.previewCurrentWheelSound()" style="padding: 2px 8px; font-size: 11.5px; font-weight: bold; display: flex; align-items: center; gap: 4px; color: var(--accent-color);" title="點擊試聽目前選取的音效風格">🔊 試聽音效</button>
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.previewCurrentWheelSound()" title="點擊試聽目前選取的音效風格">🔊 試聽音效</button>
                 </div>
-                <select id="selWheelSound" onchange="window.app.changeWheelSound(parseInt(this.value))" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer;">
+                <select id="selWheelSound" class="presentation-tool-btn" onchange="window.app.changeWheelSound(parseInt(this.value))" style="width: 100%; justify-content: flex-start;">
                   <option value="0">🎹 歡樂盛典</option>
                   <option value="1">🎮 熱血電玩 (Arcade)</option>
                   <option value="2">🥁 緊張鼓滾 (Tension Drumroll)</option>
@@ -542,12 +542,12 @@
                 </select>
               </div>
               
-              <button class="btn btn-primary" id="btnSpinWheel" onclick="window.app.triggerWheelSpin()" style="width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; font-weight: bold; border-radius: 8px;">🔥 開始抽人 (或按 Ctrl+Enter)</button>
+              <button type="button" class="presentation-tool-btn purple" id="btnSpinWheel" onclick="window.app.triggerWheelSpin()" style="width: 100%; margin-top: 10px; font-size: 15px; padding: 10px 14px;">🔥 開始抽人 (或按 Ctrl+Enter)</button>
               
               <div class="results-history" style="margin-top: 18px; border-top: 1px solid var(--border-color); padding-top: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <h4 style="margin: 0; font-size: 14px; color: var(--text-primary);">🏆 本次抽中記錄：</h4>
-                  <button type="button" class="btn btn-secondary" onclick="window.app.clearWheelHistory()" style="padding: 4px 8px; font-size: 12px; border-radius: 6px;" title="清除抽中記錄並重設">🗑️ 清除記錄</button>
+                  <button type="button" class="presentation-tool-btn danger" onclick="window.app.clearWheelHistory()" title="清除抽中記錄並重設">🗑️ 清除記錄</button>
                 </div>
                 <ul id="wheelHistoryList" style="list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto;">
                   <li style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 10px 0;">尚無記錄</li>
@@ -707,7 +707,7 @@
       <!-- 互動白板 -->
       <div class="panel-card" id="panel-whiteboard">
         <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
-          <iframe id="whiteboardFrame" src="whiteboard.html?v=3008" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板" allow="fullscreen" allowfullscreen></iframe>
+          <iframe id="whiteboardFrame" src="whiteboard.html?v=3009" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板" allow="fullscreen" allowfullscreen></iframe>
         </div>
       </div>
 
