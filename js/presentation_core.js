@@ -1022,7 +1022,7 @@
             '確定要清理 Firebase 雲端簡報暫存嗎？這將刪除目前雲端殘留的投影片大圖與作答暫存，立即釋放資料庫空間與流量（不會影響本機目前編輯內容）。',
             doClean
           );
-        } else if (confirm('確定要清理 Firebase 雲端簡報暫存嗎？這將刪除目前雲端殘留的投影片與作答暫存，立即釋放空間與流量。')) {
+        } else {
           doClean();
         }
       } else {
@@ -1227,17 +1227,18 @@
       dot.style.top = `${ry * 100}%`;
     }
 
-    // 清除當前頁面的標記
+    // 清除當前頁面的標記 (全螢幕友好確認彈窗)
     clearAnnotations() {
       const slide = this.getCurrentSlide();
       if (!slide) return;
-      if (confirm('確定要清除此頁的所有手繪標記嗎？')) {
+      this.showConfirm('🧹', '清除本頁標記', '確定要清除此頁的所有手繪標記嗎？', () => {
         delete this.annotations[slide.id];
         this.redrawAnnotations();
         if (this.isPresenting && typeof db !== 'undefined') {
           db.ref(`presentation/annotations/${slide.id}`).remove().catch(() => {});
         }
-      }
+        this.notify('已清除', '已清除本頁所有手繪標記！');
+      });
     }
 
     // 繪製當前未放開滑鼠的筆劃
@@ -1356,38 +1357,41 @@
       }
     }
 
-    // 建立新簡報 (圖 2: 清空當前簡報並建立全新投影片)
+    // 建立新簡報 (圖 2: 清空當前簡報並建立全新投影片，全螢幕友好)
     createNewPresentation() {
       if (!this.canControlPresentation()) return;
-      if (this.slides.length > 0) {
-        if (!confirm('確定要建立新簡報嗎？\n這將清空目前的簡報頁面與隨堂作答記錄。')) {
-          return;
+      const doCreate = () => {
+        this.markAsHost();
+        if (this.isPresenting) {
+          this.stopSyncPresentation();
         }
-      }
-      this.markAsHost();
-      if (this.isPresenting) {
-        this.stopSyncPresentation();
-      }
 
-      this.slides = [];
-      this.currentSlideIndex = 0;
-      this.annotations = {};
-      this.submissions = {};
-      this.myAnswers = {};
-      this.studentDrawStrokes = [];
-      this.selectedSubmissionIds.clear();
+        this.slides = [];
+        this.currentSlideIndex = 0;
+        this.annotations = {};
+        this.submissions = {};
+        this.myAnswers = {};
+        this.studentDrawStrokes = [];
+        this.selectedSubmissionIds.clear();
 
-      // 清除 Firebase 上的簡報與互動記錄
-      if (typeof db !== 'undefined') {
-        db.ref('presentation/slides').remove().catch(() => {});
-        db.ref('presentation/annotations').remove().catch(() => {});
-        db.ref('presentation/submissions').remove().catch(() => {});
-        db.ref('presentation/laser').remove().catch(() => {});
+        // 清除 Firebase 上的簡報與互動記錄
+        if (typeof db !== 'undefined') {
+          db.ref('presentation/slides').remove().catch(() => {});
+          db.ref('presentation/annotations').remove().catch(() => {});
+          db.ref('presentation/submissions').remove().catch(() => {});
+          db.ref('presentation/laser').remove().catch(() => {});
+        }
+
+        this.updatePermissionsUI();
+        this.render();
+        this.notify('🎉 新簡報已建立', '已清空並建立全新簡報！可點擊「+ 純色頁」或「+ 圖片頁」開始編排。');
+      };
+
+      if (this.slides.length > 0) {
+        this.showConfirm('➕', '建立新簡報', '確定要建立新簡報嗎？這將清空目前的簡報頁面與隨堂作答記錄。', doCreate);
+      } else {
+        doCreate();
       }
-
-      // 自動建立一張空白預設純色簡報頁
-      this.addColorSlide('#1e293b');
-      this.notify('🎉 新簡報已建立', '已清空並建立全新簡報！可點擊「+ 純色頁」或「+ 圖片頁」開始編排。');
     }
 
     // 新增純色頁
@@ -1499,22 +1503,25 @@
       e.target.value = '';
     }
 
-    // 刪除指定頁面
+    // 刪除指定頁面 (全螢幕友好)
     deleteSlide(index) {
       this.markAsHost();
-      if (!confirm(`確定要刪除第 ${index + 1} 頁嗎？`)) return;
+      this.showConfirm('🗑️', '刪除簡報頁面', '確定要刪除第 ' + (index + 1) + ' 頁嗎？', () => {
+        const deletedSlide = this.slides[index];
+        if (deletedSlide) {
+          delete this.annotations[deletedSlide.id];
+        }
 
-      const deletedSlide = this.slides[index];
-      if (deletedSlide) {
-        delete this.annotations[deletedSlide.id];
-      }
+        this.slides.splice(index, 1);
+        if (this.currentSlideIndex >= this.slides.length) {
+          this.currentSlideIndex = Math.max(0, this.slides.length - 1);
+        }
 
-      this.slides.splice(index, 1);
-      if (this.currentSlideIndex >= this.slides.length) {
-        this.currentSlideIndex = Math.max(0, this.slides.length - 1);
-      }
-      this.render();
-      if (this.isPresenting) this.broadcastLiveState(true);
+        this.updatePermissionsUI();
+        this.render();
+        if (this.isPresenting) this.broadcastLiveState(true);
+        this.notify('已刪除', '已刪除第 ' + (index + 1) + ' 頁簡報。');
+      });
     }
 
     // 主渲染流程
@@ -2418,19 +2425,19 @@
       }
     }
 
-    // 重設本頁提交記錄
+    // 重設本頁提交記錄 (全螢幕友好)
     resetSubmissions() {
       const slide = this.getCurrentSlide();
       if (!slide) return;
 
-      if (confirm('確定要清空本頁所有同學的作答回應記錄嗎？')) {
+      this.showConfirm('🗑️', '重置本頁回應', '確定要清空本頁所有同學的作答回應記錄嗎？此動作無法復原。', () => {
         if (typeof db !== 'undefined') {
           db.ref(`presentation/submissions/${slide.id}`).remove().catch(() => {});
         }
         delete this.submissions[slide.id];
         this.renderSubmissionsSidebar();
         this.notify('已重置', '本頁作答記錄已清空！');
-      }
+      });
     }
 
     // 下載回應 CSV 表格
@@ -3500,12 +3507,23 @@
       if (iframe) iframe.src = 'about:blank';
     }
 
-    // 系統提示吐司通知
+    // 系統提示吐司通知 (相容全螢幕容器動態掛載)
     notify(title, msg) {
       if (window.app && window.app.showNotification) {
         window.app.showNotification(title, msg);
       } else {
         alert(`${title}\n${msg}`);
+      }
+    }
+
+    // 自訂對話確認視窗 (完全取代原生 confirm，徹底避免全螢幕被強制中斷退回視窗)
+    showConfirm(icon, title, subtitle, onConfirm) {
+      if (window.app && typeof window.app.showConfirmModal === 'function') {
+        window.app.showConfirmModal(icon, title, subtitle, onConfirm);
+      } else {
+        if (confirm(`${title}\n${subtitle}`)) {
+          if (typeof onConfirm === 'function') onConfirm();
+        }
       }
     }
 

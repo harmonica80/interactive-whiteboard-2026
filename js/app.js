@@ -1701,6 +1701,7 @@ class App {
       '確定要刪除此影片嗎？',
       '刪除後該影片及留言回饋將永久移除，無法復原。',
       () => {
+        db.ref('video_blobs').child(id).remove().catch(() => {});
         db.ref('videos').child(id).remove()
           .then(() => {
             if (this.activeVideoId === id) {
@@ -1882,6 +1883,19 @@ class App {
         setTimeout(() => window.wordCloud.recalculateAndRender(), 60);
       }
       this.updateWheelControlPanelVisibility();
+    }
+
+    // 圖片分享與影片分享按需掛載監聽器 (離開封頁即時卸載，零背景流量消耗)
+    if (targetId === 'panel-images') {
+      this.attachImageSyncListener();
+    } else if (targetId !== 'panel-admin') {
+      this.detachImageSyncListener();
+    }
+
+    if (targetId === 'panel-videos') {
+      this.attachVideoSyncListener();
+    } else if (targetId !== 'panel-admin') {
+      this.detachVideoSyncListener();
     }
 
     if (targetId === 'panel-whiteboard') {
@@ -2921,6 +2935,12 @@ class App {
     const modal = document.getElementById('customConfirmModal');
     if (!modal) return;
     
+    // 若當前有全螢幕模式的容器 (如同步簡報 panel-presentation)，將 modal 動態移入全螢幕容器中，防止被遮蔽！
+    const fsEl = document.fullscreenElement;
+    if (fsEl && !fsEl.contains(modal)) {
+      fsEl.appendChild(modal);
+    }
+    
     document.getElementById('confirmModalIcon').textContent = icon || '⚠️';
     document.getElementById('confirmModalText').textContent = title || '確認執行此動作？';
     document.getElementById('confirmModalSubtext').innerHTML = subtitle || '';
@@ -2949,6 +2969,118 @@ class App {
       modal.classList.remove('active');
       modal.style.display = 'none';
     }
+  }
+
+  // ===== 第一優先：圖片與影片分享按需監聽 (Lazy Listen) 與筆數限制 (limitToLast) =====
+  attachImageSyncListener() {
+    if (this._isImageSyncAttached || !this.imageRef) return;
+    this._isImageSyncAttached = true;
+    this._imageSyncQuery = this.imageRef.limitToLast(28);
+    this._onImageValueChange = (snapshot) => {
+      const rawVal = snapshot.val();
+      if (rawVal) this.recordFirebaseTraffic(this.estimateJsonBytes(rawVal));
+      const images = [];
+      snapshot.forEach(child => {
+        images.push({ id: child.key, ...child.val() });
+      });
+      images.sort((a, b) => b.timestamp - a.timestamp);
+      this.images = images;
+      this.renderImages();
+      this.renderAdminImages();
+      this.scheduleCurrentClassStorageSync();
+    };
+    this._imageSyncQuery.on('value', this._onImageValueChange);
+  }
+
+  detachImageSyncListener() {
+    if (!this._isImageSyncAttached || !this._imageSyncQuery) return;
+    this._isImageSyncAttached = false;
+    if (this._onImageValueChange) {
+      this._imageSyncQuery.off('value', this._onImageValueChange);
+    }
+  }
+
+  attachVideoSyncListener() {
+    if (this._isVideoSyncAttached || !this.videoRef) return;
+    this._isVideoSyncAttached = true;
+    this._videoSyncQuery = this.videoRef.limitToLast(28);
+    this._onVideoValueChange = (snapshot) => {
+      const rawVal = snapshot.val();
+      if (rawVal) this.recordFirebaseTraffic(this.estimateJsonBytes(rawVal));
+      const videos = [];
+      snapshot.forEach(child => {
+        videos.push({ id: child.key, ...child.val() });
+      });
+      videos.sort((a, b) => b.timestamp - a.timestamp);
+      this.videos = videos;
+      this.renderVideos();
+      this.renderAdminVideos();
+      this.updateActiveVideoModal();
+      this.scheduleCurrentClassStorageSync();
+    };
+    this._videoSyncQuery.on('value', this._onVideoValueChange);
+  }
+
+  detachVideoSyncListener() {
+    if (!this._isVideoSyncAttached || !this._videoSyncQuery) return;
+    this._isVideoSyncAttached = false;
+    if (this._onVideoValueChange) {
+      this._videoSyncQuery.off('value', this._onVideoValueChange);
+    }
+  }
+
+  // ===== 第三優先：清理孤立附件檔案 (釋放資料庫空間與流量) =====
+  async cleanOrphanedAttachments() {
+    this.showConfirmModal(
+      '🧹',
+      '清理孤立附件檔案',
+      '確定要掃描並清理資料庫中所有已刪除提問或無效引用的孤立附件嗎？這將釋放 Firebase 儲存空間。',
+      async () => {
+        try {
+          this.showNotification('掃描中', '正在掃描孤立附件檔案...');
+          const [attSnap, qSnap, sharesSnap] = await Promise.all([
+            db.ref('attachments').once('value'),
+            db.ref('questions').once('value'),
+            db.ref('teacherShares').once('value')
+          ]);
+
+          const attachments = attSnap.val() || {};
+          const questions = qSnap.val() || {};
+          const shares = sharesSnap.val() || {};
+
+          // 收集所有正在被有效引用的 attachment ID
+          const validIds = new Set();
+          Object.values(questions).forEach(q => {
+            if (Array.isArray(q.attachments)) {
+              q.attachments.forEach(a => { if (a && a.id) validIds.add(a.id); });
+            }
+          });
+          Object.values(shares).forEach(s => {
+            if (Array.isArray(s.attachments)) {
+              s.attachments.forEach(a => { if (a && a.id) validIds.add(a.id); });
+            }
+          });
+
+          let deletedCount = 0;
+          let freedBytes = 0;
+          const deletePromises = [];
+          Object.keys(attachments).forEach(attId => {
+            if (!validIds.has(attId)) {
+              const item = attachments[attId];
+              freedBytes += (item.base64Size || item.size || 0);
+              deletePromises.push(db.ref(`attachments/${attId}`).remove());
+              deletedCount++;
+            }
+          });
+
+          await Promise.all(deletePromises);
+          this.scheduleCurrentClassStorageSync();
+          this.showNotification('🧹 清理完成', `已清理 ${deletedCount} 個孤立附件，釋放約 ${this.formatQuotaBytes(freedBytes)} 空間！`);
+        } catch (err) {
+          this.showNotification('錯誤', '清理附件失敗：' + err.message);
+        }
+      }
+    );
   }
 
   sortFoldersTopPriority(a, b) {
@@ -3009,20 +3141,10 @@ class App {
       this.scheduleCurrentClassStorageSync();
     });
 
-    // 監聽圖片資料庫
-    this.imageRef.on('value', (snapshot) => {
-      const rawVal = snapshot.val();
-      if (rawVal) this.recordFirebaseTraffic(this.estimateJsonBytes(rawVal));
-      const images = [];
-      snapshot.forEach(child => {
-        images.push({ id: child.key, ...child.val() });
-      });
-      images.sort((a, b) => b.timestamp - a.timestamp);
-      this.images = images;
-      this.renderImages();
-      this.renderAdminImages();
-      this.scheduleCurrentClassStorageSync();
-    });
+    // 圖片資料庫改為按需監聽 (Lazy Listen)，首頁啟動時不下載全量圖片，大幅節省平時流量
+    if (this.activeTabId === 'panel-images') {
+      this.attachImageSyncListener();
+    }
 
     // 監聽測驗狀態
     db.ref('quiz/current').on('value', (snapshot) => {
@@ -3075,21 +3197,10 @@ class App {
       this.renderAdminImages();
     });
 
-    // 監聽影片資料庫
-    this.videoRef.on('value', (snapshot) => {
-      const rawVal = snapshot.val();
-      if (rawVal) this.recordFirebaseTraffic(this.estimateJsonBytes(rawVal));
-      const videos = [];
-      snapshot.forEach(child => {
-        videos.push({ id: child.key, ...child.val() });
-      });
-      videos.sort((a, b) => b.timestamp - a.timestamp);
-      this.videos = videos;
-      this.renderVideos();
-      this.renderAdminVideos();
-      this.updateActiveVideoModal();
-      this.scheduleCurrentClassStorageSync();
-    });
+    // 影片資料庫改為按需監聽 (Lazy Listen)，首頁啟動時不下載影片列表
+    if (this.activeTabId === 'panel-videos') {
+      this.attachVideoSyncListener();
+    }
 
     // 監聽影片群組資料庫
     db.ref('quiz/videoFolders').on('value', (snapshot) => {
@@ -3418,6 +3529,14 @@ class App {
   
   showNotification(title, message, isProgress = false) {
     const notifyModal = document.getElementById('notifyModal');
+    if (!notifyModal) return;
+
+    // 若當前有全螢幕模式的容器，將 notifyModal 動態移入全螢幕容器中，防止吐司訊息被全螢幕遮蔽或導致強制退出
+    const fsEl = document.fullscreenElement;
+    if (fsEl && !fsEl.contains(notifyModal)) {
+      fsEl.appendChild(notifyModal);
+    }
+
     document.getElementById('notifyModalTitle').textContent = title;
     
     const textEl = document.getElementById('notifyModalText');
@@ -4966,7 +5085,24 @@ class App {
       const embedUrl = driveMatch ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : vid.url;
       playerContainer.innerHTML = `<iframe src="${embedUrl}" allow="autoplay" allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>`;
     } else {
-      playerContainer.innerHTML = `<video src="${vid.url}" controls autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>`;
+      if (vid.hasLocalBlob && !vid.url) {
+        playerContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-size:14px;background:#000;">⏳ 正在載入影片串流，請稍候...</div>';
+        const blobKey = vid.blobKey || vid.id;
+        db.ref(`video_blobs/${blobKey}`).once('value').then(snap => {
+          const blobUrl = snap.val();
+          if (blobUrl) {
+            vid.url = blobUrl;
+            playerContainer.innerHTML = `<video src="${blobUrl}" controls autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>`;
+            if (downloadBtn) downloadBtn.href = blobUrl;
+          } else {
+            playerContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ff453a;font-size:14px;background:#000;">❌ 影片內容已不存在或被移除</div>';
+          }
+        }).catch(err => {
+          playerContainer.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ff453a;font-size:14px;background:#000;">❌ 載入失敗：${err.message}</div>`;
+        });
+      } else {
+        playerContainer.innerHTML = `<video src="${vid.url}" controls autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>`;
+      }
     }
 
     this.updateActiveVideoModal();
@@ -5378,8 +5514,10 @@ class App {
     } else if (featureKey === 'qaMgmt') {
       this.switchQaAdminSubTab('items');
     } else if (featureKey === 'imgMgmt') {
+      this.attachImageSyncListener();
       this.switchImgAdminSubTab('items');
     } else if (featureKey === 'vidMgmt') {
+      this.attachVideoSyncListener();
       this.switchVidAdminSubTab('items');
     }
 
@@ -7389,9 +7527,16 @@ class App {
           };
           reader.onerror = () => reject(new Error('讀取檔案失敗'));
           reader.readAsDataURL(uploadFile);
-        }).then(dataUrl => {
-          return this.videoRef.push({
-            url: dataUrl,
+        }).then(async (dataUrl) => {
+          const newRef = this.videoRef.push();
+          const vidKey = newRef.key;
+          // 將高達數 MB 的影片二進位資料獨立存放在 video_blobs/${vidKey}，絕不塞在主清單節點！
+          await db.ref(`video_blobs/${vidKey}`).set(dataUrl);
+
+          return newRef.set({
+            url: '', // 主列表留空，避免列表全量廣播下載！
+            hasLocalBlob: true,
+            blobKey: vidKey,
             user: author,
             userId: uid,
             avatar: this.getCurrentUserAvatar(),

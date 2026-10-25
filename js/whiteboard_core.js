@@ -2163,15 +2163,15 @@
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      // 1. 剪貼簿是圖片
+      // 1. 剪貼簿是圖片 (自動前處理壓縮)
       if (item.type.indexOf('image') !== -1) {
         foundImage = true;
         const blob = item.getAsFile();
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          insertImageObject(event.target.result, center.x - 150, center.y - 100);
-        };
-        reader.readAsDataURL(blob);
+        compressWhiteboardImage(blob).then((compressedUrl) => {
+          if (compressedUrl) {
+            insertImageObject(compressedUrl, center.x - 150, center.y - 100);
+          }
+        });
         break;
       }
     }
@@ -2203,6 +2203,47 @@
     renderStickyNoteDOM(stickyObj);
     pushObjectUpdate(stickyObj);
     pushHistoryAction({ type: 'create', objects: [JSON.parse(JSON.stringify(stickyObj))] });
+  }
+
+  // 前端自動壓縮白板貼圖 (防止未壓縮超大相片塞爆 Firebase 資料庫)
+  function compressWhiteboardImage(fileOrBlob) {
+    return new Promise((resolve) => {
+      if (!fileOrBlob) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const rawUrl = event.target.result;
+        const img = new Image();
+        img.onload = () => {
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          const maxDim = 1600; // 限制最大邊長為 1600px，兼顧放大清晰度並壓縮數位相機大圖 90% 以上
+          if (w > maxDim || h > maxDim) {
+            const ratio = Math.min(maxDim / w, maxDim / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+
+          // 透明 PNG 且小於 400KB 則保留 PNG，其餘以 0.78 品質 JPEG 壓縮 (體積縮減至約 100KB~200KB)
+          const isPng = fileOrBlob.type === 'image/png';
+          let finalUrl;
+          if (isPng && fileOrBlob.size < 400 * 1024) {
+            finalUrl = canvas.toDataURL('image/png');
+          } else {
+            finalUrl = canvas.toDataURL('image/jpeg', 0.78);
+          }
+          resolve(finalUrl);
+        };
+        img.onerror = () => resolve(rawUrl);
+        img.src = rawUrl;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(fileOrBlob);
+    });
   }
 
   function insertImageObject(src, x, y, width, height, title) {
@@ -2406,13 +2447,13 @@
   els.imageFileInput.onchange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const rect = els.canvasViewport.getBoundingClientRect();
-      const center = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      insertImageObject(event.target.result, center.x - 160, center.y - 110, 320, 220, file.name);
-    };
-    reader.readAsDataURL(file);
+    const rect = els.canvasViewport.getBoundingClientRect();
+    const center = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    compressWhiteboardImage(file).then((compressedUrl) => {
+      if (compressedUrl) {
+        insertImageObject(compressedUrl, center.x - 160, center.y - 110, 320, 220, file.name);
+      }
+    });
     els.imageFileInput.value = '';
   };
 

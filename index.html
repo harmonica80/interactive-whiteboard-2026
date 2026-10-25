@@ -4052,6 +4052,7 @@
                     <input type="checkbox" id="selectAllQuestions" onchange="window.app.toggleSelectAllQuestions(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選提問
                   </label>
                   <button class="preset-btn" onclick="window.app.deleteSelectedQuestions()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+                  <button class="preset-btn" onclick="window.app && window.app.cleanOrphanedAttachments()" style="background: rgba(239, 68, 68, 0.1); color: var(--danger-color); border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;" title="清理已刪除問題遺留在雲端的孤立附件檔案">🧹 清理孤立附件</button>
                 </div>
                 
                 <ul id="adminQuestionList" class="question-list"></ul>
@@ -5790,7 +5791,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=386"></script>
-  <script src="js/app.js?v=414"></script>
+  <script src="js/app.js?v=415"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=381"></script>
   <script src="js/video_quiz.js?v=387"></script>
