@@ -1031,7 +1031,9 @@
             updatedAt: Date.now()
           }).catch(() => {});
         }
-        this.notify('🧹 清理完成', '已清理 Firebase 雲端簡報暫存，大幅釋放資料庫頻寬與儲存空間！');
+        if (showConfirm) {
+          this.notify('🧹 清理完成', '已清理 Firebase 雲端簡報暫存，大幅釋放資料庫頻寬與儲存空間！');
+        }
       };
 
       if (showConfirm) {
