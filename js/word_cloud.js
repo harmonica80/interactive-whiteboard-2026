@@ -433,10 +433,22 @@
         const emptyHtml = '<div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史記錄（發布題目後將自動保存，方便後續重複使用或複製至其他班級）</div>';
         if (adminListEl) adminListEl.innerHTML = emptyHtml;
         if (frontListEl) frontListEl.innerHTML = emptyHtml;
+        this.renderBankListUI();
         return;
       }
 
-      const sortedKeys = keys.sort((a, b) => (this.historyBank[b]?.createdAt || 0) - (this.historyBank[a]?.createdAt || 0));
+      // 支援自訂拖曳順序 order 排序
+      const sortedKeys = keys.sort((a, b) => {
+        const itemA = this.historyBank[a];
+        const itemB = this.historyBank[b];
+        const orderA = typeof itemA?.order === 'number' ? itemA.order : null;
+        const orderB = typeof itemB?.order === 'number' ? itemB.order : null;
+        if (orderA !== null && orderB !== null) return orderA - orderB;
+        if (orderA !== null) return -1;
+        if (orderB !== null) return 1;
+        return (itemB?.createdAt || 0) - (itemA?.createdAt || 0);
+      });
+
       const shapeLabels = {
         circle: '⭕圓形',
         rectangle: '⬛矩形',
@@ -462,10 +474,11 @@
         const hasSnapshot = Boolean((item.savedSubmissions && Object.keys(item.savedSubmissions).length > 0) || (Array.isArray(item.savedWords) && item.savedWords.length > 0));
 
         return `
-          <div class="wc-history-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; gap: 10px; flex-wrap: wrap;">
+          <div class="wc-history-item draggable-wc-history-item" draggable="true" data-history-key="${key}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; gap: 10px; flex-wrap: wrap; cursor: grab;">
             <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px;">
+              <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 16px; user-select: none; flex-shrink: 0;" title="按住拖曳調整題目順序">☰</span>
               ${hasImg ? `<img src="${item.imageUrl}" style="width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); flex-shrink: 0; cursor: pointer;" onclick="window.app?.zoomShareImage('${item.imageUrl}')" title="點擊預覽題目圖片">` : ''}
-              <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex: 1;">
+              <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex: 1; min-width: 0;">
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                   <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
                   <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(item.title || '即時互動文字雲')}</span>
@@ -476,7 +489,7 @@
                 </div>
               </div>
             </div>
-            <div style="display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap;">
+            <div style="display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; align-items: center;">
               <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" style="padding: 4px 8px; font-size: 11.5px; color: var(--accent-color); font-weight: bold;" title="複製此文字雲題目到其他班級">📤 複製他班</button>
               ${hasSnapshot ? `<button type="button" class="btn btn-secondary" onclick="window.wordCloud?.reviewHistorySnapshot('${key}')" style="padding: 4px 8px; font-size: 11.5px; color: #8b5cf6; font-weight: bold;" title="在畫布上回顧此次文字雲成果">👁️ 回顧成果</button>` : ''}
               <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.loadFromHistory('${key}', false)" style="padding: 4px 8px; font-size: 11.5px; font-weight: bold;" title="帶入此題設定到出題框">📝 載入</button>
@@ -487,8 +500,12 @@
         `;
       }).join('');
 
-      if (adminListEl) adminListEl.innerHTML = html;
+      if (adminListEl) {
+        adminListEl.innerHTML = html;
+        this.initHistoryDragAndDrop();
+      }
       if (frontListEl) frontListEl.innerHTML = html;
+      this.renderBankListUI();
     }
 
     // 從歷史記錄載入設定或直接重新發起新一輪
@@ -626,6 +643,572 @@
           });
         }
       );
+    }
+
+    // 切換文字雲後台雙頁籤 (歷次題目庫 vs 題庫管理)
+    switchWcSubTab(tabName) {
+      const btnHistory = document.getElementById('btnSubTabWcHistory');
+      const btnBank = document.getElementById('btnSubTabWcBank');
+      const paneHistory = document.getElementById('wcSubTabPaneHistory');
+      const paneBank = document.getElementById('wcSubTabPaneBank');
+
+      if (tabName === 'bank') {
+        if (btnHistory) btnHistory.classList.remove('active');
+        if (btnBank) btnBank.classList.add('active');
+        if (paneHistory) paneHistory.style.display = 'none';
+        if (paneBank) paneBank.style.display = 'block';
+        this.renderBankListUI();
+      } else {
+        if (btnBank) btnBank.classList.remove('active');
+        if (btnHistory) btnHistory.classList.add('active');
+        if (paneBank) paneBank.style.display = 'none';
+        if (paneHistory) paneHistory.style.display = 'block';
+        this.renderHistoryListUI();
+      }
+    }
+
+    // 切換格式說明對話框分頁
+    switchFormatGuideTab(fmt) {
+      ['Txt', 'Json', 'Csv'].forEach(type => {
+        const btn = document.getElementById(`tabWcFormat${type}`);
+        const pane = document.getElementById(`wcFormatGuidePane${type}`);
+        const isTarget = type.toLowerCase() === fmt.toLowerCase();
+        if (btn) btn.classList.toggle('active', isTarget);
+        if (pane) pane.style.display = isTarget ? 'block' : 'none';
+      });
+    }
+
+    // 建立新題目：重設出題表單以利輸入
+    openCreateNewTopic() {
+      if (!window.app?.isAdmin) return;
+      const adminTitleInput = document.getElementById('adminWcQuestionTitleInput');
+      if (adminTitleInput) {
+        adminTitleInput.value = '';
+        adminTitleInput.focus();
+      }
+      this.uploadedImageUrl = null;
+      this.renderQuestionImagePreview(null);
+      const limitSel = document.getElementById('adminWcLimitSelect');
+      if (limitSel) limitSel.value = '1';
+      this.maxSubmissionsPerStudent = 1;
+
+      const adminSection = document.getElementById('adminWordCloudSection');
+      if (adminSection) {
+        adminSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      window.app?.showNotification('➕ 建立新題目', '請在上方出題框輸入題目標題或引導詞，完成後點選「🚀 發布」或「💾 儲存至歷史題庫」！');
+    }
+
+    // 下載文字雲題庫 JSON 範例檔
+    downloadSampleTemplateJSON() {
+      const templateData = [
+        {
+          title: "請用一個詞形容今天學到的核心觀念？",
+          limitPerStudent: 1,
+          cloudShape: "circle"
+        },
+        {
+          title: "看完這部引導影片，你最深刻的三個感受是什麼？",
+          limitPerStudent: 3,
+          cloudShape: "cloud"
+        },
+        {
+          title: "請為我們今天的團隊合作打出一個代表字！",
+          limitPerStudent: 1,
+          cloudShape: "heart"
+        },
+        {
+          title: "你認為未來的綠能科技最關鍵的要素是什麼？",
+          limitPerStudent: 0,
+          cloudShape: "star"
+        }
+      ];
+
+      const blob = new Blob([JSON.stringify(templateData, null, 2)], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'wordcloud_template.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      window.app?.showNotification('成功', '已下載文字雲 JSON 範例格式檔！');
+    }
+
+    // 下載文字雲題庫 CSV 範例檔
+    downloadSampleTemplateCSV() {
+      let csv = '\uFEFF題目標題/引導詞,每人作答次數(1/3/0),外框形狀(circle/cloud/heart/star),題目圖片網址(選填)\r\n';
+      csv += '"請用一個詞形容今天學到的核心觀念？",1,"circle",""\r\n';
+      csv += '"看完這部引導影片，你最深刻的三個感受是什麼？",3,"cloud",""\r\n';
+      csv += '"請為我們今天的團隊合作打出一個代表字！",1,"heart",""\r\n';
+      csv += '"你認為未來的綠能科技最關鍵的要素是什麼？",0,"star",""\r\n';
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'wordcloud_template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      window.app?.showNotification('成功', '已下載文字雲 CSV 範例格式檔！');
+    }
+
+    // 匯出全部文字雲題庫備份 (JSON)
+    exportWordCloudJSON() {
+      const keys = Object.keys(this.historyBank || {});
+      if (keys.length === 0) {
+        window.app?.showNotification('提示', '題庫目前沒有任何題目可供匯出！');
+        return;
+      }
+      const list = keys.map(k => this.historyBank[k]).filter(Boolean);
+      const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wordcloud_bank_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      window.app?.showNotification('成功', `已順利匯出全部 ${list.length} 道文字雲題目 (JSON)！`);
+    }
+
+    // 匯出全部文字雲題庫備份 (CSV)
+    exportWordCloudCSV() {
+      const keys = Object.keys(this.historyBank || {});
+      if (keys.length === 0) {
+        window.app?.showNotification('提示', '題庫目前沒有任何題目可供匯出！');
+        return;
+      }
+      let csv = '\uFEFF題目標題/引導詞,每人作答次數(1/3/0),外框形狀(circle/cloud/heart/star),題目圖片網址(選填)\r\n';
+      keys.forEach(k => {
+        const item = this.historyBank[k];
+        if (!item) return;
+        const title = (item.title || '').replace(/"/g, '""');
+        const limit = item.limitPerStudent !== undefined ? item.limitPerStudent : 1;
+        const shape = (item.cloudShape || 'circle').replace(/"/g, '""');
+        const img = (item.imageUrl || '').replace(/"/g, '""');
+        csv += `"${title}",${limit},"${shape}","${img}"\r\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wordcloud_bank_backup_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      window.app?.showNotification('成功', `已順利匯出全部 ${keys.length} 道文字雲題目 (CSV)！`);
+    }
+
+    // 匯出文字雲題庫 TXT
+    exportWordCloudTxt() {
+      const keys = Object.keys(this.historyBank || {});
+      if (keys.length === 0) {
+        window.app?.showNotification('提示', '題庫目前沒有任何題目可供匯出！');
+        return;
+      }
+      let txt = '';
+      keys.forEach((k, idx) => {
+        const item = this.historyBank[k];
+        if (!item) return;
+        const title = (item.title || '即時互動文字雲').trim();
+        const limit = item.limitPerStudent !== undefined ? item.limitPerStudent : 1;
+        const shape = item.cloudShape || 'circle';
+        txt += `${title} | ${limit} | ${shape}\r\n`;
+        if (idx < keys.length - 1) {
+          txt += '---\r\n';
+        }
+      });
+
+      const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wordcloud_bank_backup_${new Date().toISOString().slice(0, 10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      window.app?.showNotification('成功', `已順利匯出全部 ${keys.length} 道文字雲題目 (TXT)！`);
+    }
+
+    // 搜尋與篩選題庫
+    filterBankQuestions(query) {
+      this.bankSearchQuery = (query || '').trim().toLowerCase();
+      this.renderBankListUI();
+    }
+
+    // 渲染題庫管理列表
+    renderBankListUI() {
+      const listContainer = document.getElementById('wcBankListContainer');
+      if (!listContainer) return;
+
+      const keys = Object.keys(this.historyBank || {});
+      if (keys.length === 0) {
+        listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 24px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">目前文字雲題庫無題目。您可以點選上方「➕ 建立新題目」出題，或點選「📥 匯入題庫」批次匯入題庫檔案！</div>';
+        return;
+      }
+
+      const query = (this.bankSearchQuery || '').toLowerCase();
+
+      // 依 order 排序
+      const sortedKeys = keys.sort((a, b) => {
+        const itemA = this.historyBank[a];
+        const itemB = this.historyBank[b];
+        const orderA = typeof itemA?.order === 'number' ? itemA.order : null;
+        const orderB = typeof itemB?.order === 'number' ? itemB.order : null;
+        if (orderA !== null && orderB !== null) return orderA - orderB;
+        if (orderA !== null) return -1;
+        if (orderB !== null) return 1;
+        return (itemB?.createdAt || 0) - (itemA?.createdAt || 0);
+      });
+
+      const filteredKeys = sortedKeys.filter(k => {
+        if (!query) return true;
+        const item = this.historyBank[k];
+        if (!item) return false;
+        const title = (item.title || '').toLowerCase();
+        return title.includes(query);
+      });
+
+      if (filteredKeys.length === 0) {
+        listContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 18px; background: var(--bg-card); border-radius: 10px;">查無符合「${this.escapeHtml(this.bankSearchQuery)}」的文字雲題目</div>`;
+        return;
+      }
+
+      const shapeLabels = {
+        circle: '⭕圓形',
+        rectangle: '⬛矩形',
+        cloud: '☁️白雲',
+        heart: '❤️愛心',
+        star: '⭐星形',
+        custom: '🖼️自訂'
+      };
+
+      listContainer.innerHTML = filteredKeys.map(key => {
+        const item = this.historyBank[key];
+        const hasImg = Boolean(item.imageUrl);
+        const badgeText = hasImg ? '🖼️ 圖文題' : '📝 文字題';
+        const badgeBg = hasImg ? 'rgba(139,92,246,0.12)' : 'rgba(37,99,235,0.1)';
+        const badgeColor = hasImg ? '#7c3aed' : 'var(--accent-color)';
+        const limitVal = item.limitPerStudent !== undefined ? parseInt(item.limitPerStudent, 10) : 1;
+        const limitText = limitVal === 0 ? '不限次數' : `每人限 ${limitVal} 次`;
+        const shapeText = shapeLabels[item.cloudShape || 'circle'] || '⭕圓形';
+        const title = item.title || '即時互動文字雲';
+
+        return `
+          <div class="wc-history-item draggable-wc-bank-item" draggable="true" data-history-key="${key}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 10px; gap: 10px; cursor: grab; transition: transform 0.15s, box-shadow 0.15s; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 200px;">
+              <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 16px; user-select: none; flex-shrink: 0;" title="按住拖曳調整題目順序">☰</span>
+              ${hasImg ? `<img src="${item.imageUrl}" style="width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); flex-shrink: 0; cursor: pointer;" onclick="window.app?.zoomShareImage('${item.imageUrl}')" title="點擊預覽題目圖片">` : ''}
+              <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
+                  <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(title)}</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-secondary);">
+                  設定：${limitText} ‧ ${shapeText}
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="action-btn" onclick="window.wordCloud?.loadFromHistory('${key}', true)" style="background: var(--accent-color); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="帶入此題並立即開動">🚀 載入出題</button>
+              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.loadFromHistory('${key}', false)" style="padding: 5px 10px; font-size: 11.5px; font-weight: bold;" title="帶入設定至出題框">📝 載入修改</button>
+              <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級題庫">📤 複製</button>
+              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.deleteHistoryItem('${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--danger-color);" title="刪除此題">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      this.initBankDragAndDrop();
+    }
+
+    // 題庫管理卡片拖曳排序
+    initBankDragAndDrop() {
+      const container = document.getElementById('wcBankListContainer');
+      if (!container) return;
+
+      const cards = container.querySelectorAll('.draggable-wc-bank-item');
+      cards.forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+          if (['INPUT', 'BUTTON', 'SELECT', 'A', 'TEXTAREA'].includes(e.target.tagName)) {
+            e.preventDefault();
+            return;
+          }
+          e.dataTransfer.effectAllowed = 'move';
+          card.classList.add('dragging-bank-item');
+          card.style.opacity = '0.5';
+        });
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging-bank-item');
+          card.style.opacity = '1';
+
+          const currentCards = [...container.querySelectorAll('.draggable-wc-bank-item')];
+          const updates = {};
+          currentCards.forEach((c, idx) => {
+            const key = c.dataset.historyKey;
+            if (key && this.historyBank[key]) {
+              this.historyBank[key].order = idx;
+              updates[`quiz/wordCloud/history/${key}/order`] = idx;
+            }
+          });
+          if (typeof db !== 'undefined' && Object.keys(updates).length > 0) {
+            db.ref().update(updates);
+          }
+        });
+      });
+
+      if (!container._dragOverHandler) {
+        container._dragOverHandler = (e) => {
+          e.preventDefault();
+          const dragging = container.querySelector('.dragging-bank-item');
+          if (!dragging) return;
+          const afterElement = this.getDragAfterElement(container, e.clientY, '.draggable-wc-bank-item');
+          if (!afterElement) {
+            container.appendChild(dragging);
+          } else {
+            container.insertBefore(dragging, afterElement);
+          }
+        };
+        container.addEventListener('dragover', container._dragOverHandler);
+      }
+    }
+
+    // 歷次題目庫卡片拖曳排序
+    initHistoryDragAndDrop() {
+      const container = document.getElementById('wcHistoryList');
+      if (!container) return;
+
+      const cards = container.querySelectorAll('.draggable-wc-history-item');
+      cards.forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+          if (['INPUT', 'BUTTON', 'SELECT', 'A', 'TEXTAREA'].includes(e.target.tagName)) {
+            e.preventDefault();
+            return;
+          }
+          e.dataTransfer.effectAllowed = 'move';
+          card.classList.add('dragging-history-item');
+          card.style.opacity = '0.5';
+        });
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging-history-item');
+          card.style.opacity = '1';
+
+          const currentCards = [...container.querySelectorAll('.draggable-wc-history-item')];
+          const updates = {};
+          currentCards.forEach((c, idx) => {
+            const key = c.dataset.historyKey;
+            if (key && this.historyBank[key]) {
+              this.historyBank[key].order = idx;
+              updates[`quiz/wordCloud/history/${key}/order`] = idx;
+            }
+          });
+          if (typeof db !== 'undefined' && Object.keys(updates).length > 0) {
+            db.ref().update(updates);
+          }
+        });
+      });
+
+      if (!container._dragOverHandler) {
+        container._dragOverHandler = (e) => {
+          e.preventDefault();
+          const dragging = container.querySelector('.dragging-history-item');
+          if (!dragging) return;
+          const afterElement = this.getDragAfterElement(container, e.clientY, '.draggable-wc-history-item');
+          if (!afterElement) {
+            container.appendChild(dragging);
+          } else {
+            container.insertBefore(dragging, afterElement);
+          }
+        };
+        container.addEventListener('dragover', container._dragOverHandler);
+      }
+    }
+
+    getDragAfterElement(container, y, selector) {
+      const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging-bank-item):not(.dragging-history-item)`)];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // 統一匯入題庫檔案 (支援 .json / .csv / .txt)
+    importWordCloudBankUnifiedFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const fileName = (file.name || '').toLowerCase();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const textContent = e.target.result;
+          let items = [];
+
+          if (fileName.endsWith('.json') || (textContent.trim().startsWith('[') && textContent.trim().endsWith(']'))) {
+            try {
+              const parsed = JSON.parse(textContent);
+              if (Array.isArray(parsed)) {
+                items = parsed.map(p => ({
+                  title: (p.title || p.question || '').trim(),
+                  limitPerStudent: p.limitPerStudent !== undefined ? parseInt(p.limitPerStudent, 10) : 1,
+                  cloudShape: p.cloudShape || 'circle',
+                  imageUrl: p.imageUrl || null
+                })).filter(p => p.title.length > 0);
+              }
+            } catch (err) {
+              console.warn('JSON parse failed', err);
+            }
+          }
+
+          if (items.length === 0 && (fileName.endsWith('.csv') || textContent.includes(','))) {
+            items = this.parseWordCloudCSV(textContent);
+          }
+
+          if (items.length === 0) {
+            items = this.parseWordCloudTXT(textContent);
+          }
+
+          if (items.length === 0) {
+            window.app?.showNotification('錯誤', '匯入失敗：格式無法解析，請參考範例格式說明！');
+            return;
+          }
+
+          let addedCount = 0;
+          items.forEach((item, idx) => {
+            const key = 'wch_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substr(2, 4);
+            const record = {
+              id: key,
+              title: item.title,
+              limitPerStudent: item.limitPerStudent !== undefined ? item.limitPerStudent : 1,
+              cloudShape: item.cloudShape || 'circle',
+              imageUrl: item.imageUrl || null,
+              createdAt: Date.now() + idx,
+              order: idx
+            };
+            this.historyBank[key] = record;
+            if (typeof db !== 'undefined') {
+              db.ref('quiz/wordCloud/history/' + key).set(record);
+            }
+            addedCount++;
+          });
+
+          this.renderHistoryListUI();
+          this.renderBankListUI();
+
+          // 自動帶入第一題到出題框
+          if (items.length > 0) {
+            const firstKey = Object.keys(this.historyBank).find(k => this.historyBank[k]?.title === items[0].title);
+            if (firstKey) {
+              this.loadFromHistory(firstKey, false);
+            }
+          }
+
+          window.app?.showNotification('成功', `已成功解析並匯入 ${addedCount} 道題目至文字雲題庫！第一題已帶入出題框。`);
+        } catch (err) {
+          window.app?.showNotification('錯誤', '解析檔案失敗：' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    // 解析 CSV 文字雲題目
+    parseWordCloudCSV(csvText) {
+      if (!csvText) return [];
+      if (csvText.charCodeAt(0) === 0xFEFF) {
+        csvText = csvText.slice(1);
+      }
+      const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+      if (lines.length <= 1) return [];
+
+      const items = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        const cells = [];
+        let cell = '';
+        let inQuotes = false;
+        for (let j = 0; j < line.length; j++) {
+          const c = line[j];
+          if (c === '"') {
+            if (inQuotes && line[j + 1] === '"') {
+              cell += '"';
+              j++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (c === ',' && !inQuotes) {
+            cells.push(cell.trim());
+            cell = '';
+          } else {
+            cell += c;
+          }
+        }
+        cells.push(cell.trim());
+
+        const title = (cells[0] || '').trim();
+        if (!title) continue;
+
+        const limitVal = cells[1] !== undefined ? parseInt(cells[1], 10) : 1;
+        const shape = (cells[2] || 'circle').trim();
+        const imageUrl = (cells[3] || '').trim() || null;
+
+        items.push({
+          title: title,
+          limitPerStudent: isNaN(limitVal) ? 1 : limitVal,
+          cloudShape: shape || 'circle',
+          imageUrl: imageUrl
+        });
+      }
+      return items;
+    }
+
+    // 解析 TXT 文字雲題目
+    parseWordCloudTXT(txtText) {
+      if (!txtText) return [];
+      const blocks = txtText.split(/---+/).map(b => b.trim()).filter(Boolean);
+      const items = [];
+
+      blocks.forEach(block => {
+        const lines = block.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        lines.forEach(line => {
+          if (!line) return;
+          const parts = line.split('|').map(p => p.trim());
+          const title = parts[0];
+          if (!title) return;
+          let limit = 1;
+          let shape = 'circle';
+          if (parts[1]) {
+            const parsedLimit = parseInt(parts[1], 10);
+            if (!isNaN(parsedLimit)) limit = parsedLimit;
+          }
+          if (parts[2]) {
+            shape = parts[2];
+          }
+          items.push({
+            title: title,
+            limitPerStudent: limit,
+            cloudShape: shape,
+            imageUrl: null
+          });
+        });
+      });
+
+      return items;
     }
 
     // 發布或開啟新一輪文字雲活動

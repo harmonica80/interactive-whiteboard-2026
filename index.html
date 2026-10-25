@@ -529,11 +529,13 @@
               <div class="control-group" style="margin: 12px 0;">
                 <label for="selWheelSound" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎵 音效風格：</label>
                 <select id="selWheelSound" onchange="window.app.changeWheelSound(parseInt(this.value))" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer;">
-                  <option value="0">🎹 歡樂鋼琴</option>
-                  <option value="1">👾 復古電玩</option>
-                  <option value="2">🥁 爵士鼓點</option>
-                  <option value="3">🪘 民族打擊</option>
-                  <option value="4">🚀 太空電音</option>
+                  <option value="0">🎹 歡樂盛典</option>
+                  <option value="1">🎮 熱血電玩 (Arcade)</option>
+                  <option value="2">🥁 緊張鼓滾 (Tension Drumroll)</option>
+                  <option value="3">🎺 傳奇史詩 (Epic Orchestral Brass)</option>
+                  <option value="4">🚀 賽博電音 (Cyber Sci-Fi)</option>
+                  <option value="5">🎰 幸運賭城 (Casino Jackpot)</option>
+                  <option value="6">⚔️ 英雄出征 (Heroic Victory)</option>
                 </select>
               </div>
               
@@ -3535,11 +3537,13 @@
                   <div>
                     <label for="adminSelWheelSound" style="font-weight: bold; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px;">🎵 音效風格：</label>
                     <select id="adminSelWheelSound" onchange="window.app.changeWheelSound(parseInt(this.value))" class="question-input" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px; cursor: pointer; margin: 0;">
-                      <option value="0">🎹 歡樂鋼琴</option>
-                      <option value="1">👾 復古電玩</option>
-                      <option value="2">🥁 爵士鼓點</option>
-                      <option value="3">🪘 民族打擊</option>
-                      <option value="4">🚀 太空電音</option>
+                      <option value="0">🎹 歡樂盛典</option>
+                      <option value="1">🎮 熱血電玩 (Arcade)</option>
+                      <option value="2">🥁 緊張鼓滾 (Tension Drumroll)</option>
+                      <option value="3">🎺 傳奇史詩 (Epic Orchestral Brass)</option>
+                      <option value="4">🚀 賽博電音 (Cyber Sci-Fi)</option>
+                      <option value="5">🎰 幸運賭城 (Casino Jackpot)</option>
+                      <option value="6">⚔️ 英雄出征 (Heroic Victory)</option>
                     </select>
                   </div>
                 </div>
@@ -3653,23 +3657,83 @@
                 </div>
               </div>
 
-              <!-- 📚 文字雲歷史記錄庫 (可重複使用與複製到其他班級) -->
-              <div style="margin-top: 16px; padding: 18px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                  <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                    📚 文字雲歷史記錄庫 <span id="wcHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 筆)</span>
-                  </h4>
-                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <button type="button" onclick="window.wordCloud?.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
-                      🗑️ 清空歷史記錄庫
-                    </button>
+              <!-- 文字雲雙頁籤：歷次題目庫 與 題庫管理 -->
+              <div id="wordCloudHistorySection" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <!-- 雙頁籤導覽列 -->
+                <div class="admin-subtabs-nav" id="wcAdminSubTabs" style="margin-bottom: 14px;">
+                  <button type="button" class="admin-subtab-btn active" id="btnSubTabWcHistory" onclick="window.wordCloud && window.wordCloud.switchWcSubTab('history')">
+                    📚 歷次題目庫
+                  </button>
+                  <button type="button" class="admin-subtab-btn" id="btnSubTabWcBank" onclick="window.wordCloud && window.wordCloud.switchWcSubTab('bank')">
+                    📁 題庫管理
+                  </button>
+                </div>
+
+                <!-- 頁籤 1: 歷次題目庫 -->
+                <div id="wcSubTabPaneHistory" class="admin-subtab-pane">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                      <span>📚 歷次題目庫</span> <span id="wcHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 筆)</span>
+                      <span style="font-size: 11.5px; color: var(--text-secondary); font-weight: normal;">（支援 ☰ 拖曳調整順序）</span>
+                    </h4>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                      <button type="button" class="btn btn-secondary" onclick="window.wordCloud && window.wordCloud.exportWordCloudTxt()" style="padding: 4px 10px; font-size: 12px; font-weight: bold;">
+                        📥 匯出選取題目 TXT
+                      </button>
+                      <button type="button" onclick="window.wordCloud?.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
+                        🗑️ 清空歷次題目庫
+                      </button>
+                    </div>
+                  </div>
+                  <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+                    💡 發布過的文字雲題目與成果皆會自動保留於此，可隨時「🚀 重新發起」、「📝 載入」、「👁️ 回顧成果」或「📤 複製到其他班級」使用！
+                  </div>
+                  <div id="wcHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto;">
+                    <div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷次記錄（發布題目後將自動保存）</div>
                   </div>
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
-                  💡 發布過的文字雲題目與成果皆會自動保留於此，可隨時「🚀 重新發起」、「📝 載入修改」、「👁️ 回顧成果」或「📤 複製到其他班級」使用！
-                </div>
-                <div id="wcHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto;">
-                  <div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史記錄（發布題目後將自動保存）</div>
+
+                <!-- 頁籤 2: 題庫管理 (可匯入、匯出、拖曳排序與直接出題) -->
+                <div id="wcSubTabPaneBank" class="admin-subtab-pane" style="display: none;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                    <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                      <span>📁 題庫管理與出題工具</span>
+                      <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">（可透過 ☰ 圖示拖曳調整題目排序）</span>
+                    </h4>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                      <button type="button" class="action-btn" onclick="window.wordCloud?.openCreateNewTopic()" style="background: #5856d6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="在上方出題框建立新文字雲題目">
+                        ➕ 建立新題目
+                      </button>
+                      <button type="button" class="action-btn" onclick="openWordCloudFormatModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看文字雲題庫格式規範">
+                        📋 範例格式說明
+                      </button>
+                      <button type="button" class="action-btn" onclick="window.wordCloud?.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
+                        ⬇️ 範例檔 (JSON)
+                      </button>
+                      <button type="button" class="action-btn" onclick="window.wordCloud?.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
+                        ⬇️ 範例檔 (CSV)
+                      </button>
+                      <button type="button" class="action-btn" onclick="window.wordCloud?.exportWordCloudJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有文字雲題目匯出為 JSON 備份檔">
+                        📤 匯出 JSON
+                      </button>
+                      <button type="button" class="action-btn" onclick="window.wordCloud?.exportWordCloudCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有文字雲題目匯出為 CSV 試算表檔">
+                        📤 匯出 CSV
+                      </button>
+                      <button type="button" class="action-btn" onclick="document.getElementById('wcBankFileInput').click()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON、CSV 或 TXT 題庫檔案">
+                        📥 匯入題庫
+                      </button>
+                      <input type="file" id="wcBankFileInput" accept=".json,.csv,.txt" style="display: none;" onchange="window.wordCloud?.importWordCloudBankUnifiedFile(event)">
+                    </div>
+                  </div>
+
+                  <!-- 關鍵字搜尋與題目列表 -->
+                  <div style="margin-bottom: 10px;">
+                    <input type="text" id="wcBankSearchInput" class="question-input" oninput="window.wordCloud?.filterBankQuestions(this.value)" placeholder="🔍 搜尋文字雲題庫題目、引導詞..." style="width: 100%; box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+                  </div>
+
+                  <div id="wcBankListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto;">
+                    <!-- 動態渲染題庫管理列表 -->
+                  </div>
                 </div>
               </div>
             </div>
@@ -5284,6 +5348,91 @@ Python</pre>
       </div>
     </div>
   </div>
+
+  <!-- 文字雲題庫範例格式說明對話框 (支援 TXT / JSON / CSV 三格式) -->
+  <div id="wordCloudFormatModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 640px; width: 92%; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;">
+      <button onclick="closeWordCloudFormatModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer;">✕</button>
+      <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+        📋 即時文字雲題庫格式說明（支援 TXT / JSON / CSV）
+      </h3>
+
+      <!-- 格式切換頁籤 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+        <button type="button" class="preset-btn active" id="tabWcFormatTxt" onclick="window.wordCloud && window.wordCloud.switchFormatGuideTab('txt')" style="padding: 6px 14px; font-size: 12.5px; font-weight: bold;">📄 TXT 純文字</button>
+        <button type="button" class="preset-btn" id="tabWcFormatJson" onclick="window.wordCloud && window.wordCloud.switchFormatGuideTab('json')" style="padding: 6px 14px; font-size: 12.5px; font-weight: bold;">💻 JSON 格式</button>
+        <button type="button" class="preset-btn" id="tabWcFormatCsv" onclick="window.wordCloud && window.wordCloud.switchFormatGuideTab('csv')" style="padding: 6px 14px; font-size: 12.5px; font-weight: bold;">📊 CSV 試算表</button>
+      </div>
+
+      <!-- TXT 說明 -->
+      <div id="wcFormatGuidePaneTxt">
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">
+          最直覺的文字檔格式！<strong>每一行代表一個文字雲題目</strong>，或以 <code>---</code> 區隔題目。亦可選擇性在題目後方用 <code>|</code> 加入每人作答次數限制（1、3 或 0 不限）：
+        </p>
+        <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 200px; line-height: 1.4;">
+請用一個詞形容今天學到的核心觀念？ | 1
+---
+看完這部引導影片，你最深刻的三個感受是什麼？ | 3
+---
+請為我們今天的團隊合作打出一個代表字！ | 1
+---
+你認為未來的綠能科技最關鍵的要素是什麼？ | 0</pre>
+        <div style="margin-top: 10px;">
+          <button type="button" class="action-btn" onclick="window.wordCloud?.exportWordCloudTxt()" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">⬇️ 下載 TXT 範例檔</button>
+        </div>
+      </div>
+
+      <!-- JSON 說明 -->
+      <div id="wcFormatGuidePaneJson" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">
+          標準 JSON 陣列結構，支援題目標題 <code>title</code>、學生提交限制 <code>limitPerStudent</code>（1、3 或 0）、形狀 <code>cloudShape</code>（<code>circle</code>、<code>cloud</code>、<code>heart</code>、<code>star</code>）與圖片網址 <code>imageUrl</code>：
+        </p>
+        <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 200px; line-height: 1.4;">
+[
+  {
+    "title": "請用一個詞形容今天學到的核心觀念？",
+    "limitPerStudent": 1,
+    "cloudShape": "circle"
+  },
+  {
+    "title": "看完這部引導影片，你最深刻的三個感受是什麼？",
+    "limitPerStudent": 3,
+    "cloudShape": "cloud"
+  },
+  {
+    "title": "看圖說故事：請用關鍵詞描述這張圖片的意境",
+    "limitPerStudent": 1,
+    "imageUrl": "https://example.com/sample.jpg",
+    "cloudShape": "heart"
+  }
+]</pre>
+        <div style="margin-top: 10px;">
+          <button type="button" class="action-btn" onclick="window.wordCloud?.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">⬇️ 下載 JSON 範例檔</button>
+        </div>
+      </div>
+
+      <!-- CSV 說明 -->
+      <div id="wcFormatGuidePaneCsv" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">
+          可用 Excel 或 Google 試算表直接編輯並另存為 UTF-8 CSV。欄位順序：<strong>題目標題/引導詞、每人次數上限(1/3/0)、文字雲外框形狀(circle/cloud/heart/star)、題目圖檔網址(選填)</strong>：
+        </p>
+        <pre style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12px; color: var(--text-primary); border: 1px solid var(--border-color); overflow-x: auto; max-height: 200px; line-height: 1.4;">
+題目標題/引導詞,每人作答次數(1/3/0),外框形狀(circle/cloud/heart/star),題目圖片網址(選填)
+"請用一個詞形容今天學到的核心觀念？",1,"circle",""
+"看完這部引導影片，你最深刻的三個感受是什麼？",3,"cloud",""
+"你認為未來的綠能科技最關鍵的要素是什麼？",0,"star",""</pre>
+        <div style="margin-top: 10px;">
+          <button type="button" class="action-btn" onclick="window.wordCloud?.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">⬇️ 下載 CSV 範例檔</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 14px;">
+        <button class="btn btn-secondary" onclick="closeWordCloudFormatModal()" style="padding: 8px 18px; font-size: 13px;">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
   
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -5299,11 +5448,11 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=384"></script>
-  <script src="js/app.js?v=412"></script>
+  <script src="js/app.js?v=413"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=381"></script>
   <script src="js/video_quiz.js?v=387"></script>
-  <script src="js/word_cloud.js?v=395"></script>
+  <script src="js/word_cloud.js?v=396"></script>
   <script src="js/presentation_core.js?v=3115"></script>
   
   <!-- 問題彈出視窗 -->
