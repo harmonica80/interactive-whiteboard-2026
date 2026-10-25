@@ -2234,6 +2234,10 @@
           if (isPng && fileOrBlob.size < 400 * 1024) {
             finalUrl = canvas.toDataURL('image/png');
           } else {
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-over';
             finalUrl = canvas.toDataURL('image/jpeg', 0.78);
           }
           resolve(finalUrl);
@@ -2790,11 +2794,12 @@
     els.participantsDrawer.classList.toggle('open');
   };
 
-  // 全螢幕切換與按鈕文字同步 (🔲 全螢幕 <-> 🗗 恢復為視窗)
+  // 全螢幕切換與按鈕文字同步 (⛶ 全螢幕 <-> 🗗 恢復為視窗)
   els.btnFullscreen.onclick = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
     } else {
+      wasFullscreenBeforeFile = false;
       document.exitFullscreen().catch(() => {});
     }
   };
@@ -2804,9 +2809,9 @@
     const isFs = Boolean(document.fullscreenElement);
     const span = els.btnFullscreen.querySelector('span');
     if (span) {
-      span.textContent = isFs ? '🗗 恢復為視窗' : '🔲 全螢幕';
+      span.textContent = isFs ? '🗗 恢復為視窗' : '⛶ 全螢幕';
     } else {
-      els.btnFullscreen.textContent = isFs ? '🗗 恢復為視窗' : '🔲 全螢幕';
+      els.btnFullscreen.textContent = isFs ? '🗗 恢復為視窗' : '⛶ 全螢幕';
     }
     if (isFs) {
       els.btnFullscreen.classList.add('is-fullscreen-active');

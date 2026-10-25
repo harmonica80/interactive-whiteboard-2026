@@ -8167,3 +8167,24 @@ body {
   }
 }
 
+
+
+/* 確保文字雲選單與按鈕套用同步簡報按鈕樣式時外觀一致 */
+#panel-word-cloud select.presentation-tool-btn {
+  height: 33px;
+  padding: 4px 10px;
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 圖片分享與放大預覽：確保透明背景 PNG 圖檔呈現乾淨白色底色而非黑色 */
+.image-item img,
+.modal-image,
+.share-item-content-image {
+  background-color: #ffffff;
+}

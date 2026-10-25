@@ -322,6 +322,8 @@
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
           const compressedUrl = canvas.toDataURL('image/jpeg', 0.85);
 
@@ -499,11 +501,11 @@
               </div>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; align-items: center;">
-              <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" style="padding: 4px 8px; font-size: 11.5px; color: var(--accent-color); font-weight: bold;" title="複製此文字雲題目到其他班級">📤 複製他班</button>
-              ${hasSnapshot ? `<button type="button" class="btn btn-secondary" onclick="window.wordCloud?.reviewHistorySnapshot('${key}')" style="padding: 4px 8px; font-size: 11.5px; color: #8b5cf6; font-weight: bold;" title="在畫布上回顧此次文字雲成果">👁️ 回顧成果</button>` : ''}
-              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.loadFromHistory('${key}', false)" style="padding: 4px 8px; font-size: 11.5px; font-weight: bold;" title="帶入此題設定到出題框">📝 載入</button>
-              <button type="button" class="btn btn-primary" onclick="window.wordCloud?.loadFromHistory('${key}', true)" style="padding: 4px 9px; font-size: 11.5px; font-weight: bold;" title="立即以此題開啟新一輪文字雲">🚀 重新發起</button>
-              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.deleteHistoryItem('${key}')" style="padding: 4px 8px; font-size: 11.5px; color: var(--danger-color);" title="刪除此筆歷史記錄">✕</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" title="複製此文字雲題目到其他班級">📤 複製他班</button>
+              ${hasSnapshot ? `<button type="button" class="presentation-tool-btn purple" onclick="window.wordCloud?.reviewHistorySnapshot('${key}')" title="在畫布上回顧此次文字雲成果">👁️ 回顧成果</button>` : ''}
+              <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.loadFromHistory('${key}', false)" title="帶入此題設定到出題框">📝 載入</button>
+              <button type="button" class="presentation-tool-btn active" onclick="window.wordCloud?.loadFromHistory('${key}', true)" title="立即以此題開啟新一輪文字雲">🚀 重新發起</button>
+              <button type="button" class="presentation-tool-btn danger" onclick="window.wordCloud?.deleteHistoryItem('${key}')" title="刪除此筆歷史記錄">✕</button>
             </div>
           </div>
         `;

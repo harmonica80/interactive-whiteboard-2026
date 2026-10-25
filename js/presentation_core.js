@@ -291,10 +291,16 @@
         };
       }
 
-      // 新增圖片頁
+      // 新增圖片頁 (支援全螢幕狀態自動追蹤與恢復)
       if (els.btnAddImage && els.fileInputImage) {
-        els.btnAddImage.onclick = () => els.fileInputImage.click();
-        els.fileInputImage.onchange = (e) => this.handleImageSlideUpload(e);
+        els.btnAddImage.onclick = () => {
+          this.trackFullscreenBeforeFile();
+          els.fileInputImage.click();
+        };
+        els.fileInputImage.onchange = (e) => {
+          this.tryRestoreFullscreen();
+          this.handleImageSlideUpload(e);
+        };
       }
 
       // 新建簡報 (圖 2)
@@ -356,6 +362,20 @@
       // 監聽全螢幕狀態切換事件，自動同步更新「最大化」/「恢復為視窗」按鈕文字與狀態
       document.addEventListener('fullscreenchange', () => this.updateFullscreenButtonUI());
       document.addEventListener('webkitfullscreenchange', () => this.updateFullscreenButtonUI());
+
+      // 當使用者在全螢幕模式下開啟本機檔案選取器返回時，自動無縫維持或點擊恢復全螢幕
+      window.addEventListener('focus', () => {
+        if (this.wasFullscreenBeforeFile && !document.fullscreenElement) {
+          this.tryRestoreFullscreen();
+          const onNextClick = () => {
+            if (this.wasFullscreenBeforeFile && !document.fullscreenElement) {
+              this.tryRestoreFullscreen();
+            }
+            window.removeEventListener('click', onNextClick, true);
+          };
+          window.addEventListener('click', onNextClick, { capture: true, once: true });
+        }
+      });
 
       // 匯入/匯出按鈕 (Item 2)
       if (els.btnImportExport) {
@@ -1445,6 +1465,8 @@
             canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
             ctx.drawImage(img, 0, 0, w, h);
             const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.72);
 
@@ -2502,6 +2524,27 @@
       }
     }
 
+    // 追蹤開啟系統檔案選取器前的全螢幕狀態
+    trackFullscreenBeforeFile() {
+      const panel = this.els.panel;
+      this.wasFullscreenBeforeFile = Boolean(
+        document.fullscreenElement && (
+          document.fullscreenElement === panel ||
+          (panel && panel.contains(document.fullscreenElement))
+        )
+      );
+    }
+
+    // 嘗試無縫恢復全螢幕狀態
+    tryRestoreFullscreen() {
+      const panel = this.els.panel;
+      if (this.wasFullscreenBeforeFile && panel && !document.fullscreenElement) {
+        panel.requestFullscreen().then(() => {
+          this.updateFullscreenButtonUI();
+        }).catch(() => {});
+      }
+    }
+
     // 全螢幕切換
     toggleFullscreen() {
       const panel = this.els.panel;
@@ -2514,6 +2557,7 @@
           console.error('Fullscreen request error:', err);
         });
       } else {
+        this.wasFullscreenBeforeFile = false;
         document.exitFullscreen().then(() => {
           this.updateFullscreenButtonUI();
         }).catch(() => {});
@@ -2577,10 +2621,14 @@
         this.notify('錯誤', 'PDF.js 解析庫載入中，請稍候重試。');
         return;
       }
+      this.trackFullscreenBeforeFile();
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'application/pdf';
-      input.onchange = (e) => this.handlePdfFile(e.target.files[0]);
+      input.onchange = (e) => {
+        this.tryRestoreFullscreen();
+        this.handlePdfFile(e.target.files[0]);
+      };
       input.click();
     }
 
@@ -2662,6 +2710,7 @@
     closePdfPickerModal() {
       this.closeModal(this.els.modalPdfPicker);
       this.currentPdfDoc = null;
+      this.tryRestoreFullscreen();
     }
 
     // 確認將勾選的 PDF 頁數轉換並加入簡報
@@ -2670,6 +2719,7 @@
         this.notify('提示', '請至少勾選一頁 PDF！');
         return;
       }
+      this.tryRestoreFullscreen();
 
       const sortedPages = Array.from(this.selectedPdfPages).sort((a, b) => a - b);
       this.notify('轉換中', `正在將 ${sortedPages.length} 頁 PDF 轉為簡報內容...`);
@@ -2741,10 +2791,12 @@
 
     // 從 JSON 匯入
     triggerJsonImport() {
+      this.trackFullscreenBeforeFile();
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'application/json';
       input.onchange = (e) => {
+        this.tryRestoreFullscreen();
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();

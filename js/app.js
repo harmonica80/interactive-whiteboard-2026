@@ -6477,6 +6477,8 @@ class App {
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
           const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
           const rawLen = rawDataUrl.length;
@@ -7145,6 +7147,9 @@ class App {
             canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
+            // 針對透明背景的 PNG 圖檔，預先填滿白色底色，避免轉為 JPEG 時透明背景變成黑色
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
             ctx.drawImage(img, 0, 0, w, h);
             // 壓縮成 JPEG，品質設為 0.8，既能看清文字又能保持體積在合理範圍（約 80KB - 150KB）
             resolve(canvas.toDataURL('image/jpeg', 0.8));
@@ -8075,6 +8080,8 @@ class App {
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           

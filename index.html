@@ -575,21 +575,21 @@
                 </div>
               </div>
               <div class="wc-header-right" id="wcTeacherQuickTools" style="display: none;">
-                <select id="wcLimitSelect" class="btn btn-secondary btn-sm" onchange="window.wordCloud?.changeSubmissionLimit(this.value)" title="設定每人作答次數上限" style="padding: 4px 8px; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
+                <select id="wcLimitSelect" class="presentation-tool-btn" onchange="window.wordCloud?.changeSubmissionLimit(this.value)" title="設定每人作答次數上限">
                   <option value="1">每人 1 次</option>
                   <option value="3">每人 3 次</option>
                   <option value="0">不限次數</option>
                 </select>
-                <button type="button" class="btn btn-secondary btn-sm" id="wcBtnToggleAccept" onclick="window.wordCloud?.toggleAccepting()">⏸️ 停止作答</button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.restartOrNewRound()" title="重設次數並清空畫布，開始新一輪">🔄 新一輪</button>
-                <select id="wcOrientationSelect" class="btn btn-secondary btn-sm" onchange="window.wordCloud?.changeOrientation(this.value)" title="設定文字方向 (橫式/直式/交錯/傾斜)" style="padding: 4px 8px; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
+                <button type="button" class="presentation-tool-btn" id="wcBtnToggleAccept" onclick="window.wordCloud?.toggleAccepting()">⏸️ 停止作答</button>
+                <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.restartOrNewRound()" title="重設次數並清空畫布，開始新一輪">🔄 新一輪</button>
+                <select id="wcOrientationSelect" class="presentation-tool-btn" onchange="window.wordCloud?.changeOrientation(this.value)" title="設定文字方向 (橫式/直式/交錯/傾斜)">
                   <option value="mixed">🔀 直橫交錯</option>
                   <option value="horizontal">↔️ 水平橫式</option>
                   <option value="vertical">↕️ 垂直直式</option>
                   <option value="tilt30">📐 傾斜 ±30°</option>
                   <option value="tilt45">📐 傾斜 ±45°</option>
                 </select>
-                <select id="wcShapeSelect" class="btn btn-secondary btn-sm" onchange="window.wordCloud?.changeShape(this.value)" title="設定文字雲圖案形狀" style="padding: 4px 8px; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
+                <select id="wcShapeSelect" class="presentation-tool-btn" onchange="window.wordCloud?.changeShape(this.value)" title="設定文字雲圖案形狀">
                   <option value="circle">⭕ 圓形/橢圓</option>
                   <option value="rectangle">⬛ 矩形滿版</option>
                   <option value="cloud">☁️ 朵朵白雲</option>
@@ -598,8 +598,8 @@
                   <option value="custom">🖼️ 自訂遮罩...</option>
                 </select>
                 <input type="file" id="wcCustomMaskInput" accept="image/*" style="display: none;" onchange="window.wordCloud?.uploadCustomMask(this.files[0])">
-                <button type="button" class="btn btn-primary btn-sm" onclick="window.wordCloud?.exportPng()" title="下載文字雲成果圖">💾 匯出 PNG</button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="window.app?.openAdminFeature('gameWordCloud')" title="進入文字雲管理後台">⚙️ 出題設定</button>
+                <button type="button" class="presentation-tool-btn purple" onclick="window.wordCloud?.exportPng()" title="下載文字雲成果圖">💾 匯出 PNG</button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app?.openAdminFeature('gameWordCloud')" title="進入文字雲管理後台">⚙️ 出題設定</button>
               </div>
             </div>
 
@@ -629,11 +629,11 @@
                     <span>獨立詞彙：<strong id="wcUniqueWordsCount" style="color: #10b981;">0 款</strong></span>
                   </div>
                   <div class="wc-canvas-actions">
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnWordCloudFullscreen" onclick="window.wordCloud?.toggleFullscreen()" title="進入/結束全螢幕">⛶ 全螢幕</button>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.switchPalette()" title="切換調色盤風格">🎨 換色</button>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.exportPng()" title="匯出高畫質 PNG 圖片">💾 下載成果</button>
-                    <button type="button" class="btn btn-secondary btn-sm wc-teacher-only" onclick="window.wordCloud?.clearSubmissions()" style="display: none; color: #ef4444; border-color: rgba(239,68,68,0.3);" title="清空全部詞彙">🗑️ 清空</button>
-                    <button type="button" id="btnExpandWcRanking" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.toggleRankingSidebar(true)" style="display: none; font-weight: bold; background: rgba(59, 130, 246, 0.1); color: var(--accent-color); border: 1px solid rgba(59, 130, 246, 0.3);" title="展開右側熱門詞頻排行榜">🏆 展開排行 ◀</button>
+                    <button type="button" class="presentation-tool-btn" id="btnWordCloudFullscreen" onclick="window.wordCloud?.toggleFullscreen()" title="進入/結束全螢幕">⛶ 全螢幕</button>
+                    <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.switchPalette()" title="切換調色盤風格">🎨 換色</button>
+                    <button type="button" class="presentation-tool-btn purple" onclick="window.wordCloud?.exportPng()" title="匯出高畫質 PNG 圖片">💾 下載成果</button>
+                    <button type="button" class="presentation-tool-btn danger wc-teacher-only" onclick="window.wordCloud?.clearSubmissions()" style="display: none;" title="清空全部詞彙">🗑️ 清空</button>
+                    <button type="button" id="btnExpandWcRanking" class="presentation-tool-btn active" onclick="window.wordCloud?.toggleRankingSidebar(true)" style="display: none;" title="展開右側熱門詞頻排行榜">🏆 展開排行 ◀</button>
                   </div>
                 </div>
                 <div class="wc-canvas-wrapper" id="wcCanvasWrapper">
@@ -647,7 +647,7 @@
                   <h4>🏆 熱門詞頻排行</h4>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 12px; color: var(--text-muted);">TOP 15</span>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnToggleWcRanking" onclick="window.wordCloud?.toggleRankingSidebar()" title="收合熱門詞頻排行" style="padding: 2px 8px; font-size: 12px; border-radius: 6px; cursor: pointer;">▶ 收合</button>
+                    <button type="button" class="presentation-tool-btn" id="btnToggleWcRanking" onclick="window.wordCloud?.toggleRankingSidebar()" title="收合熱門詞頻排行">▶ 收合</button>
                   </div>
                 </div>
                 <div class="wc-ranking-body">
@@ -665,10 +665,10 @@
                   📚 文字雲歷史記錄庫 <span id="wcFrontHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 筆)</span>
                 </h4>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.saveCurrentToHistory(true, true)" style="font-size: 12px; font-weight: bold;">
+                  <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.saveCurrentToHistory(true, true)">
                     💾 將目前文字雲存入歷史庫
                   </button>
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="window.app?.openAdminFeature('gameWordCloud')" style="font-size: 12px; font-weight: bold;">
+                  <button type="button" class="presentation-tool-btn" onclick="window.app?.openAdminFeature('gameWordCloud')">
                     ⚙️ 出題與歷史管理
                   </button>
                 </div>
@@ -707,7 +707,7 @@
       <!-- 互動白板 -->
       <div class="panel-card" id="panel-whiteboard">
         <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
-          <iframe id="whiteboardFrame" src="whiteboard.html?v=3007" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板" allow="fullscreen" allowfullscreen></iframe>
+          <iframe id="whiteboardFrame" src="whiteboard.html?v=3008" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板" allow="fullscreen" allowfullscreen></iframe>
         </div>
       </div>
 
