@@ -3159,7 +3159,7 @@
 
       if (!this.customSets || this.customSets.length === 0) {
         container.innerHTML = `
-          <div style="text-align: center; padding: 18px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color); color: var(--text-secondary); font-size: 13px;">
+          <div style="grid-column: 1 / -1; text-align: center; padding: 18px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color); color: var(--text-secondary); font-size: 13px;">
             💡 尚未建立任何測驗組合。<br>
             您可以在「單題測驗與題庫管理」頁籤中勾選單部或多部影片，點選「🌟 儲存為測驗組合」，即可建立專屬快速測驗組！
           </div>
@@ -3167,57 +3167,54 @@
         return;
       }
 
-      container.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px;">
-          ${this.customSets.map(set => {
-            const validQuizIds = [...new Set(set.quizIds || [])];
-            const resolvedQuizzes = validQuizIds.map(id => (this.quizzes || []).find(q => q.id === id)).filter(Boolean);
-            const count = resolvedQuizzes.length > 0 ? resolvedQuizzes.length : (validQuizIds.length || set.quizCount || 0);
-            const totalQ = resolvedQuizzes.length > 0
-              ? resolvedQuizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0)
-              : (set.totalQuestions || 0);
-            const titles = (resolvedQuizzes.length > 0
-              ? resolvedQuizzes.map(q => q.title)
-              : (set.quizTitles || [])
-            ).filter(Boolean).map(t => `<span style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; margin-top: 3px;">🎬 ${this.escapeHtml(t)}</span>`).join('');
-            return `
-              <div class="draggable-custom-set" draggable="true" data-set-id="${set.id}" style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.03); cursor: grab; transition: transform 0.15s, box-shadow 0.15s;">
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 6px;">
-                    <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
-                      <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 15px; user-select: none;" title="按住拖曳調整組合排序">☰</span>
-                      <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); word-break: break-word;">🌟 ${this.escapeHtml(set.name)}</span>
-                      <button class="action-btn" onclick="window.videoQuiz.openEditCustomSetNameModal('${set.id}')" title="編輯組合內容與名稱" style="background: transparent; border: none; padding: 2px 4px; cursor: pointer; color: var(--accent-color); font-size: 13px; line-height: 1; flex-shrink: 0;">✏️</button>
-                    </div>
-                    <div style="display: flex; gap: 4px; flex-shrink: 0;">
-                      <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; white-space: nowrap;">${count} 部影片</span>
-                      <span class="badge" style="background: #34c759; color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; white-space: nowrap;">${totalQ} 題</span>
-                    </div>
-                  </div>
-                  <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4;">
-                    <div>建立日期：${new Date(set.createdAt || Date.now()).toLocaleDateString()}</div>
-                    <div style="margin-top: 4px;">${titles}</div>
-                  </div>
+      container.className = 'vq-custom-sets-grid';
+      container.innerHTML = this.customSets.map(set => {
+        const validQuizIds = [...new Set(set.quizIds || [])];
+        const resolvedQuizzes = validQuizIds.map(id => (this.quizzes || []).find(q => q.id === id)).filter(Boolean);
+        const count = resolvedQuizzes.length > 0 ? resolvedQuizzes.length : (validQuizIds.length || set.quizCount || 0);
+        const totalQ = resolvedQuizzes.length > 0
+          ? resolvedQuizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0)
+          : (set.totalQuestions || 0);
+        const titles = (resolvedQuizzes.length > 0
+          ? resolvedQuizzes.map(q => q.title)
+          : (set.quizTitles || [])
+        ).filter(Boolean).map(t => `<span style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; margin-top: 3px;">🎬 ${this.escapeHtml(t)}</span>`).join('');
+        return `
+          <div class="draggable-custom-set" draggable="true" data-set-id="${set.id}" style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.03); cursor: grab; transition: transform 0.15s, box-shadow 0.15s;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                  <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 15px; user-select: none;" title="按住拖曳調整組合排序">☰</span>
+                  <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); word-break: break-word;">🌟 ${this.escapeHtml(set.name)}</span>
+                  <button class="action-btn" onclick="window.videoQuiz.openEditCustomSetNameModal('${set.id}')" title="編輯組合內容與名稱" style="background: transparent; border: none; padding: 2px 4px; cursor: pointer; color: var(--accent-color); font-size: 13px; line-height: 1; flex-shrink: 0;">✏️</button>
                 </div>
-                <div style="display: flex; gap: 4px; align-items: center; flex-wrap: nowrap; margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px; width: 100%; box-sizing: border-box;">
-                  <button class="custom-set-action-btn action-btn" onclick="window.videoQuiz.startSyncQuizFromCustomSet('${set.id}')" style="flex: 1; min-width: 0; background: var(--accent-color); color: white; border: none; padding: 5px 6px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; white-space: nowrap; text-align: center;" title="以此組合直接發起全班同步測驗">
-                    ▶ 全班開測
-                  </button>
-                  <button class="custom-set-action-btn action-btn" onclick="window.videoQuiz.assignCustomSetToSelfPaced('${set.id}')" style="flex: 1; min-width: 0; background: #34c759; color: white; border: none; padding: 5px 6px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; white-space: nowrap; text-align: center;" title="切換為學生自主學習此組合">
-                    🎧 自主學習
-                  </button>
-                  <button class="custom-set-action-btn action-btn" onclick="window.app.openQuickCopyCustomSetModal('${set.id}')" style="flex: 1.2; min-width: 0; background: rgba(88, 86, 214, 0.12); color: #5856d6; border: 1px solid rgba(88, 86, 214, 0.3); padding: 5px 6px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; white-space: nowrap; text-align: center;" title="複製此測驗組合到其他班級">
-                    📤 複製到其他班
-                  </button>
-                  <button class="custom-set-action-btn action-btn" onclick="window.videoQuiz.deleteCustomSet('${set.id}')" style="flex: 0 0 auto; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--danger-color); padding: 5px 8px; border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap;" title="刪除此組合">
-                    🗑️
-                  </button>
+                <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                  <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; white-space: nowrap;">${count} 部影片</span>
+                  <span class="badge" style="background: #34c759; color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; white-space: nowrap;">${totalQ} 題</span>
                 </div>
               </div>
-            `;
-          }).join('')}
-        </div>
-      `;
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4;">
+                <div>建立日期：${new Date(set.createdAt || Date.now()).toLocaleDateString()}</div>
+                <div style="margin-top: 4px;">${titles}</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 4px; align-items: center; flex-wrap: nowrap; margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 8px; width: 100%; box-sizing: border-box;">
+              <button class="custom-set-action-btn action-btn" onclick="window.videoQuiz.startSyncQuizFromCustomSet('${set.id}')" style="flex: 1; min-width: 0; background: var(--accent-color); color: white; border: none; padding: 5px 6px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; white-space: nowrap; text-align: center;" title="以此組合直接發起全班同步測驗">
+                ▶ 全班開測
+              </button>
+              <button class="custom-set-action-btn action-btn" onclick="window.videoQuiz.assignCustomSetToSelfPaced('${set.id}')" style="flex: 1; min-width: 0; background: #34c759; color: white; border: none; padding: 5px 6px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; white-space: nowrap; text-align: center;" title="切換為學生自主學習此組合">
+                🎧 自主學習
+              </button>
+              <button class="custom-set-action-btn action-btn" onclick="window.app.openQuickCopyCustomSetModal('${set.id}')" style="flex: 1.2; min-width: 0; background: rgba(88, 86, 214, 0.12); color: #5856d6; border: 1px solid rgba(88, 86, 214, 0.3); padding: 5px 6px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; white-space: nowrap; text-align: center;" title="複製此測驗組合到其他班級">
+                📤 複製到其他班
+              </button>
+              <button class="custom-set-action-btn action-btn" onclick="window.videoQuiz.deleteCustomSet('${set.id}')" style="flex: 0 0 auto; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--danger-color); padding: 5px 8px; border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap;" title="刪除此組合">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
 
       this.initCustomSetDragAndDrop();
     }
@@ -3976,7 +3973,7 @@
     }
 
     /**
-     * 組合測驗卡片拖曳排序 (需求 3-C)
+     * 組合測驗卡片拖曳排序 (支援一行三個 2D 網格水平與垂直拖曳換位)
      */
     initCustomSetDragAndDrop() {
       const container = document.getElementById('vqAdminCustomSetsList');
@@ -4013,21 +4010,30 @@
 
           this.customSets = reordered;
           this.saveCustomSets();
+          this.renderCustomSetsList();
+          this.renderQuizSelector();
           if (window.app) {
             window.app.showNotification('📋 排序已更新', '組合測驗排序已成功調整！');
           }
         });
       });
 
-      container.addEventListener('dragover', (e) => {
+      if (container._dragOverHandler) {
+        container.removeEventListener('dragover', container._dragOverHandler);
+      }
+
+      container._dragOverHandler = (e) => {
         e.preventDefault();
         const dragging = container.querySelector('.dragging-set');
         if (!dragging) return;
 
         const siblings = [...container.querySelectorAll('.draggable-custom-set:not(.dragging-set)')];
+        // 2D 網格判斷：先判斷行，同列中再由水平中心點判斷先後順序
         const nextSibling = siblings.find(sibling => {
           const box = sibling.getBoundingClientRect();
-          return e.clientY <= box.top + box.height / 2;
+          if (e.clientY < box.top) return true;
+          if (e.clientY <= box.bottom && e.clientX < box.left + box.width / 2) return true;
+          return false;
         });
 
         if (nextSibling) {
@@ -4035,7 +4041,9 @@
         } else {
           container.appendChild(dragging);
         }
-      });
+      };
+
+      container.addEventListener('dragover', container._dragOverHandler);
     }
 
     openEditQuizModal(quizId = null) {
