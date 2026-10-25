@@ -1116,6 +1116,7 @@ class Quiz {
           </div>
           <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
             <button type="button" class="action-btn" onclick="window.quiz.loadQuizFromHistory('${key}')" style="background: var(--accent-color); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="帶入此題到出題框">🚀 載入出題</button>
+            <button type="button" class="btn btn-secondary" onclick="window.quiz.openEditBankQuestionModal('${key}')" style="padding: 5px 10px; font-size: 12px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;" title="直接編輯此題內容與選項">✏️ 編輯</button>
             <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級題庫">📤 複製</button>
             <button type="button" class="btn btn-secondary" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--danger-color);" title="刪除此題">🗑️</button>
           </div>
@@ -2119,6 +2120,210 @@ class Quiz {
         this.historyRef.child(key).remove();
       }
     }
+  }
+
+  // 開啟題庫題目編輯彈窗
+  openEditBankQuestionModal(key) {
+    const item = this.historyBank[key];
+    if (!item) {
+      if (window.app) window.app.showNotification('提示', '找不到該題目！');
+      return;
+    }
+    this.editingBankQuestionKey = key;
+
+    const modal = document.getElementById('quizBankQuestionEditModal');
+    if (!modal) return;
+
+    // 設定題目內容
+    const qInput = document.getElementById('editBankQuestionInput');
+    if (qInput) {
+      qInput.value = item.question || '';
+    }
+
+    // 設定題型
+    const type = item.quizType || 'single';
+    const rad = document.querySelector(`input[name="editBankQuizType"][value="${type}"]`);
+    if (rad) rad.checked = true;
+
+    this.onEditBankQuizTypeChange(type, item);
+    modal.style.display = 'flex';
+  }
+
+  // 關閉題庫題目編輯彈窗
+  closeEditBankQuestionModal() {
+    const modal = document.getElementById('quizBankQuestionEditModal');
+    if (modal) modal.style.display = 'none';
+    this.editingBankQuestionKey = null;
+  }
+
+  // 切換編輯彈窗中的題型
+  onEditBankQuizTypeChange(type, sourceItem = null) {
+    const optSec = document.getElementById('editBankOptionsSection');
+    const matchSec = document.getElementById('editBankMatchingSection');
+    const optList = document.getElementById('editBankOptionsList');
+    const matchList = document.getElementById('editBankMatchingList');
+
+    if (type === 'matching') {
+      if (optSec) optSec.style.display = 'none';
+      if (matchSec) matchSec.style.display = 'block';
+      if (matchList) {
+        matchList.innerHTML = '';
+        const item = sourceItem || (this.editingBankQuestionKey ? this.historyBank[this.editingBankQuestionKey] : null);
+        let pairs = (item && item.quizType === 'matching' && Array.isArray(item.pairs)) ? item.pairs : [];
+        if (pairs.length === 0 && item && Array.isArray(item.options)) {
+          pairs = item.options.map((opt, i) => ({
+            left: typeof opt === 'object' ? (opt.text || '') : String(opt),
+            right: item.matchOptions?.[i] || ''
+          }));
+        }
+        if (pairs.length === 0) {
+          pairs = [{ left: '', right: '' }, { left: '', right: '' }];
+        }
+        pairs.forEach(p => {
+          const lText = typeof p.left === 'object' ? (p.left.text || '') : String(p.left || '');
+          const rText = typeof p.right === 'object' ? (p.right.text || '') : String(p.right || '');
+          this.addEditBankMatchingPair(lText, rText);
+        });
+      }
+    } else {
+      if (matchSec) matchSec.style.display = 'none';
+      if (optSec) optSec.style.display = 'block';
+      if (optList) {
+        optList.innerHTML = '';
+        const item = sourceItem || (this.editingBankQuestionKey ? this.historyBank[this.editingBankQuestionKey] : null);
+        let opts = (item && Array.isArray(item.options)) ? item.options : [];
+        if (opts.length === 0) {
+          opts = ['', '', '', ''];
+        }
+        opts.forEach(opt => {
+          const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
+          const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt || ''));
+          const imgSrc = isImg ? opt.image : '';
+          this.addEditBankOption(optText, imgSrc);
+        });
+      }
+    }
+  }
+
+  // 新增選項 (編輯彈窗)
+  addEditBankOption(text = '', image = '') {
+    const list = document.getElementById('editBankOptionsList');
+    if (!list) return;
+
+    const idx = list.querySelectorAll('.edit-bank-option-row').length + 1;
+    const row = document.createElement('div');
+    row.className = 'edit-bank-option-row';
+    row.style = 'display: flex; align-items: center; gap: 8px; background: var(--bg-input); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);';
+    row.innerHTML = `
+      <span class="edit-bank-opt-badge" style="font-size: 12px; font-weight: bold; background: var(--bg-card); color: var(--text-secondary); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${idx}</span>
+      <input type="text" class="edit-bank-opt-input question-input" value="${this.escapeHtml(text)}" placeholder="請輸入選項文字..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 13.5px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+      <button type="button" class="remove-option-btn" onclick="this.closest('.edit-bank-option-row').remove(); window.quiz && window.quiz.reindexEditBankOptions();" style="background: transparent; border: none; color: var(--danger-color); cursor: pointer; font-size: 16px; padding: 4px;" title="刪除此選項">✕</button>
+    `;
+    list.appendChild(row);
+    this.reindexEditBankOptions();
+  }
+
+  // 重新計算選項編號
+  reindexEditBankOptions() {
+    const list = document.getElementById('editBankOptionsList');
+    if (!list) return;
+    list.querySelectorAll('.edit-bank-option-row').forEach((row, i) => {
+      const badge = row.querySelector('.edit-bank-opt-badge');
+      if (badge) badge.textContent = i + 1;
+    });
+  }
+
+  // 新增配對組 (編輯彈窗)
+  addEditBankMatchingPair(left = '', right = '') {
+    const list = document.getElementById('editBankMatchingList');
+    if (!list) return;
+
+    const row = document.createElement('div');
+    row.className = 'edit-bank-matching-row';
+    row.style = 'display: flex; align-items: center; gap: 8px; background: var(--bg-input); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color);';
+    row.innerHTML = `
+      <input type="text" class="edit-bank-match-left question-input" value="${this.escapeHtml(left)}" placeholder="左側題目..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 13.5px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+      <span style="color: var(--accent-color); font-weight: bold; user-select: none;">🔗</span>
+      <input type="text" class="edit-bank-match-right question-input" value="${this.escapeHtml(right)}" placeholder="右側配對答案..." style="margin: 0; flex: 1; padding: 6px 10px; font-size: 13.5px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+      <button type="button" class="remove-option-btn" onclick="this.closest('.edit-bank-matching-row').remove();" style="background: transparent; border: none; color: var(--danger-color); cursor: pointer; font-size: 16px; padding: 4px;" title="刪除此配對組">✕</button>
+    `;
+    list.appendChild(row);
+  }
+
+  // 儲存題庫題目修改
+  saveEditBankQuestion() {
+    const key = this.editingBankQuestionKey;
+    if (!key || !this.historyBank[key]) {
+      if (window.app) window.app.showNotification('錯誤', '找不到要編輯的題目！');
+      return;
+    }
+
+    const qInput = document.getElementById('editBankQuestionInput');
+    const questionText = (qInput?.value || '').trim();
+    if (!questionText) {
+      if (window.app) window.app.showNotification('提示', '請輸入題目問句內容！');
+      return;
+    }
+
+    const quizType = document.querySelector('input[name="editBankQuizType"]:checked')?.value || 'single';
+    const item = this.historyBank[key];
+
+    if (quizType === 'matching') {
+      const matchRows = document.querySelectorAll('#editBankMatchingList .edit-bank-matching-row');
+      const pairs = [];
+      matchRows.forEach(row => {
+        const leftVal = (row.querySelector('.edit-bank-match-left')?.value || '').trim();
+        const rightVal = (row.querySelector('.edit-bank-match-right')?.value || '').trim();
+        if (leftVal || rightVal) {
+          pairs.push({ left: leftVal, right: rightVal });
+        }
+      });
+
+      if (pairs.length < 2) {
+        if (window.app) window.app.showNotification('提示', '連線配對題請至少建立 2 組配對項目！');
+        return;
+      }
+
+      item.question = questionText;
+      item.quizType = 'matching';
+      item.pairs = pairs;
+      item.options = pairs.map(p => p.left);
+      item.matchOptions = pairs.map(p => p.right);
+      item.updatedAt = Date.now();
+
+    } else {
+      const optRows = document.querySelectorAll('#editBankOptionsList .edit-bank-opt-input');
+      const options = [];
+      optRows.forEach(input => {
+        const val = input.value.trim();
+        if (val) options.push(val);
+      });
+
+      if (options.length < 2) {
+        if (window.app) window.app.showNotification('提示', '請至少保留 2 個選項！');
+        return;
+      }
+
+      item.question = questionText;
+      item.quizType = quizType;
+      item.options = options;
+      delete item.pairs;
+      delete item.matchOptions;
+      item.updatedAt = Date.now();
+    }
+
+    // 寫入 Firebase
+    if (this.historyRef) {
+      this.historyRef.child(key).set(item).then(() => {
+        if (window.app) window.app.showNotification('成功', '已成功儲存題庫題目修改！');
+      }).catch(err => {
+        console.warn('Sync to firebase failed', err);
+      });
+    }
+
+    this.renderQuizBankListUI();
+    this.renderQuizHistoryUI();
+    this.closeEditBankQuestionModal();
   }
 
   // 清空歷次題庫

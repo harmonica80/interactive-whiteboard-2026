@@ -2838,7 +2838,7 @@
                 <div id="quizSubTabPaneBank" class="admin-subtab-pane" style="display: none;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
                     <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                      <span>📁 題庫管理與出題工具</span>
+                      <span>📁 題庫管理</span>
                       <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">（可透過 ☰ 圖示拖曳調整題目排序）</span>
                     </h4>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -2947,7 +2947,7 @@
                 <div id="vqSubTabPaneSingle" class="admin-subtab-pane">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
                     <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                      <span>📁 題庫管理與出題工具</span>
+                      <span>📁 單題測驗與題庫管理</span>
                       <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">（可透過 ☰ 圖示拖曳調整題目排序）</span>
                     </h4>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -5433,6 +5433,88 @@ Python</pre>
       </div>
     </div>
   </div>
+
+  <!-- 選擇題題庫題目直接編輯彈出視窗 -->
+  <div id="quizBankQuestionEditModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.55); z-index: 10000; padding: 20px;">
+    <div class="modal-content" style="max-width: 640px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; border-radius: 16px; background: var(--bg-card); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); position: relative; box-sizing: border-box;">
+      <button onclick="window.quiz && window.quiz.closeEditBankQuestionModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      
+      <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+        <span>✏️</span> <span>編輯題庫題目</span>
+      </h3>
+
+      <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 14px;">
+        <!-- 題型選擇 -->
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-secondary);">
+            測驗題型：
+          </label>
+          <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13.5px; font-weight: bold; color: var(--text-primary);">
+              <input type="radio" name="editBankQuizType" value="single" onchange="window.quiz && window.quiz.onEditBankQuizTypeChange('single')">
+              <span>🔘 單選題</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13.5px; font-weight: bold; color: var(--text-primary);">
+              <input type="radio" name="editBankQuizType" value="multiple" onchange="window.quiz && window.quiz.onEditBankQuizTypeChange('multiple')">
+              <span>☑️ 複選題</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13.5px; font-weight: bold; color: var(--text-primary);">
+              <input type="radio" name="editBankQuizType" value="matching" onchange="window.quiz && window.quiz.onEditBankQuizTypeChange('matching')">
+              <span>🔗 配對題</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 題目問句 -->
+        <div>
+          <label for="editBankQuestionInput" style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: var(--text-secondary);">
+            題目問句內容：
+          </label>
+          <textarea id="editBankQuestionInput" rows="3" class="question-input" placeholder="請輸入題目問句內容..." style="width: 100%; box-sizing: border-box; margin: 0; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px; line-height: 1.5; resize: vertical;"></textarea>
+        </div>
+
+        <!-- 單選/複選 選項列表區塊 -->
+        <div id="editBankOptionsSection">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin: 0;">
+              選項內容：
+            </label>
+            <button type="button" class="btn btn-secondary" onclick="window.quiz && window.quiz.addEditBankOption()" style="padding: 4px 10px; font-size: 12px; font-weight: bold; color: var(--accent-color);">
+              ➕ 新增選項
+            </button>
+          </div>
+          <div id="editBankOptionsList" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- 動態渲染選項項目 -->
+          </div>
+        </div>
+
+        <!-- 配對題 組別列表區塊 -->
+        <div id="editBankMatchingSection" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin: 0;">
+              配對組別 (左側題目 🔗 右側答案)：
+            </label>
+            <button type="button" class="btn btn-secondary" onclick="window.quiz && window.quiz.addEditBankMatchingPair()" style="padding: 4px 10px; font-size: 12px; font-weight: bold; color: var(--accent-color);">
+              ➕ 新增配對組
+            </button>
+          </div>
+          <div id="editBankMatchingList" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- 動態渲染配對組 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部控制按鈕 -->
+      <div style="display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 14px; flex-shrink: 0;">
+        <button type="button" class="btn btn-secondary" onclick="window.quiz && window.quiz.closeEditBankQuestionModal()" style="padding: 8px 18px; font-size: 13px;">
+          取消
+        </button>
+        <button type="button" class="btn btn-primary" onclick="window.quiz && window.quiz.saveEditBankQuestion()" style="padding: 8px 22px; font-size: 13px; font-weight: bold;">
+          💾 儲存修改
+        </button>
+      </div>
+    </div>
+  </div>
   
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -5447,7 +5529,7 @@ Python</pre>
   <script src="js/focus_question_bank.js?v=381"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
-  <script src="js/quiz.js?v=384"></script>
+  <script src="js/quiz.js?v=385"></script>
   <script src="js/app.js?v=413"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=381"></script>
