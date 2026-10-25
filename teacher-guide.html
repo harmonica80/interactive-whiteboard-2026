@@ -353,9 +353,13 @@
         </li>
       </ol>
 
-      <div style="margin-left: 42px; background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text-primary); line-height: 1.6;">
-        <strong style="color: #16a34a;">💡 貼心防護小提醒：</strong>
-        本系統內建防暴力破解機制（連續輸錯 5 次將自動鎖定 3 分鐘）。若您連安全提問答案也遺忘，可聯絡系統管理員使用「系統超級救援金鑰」進行強制重設。
+      <div style="margin-left: 42px; background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3); border-radius: 10px; padding: 14px 18px; font-size: 13px; color: var(--text-primary); line-height: 1.6;">
+        <strong style="color: #16a34a; font-size: 13.5px; display: block; margin-bottom: 6px;">💡 密碼自救與自主架設安全保障（各自獨立，自給自足）：</strong>
+        <div style="margin-bottom: 6px;">本白板採「完全獨立與去中心化」架構，您的白板資料與 Firebase 完全由您自主掌控，系統無任何全域萬能鑰匙或後門。若遺忘密碼時的自救途徑如下：</div>
+        <ul style="margin: 0; padding-left: 20px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.65;">
+          <li><strong>第一線自救（安全問題）</strong>：只要您有在後台設定「安全問題」，在登入畫面點選「❓ 忘記密碼？」並回答問題，即可即時驗證並重設密碼（答案經 SHA-256 加密儲存，無洩漏風險）。</li>
+          <li><strong>終極自救（Firebase 控制台）</strong>：若連安全問題都忘了，由於您是資料庫的擁有者，您只需登入自己的 Firebase 控制台，在 <code>teachers/</code> 節點下刪除密碼欄位（或直接刪除該教師節點），重新整理白板網頁即可直接重新設定密碼！</li>
+        </ul>
       </div>
     </div>
   </div>

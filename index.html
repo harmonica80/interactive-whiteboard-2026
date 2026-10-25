@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=1">
   <link rel="shortcut icon" href="favicon.ico?v=1">
   <link rel="apple-touch-icon" href="favicon.png?v=1">
-  <link rel="stylesheet" href="css/style.css?v=398">
+  <link rel="stylesheet" href="css/style.css?v=399">
   <link rel="stylesheet" href="css/presentation.css?v=3114">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1084,9 +1084,13 @@
               </li>
             </ol>
 
-            <div style="margin-left: 42px; background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text-primary); line-height: 1.6;">
-              <strong style="color: #16a34a;">💡 貼心防護小提醒：</strong>
-              本系統內建防暴力破解機制（連續輸錯 5 次將自動鎖定 3 分鐘）。若您連安全提問答案也遺忘，可聯絡系統管理員使用「系統超級救援金鑰」進行強制重設。
+            <div style="margin-left: 42px; background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3); border-radius: 10px; padding: 14px 18px; font-size: 13px; color: var(--text-primary); line-height: 1.6;">
+              <strong style="color: #16a34a; font-size: 13.5px; display: block; margin-bottom: 6px;">💡 密碼自救與自主架設安全保障（各自獨立，自給自足）：</strong>
+              <div style="margin-bottom: 6px;">本白板採「完全獨立與去中心化」架構，您的白板資料與 Firebase 完全由您自主掌控，系統無任何全域萬能鑰匙或後門。若遺忘密碼時的自救途徑如下：</div>
+              <ul style="margin: 0; padding-left: 20px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.65;">
+                <li><strong>第一線自救（安全問題）</strong>：只要您有在後台設定「安全問題」，在登入畫面點選「❓ 忘記密碼？」並回答問題，即可即時驗證並重設密碼（答案經 SHA-256 加密儲存，無洩漏風險）。</li>
+                <li><strong>終極自救（Firebase 控制台）</strong>：若連安全問題都忘了，由於您是資料庫的擁有者，您只需登入自己的 Firebase 控制台，在 <code>teachers/</code> 節點下刪除密碼欄位（或直接刪除該教師節點），重新整理白板網頁即可直接重新設定密碼！</li>
+              </ul>
             </div>
           </div>
 
@@ -2223,7 +2227,7 @@
                   <li><strong>防暴力破解鎖定</strong>：密碼連續輸入錯誤 5 次，系統自動安全鎖定 180 秒（3 分鐘），按鈕禁用並出現即時倒數。</li>
                   <li><strong>單一密碼多白板通用</strong>：您日後新登記的任何班級代碼，皆自動享有此組專屬密碼，不必每班重複設定。</li>
                   <li><strong>一週初始密碼寬限機制</strong>：系統初始預設密碼僅供新註冊後一週（7 天）內過渡使用，逾期預設密碼將失效，無法再以預設密碼登入！請務必於一週內設定您的專屬管理密碼，以確保班級資訊安全。</li>
-                  <li><strong>終極救援保障</strong>：若連安全問題都遺忘，可由系統管理員使用「超級救援金鑰」協助重設，教學進度絕不中斷。</li>
+                  <li><strong>終極自救保障</strong>：系統採各自獨立架構，無任何全域萬能鑰匙後門。若連安全問題都遺忘，您作為 Firebase 擁有者只需登入 Firebase 控制台刪除 <code>teachers/</code> 節點的密碼資料，重新整理白板即可重新設定，既安全又保有 100% 自主掌控權。</li>
                 </ul>
               </div>
 
@@ -5059,7 +5063,7 @@ Python</pre>
   <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.min.js"></script>
   
   <script src="js/firebase-config.js?v=381"></script>
-  <script src="js/teacher_auth_manager.js?v=383"></script>
+  <script src="js/teacher_auth_manager.js?v=384"></script>
   <script src="js/character_pool.js?v=306"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
   <script src="js/song_quiz_pool.js?v=382"></script>
@@ -5341,36 +5345,15 @@ Python</pre>
           </button>
         </div>
 
-        <!-- 途徑 3：系統超級救援金鑰重設 (Master Recovery) - 折疊按鈕與緊湊字級 -->
-        <div style="background: var(--bg-card); border: 1.5px solid rgba(0, 122, 255, 0.25); border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; transition: all 0.2s;">
-          <button type="button" id="btnToggleMasterRecovery" onclick="window.teacherAuthManager.toggleMasterRecoveryCollapse()" style="background: transparent; border: none; width: 100%; display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 0; outline: none;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 15px;">2️⃣</span>
-              <span style="font-size: 13.5px; font-weight: bold; color: var(--accent-color);">途徑二：系統超級救援金鑰重設 (Master Recovery)</span>
-            </div>
-            <span id="masterRecoveryCollapseArrow" style="font-size: 12px; color: var(--accent-color); font-weight: bold; background: rgba(0, 122, 255, 0.1); padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-              ▼ 展開
-            </span>
-          </button>
-
-          <!-- 折疊內容容器，預設閉合隱藏 -->
-          <div id="masterRecoveryContent" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
-            <p style="font-size: 11.5px; color: var(--text-secondary); margin: 0 0 10px 0; line-height: 1.5;">
-              若連安全問題解答也遺忘，請輸入系統管理員超級救援金鑰重設。
-            </p>
-
-            <div style="margin-bottom: 8px;">
-              <input type="password" id="recoveryMasterKeyInput" class="question-input" placeholder="請輸入超級救援金鑰" style="margin: 0; width: 100%; font-size: 11px !important; letter-spacing: normal !important; padding: 6px 10px !important; height: 32px !important; text-align: left !important;" oninput="window.teacherAuthManager.clearRecoveryError()">
-            </div>
-
-            <div style="margin-bottom: 10px;">
-              <input type="password" id="recoveryMasterNewPassword" class="question-input" placeholder="欲設定的新密碼 (至少 4 碼)" style="margin: 0; width: 100%; font-size: 11px !important; letter-spacing: normal !important; padding: 6px 10px !important; height: 32px !important; text-align: left !important;" oninput="window.teacherAuthManager.clearRecoveryError()">
-            </div>
-
-            <button type="button" class="ask-btn" onclick="window.teacherAuthManager.submitMasterKeyRecovery()" style="width: 100%; height: 34px; font-size: 12.5px; font-weight: bold; border-radius: 8px; justify-content: center; background: #4f46e5;">
-              🛡️ 驗證超級金鑰並重設密碼
-            </button>
+        <!-- 終極自救保障說明 (Firebase Console Self-Reset) -->
+        <div style="background: rgba(0, 122, 255, 0.04); border: 1.5px dashed rgba(0, 122, 255, 0.3); border-radius: 12px; padding: 12px 16px; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="font-size: 15px;">🛡️</span>
+            <span style="font-size: 13px; font-weight: bold; color: var(--accent-color);">未設定安全提問或忘記答案？終極自救指南</span>
           </div>
+          <p style="font-size: 12px; color: var(--text-secondary); margin: 0; line-height: 1.6;">
+            本白板為各自獨立、完全自給自足架構，系統不設任何全域後門金鑰以維護最高安全性。若無法透過安全問題重設，請作為資料庫擁有者登入您的 <strong>Firebase 控制台</strong>，在 <code>teachers/</code> 節點下刪除該教師的 <code>passwordHash</code> 欄位，回到此網頁重新整理即可重新設定新密碼！
+          </p>
         </div>
       </div>
 

@@ -1822,22 +1822,6 @@ body {
   font-size: 12px !important;
 }
 
-/* 途徑二輸入框字級縮小 1~2 級 */
-#adminPasswordRecoveryModal #recoveryMasterKeyInput,
-#adminPasswordRecoveryModal #recoveryMasterNewPassword {
-  font-size: 11px !important;
-  letter-spacing: normal !important;
-  padding: 6px 10px !important;
-  height: 32px !important;
-  text-align: left !important;
-}
-
-#adminPasswordRecoveryModal #recoveryMasterKeyInput::placeholder,
-#adminPasswordRecoveryModal #recoveryMasterNewPassword::placeholder {
-  font-size: 11px !important;
-  letter-spacing: normal !important;
-}
-
 /* ===== RWD ===== */
 @media (max-width: 900px) {
   .main-content {

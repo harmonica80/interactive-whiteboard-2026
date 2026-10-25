@@ -5,9 +5,9 @@
  * 1. SHA-256 不可逆雜湊加密 (Web Crypto API + 純 JS 雙重容錯)，零明文存儲
  * 2. 認老師架構：單一教師設定專屬密碼，所建所有白板自動套用；一次性/公共白板全相容
  * 3. 防暴力破解鎖定：連續錯誤 5 次自動鎖定 180 秒 (3 分鐘)，帶即時倒數與狀態保護
- * 4. 雙重救援機制：
- *    - 途徑 A：密碼提示 + 安全提問自救 (不需外部郵件，自給自足)
- *    - 途徑 B：系統超級救援金鑰 (WHITEBOARD_MASTER_2026_RESCUE)
+ * 4. 忘記密碼自救機制：
+ *    - 第一線自救：密碼提示 + 安全提問自救 (不需外部郵件，自給自足，SHA-256 零明文)
+ *    - 終極自救保障：資料庫擁有者登入 Firebase 控制台刪除密碼節點即可自救重設 (徹底脫鉤，無全域萬能鑰匙後門)
  * 5. 向下相容：初次使用或舊班級預設密碼 1234 仍可登入，後台顯示琥珀色警告提醒儘速修改
  */
 
@@ -16,7 +16,6 @@
 
   // 預設與系統保留常數
   const DEFAULT_PASSWORD_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'; // '1234'
-  const MASTER_RECOVERY_KEY_HASH = 'bf7b231fe2ede9055ca1ccaaaf585ba9e162b25703c543edf1335c4dd4a1d8df'; // 'WHITEBOARD_MASTER_2026_RESCUE'
   const DEFAULT_PASSWORD_GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 預設密碼 1234 寬限期：7 天 (自啟用/初次登入起算 1 週)
   
   const STORAGE_KEYS = {
@@ -379,22 +378,7 @@
 
       const inputHash = await this.sha256(inputTrimmed);
 
-      // 2. 超級救援金鑰核對 (WHITEBOARD_MASTER_2026_RESCUE)
-      if (inputHash === MASTER_RECOVERY_KEY_HASH) {
-        this.clearLockout();
-        this.currentVerifiedTeacher = {
-          teacherId: this.getActiveTeacherId(),
-          name: '超級救援管理員',
-          isMasterKey: true
-        };
-        return {
-          success: true,
-          isMaster: true,
-          message: '超級救援金鑰驗證通過！已進入管理員模式。'
-        };
-      }
-
-      // 3. 判斷當前環境（班級課堂 vs 公共課堂）
+      // 2. 判斷當前環境（班級課堂 vs 公共課堂）
       const classCode = window.currentClassCode;
       let targetTeacherId = null;
 
@@ -521,7 +505,7 @@
               success: false,
               locked: false,
               isExpiredDefault: true,
-              message: '⛔ 系統安全政策：初始預設密碼 1234 已超過一週（7天）寬限期並正式停用！為保障課堂安全，請點選下方「忘記密碼？」使用安全提問或超級救援金鑰設定專屬密碼。'
+              message: '⛔ 系統安全政策：初始預設密碼 1234 已超過一週（7天）寬限期並正式停用！為保障課堂安全，請點選下方「忘記密碼？」使用安全提問自救重設專屬密碼。'
             };
           }
           this.clearLockout();
@@ -691,7 +675,7 @@
 
       const profile = await this.getTeacherProfile(teacherId);
       if (!profile.recoveryAnswerHash) {
-        throw new Error('此教師帳號尚未設定安全問題，請點開下方「途徑二：系統超級救援金鑰」進行重設！');
+        throw new Error('此教師帳號尚未設定安全問題！若遺忘密碼，請登入您的 Firebase 控制台，在 teachers/ 節點下刪除該老師密碼資料即可重新設定。');
       }
 
       const normalizedAnswer = answer.trim().toLowerCase();
@@ -706,37 +690,6 @@
         passwordHash: newPasswordHash
       });
       this.setActiveTeacher(teacherId, profile.name || '授課老師');
-
-      this.clearLockout();
-      return true;
-    }
-
-    /**
-     * 透過系統超級救援金鑰重設密碼
-     */
-    async resetViaMasterKey(teacherId, masterKey, newPassword) {
-      if (!masterKey || !newPassword) {
-        throw new Error('請輸入超級救援金鑰與新密碼！');
-      }
-      if (newPassword.length < 4) {
-        throw new Error('新密碼長度至少需 4 碼！');
-      }
-      if (newPassword.trim() === '1234' && this.isDefaultPasswordExpired(profile)) {
-        throw new Error('初始預設密碼 1234 已超過 7 天（一週）寬限期，請自訂一組專屬新密碼！');
-      }
-
-      const masterKeyHash = await this.sha256(masterKey.trim());
-      if (masterKeyHash !== MASTER_RECOVERY_KEY_HASH) {
-        throw new Error('超級救援金鑰錯誤，請洽詢系統管理員！');
-      }
-
-      const targetId = teacherId || this.getActiveTeacherId();
-      const newPasswordHash = await this.sha256(newPassword.trim());
-
-      const updated = await this.saveTeacherProfile(targetId, {
-        passwordHash: newPasswordHash
-      });
-      this.setActiveTeacher(targetId, updated.name || '授課老師');
 
       this.clearLockout();
       return true;
@@ -930,26 +883,6 @@
     }
 
     /**
-     * 切換途徑二超級救援金鑰的展開與收合 (預設閉合)
-     */
-    toggleMasterRecoveryCollapse(forceState = null) {
-      const content = document.getElementById('masterRecoveryContent');
-      const arrow = document.getElementById('masterRecoveryCollapseArrow');
-      if (!content) return;
-
-      const isCurrentlyOpen = content.style.display !== 'none';
-      const shouldOpen = forceState !== null ? forceState : !isCurrentlyOpen;
-
-      if (shouldOpen) {
-        content.style.display = 'block';
-        if (arrow) arrow.innerHTML = '▲ 收合';
-      } else {
-        content.style.display = 'none';
-        if (arrow) arrow.innerHTML = '▼ 展開';
-      }
-    }
-
-    /**
      * 將指定教師的救援資訊渲染至忘記密碼彈窗
      */
     _applyRecoveryContextToUI(info) {
@@ -1012,9 +945,6 @@
 
       this.clearRecoveryError();
 
-      // 途徑二預設保持閉合 (收合)
-      this.toggleMasterRecoveryCollapse(false);
-
       const [info, availableTeachers] = await Promise.all([
         this.getRecoveryContext(),
         this.getAvailableTeachersForRecovery()
@@ -1043,14 +973,10 @@
       const answerInput = document.getElementById('recoveryQuestionAnswer');
       const newPwd1 = document.getElementById('recoveryNewPassword');
       const newPwd2 = document.getElementById('recoveryNewPasswordConfirm');
-      const masterKey = document.getElementById('recoveryMasterKeyInput');
-      const masterNewPwd = document.getElementById('recoveryMasterNewPassword');
 
       if (answerInput) answerInput.value = '';
       if (newPwd1) newPwd1.value = '';
       if (newPwd2) newPwd2.value = '';
-      if (masterKey) masterKey.value = '';
-      if (masterNewPwd) masterNewPwd.value = '';
     }
 
     closeRecoveryModal(skipReopenLogin = false) {
@@ -1103,37 +1029,6 @@
         window.app.showNotification('🎉 重設成功', '管理員密碼已成功更新！請使用新密碼登入。');
       } catch (e) {
         this.showRecoveryError(e.message || '安全提問驗證錯誤', answerInput);
-      }
-    }
-
-    /**
-     * 執行超級救援金鑰重設
-     */
-    async submitMasterKeyRecovery() {
-      const modal = document.getElementById('adminPasswordRecoveryModal');
-      const teacherId = modal ? modal.getAttribute('data-target-teacher-id') : null;
-      const masterKeyInput = document.getElementById('recoveryMasterKeyInput');
-      const masterNewPwd = document.getElementById('recoveryMasterNewPassword');
-
-      const key = masterKeyInput ? masterKeyInput.value : '';
-      const p1 = masterNewPwd ? masterNewPwd.value : '';
-
-      if (!key) {
-        this.showRecoveryError('請輸入系統超級救援金鑰！', masterKeyInput);
-        return;
-      }
-      if (!p1 || p1.length < 4) {
-        this.showRecoveryError('新密碼長度至少需 4 碼！', masterNewPwd);
-        return;
-      }
-
-      try {
-        await this.resetViaMasterKey(teacherId, key, p1);
-        this.closeRecoveryModal();
-        this.updatePasswordModalUI();
-        window.app.showNotification('🎉 救援成功', '已透過系統超級救援金鑰重設密碼！請立即登入。');
-      } catch (e) {
-        this.showRecoveryError(e.message || '超級救援金鑰錯誤，請重新確認！', masterKeyInput);
       }
     }
 
