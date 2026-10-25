@@ -392,6 +392,21 @@
       border-color: #cbd5e1;
     }
 
+    /* 學生端唯讀顯示權限狀態（僅顯示狀態、不可點擊修改） */
+    .btn-toggle-perm.is-student-readonly {
+      cursor: default;
+    }
+
+    .btn-toggle-perm.is-student-readonly.is-active:hover {
+      background: #0284c7;
+      border-color: #0284c7;
+    }
+
+    .btn-toggle-perm.is-student-readonly.is-inactive:hover {
+      background: #ffffff;
+      border-color: #cbd5e1;
+    }
+
     .btn-danger {
       color: #dc2626 !important;
       border-color: #fca5a5 !important;

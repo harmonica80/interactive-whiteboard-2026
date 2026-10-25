@@ -486,9 +486,21 @@
 
     // 教師控場開關顯示與權限套用
     if (!teacher) {
-      if (els.btnToggleStudentEdit) els.btnToggleStudentEdit.style.display = 'none';
-      if (els.btnToggleMoveOthers) els.btnToggleMoveOthers.style.display = 'none';
-      if (els.btnToggleStudentPages) els.btnToggleStudentPages.style.display = 'none';
+      if (els.btnToggleStudentEdit) {
+        els.btnToggleStudentEdit.style.display = 'inline-flex';
+        els.btnToggleStudentEdit.classList.add('is-student-readonly');
+        els.btnToggleStudentEdit.title = '目前畫布編輯權限狀態（僅供老師修改）';
+      }
+      if (els.btnToggleMoveOthers) {
+        els.btnToggleMoveOthers.style.display = 'inline-flex';
+        els.btnToggleMoveOthers.classList.add('is-student-readonly');
+        els.btnToggleMoveOthers.title = '目前物件移動權限狀態（僅供老師修改）';
+      }
+      if (els.btnToggleStudentPages) {
+        els.btnToggleStudentPages.style.display = 'inline-flex';
+        els.btnToggleStudentPages.classList.add('is-student-readonly');
+        els.btnToggleStudentPages.title = '目前頁面管理權限狀態（僅供老師修改）';
+      }
       if (els.btnFollowMode) els.btnFollowMode.style.display = 'none';
       if (els.btnSummonAll) els.btnSummonAll.style.display = 'none';
       if (els.btnClearOrEnd) els.btnClearOrEnd.style.display = 'none';
@@ -509,9 +521,21 @@
         disableDrawingTools(false);
       }
     } else {
-      if (els.btnToggleStudentEdit) els.btnToggleStudentEdit.style.display = 'inline-flex';
-      if (els.btnToggleMoveOthers) els.btnToggleMoveOthers.style.display = 'inline-flex';
-      if (els.btnToggleStudentPages) els.btnToggleStudentPages.style.display = 'inline-flex';
+      if (els.btnToggleStudentEdit) {
+        els.btnToggleStudentEdit.style.display = 'inline-flex';
+        els.btnToggleStudentEdit.classList.remove('is-student-readonly');
+        els.btnToggleStudentEdit.title = '設定學生是否可以編輯畫布';
+      }
+      if (els.btnToggleMoveOthers) {
+        els.btnToggleMoveOthers.style.display = 'inline-flex';
+        els.btnToggleMoveOthers.classList.remove('is-student-readonly');
+        els.btnToggleMoveOthers.title = '設定學生是否可移動別人的物件';
+      }
+      if (els.btnToggleStudentPages) {
+        els.btnToggleStudentPages.style.display = 'inline-flex';
+        els.btnToggleStudentPages.classList.remove('is-student-readonly');
+        els.btnToggleStudentPages.title = '設定學生是否可以增減畫布與頁數';
+      }
       if (els.btnFollowMode) els.btnFollowMode.style.display = 'inline-flex';
       if (els.btnSummonAll) els.btnSummonAll.style.display = state.settings.followTeacher ? 'none' : 'inline-flex';
       if (els.btnClearOrEnd) els.btnClearOrEnd.style.display = 'inline-flex';
