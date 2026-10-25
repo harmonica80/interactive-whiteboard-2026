@@ -764,6 +764,7 @@
               <button type="button" class="presentation-tool-btn" id="btnSlideSettings" title="設定外部 URL 與多題互動">⚙️ 本頁設定</button>
               <button type="button" class="presentation-tool-btn purple" id="btnSlideImportExport" title="匯入 PDF / 匯入匯出 JSON 備份">📁 匯入 / 匯出</button>
               <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答記錄">重置回應</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlidePurgeCache" onclick="window.presentationManager && window.presentationManager.cleanUpOrphanedPresentationData(true)" title="清理 Firebase 雲端簡報暫存，釋放資料庫頻寬與空間" style="background: rgba(239, 68, 68, 0.08); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25);">🧹 清理暫存</button>
             </div>
           </div>
         </div>
@@ -5541,7 +5542,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=381"></script>
   <script src="js/video_quiz.js?v=387"></script>
   <script src="js/word_cloud.js?v=396"></script>
-  <script src="js/presentation_core.js?v=3115"></script>
+  <script src="js/presentation_core.js?v=3116"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -7072,6 +7073,10 @@ Python</pre>
 
         <button type="button" class="presentation-btn-modal-action" onclick="window.presentationManager.exportJsonBackup()">
           💾 匯出 JSON 備份
+        </button>
+
+        <button type="button" class="presentation-btn-modal-action" onclick="window.presentationManager.cleanUpOrphanedPresentationData(true)" style="background: rgba(239, 68, 68, 0.08); color: #ef4444; border-color: rgba(239, 68, 68, 0.3); margin-top: 8px;">
+          🧹 清理 Firebase 雲端簡報暫存（立即釋放資料庫空間與流量）
         </button>
       </div>
       <div class="presentation-modal-footer">

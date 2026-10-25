@@ -486,6 +486,8 @@
       if (els.btnSettings) els.btnSettings.style.display = ctrlDisplay;
       if (els.btnImportExport) els.btnImportExport.style.display = ctrlDisplay;
       if (els.btnResetSubmissions) els.btnResetSubmissions.style.display = ctrlDisplay;
+      const purgeBtn = document.getElementById('btnSlidePurgeCache');
+      if (purgeBtn) purgeBtn.style.display = ctrlDisplay;
       const expandRight = document.getElementById('btnExpandRightSidebar');
       if (els.rightSidebar) {
         if (!canControl) {
@@ -852,7 +854,7 @@
         }
       });
 
-      // 1. 監聽簡報同步狀態與當前頁 (圖 1：修復同步狀態生命週期與結束簡報)
+      // 1. 監聽簡報同步狀態與當前頁 (極致輕量：僅傳遞 ~100 bytes 狀態，不含大圖)
       presRef.child('live').on('value', (snap) => {
         const data = snap.val();
         if (!data) return;
@@ -864,10 +866,22 @@
         const isAnotherHost = data.hostUid && data.hostUid !== myUser.uid;
 
         if (!isBroadcastingNow) {
-          // 目前無有效廣播中
+          // 目前無有效廣播中：立即卸載即時監聽器，防止閒置背景全量下載
           this.isRemoteBroadcastingActive = false;
           if (this.isPresenting && (isAnotherHost || !data.isPresenting)) {
             this.isPresenting = false;
+          }
+          this.detachLivePresentationListeners();
+          this.detachSubmissionsListener();
+
+          // 老師端在無活躍廣播時，自動偵測並清理舊的雲端大檔殘留 (釋放資料庫儲存空間)
+          if (this.isTeacher() && !this.isPresenting && !this._initialStaleCleaned) {
+            this._initialStaleCleaned = true;
+            setTimeout(() => {
+              if (!this.isPresenting && !this.isRemoteBroadcastingActive) {
+                this.cleanUpOrphanedPresentationData(false);
+              }
+            }, 1200);
           }
         } else {
           // 當前有活躍廣播
@@ -877,15 +891,20 @@
               this.isPresenting = true;
               this.isRemoteBroadcastingActive = false;
               this.markAsHost();
+              // 主持人掛載 submissions 監聽以收取學生作答
+              this.attachSubmissionsListener();
             } else {
               // 另一位老師正在廣播
               this.isRemoteBroadcastingActive = true;
               this.isPresenting = false;
+              this.attachLivePresentationListeners();
             }
           } else {
-            // 學生端：跟隨老師同步廣播 (項目 3：老師按下開始簡報時，同學畫面自動切換到同步簡報分頁)
+            // 學生端：跟隨老師同步廣播，按需掛載監聽器 (學生端絕不掛載 submissions，節省巨大頻寬)
             this.isRemoteBroadcastingActive = true;
             this.isPresenting = true;
+            this.attachLivePresentationListeners();
+
             if (window.app && typeof window.app.switchToTab === 'function') {
               if (window.app.activeTabId !== 'panel-presentation') {
                 window.app.switchToTab('panel-presentation');
@@ -900,51 +919,134 @@
         this.updateSyncButtonUI();
         this.updatePermissionsUI();
       });
+    }
 
-      // 2. 監聽全體簡報頁面 (當收到遠端老師同步時)
-      presRef.child('slides').on('value', (snap) => {
+    // 動態掛載學生端即時監聽器 (僅在廣播中掛載，結束時卸載)
+    attachLivePresentationListeners() {
+      if (this._isLiveListenersAttached || typeof db === 'undefined') return;
+      this._isLiveListenersAttached = true;
+      const presRef = db.ref('presentation');
+
+      this._onSlidesChange = (snap) => {
         const cloudSlides = snap.val();
         if (cloudSlides && Array.isArray(cloudSlides) && this.isRemoteBroadcastingActive) {
           this.slides = cloudSlides;
           this.render();
         }
-      });
+      };
 
-      // 3. 監聽雷射筆座標
-      presRef.child('laser').on('value', (snap) => {
+      this._onLaserChange = (snap) => {
         const laser = snap.val();
         if (this.isRemoteBroadcastingActive && laser) {
           this.updateLaserPointer(laser.rx, laser.ry, laser.active);
         }
-      });
+      };
 
-      // 4. 監聽繪圖標註
-      presRef.child('annotations').on('value', (snap) => {
+      this._onAnnotationsChange = (snap) => {
         const annots = snap.val();
-        if (annots) {
-          this.annotations = annots;
-          this.redrawAnnotations();
-        } else {
-          this.annotations = {};
-          this.redrawAnnotations();
-        }
-      });
+        this.annotations = annots || {};
+        this.redrawAnnotations();
+      };
 
-      // 5. 監聽學生提交作答
-      presRef.child('submissions').on('value', (snap) => {
-        this.submissions = snap.val() || {};
-        this.renderSubmissionsSidebar();
-      });
+      presRef.child('slides').on('value', this._onSlidesChange);
+      presRef.child('laser').on('value', this._onLaserChange);
+      presRef.child('annotations').on('value', this._onAnnotationsChange);
     }
 
-    // 廣播雷射筆位置 (節流 35ms)
+    // 卸載學生端即時監聽器
+    detachLivePresentationListeners() {
+      if (!this._isLiveListenersAttached || typeof db === 'undefined') return;
+      this._isLiveListenersAttached = false;
+      const presRef = db.ref('presentation');
+      if (this._onSlidesChange) presRef.child('slides').off('value', this._onSlidesChange);
+      if (this._onLaserChange) presRef.child('laser').off('value', this._onLaserChange);
+      if (this._onAnnotationsChange) presRef.child('annotations').off('value', this._onAnnotationsChange);
+    }
+
+    // 老師端專用：掛載學生作答回傳監聽器
+    attachSubmissionsListener() {
+      if (this._isSubmissionsListenerAttached || typeof db === 'undefined') return;
+      this._isSubmissionsListenerAttached = true;
+      const presRef = db.ref('presentation');
+
+      this._onSubmissionsChange = (snap) => {
+        this.submissions = snap.val() || {};
+        this.renderSubmissionsSidebar();
+      };
+
+      presRef.child('submissions').on('value', this._onSubmissionsChange);
+    }
+
+    // 老師端專用：卸載學生作答回傳監聽器
+    detachSubmissionsListener() {
+      if (!this._isSubmissionsListenerAttached || typeof db === 'undefined') return;
+      this._isSubmissionsListenerAttached = false;
+      const presRef = db.ref('presentation');
+      if (this._onSubmissionsChange) presRef.child('submissions').off('value', this._onSubmissionsChange);
+    }
+
+    // 清理雲端簡報暫存空間 (一鍵清除 40MB+ 大檔與歷史作答，釋放 Firebase 頻寬與儲存空間)
+    cleanUpOrphanedPresentationData(showConfirm = true) {
+      if (typeof db === 'undefined') return;
+
+      const doClean = () => {
+        db.ref('presentation/slides').remove().catch(() => {});
+        db.ref('presentation/submissions').remove().catch(() => {});
+        db.ref('presentation/annotations').remove().catch(() => {});
+        db.ref('presentation/laser').remove().catch(() => {});
+        if (!this.isPresenting) {
+          db.ref('presentation/live').set({
+            isPresenting: false,
+            currentSlideIndex: 0,
+            hostUid: '',
+            hostName: '',
+            updatedAt: Date.now()
+          }).catch(() => {});
+        }
+        this.notify('🧹 清理完成', '已清理 Firebase 雲端簡報暫存，大幅釋放資料庫頻寬與儲存空間！');
+      };
+
+      if (showConfirm) {
+        if (window.app && typeof window.app.showConfirmModal === 'function') {
+          window.app.showConfirmModal(
+            '🧹',
+            '清理雲端簡報暫存',
+            '確定要清理 Firebase 雲端簡報暫存嗎？這將刪除目前雲端殘留的投影片大圖與作答暫存，立即釋放資料庫空間與流量（不會影響本機目前編輯內容）。',
+            doClean
+          );
+        } else if (confirm('確定要清理 Firebase 雲端簡報暫存嗎？這將刪除目前雲端殘留的投影片與作答暫存，立即釋放空間與流量。')) {
+          doClean();
+        }
+      } else {
+        doClean();
+      }
+    }
+
+    // 廣播雷射筆位置 (節流 65ms 與微動略過，大幅減少高頻小封包)
     broadcastLaser(rx, ry, active) {
       if (!this.isPresenting || typeof db === 'undefined') return;
       const now = Date.now();
-      if (now - this.lastLaserBroadcast < 35 && active) return;
-      this.lastLaserBroadcast = now;
+      if (active) {
+        if (now - this.lastLaserBroadcast < 65) return;
+        if (typeof this.lastLaserRx === 'number') {
+          const dist = Math.hypot(rx - this.lastLaserRx, ry - this.lastLaserRy);
+          if (dist < 0.005) return; // 微小抖動略過發送
+        }
+      } else {
+        if (this.lastLaserActive === false) return;
+      }
 
-      db.ref('presentation/laser').set({ rx, ry, active, ts: now }).catch(() => {});
+      this.lastLaserBroadcast = now;
+      this.lastLaserRx = rx;
+      this.lastLaserRy = ry;
+      this.lastLaserActive = active;
+
+      db.ref('presentation/laser').set({
+        rx: Math.round(rx * 1000) / 1000,
+        ry: Math.round(ry * 1000) / 1000,
+        active,
+        ts: now
+      }).catch(() => {});
     }
 
     // 廣播繪圖標註
@@ -985,6 +1087,7 @@
       const user = this.getUserInfo();
       this.isPresenting = true;
       this.isRemoteBroadcastingActive = false;
+      this.attachSubmissionsListener();
 
       if (typeof db !== 'undefined') {
         const liveRef = db.ref('presentation/live');
@@ -1026,14 +1129,16 @@
           updatedAt: Date.now()
         }).catch(err => console.warn('stopSyncPresentation error:', err));
 
-        // 清除雷射筆
-        db.ref('presentation/laser').remove().catch(() => {});
+        // 結束同步時徹底清空雲端資料庫中的投影片與學生作答，釋放資料庫頻寬與儲存空間
+        this.cleanUpOrphanedPresentationData(false);
       }
 
+      this.detachLivePresentationListeners();
+      this.detachSubmissionsListener();
       this.updateSyncButtonUI();
       this.updatePermissionsUI();
       this.render();
-      this.notify('🏁 同步簡報已結束', '已關閉學生跟隨同步。');
+      this.notify('🏁 同步簡報已結束', '已關閉學生跟隨同步，並釋放雲端暫存頻寬。');
     }
 
     // 切換開始/結束同步簡報 (圖 1)
@@ -1313,28 +1418,72 @@
         if (!file.type.startsWith('image/')) return;
         const reader = new FileReader();
         reader.onload = (event) => {
-          this.slides.push({
-            id: 'slide_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-            type: 'image',
-            bgColor: '#0f172a',
-            bgUrl: event.target.result,
-            externalLinks: [],
-            externalUrl: '',
-            externalUrlTitle: '',
-            urlPosition: 'center',
-            urlTarget: 'iframe',
-            displayMode: 'step',
-            allowAsyncAnswer: false,
-            questions: []
-          });
-          loadedCount++;
-          if (loadedCount === files.length) {
-            this.currentSlideIndex = this.slides.length - 1;
-            this.updatePermissionsUI();
-            this.render();
-            if (this.isPresenting) this.broadcastLiveState(true);
-            this.notify('成功', `已新增 ${files.length} 張圖片簡報頁面！`);
-          }
+          const rawUrl = event.target.result;
+          const img = new Image();
+          img.onload = () => {
+            let w = img.naturalWidth || img.width;
+            let h = img.naturalHeight || img.height;
+            const maxDim = 1440;
+            if (w > maxDim || h > maxDim) {
+              const scale = maxDim / Math.max(w, h);
+              w = Math.round(w * scale);
+              h = Math.round(h * scale);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.72);
+
+            this.slides.push({
+              id: 'slide_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+              type: 'image',
+              bgColor: '#0f172a',
+              bgUrl: compressedDataUrl,
+              externalLinks: [],
+              externalUrl: '',
+              externalUrlTitle: '',
+              urlPosition: 'center',
+              urlTarget: 'iframe',
+              displayMode: 'step',
+              allowAsyncAnswer: false,
+              questions: []
+            });
+            loadedCount++;
+            if (loadedCount === files.length) {
+              this.currentSlideIndex = this.slides.length - 1;
+              this.updatePermissionsUI();
+              this.render();
+              if (this.isPresenting) this.broadcastLiveState(true);
+              this.notify('成功', `已新增 ${files.length} 張圖片簡報頁面！`);
+            }
+          };
+          img.onerror = () => {
+            this.slides.push({
+              id: 'slide_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+              type: 'image',
+              bgColor: '#0f172a',
+              bgUrl: rawUrl,
+              externalLinks: [],
+              externalUrl: '',
+              externalUrlTitle: '',
+              urlPosition: 'center',
+              urlTarget: 'iframe',
+              displayMode: 'step',
+              allowAsyncAnswer: false,
+              questions: []
+            });
+            loadedCount++;
+            if (loadedCount === files.length) {
+              this.currentSlideIndex = this.slides.length - 1;
+              this.updatePermissionsUI();
+              this.render();
+              if (this.isPresenting) this.broadcastLiveState(true);
+              this.notify('成功', `已新增 ${files.length} 張圖片簡報頁面！`);
+            }
+          };
+          img.src = rawUrl;
         };
         reader.readAsDataURL(file);
       });
@@ -2139,20 +2288,20 @@
           img.onload = () => {
             ctx.drawImage(img, 0, 0, exportCanvas.width, exportCanvas.height);
             ctx.drawImage(studentDrawCanvas, 0, 0);
-            doSubmit(exportCanvas.toDataURL('image/png'));
+            doSubmit(exportCanvas.toDataURL('image/jpeg', 0.72));
           };
           img.onerror = () => {
             ctx.fillStyle = slide.bgColor || '#0f172a';
             ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
             ctx.drawImage(studentDrawCanvas, 0, 0);
-            doSubmit(exportCanvas.toDataURL('image/png'));
+            doSubmit(exportCanvas.toDataURL('image/jpeg', 0.72));
           };
           img.src = slide.bgUrl;
         } else {
           ctx.fillStyle = slide.bgColor || '#1e293b';
           ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
           ctx.drawImage(studentDrawCanvas, 0, 0);
-          doSubmit(exportCanvas.toDataURL('image/png'));
+          doSubmit(exportCanvas.toDataURL('image/jpeg', 0.72));
         }
       } else {
         // 預設為不包含簡報底圖 (圖 1: 僅深色底襯托學生手繪筆劃)
@@ -2163,7 +2312,7 @@
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
         ctx.drawImage(studentDrawCanvas, 0, 0);
-        doSubmit(exportCanvas.toDataURL('image/png'));
+        doSubmit(exportCanvas.toDataURL('image/jpeg', 0.72));
       }
     }
 
@@ -2486,13 +2635,18 @@
 
       for (const pageNum of sortedPages) {
         const page = await this.currentPdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.5 });
+        const unscaledViewport = page.getViewport({ scale: 1.0 });
+        // 限制最大邊長為 1280px，既保有投影機與平板極佳清晰度，又縮小 80% 記憶體與網路傳輸負擔
+        const maxDim = 1280;
+        const targetScale = Math.min(1.35, maxDim / Math.max(unscaledViewport.width, unscaledViewport.height));
+        const viewport = page.getViewport({ scale: Math.max(0.75, targetScale) });
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = viewport.width;
         tempCanvas.height = viewport.height;
         await page.render({ canvasContext: tempCanvas.getContext('2d'), viewport }).promise;
 
-        const imgDataUrl = tempCanvas.toDataURL('image/jpeg', 0.85);
+        // 使用 0.68 品質 JPEG，相較 0.85 畫質清晰無損但體積驟降 70%
+        const imgDataUrl = tempCanvas.toDataURL('image/jpeg', 0.68);
         this.slides.push({
           id: 'slide_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
           type: 'image',
