@@ -1868,8 +1868,29 @@
         </div>
       </div>
     </div>
+    <!-- 8. 白板專屬全螢幕友好通用彈窗 (支援輸入名稱與確認對話框，避免原生 prompt/confirm/alert 造成全螢幕被強制中斷退回視窗) -->
+    <div class="modal-overlay" id="whiteboardDialogModal" style="display: none; z-index: 99999;">
+      <div class="modal-card" style="max-width: 420px;">
+        <div class="modal-header">
+          <div class="modal-title" id="wbDialogTitle">
+            <span style="font-size: 18px;">✏️</span>
+            <span id="wbDialogTitleText">提示</span>
+          </div>
+          <button class="btn-close" id="wbDialogCloseBtn">✕</button>
+        </div>
+        <div style="padding: 20px 24px;">
+          <p id="wbDialogMessage" style="font-size: 14px; color: var(--text-main); margin: 0 0 12px 0;"></p>
+          <input type="text" id="wbDialogInput" class="question-input" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); font-size: 14px; color: var(--text-main); display: none;">
+        </div>
+        <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end; gap: 10px;">
+          <button class="btn-secondary" id="wbDialogCancelBtn">取消</button>
+          <button class="btn-primary" id="wbDialogConfirmBtn">確定</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <script src="js/whiteboard_core.js?v=3006"></script>
+  <script src="js/whiteboard_core.js?v=3007"></script>
 </body>
 </html>

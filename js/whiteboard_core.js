@@ -611,26 +611,26 @@
       flashToast('至少需保留 1 個頁面，無法刪除！');
       return;
     }
-    if (!confirm(`確定要刪除「頁 ${pageNum}」嗎？該頁面的所有白板內容將會被移除。`)) return;
+    showWhiteboardConfirm('🗑️ 刪除分頁', `確定要刪除「頁 ${pageNum}」嗎？該頁面的所有白板內容將會被移除。`, () => {
+      curCanvas.pages = curCanvas.pages.filter(p => p !== pageId);
+      state.canvases[canvasId] = curCanvas;
 
-    curCanvas.pages = curCanvas.pages.filter(p => p !== pageId);
-    state.canvases[canvasId] = curCanvas;
+      // 清空該頁資料庫物件
+      if (roomRef) {
+        const pageKey = `${canvasId}_${pageId}`;
+        roomRef.child('pages').child(pageKey).remove();
+        roomRef.child('canvases').set(state.canvases);
+      }
 
-    // 清空該頁資料庫物件
-    if (roomRef) {
-      const pageKey = `${canvasId}_${pageId}`;
-      roomRef.child('pages').child(pageKey).remove();
-      roomRef.child('canvases').set(state.canvases);
-    }
+      flashToast(`已刪除「頁 ${pageNum}」`);
 
-    flashToast(`已刪除「頁 ${pageNum}」`);
-
-    // 若刪除的是當前頁，自動切換至第一頁
-    if (state.activePageId === pageId) {
-      switchCanvasAndPage(canvasId, curCanvas.pages[0], true);
-    } else {
-      renderPagesTabs();
-    }
+      // 若刪除的是當前頁，自動切換至第一頁
+      if (state.activePageId === pageId) {
+        switchCanvasAndPage(canvasId, curCanvas.pages[0], true);
+      } else {
+        renderPagesTabs();
+      }
+    });
   }
 
   function switchCanvasAndPage(canvasId, pageId, broadcast) {
@@ -2285,20 +2285,32 @@
   let currentPdfDoc = null;
   let selectedPdfPages = new Set();
 
+  let wasFullscreenBeforeFile = false;
+  function trackFullscreenBeforeFile() {
+    wasFullscreenBeforeFile = Boolean(document.fullscreenElement);
+  }
+  function tryRestoreFullscreen() {
+    if (wasFullscreenBeforeFile && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }
+
   els.btnInsertPdf.onclick = () => {
     if (!isStudentAllowedToEdit()) {
       flashToast(state.isIndividuallyLocked ? '🚫 您目前已被老師限制編輯白板' : '🔒 老師目前已關閉學生編輯權限');
       return;
     }
+    trackFullscreenBeforeFile();
     els.pdfFileInput.click();
   };
 
   els.pdfFileInput.onchange = async (e) => {
+    tryRestoreFullscreen();
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
     if (!window.pdfjsLib) {
-      alert('PDF 解析元件載入中，請稍候重試！');
+      flashToast('⏳ PDF 解析元件載入中，請稍候重試！');
       return;
     }
 
@@ -2308,7 +2320,7 @@
       openPdfSelectModal();
     } catch (err) {
       console.error('Failed to parse PDF:', err);
-      alert('解析 PDF 檔案失敗，請確認檔案格式是否正確。');
+      flashToast('❌ 解析 PDF 檔案失敗，請確認檔案格式是否正確。');
     }
   };
 
@@ -2388,14 +2400,16 @@
   function closePdfModal() {
     els.pdfModal.classList.remove('open');
     els.pdfFileInput.value = '';
+    tryRestoreFullscreen();
   }
 
   // 確認插入選取的 PDF 頁面 (自動計算網格排版，絕不重疊)
   els.btnConfirmInsertPdf.onclick = async () => {
     if (!currentPdfDoc || selectedPdfPages.size === 0) {
-      alert('請至少勾選一頁要插入的 PDF！');
+      flashToast('⚠️ 請至少勾選一頁要插入的 PDF！');
       return;
     }
+    tryRestoreFullscreen();
 
     const pagesToInsert = Array.from(selectedPdfPages).sort((a, b) => a - b);
     closePdfModal();
@@ -2441,10 +2455,12 @@
       flashToast(state.isIndividuallyLocked ? '🚫 您目前已被老師限制編輯白板' : '🔒 老師目前已關閉學生編輯權限');
       return;
     }
+    trackFullscreenBeforeFile();
     els.imageFileInput.click();
   };
 
   els.imageFileInput.onchange = (e) => {
+    tryRestoreFullscreen();
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     const rect = els.canvasViewport.getBoundingClientRect();
@@ -2629,22 +2645,25 @@
     };
   }
 
-  // 新增畫布
+  // 新增畫布 (全螢幕友好，避免原生 prompt 中斷全螢幕)
   els.btnAddCanvas.onclick = () => {
     if (!canManagePages()) {
       flashToast('⚠️ 老師未開放學生增減畫布與頁數');
       return;
     }
-    const name = prompt('請輸入新畫布名稱：', `畫布 ${Object.keys(state.canvases).length + 1}`);
-    if (!name || !name.trim()) return;
-    const newId = 'canvas_' + Date.now().toString(36);
-    state.canvases[newId] = { id: newId, name: name.trim(), pages: ['page_1'] };
-    renderCanvasSelector();
-    if (roomRef) roomRef.child('canvases').set(state.canvases);
-    switchCanvasAndPage(newId, 'page_1', true);
+    const defaultName = `畫布 ${Object.keys(state.canvases).length + 1}`;
+    showWhiteboardPrompt('➕ 新增畫布', '請輸入新畫布名稱：', defaultName, (name) => {
+      if (!name || !name.trim()) return;
+      const newId = 'canvas_' + Date.now().toString(36);
+      state.canvases[newId] = { id: newId, name: name.trim(), pages: ['page_1'] };
+      renderCanvasSelector();
+      if (roomRef) roomRef.child('canvases').set(state.canvases);
+      switchCanvasAndPage(newId, 'page_1', true);
+      flashToast(`✅ 已新增畫布「${name.trim()}」`);
+    });
   };
 
-  // 刪除目前畫布 (Item 2)
+  // 刪除目前畫布 (Item 2，全螢幕友好)
   if (els.btnDeleteCanvas) {
     els.btnDeleteCanvas.onclick = () => {
       if (!canManagePages()) {
@@ -2658,24 +2677,24 @@
       }
       const cur = state.canvases[state.activeCanvasId];
       const curName = (cur && cur.name) || state.activeCanvasId;
-      if (!confirm(`確定要刪除畫布「${curName}」及其包含的所有分頁嗎？此操作無法還原。`)) return;
+      showWhiteboardConfirm('🗑️ 刪除畫布', `確定要刪除畫布「${curName}」及其包含的所有分頁嗎？此操作無法還原。`, () => {
+        // 清除資料庫中該畫布的所有頁面
+        if (roomRef && cur && cur.pages) {
+          cur.pages.forEach(pId => {
+            roomRef.child('pages').child(`${state.activeCanvasId}_${pId}`).remove();
+          });
+        }
 
-      // 清除資料庫中該畫布的所有頁面
-      if (roomRef && cur && cur.pages) {
-        cur.pages.forEach(pId => {
-          roomRef.child('pages').child(`${state.activeCanvasId}_${pId}`).remove();
-        });
-      }
+        delete state.canvases[state.activeCanvasId];
+        const remainingIds = Object.keys(state.canvases);
+        const nextCanvasId = remainingIds[0];
+        const nextCanvas = state.canvases[nextCanvasId];
+        const nextPageId = (nextCanvas && nextCanvas.pages && nextCanvas.pages[0]) || 'page_1';
 
-      delete state.canvases[state.activeCanvasId];
-      const remainingIds = Object.keys(state.canvases);
-      const nextCanvasId = remainingIds[0];
-      const nextCanvas = state.canvases[nextCanvasId];
-      const nextPageId = (nextCanvas && nextCanvas.pages && nextCanvas.pages[0]) || 'page_1';
-
-      if (roomRef) roomRef.child('canvases').set(state.canvases);
-      flashToast(`已刪除畫布「${curName}」`);
-      switchCanvasAndPage(nextCanvasId, nextPageId, true);
+        if (roomRef) roomRef.child('canvases').set(state.canvases);
+        flashToast(`已刪除畫布「${curName}」`);
+        switchCanvasAndPage(nextCanvasId, nextPageId, true);
+      });
     };
   }
 
@@ -2708,16 +2727,16 @@
   els.btnZoomReset.onclick = zoomToFitAllObjects; // 如圖 4：讓畫布所有物件完全顯示在畫面中
   els.zoomVal.onclick = resetView;
 
-  // 清空或結束白板
+  // 清空或結束白板 (全螢幕友好)
   els.btnTrashCanvas.onclick = clearCurrentPage;
   els.btnClearOrEnd.onclick = () => {
     if (!isTeacherUser()) return;
-    if (confirm('確定要結束並清空白板當前畫布所有頁面內容嗎？')) {
+    showWhiteboardConfirm('💥 結束白板', '確定要結束並清空白板當前畫布所有頁面內容嗎？', () => {
       if (roomRef) {
         roomRef.child('pages').remove();
         flashToast('💥 白板內容已全部重設清空');
       }
-    }
+    });
   };
 
   function clearCurrentPage() {
@@ -2733,13 +2752,13 @@
       flashToast('🔒 您目前已被老師個別限制編輯白板');
       return;
     }
-    if (confirm('確定要清空當前頁面的所有內容嗎？')) {
+    showWhiteboardConfirm('🗑️ 清空當前頁面', '確定要清空當前頁面的所有內容嗎？', () => {
       if (objectsRef) objectsRef.remove();
       state.objects = {};
       els.svgLayer.innerHTML = '';
       els.htmlLayer.innerHTML = '';
       flashToast('🗑️ 當前頁面已清空');
-    }
+    });
   }
 
   // 工具按鈕點選綁定
@@ -2771,7 +2790,7 @@
     els.participantsDrawer.classList.toggle('open');
   };
 
-  // 全螢幕切換
+  // 全螢幕切換與按鈕文字同步 (🔲 全螢幕 <-> 🗗 恢復為視窗)
   els.btnFullscreen.onclick = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -2779,6 +2798,41 @@
       document.exitFullscreen().catch(() => {});
     }
   };
+
+  function updateWhiteboardFullscreenButtonUI() {
+    if (!els.btnFullscreen) return;
+    const isFs = Boolean(document.fullscreenElement);
+    const span = els.btnFullscreen.querySelector('span');
+    if (span) {
+      span.textContent = isFs ? '🗗 恢復為視窗' : '🔲 全螢幕';
+    } else {
+      els.btnFullscreen.textContent = isFs ? '🗗 恢復為視窗' : '🔲 全螢幕';
+    }
+    if (isFs) {
+      els.btnFullscreen.classList.add('is-fullscreen-active');
+      els.btnFullscreen.title = '點擊結束全螢幕，恢復為一般視窗 (或按 Esc)';
+    } else {
+      els.btnFullscreen.classList.remove('is-fullscreen-active');
+      els.btnFullscreen.title = '全螢幕切換';
+    }
+  }
+  document.addEventListener('fullscreenchange', updateWhiteboardFullscreenButtonUI);
+  document.addEventListener('webkitfullscreenchange', updateWhiteboardFullscreenButtonUI);
+
+  // 當使用者在全螢幕模式下開啟本機檔案選取器返回時，若全螢幕被瀏覽器退出，點擊畫面可平滑恢復全螢幕
+  window.addEventListener('focus', () => {
+    if (wasFullscreenBeforeFile && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {
+        const onNextClick = () => {
+          if (wasFullscreenBeforeFile && !document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          }
+          window.removeEventListener('click', onNextClick, true);
+        };
+        window.addEventListener('click', onNextClick, { capture: true, once: true });
+      });
+    }
+  });
 
   // 使用說明彈窗事件 (圖 2)
   if (els.btnHelpGuide && els.guideModal) {
@@ -2969,7 +3023,7 @@
         if (!data || !data.pages) throw new Error('無效的白板備份資料');
 
         const canvasName = (data.canvas && data.canvas.name) || '備份畫布';
-        if (confirm(`確定要匯入備份「${canvasName}」嗎？這將會更新目前畫布內容。`)) {
+        showWhiteboardConfirm('📁 匯入備份', `確定要匯入備份「${canvasName}」嗎？這將會更新目前畫布內容。`, () => {
           if (roomRef) {
             Object.keys(data.pages).forEach(pId => {
               const key = `${state.activeCanvasId}_${pId}`;
@@ -2985,9 +3039,9 @@
           flashToast('✅ 備份資料已成功匯入！');
           if (els.exportModal) els.exportModal.classList.remove('open');
           switchCanvasAndPage(state.activeCanvasId, state.activePageId, true);
-        }
+        });
       } catch (err) {
-        alert('匯入失敗：' + err.message);
+        flashToast('❌ 匯入失敗：' + err.message);
       }
       els.jsonFileInput.value = '';
     };
@@ -3224,6 +3278,111 @@
     a.href = canvas.toDataURL('image/png');
     a.click();
     flashToast('✅ 圖片已成功匯出至下載資料夾！');
+  }
+
+  // 白板專屬全螢幕友好通用彈窗系統 (避免原生 prompt/confirm/alert 強制中斷瀏覽器全螢幕模式)
+  function showWhiteboardDialog({ title, message, inputDefault, showInput, onConfirm, onCancel }) {
+    let modal = document.getElementById('whiteboardDialogModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'whiteboardDialogModal';
+      modal.style.zIndex = '99999';
+      modal.innerHTML = `
+        <div class="modal-card" style="max-width: 420px;">
+          <div class="modal-header">
+            <div class="modal-title" id="wbDialogTitle"><span id="wbDialogTitleText">提示</span></div>
+            <button class="btn-close" id="wbDialogCloseBtn">✕</button>
+          </div>
+          <div style="padding: 20px 24px;">
+            <p id="wbDialogMessage" style="font-size: 14px; color: var(--text-main); margin: 0 0 12px 0;"></p>
+            <input type="text" id="wbDialogInput" class="question-input" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); font-size: 14px; color: var(--text-main); display: none;">
+          </div>
+          <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end; gap: 10px;">
+            <button class="btn-secondary" id="wbDialogCancelBtn">取消</button>
+            <button class="btn-primary" id="wbDialogConfirmBtn">確定</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    const titleEl = modal.querySelector('#wbDialogTitleText') || modal.querySelector('#wbDialogTitle span');
+    const msgEl = modal.querySelector('#wbDialogMessage');
+    const inputEl = modal.querySelector('#wbDialogInput');
+    const btnCancel = modal.querySelector('#wbDialogCancelBtn');
+    const btnConfirm = modal.querySelector('#wbDialogConfirmBtn');
+    const btnClose = modal.querySelector('#wbDialogCloseBtn');
+
+    if (titleEl) titleEl.textContent = title || '提示';
+    if (msgEl) msgEl.textContent = message || '';
+    if (showInput) {
+      inputEl.style.display = 'block';
+      inputEl.value = inputDefault || '';
+      setTimeout(() => {
+        inputEl.focus();
+        inputEl.select();
+      }, 50);
+    } else {
+      inputEl.style.display = 'none';
+    }
+
+    const close = () => {
+      modal.classList.remove('open');
+      modal.style.display = 'none';
+      if (inputEl) inputEl.onkeydown = null;
+    };
+
+    const doConfirm = () => {
+      const val = inputEl ? inputEl.value : null;
+      close();
+      if (typeof onConfirm === 'function') onConfirm(val);
+    };
+
+    const doCancel = () => {
+      close();
+      if (typeof onCancel === 'function') onCancel();
+    };
+
+    btnConfirm.onclick = doConfirm;
+    btnCancel.onclick = doCancel;
+    btnClose.onclick = doCancel;
+
+    if (showInput) {
+      inputEl.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          doConfirm();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          doCancel();
+        }
+      };
+    }
+
+    modal.style.display = 'flex';
+    modal.classList.add('open');
+  }
+
+  function showWhiteboardPrompt(title, message, defaultValue, onConfirm, onCancel) {
+    showWhiteboardDialog({
+      title,
+      message,
+      inputDefault: defaultValue,
+      showInput: true,
+      onConfirm,
+      onCancel
+    });
+  }
+
+  function showWhiteboardConfirm(title, message, onConfirm, onCancel) {
+    showWhiteboardDialog({
+      title,
+      message,
+      showInput: false,
+      onConfirm,
+      onCancel
+    });
   }
 
   // 輕量 Toast 提示

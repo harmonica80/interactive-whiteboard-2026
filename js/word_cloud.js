@@ -43,6 +43,15 @@
       } else {
         this.initCanvasPinchZoom();
       }
+
+      document.addEventListener('fullscreenchange', () => {
+        this.updateFullscreenButtonUI();
+        setTimeout(() => this.recalculateAndRender(), 150);
+      });
+      document.addEventListener('webkitfullscreenchange', () => {
+        this.updateFullscreenButtonUI();
+        setTimeout(() => this.recalculateAndRender(), 150);
+      });
     }
 
     // 取得目前使用者正確顯示名稱 (修正文字雲提交時顯示為「匿名同學」的問題)
@@ -2272,6 +2281,81 @@
       a.download = `文字雲成果_${title}_${Date.now()}.png`;
       a.click();
       window.app?.showNotification('成功', '文字雲高畫質圖片已下載！');
+    }
+
+    // 全螢幕切換 (圖 1 紅框處功能)
+    toggleFullscreen() {
+      const panel = document.getElementById('panel-word-cloud');
+      if (!panel) return;
+
+      if (!document.fullscreenElement) {
+        const reqFs = panel.requestFullscreen || panel.webkitRequestFullscreen || panel.mozRequestFullScreen || panel.msRequestFullscreen;
+        if (reqFs) {
+          reqFs.call(panel).then(() => {
+            this.updateFullscreenButtonUI();
+            setTimeout(() => this.recalculateAndRender(), 150);
+          }).catch(err => {
+            console.warn('WordCloud fullscreen error:', err);
+          });
+        }
+      } else {
+        const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exitFs) {
+          exitFs.call(document).then(() => {
+            this.updateFullscreenButtonUI();
+            setTimeout(() => this.recalculateAndRender(), 150);
+          }).catch(() => {});
+        }
+      }
+    }
+
+    // 更新文字雲全螢幕切換按鈕文字與狀態
+    updateFullscreenButtonUI() {
+      const btn = document.getElementById('btnWordCloudFullscreen');
+      if (!btn) return;
+      const panel = document.getElementById('panel-word-cloud');
+      const isFullscreen = Boolean(
+        document.fullscreenElement && (
+          document.fullscreenElement === panel ||
+          (panel && panel.contains(document.fullscreenElement))
+        )
+      );
+
+      if (isFullscreen) {
+        btn.innerHTML = '🗗 恢復為視窗';
+        btn.title = '點擊結束全螢幕，恢復為一般視窗 (或按 Esc)';
+        btn.classList.add('is-fullscreen-active');
+      } else {
+        btn.innerHTML = '⛶ 全螢幕';
+        btn.title = '進入全螢幕展示文字雲';
+        btn.classList.remove('is-fullscreen-active');
+      }
+    }
+
+    // 收合 / 展開熱門詞頻排行側欄
+    toggleRankingSidebar(forceOpen) {
+      const grid = document.querySelector('.wc-main-grid');
+      const card = document.getElementById('wcRankingCard');
+      const expandBtn = document.getElementById('btnExpandWcRanking');
+      const collapseBtn = document.getElementById('btnToggleWcRanking');
+      if (!grid || !card) return;
+
+      const isCollapsed = grid.classList.contains('wc-ranking-collapsed');
+      const shouldOpen = forceOpen !== undefined ? Boolean(forceOpen) : isCollapsed;
+
+      if (shouldOpen) {
+        grid.classList.remove('wc-ranking-collapsed');
+        if (expandBtn) expandBtn.style.display = 'none';
+        if (collapseBtn) collapseBtn.innerHTML = '▶ 收合';
+      } else {
+        grid.classList.add('wc-ranking-collapsed');
+        if (expandBtn) expandBtn.style.display = 'inline-flex';
+        if (collapseBtn) collapseBtn.innerHTML = '◀ 展開';
+      }
+
+      setTimeout(() => {
+        this.recalculateAndRender();
+      }, 100);
     }
   }
 

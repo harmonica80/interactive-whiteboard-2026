@@ -629,9 +629,11 @@
                     <span>獨立詞彙：<strong id="wcUniqueWordsCount" style="color: #10b981;">0 款</strong></span>
                   </div>
                   <div class="wc-canvas-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnWordCloudFullscreen" onclick="window.wordCloud?.toggleFullscreen()" title="進入/結束全螢幕">⛶ 全螢幕</button>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.switchPalette()" title="切換調色盤風格">🎨 換色</button>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.exportPng()" title="匯出高畫質 PNG 圖片">💾 下載成果</button>
                     <button type="button" class="btn btn-secondary btn-sm wc-teacher-only" onclick="window.wordCloud?.clearSubmissions()" style="display: none; color: #ef4444; border-color: rgba(239,68,68,0.3);" title="清空全部詞彙">🗑️ 清空</button>
+                    <button type="button" id="btnExpandWcRanking" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.toggleRankingSidebar(true)" style="display: none; font-weight: bold; background: rgba(59, 130, 246, 0.1); color: var(--accent-color); border: 1px solid rgba(59, 130, 246, 0.3);" title="展開右側熱門詞頻排行榜">🏆 展開排行 ◀</button>
                   </div>
                 </div>
                 <div class="wc-canvas-wrapper" id="wcCanvasWrapper">
@@ -640,10 +642,13 @@
               </div>
 
               <!-- 右欄：熱門詞頻排行榜 -->
-              <div class="wc-ranking-card">
+              <div class="wc-ranking-card" id="wcRankingCard">
                 <div class="wc-ranking-header">
                   <h4>🏆 熱門詞頻排行</h4>
-                  <span style="font-size: 12px; color: var(--text-muted);">TOP 15</span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 12px; color: var(--text-muted);">TOP 15</span>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnToggleWcRanking" onclick="window.wordCloud?.toggleRankingSidebar()" title="收合熱門詞頻排行" style="padding: 2px 8px; font-size: 12px; border-radius: 6px; cursor: pointer;">▶ 收合</button>
+                  </div>
                 </div>
                 <div class="wc-ranking-body">
                   <ul id="wcRankingList" class="wc-ranking-list">
@@ -702,7 +707,7 @@
       <!-- 互動白板 -->
       <div class="panel-card" id="panel-whiteboard">
         <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
-          <iframe id="whiteboardFrame" src="whiteboard.html?v=3006" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板"></iframe>
+          <iframe id="whiteboardFrame" src="whiteboard.html?v=3007" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板" allow="fullscreen" allowfullscreen></iframe>
         </div>
       </div>
 
@@ -760,7 +765,7 @@
 
               <button type="button" class="presentation-tool-btn" id="btnSlideToolLaser" title="發光雷射筆，滑鼠移動即時同步全班視線">🔴 雷射筆</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideClearAnnotations" title="清除本頁標記">清除標記</button>
-              <button type="button" class="presentation-tool-btn" id="btnSlideFullscreen" title="進入/退出全螢幕">🗖 最大化</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlideFullscreen" title="進入/退出全螢幕">⛶ 全螢幕</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideSettings" title="設定外部 URL 與多題互動">⚙️ 本頁設定</button>
               <button type="button" class="presentation-tool-btn purple" id="btnSlideImportExport" title="匯入 PDF / 匯入匯出 JSON 備份">📁 匯入 / 匯出</button>
               <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答記錄">重置回應</button>

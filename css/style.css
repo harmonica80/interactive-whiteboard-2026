@@ -7581,11 +7581,37 @@ body {
 }
 
 /* 核心雙欄佈局 */
+/* 文字雲全螢幕與排版適配 */
+#panel-word-cloud:fullscreen,
+#panel-word-cloud:-webkit-full-screen {
+  background: var(--bg-main, #f8fafc);
+  padding: 16px 20px;
+  overflow-y: auto;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+#panel-word-cloud:fullscreen .wc-canvas-wrapper,
+#panel-word-cloud:-webkit-full-screen .wc-canvas-wrapper {
+  height: calc(100vh - 180px);
+  min-height: 520px;
+}
+
 .wc-main-grid {
   display: grid;
   grid-template-columns: 1fr 310px;
   gap: 16px;
   align-items: start;
+  transition: all 0.25s ease;
+}
+
+.wc-main-grid.wc-ranking-collapsed {
+  grid-template-columns: 1fr;
+}
+
+.wc-main-grid.wc-ranking-collapsed .wc-ranking-card {
+  display: none !important;
 }
 
 .wc-canvas-card {

@@ -2480,7 +2480,7 @@
       URL.revokeObjectURL(url);
     }
 
-    // 更新全螢幕切換按鈕文字與狀態 (項目 1-A：最大化 <-> 恢復為視窗)
+    // 更新全螢幕切換按鈕文字與狀態 (項目 4：全螢幕 <-> 恢復為視窗)
     updateFullscreenButtonUI() {
       const btn = this.els.btnFullscreen || document.getElementById('btnSlideFullscreen');
       if (!btn) return;
@@ -2493,11 +2493,11 @@
 
       if (isFullscreen) {
         btn.innerHTML = '🗗 恢復為視窗';
-        btn.title = '點擊結束最大化全螢幕，恢復為一般視窗 (或按 Esc)';
+        btn.title = '點擊結束全螢幕，恢復為一般視窗 (或按 Esc)';
         btn.classList.add('is-fullscreen-active');
       } else {
-        btn.innerHTML = '🗖 最大化';
-        btn.title = '進入全螢幕最大化簡報';
+        btn.innerHTML = '⛶ 全螢幕';
+        btn.title = '進入全螢幕同步簡報';
         btn.classList.remove('is-fullscreen-active');
       }
     }
