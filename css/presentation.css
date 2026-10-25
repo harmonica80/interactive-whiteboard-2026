@@ -1631,8 +1631,8 @@
   }
 }
 
-/* 確保簡報專用彈窗能正常顯現 (修復 .modal-overlay.active opacity/visibility) */
-.modal-overlay.active {
+/* 確保簡報專用彈窗能正常顯現 (僅限同步簡報容器內之彈窗，避免覆蓋全站其他彈窗層級) */
+#panel-presentation .modal-overlay.active {
   display: flex !important;
   opacity: 1 !important;
   visibility: visible !important;

@@ -5950,7 +5950,7 @@ Python</pre>
   </div>
 
   <!-- 通知彈出視窗（用於投票成功、重複投票等提示，提高 z-index 防止被任何彈窗遮擋） -->
-  <div id="notifyModal" class="modal-overlay question-modal" style="z-index: 4000;">
+  <div id="notifyModal" class="modal-overlay question-modal" style="z-index: 20050;">
     <div class="modal-content">
       <div class="modal-header">
         <span id="notifyModalTitle">提示</span>
@@ -7125,7 +7125,7 @@ Python</pre>
   </div>
 
   <!-- 單一項目跨班級複製彈窗 (提問、圖片、影片、教師分享、選擇題、影片出題) -->
-  <div id="singleItemCopyModal" class="video-quiz-overlay" style="display: none; z-index: 2760;" onclick="if(event.target===this) window.app.closeSingleItemCopyModal()">
+  <div id="singleItemCopyModal" class="video-quiz-overlay" style="display: none; z-index: 20000;" onclick="if(event.target===this) window.app.closeSingleItemCopyModal()">
     <div class="video-quiz-card" style="max-width: 520px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
         <h3 id="singleItemCopyModalTitle" style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">

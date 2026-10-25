@@ -1461,14 +1461,18 @@ body {
   }
 }
 
-/* 確保管理後台密碼、班級切換等系統彈窗在遊戲層與頂部工具列之上 */
+/* 確保管理後台密碼、班級切換、修改、刪除確認、跨班複製等系統彈窗永遠在圖片/影片/提問大圖檢視層之上 */
 #adminPasswordModal,
 #classSwitchModal,
 #studentNameModal,
 #itemEditModal,
-#notifyModal,
+#singleItemCopyModal,
 #customConfirmModal {
-  z-index: 4500 !important;
+  z-index: 20000 !important;
+}
+
+#notifyModal {
+  z-index: 20050 !important;
 }
 
 .modal-header {
@@ -7575,19 +7579,26 @@ body {
 }
 
 /* 核心雙欄佈局 */
-/* 文字雲全螢幕與排版適配 */
+/* 文字雲全螢幕與排版適配 (支援切換至出題設定後台仍可流暢操作) */
 #panel-word-cloud:fullscreen,
-#panel-word-cloud:-webkit-full-screen {
-  background: var(--bg-main, #f8fafc);
-  padding: 16px 20px;
-  overflow-y: auto;
-  width: 100vw;
-  height: 100vh;
-  box-sizing: border-box;
+#panel-word-cloud:-webkit-full-screen,
+body.wc-fullscreen-active #panel-word-cloud.active {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 3200 !important;
+  background: var(--bg-main, #f8fafc) !important;
+  padding: 16px 20px !important;
+  overflow-y: auto !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  box-sizing: border-box !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
 }
 
 #panel-word-cloud:fullscreen .wc-canvas-wrapper,
-#panel-word-cloud:-webkit-full-screen .wc-canvas-wrapper {
+#panel-word-cloud:-webkit-full-screen .wc-canvas-wrapper,
+body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   height: calc(100vh - 180px);
   min-height: 520px;
 }

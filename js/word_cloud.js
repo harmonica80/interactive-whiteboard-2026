@@ -2285,22 +2285,23 @@
       window.app?.showNotification('成功', '文字雲高畫質圖片已下載！');
     }
 
-    // 全螢幕切換 (圖 1 紅框處功能)
+    // 全螢幕切換 (使用 documentElement 全螢幕搭配 body.wc-fullscreen-active，確保從全螢幕點擊「出題設定」進入後台時仍可完整操作)
     toggleFullscreen() {
-      const panel = document.getElementById('panel-word-cloud');
-      if (!panel) return;
-
+      const docEl = document.documentElement;
       if (!document.fullscreenElement) {
-        const reqFs = panel.requestFullscreen || panel.webkitRequestFullscreen || panel.mozRequestFullScreen || panel.msRequestFullscreen;
+        document.body.classList.add('wc-fullscreen-active');
+        const reqFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
         if (reqFs) {
-          reqFs.call(panel).then(() => {
+          reqFs.call(docEl).then(() => {
             this.updateFullscreenButtonUI();
             setTimeout(() => this.recalculateAndRender(), 150);
           }).catch(err => {
+            document.body.classList.remove('wc-fullscreen-active');
             console.warn('WordCloud fullscreen error:', err);
           });
         }
       } else {
+        document.body.classList.remove('wc-fullscreen-active');
         const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
         if (exitFs) {
           exitFs.call(document).then(() => {
@@ -2314,10 +2315,14 @@
     // 更新文字雲全螢幕切換按鈕文字與狀態
     updateFullscreenButtonUI() {
       const btn = document.getElementById('btnWordCloudFullscreen');
-      if (!btn) return;
       const panel = document.getElementById('panel-word-cloud');
+      if (!document.fullscreenElement) {
+        document.body.classList.remove('wc-fullscreen-active');
+      }
+      if (!btn) return;
       const isFullscreen = Boolean(
         document.fullscreenElement && (
+          document.body.classList.contains('wc-fullscreen-active') ||
           document.fullscreenElement === panel ||
           (panel && panel.contains(document.fullscreenElement))
         )

@@ -1162,6 +1162,13 @@ class App {
     const attArea = document.getElementById('itemEditModalAttachmentArea');
     if (!modal || !textarea || !saveBtn) return;
 
+    const fsEl = document.fullscreenElement;
+    if (fsEl && fsEl !== document.documentElement) {
+      if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+    } else if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+
     if (!keepAttachmentArea && attArea) {
       attArea.style.display = 'none';
       attArea.innerHTML = '';
@@ -1816,6 +1823,14 @@ class App {
   }
   
   switchToTab(targetId) {
+    const fsEl = document.fullscreenElement;
+    const targetPanel = document.getElementById(targetId);
+    if (fsEl && fsEl !== document.documentElement && targetPanel && !fsEl.contains(targetPanel)) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
     const tabs = document.querySelectorAll('.menu-tab');
     const panels = document.querySelectorAll('.main-content .panel-card');
     
@@ -2935,10 +2950,12 @@ class App {
     const modal = document.getElementById('customConfirmModal');
     if (!modal) return;
     
-    // 若當前有全螢幕模式的容器 (如同步簡報 panel-presentation)，將 modal 動態移入全螢幕容器中，防止被遮蔽！
+    // 若當前有全螢幕模式的容器 (如同步簡報 panel-presentation)，將 modal 動態移入全螢幕容器中；非全螢幕時移回 body，防止被隱藏分頁遮蔽！
     const fsEl = document.fullscreenElement;
-    if (fsEl && !fsEl.contains(modal)) {
-      fsEl.appendChild(modal);
+    if (fsEl && fsEl !== document.documentElement) {
+      if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+    } else if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
     }
     
     document.getElementById('confirmModalIcon').textContent = icon || '⚠️';
@@ -3531,10 +3548,12 @@ class App {
     const notifyModal = document.getElementById('notifyModal');
     if (!notifyModal) return;
 
-    // 若當前有全螢幕模式的容器，將 notifyModal 動態移入全螢幕容器中，防止吐司訊息被全螢幕遮蔽或導致強制退出
+    // 若當前有全螢幕模式的容器，將 notifyModal 動態移入全螢幕容器中；非全螢幕時移回 body，防止被隱藏分頁遮蔽！
     const fsEl = document.fullscreenElement;
-    if (fsEl && !fsEl.contains(notifyModal)) {
-      fsEl.appendChild(notifyModal);
+    if (fsEl && fsEl !== document.documentElement) {
+      if (!fsEl.contains(notifyModal)) fsEl.appendChild(notifyModal);
+    } else if (notifyModal.parentElement !== document.body) {
+      document.body.appendChild(notifyModal);
     }
 
     document.getElementById('notifyModalTitle').textContent = title;
