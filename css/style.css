@@ -8085,3 +8085,35 @@ body {
   color: var(--text-secondary, #64748b);
   line-height: 1.4;
 }
+
+/* ==========================================================================
+   影片測驗拖曳排序樣式 (需求 3-C)
+   ========================================================================== */
+.draggable-quiz-card,
+.draggable-custom-set {
+  cursor: grab;
+  user-select: none;
+}
+
+.draggable-quiz-card:active,
+.draggable-custom-set:active {
+  cursor: grabbing;
+}
+
+.draggable-quiz-card.dragging-card,
+.draggable-custom-set.dragging-set {
+  opacity: 0.45 !important;
+  border: 2px dashed var(--accent-color, #007aff) !important;
+  background: rgba(0, 122, 255, 0.04) !important;
+  transform: scale(0.99);
+}
+
+.drag-handle {
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.drag-handle:hover {
+  color: var(--accent-color, #007aff) !important;
+  transform: scale(1.15);
+}
+

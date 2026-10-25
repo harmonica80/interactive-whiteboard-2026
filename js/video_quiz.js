@@ -3146,7 +3146,7 @@
         container.innerHTML = `
           <div style="text-align: center; padding: 18px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color); color: var(--text-secondary); font-size: 13px;">
             💡 尚未建立任何測驗組合。<br>
-            您可以在下方題庫中勾選單部或多部影片，點選「🌟 儲存為測驗組合」，即可建立專屬快速測驗組！
+            您可以在「單題測驗與題庫管理」頁籤中勾選單部或多部影片，點選「🌟 儲存為測驗組合」，即可建立專屬快速測驗組！
           </div>
         `;
         return;
@@ -3161,10 +3161,11 @@
               ? set.quizTitles.map(t => `<span style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; margin-top: 3px;">🎬 ${this.escapeHtml(t)}</span>`).join('')
               : '';
             return `
-              <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+              <div class="draggable-custom-set" draggable="true" data-set-id="${set.id}" style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.03); cursor: grab; transition: transform 0.15s, box-shadow 0.15s;">
                 <div>
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 6px;">
                     <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                      <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 15px; user-select: none;" title="按住拖曳調整組合排序">☰</span>
                       <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); word-break: break-word;">🌟 ${this.escapeHtml(set.name)}</span>
                       <button class="action-btn" onclick="window.videoQuiz.openEditCustomSetNameModal('${set.id}')" title="編輯組合名稱" style="background: transparent; border: none; padding: 2px 4px; cursor: pointer; color: var(--accent-color); font-size: 13px; line-height: 1; flex-shrink: 0;">✏️</button>
                     </div>
@@ -3197,6 +3198,8 @@
           }).join('')}
         </div>
       `;
+
+      this.initCustomSetDragAndDrop();
     }
 
     // 開啟編輯測驗組合名稱彈窗
@@ -3519,12 +3522,13 @@
           `).join('');
 
           return `
-            <div style="background: var(--bg-card); border: 1.5px solid ${isChecked ? 'var(--accent-color)' : 'var(--border-color)'}; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-              <!-- 測驗卡片頂部控制列 (核選、標題、開放開關、操作按鈕) -->
+            <div class="draggable-quiz-card" draggable="true" data-quiz-id="${quiz.id}" style="background: var(--bg-card); border: 1.5px solid ${isChecked ? 'var(--accent-color)' : 'var(--border-color)'}; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: transform 0.15s, box-shadow 0.15s;">
+              <!-- 測驗卡片頂部控制列 (拖曳手柄、核選、標題、開放開關、操作按鈕) -->
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 260px;">
-                  <!-- 核選以自訂常用組合 (需求 c) -->
-                  <div style="padding-top: 3px;">
+                <div style="display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 260px;">
+                  <!-- 拖曳手柄與核選以自訂常用組合 (需求 3-C) -->
+                  <div style="display: flex; align-items: center; gap: 6px; padding-top: 3px;">
+                    <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 16px; user-select: none;" title="按住拖曳調整測驗排序">☰</span>
                     <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.videoQuiz.toggleSelectQuizForCustomSet('${quiz.id}')" title="核選此影片加入常用組合" style="width: 18px; height: 18px; cursor: pointer;">
                   </div>
                   <div>
@@ -3538,7 +3542,7 @@
                   </div>
                 </div>
 
-                <!-- 影片出題開關 (需求 a) 與 編輯/刪除按鈕 -->
+                <!-- 影片出題開關與編輯/刪除按鈕 -->
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                   <button class="action-btn" onclick="window.videoQuiz.startSyncQuizAsTeacher('${quiz.id}')" style="background: linear-gradient(135deg, #5856d6, #4a6cf7); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(88,86,214,0.25); display: inline-flex; align-items: center; gap: 4px;" title="以此題目立即發起全班同步連線測驗">
                     🚀 發起全班同步測驗
@@ -3552,17 +3556,24 @@
                 </div>
               </div>
 
-              <!-- 題目預覽列表 -->
-              <div style="background: var(--bg-input); border-radius: 10px; padding: 10px; border: 1px solid var(--border-color); margin-top: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border-color);">
-                  <span style="font-size: 12px; font-weight: bold; color: var(--text-secondary);">
-                    📌 影片題目預覽：
-                  </span>
+              <!-- 題目預覽列表 (可收合，預設為收合 需求 3-B) -->
+              <div style="background: var(--bg-input); border-radius: 10px; padding: 10px 14px; border: 1px solid var(--border-color); margin-top: 8px;">
+                <div onclick="window.videoQuiz.togglePreviewCollapse('${quiz.id}')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 13px; font-weight: bold; color: var(--text-secondary);">
+                      📌 影片題目預覽（共 ${questions.length} 題）
+                    </span>
+                    <span id="vqPreviewArrow_${quiz.id}" style="font-size: 11.5px; color: var(--accent-color); font-weight: bold; background: rgba(0,122,255,0.08); padding: 2px 8px; border-radius: 6px;">
+                      ▼ 展開預覽
+                    </span>
+                  </div>
                   <span style="font-size: 11px; color: var(--text-muted);">
-                    點擊右上角「✏️ 編輯題目」可微調各題時間點與選項
+                    點擊右上角「✏️ 編輯題目」進入完整頁面出題與微調
                   </span>
                 </div>
-                ${questionsPreview}
+                <div id="vqPreviewContent_${quiz.id}" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+                  ${questionsPreview}
+                </div>
               </div>
             </div>
           `;
@@ -3606,6 +3617,174 @@
           `;
         }
       }
+
+      this.initQuizDragAndDrop();
+    }
+
+    /**
+     * 切換單題測驗與組合測驗子頁籤 (需求 3-A)
+     */
+    switchVqSubTab(tab) {
+      const btnSingle = document.getElementById('btnSubTabVqSingle');
+      const btnCombo = document.getElementById('btnSubTabVqCombo');
+      const paneSingle = document.getElementById('vqSubTabPaneSingle');
+      const paneCombo = document.getElementById('vqSubTabPaneCombo');
+
+      if (tab === 'single') {
+        if (btnSingle) btnSingle.classList.add('active');
+        if (btnCombo) btnCombo.classList.remove('active');
+        if (paneSingle) paneSingle.style.display = 'block';
+        if (paneCombo) paneCombo.style.display = 'none';
+      } else {
+        if (btnSingle) btnSingle.classList.remove('active');
+        if (btnCombo) btnCombo.classList.add('active');
+        if (paneSingle) paneSingle.style.display = 'none';
+        if (paneCombo) paneCombo.style.display = 'block';
+      }
+    }
+
+    /**
+     * 切換題目預覽收合與展開 (需求 3-B)
+     */
+    togglePreviewCollapse(quizId) {
+      const content = document.getElementById(`vqPreviewContent_${quizId}`);
+      const arrow = document.getElementById(`vqPreviewArrow_${quizId}`);
+      if (!content) return;
+      const isHidden = content.style.display === 'none';
+      if (isHidden) {
+        content.style.display = 'block';
+        if (arrow) arrow.textContent = '▲ 收合預覽';
+      } else {
+        content.style.display = 'none';
+        if (arrow) arrow.textContent = '▼ 展開預覽';
+      }
+    }
+
+    /**
+     * 單題測驗卡片拖曳排序 (需求 3-C)
+     */
+    initQuizDragAndDrop() {
+      const container = document.getElementById('vqAdminEditorQuizList');
+      if (!container) return;
+
+      const cards = container.querySelectorAll('.draggable-quiz-card');
+      cards.forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+          if (['INPUT', 'BUTTON', 'SELECT', 'A', 'TEXTAREA'].includes(e.target.tagName)) {
+            e.preventDefault();
+            return;
+          }
+          e.dataTransfer.effectAllowed = 'move';
+          card.classList.add('dragging-card');
+          card.style.opacity = '0.5';
+        });
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging-card');
+          card.style.opacity = '1';
+
+          const currentCards = [...container.querySelectorAll('.draggable-quiz-card')];
+          const pageQuizIds = currentCards.map(c => c.getAttribute('data-quiz-id')).filter(Boolean);
+
+          const quizMap = new Map(this.quizzes.map(q => [q.id, q]));
+          const newQuizzes = [];
+
+          pageQuizIds.forEach(id => {
+            if (quizMap.has(id)) {
+              newQuizzes.push(quizMap.get(id));
+              quizMap.delete(id);
+            }
+          });
+          quizMap.forEach(q => newQuizzes.push(q));
+
+          this.quizzes = newQuizzes;
+          this.saveQuizzes();
+          if (window.app) {
+            window.app.showNotification('📋 排序已更新', '單題影片測驗排序已成功調整！');
+          }
+        });
+      });
+
+      container.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const dragging = container.querySelector('.dragging-card');
+        if (!dragging) return;
+
+        const siblings = [...container.querySelectorAll('.draggable-quiz-card:not(.dragging-card)')];
+        const nextSibling = siblings.find(sibling => {
+          const box = sibling.getBoundingClientRect();
+          return e.clientY <= box.top + box.height / 2;
+        });
+
+        if (nextSibling) {
+          container.insertBefore(dragging, nextSibling);
+        } else {
+          container.appendChild(dragging);
+        }
+      });
+    }
+
+    /**
+     * 組合測驗卡片拖曳排序 (需求 3-C)
+     */
+    initCustomSetDragAndDrop() {
+      const container = document.getElementById('vqAdminCustomSetsList');
+      if (!container) return;
+
+      const sets = container.querySelectorAll('.draggable-custom-set');
+      sets.forEach(setCard => {
+        setCard.addEventListener('dragstart', (e) => {
+          if (['INPUT', 'BUTTON', 'SELECT', 'A'].includes(e.target.tagName)) {
+            e.preventDefault();
+            return;
+          }
+          e.dataTransfer.effectAllowed = 'move';
+          setCard.classList.add('dragging-set');
+          setCard.style.opacity = '0.5';
+        });
+
+        setCard.addEventListener('dragend', () => {
+          setCard.classList.remove('dragging-set');
+          setCard.style.opacity = '1';
+
+          const currentSets = [...container.querySelectorAll('.draggable-custom-set')];
+          const currentSetIds = currentSets.map(c => c.getAttribute('data-set-id')).filter(Boolean);
+
+          const setMap = new Map(this.customSets.map(s => [s.id, s]));
+          const reordered = [];
+          currentSetIds.forEach(id => {
+            if (setMap.has(id)) {
+              reordered.push(setMap.get(id));
+              setMap.delete(id);
+            }
+          });
+          setMap.forEach(s => reordered.push(s));
+
+          this.customSets = reordered;
+          this.saveCustomSets();
+          if (window.app) {
+            window.app.showNotification('📋 排序已更新', '組合測驗排序已成功調整！');
+          }
+        });
+      });
+
+      container.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const dragging = container.querySelector('.dragging-set');
+        if (!dragging) return;
+
+        const siblings = [...container.querySelectorAll('.draggable-custom-set:not(.dragging-set)')];
+        const nextSibling = siblings.find(sibling => {
+          const box = sibling.getBoundingClientRect();
+          return e.clientY <= box.top + box.height / 2;
+        });
+
+        if (nextSibling) {
+          container.insertBefore(dragging, nextSibling);
+        } else {
+          container.appendChild(dragging);
+        }
+      });
     }
 
     openEditQuizModal(quizId = null) {
@@ -3625,9 +3804,17 @@
         };
       }
 
-      document.getElementById('vqEditQuizTitle').value = this.editingQuiz.title || '';
-      document.getElementById('vqEditQuizDesc').value = this.editingQuiz.description || '';
-      document.getElementById('vqEditQuizUrl').value = this.editingQuiz.originalUrlText || this.editingQuiz.videoUrl || '';
+      const titleInput = document.getElementById('vqEditQuizTitle');
+      const descInput = document.getElementById('vqEditQuizDesc');
+      const urlInput = document.getElementById('vqEditQuizUrl');
+      const pageTitle = document.getElementById('vqEditorPageTitle');
+
+      if (titleInput) titleInput.value = this.editingQuiz.title || '';
+      if (descInput) descInput.value = this.editingQuiz.description || '';
+      if (urlInput) urlInput.value = this.editingQuiz.originalUrlText || this.editingQuiz.videoUrl || '';
+      if (pageTitle) {
+        pageTitle.textContent = quizId ? `編輯影片測驗：${this.editingQuiz.title || ''}` : '建立新影片測驗';
+      }
 
       const s = this.editingQuiz.startTime || 0;
       const e = this.editingQuiz.endTime || 0;
@@ -3636,13 +3823,38 @@
       this.renderEditorTimelineList();
       this.loadEditorVideo();
 
-      const modal = document.getElementById('vqEditQuizModal');
-      if (modal) modal.style.display = 'flex';
+      // 切換至完整頁面編輯器 (需求 3-D)
+      const mainView = document.getElementById('vqAdminMainView');
+      const editorView = document.getElementById('vqAdminEditorFullView');
+      if (mainView) mainView.style.display = 'none';
+      if (editorView) {
+        editorView.style.display = 'block';
+        editorView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      const oldModal = document.getElementById('vqEditQuizModal');
+      if (oldModal) oldModal.style.display = 'none';
     }
 
     closeEditQuizModal() {
-      const modal = document.getElementById('vqEditQuizModal');
-      if (modal) modal.style.display = 'none';
+      const mainView = document.getElementById('vqAdminMainView');
+      const editorView = document.getElementById('vqAdminEditorFullView');
+      if (editorView) editorView.style.display = 'none';
+      if (mainView) {
+        mainView.style.display = 'block';
+        mainView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      const oldModal = document.getElementById('vqEditQuizModal');
+      if (oldModal) oldModal.style.display = 'none';
+
+      if (this.players && this.players['vqEditorPlayerContainer']) {
+        try {
+          if (typeof this.players['vqEditorPlayerContainer'].pauseVideo === 'function') {
+            this.players['vqEditorPlayerContainer'].pauseVideo();
+          }
+        } catch (e) {}
+      }
       this.editingQuiz = null;
     }
 

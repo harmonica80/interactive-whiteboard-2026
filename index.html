@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=1">
   <link rel="shortcut icon" href="favicon.ico?v=1">
   <link rel="apple-touch-icon" href="favicon.png?v=1">
-  <link rel="stylesheet" href="css/style.css?v=399">
+  <link rel="stylesheet" href="css/style.css?v=400">
   <link rel="stylesheet" href="css/presentation.css?v=3114">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -2833,24 +2833,18 @@
                 </div>
               </div>
 
-              <!-- 1. 全班同步廣播控制台 -->
-              <div style="margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-                  <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                    <span id="vqAdminModeSectionTitle">🧑‍🏫 全班同步測驗廣播控制</span>
-                    <span id="vqAdminBroadcastStatusBadge" class="badge" style="background: var(--text-muted); color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px;">⚪ 未發起測驗</span>
-                  </h4>
-                  <button class="action-btn" id="vqAdminForceStopBtn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; display: none;">
-                    ⏹️ 停止測驗廣播
-                  </button>
-                </div>
-
-                <!-- 廣播進行中即時控制台 -->
+              <!-- 主管理視圖 (列表與設定) -->
+              <div id="vqAdminMainView">
+                <!-- 廣播進行中即時控制台 (當全班同步測驗發起時自動顯示) -->
                 <div id="vqAdminActiveControls" style="display: none; background: rgba(0, 122, 255, 0.08); border: 1.5px solid var(--accent-color); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div>
-                      <div style="font-weight: bold; font-size: 15px; color: var(--text-primary);" id="vqAdminCurrentQuizTitle">當前測驗：-</div>
-                      <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;" id="vqAdminCurrentQuizProgress">狀態：-</div>
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span id="vqAdminModeSectionTitle" style="font-weight: bold; font-size: 15px; color: var(--text-primary);">🧑‍🏫 全班同步測驗廣播中</span>
+                        <span id="vqAdminBroadcastStatusBadge" class="badge" style="background: var(--success-color); color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px;">🟢 廣播進行中</span>
+                      </div>
+                      <div style="font-weight: bold; font-size: 14px; color: var(--text-primary);" id="vqAdminCurrentQuizTitle">當前測驗：-</div>
+                      <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;" id="vqAdminCurrentQuizProgress">狀態：-</div>
                     </div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                       <button class="action-btn" onclick="window.videoQuiz.resumeSyncPlayback()" style="background: var(--success-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
@@ -2859,76 +2853,190 @@
                       <button class="action-btn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
                         📊 查看答題統計
                       </button>
-                      <button class="action-btn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                      <button class="action-btn" id="vqAdminForceStopBtn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
                         ⏹️ 結束全班測驗
                       </button>
                     </div>
                   </div>
                 </div>
 
-                <!-- 發起測驗列 -->
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                  <label id="vqAdminQuizSelectLabel" for="vqAdminQuizSelect" style="font-weight: bold; font-size: 14px; color: var(--text-secondary); white-space: nowrap;">選擇同步測驗單元：</label>
-                  <select id="vqAdminQuizSelect" onchange="window.videoQuiz.selectQuiz(this.value)" style="flex: 1; min-width: 220px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;"></select>
-                  <button id="vqAdminStartQuizBtn" class="action-btn" onclick="window.videoQuiz.startAdminSelectedQuiz()" style="background: var(--accent-color); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">
-                    🚀 發起全班同步測驗
-                  </button>
-                </div>
-              </div>
+                <!-- 隱藏的元素保留，確保向後相容 -->
+                <select id="vqAdminQuizSelect" style="display: none;"></select>
+                <span id="vqAdminQuizSelectLabel" style="display: none;"></span>
+                <button id="vqAdminStartQuizBtn" style="display: none;"></button>
 
-              <!-- 2. 測驗組合 (快速載入開始測驗) -->
-              <div style="margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                  <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                    <span>🌟 測驗組合</span>
-                    <span style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">（核選單部或多部影片後自訂命名，方便隨時編輯與一鍵開測）</span>
-                  </h4>
+                <!-- 兩個頁籤功能：單題測驗與題庫管理、組合測驗 (圖 3 需求 A) -->
+                <div class="admin-subtabs-nav" id="vqAdminSubTabs">
+                  <button type="button" class="admin-subtab-btn active" id="btnSubTabVqSingle" onclick="window.videoQuiz && window.videoQuiz.switchVqSubTab('single')">📁 單題測驗與題庫管理</button>
+                  <button type="button" class="admin-subtab-btn" id="btnSubTabVqCombo" onclick="window.videoQuiz && window.videoQuiz.switchVqSubTab('combo')">🌟 組合測驗</button>
                 </div>
-                <div id="vqAdminCustomSetsList"></div>
-              </div>
 
-              <!-- 3. 影片測驗題庫管理區 -->
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-                  <h4 style="margin: 0; font-size: 15px; color: var(--text-primary);">📁 題庫管理與出題工具</h4>
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal()" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="建立新的影片測驗">
-                      ➕ 建立新測驗
+                <!-- 子頁籤 1: 單題測驗與題庫管理 -->
+                <div id="vqSubTabPaneSingle" class="admin-subtab-pane">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                    <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                      <span>📁 題庫管理與出題工具</span>
+                      <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">（可透過 ☰ 圖示拖曳調整題目排序）</span>
+                    </h4>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                      <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal()" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="建立新的影片測驗">
+                        ➕ 建立新測驗
+                      </button>
+                      <button class="action-btn" onclick="window.videoQuiz.openFormatGuideModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看 JSON 與 CSV 題庫格式規範">
+                        📋 範例格式說明
+                      </button>
+                      <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
+                        ⬇️ 範例檔 (JSON)
+                      </button>
+                      <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
+                        ⬇️ 範例檔 (CSV)
+                      </button>
+                      <button class="action-btn" onclick="window.videoQuiz.exportQuizzesJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有測驗匯出為 JSON 備份檔">
+                        📤 匯出 JSON
+                      </button>
+                      <button class="action-btn" onclick="window.videoQuiz.exportQuizzesCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有測驗匯出為 CSV 試算表檔">
+                        📤 匯出 CSV
+                      </button>
+                      <button class="action-btn" onclick="window.videoQuiz.openImportModal()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON 或 CSV 題庫檔案">
+                        📥 匯入題庫
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 搜尋工具列 -->
+                  <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; background: var(--bg-card); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <span style="font-size: 16px;">🔍</span>
+                    <input type="text" id="vqAdminSearchInput" oninput="window.videoQuiz.setAdminSearchQuery(this.value)" placeholder="搜尋影片測驗標題、簡介、網址關鍵字..." style="flex: 1; border: none; background: transparent; color: var(--text-primary); font-size: 14px; outline: none; padding: 4px;">
+                    <button type="button" onclick="document.getElementById('vqAdminSearchInput').value=''; window.videoQuiz.setAdminSearchQuery('');" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 0 4px;" title="清除搜尋">✕</button>
+                  </div>
+
+                  <!-- 題庫清單列表 (含題目核選出題與拖曳排序) -->
+                  <div id="vqAdminEditorQuizList"></div>
+
+                  <!-- 分頁導覽控制列 -->
+                  <div id="vqAdminPaginationContainer" style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;"></div>
+                </div>
+
+                <!-- 子頁籤 2: 組合測驗 -->
+                <div id="vqSubTabPaneCombo" class="admin-subtab-pane" style="display: none;">
+                  <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                      <h4 style="margin: 0; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span>🌟 測驗組合</span>
+                        <span style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">（核選單部或多部影片後自訂命名，支援 ☰ 拖曳自訂卡片排序，方便隨時編輯與一鍵開測）</span>
+                      </h4>
+                    </div>
+                    <div id="vqAdminCustomSetsList"></div>
+                  </div>
+                </div>
+              </div> <!-- #vqAdminMainView 結束 -->
+
+              <!-- 完整頁面：影片出題編輯器 (需求 3-D，不再使用彈出式彈窗) -->
+              <div id="vqAdminEditorFullView" style="display: none; background: var(--bg-card); border-radius: 12px; padding: 20px; border: 1.5px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.04); margin-top: 4px;">
+                <!-- 頂部導覽列與操作按鈕 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid var(--border-color); padding-bottom: 14px; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+                  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <button type="button" onclick="window.videoQuiz.closeEditQuizModal()" class="action-btn" style="background: var(--bg-input); border: 1.5px solid var(--border-color); color: var(--text-primary); padding: 7px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                      ⬅️ 返回測驗清單
                     </button>
-                    <button class="action-btn" onclick="window.videoQuiz.openFormatGuideModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看 JSON 與 CSV 題庫格式規範">
-                      📋 範例格式說明
-                    </button>
-                    <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
-                      ⬇️ 範例檔 (JSON)
-                    </button>
-                    <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
-                      ⬇️ 範例檔 (CSV)
-                    </button>
-                    <button class="action-btn" onclick="window.videoQuiz.exportQuizzesJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有測驗匯出為 JSON 備份檔">
-                      📤 匯出 JSON
-                    </button>
-                    <button class="action-btn" onclick="window.videoQuiz.exportQuizzesCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有測驗匯出為 CSV 試算表檔">
-                      📤 匯出 CSV
-                    </button>
-                    <button class="action-btn" onclick="window.videoQuiz.openImportModal()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON 或 CSV 題庫檔案">
-                      📥 匯入題庫
-                    </button>
+                    <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                      🛠️ <span id="vqEditorPageTitle">編輯影片測驗</span>
+                    </h3>
+                  </div>
+                  <div style="display: flex; gap: 10px; align-items: center;">
+                    <button type="button" onclick="window.videoQuiz.closeEditQuizModal()" class="action-btn" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 7px 16px; border-radius: 8px; font-size: 13px; cursor: pointer;">取消</button>
+                    <button type="button" id="vqEditorTopSaveQuizBtn" onclick="window.videoQuiz.saveEditingQuiz()" class="action-btn" style="background: var(--accent-color); color: white; border: none; padding: 7px 22px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,122,255,0.3);">💾 儲存測驗</button>
                   </div>
                 </div>
 
-                <!-- 搜尋工具列 -->
-                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; background: var(--bg-card); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
-                  <span style="font-size: 16px;">🔍</span>
-                  <input type="text" id="vqAdminSearchInput" oninput="window.videoQuiz.setAdminSearchQuery(this.value)" placeholder="搜尋影片測驗標題、簡介、網址關鍵字..." style="flex: 1; border: none; background: transparent; color: var(--text-primary); font-size: 14px; outline: none; padding: 4px;">
-                  <button type="button" onclick="document.getElementById('vqAdminSearchInput').value=''; window.videoQuiz.setAdminSearchQuery('');" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 0 4px;" title="清除搜尋">✕</button>
+                <!-- 使用注意事項說明卡片 -->
+                <div style="background: rgba(0, 122, 255, 0.06); border-left: 3.5px solid #007aff; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: var(--text-secondary); line-height: 1.55;">
+                  <div style="font-weight: bold; color: var(--text-primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    💡 <strong>影片來源支援規範與使用注意事項：</strong>
+                  </div>
+                  <ul style="margin: 0 0 0 16px; padding: 0;">
+                    <li><strong>YouTube 影片</strong>：支援度最佳、畫質自動調整且無流量限制，<strong>一般教學影片請優先使用 YouTube</strong>。</li>
+                    <li><strong>MP4 直連影片</strong>：支援標準 HTML5 影片網址（如 <code>.mp4</code> 直連），原生支援時間軸播放與暫停出題。</li>
+                  </ul>
                 </div>
 
-                <!-- 題庫清單列表 (含題目核選出題與自訂組合工具) -->
-                <div id="vqAdminEditorQuizList"></div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 18px;">
+                  <div>
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">測驗標題 *</label>
+                    <input type="text" id="vqEditQuizTitle" class="question-input" placeholder="例如：自然科學：太陽系行星奧秘 / 國文與歷史典故探索" style="width: 100%; box-sizing: border-box; margin: 0 0 12px 0; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;">
+                    
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">測驗簡介說明</label>
+                    <textarea id="vqEditQuizDesc" rows="2" class="question-input" placeholder="簡述本次影片測驗目標..." style="width: 100%; box-sizing: border-box; margin: 0 0 12px 0; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); resize: vertical; font-size: 13px;"></textarea>
 
-                <!-- 分頁導覽控制列 -->
-                <div id="vqAdminPaginationContainer" style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;"></div>
-              </div>
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">影片網址 (YouTube 或 MP4 直連網址) *</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                      <input type="text" id="vqEditQuizUrl" class="question-input" placeholder="https://www.youtube.com/watch?v=... 或 MP4 直連網址" style="flex: 1; margin: 0; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 13px;">
+                      <button id="vqEditorLoadVideoBtn" type="button" style="background: var(--bg-input); border: 1.5px solid var(--border-color); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap;">載入影片</button>
+                    </div>
+
+                    <!-- 指定播放起訖點 (雙滑桿區間控制項) -->
+                    <div class="vq-time-range-box" style="margin: 14px 0 12px 0; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                          <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">指定播放起訖點</span>
+                          <span class="vq-range-tooltip-trigger" title="指定影片播放的起訖時間區間。學生作答或同步播放時，將自動從起始時間播放，到達結束時間時自動停止並完成測驗。若起訖點設為 00:00 則依影片原始長度完整播放。" style="color: #0284c7; cursor: pointer; font-size: 13px; font-weight: bold;">(?)</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                          <button type="button" id="vqSetStartCurrentBtn" class="vq-btn-sm" style="font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);" title="將目前影片播放時間設為起始點">📍 起點=當前</button>
+                          <button type="button" id="vqSetEndCurrentBtn" class="vq-btn-sm" style="font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);" title="將目前影片播放時間設為結束點">📍 訖點=當前</button>
+                          <button type="button" id="vqResetRangeBtn" class="vq-btn-sm" style="font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);" title="重設為全片播放">↺ 重設</button>
+                        </div>
+                      </div>
+
+                      <div style="display: flex; align-items: center; gap: 14px; margin-top: 4px;">
+                        <div style="flex: 1; position: relative; padding-top: 22px; padding-bottom: 6px;">
+                          <span id="vqRangeStartTimeLabel" style="position: absolute; top: 0; font-size: 12px; font-weight: bold; color: #0096c7; transform: translateX(-50%); pointer-events: none; transition: left 0.05s ease;">00:00</span>
+                          <span id="vqRangeEndTimeLabel" style="position: absolute; top: 0; font-size: 12px; font-weight: bold; color: #0096c7; transform: translateX(-50%); pointer-events: none; transition: left 0.05s ease;">00:00</span>
+                          <span id="vqRangeTotalTimeLabel" style="position: absolute; top: 0; right: 0; font-size: 12px; font-weight: normal; color: var(--text-secondary);" title="影片總長度">00:00</span>
+
+                          <div class="vq-dual-slider-container" style="position: relative; height: 20px; display: flex; align-items: center;">
+                            <div class="vq-slider-track-bg" style="position: absolute; width: 100%; height: 6px; background: #cbd5e1; border-radius: 3px;"></div>
+                            <div id="vqSliderTrackHighlight" style="position: absolute; height: 6px; background: #00b4d8; border-radius: 3px; left: 0%; width: 100%;"></div>
+                            <input type="range" id="vqRangeStartInput" min="0" max="100" value="0" step="1" class="vq-range-slider-input vq-range-start">
+                            <input type="range" id="vqRangeEndInput" min="0" max="100" value="100" step="1" class="vq-range-slider-input vq-range-end">
+                          </div>
+                        </div>
+
+                        <div id="vqRangeDurationLabel" style="min-width: 50px; text-align: right; font-size: 14px; font-weight: bold; color: var(--text-primary); font-family: monospace;" title="選取播放區間總時長">
+                          00:00
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="video-quiz-player-container" style="height: 300px; border-radius: 10px; overflow: hidden; background: #000;">
+                      <div id="vqEditorPlayerContainer" style="width: 100%; height: 100%;"></div>
+                    </div>
+                    <div id="vqEditorPlayerStatus" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; text-align: center; min-height: 20px;">
+                      ⏳ 播放器尚未就緒（請先載入影音）
+                    </div>
+                    <div style="margin-top: 6px; text-align: center;">
+                      <button id="vqEditorAddQuestionBtn" style="background: var(--accent-color); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 2px 8px rgba(0,122,255,0.3);">
+                        📌 在當前播放時間插入題目
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="border-top: 1.5px solid var(--border-color); padding-top: 16px; margin-top: 12px;">
+                  <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span>⏱️ 已設定的時間節點題目：</span>
+                    <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">（點擊題目卡片可跳轉至該時間點預覽）</span>
+                  </h4>
+                  <div id="vqEditorTimelineList" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px; flex-wrap: wrap; gap: 10px;">
+                  <button type="button" onclick="window.videoQuiz.closeEditQuizModal()" class="action-btn" style="padding: 8px 18px; font-size: 13px; font-weight: bold; background: var(--bg-input); border: 1.5px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);">⬅️ 返回測驗清單</button>
+                  <button id="vqEditorSaveQuizBtn" onclick="window.videoQuiz.saveEditingQuiz()" style="padding: 10px 28px; font-size: 14px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,122,255,0.3);">💾 儲存測驗</button>
+                </div>
+              </div> <!-- #vqAdminEditorFullView 結束 -->
             </div>
           </div>
 
@@ -3521,27 +3629,14 @@
                 </div>
               </div>
 
-              <!-- 子頁籤導覽列 (需求 4: 分成「群組清單管理」與「提問管理」兩個子頁籤) -->
+              <!-- 子頁籤導覽列 (分成「提問管理」與「群組清單管理」兩個子頁籤，預設為提問管理) -->
               <div class="admin-subtabs-nav" id="qaAdminSubTabs">
-                <button type="button" class="admin-subtab-btn active" id="btnSubTabQaGroups" onclick="window.app && window.app.switchQaAdminSubTab('groups')">📁 群組清單管理</button>
-                <button type="button" class="admin-subtab-btn" id="btnSubTabQaItems" onclick="window.app && window.app.switchQaAdminSubTab('items')">💬 提問管理</button>
+                <button type="button" class="admin-subtab-btn active" id="btnSubTabQaItems" onclick="window.app && window.app.switchQaAdminSubTab('items')">💬 提問管理</button>
+                <button type="button" class="admin-subtab-btn" id="btnSubTabQaGroups" onclick="window.app && window.app.switchQaAdminSubTab('groups')">📁 群組清單管理</button>
               </div>
 
-              <!-- 子頁籤 1: 群組清單管理 (圖 1 上方紅框) -->
-              <div id="qaAdminSubTabPaneGroups" class="admin-subtab-pane">
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                  <input type="text" id="newQuestionFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新提問群組名稱（如：第一組）...">
-                  <button class="preset-btn" onclick="window.app.adminCreateQuestionFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
-                </div>
-                
-                <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">提問群組清單：</div>
-                <div id="adminQuestionFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-                  <!-- 提問群組清單 -->
-                </div>
-              </div>
-
-              <!-- 子頁籤 2: 提問管理 (圖 1 下方紅框) -->
-              <div id="qaAdminSubTabPaneItems" class="admin-subtab-pane" style="display: none;">
+              <!-- 子頁籤 1: 提問管理 (預設顯示) -->
+              <div id="qaAdminSubTabPaneItems" class="admin-subtab-pane">
                 <!-- 提問批次管理工具列 -->
                 <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
                   <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次提問歸檔：</span>
@@ -3564,6 +3659,19 @@
                 
                 <ul id="adminQuestionList" class="question-list"></ul>
               </div>
+
+              <!-- 子頁籤 2: 群組清單管理 -->
+              <div id="qaAdminSubTabPaneGroups" class="admin-subtab-pane" style="display: none;">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                  <input type="text" id="newQuestionFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新提問群組名稱（如：第一組）...">
+                  <button class="preset-btn" onclick="window.app.adminCreateQuestionFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+                </div>
+                
+                <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">提問群組清單：</div>
+                <div id="adminQuestionFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                  <!-- 提問群組清單 -->
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3574,27 +3682,14 @@
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
-              <!-- 子頁籤導覽列 (需求 4: 分成「群組清單管理」與「圖片管理」兩個子頁籤) -->
+              <!-- 子頁籤導覽列 (分成「圖片管理」與「群組清單管理」兩個子頁籤，預設為圖片管理) -->
               <div class="admin-subtabs-nav" id="imgAdminSubTabs">
-                <button type="button" class="admin-subtab-btn active" id="btnSubTabImgGroups" onclick="window.app && window.app.switchImgAdminSubTab('groups')">📁 群組清單管理</button>
-                <button type="button" class="admin-subtab-btn" id="btnSubTabImgItems" onclick="window.app && window.app.switchImgAdminSubTab('items')">🖼️ 圖片管理</button>
+                <button type="button" class="admin-subtab-btn active" id="btnSubTabImgItems" onclick="window.app && window.app.switchImgAdminSubTab('items')">🖼️ 圖片管理</button>
+                <button type="button" class="admin-subtab-btn" id="btnSubTabImgGroups" onclick="window.app && window.app.switchImgAdminSubTab('groups')">📁 群組清單管理</button>
               </div>
 
-              <!-- 子頁籤 1: 群組清單管理 -->
-              <div id="imgAdminSubTabPaneGroups" class="admin-subtab-pane">
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                  <input type="text" id="newImageFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新圖片群組名稱（如：第一組圖片）...">
-                  <button class="preset-btn" onclick="window.app.adminCreateImageFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
-                </div>
-
-                <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">圖片群組清單：</div>
-                <div id="adminImageFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-                  <!-- 圖片群組清單 -->
-                </div>
-              </div>
-
-              <!-- 子頁籤 2: 圖片管理 -->
-              <div id="imgAdminSubTabPaneItems" class="admin-subtab-pane" style="display: none;">
+              <!-- 子頁籤 1: 圖片管理 (預設顯示) -->
+              <div id="imgAdminSubTabPaneItems" class="admin-subtab-pane">
                 <!-- 圖片批次管理工具列 -->
                 <div class="batch-archive-toolbar" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; background: rgba(175, 82, 222, 0.1); border: 1px solid var(--accent-color); border-radius: 8px;">
                   <span style="font-weight: bold; font-size: 13px; color: var(--text-primary);">⚡ 批次圖片歸檔：</span>
@@ -3617,6 +3712,19 @@
                 
                 <div id="adminImagePreview" class="image-preview"></div>
               </div>
+
+              <!-- 子頁籤 2: 群組清單管理 -->
+              <div id="imgAdminSubTabPaneGroups" class="admin-subtab-pane" style="display: none;">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                  <input type="text" id="newImageFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新圖片群組名稱（如：第一組圖片）...">
+                  <button class="preset-btn" onclick="window.app.adminCreateImageFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+                </div>
+
+                <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">圖片群組清單：</div>
+                <div id="adminImageFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                  <!-- 圖片群組清單 -->
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3627,28 +3735,14 @@
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
-              <!-- 子頁籤導覽列 (需求 4: 分成「群組清單管理」與「影片管理」兩個子頁籤) -->
+              <!-- 子頁籤導覽列 (分成「影片管理」與「群組清單管理」兩個子頁籤，預設為影片管理) -->
               <div class="admin-subtabs-nav" id="vidAdminSubTabs">
-                <button type="button" class="admin-subtab-btn active" id="btnSubTabVidGroups" onclick="window.app && window.app.switchVidAdminSubTab('groups')">📁 群組清單管理</button>
-                <button type="button" class="admin-subtab-btn" id="btnSubTabVidItems" onclick="window.app && window.app.switchVidAdminSubTab('items')">🎥 影片管理</button>
+                <button type="button" class="admin-subtab-btn active" id="btnSubTabVidItems" onclick="window.app && window.app.switchVidAdminSubTab('items')">🎥 影片管理</button>
+                <button type="button" class="admin-subtab-btn" id="btnSubTabVidGroups" onclick="window.app && window.app.switchVidAdminSubTab('groups')">📁 群組清單管理</button>
               </div>
 
-              <!-- 子頁籤 1: 群組清單管理 -->
-              <div id="vidAdminSubTabPaneGroups" class="admin-subtab-pane">
-                <!-- 新建影片群組與清單 -->
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                  <input type="text" id="newVideoFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新影片群組名稱（如：第一組影片）...">
-                  <button class="preset-btn" onclick="window.app.adminCreateVideoFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
-                </div>
-
-                <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">影片群組清單：</div>
-                <div id="adminVideoFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-                  <!-- 影片群組清單 -->
-                </div>
-              </div>
-
-              <!-- 子頁籤 2: 影片管理 -->
-              <div id="vidAdminSubTabPaneItems" class="admin-subtab-pane" style="display: none;">
+              <!-- 子頁籤 1: 影片管理 (預設顯示) -->
+              <div id="vidAdminSubTabPaneItems" class="admin-subtab-pane">
                 <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
                   <button onclick="window.app.stopBroadcastVideo()" class="preset-btn" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto; margin: 0;">⏹️ 停止全體廣播</button>
                 </div>
@@ -3675,6 +3769,20 @@
 
                 <div id="adminVideoPreview" class="image-preview"></div>
               </div>
+
+              <!-- 子頁籤 2: 群組清單管理 -->
+              <div id="vidAdminSubTabPaneGroups" class="admin-subtab-pane" style="display: none;">
+                <!-- 新建影片群組與清單 -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                  <input type="text" id="newVideoFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新影片群組名稱（如：第一組影片）...">
+                  <button class="preset-btn" onclick="window.app.adminCreateVideoFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+                </div>
+
+                <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">影片群組清單：</div>
+                <div id="adminVideoFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                  <!-- 影片群組清單 -->
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3685,29 +3793,14 @@
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
-              <!-- 子頁籤導覽列：分成「資料夾清單管理」與「分享內容管理」兩個子頁籤 -->
+              <!-- 子頁籤導覽列：分成「分享內容管理」與「資料夾清單管理」兩個子頁籤，預設為分享內容管理 -->
               <div class="admin-subtabs-nav" id="shareAdminSubTabs">
-                <button type="button" class="admin-subtab-btn active" id="btnSubTabShareFolders" onclick="window.app && window.app.switchShareAdminSubTab('folders')">📁 資料夾清單管理</button>
-                <button type="button" class="admin-subtab-btn" id="btnSubTabShareItems" onclick="window.app && window.app.switchShareAdminSubTab('items')">📢 分享內容管理</button>
+                <button type="button" class="admin-subtab-btn active" id="btnSubTabShareItems" onclick="window.app && window.app.switchShareAdminSubTab('items')">📢 分享內容管理</button>
+                <button type="button" class="admin-subtab-btn" id="btnSubTabShareFolders" onclick="window.app && window.app.switchShareAdminSubTab('folders')">📁 資料夾清單管理</button>
               </div>
 
-              <!-- 子頁籤 1: 資料夾清單管理 (圖 2 上方紅框) -->
-              <div id="shareAdminSubTabPaneFolders" class="admin-subtab-pane">
-                <!-- 新建分享資料夾 -->
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                  <input type="text" id="newShareFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新分享資料夾名稱（如：課堂講義）...">
-                  <button class="preset-btn" onclick="window.app.adminCreateShareFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
-                </div>
-
-                <!-- 分享資料夾清單 -->
-                <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">資料夾清單：</div>
-                <div id="adminShareFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-                  <!-- 渲染資料夾 -->
-                </div>
-              </div>
-
-              <!-- 子頁籤 2: 分享內容管理 (圖 2 下方紅框) -->
-              <div id="shareAdminSubTabPaneItems" class="admin-subtab-pane" style="display: none;">
+              <!-- 子頁籤 1: 分享內容管理 (預設顯示) -->
+              <div id="shareAdminSubTabPaneItems" class="admin-subtab-pane">
                 <!-- 新增分享內容區 -->
                 <div class="share-creation-box" style="padding: 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 16px;">
                   <div style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: var(--text-primary);">➕ 新增分享內容</div>
@@ -3815,6 +3908,21 @@
                     <input type="checkbox" id="selectAllShares" onchange="window.app.toggleSelectAllShares(this.checked)" style="width: 14px; height: 14px; margin: 0;"> 全選分享項目
                   </label>
                   <button class="preset-btn" onclick="window.app.deleteSelectedShares()" style="background: var(--danger-color); color: white; border: none; padding: 4px 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; height: auto;">🗑️ 刪除選取</button>
+                </div>
+              </div>
+
+              <!-- 子頁籤 2: 資料夾清單管理 -->
+              <div id="shareAdminSubTabPaneFolders" class="admin-subtab-pane" style="display: none;">
+                <!-- 新建分享資料夾 -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                  <input type="text" id="newShareFolderName" class="question-input" style="flex: 1; margin: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" placeholder="輸入新分享資料夾名稱（如：課堂講義）...">
+                  <button class="preset-btn" onclick="window.app.adminCreateShareFolder()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; height: 38px;">建立</button>
+                </div>
+
+                <!-- 分享資料夾清單 -->
+                <div style="font-size: 13px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">資料夾清單：</div>
+                <div id="adminShareFolderList" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding: 6px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                  <!-- 渲染資料夾 -->
                 </div>
               </div>
             </div>
@@ -5071,10 +5179,10 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=382"></script>
-  <script src="js/app.js?v=408"></script>
+  <script src="js/app.js?v=409"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=381"></script>
-  <script src="js/video_quiz.js?v=383"></script>
+  <script src="js/video_quiz.js?v=384"></script>
   <script src="js/word_cloud.js?v=395"></script>
   <script src="js/presentation_core.js?v=3115"></script>
   
@@ -5883,103 +5991,8 @@ Python</pre>
     </div>
   </div>
 
-  <!-- 影片測驗：測驗出題編輯器彈窗 -->
-  <div id="vqEditQuizModal" class="video-quiz-overlay" onclick="if(event.target===this) window.videoQuiz.closeEditQuizModal()">
-    <div class="video-quiz-card" style="max-width: 850px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
-        <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">🛠️ 編輯影片測驗</h3>
-        <button onclick="window.videoQuiz.closeEditQuizModal()" style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: var(--text-secondary);">✕</button>
-      </div>
-      
-      <!-- 使用注意事項說明卡片 -->
-      <div style="background: rgba(0, 122, 255, 0.06); border-left: 3.5px solid #007aff; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: var(--text-secondary); line-height: 1.55;">
-        <div style="font-weight: bold; color: var(--text-primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-          💡 <strong>影片來源支援規範與使用注意事項：</strong>
-        </div>
-        <ul style="margin: 0 0 0 16px; padding: 0;">
-          <li><strong>YouTube 影片</strong>：支援度最佳、畫質自動調整且無流量限制，<strong>一般教學影片請優先使用 YouTube</strong>。</li>
-          <li><strong>MP4 直連影片</strong>：支援標準 HTML5 影片網址（如 <code>.mp4</code> 直連），原生支援時間軸播放與暫停出題。</li>
-        </ul>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-        <div>
-          <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">測驗標題 *</label>
-          <input type="text" id="vqEditQuizTitle" class="question-input" placeholder="例如：自然科學：太陽系行星奧秘 / 國文與歷史典故探索" style="width: 100%; box-sizing: border-box; margin: 0 0 10px 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
-          
-          <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">測驗簡介說明</label>
-          <textarea id="vqEditQuizDesc" rows="2" class="question-input" placeholder="簡述本次影片測驗目標..." style="width: 100%; box-sizing: border-box; margin: 0 0 10px 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); resize: vertical;"></textarea>
-
-          <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px;">影片網址 (YouTube 或 MP4 直連網址) *</label>
-          <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-            <input type="text" id="vqEditQuizUrl" class="question-input" placeholder="https://www.youtube.com/watch?v=... 或 MP4 直連網址" style="flex: 1; margin: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
-            <button id="vqEditorLoadVideoBtn" type="button" style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap;">載入影片</button>
-          </div>
-
-          <!-- 指定播放起訖點 (雙滑桿區間控制項) -->
-          <div class="vq-time-range-box" style="margin: 12px 0 10px 0; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">指定播放起訖點</span>
-                <span class="vq-range-tooltip-trigger" title="指定影片播放的起訖時間區間。學生作答或同步播放時，將自動從起始時間播放，到達結束時間時自動停止並完成測驗。若起訖點設為 00:00 則依影片原始長度完整播放。" style="color: #0284c7; cursor: pointer; font-size: 13px; font-weight: bold;">(?)</span>
-              </div>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <button type="button" id="vqSetStartCurrentBtn" class="vq-btn-sm" style="font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);" title="將目前影片播放時間設為起始點">📍 起點=當前</button>
-                <button type="button" id="vqSetEndCurrentBtn" class="vq-btn-sm" style="font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);" title="將目前影片播放時間設為結束點">📍 訖點=當前</button>
-                <button type="button" id="vqResetRangeBtn" class="vq-btn-sm" style="font-size: 11px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); cursor: pointer; color: var(--text-primary);" title="重設為全片播放">↺ 重設</button>
-              </div>
-            </div>
-
-            <div style="display: flex; align-items: center; gap: 14px; margin-top: 4px;">
-              <div style="flex: 1; position: relative; padding-top: 22px; padding-bottom: 6px;">
-                <!-- 浮動時間指示與總時長 -->
-                <span id="vqRangeStartTimeLabel" style="position: absolute; top: 0; font-size: 12px; font-weight: bold; color: #0096c7; transform: translateX(-50%); pointer-events: none; transition: left 0.05s ease;">00:00</span>
-                <span id="vqRangeEndTimeLabel" style="position: absolute; top: 0; font-size: 12px; font-weight: bold; color: #0096c7; transform: translateX(-50%); pointer-events: none; transition: left 0.05s ease;">00:00</span>
-                <span id="vqRangeTotalTimeLabel" style="position: absolute; top: 0; right: 0; font-size: 12px; font-weight: normal; color: var(--text-secondary);" title="影片總長度">00:00</span>
-
-                <!-- 雙滑桿軌道容器 -->
-                <div class="vq-dual-slider-container" style="position: relative; height: 20px; display: flex; align-items: center;">
-                  <div class="vq-slider-track-bg" style="position: absolute; width: 100%; height: 6px; background: #cbd5e1; border-radius: 3px;"></div>
-                  <div id="vqSliderTrackHighlight" style="position: absolute; height: 6px; background: #00b4d8; border-radius: 3px; left: 0%; width: 100%;"></div>
-                  <input type="range" id="vqRangeStartInput" min="0" max="100" value="0" step="1" class="vq-range-slider-input vq-range-start">
-                  <input type="range" id="vqRangeEndInput" min="0" max="100" value="100" step="1" class="vq-range-slider-input vq-range-end">
-                </div>
-              </div>
-
-              <!-- 右側區間時長 -->
-              <div id="vqRangeDurationLabel" style="min-width: 50px; text-align: right; font-size: 14px; font-weight: bold; color: var(--text-primary); font-family: monospace;" title="選取播放區間總時長">
-                00:00
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div class="video-quiz-player-container" style="height: 180px;">
-            <div id="vqEditorPlayerContainer" style="width: 100%; height: 100%;"></div>
-          </div>
-          <div id="vqEditorPlayerStatus" style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; text-align: center; min-height: 18px;">
-            ⏳ 播放器尚未就緒（請先載入影音）
-          </div>
-          <div style="margin-top: 4px; text-align: center;">
-            <button id="vqEditorAddQuestionBtn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
-              📌 在當前播放時間插入題目
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div style="border-top: 1px solid var(--border-color); padding-top: 14px;">
-        <h4 style="margin: 0 0 10px 0; font-size: 15px;">⏱️ 已設定的時間節點題目：</h4>
-        <div id="vqEditorTimelineList" style="max-height: 220px; overflow-y: auto;"></div>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 14px;">
-        <button onclick="window.videoQuiz.closeEditQuizModal()" style="padding: 8px 16px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">取消</button>
-        <button id="vqEditorSaveQuizBtn" style="padding: 8px 22px; font-size: 13px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">💾 儲存測驗</button>
-      </div>
-    </div>
-  </div>
+  <!-- 舊版影片測驗出題編輯器彈窗已全面遷移為管理後台完整頁面 (#vqAdminEditorFullView)，保留隱藏佔位確保向下相容 -->
+  <div id="vqEditQuizModal" style="display: none;"></div>
 
   <!-- 影片測驗：題目細節編輯彈窗 -->
   <div id="vqQuestionEditModal" class="video-quiz-overlay" style="z-index: 2600;">

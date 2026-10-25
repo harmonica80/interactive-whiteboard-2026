@@ -5372,6 +5372,17 @@ class App {
       this.renderAdminShares();
     }
 
+    // 預設進入內容管理子頁籤 (需求 1 & 2)
+    if (featureKey === 'shareNews' || featureKey === 'shareMaterials') {
+      this.switchShareAdminSubTab('items');
+    } else if (featureKey === 'qaMgmt') {
+      this.switchQaAdminSubTab('items');
+    } else if (featureKey === 'imgMgmt') {
+      this.switchImgAdminSubTab('items');
+    } else if (featureKey === 'vidMgmt') {
+      this.switchVidAdminSubTab('items');
+    }
+
     if (featureKey === 'whiteboardFeatures') {
       this.renderWhiteboardFeaturesAdminUI();
     }
