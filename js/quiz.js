@@ -101,11 +101,11 @@ class Quiz {
     this.quizRef.set(quizData);
     this.answersRef.remove();
 
-    // 備份至歷屆題目庫
+    // 備份至歷次題目庫
     this.saveToHistoryBank(question, options, quizType, extraData);
   }
 
-  // 儲存至歷屆題目庫 (防重覆)
+  // 儲存至歷次題目庫 (防重覆)
   saveToHistoryBank(question, options, quizType, extraData = {}) {
     const keys = Object.keys(this.historyBank);
     const exists = keys.some(k => {
@@ -118,7 +118,8 @@ class Quiz {
         question: question,
         options: options,
         quizType: quizType || 'single',
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        order: keys.length
       };
       if (quizType === 'matching') {
         historyItem.pairs = extraData.pairs || [];
@@ -775,7 +776,7 @@ class Quiz {
     });
   }
 
-  // 渲染歷屆題目庫 UI
+  // 渲染歷次題目庫 UI
   renderQuizHistoryUI() {
     const listContainer = document.getElementById('quizHistoryList');
     const countSpan = document.getElementById('quizHistoryCount');
@@ -789,8 +790,19 @@ class Quiz {
       return;
     }
 
-    // 按建立時間由新到舊排序
-    const sortedKeys = keys.sort((a, b) => (this.historyBank[b].createdAt || 0) - (this.historyBank[a].createdAt || 0));
+    // 按 order 順序排序，若無 order 則依建立時間排序
+    const sortedKeys = keys.sort((a, b) => {
+      const itemA = this.historyBank[a];
+      const itemB = this.historyBank[b];
+      const orderA = typeof itemA.order === 'number' ? itemA.order : null;
+      const orderB = typeof itemB.order === 'number' ? itemB.order : null;
+      if (orderA !== null && orderB !== null) {
+        return orderA - orderB;
+      }
+      if (orderA !== null) return -1;
+      if (orderB !== null) return 1;
+      return (itemB.createdAt || 0) - (itemA.createdAt || 0);
+    });
 
     listContainer.innerHTML = sortedKeys.map(key => {
       const q = this.historyBank[key];
@@ -809,10 +821,11 @@ class Quiz {
       const questionText = (q.question || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() || (q.question || '');
 
       return `
-        <div class="quiz-history-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; gap: 10px;">
-          <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
-            <input type="checkbox" class="quiz-history-checkbox" value="${key}" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-color);">
-            <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden;">
+        <div class="quiz-history-item draggable-quiz-history-item" draggable="true" data-history-key="${key}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; gap: 8px; cursor: grab; transition: transform 0.15s, box-shadow 0.15s;">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+            <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 15px; user-select: none; flex-shrink: 0;" title="按住拖曳調整題目順序">☰</span>
+            <input type="checkbox" class="quiz-history-checkbox" value="${key}" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-color); flex-shrink: 0;">
+            <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
                 <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(questionText)}</span>
@@ -823,13 +836,78 @@ class Quiz {
             </div>
           </div>
           <div style="display: flex; gap: 6px; flex-shrink: 0;">
-            <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="padding: 4px 8px; font-size: 11px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級歷屆題庫">📤 複製</button>
+            <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="padding: 4px 8px; font-size: 11px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級歷次題庫">📤 複製</button>
             <button type="button" class="btn btn-secondary" onclick="window.quiz.loadQuizFromHistory('${key}')" style="padding: 4px 8px; font-size: 11px; font-weight: bold;" title="帶入此題到出題框">🚀 載入</button>
             <button type="button" class="btn btn-secondary" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="padding: 4px 8px; font-size: 11px; color: var(--danger-color);" title="刪除此題">✕</button>
           </div>
         </div>
       `;
     }).join('');
+
+    this.initQuizHistoryDragAndDrop();
+  }
+
+  // 歷次題目庫卡片拖曳排序
+  initQuizHistoryDragAndDrop() {
+    const container = document.getElementById('quizHistoryList');
+    if (!container) return;
+
+    const cards = container.querySelectorAll('.draggable-quiz-history-item');
+    cards.forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        if (['INPUT', 'BUTTON', 'SELECT', 'A', 'TEXTAREA'].includes(e.target.tagName)) {
+          e.preventDefault();
+          return;
+        }
+        e.dataTransfer.effectAllowed = 'move';
+        card.classList.add('dragging-quiz-item');
+        card.style.opacity = '0.5';
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging-quiz-item');
+        card.style.opacity = '1';
+
+        const currentCards = [...container.querySelectorAll('.draggable-quiz-history-item')];
+        const orderedKeys = currentCards.map(c => c.getAttribute('data-history-key')).filter(Boolean);
+
+        const updates = {};
+        orderedKeys.forEach((key, idx) => {
+          if (this.historyBank[key]) {
+            this.historyBank[key].order = idx;
+            updates[`${key}/order`] = idx;
+          }
+        });
+
+        if (this.historyRef && Object.keys(updates).length > 0) {
+          this.historyRef.update(updates).catch(err => {
+            console.warn('Failed to update quiz history order in Firebase', err);
+          });
+        }
+
+        if (window.app) {
+          window.app.showNotification('📋 排序已更新', '歷次題目庫排序已成功調整！');
+        }
+      });
+    });
+
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const dragging = container.querySelector('.dragging-quiz-item');
+      if (!dragging) return;
+
+      const siblings = [...container.querySelectorAll('.draggable-quiz-history-item:not(.dragging-quiz-item)')];
+      const nextSibling = siblings.find(sibling => {
+        const box = sibling.getBoundingClientRect();
+        return e.clientY <= box.top + box.height / 2;
+      });
+
+      if (nextSibling) {
+        container.insertBefore(dragging, nextSibling);
+      } else {
+        container.appendChild(dragging);
+      }
+    });
   }
 
   // 切換全選 / 全不選
@@ -853,11 +931,11 @@ class Quiz {
     if (window.app) window.app.showNotification('成功', `已成功匯出 ${questionsToExport.length} 道選取題目！`);
   }
 
-  // 匯出全部歷屆題目庫 TXT
+  // 匯出全部歷次題目庫 TXT
   exportAllQuizBankTxt() {
     const keys = Object.keys(this.historyBank);
     if (keys.length === 0) {
-      if (window.app) window.app.showNotification('提示', '歷屆題目庫目前無任何題目可匯出');
+      if (window.app) window.app.showNotification('提示', '歷次題目庫目前無任何題目可匯出');
       return;
     }
 
@@ -1520,16 +1598,16 @@ class Quiz {
     }
   }
 
-  // 清空歷屆題庫
+  // 清空歷次題庫
   clearHistoryBank() {
     if (window.app) {
       window.app.showConfirmModal(
         '🗑️',
-        '確定要清空歷屆題庫嗎？',
+        '確定要清空歷次題庫嗎？',
         '這將刪除所有在後台保存的歷史題目，此動作無法復原。',
         () => {
           this.historyRef.remove();
-          window.app.showNotification('成功', '已清空歷屆題庫！');
+          window.app.showNotification('成功', '已清空歷次題庫！');
         }
       );
     }
@@ -1641,7 +1719,7 @@ Python
           return;
         }
 
-        // 自動寫入歷屆題目庫
+        // 自動寫入歷次題目庫
         questions.forEach(q => {
           this.saveToHistoryBank(q.question, q.options, q.quizType, q);
         });
@@ -1736,7 +1814,7 @@ Python
         }
 
 
-        if (window.app) window.app.showNotification('成功', `已成功解析並儲存 ${questions.length} 個題目至歷屆題目庫！第一題已自動帶入出題框`);
+        if (window.app) window.app.showNotification('成功', `已成功解析並儲存 ${questions.length} 個題目至歷次題目庫！第一題已自動帶入出題框`);
       } catch (err) {
         if (window.app) window.app.showNotification('錯誤', '解析文字檔失敗: ' + err.message);
       }

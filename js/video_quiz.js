@@ -120,6 +120,7 @@
       id: 'cset_comprehensive_default',
       name: '綜合影音複習測驗組',
       quizIds: ['vq_science_solar', 'vq_eye_cells'],
+      quizCount: 2,
       createdAt: 1725550000000,
       totalQuestions: 7
     },
@@ -127,6 +128,7 @@
       id: 'cset_interdisciplinary_default',
       name: '跨學科精選測驗組',
       quizIds: ['vq_eye_cells', 'vq_science_solar'],
+      quizCount: 2,
       createdAt: 1789574400000,
       totalQuestions: 7
     }
@@ -257,17 +259,19 @@
         : JSON.parse(JSON.stringify(DEFAULT_CUSTOM_SETS[1]));
 
       if (defaultSet1 && Array.isArray(defaultSet1.quizIds)) {
-        defaultSet1.quizIds = defaultSet1.quizIds.map(id => id === 'vq_chinese_culture' ? 'vq_eye_cells' : id);
+        defaultSet1.quizIds = [...new Set(defaultSet1.quizIds.map(id => id === 'vq_chinese_culture' ? 'vq_eye_cells' : id))];
+        defaultSet1.quizCount = defaultSet1.quizIds.length;
       }
       if (defaultSet2 && Array.isArray(defaultSet2.quizIds)) {
-        defaultSet2.quizIds = defaultSet2.quizIds.map(id => id === 'vq_chinese_culture' ? 'vq_eye_cells' : id);
+        defaultSet2.quizIds = [...new Set(defaultSet2.quizIds.map(id => id === 'vq_chinese_culture' ? 'vq_eye_cells' : id))];
+        defaultSet2.quizCount = defaultSet2.quizIds.length;
       }
 
       if (!Array.isArray(list) || list.length === 0) {
         return [defaultSet1, defaultSet2];
       }
 
-      // 舊版範例名稱或測試留存黑名單，全部自動清除
+      // 舊版過渡範例黑名單
       const legacySampleNames = new Set([
         '更新後的跨領域精選測驗組',
         '原測驗組合名稱',
@@ -275,19 +279,30 @@
         '八大行星核心速測組',
         '經典成語與文化精選組',
         '國文與成語典故組',
-        '歷史與科學綜合特輯',
-        '新測驗組合'
+        '歷史與科學綜合特輯'
       ]);
 
       const defaultIds = new Set(['cset_comprehensive_default', 'cset_interdisciplinary_default', defaultSet1.id, defaultSet2.id]);
       const defaultNames = new Set(['綜合影音複習測驗組', '跨學科精選測驗組', defaultSet1.name, defaultSet2.name]);
 
-      // 篩選出使用者自行新建的非範例組合（排除官方預設範例與各舊版範例）
+      // 篩選出使用者建立的測驗組合
       const userCreatedSets = list.filter(s => {
         if (!s || !s.name) return false;
         if (defaultNames.has(s.name) || defaultIds.has(s.id)) return false;
+        // 使用者自訂組合一律保留 (包含 set_ 或 cset_custom 開頭)
+        if (s.id && (s.id.startsWith('set_') || s.id.startsWith('cset_custom'))) {
+          if (Array.isArray(s.quizIds)) {
+            s.quizIds = [...new Set(s.quizIds)];
+            s.quizCount = s.quizIds.length;
+          }
+          return true;
+        }
         if (legacySampleNames.has(s.name)) return false;
         if (s.id && (s.id.startsWith('cset_default') || s.id.startsWith('cset_sample'))) return false;
+        if (Array.isArray(s.quizIds)) {
+          s.quizIds = [...new Set(s.quizIds)];
+          s.quizCount = s.quizIds.length;
+        }
         return true;
       });
 
@@ -3155,11 +3170,16 @@
       container.innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px;">
           ${this.customSets.map(set => {
-            const count = set.quizIds ? set.quizIds.length : (set.quizCount || 1);
-            const totalQ = set.totalQuestions || 0;
-            const titles = (set.quizTitles && set.quizTitles.length > 0)
-              ? set.quizTitles.map(t => `<span style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; margin-top: 3px;">🎬 ${this.escapeHtml(t)}</span>`).join('')
-              : '';
+            const validQuizIds = [...new Set(set.quizIds || [])];
+            const resolvedQuizzes = validQuizIds.map(id => (this.quizzes || []).find(q => q.id === id)).filter(Boolean);
+            const count = resolvedQuizzes.length > 0 ? resolvedQuizzes.length : (validQuizIds.length || set.quizCount || 0);
+            const totalQ = resolvedQuizzes.length > 0
+              ? resolvedQuizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0)
+              : (set.totalQuestions || 0);
+            const titles = (resolvedQuizzes.length > 0
+              ? resolvedQuizzes.map(q => q.title)
+              : (set.quizTitles || [])
+            ).filter(Boolean).map(t => `<span style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; margin-top: 3px;">🎬 ${this.escapeHtml(t)}</span>`).join('');
             return `
               <div class="draggable-custom-set" draggable="true" data-set-id="${set.id}" style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.03); cursor: grab; transition: transform 0.15s, box-shadow 0.15s;">
                 <div>
@@ -3167,7 +3187,7 @@
                     <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
                       <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 15px; user-select: none;" title="按住拖曳調整組合排序">☰</span>
                       <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); word-break: break-word;">🌟 ${this.escapeHtml(set.name)}</span>
-                      <button class="action-btn" onclick="window.videoQuiz.openEditCustomSetNameModal('${set.id}')" title="編輯組合名稱" style="background: transparent; border: none; padding: 2px 4px; cursor: pointer; color: var(--accent-color); font-size: 13px; line-height: 1; flex-shrink: 0;">✏️</button>
+                      <button class="action-btn" onclick="window.videoQuiz.openEditCustomSetNameModal('${set.id}')" title="編輯組合內容與名稱" style="background: transparent; border: none; padding: 2px 4px; cursor: pointer; color: var(--accent-color); font-size: 13px; line-height: 1; flex-shrink: 0;">✏️</button>
                     </div>
                     <div style="display: flex; gap: 4px; flex-shrink: 0;">
                       <span class="badge" style="background: var(--accent-color); color: white; padding: 2px 6px; border-radius: 6px; font-size: 11px; white-space: nowrap;">${count} 部影片</span>
@@ -3218,7 +3238,7 @@
 
       const input = document.getElementById('vqEditCustomSetNameInput');
       if (input) {
-        input.value = set ? (set.name || '') : (this.editingCustomSetQuizIds.length > 0 ? `測驗組合 (${this.editingCustomSetQuizIds.length}部影片)` : '新測驗組合');
+        input.value = set ? (set.name || '') : (this.editingCustomSetQuizIds.length > 0 ? `測驗組合 (${this.editingCustomSetQuizIds.length}部影片)` : '自訂測驗組合');
       }
 
       const searchInput = document.getElementById('vqCustomSetSearchQuizInput');
@@ -3439,7 +3459,7 @@
         const set = (this.customSets || []).find(s => s.id === this.editingCustomSetId);
         if (set) {
           set.name = newName;
-          set.quizIds = quizIdsToSave;
+          set.quizIds = [...new Set(quizIdsToSave)];
           set.quizTitles = selectedQuizzes.map(q => q.title || '');
           set.quizCount = selectedQuizzes.length;
           set.totalQuestions = totalQuestions;
@@ -3450,7 +3470,7 @@
         const newSet = {
           id: 'set_' + Date.now(),
           name: newName,
-          quizIds: quizIdsToSave,
+          quizIds: [...new Set(quizIdsToSave)],
           quizTitles: selectedQuizzes.map(q => q.title || ''),
           quizCount: selectedQuizzes.length,
           totalQuestions: totalQuestions,

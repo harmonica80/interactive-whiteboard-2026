@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=1">
   <link rel="shortcut icon" href="favicon.ico?v=1">
   <link rel="apple-touch-icon" href="favicon.png?v=1">
-  <link rel="stylesheet" href="css/style.css?v=401">
+  <link rel="stylesheet" href="css/style.css?v=402">
   <link rel="stylesheet" href="css/presentation.css?v=3114">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -2059,7 +2059,7 @@
                     ⚠️ 注意：重設將清除目前課堂或公共空間的所有資料（提問、測驗、圖片、作品及白板），請謹慎操作！
                   </p>
                   <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <button class="reset-btn" onclick="confirmReset()" style="flex: 1; min-width: 130px; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 12px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-sizing: border-box; margin: 0;">
+                    <button class="preset-btn" onclick="confirmReset()" style="flex: 1; min-width: 130px; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 12px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 15px; box-sizing: border-box; margin: 0;">
                       🔄 清除所有資料 (提問、測驗、圖片及白板)
                     </button>
                   </div>
@@ -2229,6 +2229,19 @@
                   <li><strong>一週初始密碼寬限機制</strong>：系統初始預設密碼僅供新註冊後一週（7 天）內過渡使用，逾期預設密碼將失效，無法再以預設密碼登入！請務必於一週內設定您的專屬管理密碼，以確保班級資訊安全。</li>
                   <li><strong>終極自救保障</strong>：系統採各自獨立架構，無任何全域萬能鑰匙後門。若連安全問題都遺忘，您作為 Firebase 擁有者只需登入 Firebase 控制台刪除 <code>teachers/</code> 節點的密碼資料，重新整理白板即可重新設定，既安全又保有 100% 自主掌控權。</li>
                 </ul>
+
+                <!-- 終極自救截圖指引 (Firebase Console 刪除 teachers 節點示範) -->
+                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(0, 122, 255, 0.25);">
+                  <div style="font-size: 12px; font-weight: bold; color: var(--accent-color); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span>📸</span> <strong>終極自救操作示範（Firebase 控制台刪除 teachers 節點）：</strong>
+                  </div>
+                  <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; max-width: 720px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                    <img src="images/firebase_teachers_guide.png" alt="Firebase 控制台刪除 teachers 節點操作指示" style="width: 100%; height: auto; display: block; cursor: zoom-in;" onclick="window.open(this.src, '_blank')" title="點擊放大檢視原圖">
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">
+                    💡 提示：點擊上方圖片可另開分頁檢視高解析大圖。登入 Firebase 控制台 ➔ 進入 Realtime Database ➔ 找到 <code>teachers</code> 節點點擊右側 ✖ 或刪除，即可清除密碼並於白板重新設定。
+                  </div>
+                </div>
               </div>
 
               <!-- 底部操作按鈕列 -->
@@ -2776,11 +2789,12 @@
               </div>
               <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="display: none; margin-top: 10px; padding: 12px; width: 100%; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color);">結束測驗</button>
 
-              <!-- 5. 📚 歷屆題目庫 (支援全選與勾選 TXT 匯出) -->
+              <!-- 5. 📚 歷次題目庫 (支援全選、拖曳排序與勾選 TXT 匯出) -->
               <div id="quizHistorySection" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                   <h4 style="font-size: 14px; color: var(--text-primary); margin: 0; font-weight: bold; display: flex; align-items: center; gap: 6px;">
-                    📚 歷屆題目庫 <span id="quizHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 題)</span>
+                    <span>📚 歷次題目庫</span> <span id="quizHistoryCount" style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(0 題)</span>
+                    <span style="font-size: 11.5px; color: var(--text-secondary); font-weight: normal;">（支援 ☰ 拖曳調整順序）</span>
                   </h4>
                   <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                     <button type="button" class="btn btn-secondary" onclick="window.quiz.exportSelectedQuizBankTxt()" style="padding: 4px 10px; font-size: 12px; font-weight: bold;">
@@ -2796,7 +2810,7 @@
                     <span>全選 / 全不選</span>
                   </label>
                   <button type="button" onclick="window.quiz.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
-                    🗑️ 清空歷屆題庫
+                    🗑️ 清空歷次題庫
                   </button>
                 </div>
 
@@ -5181,11 +5195,11 @@ Python</pre>
   <script src="js/focus_question_bank.js?v=381"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
-  <script src="js/quiz.js?v=382"></script>
-  <script src="js/app.js?v=410"></script>
+  <script src="js/quiz.js?v=383"></script>
+  <script src="js/app.js?v=411"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=381"></script>
-  <script src="js/video_quiz.js?v=385"></script>
+  <script src="js/video_quiz.js?v=386"></script>
   <script src="js/word_cloud.js?v=395"></script>
   <script src="js/presentation_core.js?v=3115"></script>
   
