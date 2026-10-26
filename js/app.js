@@ -1878,6 +1878,9 @@ class App {
     }
 
     if (targetId === 'panel-quiz') {
+      if (window.quiz && typeof window.quiz.setAdminState === 'function') {
+        window.quiz.setAdminState(this.isAdmin);
+      }
       if (window.quiz && typeof window.quiz.updateUI === 'function') {
         window.quiz.updateUI();
       }
@@ -1943,6 +1946,9 @@ class App {
       if (window.videoQuiz) {
         window.videoQuiz.setAdminState(true);
         window.videoQuiz.updateAdminBroadcastUI(window.videoQuiz.lastSession);
+      }
+      if (window.quiz && typeof window.quiz.setAdminState === 'function') {
+        window.quiz.setAdminState(true);
       }
       this.populateAdminClassAvatarDropdown();
       const vqSection = document.getElementById('adminVideoQuizSection');
@@ -20149,6 +20155,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.videoQuiz && typeof window.videoQuiz.setAdminState === 'function') {
         window.videoQuiz.setAdminState(true);
       }
+      if (window.quiz && typeof window.quiz.setAdminState === 'function') {
+        window.quiz.setAdminState(true);
+      }
       if (window.app._restoredAutoOpenAdminPanel) {
         window.app._restoredAutoOpenAdminPanel = false;
         window.app.switchToTab('panel-admin');
@@ -20183,6 +20192,7 @@ async function submitAdminPassword() {
         window.app.startAdminIdleMonitor();
       }
       if (window.videoQuiz) window.videoQuiz.setAdminState(true);
+      if (window.quiz && typeof window.quiz.setAdminState === 'function') window.quiz.setAdminState(true);
       window.app.closeAdminPasswordModal(); // 關閉彈窗
       window.app.switchToTab('panel-admin'); // 自動進入「管理後台」分頁
       window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
@@ -20243,6 +20253,7 @@ async function submitAdminPassword() {
         window.app.startAdminIdleMonitor();
       }
       if (window.videoQuiz) window.videoQuiz.setAdminState(true);
+      if (window.quiz && typeof window.quiz.setAdminState === 'function') window.quiz.setAdminState(true);
       window.app.closeAdminPasswordModal();
       window.app.switchToTab('panel-admin');
       window.app.updateAdminActiveActivitiesUI();
@@ -20272,6 +20283,7 @@ function logoutAdmin(isAutoIdleLogout = false) {
     window.app.stopAdminIdleMonitor();
   }
   if (window.videoQuiz) window.videoQuiz.setAdminState(false);
+  if (window.quiz && typeof window.quiz.setAdminState === 'function') window.quiz.setAdminState(false);
   window.app.closeAdminPasswordModal();
   window.app.switchToTab('panel-questions'); // 登出後切換回到「提問區分頁」
   window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI

@@ -1,4 +1,16 @@
 # System Log
+## 2026-10-26 - 影片出題與選擇題測驗發起自動切換前台、空狀態後台導航捷徑優化
+- 影響檔案：`index.html`, `js/quiz.js`, `js/video_quiz.js`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **發起測驗自動切換至前台畫面 (`js/quiz.js`, `js/video_quiz.js`)**：
+     - 選擇題測驗於教師發起測驗時（`startQuiz`），自動呼叫 `switchToTab('panel-quiz')` 切換至前台視角，便於大螢幕投影展示與控場。
+     - 影片出題測驗於發起全班同步測驗時（`startSyncQuizAsTeacher`），確保即時更新 session 狀態並直接展開播放容器並自動切換至 `panel-video-quiz`。
+  2. **影片出題前台空狀態捷徑按鈕文案與目標功能修正 (`index.html`)**：
+     - 修改按鈕文字為「⚙️ 前往管理後台發起或管理影片測驗」，並修復導向錯誤之問題，改為呼叫 `openAdminFeature('quizVideo')` 直接精確開啟後台「B. 影片出題測驗」工作區。
+  3. **選擇題測驗前台新增空狀態提示與直達後台捷徑按鈕 (`index.html`, `js/quiz.js`, `js/app.js`)**：
+     - 在選擇題前台（`#panel-quiz`）新增與影片出題一致之空狀態提示卡片（電視圖示、說明文字），當無測驗進行時優雅呈現。
+     - 若為管理員登入狀態，自動顯示「⚙️ 前往管理後台發起或管理選擇題測驗」按鈕，點擊直達後台「A. 選擇題測驗」出題區。
+
 ## 2026-10-26 - 修復互動白板導航縮放工具列（小地圖）深色主題對比度過低問題
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `SYSTEM_LOG.md`。
 - 修改項目：

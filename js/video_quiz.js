@@ -1482,11 +1482,19 @@
         createdAt: Date.now()
       };
 
+      this.lastSession = sessionData;
+
       if (this.sessionRef) {
         this.sessionRef.set(sessionData).then(() => {
           if (window.app) window.app.showNotification('成功', `已發起「${quiz.title}」全班同步測驗！`);
         });
       }
+
+      // 隱藏閒置提示，開啟播放器容器
+      const studentNotice = document.getElementById('vqSyncStudentIdleNotice');
+      const activeWrapper = document.getElementById('vqSyncActivePlayerWrapper');
+      if (studentNotice) studentNotice.style.display = 'none';
+      if (activeWrapper) activeWrapper.style.display = 'block';
 
       // 自動切換至「影片出題測驗」前台畫面以供投影與播放
       if (window.app && typeof window.app.switchToTab === 'function') {

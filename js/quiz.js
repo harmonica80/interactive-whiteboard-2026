@@ -104,6 +104,11 @@ class Quiz {
 
     // 備份至歷次題目庫
     this.saveToHistoryBank(question, options, quizType, extraData);
+
+    // 發起測驗後自動切換至前台「選擇題測驗」畫面，供投影與控場
+    if (window.app && typeof window.app.switchToTab === 'function') {
+      window.app.switchToTab('panel-quiz');
+    }
   }
 
   // 儲存至歷次題目庫 (防重覆)
@@ -324,8 +329,15 @@ class Quiz {
     const quizForm = document.getElementById('quizForm');
     const answerOptions = document.getElementById('answerOptions');
     const endQuizBtn = document.getElementById('endQuizBtn');
+    const idleNotice = document.getElementById('quizStudentIdleNotice');
+    const adminLink = document.getElementById('quizAdminQuickLinkWrapper');
+    const isAdmin = !!(window.app && window.app.isAdmin);
+    if (adminLink) {
+      adminLink.style.display = isAdmin ? 'block' : 'none';
+    }
     
     if (this.currentQuiz && this.currentQuiz.active) {
+      if (idleNotice) idleNotice.style.display = 'none';
       const isMultiple = this.currentQuiz.quizType === 'multiple';
       const isMatching = this.currentQuiz.quizType === 'matching';
       const badgeText = isMatching ? '🔗 配對題 (連連看)' : (isMultiple ? '☑️ 複選題' : '🔘 單選題');
@@ -407,6 +419,7 @@ class Quiz {
         }
       }
     } else if (this.currentQuiz && !this.currentQuiz.active) {
+      if (idleNotice) idleNotice.style.display = 'none';
       const isMultiple = this.currentQuiz.quizType === 'multiple';
       const isMatching = this.currentQuiz.quizType === 'matching';
       const badgeText = isMatching ? '🔗 配對題 (連連看)' : (isMultiple ? '☑️ 複選題' : '🔘 單選題');
@@ -443,8 +456,13 @@ class Quiz {
     const answerOptions = document.getElementById('answerOptions');
     const endQuizBtn = document.getElementById('endQuizBtn');
     const resultsContainer = document.getElementById('quizResults');
+    const idleNotice = document.getElementById('quizStudentIdleNotice');
+    const adminLink = document.getElementById('quizAdminQuickLinkWrapper');
+    const isAdmin = !!(window.app && window.app.isAdmin);
 
-    if (quizStatus) quizStatus.innerHTML = '<div style="color: var(--text-muted); text-align: center;">目前沒有進行中的測驗</div>';
+    if (idleNotice) idleNotice.style.display = 'block';
+    if (adminLink) adminLink.style.display = isAdmin ? 'block' : 'none';
+    if (quizStatus) quizStatus.innerHTML = '';
     if (quizForm) quizForm.style.display = 'block';
     if (endQuizBtn) endQuizBtn.style.display = 'none';
     if (answerOptions) {
@@ -454,6 +472,11 @@ class Quiz {
     if (resultsContainer) {
       resultsContainer.innerHTML = '';
     }
+  }
+
+  setAdminState(isAdmin) {
+    const adminLink = document.getElementById('quizAdminQuickLinkWrapper');
+    if (adminLink) adminLink.style.display = isAdmin ? 'block' : 'none';
   }
   
   renderResultsVisualization(items, totalVoters, isFinal = false, quizType = 'single') {

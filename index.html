@@ -267,8 +267,8 @@
                 當老師在管理後台發起測驗時，影片與題目將自動在此同步播放。
               </div>
               <div id="vqAdminQuickLinkWrapper" style="display: none;">
-                <button class="preset-btn" onclick="window.app.switchToTab('panel-admin')" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer;">
-                  ⚙️ 前往管理後台發起或管理測驗
+                <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.openAdminFeature ? window.app.openAdminFeature('quizVideo') : window.app.switchToTab('panel-admin')" style="font-size: 14px; font-weight: bold; padding: 8px 18px; cursor: pointer;" title="前往管理後台發起或管理影片測驗">
+                  ⚙️ 前往管理後台發起或管理影片測驗
                 </button>
               </div>
             </div>
@@ -336,6 +336,18 @@
       <!-- 選擇題測驗 -->
       <div class="panel-card" id="panel-quiz">
         <div class="panel-body">
+          <div id="quizStudentIdleNotice" style="text-align: center; padding: 40px 20px; background: var(--bg-input); border-radius: 12px; border: 1px dashed var(--border-color); margin-bottom: 16px;">
+            <div style="font-size: 40px; margin-bottom: 10px;">📺</div>
+            <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">目前尚無進行中的全班測驗</div>
+            <div style="font-size: 14px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 16px auto; line-height: 1.5;">
+              當老師在管理後台發起測驗時，題目與選項將自動在此同步顯示。
+            </div>
+            <div id="quizAdminQuickLinkWrapper" style="display: none;">
+              <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.openAdminFeature ? window.app.openAdminFeature('quizChoice') : window.app.switchToTab('panel-admin')" style="font-size: 14px; font-weight: bold; padding: 8px 18px; cursor: pointer;" title="前往管理後台發起或管理選擇題測驗">
+                ⚙️ 前往管理後台發起或管理選擇題測驗
+              </button>
+            </div>
+          </div>
           <div id="quizStatus"></div>
           <div id="answerOptions" style="display: none;"></div>
           <div id="quizResults" class="quiz-results"></div>
@@ -5795,11 +5807,11 @@ Python</pre>
   <script src="js/focus_question_bank.js?v=381"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
-  <script src="js/quiz.js?v=386"></script>
-  <script src="js/app.js?v=417"></script>
+  <script src="js/quiz.js?v=387"></script>
+  <script src="js/app.js?v=418"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
-  <script src="js/video_quiz.js?v=388"></script>
+  <script src="js/video_quiz.js?v=389"></script>
   <script src="js/word_cloud.js?v=397"></script>
   <script src="js/presentation_core.js?v=3118"></script>
   
