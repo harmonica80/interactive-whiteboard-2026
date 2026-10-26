@@ -1,4 +1,20 @@
 # System Log
+## 2026-10-26 - 互動白板匯出/匯入彈窗優化、雲端檔案庫按鈕清理與命名調整
+- 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **匯入/匯出彈窗優化 (`whiteboard.html`, `js/whiteboard_core.js`)**：
+     - 移除底部未完整顯示且多餘之關閉按鈕與 footer 區塊（上方已有 `✕` 關閉按鈕）。
+     - 移除第一個重複選項「☁️ 白板雲端歷程檔案庫」，避免與主工具列功能重疊。
+     - 實作點選彈窗外部半透明背景（backdrop）自動關閉功能（包含 `exportModal`、`whiteboardArchiveModal` 與 `wbArchiveLoadChoiceModal`）。
+  2. **雲端檔案庫頂部操作列清理 (`whiteboard.html`)**：
+     - 依指示自白板雲端檔案庫彈窗頂部移除「📤 匯出目前白板 JSON」與「📥 匯入白板 JSON」兩顆按鈕，使題庫操作列更精簡聚焦於線上存檔與重新整理。
+  3. **工具列按鈕與彈窗標題命名統一 (`whiteboard.html`)**：
+     - 頂部工具列按鈕文字由「`☁️ 雲端存檔庫`」更新為「`☁️ 雲端檔案庫`」。
+     - 彈窗標題同步調整為「`白板雲端檔案庫`」。
+  4. **合規檢測**：
+     - 通過 `npm run check:syntax` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-26 - 專注力測驗前台大廳外框與按鈕、影片出題管理後台快捷列與自主學習按鈕改造、選擇題按鈕等寬化
 - 影響檔案：`index.html`, `js/video_quiz.js`, `SYSTEM_LOG.md`。
 - 修改項目：

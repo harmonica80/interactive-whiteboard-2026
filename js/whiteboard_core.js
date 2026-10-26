@@ -3169,6 +3169,13 @@
   if (els.btnCancelExportModal && els.exportModal) {
     els.btnCancelExportModal.onclick = () => els.exportModal.classList.remove('open');
   }
+  if (els.exportModal) {
+    els.exportModal.addEventListener('click', (e) => {
+      if (e.target === els.exportModal) {
+        els.exportModal.classList.remove('open');
+      }
+    });
+  }
 
   if (els.btnExportPdf) els.btnExportPdf.onclick = exportCanvasToPdf;
   if (els.btnExportPng) els.btnExportPng.onclick = exportCurrentPageToPng;
@@ -3187,6 +3194,13 @@
   }
   if (els.btnCloseWbArchiveModal) {
     els.btnCloseWbArchiveModal.onclick = closeWhiteboardArchiveModal;
+  }
+  if (els.whiteboardArchiveModal) {
+    els.whiteboardArchiveModal.addEventListener('click', (e) => {
+      if (e.target === els.whiteboardArchiveModal) {
+        closeWhiteboardArchiveModal();
+      }
+    });
   }
   if (els.btnSaveCurrentWbToCloud) {
     els.btnSaveCurrentWbToCloud.onclick = saveCurrentWhiteboardToCloud;
@@ -3231,6 +3245,13 @@
   }
   if (els.btnCancelLoadChoice) els.btnCancelLoadChoice.onclick = closeArchiveLoadChoice;
   if (els.btnCloseWbLoadChoiceModal) els.btnCloseWbLoadChoiceModal.onclick = closeArchiveLoadChoice;
+  if (els.wbArchiveLoadChoiceModal) {
+    els.wbArchiveLoadChoiceModal.addEventListener('click', (e) => {
+      if (e.target === els.wbArchiveLoadChoiceModal) {
+        closeArchiveLoadChoice();
+      }
+    });
+  }
 
   if (els.btnImportJson && els.jsonFileInput) {
     els.btnImportJson.onclick = () => els.jsonFileInput.click();

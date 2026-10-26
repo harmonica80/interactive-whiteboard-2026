@@ -1663,7 +1663,7 @@
           <button class="btn-pill" id="btnAddCanvas">+ 畫布</button>
           <button class="btn-pill" id="btnRenameCanvas" title="修改目前畫布名稱">✏️ 重新命名</button>
           <button class="btn-pill btn-danger" id="btnDeleteCanvas" title="刪除目前畫布" style="display:none;">🗑️ 刪除畫布</button>
-          <button class="btn-pill" id="btnCloudArchive" title="白板雲端歷程檔案庫管理">☁️ 雲端存檔庫</button>
+          <button class="btn-pill" id="btnCloudArchive" title="白板雲端檔案庫管理">☁️ 雲端檔案庫</button>
           <button class="btn-pill purple" id="btnExport" title="匯入與匯出畫布資料">
             <span>📁 匯入 / 匯出</span>
           </button>
@@ -2019,11 +2019,6 @@
           <button class="btn-close" id="btnCloseExportModal">✕</button>
         </div>
         <div style="padding: 24px; display: flex; flex-direction: column; gap: 14px;">
-          <!-- 0. 雲端歷程檔案管理 -->
-          <button class="btn-export-choice btn-export-primary" id="btnOpenCloudArchiveFromExport" style="background: var(--accent-color); color: #fff;">
-            <span style="font-size: 20px;">☁️</span>
-            <span>白板雲端歷程檔案庫（線上存檔、載入、跨班複製）</span>
-          </button>
           <!-- 1. 匯出目前畫布為 PDF (所有頁面) -->
           <button class="btn-export-choice btn-export-primary" id="btnExportPdf">
             <span style="font-size: 20px;">📄</span>
@@ -2050,9 +2045,6 @@
             <span>匯入 JSON 備份</span>
           </button>
           <input type="file" id="jsonFileInput" class="hidden-file-input" accept=".json,.zip">
-        </div>
-        <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end;">
-          <button class="btn-secondary" id="btnCancelExportModal">關閉</button>
         </div>
       </div>
     </div>
@@ -2095,7 +2087,7 @@
         <div class="modal-header">
           <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 20px;">☁️</span>
-            <span style="font-size: 16px; font-weight: 700;">白板雲端歷程檔案庫</span>
+            <span style="font-size: 16px; font-weight: 700;">白板雲端檔案庫</span>
           </div>
           <button class="btn-close" id="btnCloseWbArchiveModal" title="關閉">✕</button>
         </div>
@@ -2104,14 +2096,8 @@
           <!-- 頂部操作按鈕列 (題庫管理工具列樣式) -->
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-              <button type="button" class="presentation-tool-btn active" id="btnSaveCurrentWbToCloud" style="height: 34px; padding: 0 14px; font-size: 14px; border-radius: 10px;" title="將目前課堂白板包含所有畫布與分頁儲存為一筆雲端歷程">
+              <button type="button" class="presentation-tool-btn active" id="btnSaveCurrentWbToCloud" style="height: 34px; padding: 0 14px; font-size: 14px; border-radius: 10px;" title="將目前課堂白板包含所有畫布與分頁儲存為一筆雲端檔案">
                 ➕ 儲存目前白板
-              </button>
-              <button type="button" class="presentation-tool-btn" id="btnArchiveExportJson" style="height: 34px; padding: 0 12px; font-size: 14px; border-radius: 10px;" title="匯出目前白板為本機 JSON 備份檔">
-                📤 匯出目前白板 JSON
-              </button>
-              <button type="button" class="presentation-tool-btn" id="btnArchiveImportJson" style="height: 34px; padding: 0 12px; font-size: 14px; border-radius: 10px;" title="從本機匯入白板備份檔">
-                📥 匯入白板 JSON
               </button>
               <button type="button" class="presentation-tool-btn" id="btnRefreshWbArchives" style="height: 34px; padding: 0 10px; font-size: 14px; border-radius: 10px;" title="重新整理雲端歷程清單">
                 🔄 重新整理
@@ -2188,6 +2174,6 @@
 
   </div>
 
-  <script src="js/whiteboard_core.js?v=3011"></script>
+  <script src="js/whiteboard_core.js?v=3012"></script>
 </body>
 </html>
