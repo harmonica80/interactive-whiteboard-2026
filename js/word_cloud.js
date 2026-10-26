@@ -343,7 +343,7 @@
       const html = dataUrl ? `
         <div style="position: relative; display: inline-block; margin-top: 8px;">
           <img src="${dataUrl}" style="max-width: 100%; max-height: 180px; border-radius: 8px; border: 1.5px solid var(--accent-color); box-shadow: 0 4px 12px rgba(0,0,0,0.15);" onclick="window.app?.zoomShareImage('${dataUrl}')" title="點擊放大預覽">
-          <button type="button" onclick="window.wordCloud?.removeQuestionImage()" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">✕</button>
+          <button type="button" onclick="window.wordCloud?.removeQuestionImage()" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">✕</button>
         </div>
       ` : '';
 
@@ -441,7 +441,7 @@
       if (frontCountEl) frontCountEl.textContent = `(${keys.length} 筆)`;
 
       if (keys.length === 0) {
-        const emptyHtml = '<div style="color: var(--text-muted); text-align: center; font-size: 12px; padding: 12px;">目前尚無文字雲歷史記錄（發布題目後將自動保存，方便後續重複使用或複製至其他班級）</div>';
+        const emptyHtml = '<div style="color: var(--text-muted); text-align: center; font-size: 14px; padding: 12px;">目前尚無文字雲歷史記錄（發布題目後將自動保存，方便後續重複使用或複製至其他班級）</div>';
         if (adminListEl) adminListEl.innerHTML = emptyHtml;
         if (frontListEl) frontListEl.innerHTML = emptyHtml;
         this.renderBankListUI();
@@ -491,11 +491,11 @@
               ${hasImg ? `<img src="${item.imageUrl}" style="width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); flex-shrink: 0; cursor: pointer;" onclick="window.app?.zoomShareImage('${item.imageUrl}')" title="點擊預覽題目圖片">` : ''}
               <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex: 1; min-width: 0;">
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                  <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
+                  <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 14px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
                   <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(item.title || '即時互動文字雲')}</span>
-                  <span style="font-size: 11px; color: var(--text-secondary); background: var(--bg-input); padding: 1px 6px; border-radius: 6px;">${limitText} ‧ ${shapeText}</span>
+                  <span style="font-size: 14px; color: var(--text-secondary); background: var(--bg-input); padding: 1px 6px; border-radius: 6px;">${limitText} ‧ ${shapeText}</span>
                 </div>
-                <div style="font-size: 11.5px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                <div style="font-size: 14px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                   ${this.escapeHtml(topPreview)}
                 </div>
               </div>
@@ -862,7 +862,7 @@
 
       const keys = Object.keys(this.historyBank || {});
       if (keys.length === 0) {
-        listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 24px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">目前文字雲題庫無題目。您可以點選上方「➕ 建立新題目」出題，或點選「📥 匯入題庫」批次匯入題庫檔案！</div>';
+        listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 14px; padding: 24px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">目前文字雲題庫無題目。您可以點選上方「➕ 建立新題目」出題，或點選「📥 匯入題庫」批次匯入題庫檔案！</div>';
         return;
       }
 
@@ -889,7 +889,7 @@
       });
 
       if (filteredKeys.length === 0) {
-        listContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; font-size: 13px; padding: 18px; background: var(--bg-card); border-radius: 10px;">查無符合「${this.escapeHtml(this.bankSearchQuery)}」的文字雲題目</div>`;
+        listContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; font-size: 14px; padding: 18px; background: var(--bg-card); border-radius: 10px;">查無符合「${this.escapeHtml(this.bankSearchQuery)}」的文字雲題目</div>`;
         return;
       }
 
@@ -920,19 +920,19 @@
               ${hasImg ? `<img src="${item.imageUrl}" style="width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); flex-shrink: 0; cursor: pointer;" onclick="window.app?.zoomShareImage('${item.imageUrl}')" title="點擊預覽題目圖片">` : ''}
               <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex: 1; min-width: 0;">
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                  <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
+                  <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 14px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
                   <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(title)}</span>
                 </div>
-                <div style="font-size: 11.5px; color: var(--text-secondary);">
+                <div style="font-size: 14px; color: var(--text-secondary);">
                   設定：${limitText} ‧ ${shapeText}
                 </div>
               </div>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap;">
-              <button type="button" class="action-btn" onclick="window.wordCloud?.loadFromHistory('${key}', true)" style="background: var(--accent-color); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="帶入此題並立即開動">🚀 載入出題</button>
-              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.loadFromHistory('${key}', false)" style="padding: 5px 10px; font-size: 11.5px; font-weight: bold;" title="帶入設定至出題框">📝 載入修改</button>
-              <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級題庫">📤 複製</button>
-              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.deleteHistoryItem('${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--danger-color);" title="刪除此題">🗑️</button>
+              <button type="button" class="action-btn" onclick="window.wordCloud?.loadFromHistory('${key}', true)" style="background: var(--accent-color); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="帶入此題並立即開動">🚀 載入出題</button>
+              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.loadFromHistory('${key}', false)" style="padding: 5px 10px; font-size: 14px; font-weight: bold;" title="帶入設定至出題框">📝 載入修改</button>
+              <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" style="padding: 5px 8px; font-size: 14px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級題庫">📤 複製</button>
+              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.deleteHistoryItem('${key}')" style="padding: 5px 8px; font-size: 14px; color: var(--danger-color);" title="刪除此題">🗑️</button>
             </div>
           </div>
         `;
@@ -1939,7 +1939,7 @@
 
       if (!listEl) return;
       if (wordsList.length === 0) {
-        listEl.innerHTML = '<li style="text-align: center; color: var(--text-muted); padding: 16px; font-size: 13px;">尚無詞彙，等待同學提交中...</li>';
+        listEl.innerHTML = '<li style="text-align: center; color: var(--text-muted); padding: 16px; font-size: 14px;">尚無詞彙，等待同學提交中...</li>';
         return;
       }
 
@@ -1951,7 +1951,7 @@
         const rankColor = idx === 0 ? '#f59e0b' : (idx === 1 ? '#94a3b8' : (idx === 2 ? '#b45309' : 'var(--text-secondary)'));
         const isMultiple = item.count > 1;
         return `
-          <li class="wc-rank-item" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px; border-bottom: 1px solid var(--border-color); font-size: 13px; ${isMultiple ? 'background: rgba(37, 99, 235, 0.04);' : ''}">
+          <li class="wc-rank-item" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px; border-bottom: 1px solid var(--border-color); font-size: 14px; ${isMultiple ? 'background: rgba(37, 99, 235, 0.04);' : ''}">
             <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
               <span style="font-weight: 800; color: ${rankColor}; width: 24px; flex-shrink: 0; font-size: 14px;">#${idx + 1}</span>
               <span style="font-weight: bold; color: ${item.isFocused ? '#2563eb' : 'var(--text-primary)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.word}">
@@ -1962,10 +1962,10 @@
               <div style="width: 50px; height: 7px; background: rgba(0,0,0,0.06); border-radius: 4px; overflow: hidden;" title="${pct}% 佔比">
                 <div style="width: ${pct}%; height: 100%; background: ${isMultiple ? 'linear-gradient(90deg, #3b82f6, #ec4899)' : 'var(--accent-color)'}; border-radius: 4px; transition: width 0.3s ease;"></div>
               </div>
-              <span style="font-weight: 900; color: ${isMultiple ? '#2563eb' : 'var(--accent-color)'}; font-size: 13px; min-width: 32px; text-align: right;">${item.count}票</span>
+              <span style="font-weight: 900; color: ${isMultiple ? '#2563eb' : 'var(--accent-color)'}; font-size: 14px; min-width: 32px; text-align: right;">${item.count}票</span>
               ${window.app?.isAdmin ? `
-                <button type="button" class="preset-btn" onclick="window.wordCloud?.toggleFocusWord('${encodeURIComponent(item.word)}')" style="padding: 1px 6px; font-size: 11px; color: ${item.isFocused ? '#2563eb' : '#64748b'}; border-color: ${item.isFocused ? '#2563eb' : 'var(--border-color)'}; background: ${item.isFocused ? 'rgba(37,99,235,0.1)' : 'transparent'}; height: auto;" title="${item.isFocused ? '取消焦點詞彙' : '設為焦點詞彙'}">${item.isFocused ? '★' : '☆'}</button>
-                <button type="button" class="preset-btn" onclick="window.wordCloud?.toggleHideWord('${encodeURIComponent(item.word)}')" style="padding: 1px 6px; font-size: 11px; color: #ef4444; border-color: rgba(239,68,68,0.3); background: transparent; height: auto;" title="隱藏此詞彙">✕</button>
+                <button type="button" class="preset-btn" onclick="window.wordCloud?.toggleFocusWord('${encodeURIComponent(item.word)}')" style="padding: 1px 6px; font-size: 14px; color: ${item.isFocused ? 'var(--accent-color)' : 'var(--text-secondary)'}; border-color: ${item.isFocused ? '#2563eb' : 'var(--border-color)'}; background: ${item.isFocused ? 'rgba(37,99,235,0.1)' : 'transparent'}; height: auto;" title="${item.isFocused ? '取消焦點詞彙' : '設為焦點詞彙'}">${item.isFocused ? '★' : '☆'}</button>
+                <button type="button" class="preset-btn" onclick="window.wordCloud?.toggleHideWord('${encodeURIComponent(item.word)}')" style="padding: 1px 6px; font-size: 14px; color: #ef4444; border-color: rgba(239,68,68,0.3); background: transparent; height: auto;" title="隱藏此詞彙">✕</button>
               ` : ''}
             </div>
           </li>
@@ -1974,9 +1974,9 @@
 
       if (window.app?.isAdmin && this.hiddenWords.size > 0) {
         listEl.innerHTML += `
-          <li style="margin-top: 10px; padding: 6px 10px; background: rgba(239, 68, 68, 0.08); border-radius: 8px; font-size: 12px; display: flex; align-items: center; justify-content: space-between;">
+          <li style="margin-top: 10px; padding: 6px 10px; background: rgba(239, 68, 68, 0.08); border-radius: 8px; font-size: 14px; display: flex; align-items: center; justify-content: space-between;">
             <span style="color: #ef4444; font-weight: bold;">🚫 已遮蔽 ${this.hiddenWords.size} 個詞彙</span>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.unhideAllWords()" style="font-size: 11px; padding: 2px 8px; height: 22px; cursor: pointer;">全部取消遮蔽</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.wordCloud?.unhideAllWords()" style="font-size: 14px; padding: 2px 8px; height: 22px; cursor: pointer;">全部取消遮蔽</button>
           </li>
         `;
       }

@@ -26,10 +26,10 @@
   flex: none !important;
   max-width: none !important;
   padding: 8px 14px !important;
-  font-size: 13px !important;
-  border: 1.5px solid #0284c7 !important;
+  font-size: 14px !important;
+  border: 1.5px solid var(--accent-color) !important;
   background: transparent !important;
-  color: #0284c7 !important;
+  color: var(--accent-color) !important;
   border-radius: 20px !important;
   white-space: nowrap;
   font-weight: 700;
@@ -42,9 +42,9 @@
 
 .presentation-top-btn:hover,
 .presentation-top-btn.active {
-  background: #0284c7 !important;
+  background: var(--accent-color) !important;
   color: white !important;
-  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
+  box-shadow: var(--shadow);
 }
 
 @media (max-width: 768px) {
@@ -52,7 +52,7 @@
     flex: 0 0 auto !important;
     justify-content: center;
     padding: 5px 10px !important;
-    font-size: 12px !important;
+    font-size: 14px !important;
     border-radius: 14px !important;
     white-space: nowrap !important;
     min-height: 28px !important;
@@ -66,7 +66,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: #ffffff;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
   z-index: 10;
   gap: 10px;
@@ -83,7 +83,7 @@
 .presentation-main-title {
   font-size: 16px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -95,21 +95,21 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #64748b;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
 .presentation-perm-btn.is-active {
-  background: #e0f2fe;
-  border-color: #0284c7;
-  color: #0284c7;
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #ffffff;
 }
 
 .presentation-perm-btn:hover {
@@ -155,8 +155,8 @@
   top: 100%;
   left: 0;
   margin-top: 6px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   padding: 6px 8px;
@@ -192,7 +192,7 @@
 }
 
 .presentation-live-badge {
-  font-size: 11px;
+  font-size: 14px;
   padding: 2px 8px;
   border-radius: 12px;
   background: #fee2e2;
@@ -224,14 +224,14 @@
   flex: 1;
   display: flex;
   overflow: hidden;
-  background: #f8fafc;
+  background: var(--bg-primary);
   position: relative;
 }
 
 /* ===== 左側邊欄 ===== */
 .presentation-left-sidebar {
   width: 170px;
-  background: #ffffff;
+  background: var(--bg-card);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -260,14 +260,14 @@
   align-items: center;
   justify-content: space-between;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 2px;
 }
 
 .presentation-sidebar-header-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: #475569;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -279,7 +279,7 @@
   color: var(--text-secondary, #64748b);
   border-radius: 6px;
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
@@ -300,14 +300,14 @@
   position: absolute;
   top: 14px;
   z-index: 25;
-  background: #ffffff;
-  border: 1.5px solid var(--accent-color, #007aff);
+  background: var(--bg-card);
+  border: 1.5px solid var(--accent-color);
   color: var(--accent-color, #007aff);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
   border-radius: 20px;
   padding: 6px 14px;
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -338,7 +338,7 @@
   color: #ffffff;
   border: none;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -362,11 +362,11 @@
 .presentation-add-page-btn {
   width: 100%;
   padding: 8px 10px;
-  background: #ffffff;
-  color: #334155;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -377,8 +377,9 @@
 }
 
 .presentation-add-page-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: var(--bg-input);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 /* 純色頁背景選色浮窗 (圖 1) */
@@ -392,8 +393,8 @@
   top: 100%;
   left: 0;
   margin-top: 6px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
   padding: 10px 12px;
@@ -439,7 +440,7 @@
   aspect-ratio: 16 / 9;
   border-radius: 8px;
   overflow: hidden;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border-color);
   background: #0f172a;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -452,8 +453,8 @@
 }
 
 .presentation-thumbnail-card.active {
-  border-color: #06b6d4;
-  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.3);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px var(--accent-color);
 }
 
 .presentation-thumbnail-img {
@@ -475,7 +476,7 @@
   left: 4px;
   background: rgba(0, 0, 0, 0.65);
   color: #ffffff;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 4px;
@@ -492,7 +493,7 @@
   background: #ef4444;
   color: #ffffff;
   border: none;
-  font-size: 10px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -512,7 +513,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #f1f5f9;
+  background: var(--bg-input);
   position: relative;
 }
 
@@ -613,7 +614,7 @@
   background: rgba(15, 23, 42, 0.88);
   color: #ffffff;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   display: inline-flex;
@@ -651,7 +652,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: #ffffff;
+  background: var(--bg-card);
   border-top: 1px solid var(--border-color);
   z-index: 10;
   flex-wrap: wrap;
@@ -672,11 +673,11 @@
   justify-content: center;
   gap: 6px;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: #334155;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -684,14 +685,15 @@
 }
 
 .presentation-tool-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: var(--bg-input);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .presentation-tool-btn.active {
-  background: #0284c7;
+  background: var(--accent-color);
   color: #ffffff;
-  border-color: #0284c7;
+  border-color: var(--accent-color);
 }
 
 .presentation-tool-btn.purple {
@@ -705,27 +707,27 @@
 }
 
 .presentation-tool-btn.danger {
-  color: #dc2626;
-  border-color: #fca5a5;
-  background: #fff5f5;
+  color: var(--danger-color);
+  border-color: rgba(220, 53, 69, 0.35);
+  background: rgba(220, 53, 69, 0.08);
 }
 
 .presentation-tool-btn.danger:hover {
-  background: #fee2e2;
+  background: rgba(220, 53, 69, 0.16);
 }
 
 #btnSlidePrev,
 #btnSlideNext {
   min-width: 38px;
   padding: 6px 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .presentation-page-counter {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: #475569;
+  color: var(--text-secondary);
   min-width: 48px;
   text-align: center;
 }
@@ -733,7 +735,7 @@
 /* ===== 右側邊欄 (即時回應) ===== */
 .presentation-right-sidebar {
   width: 250px;
-  background: #ffffff;
+  background: var(--bg-card);
   border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -759,11 +761,11 @@
 .presentation-right-header {
   font-size: 15px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 8px;
 }
 
@@ -776,15 +778,15 @@
 }
 
 .presentation-submissions-empty {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 14px;
+  color: var(--text-secondary);
   line-height: 1.6;
   padding: 12px 4px;
 }
 
 .presentation-submission-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 10px;
   display: flex;
@@ -794,7 +796,7 @@
 }
 
 .presentation-submission-card:hover {
-  border-color: #cbd5e1;
+  border-color: var(--accent-color);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
@@ -806,25 +808,25 @@
 
 .presentation-student-name {
   font-weight: 700;
-  font-size: 13px;
-  color: #1e293b;
+  font-size: 14px;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
 .presentation-submission-time {
-  font-size: 11px;
-  color: #94a3b8;
+  font-size: 14px;
+  color: var(--text-muted);
 }
 
 .presentation-submission-answer {
-  font-size: 12px;
-  color: #334155;
-  background: #ffffff;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-card);
   padding: 6px 8px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -832,11 +834,11 @@
 .presentation-btn-download-responses {
   width: 100%;
   padding: 8px 12px;
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -847,8 +849,9 @@
 }
 
 .presentation-btn-download-responses:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: var(--bg-card);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
 }
 
 /* ===== 學生端互動作答介面 ===== */
@@ -887,7 +890,7 @@
 }
 
 .presentation-reaction-btn.is-custom-text {
-  font-size: 13px;
+  font-size: 14px;
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.35);
   padding: 5px 12px;
@@ -903,7 +906,7 @@
 }
 
 .presentation-reaction-count {
-  font-size: 10px;
+  font-size: 14px;
   color: #cbd5e1;
   font-weight: 700;
   position: absolute;
@@ -918,10 +921,10 @@
   width: 320px;
   max-width: calc(100% - 40px);
   max-height: calc(100% - 40px);
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 14px;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
   z-index: 30;
   display: flex;
   flex-direction: column;
@@ -936,8 +939,8 @@
 
 .presentation-student-dialog-head {
   padding: 12px 16px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -946,7 +949,7 @@
 .presentation-student-dialog-title {
   font-size: 14px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .presentation-student-dialog-body {
@@ -959,9 +962,9 @@
 }
 
 .presentation-student-q-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
@@ -1024,24 +1027,24 @@
 .presentation-choice-btn {
   text-align: left;
   padding: 8px 12px;
-  background: #f8fafc;
-  border: 1.5px solid #cbd5e1;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
   border-radius: 8px;
-  font-size: 13px;
-  color: #334155;
+  font-size: 14px;
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .presentation-choice-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: var(--bg-card);
+  border-color: var(--accent-color);
 }
 
 .presentation-choice-btn.selected {
-  background: #e0f2fe;
-  border-color: #0284c7;
-  color: #0369a1;
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #ffffff;
   font-weight: 700;
 }
 
@@ -1049,17 +1052,19 @@
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
   resize: vertical;
   min-height: 60px;
 }
 
 .presentation-student-dialog-footer {
   padding: 10px 16px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -1071,15 +1076,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .presentation-step-progress-bar {
   height: 4px;
-  background: #e2e8f0;
+  background: var(--border-color);
   border-radius: 2px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -1087,7 +1092,7 @@
 
 .presentation-step-progress-fill {
   height: 100%;
-  background: #2563eb;
+  background: var(--accent-color);
   transition: width 0.25s ease;
 }
 
@@ -1104,12 +1109,12 @@
 }
 
 .presentation-floating-drawer-btn {
-  background: #2563eb;
+  background: var(--accent-color);
   color: #ffffff;
   border: none;
   border-radius: 20px;
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
@@ -1129,7 +1134,9 @@
 .presentation-modal-card {
   width: 90%;
   max-width: 580px;
-  background: #ffffff;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
   display: flex;
@@ -1139,7 +1146,7 @@
 
 .presentation-modal-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1153,10 +1160,10 @@
 }
 
 .presentation-modal-tip {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 14px;
+  color: var(--text-secondary);
   line-height: 1.5;
-  background: #f8fafc;
+  background: var(--bg-input);
   padding: 10px 14px;
   border-radius: 8px;
   border-left: 3px solid #f59e0b;
@@ -1188,9 +1195,9 @@
 .presentation-btn-modal-action {
   width: 100%;
   padding: 11px 16px;
-  background: #ffffff;
-  color: #1e293b;
-  border: 1.5px solid #cbd5e1;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-color);
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
@@ -1203,14 +1210,14 @@
 }
 
 .presentation-btn-modal-action:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
+  background: var(--bg-input);
+  border-color: var(--accent-color);
 }
 
 .presentation-modal-footer {
   padding: 12px 20px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
 }
@@ -1272,8 +1279,8 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: #ffffff;
-  border: 1.5px solid #cbd5e1;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
   border-radius: 9999px;
   padding: 6px 16px;
   margin-bottom: 8px;
@@ -1287,9 +1294,9 @@
 }
 
 .presentation-draw-hint {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1324,11 +1331,11 @@
 .presentation-draw-width-select {
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1.5px solid #cbd5e1;
-  font-size: 12px;
+  border: 1.5px solid var(--border-color);
+  font-size: 14px;
   font-weight: 700;
-  color: #334155;
-  background: #f8fafc;
+  color: var(--text-primary);
+  background: var(--bg-input);
   cursor: pointer;
 }
 
@@ -1363,12 +1370,12 @@
 
 /* 學生作答卡片收合與展開按鈕 (圖 3: 大尺寸箭頭無中文) */
 .presentation-collapse-dialog-btn {
-  background: #f1f5f9;
-  border: 1.5px solid #cbd5e1;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
   font-size: 16px;
   line-height: 1;
   font-weight: 900;
-  color: #475569;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px 10px;
   border-radius: 6px;
@@ -1393,7 +1400,7 @@
   padding: 8px 16px;
   border-radius: 20px;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
   z-index: 30;
@@ -1416,27 +1423,28 @@
   justify-content: space-between;
   gap: 6px;
   padding: 10px 12px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border-color);
 }
 
 .presentation-selected-count-badge {
-  background: #dbeafe;
-  color: #2563eb;
+  background: var(--bg-card);
+  color: var(--accent-color);
+  border: 1px solid var(--border-color);
   font-weight: 700;
-  font-size: 12px;
+  font-size: 14px;
   border-radius: 8px;
   padding: 6px 10px;
   white-space: nowrap;
 }
 
 .presentation-sub-footer-btn {
-  background: #ffffff;
-  border: 1.5px solid #cbd5e1;
-  color: #334155;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  color: var(--text-primary);
   border-radius: 8px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
@@ -1444,15 +1452,17 @@
 }
 
 .presentation-sub-footer-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: var(--bg-input);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .presentation-submissions-count-badge {
   display: inline-block;
-  background: #dbeafe;
-  color: #2563eb;
-  font-size: 12px;
+  background: var(--bg-input);
+  color: var(--accent-color);
+  border: 1px solid var(--border-color);
+  font-size: 14px;
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 8px;
@@ -1461,8 +1471,8 @@
 
 .presentation-draw-submission-card {
   position: relative;
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
@@ -1505,14 +1515,14 @@
 
 .presentation-draw-submission-author {
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f8fafc;
-  border-top: 1px solid #f1f5f9;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border-color);
 }
 
 /* RWD 行動裝置調適 */
@@ -1574,7 +1584,7 @@
   }
   .presentation-draw-width-select {
     padding: 3px 6px !important;
-    font-size: 12px !important;
+    font-size: 14px !important;
   }
   .presentation-draw-actions {
     gap: 6px !important;

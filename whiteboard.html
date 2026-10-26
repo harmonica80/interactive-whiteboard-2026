@@ -22,21 +22,110 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="js/firebase-config.js"></script>
 
+  <script>
+    (function() {
+      function applyWbTheme(theme) {
+        var t = theme || localStorage.getItem('whiteboard_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      }
+      try {
+        if (window.parent && window.parent.document && window.parent.document.documentElement) {
+          var parentTheme = window.parent.document.documentElement.getAttribute('data-theme');
+          applyWbTheme(parentTheme);
+        } else {
+          applyWbTheme();
+        }
+      } catch (e) {
+        applyWbTheme();
+      }
+      window.addEventListener('storage', function(e) {
+        if (e.key === 'whiteboard_theme') applyWbTheme(e.newValue);
+      });
+      window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'THEME_CHANGE') applyWbTheme(e.data.theme);
+      });
+    })();
+  </script>
   <style>
+    /* ===== 四大色系主題變數 (與 index.html / css/style.css 100% 同步連動) ===== */
     :root {
-      --primary: #f97316;
-      --primary-hover: #ea580c;
-      --primary-light: #fff7ed;
-      --primary-border: #fdba74;
-      --text-main: #1f2937;
-      --text-muted: #6b7280;
-      --border-color: #e5e7eb;
-      --bg-topbar: #ffffff;
-      --bg-canvas: #f8fafc;
-      --danger: #ef4444;
-      --danger-hover: #dc2626;
+      --bg-primary: #f0f2f5;
+      --bg-card: #ffffff;
+      --bg-header: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --bg-input: #f8f9fa;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border-color: #e9ecef;
+      --accent-color: #667eea;
+      --accent-hover: #5a6fd6;
+      --danger-color: #dc3545;
+      --success-color: #28a745;
+      --shadow: 0 8px 30px rgba(0,0,0,0.08);
+      --shadow-hover: 0 12px 40px rgba(0,0,0,0.12);
+      /* 白板相容對應變數 */
+      --primary: var(--accent-color);
+      --primary-hover: var(--accent-hover);
+      --primary-light: var(--bg-input);
+      --primary-border: var(--accent-color);
+      --text-main: var(--text-primary);
+      --bg-topbar: var(--bg-card);
+      --bg-canvas: var(--bg-primary);
+      --danger: var(--danger-color);
+      --danger-hover: var(--danger-color);
       --sticky-bg: #fef08a;
       --sticky-border: #facc15;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1a1a2e;
+      --bg-card: #16213e;
+      --bg-header: linear-gradient(135deg, #0f3460 0%, #533483 100%);
+      --bg-input: #1a1a2e;
+      --text-primary: #eaeaea;
+      --text-secondary: #b0b0b0;
+      --text-muted: #707070;
+      --border-color: #2a2a4a;
+      --accent-color: #e94560;
+      --accent-hover: #d63851;
+      --danger-color: #e94560;
+      --success-color: #4ecca3;
+      --shadow: 0 8px 30px rgba(0,0,0,0.3);
+      --shadow-hover: 0 12px 40px rgba(0,0,0,0.4);
+    }
+
+    [data-theme="pink"] {
+      --bg-primary: #fff0f5;
+      --bg-card: #ffffff;
+      --bg-header: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --bg-input: #fff5f8;
+      --text-primary: #4a4a4a;
+      --text-secondary: #7a7a7a;
+      --text-muted: #aaaaaa;
+      --border-color: #fce4ec;
+      --accent-color: #f5576c;
+      --accent-hover: #e4455a;
+      --danger-color: #f5576c;
+      --success-color: #4caf50;
+      --shadow: 0 8px 30px rgba(245,87,108,0.1);
+      --shadow-hover: 0 12px 40px rgba(245,87,108,0.15);
+    }
+
+    [data-theme="brown"] {
+      --bg-primary: #f5f0e8;
+      --bg-card: #fffef9;
+      --bg-header: linear-gradient(135deg, #8d6e63 0%, #a1887f 100%);
+      --bg-input: #faf7f2;
+      --text-primary: #4e342e;
+      --text-secondary: #795548;
+      --text-muted: #a1887f;
+      --border-color: #d7ccc8;
+      --accent-color: #8d6e63;
+      --accent-hover: #795548;
+      --danger-color: #c62828;
+      --success-color: #558b2f;
+      --shadow: 0 8px 30px rgba(141,110,99,0.1);
+      --shadow-hover: 0 12px 40px rgba(141,110,99,0.15);
     }
 
     * {
@@ -101,19 +190,20 @@
       gap: 6px;
       margin-left: 12px;
       padding: 6px 12px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      color: #334155;
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
+      color: var(--text-primary);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.15s ease;
     }
 
     .btn-help-guide:hover {
-      background: #f1f5f9;
-      border-color: #94a3b8;
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
     }
 
     .topbar-title svg {
@@ -128,10 +218,10 @@
       justify-content: center;
       gap: 4px;
       padding: 6px 14px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      color: var(--text-muted);
-      background: #ffffff;
+      color: var(--text-secondary);
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 8px;
       cursor: pointer;
@@ -139,14 +229,14 @@
     }
 
     .btn-close:hover {
-      background: #f3f4f6;
-      color: var(--text-main);
+      background: var(--bg-input);
+      color: var(--text-primary);
     }
 
     /* ===== 次工具列 (畫布切換、頁數、縮放、權限開關) ===== */
     .whiteboard-subbar {
       min-height: 48px;
-      background: #ffffff;
+      background: var(--bg-card);
       border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
@@ -174,13 +264,13 @@
 
     .canvas-select {
       appearance: none;
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 6px 28px 6px 12px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      color: #334155;
+      color: var(--text-primary);
       cursor: pointer;
       outline: none;
       min-width: 95px;
@@ -188,12 +278,12 @@
     }
 
     .canvas-select:hover {
-      background: #f1f5f9;
-      border-color: #94a3b8;
+      background: var(--bg-input);
+      border-color: var(--accent-color);
     }
 
     .canvas-select:focus {
-      border-color: #0284c7;
+      border-color: var(--accent-color);
     }
 
     .canvas-select-arrow {
@@ -201,7 +291,7 @@
       right: 8px;
       pointer-events: none;
       color: #64748b;
-      font-size: 11px;
+      font-size: 14px;
     }
 
     .btn-pill {
@@ -210,12 +300,12 @@
       justify-content: center;
       gap: 6px;
       padding: 6px 12px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      color: #334155;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
       cursor: pointer;
       transition: all 0.15s ease;
       white-space: nowrap;
@@ -223,15 +313,16 @@
     }
 
     .btn-pill:hover {
-      background: #f1f5f9;
-      border-color: #94a3b8;
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
     }
 
     .btn-pill.active,
     .btn-pill.is-fullscreen-active {
-      background: #0284c7 !important;
+      background: var(--accent-color) !important;
       color: #ffffff !important;
-      border-color: #0284c7 !important;
+      border-color: var(--accent-color) !important;
     }
 
     .btn-pill.purple {
@@ -258,26 +349,27 @@
       align-items: center;
       gap: 6px;
       padding: 6px 12px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      color: #334155;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
       cursor: pointer;
       transition: all 0.15s ease;
       user-select: none;
     }
 
     .page-tab-item:hover {
-      background: #f1f5f9;
-      border-color: #94a3b8;
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
     }
 
-    /* 目前所在頁數採用同步簡報啟用藍 */
+    /* 目前所在頁數跟隨主題強調色 */
     .page-tab-item.active {
-      border: 1px solid #0284c7 !important;
-      background: #0284c7 !important;
+      border: 1px solid var(--accent-color) !important;
+      background: var(--accent-color) !important;
       color: #ffffff !important;
       box-shadow: none !important;
     }
@@ -292,7 +384,7 @@
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.08);
       color: #64748b;
-      font-size: 11px;
+      font-size: 14px;
       line-height: 1;
       margin-left: 2px;
       transition: all 0.15s;
@@ -317,7 +409,7 @@
     .zoom-group {
       display: inline-flex;
       align-items: center;
-      background: #ffffff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 2px;
@@ -344,7 +436,7 @@
 
     .zoom-value {
       padding: 0 8px;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
       min-width: 48px;
       text-align: center;
@@ -358,38 +450,38 @@
       justify-content: center;
       gap: 6px;
       padding: 6px 12px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       border-radius: 8px;
       cursor: pointer;
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      color: #334155;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
       transition: all 0.15s ease;
       white-space: nowrap;
       user-select: none;
     }
 
     .btn-toggle-perm:hover {
-      background: #f1f5f9;
-      border-color: #94a3b8;
+      background: var(--bg-input);
+      border-color: var(--accent-color);
     }
 
     .btn-toggle-perm.is-active {
-      background: #0284c7;
+      background: var(--accent-color);
       color: #ffffff;
-      border-color: #0284c7;
+      border-color: var(--accent-color);
     }
 
     .btn-toggle-perm.is-active:hover {
-      background: #0369a1;
-      border-color: #0369a1;
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
     }
 
     .btn-toggle-perm.is-inactive {
-      background: #ffffff;
-      color: #334155;
-      border-color: #cbd5e1;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border-color: var(--border-color);
     }
 
     /* 學生端唯讀顯示權限狀態（僅顯示狀態、不可點擊修改） */
@@ -398,23 +490,23 @@
     }
 
     .btn-toggle-perm.is-student-readonly.is-active:hover {
-      background: #0284c7;
-      border-color: #0284c7;
+      background: var(--accent-color);
+      border-color: var(--accent-color);
     }
 
     .btn-toggle-perm.is-student-readonly.is-inactive:hover {
-      background: #ffffff;
-      border-color: #cbd5e1;
+      background: var(--bg-card);
+      border-color: var(--border-color);
     }
 
     .btn-danger {
-      color: #dc2626 !important;
-      border-color: #fca5a5 !important;
-      background: #fff5f5 !important;
+      color: var(--danger-color) !important;
+      border-color: rgba(220, 53, 69, 0.35) !important;
+      background: rgba(220, 53, 69, 0.08) !important;
     }
 
     .btn-danger:hover {
-      background: #fee2e2 !important;
+      background: rgba(220, 53, 69, 0.16) !important;
     }
 
     /* ===== 主畫布區域與視角容器 ===== */
@@ -499,7 +591,7 @@
       left: 0;
       background: #f97316;
       color: #ffffff;
-      font-size: 11px;
+      font-size: 14px;
       font-weight: 700;
       padding: 1px 6px;
       border-radius: 4px;
@@ -594,7 +686,7 @@
       left: 14px;
       top: 50%;
       transform: translateY(-50%);
-      background: #ffffff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 20px;
       box-shadow: 0 6px 24px rgba(0,0,0,0.12);
@@ -634,11 +726,11 @@
       justify-content: center;
       cursor: grab;
       color: #64748b;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       letter-spacing: 2px;
       border-radius: 8px;
-      background: #f1f5f9;
+      background: var(--bg-input);
       touch-action: none;
       user-select: none;
       transition: background 0.15s, color 0.15s;
@@ -662,7 +754,7 @@
       transform: translateY(-50%);
       width: 24px;
       height: 48px;
-      background: #ffffff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-left: none;
       border-radius: 0 10px 10px 0;
@@ -672,7 +764,7 @@
       justify-content: center;
       cursor: pointer;
       color: var(--text-main);
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 800;
       z-index: 26;
       padding: 0;
@@ -715,7 +807,7 @@
       .stroke-size-select {
         width: 54px !important;
         padding: 2px !important;
-        font-size: 11px !important;
+        font-size: 14px !important;
       }
       .toolbar-history {
         padding-top: 4px !important;
@@ -739,7 +831,7 @@
       border-radius: 10px;
       border: none;
       background: transparent;
-      color: #4b5563;
+      color: var(--text-secondary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -748,8 +840,8 @@
     }
 
     .tool-btn:hover {
-      background: #f3f4f6;
-      color: var(--text-main);
+      background: var(--bg-input);
+      color: var(--text-primary);
     }
 
     .tool-btn.active {
@@ -790,11 +882,12 @@
     .stroke-size-select {
       width: 60px;
       padding: 3px 4px;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 600;
       border: 1px solid var(--border-color);
       border-radius: 6px;
-      background: #ffffff;
+      background: var(--bg-input);
+      color: var(--text-primary);
       cursor: pointer;
       outline: none;
       text-align: center;
@@ -806,7 +899,7 @@
       left: 100%;
       top: 0;
       margin-left: 10px;
-      background: #ffffff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 12px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.15);
@@ -830,8 +923,8 @@
     .tool-btn-history {
       width: 28px;
       height: 28px;
-      border: 1px solid transparent;
-      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
       border-radius: 6px;
       cursor: pointer;
       display: flex;
@@ -860,8 +953,8 @@
       padding: 10px 8px;
       border: 1px solid var(--border-color);
       border-radius: 8px;
-      background: #f8fafc;
-      font-size: 13px;
+      background: var(--bg-input);
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       color: var(--text-main);
@@ -886,7 +979,7 @@
     }
     .btn-student-lock-action {
       padding: 3px 8px;
-      font-size: 11px;
+      font-size: 14px;
       font-weight: 700;
       border-radius: 6px;
       cursor: pointer;
@@ -913,7 +1006,7 @@
       color: #16a34a;
     }
     .student-locked-tag {
-      font-size: 11px;
+      font-size: 14px;
       font-weight: 700;
       color: #dc2626;
       background: #fef2f2;
@@ -944,7 +1037,7 @@
       right: 0;
       bottom: 0;
       width: 280px;
-      background: #ffffff;
+      background: var(--bg-card);
       border-left: 1px solid var(--border-color);
       box-shadow: -4px 0 16px rgba(0,0,0,0.05);
       display: flex;
@@ -966,7 +1059,7 @@
     .drawer-title {
       font-size: 15px;
       font-weight: 700;
-      color: #4c1d95;
+      color: var(--accent-color);
       display: flex;
       align-items: center;
       gap: 6px;
@@ -974,7 +1067,7 @@
     }
 
     .drawer-desc {
-      font-size: 12px;
+      font-size: 14px;
       color: var(--text-muted);
       line-height: 1.5;
     }
@@ -995,7 +1088,7 @@
       padding: 8px 10px;
       border-radius: 8px;
       background: #f8fafc;
-      font-size: 13px;
+      font-size: 14px;
     }
 
     .user-info-left {
@@ -1012,7 +1105,7 @@
     }
 
     .user-role-badge {
-      font-size: 10px;
+      font-size: 14px;
       font-weight: 700;
       padding: 1px 5px;
       border-radius: 4px;
@@ -1050,7 +1143,9 @@
     }
 
     .modal-card {
-      background: #ffffff;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
       border-radius: 16px;
       width: 95%;
       max-width: 1050px;
@@ -1080,7 +1175,7 @@
 
     .pdf-select-toolbar {
       padding: 10px 24px;
-      background: #f8fafc;
+      background: var(--bg-input);
       border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
@@ -1098,7 +1193,7 @@
 
     .badge-count {
       padding: 3px 10px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       border-radius: 12px;
       background: #e0f2fe;
@@ -1132,7 +1227,7 @@
     /* 選取物件操作與對齊工具列 (Item 5 & Item 9) */
     .selection-action-bar {
       position: absolute;
-      background: #ffffff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 12px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.16);
@@ -1153,7 +1248,7 @@
     }
     .action-btn {
       padding: 4px 7px;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 600;
       background: #f8fafc;
       border: 1px solid var(--border-color);
@@ -1238,7 +1333,7 @@
       left: 8px;
       background: rgba(0, 0, 0, 0.75);
       color: #ffffff;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
       padding: 2px 8px;
       border-radius: 6px;
@@ -1276,15 +1371,15 @@
       align-items: center;
       justify-content: flex-end;
       gap: 12px;
-      background: #ffffff;
+      background: var(--bg-input);
     }
 
     .btn-secondary {
       padding: 8px 18px;
       font-size: 14px;
       font-weight: 600;
-      color: var(--text-main);
-      background: #f3f4f6;
+      color: var(--text-primary);
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 8px;
       cursor: pointer;
@@ -1321,7 +1416,7 @@
       color: #ffffff;
       padding: 6px 16px;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       pointer-events: none;
       z-index: 15;
@@ -1338,7 +1433,7 @@
       position: absolute;
       right: 18px;
       bottom: 18px;
-      background: #ffffff;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 12px;
       box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
@@ -1381,7 +1476,7 @@
     .minimap-zoom-val {
       min-width: 44px;
       text-align: center;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--text-main);
       cursor: pointer;
@@ -1391,13 +1486,13 @@
       width: 28px;
       height: 28px;
       border: 1px solid var(--border-color);
-      background: #f8fafc;
+      background: var(--bg-input);
       border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #64748b;
+      color: var(--text-secondary);
       transition: all 0.15s;
     }
 
@@ -1461,14 +1556,14 @@
       box-shadow: 0 6px 16px rgba(249,115,22,0.4);
     }
     .btn-export-secondary {
-      background: #ffffff;
-      color: #1e293b;
-      border: 1.5px solid #e2e8f0;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1.5px solid var(--border-color);
       box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     }
     .btn-export-secondary:hover {
-      background: #f8fafc;
-      border-color: #cbd5e1;
+      background: var(--bg-input);
+      border-color: var(--accent-color);
       transform: translateY(-1px);
     }
   </style>
@@ -1898,7 +1993,7 @@
           <button class="btn-close" id="btnCloseStudentLockModal">✕</button>
         </div>
         <div style="padding: 20px 24px;">
-          <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 12px 0;">
+          <p style="font-size: 14px; color: var(--text-muted); margin: 0 0 12px 0;">
             鎖定後該學生將暫時無法新增、編輯或移動白板上的任何物件：
           </p>
           <div class="lock-duration-grid">
@@ -1910,9 +2005,9 @@
             <button class="btn-lock-time" data-duration="1800">⏱️ 30 分鐘</button>
             <button class="btn-lock-time btn-lock-perm" data-duration="-1">🛑 永久鎖定（需手動解鎖）</button>
           </div>
-          <div id="lockStudentStatusBox" style="display:none; margin-top:14px; padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size:13px; color:#b91c1c; display:flex; align-items:center; justify-content:space-between;">
+          <div id="lockStudentStatusBox" style="display:none; margin-top:14px; padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; font-size: 14px; color:#b91c1c; display:flex; align-items:center; justify-content:space-between;">
             <span id="lockStudentStatusText">目前狀態：已鎖定</span>
-            <button class="btn-secondary" id="btnUnlockStudentDirect" style="padding:4px 10px; font-size:12px; border-color:#fca5a5; color:#dc2626; background:#fff;">解除鎖定</button>
+            <button class="btn-secondary" id="btnUnlockStudentDirect" style="padding:4px 10px; font-size: 14px; border-color:#fca5a5; color:#dc2626; background:#fff;">解除鎖定</button>
           </div>
         </div>
         <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end;">

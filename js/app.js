@@ -10925,9 +10925,34 @@ class App {
     }
   }
   
+  syncThemeToSubwindows(theme) {
+    const wbFrame = document.getElementById('whiteboardFrame');
+    if (wbFrame) {
+      try {
+        if (wbFrame.contentDocument && wbFrame.contentDocument.documentElement) {
+          wbFrame.contentDocument.documentElement.setAttribute('data-theme', theme);
+        }
+        if (wbFrame.contentWindow) {
+          wbFrame.contentWindow.postMessage({ type: 'THEME_CHANGE', theme }, '*');
+        }
+      } catch (e) {}
+    }
+    if (window.wordCloud && typeof window.wordCloud.renderCloud === 'function') {
+      window.wordCloud.renderCloud();
+    }
+  }
+
   initThemeSwitcher() {
     const savedTheme = localStorage.getItem('whiteboard_theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
+    this.syncThemeToSubwindows(savedTheme);
+    const wbFrame = document.getElementById('whiteboardFrame');
+    if (wbFrame) {
+      wbFrame.addEventListener('load', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        this.syncThemeToSubwindows(currentTheme);
+      });
+    }
     document.querySelectorAll('.theme-btn').forEach(btn => {
       if (btn.dataset.theme === savedTheme) btn.classList.add('active');
       else btn.classList.remove('active');
@@ -10938,6 +10963,7 @@ class App {
         localStorage.setItem('whiteboard_theme', theme);
         document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        this.syncThemeToSubwindows(theme);
       });
     });
   }

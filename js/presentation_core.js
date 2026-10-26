@@ -539,8 +539,8 @@
         if (els.emptyHint) {
           els.emptyHint.innerHTML = `
             <span style="font-size: 38px;">🔒</span>
-            <span style="font-weight: 700; color: #64748b; font-size: 16px;">目前設定為「僅老師進行簡報」</span>
-            <span style="font-size: 13px; color: #94a3b8;">請等待老師開啟同步簡報或開放操作權限</span>
+            <span style="font-weight: 700; color: var(--text-secondary); font-size: 16px;">目前設定為「僅老師進行簡報」</span>
+            <span style="font-size: 14px; color: var(--text-muted);">請等待老師開啟同步簡報或開放操作權限</span>
           `;
           els.emptyHint.style.display = 'flex';
         }
@@ -1573,8 +1573,8 @@
           if (!this.canControlPresentation() && !this.isPresenting) {
             els.emptyHint.innerHTML = `
               <span style="font-size: 38px;">🔒</span>
-              <span style="font-weight: 700; color: #64748b; font-size: 16px;">目前設定為「僅老師進行簡報」</span>
-              <span style="font-size: 13px; color: #94a3b8;">請等待老師開啟同步簡報或開放操作權限</span>
+              <span style="font-weight: 700; color: var(--text-secondary); font-size: 16px;">目前設定為「僅老師進行簡報」</span>
+              <span style="font-size: 14px; color: var(--text-muted);">請等待老師開啟同步簡報或開放操作權限</span>
             `;
           } else {
             els.emptyHint.innerHTML = `
@@ -1682,7 +1682,7 @@
         submissionsList.innerHTML = `
           <div class="presentation-submissions-empty">
             本頁未設定互動。<br>
-            <span style="font-size: 11px; opacity: 0.8;">可點擊頂部「⚙️ 本頁設定」新增選擇題、手繪作答或心得回饋。</span>
+            <span style="font-size: 14px; opacity: 0.8;">可點擊頂部「⚙️ 本頁設定」新增選擇題、手繪作答或心得回饋。</span>
           </div>
         `;
         if (submissionsStats) {
@@ -1805,8 +1805,8 @@
           lockedCard.style.cssText = 'padding: 16px 20px; text-align: center; background: rgba(255, 255, 255, 0.96); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-left: 4px solid #f59e0b; max-width: 360px;';
           lockedCard.innerHTML = `
             <div style="font-size: 26px; margin-bottom: 6px;">🔒</div>
-            <div style="font-weight: 700; color: #1e293b; font-size: 14px;">隨堂作答暫未開放</div>
-            <div style="font-size: 12px; color: #64748b; margin-top: 6px; line-height: 1.5;">
+            <div style="font-weight: 700; color: var(--text-primary); font-size: 14px;">隨堂作答暫未開放</div>
+            <div style="font-size: 14px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5;">
               本頁互動題目設定為「<strong>僅限老師同步廣播時作答</strong>」。<br>
               請等待老師開啟同步簡報，系統將自動開啟作答！
             </div>
@@ -1908,7 +1908,7 @@
         <div class="presentation-student-dialog-head">
           <span class="presentation-student-dialog-title">${headTitle}</span>
           <div style="display: flex; align-items: center; gap: 6px;">
-            ${isSubmitted ? '<span style="color: #10b981; font-size: 11px; font-weight: 700;">✅ 已提交</span>' : ''}
+            ${isSubmitted ? '<span style="color: #10b981; font-size: 14px; font-weight: 700;">✅ 已提交</span>' : ''}
             <button type="button" class="presentation-collapse-dialog-btn" id="btnCollapseInteraction" title="收合作答視窗" aria-label="收合">▼</button>
             ${mode === 'floating' ? '<button type="button" class="presentation-btn-close-sub" id="btnCloseStudentDrawer" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:14px;" title="收合">✕</button>' : ''}
           </div>
@@ -2000,7 +2000,7 @@
           drawNotice.style.border = '1px dashed #0284c7';
           drawNotice.style.borderRadius = '8px';
           drawNotice.style.padding = '12px';
-          drawNotice.style.fontSize = '13px';
+          drawNotice.style.fontSize = '14px';
           drawNotice.style.color = '#0369a1';
           drawNotice.style.lineHeight = '1.6';
           drawNotice.style.textAlign = 'center';
@@ -2375,7 +2375,7 @@
       selectedList.forEach(([uid, sub]) => {
         const item = document.createElement('div');
         item.style.background = '#ffffff';
-        item.style.border = '1px solid #cbd5e1';
+        item.style.border = '1px solid var(--border-color)';
         item.style.borderRadius = '10px';
         item.style.padding = '10px';
         item.style.display = 'flex';
@@ -2385,8 +2385,8 @@
 
         item.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-weight: 700; color: #1e293b; font-size: 14px;">${sub.avatar || '👤'} ${this.escapeHtml(sub.userName || '同學')}</span>
-            <span style="font-size: 11px; color: #64748b;">${sub.timestamp ? new Date(sub.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+            <span style="font-weight: 700; color: var(--text-primary); font-size: 14px;">${sub.avatar || '👤'} ${this.escapeHtml(sub.userName || '同學')}</span>
+            <span style="font-size: 14px; color: var(--text-secondary);">${sub.timestamp ? new Date(sub.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
           </div>
           <div style="background: #0f172a; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; aspect-ratio: 16/9; cursor: pointer;" title="點擊放大查看">
             <img src="${sub.drawDataUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
@@ -2674,8 +2674,8 @@
         pageItem.style.cursor = 'pointer';
 
         pageItem.innerHTML = `
-          <canvas id="pdfPreviewCanvas_${i}" style="width: 140px; aspect-ratio: 16/9; object-fit: contain; background: white; border: 1px solid #e2e8f0; border-radius: 4px;"></canvas>
-          <label style="font-size: 12px; font-weight: 600; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+          <canvas id="pdfPreviewCanvas_${i}" style="width: 140px; aspect-ratio: 16/9; object-fit: contain; background: white; border: 1px solid var(--border-color); border-radius: 4px;"></canvas>
+          <label style="font-size: 14px; font-weight: 600; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 4px;">
             <input type="checkbox" class="pdf-page-checkbox" data-page="${i}" checked> 第 ${i} 頁
           </label>
         `;
@@ -2931,7 +2931,7 @@
           cursor: pointer;
           transition: all 0.15s ease;
         `;
-        btn.innerHTML = `<span>${this.escapeHtml(emo)}</span><span style="font-size: 12px;">${isChecked ? '✓' : ''}</span>`;
+        btn.innerHTML = `<span>${this.escapeHtml(emo)}</span><span style="font-size: 14px;">${isChecked ? '✓' : ''}</span>`;
         btn.onclick = () => this.toggleFloatingEmoji(emo);
         grid.appendChild(btn);
       });
@@ -3064,7 +3064,7 @@
 
       if (this.tempExternalLinks.length === 0) {
         container.innerHTML = `
-          <div style="color: #94a3b8; font-size: 12px; padding: 6px 0; font-style: italic;">
+          <div style="color: var(--text-muted); font-size: 14px; padding: 6px 0; font-style: italic;">
             尚未設定外部連結，點擊上方「➕ 新增連結」即可加入（最多 3 個）。
           </div>
         `;
@@ -3085,13 +3085,13 @@
           <div style="flex: 0 0 110px;">
             <input type="text" placeholder="連結名稱" value="${this.escapeHtml(item.title || '')}"
               oninput="window.presentationManager.updateExternalLinkTitle(${idx}, this.value)"
-              style="width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 12px;">
+              style="width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
           </div>
           <div style="flex: 1;">
             <input type="url" placeholder="https://..." value="${this.escapeHtml(item.url || '')}"
               oninput="window.presentationManager.updateExternalLinkUrl(${idx}, this.value)"
               onblur="window.presentationManager.onExternalLinkUrlBlur(${idx}, this.value)"
-              style="width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 12px;">
+              style="width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
           </div>
           <button type="button" onclick="window.presentationManager.deleteExternalLinkItem(${idx})"
             title="刪除此連結"
@@ -3157,14 +3157,14 @@
       container.innerHTML = '';
 
       if (this.tempQuestions.length === 0) {
-        container.innerHTML = '<div style="color: #94a3b8; font-size: 13px; padding: 10px 0;">目前本頁無設定互動題目，點擊下方「+ 新增題目」開始建立！</div>';
+        container.innerHTML = '<div style="color: var(--text-muted); font-size: 14px; padding: 10px 0;">目前本頁無設定互動題目，點擊下方「+ 新增題目」開始建立！</div>';
         return;
       }
 
       this.tempQuestions.forEach((q, idx) => {
         const item = document.createElement('div');
-        item.style.background = '#f8fafc';
-        item.style.border = '1px solid #cbd5e1';
+        item.style.background = 'var(--bg-input)';
+        item.style.border = '1px solid var(--border-color)';
         item.style.borderRadius = '10px';
         item.style.padding = '12px';
         item.style.display = 'flex';
@@ -3177,11 +3177,11 @@
 
         item.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-weight: 700; font-size: 13px; color: #1e293b;">題目 ${idx + 1}</span>
-            <button type="button" style="color: #ef4444; border: none; background: none; font-size: 12px; cursor: pointer; font-weight: 600;" onclick="window.presentationManager.deleteQuestionItem(${idx})">✕ 刪除</button>
+            <span style="font-weight: 700; font-size: 14px; color: var(--text-primary);">題目 ${idx + 1}</span>
+            <button type="button" style="color: #ef4444; border: none; background: none; font-size: 14px; cursor: pointer; font-weight: 600;" onclick="window.presentationManager.deleteQuestionItem(${idx})">✕ 刪除</button>
           </div>
           <div style="display: flex; gap: 8px;">
-            <select style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; width: 100%;" onchange="window.presentationManager.updateQuestionType(${idx}, this.value)">
+            <select style="padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; width: 100%;" onchange="window.presentationManager.updateQuestionType(${idx}, this.value)">
               <option value="quick_choice" ${q.type === 'quick_choice' ? 'selected' : ''}>選擇題 (學生按色塊作答，可設正解)</option>
               <option value="draw" ${q.type === 'draw' ? 'selected' : ''}>手繪標記作答 (學生於畫面繪圖提交)</option>
               <option value="choice" ${q.type === 'choice' ? 'selected' : ''}>自訂文字選擇題</option>
@@ -3190,14 +3190,14 @@
             </select>
           </div>
           ${q.type !== 'draw' ? `
-            <input type="text" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" placeholder="輸入題幹或題目說明..." value="${this.escapeHtml(q.title || '')}" oninput="window.presentationManager.updateQuestionTitle(${idx}, this.value)">
+            <input type="text" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px;" placeholder="輸入題幹或題目說明..." value="${this.escapeHtml(q.title || '')}" oninput="window.presentationManager.updateQuestionTitle(${idx}, this.value)">
           ` : ''}
           
           ${q.type === 'quick_choice' ? `
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; background: #ffffff; padding: 8px 10px; border-radius: 6px; border: 1px dashed #cbd5e1;">
-              <div style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #475569;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; background: var(--bg-card); padding: 8px 10px; border-radius: 6px; border: 1px dashed var(--border-color);">
+              <div style="display: flex; align-items: center; gap: 4px; font-size: 14px; color: var(--text-secondary);">
                 <span>選項數：</span>
-                <select style="padding: 4px 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px;" onchange="window.presentationManager.updateQuestionOptCount(${idx}, this.value)">
+                <select style="padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;" onchange="window.presentationManager.updateQuestionOptCount(${idx}, this.value)">
                   <option value="2" ${optCount == 2 ? 'selected' : ''}>2 個選項</option>
                   <option value="3" ${optCount == 3 ? 'selected' : ''}>3 個選項</option>
                   <option value="4" ${optCount == 4 ? 'selected' : ''}>4 個選項</option>
@@ -3205,18 +3205,18 @@
                   <option value="6" ${optCount == 6 ? 'selected' : ''}>6 個選項</option>
                 </select>
               </div>
-              <div style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #475569;">
+              <div style="display: flex; align-items: center; gap: 4px; font-size: 14px; color: var(--text-secondary);">
                 <span>標籤：</span>
-                <select style="padding: 4px 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px;" onchange="window.presentationManager.updateQuestionOptStyle(${idx}, this.value)">
+                <select style="padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;" onchange="window.presentationManager.updateQuestionOptStyle(${idx}, this.value)">
                   <option value="abcd" ${optStyle === 'abcd' ? 'selected' : ''}>A B C D</option>
                   <option value="1234" ${optStyle === '1234' ? 'selected' : ''}>1 2 3 4</option>
                   <option value="ox" ${optStyle === 'ox' ? 'selected' : ''}>◯ ✕ (是非)</option>
                   <option value="cjk" ${optStyle === 'cjk' ? 'selected' : ''}>甲 乙 丙 丁</option>
                 </select>
               </div>
-              <div style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #475569;">
+              <div style="display: flex; align-items: center; gap: 4px; font-size: 14px; color: var(--text-secondary);">
                 <span>正解：</span>
-                <select style="padding: 4px 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px;" onchange="window.presentationManager.updateQuestionCorrectAnswer(${idx}, this.value)">
+                <select style="padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;" onchange="window.presentationManager.updateQuestionCorrectAnswer(${idx}, this.value)">
                   <option value="" ${!q.correctAnswer ? 'selected' : ''}>無正解 (調查/回饋)</option>
                   ${optLabels.map(lbl => `<option value="${lbl}" ${q.correctAnswer === lbl ? 'selected' : ''}>正解：${lbl}</option>`).join('')}
                 </select>
@@ -3225,11 +3225,11 @@
           ` : ''}
 
           ${q.type === 'draw' ? `
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #0284c7; background: #e0f2fe; padding: 8px 10px; border-radius: 6px; border: 1px dashed #7dd3fc;">
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #0284c7; background: #e0f2fe; padding: 8px 10px; border-radius: 6px; border: 1px dashed #7dd3fc;">
               <div>🎨 學生端將在畫面上方顯示手繪工具列，可直接在投影片上進行標記並送出。</div>
-              <div style="display: flex; align-items: center; gap: 8px; color: #0369a1; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd;">
+              <div style="display: flex; align-items: center; gap: 8px; color: #0369a1; background: var(--bg-card); padding: 6px 10px; border-radius: 6px; border: 1px solid #bae6fd;">
                 <span style="font-weight: 700; white-space: nowrap;">繳交作品底圖 (圖 1)：</span>
-                <select style="padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px; flex: 1;" onchange="window.presentationManager.updateQuestionIncludeBg(${idx}, this.value)">
+                <select style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; flex: 1;" onchange="window.presentationManager.updateQuestionIncludeBg(${idx}, this.value)">
                   <option value="false" ${!q.includeSlideBg ? 'selected' : ''}>不包含簡報畫面（僅手繪筆劃，預設）</option>
                   <option value="true" ${q.includeSlideBg ? 'selected' : ''}>包含簡報畫面底圖</option>
                 </select>
@@ -3238,7 +3238,7 @@
           ` : ''}
 
           ${q.type === 'choice' ? `
-            <input type="text" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px dashed #94a3b8; border-radius: 6px; font-size: 12px; background: #ffffff;" placeholder="選項清單 (以逗號分隔，例如：選項A, 選項B, 選項C, 選項D)" value="${this.escapeHtml((q.options || ['A', 'B', 'C', 'D']).join(', '))}" onchange="window.presentationManager.updateQuestionOptions(${idx}, this.value)">
+            <input type="text" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px dashed var(--border-color); border-radius: 6px; font-size: 14px; background: var(--bg-card);" placeholder="選項清單 (以逗號分隔，例如：選項A, 選項B, 選項C, 選項D)" value="${this.escapeHtml((q.options || ['A', 'B', 'C', 'D']).join(', '))}" onchange="window.presentationManager.updateQuestionOptions(${idx}, this.value)">
           ` : ''}
         `;
 
@@ -3454,7 +3454,7 @@
         item.style.borderRadius = '8px';
         item.style.overflow = 'hidden';
         item.style.cursor = 'pointer';
-        item.style.border = idx === this.currentSlideIndex ? '3px solid #06b6d4' : '1px solid #cbd5e1';
+        item.style.border = idx === this.currentSlideIndex ? '3px solid var(--accent-color)' : '1px solid var(--border-color)';
         item.onclick = () => {
           if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
             this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。');
@@ -3469,7 +3469,7 @@
         } else {
           item.innerHTML = `<div style="width: 100%; height: 100%; background: ${slide.bgColor || '#1e293b'};"></div>`;
         }
-        item.innerHTML += `<div style="position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.7); color: white; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 700;">${idx + 1}</div>`;
+        item.innerHTML += `<div style="position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.7); color: white; padding: 1px 6px; border-radius: 4px; font-size: 14px; font-weight: 700;">${idx + 1}</div>`;
         container.appendChild(item);
       });
 
