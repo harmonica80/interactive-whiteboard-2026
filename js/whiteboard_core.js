@@ -2908,8 +2908,9 @@
     const cw = canvas.width;
     const ch = canvas.height;
 
+    const themeBg = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() || '#f8fafc';
     ctx.clearRect(0, 0, cw, ch);
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = themeBg;
     ctx.fillRect(0, 0, cw, ch);
 
     const objs = Object.values(state.objects || {});

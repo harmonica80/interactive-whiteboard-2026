@@ -1,4 +1,13 @@
 # System Log
+## 2026-10-26 - 修復互動白板導航縮放工具列（小地圖）深色主題對比度過低問題
+- 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **小地圖導航標題列與縮放按鈕連動全域主題 CSS 變數 (`whiteboard.html`)**：
+     - 解決深色模式下文字變白但底色寫死白色（#ffffff / #f8fafc）導致「-、75%、+、⛶」文字過淺看不清之問題。
+     - `.minimap-header` 與 `.minimap-body` 背景全面改為 `var(--bg-card)`，縮放按鈕改為 `var(--bg-input)` 與 `var(--border-color)`，文字統一採用 `var(--text-primary)`，懸停邊框與視窗邊框連動 `var(--accent-color)`，確保淺色、深色、粉色、棕色四大主題下皆具備清晰對比度。
+  2. **小地圖 Canvas 動態取得主題背景色 (`js/whiteboard_core.js`)**：
+     - 在 `renderMinimap()` 繪製背景時，動態讀取當前主題 `--bg-card`，消除深色模式下底布殘留亮灰底之問題。
+
 ## 2026-10-26 - 專注力測驗控場列與聽歌搶答按鈕連動四大主題、圖示與對比度優化
 - 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`。
 - 修改項目：

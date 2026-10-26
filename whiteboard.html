@@ -1449,14 +1449,14 @@
       align-items: center;
       gap: 3px;
       padding: 4px 6px;
-      background: #ffffff;
+      background: var(--bg-card);
     }
 
     .btn-minimap-zoom {
       width: 28px;
       height: 28px;
       border: 1px solid var(--border-color);
-      background: #f8fafc;
+      background: var(--bg-input);
       border-radius: 6px;
       font-size: 14px;
       font-weight: 700;
@@ -1464,13 +1464,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--text-main);
+      color: var(--text-primary);
       transition: all 0.12s;
     }
 
     .btn-minimap-zoom:hover {
-      background: #f1f5f9;
-      border-color: #cbd5e1;
+      background: var(--bg-card);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
     }
 
     .minimap-zoom-val {
@@ -1478,7 +1479,7 @@
       text-align: center;
       font-size: 14px;
       font-weight: 700;
-      color: var(--text-main);
+      color: var(--text-primary);
       cursor: pointer;
     }
 
@@ -1497,8 +1498,9 @@
     }
 
     .btn-minimap-toggle:hover {
-      background: #e2e8f0;
-      color: #0f172a;
+      background: var(--bg-card);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
     }
 
     .btn-minimap-toggle.expanded svg {
@@ -1509,7 +1511,7 @@
       position: relative;
       width: 200px;
       height: 130px;
-      background: #f8fafc;
+      background: var(--bg-card);
       border-top: 1px solid var(--border-color);
       cursor: crosshair;
       overflow: hidden;
@@ -1523,7 +1525,7 @@
 
     .minimap-viewport-rect {
       position: absolute;
-      border: 1.5px solid #2563eb;
+      border: 1.5px solid var(--accent-color);
       background: rgba(37, 99, 235, 0.15);
       border-radius: 2px;
       pointer-events: none;
@@ -2038,6 +2040,6 @@
 
   </div>
 
-  <script src="js/whiteboard_core.js?v=3009"></script>
+  <script src="js/whiteboard_core.js?v=3010"></script>
 </body>
 </html>
