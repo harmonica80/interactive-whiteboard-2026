@@ -1,4 +1,26 @@
 # System Log
+## 2026-10-26 - 專注力測驗前台大廳外框與按鈕、影片出題管理後台快捷列與自主學習按鈕改造、選擇題按鈕等寬化
+- 影響檔案：`index.html`, `js/video_quiz.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **專注力測驗前台大廳介面樣式改造 (`index.html`)**：
+     - 保留原腦袋圖示 `🧠`、專注力測驗大廳標題與說明文字。
+     - 外層套用虛線圓角底色框（`var(--bg-input)`，`1.5px dashed var(--border-color)`，圓角 `14px`），內嵌居中卡片（`var(--bg-card)`，陰影與圓角 `12px`）。
+     - 加入「⚙️ 前往管理後台發起或管理專注力測驗」快捷按鈕列（`#focusAdminQuickLinkWrapper`），教師登入可見，學生端唯讀隱藏。
+  2. **影片出題管理後台頂部控制列升級 (`index.html`, `js/video_quiz.js`)**：
+     - 移除舊版「學生端測驗模式設定 (全班即時連動)」Radio 單選框區塊。
+     - 新增影片測驗進行中快捷操作列（`#vqActiveActionRow`），包含「⏹️ 結束測驗」與「👁️ 前台測驗畫面」兩等寬按鈕（`flex: 1`，字級 `15px`，圓角 `10px`）。
+     - 於 `updateAdminBroadcastUI(session)` 及 `stopSyncQuiz()` 中動態連動 `#vqActiveActionRow` 的顯示與隱藏（測驗或自主學習進行時顯示，閒置時自動隱藏）。
+  3. **影片出題題庫卡片「自主學習模式」改造與直連實作 (`js/video_quiz.js`)**：
+     - 將影片測驗卡片原「🟢 前台開放測驗」按鈕替換為「`🎧 自主學習模式`」按鈕（`window.videoQuiz.launchSelfPacedQuiz(quiz.id)`）。
+     - 實作 `launchSelfPacedQuiz(quizId)` 方法：自動設定全域自主學習模式、指派當前影片題目至 Firebase `settingsRef`、於老師端啟動自主學習播放器並自動切換至前台視角，全班學生端同步切換至該影片之自主學習畫面。
+  4. **影片出題前台視角清理 (`index.html`, `js/video_quiz.js`)**：
+     - 依指示自前台視角移除原「選擇自主學習影片」下拉選單與「▶ 開始自主學習」按鈕區塊，不再顯示多餘前台選擇器。
+  5. **選擇題測驗後台控制按鈕等寬化 (`index.html`)**：
+     - 將選擇題測驗進行中的「結束測驗」與「👁️ 前台測驗畫面」按鈕皆統一設為 `flex: 1; min-width: 140px;` 等寬排列。
+  6. **合規檢測**：
+     - 通過 `node --check js/video_quiz.js` 與 `npm run check:syntax` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-26 - 同步簡報雲端教材庫功能實作 (支援雲端儲存、共編/唯讀雙模式載入、跨班級複製與刪除，大幅降低重複上傳流量)
 - 影響檔案：`index.html`, `js/presentation_core.js`, `css/presentation.css`, `js/firebase-config.js`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

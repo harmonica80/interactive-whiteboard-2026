@@ -298,13 +298,8 @@
 
           <!-- 模式 2: 個人自主學習測驗 (Self-paced) -->
           <div id="vqSelfSection" style="display: none;">
-            <div id="vqSelfQuizSelectorRow" style="display: none; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
-              <label for="vqSelfQuizSelect" style="font-weight: bold; font-size: 14px;">選擇自主學習影片：</label>
-              <select id="vqSelfQuizSelect" onchange="window.videoQuiz.startSelfPacedQuiz(this.value)" style="flex: 1; min-width: 220px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;"></select>
-              <button class="presentation-tool-btn" onclick="window.videoQuiz.startSelfPacedQuiz(document.getElementById('vqSelfQuizSelect').value)" style="background: var(--accent-color); color: white; border-color: var(--accent-color); font-size: 14px; padding: 8px 18px;">
-                ▶ 開始自主學習
-              </button>
-            </div>
+            <!-- 隱藏保留以相容舊版腳本，不再顯示於前台 -->
+            <select id="vqSelfQuizSelect" style="display: none;"></select>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <div id="vqSelfProgressInfo" style="font-size: 14px; color: var(--accent-color); font-weight: bold;"></div>
               <button id="vqStudentSelfStatsBtn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" class="presentation-tool-btn active" style="font-size: 14px;" title="查看全班答題分佈與排行榜">
@@ -698,24 +693,17 @@
         <div class="panel-body">
           <!-- 遊戲大廳面板，平常沒開始時顯示 -->
           <div id="focusGameLobby">
-            <!-- 學生視角 lobby -->
-            <div id="studentGameLobby" style="text-align: center; padding: 24px 20px 10px 20px;">
-              <div style="font-size: 48px; margin-bottom: 12px;">🧠</div>
-              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-primary); font-weight: bold;">專注力測驗大廳</h3>
-              <p style="color: var(--text-secondary); font-size: 14px;">等待老師發起專注力活動... 請保持此頁面開啟喔！</p>
-            </div>
-
-            <!-- 未發起遊戲時的說明與後台快捷按鈕 (如同影片出題測驗紅框) -->
-            <div id="focusStudentIdleNotice" style="text-align: center; padding: 36px 20px; background: var(--bg-input); border-radius: 12px; border: 1px dashed var(--border-color); margin: 0 auto 16px auto; max-width: 600px;">
-              <div style="font-size: 40px; margin-bottom: 10px;">📺</div>
-              <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">目前尚無進行中的全班同步測驗</div>
-              <div style="font-size: 14px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 16px auto; line-height: 1.5;">
-                當老師在管理後台發起測驗時，專注力測驗將自動在此同步播放。
-              </div>
-              <div id="focusAdminQuickLinkWrapper" style="display: none;">
-                <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.openAdminFeature ? window.app.openAdminFeature('gameFocus') : window.app.switchToTab('panel-admin')" style="font-size: 14px; font-weight: bold; padding: 8px 20px; cursor: pointer; border-radius: 10px;" title="前往管理後台發起或管理專注力測驗">
-                  ⚙️ 前往管理後台發起或管理專注力測驗
-                </button>
+            <!-- 學生視角 lobby (圖 1：外層虛線底色框包裹置中卡片與管理快捷鍵) -->
+            <div id="studentGameLobby" style="background: var(--bg-input); border: 1.5px dashed var(--border-color); border-radius: 14px; padding: 48px 20px; margin: 10px 0 20px 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 32px 36px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); text-align: center; max-width: 480px; width: 100%; box-sizing: border-box;">
+                <div style="font-size: 52px; margin-bottom: 12px; line-height: 1;">🧠</div>
+                <h3 style="font-size: 18px; margin: 0 0 10px 0; color: var(--text-primary); font-weight: bold;">專注力測驗大廳</h3>
+                <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 16px 0; line-height: 1.5;">等待老師發起專注力活動... 請保持此頁面開啟喔！</p>
+                <div id="focusAdminQuickLinkWrapper" style="display: none;">
+                  <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.openAdminFeature ? window.app.openAdminFeature('gameFocus') : window.app.switchToTab('panel-admin')" style="font-size: 14px; font-weight: bold; padding: 8px 20px; cursor: pointer; border-radius: 10px;" title="前往管理後台發起或管理專注力測驗">
+                    ⚙️ 前往管理後台發起或管理專注力測驗
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -3164,7 +3152,7 @@
                 <button id="startQuizBtn" class="start-quiz-btn" onclick="startQuiz()">🚀 開始測驗</button>
               </div>
               <div id="quizActiveActionRow" style="display: none; margin-top: 10px; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="flex: 2; min-width: 140px; padding: 12px; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color); font-size: 15px;">結束測驗</button>
+                <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="flex: 1; min-width: 140px; padding: 12px; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color); font-size: 15px;">結束測驗</button>
                 <button type="button" id="quizGoToFrontendBtn" class="presentation-tool-btn" onclick="window.app && window.app.switchToTab('panel-quiz')" style="flex: 1; min-width: 140px; padding: 12px; font-weight: bold; border-radius: 10px; cursor: pointer; font-size: 15px; justify-content: center; box-sizing: border-box;" title="前往前台學生測驗視角畫面">
                   👁️ 前台測驗畫面
                 </button>
@@ -3271,22 +3259,12 @@
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
-              <!-- 0. 學生端模式設定（老師統一設定，全班即時連動） -->
-              <div style="margin-bottom: 20px; padding: 14px 16px; background: var(--bg-card); border: 1.5px solid var(--accent-color); border-radius: 12px;">
-                <div style="font-weight: bold; font-size: 14px; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
-                  <span>🎯 學生端測驗模式設定（全班即時連動）：</span>
-                  <span style="font-size: 14px; color: var(--text-secondary); font-weight: normal;">同學端無法自行切換，由老師主導</span>
-                </div>
-                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                  <label id="lblGlobalModeSync" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border: 2px solid var(--accent-color); border-radius: 10px; cursor: pointer; background: rgba(0,122,255,0.08); font-weight: bold; font-size: 14px; color: var(--text-primary); transition: all 0.2s;">
-                    <input type="radio" name="adminVideoQuizModeRadio" value="sync" checked onchange="window.videoQuiz.setGlobalMode('sync')" style="width: 16px; height: 16px; cursor: pointer;">
-                    <span>🧑‍🏫 全班同步測驗模式（由老師主控播放與題目廣播）</span>
-                  </label>
-                  <label id="lblGlobalModeSelf" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; background: var(--bg-input); font-weight: bold; font-size: 14px; color: var(--text-primary); transition: all 0.2s;">
-                    <input type="radio" name="adminVideoQuizModeRadio" value="self" onchange="window.videoQuiz.setGlobalMode('self')" style="width: 16px; height: 16px; cursor: pointer;">
-                    <span>🎧 個人自主學習模式（同學各自觀看影片作答）</span>
-                  </label>
-                </div>
+              <!-- 影片測驗進行中操作列 (圖 4：結束測驗 與 前台測驗畫面，兩按鈕等寬) -->
+              <div id="vqActiveActionRow" style="display: none; margin-bottom: 16px; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button type="button" id="endVideoQuizBtn" class="end-quiz-btn" onclick="window.videoQuiz && window.videoQuiz.stopSyncQuiz()" style="flex: 1; min-width: 140px; padding: 12px; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color); font-size: 15px;">結束測驗</button>
+                <button type="button" id="vqGoToFrontendBtn" class="presentation-tool-btn" onclick="window.app && window.app.switchToTab('panel-video-quiz')" style="flex: 1; min-width: 140px; padding: 12px; font-weight: bold; border-radius: 10px; cursor: pointer; font-size: 15px; justify-content: center; box-sizing: border-box;" title="前往前台學生測驗視角畫面">
+                  👁️ 前台測驗畫面
+                </button>
               </div>
 
               <!-- 主管理視圖 (列表與設定) -->
@@ -5904,7 +5882,7 @@ Python</pre>
   <script src="js/app.js?v=421"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
-  <script src="js/video_quiz.js?v=390"></script>
+  <script src="js/video_quiz.js?v=391"></script>
   <script src="js/word_cloud.js?v=399"></script>
   <script src="js/presentation_core.js?v=3120"></script>
   

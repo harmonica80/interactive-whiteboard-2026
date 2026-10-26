@@ -541,7 +541,7 @@
       const selfSec = document.getElementById('vqSelfSection');
       const selectorRow = document.getElementById('vqSelfQuizSelectorRow');
       if (selectorRow) {
-        selectorRow.style.display = isTeacherUser ? 'flex' : 'none';
+        selectorRow.style.display = 'none';
       }
       if (syncSec && selfSec) {
         if (mode === 'sync') {
@@ -604,7 +604,7 @@
       const link = document.getElementById('vqAdminQuickLinkWrapper');
       if (link) link.style.display = this.isTeacher ? 'block' : 'none';
       const selectorRow = document.getElementById('vqSelfQuizSelectorRow');
-      if (selectorRow) selectorRow.style.display = this.isTeacher ? 'flex' : 'none';
+      if (selectorRow) selectorRow.style.display = 'none';
       this.renderCustomSetsList();
       this.renderQuizSelector();
       this.renderEditorQuizList();
@@ -913,6 +913,15 @@
       const activeControls = document.getElementById('vqAdminActiveControls');
       const currentTitle = document.getElementById('vqAdminCurrentQuizTitle');
       const currentProgress = document.getElementById('vqAdminCurrentQuizProgress');
+      const activeRow = document.getElementById('vqActiveActionRow');
+
+      const isSyncActive = session && session.status && session.status !== 'idle';
+      const isSelfActive = this.globalMode === 'self' && this.hasAssignedSelfQuiz;
+      const isAnyActive = isSyncActive || isSelfActive;
+
+      if (activeRow) {
+        activeRow.style.display = isAnyActive ? 'flex' : 'none';
+      }
 
       if (!session || session.status === 'idle') {
         if (badge) {
@@ -924,7 +933,7 @@
             badge.style.background = 'var(--text-muted)';
           }
         }
-        if (forceStopBtn) forceStopBtn.style.display = 'none';
+        if (forceStopBtn) forceStopBtn.style.display = isSelfActive ? 'inline-block' : 'none';
         if (activeControls) activeControls.style.display = 'none';
         return;
       }
@@ -1514,12 +1523,19 @@
       if (this.sessionRef) {
         this.sessionRef.set({ status: 'idle', sessionId: null, updatedAt: Date.now() });
       }
+      if (this.settingsRef) {
+        this.settingsRef.update({ mode: 'sync', assignedQuizId: null, updatedAt: Date.now() });
+      }
+      this.globalMode = 'sync';
+      this.hasAssignedSelfQuiz = false;
       this.destroyPlayer();
       this.hideQuestionOverlay();
       this.currentSyncSessionId = null;
       this.handledEventIds.clear();
       this.lastSession = { status: 'idle' };
       this.updateAdminBroadcastUI(this.lastSession);
+      const activeRow = document.getElementById('vqActiveActionRow');
+      if (activeRow) activeRow.style.display = 'none';
       if (window.app && typeof window.app.updateAdminActiveActivitiesUI === 'function') {
         window.app.updateAdminActiveActivitiesUI();
       }
@@ -3634,11 +3650,37 @@
           updatedAt: Date.now()
         });
       }
+      this.updateAdminBroadcastUI(this.lastSession);
       if (window.app && typeof window.app.switchToTab === 'function') {
         window.app.switchToTab('panel-video-quiz');
       }
       if (window.app) {
         window.app.showNotification('成功', `已指派「${set.name}」進入個人自主學習！`);
+      }
+    }
+
+    // 從單題測驗卡片直接指派進入個人自主學習模式
+    launchSelfPacedQuiz(quizId) {
+      const quiz = this.quizzes.find(q => q.id === quizId);
+      if (!quiz) return;
+
+      this.globalMode = 'self';
+      this.hasAssignedSelfQuiz = true;
+      this.applyGlobalMode('self');
+      this.startSelfPacedQuiz(quizId);
+      if (this.settingsRef) {
+        this.settingsRef.update({
+          mode: 'self',
+          assignedQuizId: quizId,
+          updatedAt: Date.now()
+        });
+      }
+      this.updateAdminBroadcastUI(this.lastSession);
+      if (window.app && typeof window.app.switchToTab === 'function') {
+        window.app.switchToTab('panel-video-quiz');
+      }
+      if (window.app) {
+        window.app.showNotification('自主學習模式', `已指派「${quiz.title}」進入個人自主學習！學生端已同步切換。`);
       }
     }
 
@@ -3782,8 +3824,8 @@
                   <button class="presentation-tool-btn active" onclick="window.videoQuiz.startSyncQuizAsTeacher('${quiz.id}')" style="font-size: 14px; padding: 6px 14px;" title="以此題目立即發起全班同步連線測驗">
                     🚀 發起全班同步測驗
                   </button>
-                  <button class="presentation-tool-btn" onclick="window.videoQuiz.toggleQuizEnabled('${quiz.id}')" style="background: ${isEnabled ? 'rgba(52,199,89,0.12)' : 'rgba(142,142,147,0.15)'}; color: ${isEnabled ? '#28a745' : 'var(--text-muted)'}; border: 1px solid ${isEnabled ? 'rgba(52,199,89,0.3)' : 'var(--border-color)'}; font-size: 14px; padding: 6px 12px;" title="${isEnabled ? '點擊設為隱藏（前台學生選單不顯示此影片）' : '點擊設為開放（前台學生可見並能測驗此影片）'}">
-                    ${isEnabled ? '🟢 前台開放測驗' : '⚪ 前台隱藏 (不顯示)'}
+                  <button class="presentation-tool-btn" onclick="window.videoQuiz.launchSelfPacedQuiz('${quiz.id}')" style="background: rgba(52,199,89,0.12); color: #28a745; border: 1.5px solid rgba(52,199,89,0.4); font-size: 14px; padding: 6px 12px; font-weight: bold; border-radius: 8px;" title="以此題目立即指派進入個人自主學習模式">
+                    🎧 自主學習模式
                   </button>
                   <button class="presentation-tool-btn" onclick="window.app && window.app.openSingleItemCopyModal('videoQuiz', '${quiz.id}')" style="background: var(--bg-card); border: 1px solid var(--accent-color); color: var(--accent-color); font-size: 14px; padding: 6px 12px;" title="複製此部影片測驗至其他班級">📤 複製到其他班</button>
                   <button class="presentation-tool-btn" onclick="window.videoQuiz.openEditQuizModal('${quiz.id}')" style="background: var(--accent-color); color: white; border-color: var(--accent-color); font-size: 14px; padding: 6px 12px;">✏️ 編輯題目</button>
