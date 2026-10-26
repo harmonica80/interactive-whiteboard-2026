@@ -113,10 +113,23 @@ class Quiz {
 
   // 儲存至歷次題目庫 (防重覆)
   saveToHistoryBank(question, options, quizType, extraData = {}) {
-    const keys = Object.keys(this.historyBank);
+    if (!question || !this.historyRef) return;
+
+    // 防呆：自動化測試環境下不寫入正式雲端題庫，防止測試題目污染題庫
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.webdriver && !window.__ALLOW_TEST_HISTORY_WRITE__) {
+      return;
+    }
+
+    const cleanQ = String(question).trim();
+    const cleanOpts = Array.isArray(options) ? options.map(o => typeof o === 'object' ? (o.text || '') : String(o)) : [];
+
+    const keys = Object.keys(this.historyBank || {});
     const exists = keys.some(k => {
       const item = this.historyBank[k];
-      return item.question === question && JSON.stringify(item.options) === JSON.stringify(options);
+      if (!item) return false;
+      const itemQ = String(item.question || '').trim();
+      const itemOpts = Array.isArray(item.options) ? item.options.map(o => typeof o === 'object' ? (o.text || '') : String(o)) : [];
+      return itemQ === cleanQ && JSON.stringify(itemOpts) === JSON.stringify(cleanOpts);
     });
 
     if (!exists) {
@@ -2373,6 +2386,51 @@ class Quiz {
         () => {
           this.historyRef.remove();
           window.app.showNotification('成功', '已清空歷次題庫！');
+        }
+      );
+    }
+  }
+
+  // 清除題庫中所有重複題目（保留最新 1 筆）
+  cleanDuplicateBankQuestions() {
+    const keys = Object.keys(this.historyBank || {});
+    if (keys.length === 0) {
+      if (window.app) window.app.showNotification('提示', '目前題庫無題目。');
+      return;
+    }
+
+    const seen = new Map();
+    const duplicatesToDelete = [];
+
+    // 依序檢查重複題目（依題目問句、選項與題型進行特徵比對）
+    keys.forEach(k => {
+      const item = this.historyBank[k];
+      if (!item) return;
+      const cleanQ = String(item.question || '').trim();
+      const cleanOpts = Array.isArray(item.options) ? item.options.map(o => typeof o === 'object' ? (o.text || '') : String(o)) : [];
+      const sig = `${cleanQ}__${JSON.stringify(cleanOpts)}__${item.quizType || 'single'}`;
+      if (seen.has(sig)) {
+        duplicatesToDelete.push(k);
+      } else {
+        seen.set(sig, k);
+      }
+    });
+
+    if (duplicatesToDelete.length === 0) {
+      if (window.app) window.app.showNotification('提示', '題庫中沒有發現任何重複的題目！');
+      return;
+    }
+
+    if (window.app) {
+      window.app.showConfirmModal(
+        '🧹 清除重複題目',
+        `檢測到題庫中有 ${duplicatesToDelete.length} 筆完全重複的題目，確定要自動清理嗎？`,
+        '將保留最新 1 筆，並刪除其餘多餘的重複項目。',
+        () => {
+          duplicatesToDelete.forEach(k => {
+            this.historyRef.child(k).remove();
+          });
+          window.app.showNotification('成功', `已成功清理 ${duplicatesToDelete.length} 筆重複題目！`);
         }
       );
     }

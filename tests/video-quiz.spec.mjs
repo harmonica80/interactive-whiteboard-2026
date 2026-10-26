@@ -339,7 +339,20 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
       window.app.switchToTab('panel-quiz')
       const q = window.quiz
       
-      // 1. 發起測驗並作答
+      // 1. 發起測驗並作答 (隔離歷史題庫，避免寫入正式雲端題庫)
+      const origHistoryRef = q.historyRef
+      const testHistory = {}
+      q.historyRef = {
+        push: (item) => {
+          const testKey = 'test_key_' + Date.now()
+          testHistory[testKey] = item
+          q.historyBank[testKey] = item
+          return { key: testKey }
+        },
+        child: () => ({ remove: () => {} }),
+        remove: () => {}
+      }
+
       q.startQuiz('請問長方形面積計算公式？', ['長 × 寬', '(長 + 寬) × 2'], 'single')
       await new Promise(r => setTimeout(r, 200))
       q.submitAnswer(0)
@@ -364,7 +377,11 @@ test.describe('Interactive Video Quiz Assessment System Tests', () => {
       const afterResetResultsHtml = document.getElementById('quizResults')?.innerHTML || ''
       const afterResetOptionsHtml = document.getElementById('answerOptions')?.innerHTML || ''
       const historyKeys = Object.keys(q.historyBank || {})
-      const hasHistorySaved = historyKeys.some(k => q.historyBank[k].question.includes('長方形面積'))
+      const hasHistorySaved = Object.values(testHistory).some(item => item.question && item.question.includes('長方形面積')) || historyKeys.some(k => q.historyBank[k].question.includes('長方形面積'))
+      
+      // 還原題庫引用並清除測試物件
+      q.historyRef = origHistoryRef
+      Object.keys(testHistory).forEach(k => delete q.historyBank[k])
       
       return {
         afterEndStatus,

@@ -1,4 +1,18 @@
 # System Log
+## 2026-10-26 - 清除選擇題題庫重複長方形測試題目、防範測試污染與新增清除重複工具
+- 影響檔案：`index.html`, `js/quiz.js`, `tests/video-quiz.spec.mjs`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **排查與徹底清除雲端 Firebase 題庫累積之「長方形面積計算公式」測試資料**：
+     - 排查原因：過往自動化測試腳本（`tests/video-quiz.spec.mjs`）於驗證選擇題流程時呼叫 `q.startQuiz('請問長方形面積計算公式？', ...)`，因頁面初始載入題庫非同步尚未完成時執行，導致防重覆檢查失靈，每次執行測試便向正式 Firebase `quiz/history` 寫入一筆題目，累積達 19 筆重複項目。
+     - 透過 Firebase REST API 完整刪除雲端 `quiz/history` 內全部 19 筆長方形面積測試題目，保留教師原有的 7 筆正規課堂題目。
+  2. **測試環境隔離與程式防呆避免再度寫入雲端 (`tests/video-quiz.spec.mjs`, `js/quiz.js`)**：
+     - 於 `tests/video-quiz.spec.mjs` 測試進行時對 `q.historyRef` 進行單元隔離與區域記憶體模擬，驗證完畢後立即還原並刪除暫存，確保絕不寫入正式雲端題庫。
+     - 於 `js/quiz.js` 的 `saveToHistoryBank()` 加入全域環境防呆檢查（檢測 `window.navigator.webdriver`），自動化測試環境下嚴禁向正式雲端題庫進行持久化寫入，並強化問句與選項字串的比對過濾。
+  3. **題庫管理與歷次題目庫新增「清除重複題目」與「清空題庫」功能 (`index.html`, `js/quiz.js`)**：
+     - 在後台「📁 題庫管理」工具列新增「`🧹 清除重複`」與「`🗑️ 清空題庫`」按鈕（採用 `.presentation-tool-btn` 規範，字體大小 14px，連動四大主題配色）。
+     - 在後台「📑 歷次題目庫」批次操作列新增「`🧹 清除重複題目`」快捷功能。
+     - 於 `js/quiz.js` 實作 `cleanDuplicateBankQuestions()`，自動比對問句、選項與題型特徵，彈出確認提示並可一鍵自動清除所有重複項目（保留最新 1 筆）。
+
 ## 2026-10-26 - 選擇題與影片測驗後台測驗進行中新增「前台測驗畫面」捷徑按鈕
 - 影響檔案：`index.html`, `js/quiz.js`, `SYSTEM_LOG.md`。
 - 修改項目：

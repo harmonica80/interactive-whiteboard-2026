@@ -3102,9 +3102,14 @@
                       <input type="checkbox" id="chkSelectAllQuiz" onchange="window.quiz.toggleSelectAllHistory(this.checked)" style="cursor: pointer;">
                       <span>全選 / 全不選</span>
                     </label>
-                    <button type="button" onclick="window.quiz.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
-                      🗑️ 清空歷次題庫
-                    </button>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                      <button type="button" onclick="window.quiz.cleanDuplicateBankQuestions()" style="background: transparent; color: var(--text-secondary); border: none; font-size: 12px; cursor: pointer; font-weight: bold;" title="檢查並清理重複題目">
+                        🧹 清除重複題目
+                      </button>
+                      <button type="button" onclick="window.quiz.clearHistoryBank()" style="background: transparent; color: var(--danger-color); border: none; font-size: 12px; cursor: pointer; font-weight: bold;">
+                        🗑️ 清空歷次題庫
+                      </button>
+                    </div>
                   </div>
 
                   <!-- 歷史題目清單 -->
@@ -3141,6 +3146,12 @@
                       </button>
                       <button type="button" class="presentation-tool-btn" onclick="document.getElementById('quizBankFileInput').click()" style="font-size: 14px;" title="匯入 JSON、CSV 或 TXT 題庫檔案">
                         📥 匯入題庫
+                      </button>
+                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.cleanDuplicateBankQuestions()" style="font-size: 14px;" title="檢查並清理題庫中完全重複的題目（保留最新 1 筆）">
+                        🧹 清除重複
+                      </button>
+                      <button type="button" class="presentation-tool-btn danger" onclick="window.quiz.clearHistoryBank()" style="font-size: 14px;" title="清空題庫中所有題目">
+                        🗑️ 清空題庫
                       </button>
                       <input type="file" id="quizBankFileInput" accept=".json,.csv,.txt" style="display: none;" onchange="window.quiz.importQuizBankUnifiedFile(event)">
                     </div>
@@ -5815,7 +5826,7 @@ Python</pre>
   <script src="js/focus_question_bank.js?v=381"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
-  <script src="js/quiz.js?v=388"></script>
+  <script src="js/quiz.js?v=389"></script>
   <script src="js/app.js?v=418"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
