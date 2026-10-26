@@ -1,4 +1,18 @@
 # System Log
+## 2026-10-26 - 前後台按鈕全面連動四大主題色系、文字大小規範優化 (>= 14px)
+- 影響檔案：`css/presentation.css`, `whiteboard.html`, `index.html`, `js/video_quiz.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **抽籤模組（圖1）與文字雲（圖2）按鈕連動主題色 (`css/presentation.css`)**：
+     - 將 `.presentation-tool-btn.purple` 由寫死紫底色（#9333ea）改為使用主題變數 `var(--accent-color)` 與 `var(--accent-hover)`，使隨機抽人「🔥 開始抽人」與文字雲「💾 匯出 PNG / 下載成果」等按鈕在切換四大主題時即時同步配色。
+  2. **互動白板子視窗匯入/匯出按鈕連動主題色 (`whiteboard.html`)**：
+     - 將 `.btn-pill.purple` 由固定紫色改為 `var(--accent-color)` 與 `var(--accent-hover)`，使「📁 匯入 / 匯出」按鈕完美匹配全域主題色系。
+  3. **影片測驗按鈕樣式與主題色統一 (`index.html`, `js/video_quiz.js`)**：
+     - 將前台頂部「📊 查看本題統計」由寫死紫色（#5856d6）改為 `.presentation-tool-btn.active`，文字大小統一為 14px。
+     - 同步優化教師控制台「▶ 繼續播放影片」、「📊 查看本題統計」、「⏹ 結束全班測驗」與題目彈窗按鈕，全數採用 `.presentation-tool-btn` 規範，移除固定紫色彩度並統一字體大小為 14px 以上。
+  4. **測驗出題題庫管理工具列統一與主題化 (`index.html`, `js/video_quiz.js`)**：
+     - 全面重構選擇題題庫、影片測驗題庫與文字雲題庫管理工具列（「➕ 建立新測驗」、「📋 範例格式說明」、「⬇️ 範例檔 (JSON/CSV)」、「📤 匯出 JSON/CSV」、「📥 匯入題庫」），移除舊有混雜彩虹色碼（#5856d6、#34c759、#30b0c7 等），一律統一採用 `.presentation-tool-btn` 樣式並連動主題卡片底色與強調色。
+     - 格式說明彈窗與複製班級連結等區塊字體大小全面確保 `>= 14px`。
+
 ## 2026-10-13 - 班級管理新增「測驗與互動音效設定」功能（支援自選 4 款正確與 4 款錯誤 MP3 音效及原生合成音）
 - 影響檔案：`index.html`, `js/app.js`, `js/video_quiz.js`, `images/admin_icons/class_sound.svg`, `audio/*`, `SYSTEM_LOG.md`。
 - 修改項目：

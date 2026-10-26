@@ -8,7 +8,7 @@
   <link rel="shortcut icon" href="favicon.ico?v=2">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
   <link rel="stylesheet" href="css/style.css?v=405">
-  <link rel="stylesheet" href="css/presentation.css?v=3116">
+  <link rel="stylesheet" href="css/presentation.css?v=3117">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -280,10 +280,10 @@
                   <div id="vqSyncQuizDesc" style="font-size: 14px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;"></div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <button id="vqStudentSyncStatsBtn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" class="action-btn" style="background: #5856d6; color: white; border: none; padding: 5px 12px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="查看全班答題分佈與排行榜">
+                  <button id="vqStudentSyncStatsBtn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" class="presentation-tool-btn active" style="font-size: 14px;" title="查看全班答題分佈與排行榜">
                     📊 查看本題統計
                   </button>
-                  <div id="vqSyncLiveBadge" class="badge" style="background: var(--success-color); color: white; padding: 3px 10px; border-radius: 12px; font-size: 14px;">🟢 廣播連線中</div>
+                  <div id="vqSyncLiveBadge" class="badge" style="background: var(--success-color); color: white; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: bold;">🟢 廣播連線中</div>
                 </div>
               </div>
               
@@ -301,13 +301,13 @@
             <div id="vqSelfQuizSelectorRow" style="display: none; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
               <label for="vqSelfQuizSelect" style="font-weight: bold; font-size: 14px;">選擇自主學習影片：</label>
               <select id="vqSelfQuizSelect" onchange="window.videoQuiz.startSelfPacedQuiz(this.value)" style="flex: 1; min-width: 220px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;"></select>
-              <button class="action-btn" onclick="window.videoQuiz.startSelfPacedQuiz(document.getElementById('vqSelfQuizSelect').value)" style="background: var(--success-color); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+              <button class="presentation-tool-btn" onclick="window.videoQuiz.startSelfPacedQuiz(document.getElementById('vqSelfQuizSelect').value)" style="background: var(--accent-color); color: white; border-color: var(--accent-color); font-size: 14px; padding: 8px 18px;">
                 ▶ 開始自主學習
               </button>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <div id="vqSelfProgressInfo" style="font-size: 14px; color: var(--accent-color); font-weight: bold;"></div>
-              <button id="vqStudentSelfStatsBtn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" class="action-btn" style="background: #5856d6; color: white; border: none; padding: 5px 12px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="查看全班答題分佈與排行榜">
+              <button id="vqStudentSelfStatsBtn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" class="presentation-tool-btn active" style="font-size: 14px;" title="查看全班答題分佈與排行榜">
                 📊 查看本題統計
               </button>
             </div>
@@ -3104,25 +3104,25 @@
                       <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">（可透過 ☰ 圖示拖曳調整題目排序）</span>
                     </h4>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                      <button type="button" class="action-btn" onclick="window.quiz.openCreateNewQuiz()" style="background: #5856d6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="在上方出題框建立新題目">
+                      <button type="button" class="presentation-tool-btn active" onclick="window.quiz.openCreateNewQuiz()" style="font-size: 14px;" title="在上方出題框建立新題目">
                         ➕ 建立新測驗
                       </button>
-                      <button type="button" class="action-btn" onclick="openQuizFormatModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看題庫格式規範">
+                      <button type="button" class="presentation-tool-btn" onclick="openQuizFormatModal()" style="font-size: 14px;" title="查看題庫格式規範">
                         📋 範例格式說明
                       </button>
-                      <button type="button" class="action-btn" onclick="window.quiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.downloadSampleTemplateJSON()" style="font-size: 14px;" title="下載標準 JSON 格式範例檔">
                         ⬇️ 範例檔 (JSON)
                       </button>
-                      <button type="button" class="action-btn" onclick="window.quiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.downloadSampleTemplateCSV()" style="font-size: 14px;" title="下載標準 CSV 格式範例檔">
                         ⬇️ 範例檔 (CSV)
                       </button>
-                      <button type="button" class="action-btn" onclick="window.quiz.exportQuizzesJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有題目匯出為 JSON 備份檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.exportQuizzesJSON()" style="font-size: 14px;" title="將目前所有題目匯出為 JSON 備份檔">
                         📤 匯出 JSON
                       </button>
-                      <button type="button" class="action-btn" onclick="window.quiz.exportQuizzesCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有題目匯出為 CSV 試算表檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.exportQuizzesCSV()" style="font-size: 14px;" title="將目前所有題目匯出為 CSV 試算表檔">
                         📤 匯出 CSV
                       </button>
-                      <button type="button" class="action-btn" onclick="document.getElementById('quizBankFileInput').click()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON、CSV 或 TXT 題庫檔案">
+                      <button type="button" class="presentation-tool-btn" onclick="document.getElementById('quizBankFileInput').click()" style="font-size: 14px;" title="匯入 JSON、CSV 或 TXT 題庫檔案">
                         📥 匯入題庫
                       </button>
                       <input type="file" id="quizBankFileInput" accept=".json,.csv,.txt" style="display: none;" onchange="window.quiz.importQuizBankUnifiedFile(event)">
@@ -3175,19 +3175,19 @@
                     <div>
                       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                         <span id="vqAdminModeSectionTitle" style="font-weight: bold; font-size: 15px; color: var(--text-primary);">🧑‍🏫 全班同步測驗廣播中</span>
-                        <span id="vqAdminBroadcastStatusBadge" class="badge" style="background: var(--success-color); color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px;">🟢 廣播進行中</span>
+                        <span id="vqAdminBroadcastStatusBadge" class="badge" style="background: var(--success-color); color: white; padding: 3px 10px; border-radius: 12px; font-size: 14px;">🟢 廣播進行中</span>
                       </div>
                       <div style="font-weight: bold; font-size: 14px; color: var(--text-primary);" id="vqAdminCurrentQuizTitle">當前測驗：-</div>
-                      <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;" id="vqAdminCurrentQuizProgress">狀態：-</div>
+                      <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;" id="vqAdminCurrentQuizProgress">狀態：-</div>
                     </div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                      <button class="action-btn" onclick="window.videoQuiz.resumeSyncPlayback()" style="background: var(--success-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                      <button class="presentation-tool-btn" onclick="window.videoQuiz.resumeSyncPlayback()" style="background: var(--success-color); color: white; border-color: var(--success-color); font-size: 14px;">
                         ▶ 繼續播放影片
                       </button>
-                      <button class="action-btn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                      <button class="presentation-tool-btn active" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="font-size: 14px;">
                         📊 查看答題統計
                       </button>
-                      <button class="action-btn" id="vqAdminForceStopBtn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                      <button class="presentation-tool-btn danger" id="vqAdminForceStopBtn" onclick="window.videoQuiz.stopSyncQuiz()" style="font-size: 14px;">
                         ⏹️ 結束全班測驗
                       </button>
                     </div>
@@ -3213,25 +3213,25 @@
                       <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">（可透過 ☰ 圖示拖曳調整題目排序）</span>
                     </h4>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                      <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal()" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="建立新的影片測驗">
+                      <button type="button" class="presentation-tool-btn active" onclick="window.videoQuiz.openEditQuizModal()" style="font-size: 14px;" title="建立新的影片測驗">
                         ➕ 建立新測驗
                       </button>
-                      <button class="action-btn" onclick="window.videoQuiz.openFormatGuideModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看 JSON 與 CSV 題庫格式規範">
+                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.openFormatGuideModal()" style="font-size: 14px;" title="查看 JSON 與 CSV 題庫格式規範">
                         📋 範例格式說明
                       </button>
-                      <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.downloadSampleTemplateJSON()" style="font-size: 14px;" title="下載標準 JSON 格式範例檔">
                         ⬇️ 範例檔 (JSON)
                       </button>
-                      <button class="action-btn" onclick="window.videoQuiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.downloadSampleTemplateCSV()" style="font-size: 14px;" title="下載標準 CSV 格式範例檔">
                         ⬇️ 範例檔 (CSV)
                       </button>
-                      <button class="action-btn" onclick="window.videoQuiz.exportQuizzesJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有測驗匯出為 JSON 備份檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.exportQuizzesJSON()" style="font-size: 14px;" title="將目前所有測驗匯出為 JSON 備份檔">
                         📤 匯出 JSON
                       </button>
-                      <button class="action-btn" onclick="window.videoQuiz.exportQuizzesCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有測驗匯出為 CSV 試算表檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.exportQuizzesCSV()" style="font-size: 14px;" title="將目前所有測驗匯出為 CSV 試算表檔">
                         📤 匯出 CSV
                       </button>
-                      <button class="action-btn" onclick="window.videoQuiz.openImportModal()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON 或 CSV 題庫檔案">
+                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.openImportModal()" style="font-size: 14px;" title="匯入 JSON 或 CSV 題庫檔案">
                         📥 匯入題庫
                       </button>
                     </div>
@@ -3966,25 +3966,25 @@
                       <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">（可透過 ☰ 圖示拖曳調整題目排序）</span>
                     </h4>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                      <button type="button" class="action-btn" onclick="window.wordCloud?.openCreateNewTopic()" style="background: #5856d6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="在上方出題框建立新文字雲題目">
+                      <button type="button" class="presentation-tool-btn active" onclick="window.wordCloud?.openCreateNewTopic()" style="font-size: 14px;" title="在上方出題框建立新文字雲題目">
                         ➕ 建立新題目
                       </button>
-                      <button type="button" class="action-btn" onclick="openWordCloudFormatModal()" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="查看文字雲題庫格式規範">
+                      <button type="button" class="presentation-tool-btn" onclick="openWordCloudFormatModal()" style="font-size: 14px;" title="查看文字雲題庫格式規範">
                         📋 範例格式說明
                       </button>
-                      <button type="button" class="action-btn" onclick="window.wordCloud?.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 JSON 格式範例檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.downloadSampleTemplateJSON()" style="font-size: 14px;" title="下載標準 JSON 格式範例檔">
                         ⬇️ 範例檔 (JSON)
                       </button>
-                      <button type="button" class="action-btn" onclick="window.wordCloud?.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="下載標準 CSV 格式範例檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.downloadSampleTemplateCSV()" style="font-size: 14px;" title="下載標準 CSV 格式範例檔">
                         ⬇️ 範例檔 (CSV)
                       </button>
-                      <button type="button" class="action-btn" onclick="window.wordCloud?.exportWordCloudJSON()" style="background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有文字雲題目匯出為 JSON 備份檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.exportWordCloudJSON()" style="font-size: 14px;" title="將目前所有文字雲題目匯出為 JSON 備份檔">
                         📤 匯出 JSON
                       </button>
-                      <button type="button" class="action-btn" onclick="window.wordCloud?.exportWordCloudCSV()" style="background: #af52de; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="將目前所有文字雲題目匯出為 CSV 試算表檔">
+                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.exportWordCloudCSV()" style="font-size: 14px;" title="將目前所有文字雲題目匯出為 CSV 試算表檔">
                         📤 匯出 CSV
                       </button>
-                      <button type="button" class="action-btn" onclick="document.getElementById('wcBankFileInput').click()" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;" title="匯入 JSON、CSV 或 TXT 題庫檔案">
+                      <button type="button" class="presentation-tool-btn" onclick="document.getElementById('wcBankFileInput').click()" style="font-size: 14px;" title="匯入 JSON、CSV 或 TXT 題庫檔案">
                         📥 匯入題庫
                       </button>
                       <input type="file" id="wcBankFileInput" accept=".json,.csv,.txt" style="display: none;" onchange="window.wordCloud?.importWordCloudBankUnifiedFile(event)">
@@ -5589,7 +5589,7 @@ Python</pre>
   }
 ]</pre>
         <div style="margin-top: 10px;">
-          <button type="button" class="action-btn" onclick="window.quiz.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">⬇️ 下載 JSON 範例檔</button>
+          <button type="button" class="presentation-tool-btn active" onclick="window.quiz.downloadSampleTemplateJSON()" style="font-size: 14px;">⬇️ 下載 JSON 範例檔</button>
         </div>
       </div>
 
@@ -5603,7 +5603,7 @@ Python</pre>
 "您對今天的課堂內容滿意度如何？","單選","⭐ 1 星;⭐⭐ 2 星;⭐⭐⭐ 3 星;⭐⭐⭐⭐ 4 星;⭐⭐⭐⭐⭐ 5 星",""
 "請問下列哪些是網頁開發的三大核心語言？","複選","HTML;CSS;JavaScript;Python","HTML;CSS;JavaScript"</pre>
         <div style="margin-top: 10px;">
-          <button type="button" class="action-btn" onclick="window.quiz.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">⬇️ 下載 CSV 範例檔</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.quiz.downloadSampleTemplateCSV()" style="font-size: 14px;">⬇️ 下載 CSV 範例檔</button>
         </div>
       </div>
 
@@ -5673,7 +5673,7 @@ Python</pre>
   }
 ]</pre>
         <div style="margin-top: 10px;">
-          <button type="button" class="action-btn" onclick="window.wordCloud?.downloadSampleTemplateJSON()" style="background: #34c759; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">⬇️ 下載 JSON 範例檔</button>
+          <button type="button" class="presentation-tool-btn active" onclick="window.wordCloud?.downloadSampleTemplateJSON()" style="font-size: 14px;">⬇️ 下載 JSON 範例檔</button>
         </div>
       </div>
 
@@ -5688,7 +5688,7 @@ Python</pre>
 "看完這部引導影片，你最深刻的三個感受是什麼？",3,"cloud",""
 "你認為未來的綠能科技最關鍵的要素是什麼？",0,"star",""</pre>
         <div style="margin-top: 10px;">
-          <button type="button" class="action-btn" onclick="window.wordCloud?.downloadSampleTemplateCSV()" style="background: #30b0c7; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">⬇️ 下載 CSV 範例檔</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.downloadSampleTemplateCSV()" style="font-size: 14px;">⬇️ 下載 CSV 範例檔</button>
         </div>
       </div>
 
@@ -5799,7 +5799,7 @@ Python</pre>
   <script src="js/app.js?v=416"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=381"></script>
-  <script src="js/video_quiz.js?v=387"></script>
+  <script src="js/video_quiz.js?v=388"></script>
   <script src="js/word_cloud.js?v=397"></script>
   <script src="js/presentation_core.js?v=3118"></script>
   
@@ -7067,7 +7067,7 @@ Python</pre>
         </label>
         <div style="display: flex; gap: 8px; align-items: center;">
           <input type="text" id="adminReminderNewShareUrl" readonly style="flex: 1; min-width: 0; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px;">
-          <button type="button" id="adminReminderCopyBtn" onclick="window.app.copyNewClassShareLink()" style="padding: 9px 16px; font-size: 14px; font-weight: bold; background: #5856d6; color: white; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+          <button type="button" id="adminReminderCopyBtn" onclick="window.app.copyNewClassShareLink()" style="padding: 9px 16px; font-size: 14px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
             📋 複製連結
           </button>
         </div>
@@ -7113,7 +7113,7 @@ Python</pre>
         </div>
       </div>
 
-      <div style="background: rgba(88, 86, 214, 0.08); border-left: 3px solid #5856d6; padding: 8px 12px; border-radius: 4px; font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+      <div style="background: var(--bg-card); border-left: 3px solid var(--accent-color); padding: 8px 12px; border-radius: 4px; font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; border: 1px solid var(--border-color); border-left-width: 3px; border-left-color: var(--accent-color);">
         💡 發送後，該測驗組合及其關聯的影片題目將自動加入所選目標班級的題庫中，該班學生與老師可直接開測！
       </div>
 

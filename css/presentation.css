@@ -697,13 +697,15 @@
 }
 
 .presentation-tool-btn.purple {
-  background: #9333ea;
+  background: var(--accent-color);
   color: #ffffff;
-  border-color: #9333ea;
+  border-color: var(--accent-color);
 }
 
 .presentation-tool-btn.purple:hover {
-  background: #7e22ce;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #ffffff;
 }
 
 .presentation-tool-btn.danger {

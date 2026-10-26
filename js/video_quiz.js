@@ -2104,14 +2104,14 @@
           ${multiVideoHtml}
           <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-weight: bold; color: var(--accent-color); white-space: nowrap;">🧑‍🏫 老師同步控制台</span>
-              <span class="badge vq-submitted-count-badge" id="vqSyncSubmittedCountBadge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap;">已提交 ${submittedCount} 人</span>
+              <span style="font-weight: bold; color: var(--accent-color); white-space: nowrap; font-size: 14px;">🧑‍🏫 老師同步控制台</span>
+              <span class="badge vq-submitted-count-badge" id="vqSyncSubmittedCountBadge" style="background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 14px; white-space: nowrap;">已提交 ${submittedCount} 人</span>
             </div>
             ${questionsListHtml}
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-              <button class="action-btn" onclick="window.videoQuiz.resumeSyncPlayback()" style="background: var(--success-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">▶ 繼續播放影片</button>
-              <button class="action-btn" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">📊 查看本題統計</button>
-              <button class="action-btn" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">${stopBtnText}</button>
+              <button class="presentation-tool-btn" onclick="window.videoQuiz.resumeSyncPlayback()" style="background: var(--success-color); color: white; border-color: var(--success-color); font-size: 14px;">▶ 繼續播放影片</button>
+              <button class="presentation-tool-btn active" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="font-size: 14px;">📊 查看本題統計</button>
+              <button class="presentation-tool-btn danger" onclick="window.videoQuiz.stopSyncQuiz()" style="font-size: 14px;">${stopBtnText}</button>
             </div>
           </div>
         </div>
@@ -2345,16 +2345,16 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-weight: bold; color: var(--accent-color); font-size: 14px;">${typeBadge}（${points} 分）</span>
-            <span style="font-size: 12px; color: var(--text-secondary);">時間點：${question.timeFormatted || '00:00'}</span>
+            <span style="font-size: 14px; color: var(--text-secondary);">時間點：${question.timeFormatted || '00:00'}</span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             ${isTeacherOrAdmin ? `
-              <button type="button" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: #5856d6; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" title="查看全班答題分佈與排行榜">📊 查看本題統計</button>
-              <button type="button" onclick="window.videoQuiz.stopSyncQuiz()" style="background: var(--danger-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="立即停止全班測驗廣播">⏹️ 結束測驗</button>
-              <button type="button" onclick="window.videoQuiz.returnToQuizVideo()" style="background: var(--accent-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="關閉題目彈窗，返回測驗影片播放介面">🎬 返回測驗影片</button>
+              <button type="button" class="presentation-tool-btn active" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="font-size: 14px; padding: 4px 10px;" title="查看全班答題分佈與排行榜">📊 查看本題統計</button>
+              <button type="button" class="presentation-tool-btn danger" onclick="window.videoQuiz.stopSyncQuiz()" style="font-size: 14px; padding: 4px 10px;" title="立即停止全班測驗廣播">⏹️ 結束測驗</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.returnToQuizVideo()" style="background: var(--accent-color); color: white; border-color: var(--accent-color); font-size: 14px; padding: 4px 10px;" title="關閉題目彈窗，返回測驗影片播放介面">🎬 返回測驗影片</button>
             ` : `
-              <button type="button" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="background: rgba(88,86,214,0.12); border: 1.5px solid #5856d6; color: #5856d6; padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;" title="查看全班答題分佈與排行榜">📊 查看本題統計</button>
-              <button type="button" class="desktop-only" onclick="window.app.switchToTab('panel-admin')" style="background: transparent; border: 1.5px solid var(--accent-color); color: var(--accent-color); padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;" title="若您是老師，點此登入管理後台">⚙️ 後台登入</button>
+              <button type="button" class="presentation-tool-btn active" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="font-size: 14px; padding: 4px 10px;" title="查看全班答題分佈與排行榜">📊 查看本題統計</button>
+              <button type="button" class="presentation-tool-btn desktop-only" onclick="window.app.switchToTab('panel-admin')" style="font-size: 14px; padding: 4px 10px;" title="若您是老師，點此登入管理後台">⚙️ 後台登入</button>
             `}
             <button type="button" onclick="window.videoQuiz.hideQuestionOverlay()" style="background: rgba(0,0,0,0.06); color: var(--text-primary); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="暫時收合題目視窗">✕</button>
           </div>
@@ -3771,15 +3771,15 @@
 
                 <!-- 影片出題開關與編輯/刪除按鈕 -->
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                  <button class="action-btn" onclick="window.videoQuiz.startSyncQuizAsTeacher('${quiz.id}')" style="background: linear-gradient(135deg, #5856d6, #4a6cf7); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(88,86,214,0.25); display: inline-flex; align-items: center; gap: 4px;" title="以此題目立即發起全班同步連線測驗">
+                  <button class="presentation-tool-btn active" onclick="window.videoQuiz.startSyncQuizAsTeacher('${quiz.id}')" style="font-size: 14px; padding: 6px 14px;" title="以此題目立即發起全班同步連線測驗">
                     🚀 發起全班同步測驗
                   </button>
-                  <button class="action-btn" onclick="window.videoQuiz.toggleQuizEnabled('${quiz.id}')" style="background: ${isEnabled ? 'rgba(52,199,89,0.12)' : 'rgba(142,142,147,0.15)'}; color: ${isEnabled ? '#28a745' : 'var(--text-muted)'}; border: 1px solid ${isEnabled ? 'rgba(52,199,89,0.3)' : 'var(--border-color)'}; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="${isEnabled ? '點擊設為隱藏（前台學生選單不顯示此影片）' : '點擊設為開放（前台學生可見並能測驗此影片）'}">
+                  <button class="presentation-tool-btn" onclick="window.videoQuiz.toggleQuizEnabled('${quiz.id}')" style="background: ${isEnabled ? 'rgba(52,199,89,0.12)' : 'rgba(142,142,147,0.15)'}; color: ${isEnabled ? '#28a745' : 'var(--text-muted)'}; border: 1px solid ${isEnabled ? 'rgba(52,199,89,0.3)' : 'var(--border-color)'}; font-size: 14px; padding: 6px 12px;" title="${isEnabled ? '點擊設為隱藏（前台學生選單不顯示此影片）' : '點擊設為開放（前台學生可見並能測驗此影片）'}">
                     ${isEnabled ? '🟢 前台開放測驗' : '⚪ 前台隱藏 (不顯示)'}
                   </button>
-                  <button class="action-btn" onclick="window.app && window.app.openSingleItemCopyModal('videoQuiz', '${quiz.id}')" style="background: var(--bg-card); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;" title="複製此部影片測驗至其他班級">📤 複製到其他班</button>
-                  <button class="action-btn" onclick="window.videoQuiz.openEditQuizModal('${quiz.id}')" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">✏️ 編輯題目</button>
-                  <button class="action-btn" onclick="window.videoQuiz.deleteQuiz('${quiz.id}')" style="background: var(--danger-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">🗑️ 刪除</button>
+                  <button class="presentation-tool-btn" onclick="window.app && window.app.openSingleItemCopyModal('videoQuiz', '${quiz.id}')" style="background: var(--bg-card); border: 1px solid var(--accent-color); color: var(--accent-color); font-size: 14px; padding: 6px 12px;" title="複製此部影片測驗至其他班級">📤 複製到其他班</button>
+                  <button class="presentation-tool-btn" onclick="window.videoQuiz.openEditQuizModal('${quiz.id}')" style="background: var(--accent-color); color: white; border-color: var(--accent-color); font-size: 14px; padding: 6px 12px;">✏️ 編輯題目</button>
+                  <button class="presentation-tool-btn danger" onclick="window.videoQuiz.deleteQuiz('${quiz.id}')" style="font-size: 14px; padding: 6px 12px;">🗑️ 刪除</button>
                 </div>
               </div>
 
