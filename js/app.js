@@ -5821,9 +5821,9 @@ class App {
     const backBtn = document.getElementById('btnQuickBackToAdminWorkspace');
     if (backBtn) {
       if (this.lastAdminFeatureTitle) {
-        backBtn.innerHTML = `🔙 返回【${this.lastAdminFeatureTitle}】`;
+        backBtn.innerHTML = `↩️ 返回【${this.lastAdminFeatureTitle}】`;
       } else {
-        backBtn.innerHTML = `🔙 返回後台控場`;
+        backBtn.innerHTML = `↩️ 返回後台控場`;
       }
     }
 

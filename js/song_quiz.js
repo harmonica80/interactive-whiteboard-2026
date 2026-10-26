@@ -913,55 +913,55 @@
       const hasPausedProgress = round.audioSeekTime != null && Number(round.audioSeekTime) > Number(question?.startTime || 0);
 
       teacherControlHtml = `
-        <div style="margin-top:10px; padding:14px; border-radius:12px; background:var(--bg-input); border:1.5px solid var(--accent-color);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:13px; font-weight:900; color:var(--accent-color);">👑 老師主控台 (正解：${escapeForSong(question.title)} / ${escapeForSong(question.artist || '')})</span>
-            <span style="font-size:12px; color:var(--text-muted);">狀態：${roundStatus}${hasPausedProgress ? ` (進度 ${round.audioSeekTime}s)` : ''}</span>
+        <div style="margin-top:10px; padding:14px; border-radius:12px; background:var(--bg-card); border:1.5px solid var(--accent-color);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
+            <span style="font-size:14px; font-weight:900; color:var(--accent-color);">👑 老師主控台 (正解：${escapeForSong(question.title)} / ${escapeForSong(question.artist || '')})</span>
+            <span style="font-size:14px; color:var(--text-muted);">狀態：${roundStatus}${hasPausedProgress ? ` (進度 ${round.audioSeekTime}s)` : ''}</span>
           </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
             ${roundStatus === 'waiting' ? `
-              <button type="button" onclick="window.app.teacherBuzzerAction('play')" style="flex:1; padding:10px; border:none; border-radius:8px; background:#34c759; color:white; font-size:14px; font-weight:bold; cursor:pointer;">
+              <button type="button" class="presentation-tool-btn active" onclick="window.app.teacherBuzzerAction('play')" style="flex:1; padding:10px 14px; font-size:14px; font-weight:bold; cursor:pointer;">
                 ${hasPausedProgress ? '▶️ 繼續播放音樂 (從暫停進度)' : '▶️ 開始播放音樂 (開放搶答)'}
               </button>
               ${hasPausedProgress ? `
-                <button type="button" onclick="window.app.teacherBuzzerAction('restart')" style="padding:10px 14px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer;">
+                <button type="button" class="presentation-tool-btn" onclick="window.app.teacherBuzzerAction('restart')" style="padding:10px 14px; font-size:14px; font-weight:bold; cursor:pointer;">
                   ⏮️ 從頭重新播放
                 </button>
               ` : ''}
             ` : ''}
 
             ${roundStatus === 'playing' ? `
-              <button type="button" onclick="window.app.teacherBuzzerAction('pause')" style="flex:1; padding:10px; border:none; border-radius:8px; background:#ff9500; color:white; font-size:14px; font-weight:bold; cursor:pointer;">
+              <button type="button" class="presentation-tool-btn" onclick="window.app.teacherBuzzerAction('pause')" style="flex:1; padding:10px 14px; background:var(--accent-hover); color:white; border-color:var(--accent-hover); font-size:14px; font-weight:bold; cursor:pointer;">
                 ⏸️ 暫停播放
               </button>
             ` : ''}
 
             ${roundStatus === 'answered_wrong' ? `
-              <button type="button" onclick="window.app.teacherBuzzerAction('resume')" style="flex:2; padding:12px; border:none; border-radius:8px; background:#34c759; color:white; font-size:14px; font-weight:900; cursor:pointer; box-shadow:0 2px 8px rgba(52,199,89,0.3);">
+              <button type="button" class="presentation-tool-btn active" onclick="window.app.teacherBuzzerAction('resume')" style="flex:2; padding:12px 14px; font-size:14px; font-weight:900; cursor:pointer;">
                 ▶️ 繼續播放音樂 (開放其餘同學繼續搶答)
               </button>
-              <button type="button" onclick="window.app.teacherBuzzerAction('restart')" style="padding:10px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer;">
+              <button type="button" class="presentation-tool-btn" onclick="window.app.teacherBuzzerAction('restart')" style="padding:10px 12px; font-size:14px; font-weight:bold; cursor:pointer;">
                 ⏮️ 從頭重播
               </button>
-              <button type="button" onclick="window.app.teacherBuzzerAction('reveal')" style="padding:10px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer;">
+              <button type="button" class="presentation-tool-btn" onclick="window.app.teacherBuzzerAction('reveal')" style="padding:10px 12px; font-size:14px; font-weight:bold; cursor:pointer;">
                 💡 揭曉答案
               </button>
-              <button type="button" onclick="window.app.teacherBuzzerAction('next')" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff3b30; color:white; font-size:14px; font-weight:900; cursor:pointer;">
+              <button type="button" class="presentation-tool-btn danger" onclick="window.app.teacherBuzzerAction('next')" style="flex:1; padding:12px 14px; font-size:14px; font-weight:900; cursor:pointer;">
                 ⏭️ 跳至下一題
               </button>
             ` : ''}
 
             ${(roundStatus === 'answered_correct' || roundStatus === 'revealed') ? `
-              <button type="button" onclick="window.app.teacherBuzzerAction('next')" style="flex:1; padding:12px; border:none; border-radius:8px; background:var(--accent-color); color:white; font-size:15px; font-weight:900; cursor:pointer; box-shadow:0 3px 10px rgba(0,122,255,0.3);">
+              <button type="button" class="presentation-tool-btn active" onclick="window.app.teacherBuzzerAction('next')" style="flex:1; padding:12px 14px; font-size:15px; font-weight:900; cursor:pointer;">
                 ${qIndex + 1 >= questions.length ? '🏁 結束並查看全班排行榜' : '⏭️ 進入下一題 ➜'}
               </button>
             ` : ''}
 
             ${roundStatus !== 'answered_correct' && roundStatus !== 'revealed' && roundStatus !== 'answered_wrong' ? `
-              <button type="button" onclick="window.app.teacherBuzzerAction('reveal')" style="padding:10px 14px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer;">
+              <button type="button" class="presentation-tool-btn" onclick="window.app.teacherBuzzerAction('reveal')" style="padding:10px 14px; font-size:14px; font-weight:bold; cursor:pointer;">
                 💡 揭曉答案
               </button>
-              <button type="button" onclick="window.app.teacherBuzzerAction('next')" style="padding:10px 14px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font-size:13px; font-weight:bold; cursor:pointer;">
+              <button type="button" class="presentation-tool-btn" onclick="window.app.teacherBuzzerAction('next')" style="padding:10px 14px; font-size:14px; font-weight:bold; cursor:pointer;">
                 ⏭️ 跳題
               </button>
             ` : ''}

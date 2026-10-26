@@ -158,7 +158,7 @@
       </div>
       <div class="teacher-quick-bar-right">
         <button type="button" id="btnQuickBackToAdminWorkspace" class="teacher-quick-btn primary" onclick="window.app && window.app.returnToAdminFromPreview()">
-          🔙 返回後台控場
+          ↩️ 返回後台控場
         </button>
         <button type="button" class="teacher-quick-btn secondary" onclick="window.app && window.app.openAdminDashboardDirect()">
           🗂️ 後台總覽
@@ -3396,7 +3396,7 @@
                 <button onclick="window.app.startBuzzGameAdmin()" style="flex: 1; min-width: 140px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 38px;">
                   🚀 開始搶答
                 </button>
-                <button onclick="window.app.previewStudentActivity('gameBuzz')" style="flex: 1; min-width: 140px; justify-content: center; background: #4f46e5; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(79,70,229,0.28); height: 38px;">
+                <button class="presentation-tool-btn" onclick="window.app.previewStudentActivity('gameBuzz')" style="flex: 1; min-width: 140px; justify-content: center; height: 38px; font-size: 14px;" title="以學生視角預覽搶答畫面">
                   👁️ 前台搶答畫面
                 </button>
                 <button onclick="window.app.endBuzzGameAdmin()" style="flex: 1; min-width: 140px; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 38px;">
@@ -3694,7 +3694,7 @@
                 <button onclick="window.app.startFocusGame()" style="flex: 1; min-width: 140px; justify-content: center; background: var(--accent-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); height: 38px;">
                   🚀 開始遊戲
                 </button>
-                <button onclick="window.app.previewStudentActivity('gameFocus')" style="flex: 1; min-width: 140px; justify-content: center; background: #4f46e5; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(79,70,229,0.28); height: 38px;">
+                <button class="presentation-tool-btn" onclick="window.app.previewStudentActivity('gameFocus')" style="flex: 1; min-width: 140px; justify-content: center; height: 38px; font-size: 14px;" title="以學生視角預覽測驗畫面">
                   👁️ 前台測驗畫面
                 </button>
                 <button onclick="window.app.endFocusGame()" style="flex: 1; min-width: 140px; justify-content: center; background: var(--danger-color); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-shadow: 0 4px 10px rgba(255,59,48,0.3); height: 38px;">
@@ -5796,9 +5796,9 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=386"></script>
-  <script src="js/app.js?v=416"></script>
+  <script src="js/app.js?v=417"></script>
   <script src="js/classics_quiz.js?v=380"></script>
-  <script src="js/song_quiz.js?v=381"></script>
+  <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=388"></script>
   <script src="js/word_cloud.js?v=397"></script>
   <script src="js/presentation_core.js?v=3118"></script>
@@ -6220,12 +6220,12 @@ Python</pre>
     <div id="focusGameOverlayContent" style="width: 95%; max-width: 600px; padding: 24px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--border-color); position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; max-height: calc(100vh - 105px); overflow-y: auto;">
       
       <!-- 教師前台預覽快捷控場列（僅對已登入管理員顯示，支援一鍵切回後台或結束遊戲） -->
-      <div id="focusGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: linear-gradient(90deg, rgba(79, 70, 229, 0.1) 0%, rgba(0, 122, 255, 0.08) 100%); border: 1.5px solid rgba(79, 70, 229, 0.28); border-radius: 12px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-        <span style="font-size: 14px; font-weight: 800; color: #4f46e5; display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
+      <div id="focusGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: var(--bg-card); border: 1.5px solid var(--accent-color); border-radius: 12px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <span style="font-size: 14px; font-weight: 800; color: var(--accent-color); display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-          <button type="button" onclick="window.app.returnToAdminFromPreview()" style="background: #4f46e5; color: white; border: none; padding: 5px 11px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(79,70,229,0.25);">🔙 返回後台控場</button>
-          <button type="button" onclick="window.app.openAdminDashboardDirect()" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">🗂️ 後台總覽</button>
-          <button type="button" onclick="window.app.endFocusGame()" style="background: var(--danger-color); color: white; border: none; padding: 5px 11px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(255,59,48,0.2);">結束遊戲 ❌</button>
+          <button type="button" class="presentation-tool-btn active" onclick="window.app.returnToAdminFromPreview()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="返回後台控場管理工作區">↩️ 返回後台控場</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app.openAdminDashboardDirect()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="開啟後台總覽">🗂️ 後台總覽</button>
+          <button type="button" class="presentation-tool-btn danger" onclick="window.app.endFocusGame()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="結束目前專注力遊戲">結束遊戲 ❌</button>
         </div>
       </div>
 
@@ -6346,12 +6346,12 @@ Python</pre>
     <div id="buzzGameOverlayContent" style="width: 95%; max-width: 650px; padding: 30px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); border: 1px solid var(--border-color); position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; max-height: calc(100vh - 105px); overflow-y: auto; overflow-x: hidden;">
       
       <!-- 教師前台預覽快捷控場列，僅對教師顯示 -->
-      <div id="buzzGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: linear-gradient(90deg, rgba(79, 70, 229, 0.1) 0%, rgba(0, 122, 255, 0.08) 100%); border: 1.5px solid rgba(79, 70, 229, 0.28); border-radius: 12px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-        <span style="font-size: 14px; font-weight: 800; color: #4f46e5; display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
+      <div id="buzzGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: var(--bg-card); border: 1.5px solid var(--accent-color); border-radius: 12px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <span style="font-size: 14px; font-weight: 800; color: var(--accent-color); display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-          <button type="button" onclick="window.app.returnToAdminFromPreview()" style="background: #4f46e5; color: white; border: none; padding: 5px 11px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(79,70,229,0.25);">🔙 返回後台控場</button>
-          <button type="button" onclick="window.app.openAdminDashboardDirect()" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">🗂️ 後台總覽</button>
-          <button type="button" onclick="window.app.endBuzzGameAdmin()" style="background: var(--danger-color); color: white; border: none; padding: 5px 11px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(255,59,48,0.2);">結束搶答 ❌</button>
+          <button type="button" class="presentation-tool-btn active" onclick="window.app.returnToAdminFromPreview()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="返回後台控場管理工作區">↩️ 返回後台控場</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app.openAdminDashboardDirect()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="開啟後台總覽">🗂️ 後台總覽</button>
+          <button type="button" class="presentation-tool-btn danger" onclick="window.app.endBuzzGameAdmin()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="結束目前搶答遊戲">結束搶答 ❌</button>
         </div>
       </div>
 

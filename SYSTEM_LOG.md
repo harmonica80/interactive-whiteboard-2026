@@ -1,4 +1,16 @@
 # System Log
+## 2026-10-26 - 專注力測驗控場列與聽歌搶答按鈕連動四大主題、圖示與對比度優化
+- 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **專注力測驗與搶答前台視角教師控場列圖示與配色優化 (`index.html`, `js/app.js`)**：
+     - 將原寫死深藍色（#4f46e5）改為連動主題色 `var(--accent-color)`，解決在各主題下顏色過深刺眼之問題。
+     - 「🔙 返回後台控場」圖示因在深色底不易辨認，全面換用清晰明瞭的弧線反向箭頭「↩️ 返回後台控場」，並採用 `.presentation-tool-btn.active` 樣式。
+     - 同步將「🗂️ 後台總覽」與「結束遊戲 ❌」換用 `.presentation-tool-btn` 規範，外框與背景卡片全面連動主題 CSS 變數。
+     - 後台專注力與聽歌搶答前台預覽按鈕移除寫死 #4f46e5，統一採用 `.presentation-tool-btn`。
+  2. **聽歌搶答老師主控台按鈕主題化與文字大小優化 (`js/song_quiz.js`)**：
+     - 將「▶️ 開始播放音樂 (開放搶答)」與「▶️ 繼續播放音樂」由寫死亮綠色（#34c759）改為 `.presentation-tool-btn.active`（連動主題強調色）。
+     - 「💡 揭曉答案」、「⏭️ 跳題」、「⏮️ 從頭重播」改用 `.presentation-tool-btn`，次要操作按鈕文字大小全面由 12/13px 提升至 14px 以上規範。
+
 ## 2026-10-26 - 前後台按鈕全面連動四大主題色系、文字大小規範優化 (>= 14px)
 - 影響檔案：`css/presentation.css`, `whiteboard.html`, `index.html`, `js/video_quiz.js`, `SYSTEM_LOG.md`。
 - 修改項目：
