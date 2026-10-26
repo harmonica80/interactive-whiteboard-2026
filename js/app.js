@@ -649,10 +649,14 @@ class App {
     if (tab0) {
       if (this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
         tab0.style.display = 'inline-block';
+        const isClass = (window.ClassRoomManager && typeof window.ClassRoomManager.isClassMode === 'function')
+          ? window.ClassRoomManager.isClassMode()
+          : Boolean(window.currentClassCode);
+        const prefix = isClass ? '🏫 班級專屬' : '🌱 課堂專屬';
         if (this.currentClassCustomAvatars.name) {
-          tab0.textContent = `🏫 班級專屬 (${this.currentClassCustomAvatars.name})`;
+          tab0.textContent = `${prefix} (${this.currentClassCustomAvatars.name})`;
         } else {
-          tab0.textContent = '🏫 班級專屬 (48款)';
+          tab0.textContent = `${prefix} (48款)`;
         }
       } else {
         tab0.style.display = 'none';
@@ -5559,6 +5563,9 @@ class App {
     // 班級管理專屬資料初始化
     if (featureKey === 'classReg' && Array.isArray(this.adminRegisteredClasses)) {
       this.renderAdminClassList(this.adminRegisteredClasses);
+    }
+    if (featureKey === 'classAvatar') {
+      this.populateAdminClassAvatarDropdown();
     }
 
     // 影片出題清單更新
@@ -17105,16 +17112,24 @@ class App {
       ? window.ClassRoomManager.getActiveClassCode()
       : (window.currentClassCode || '');
 
-    let optionsHtml = '';
-    if (list.length === 0) {
-      optionsHtml = `<option value="${currentCode || 'default'}">${currentCode ? `班級【${currentCode}】` : '預設課堂'}</option>`;
-    } else {
-      list.forEach(cls => {
-        const isCurrent = (cls.code === currentCode);
-        optionsHtml += `<option value="${cls.code}" ${isCurrent ? 'selected' : ''}>${cls.code}（${cls.name || cls.code}）${isCurrent ? ' [目前所在]' : ''}</option>`;
-      });
-    }
+    const previousSelected = select.value;
+    const isCurrentOneOff = !currentCode || currentCode === 'default';
+
+    // 預設以先前的選取值，若無則依當前所在課堂選取（若為一次性課堂則選取 default）
+    const targetSelected = previousSelected || (isCurrentOneOff ? 'default' : currentCode);
+
+    let optionsHtml = `<option value="default" ${targetSelected === 'default' ? 'selected' : ''}>🌱 免代碼一次性課堂（公開空間）${isCurrentOneOff ? ' [目前所在]' : ''}</option>`;
+
+    list.forEach(cls => {
+      const isCurrent = (cls.code === currentCode);
+      const isSelected = (cls.code === targetSelected);
+      optionsHtml += `<option value="${cls.code}" ${isSelected ? 'selected' : ''}>${cls.code}（${cls.name || cls.code}）${isCurrent ? ' [目前所在]' : ''}</option>`;
+    });
+
     select.innerHTML = optionsHtml;
+    if (targetSelected && Array.from(select.options).some(o => o.value === targetSelected)) {
+      select.value = targetSelected;
+    }
     const activeVal = select.value;
     if (activeVal) {
       this.onAdminAvatarClassChange(activeVal);
@@ -17123,6 +17138,9 @@ class App {
 
   async onAdminAvatarClassChange(classCode) {
     if (!classCode) return;
+    const isOneOff = (classCode === 'default');
+    const scopeLabel = isOneOff ? '免代碼一次性課堂' : '目前班級';
+
     const badge = document.getElementById('badgeClassAvatarStatus');
     const resetBtn = document.getElementById('btnResetClassAvatars');
     const previewSection = document.getElementById('adminClassAvatarPreviewSection');
@@ -17136,7 +17154,14 @@ class App {
       nameDisplay.style.fontWeight = 'normal';
     }
     const saveBtn = document.getElementById('btnSaveClassAvatars');
-    if (saveBtn) saveBtn.style.display = 'none';
+    if (saveBtn) {
+      saveBtn.style.display = 'none';
+      saveBtn.textContent = isOneOff ? '💾 儲存並套用一次性課堂頭像' : '💾 儲存並套用班級頭像';
+      saveBtn.title = isOneOff ? '儲存為免代碼一次性課堂的專屬頭像' : '儲存為此班級的專屬頭像';
+    }
+    if (resetBtn) {
+      resetBtn.title = isOneOff ? '清除一次性課堂自訂頭像，還原為系統預設' : '清除此班級專屬頭像，還原為系統預設';
+    }
 
     this._pendingCustomAvatarSheetData = null;
 
@@ -17148,7 +17173,7 @@ class App {
       if (data && data.url) {
         if (badge) {
           const typeName = data.name ? `（${data.name} 48款）` : '(48款)';
-          badge.textContent = `已設定班級專屬頭像 ${typeName}`;
+          badge.textContent = isOneOff ? `已設定一次性課堂專屬頭像 ${typeName}` : `已設定班級專屬頭像 ${typeName}`;
           badge.style.background = 'rgba(0, 122, 255, 0.15)';
           badge.style.color = '#007aff';
         }
@@ -17168,10 +17193,10 @@ class App {
           const pSub = document.getElementById('adminClassAvatarPreviewSub');
           if (pTitle) {
             pTitle.textContent = data.name 
-              ? `👀 目前班級專屬頭像（${data.name} 48 格圖鑑）：`
-              : '👀 目前班級專屬頭像（自訂 48 格圖鑑）：';
+              ? `👀 目前${scopeLabel}專屬頭像（${data.name} 48 格圖鑑）：`
+              : `👀 目前${scopeLabel}專屬頭像（自訂 48 格圖鑑）：`;
           }
-          if (pSub) pSub.textContent = data.name ? `使用系統精選「${data.name}」` : '使用老師上傳之班級專屬角色圖鑑';
+          if (pSub) pSub.textContent = data.name ? `使用系統精選「${data.name}」` : (isOneOff ? '使用老師上傳之公開課堂角色圖鑑' : '使用老師上傳之班級專屬角色圖鑑');
           let html = '';
           for (let i = 0; i < 48; i++) {
             const col = i % 8;
@@ -17206,7 +17231,7 @@ class App {
           previewSection.style.display = 'block';
           const pTitle = document.getElementById('adminClassAvatarPreviewTitle');
           const pSub = document.getElementById('adminClassAvatarPreviewSub');
-          if (pTitle) pTitle.textContent = '👀 目前班級使用頭像（系統預設 96 款可愛生物）：';
+          if (pTitle) pTitle.textContent = `👀 目前${scopeLabel}使用頭像（系統預設 96 款可愛生物）：`;
           if (pSub) pSub.textContent = '含「萌寵奇幻 48 款」與「森林海洋 48 款」共 96 款圖鑑';
           let html = '';
           for (let i = 0; i < 96; i++) {
@@ -17359,8 +17384,13 @@ class App {
       previewSection.style.display = 'block';
       const pTitle = document.getElementById('adminClassAvatarPreviewTitle');
       const pSub = document.getElementById('adminClassAvatarPreviewSub');
+      const select = document.getElementById('adminAvatarClassSelect');
+      const classCode = select ? select.value : '';
+      const isOneOff = (classCode === 'default');
+      const actionHint = isOneOff ? '儲存並套用一次性課堂頭像' : '儲存並套用班級頭像';
+
       if (pTitle) pTitle.textContent = '👀 待儲存頭像切分即時預覽（共 48 格）：';
-      if (pSub) pSub.textContent = '請檢視無誤後點擊上方「💾 儲存並套用班級頭像」';
+      if (pSub) pSub.textContent = `請檢視無誤後點擊上方「💾 ${actionHint}」`;
       let html = '';
       for (let i = 0; i < total; i++) {
         const col = i % cols;
@@ -17376,12 +17406,19 @@ class App {
       previewGrid.innerHTML = html;
     }
 
+    const select = document.getElementById('adminAvatarClassSelect');
+    const classCode = select ? select.value : '';
+    const isOneOff = (classCode === 'default');
+    const actionHint = isOneOff ? '儲存並套用一次性課堂頭像' : '儲存並套用班級頭像';
+
     if (saveBtn) {
       saveBtn.style.display = 'inline-block';
+      saveBtn.textContent = `💾 ${actionHint}`;
+      saveBtn.title = isOneOff ? '儲存為免代碼一次性課堂的專屬頭像' : '儲存為此班級的專屬頭像';
       saveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    this.showNotification('👀 圖鑑已切分', '48 格頭像已成功切分預覽！請檢視效果並點擊「儲存並套用班級頭像」。');
+    this.showNotification('👀 圖鑑已切分', `48 格頭像已成功切分預覽！請檢視效果並點擊「${actionHint}」。`);
   }
 
   applyPresetAvatarSheet(presetKey) {
@@ -17469,11 +17506,20 @@ class App {
     }
 
     if (saveBtn) {
+      const select = document.getElementById('adminAvatarClassSelect');
+      const classCode = select ? select.value : '';
+      const isOneOff = (classCode === 'default');
       saveBtn.style.display = 'inline-block';
+      saveBtn.textContent = isOneOff ? '💾 儲存並套用一次性課堂頭像' : '💾 儲存並套用班級頭像';
+      saveBtn.title = isOneOff ? '儲存為免代碼一次性課堂的專屬頭像' : '儲存為此班級的專屬頭像';
       saveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    this.showNotification('✨ 已載入精選圖鑑', `已載入「${preset.name}」48 款角色頭像！請檢視預覽並點擊「儲存並套用班級頭像」。`);
+    const select = document.getElementById('adminAvatarClassSelect');
+    const classCode = select ? select.value : '';
+    const isOneOff = (classCode === 'default');
+    const actionHint = isOneOff ? '儲存並套用一次性課堂頭像' : '儲存並套用班級頭像';
+    this.showNotification('✨ 已載入精選圖鑑', `已載入「${preset.name}」48 款角色頭像！請檢視預覽並點擊「${actionHint}」。`);
   }
 
   async saveAdminClassAvatars() {
@@ -17485,9 +17531,12 @@ class App {
     const select = document.getElementById('adminAvatarClassSelect');
     const classCode = select ? select.value : '';
     if (!classCode) {
-      this.showNotification('請選擇班級', '請選擇要套用頭像的班級！');
+      this.showNotification('請選擇班級', '請選擇要套用頭像的班級或一次性課堂！');
       return;
     }
+
+    const isOneOff = (classCode === 'default');
+    const targetLabel = isOneOff ? '免代碼一次性課堂（公開空間）' : `班級【${classCode}】`;
 
     const saveBtn = document.getElementById('btnSaveClassAvatars');
     if (saveBtn) {
@@ -17506,16 +17555,16 @@ class App {
       }
 
       const typeInfo = this._pendingCustomAvatarSheetData.name ? `「${this._pendingCustomAvatarSheetData.name}」` : '';
-      this.showNotification('🎉 儲存成功', `班級【${classCode}】的 ${typeInfo}48 款專屬頭像已成功生效！`);
+      this.showNotification('🎉 儲存成功', `${targetLabel}的 ${typeInfo}48 款專屬頭像已成功生效！`);
       if (saveBtn) saveBtn.style.display = 'none';
 
       this.onAdminAvatarClassChange(classCode);
     } catch (err) {
-      this.showNotification('儲存失敗', err.message || '儲存班級頭像時發生錯誤');
+      this.showNotification('儲存失敗', err.message || '儲存頭像時發生錯誤');
     } finally {
       if (saveBtn) {
         saveBtn.disabled = false;
-        saveBtn.textContent = '💾 儲存並套用班級頭像';
+        saveBtn.textContent = isOneOff ? '💾 儲存並套用一次性課堂頭像' : '💾 儲存並套用班級頭像';
       }
     }
   }
@@ -17525,7 +17574,10 @@ class App {
     const classCode = select ? select.value : '';
     if (!classCode) return;
 
-    if (!confirm(`確定要清除班級【${classCode}】的專屬頭像，還原為系統預設 96 款生物頭像嗎？`)) {
+    const isOneOff = (classCode === 'default');
+    const targetLabel = isOneOff ? '免代碼一次性課堂（公開空間）' : `班級【${classCode}】`;
+
+    if (!confirm(`確定要清除${targetLabel}的專屬頭像，還原為系統預設 96 款生物頭像嗎？`)) {
       return;
     }
 
@@ -17539,7 +17591,7 @@ class App {
         this.updateClassCustomAvatarUI();
       }
 
-      this.showNotification('已還原', `班級【${classCode}】已還原為系統預設頭像！`);
+      this.showNotification('已還原', `${targetLabel}已還原為系統預設頭像！`);
       this.onAdminAvatarClassChange(classCode);
     } catch (err) {
       this.showNotification('還原失敗', err.message || '還原系統預設頭像時發生錯誤');
