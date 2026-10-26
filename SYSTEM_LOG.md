@@ -1,4 +1,21 @@
 # System Log
+## 2026-10-27 - 更新「萌寵奇幻」48款頭像為精準零重疊新版圖檔並同步校正角色對照中繼資料
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatars_sheet1.png`, `images/avatars_sheet.png`, `images/avatars/avatar_0.png` ~ `avatar_47.png`, `scripts/process-cute-fantasy.ps1`, `scripts/verify-all-avatars.ps1`。
+- 修改項目：
+  1. **替換全新製作之「萌寵奇幻」48 款精準對齊圖鑑**：
+     - 使用者重新提供已確認無重疊、精準對齊之 1024×768 透明圖檔（`media_1793030433095_32fd6f34.png`）。
+     - 採用與「台灣特色小吃版」相同之標準等距網格座標系統（8 欄 × 6 列，每格均勻 128×128 像素），徹底根除舊版裁切時產生的位置偏差問題。
+     - 透過微邊界殘餘透明雜訊清理（A <= 15），達到各格位外圍 100% 純透明。
+     - 重新切分產生 48 張 128×128 獨立透明 PNG（`images/avatars/avatar_0.png` ~ `avatar_47.png`）。
+     - 重新合成萌寵奇幻雪碧圖（`images/avatars_sheet1.png`）與全系統 96 款統一雪碧圖（`images/avatars_sheet.png`，1024×1536）。
+     - 通過邊界像素自動化檢測：全系統所有 96 款頭像、雙圖鑑雪碧圖（sheet1、sheet2）與統一雪碧圖的所有分割線非透明像素數皆為 0，達到零滲透零重疊。
+     - **校準 0~47 號角色中繼資料**：同步更新 `js/app.js` 之 `CUTE_AVATARS` 前 48 款名稱與表情符號（如狐狸、白兔、小熊、小鹿、浣熊、刺蝟、松鼠、水獺等），使滑鼠懸浮原尺寸預覽卡片名稱精確吻合實際角色。
+     - 更新 `css/style.css`、`js/app.js` 與 `index.html` 之快取版本參數（`avatars_sheet.png?v=432`、`style.css?v=412`、`app.js?v=432`）。
+  2. **合規檢測**：
+     - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
+     - 通過邊界零滲透自動化驗證腳本 `scripts/verify-all-avatars.ps1`（96 款全數通過）。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-26 - 更新「森林海洋」48款頭像為精準零重疊新版圖檔 (採用與台灣特色小吃相同之128×128標準網格座標)
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatars_sheet2_raw.jpg`, `images/avatars_sheet2.png`, `images/avatars_sheet.png`, `images/avatars/avatar_48.png` ~ `avatar_95.png`, `scripts/process-forest-ocean.ps1`, `scripts/verify-all-avatars.ps1`。
 - 修改項目：
