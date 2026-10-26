@@ -2628,13 +2628,13 @@ class App {
       });
 
       const rateOptions = [
-        { val: 1, label: '1 個 / 秒 (單擊表決)' },
-        { val: 2, label: '2 個 / 秒 (溫和互動)' },
-        { val: 3, label: '3 個 / 秒 (預設推薦)' },
+        { val: 1, label: '1 個 / 秒' },
+        { val: 2, label: '2 個 / 秒' },
+        { val: 3, label: '3 個 / 秒' },
         { val: 4, label: '4 個 / 秒' },
-        { val: 5, label: '5 個 / 秒 (熱烈互動)' },
-        { val: 8, label: '8 個 / 秒 (高潮喝采)' },
-        { val: 10, label: '10 個 / 秒 (全場狂歡)' }
+        { val: 5, label: '5 個 / 秒' },
+        { val: 8, label: '8 個 / 秒' },
+        { val: 10, label: '10 個 / 秒' }
       ];
 
       container.innerHTML = '';
@@ -10868,7 +10868,10 @@ class App {
     const btn = document.getElementById('classBellBtn');
     if (btn) {
       btn.textContent = '⏹️ 停止鐘聲';
-      btn.style.background = '#7f8c8d';
+      btn.classList.add('is-playing');
+      btn.style.backgroundColor = '#2c3e50';
+      btn.style.color = '#ffffff';
+      btn.style.borderColor = '#1a252f';
     }
 
     if (this.ytBellReady && this.playerBell) {
@@ -10907,7 +10910,10 @@ class App {
     const btn = document.getElementById('classBellBtn');
     if (btn) {
       btn.textContent = '🔔 上/下課鐘聲';
-      btn.style.background = '#e74c3c';
+      btn.classList.remove('is-playing');
+      btn.style.backgroundColor = 'var(--danger-color)';
+      btn.style.color = '#ffffff';
+      btn.style.borderColor = 'var(--danger-color)';
     }
 
     const bellAudio = document.getElementById('bellAudioPlayer');

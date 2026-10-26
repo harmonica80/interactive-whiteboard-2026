@@ -8218,3 +8218,32 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
 .share-item-content-image {
   background-color: #ffffff;
 }
+
+/* 上/下課鐘聲按鈕：常態高對比紅色與播放中深色樣式 */
+#classBellBtn {
+  background-color: var(--danger-color) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--danger-color) !important;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 10px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+#classBellBtn:hover {
+  filter: brightness(0.9);
+}
+
+#classBellBtn.is-playing {
+  background-color: #2c3e50 !important;
+  color: #ffffff !important;
+  border-color: #1a252f !important;
+  box-shadow: 0 0 8px rgba(44, 62, 80, 0.4);
+}
+
+#classBellBtn.is-playing:hover {
+  background-color: #1a252f !important;
+}

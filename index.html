@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=2">
   <link rel="shortcut icon" href="favicon.ico?v=2">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
-  <link rel="stylesheet" href="css/style.css?v=408">
+  <link rel="stylesheet" href="css/style.css?v=409">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1540,7 +1540,7 @@
                   <button id="adminPauseTimerBtn" class="presentation-tool-btn warning" style="font-size: 14px; font-weight: bold; border-radius: 10px; margin: 0; display: none;" onclick="adminPauseTimer()">暫停</button>
                   <button id="adminResumeTimerBtn" class="presentation-tool-btn success" style="font-size: 14px; font-weight: bold; border-radius: 10px; margin: 0; display: none;" onclick="adminResumeTimer()">繼續</button>
                   <button id="adminResetTimerBtn" class="presentation-tool-btn" style="font-size: 14px; font-weight: bold; border-radius: 10px; margin: 0;" onclick="adminResetTimer()">重設/關閉</button>
-                  <button id="classBellBtn" class="presentation-tool-btn danger" style="font-size: 14px; font-weight: bold; border-radius: 10px; margin: 0;" onclick="playClassBell()">🔔 上/下課鐘聲</button>
+                  <button id="classBellBtn" class="presentation-tool-btn danger" style="font-size: 14px; font-weight: bold; border-radius: 10px; margin: 0; background-color: var(--danger-color); color: #ffffff; border: 1px solid var(--danger-color); padding: 6px 14px; cursor: pointer; transition: all 0.2s;" onclick="playClassBell()">🔔 上/下課鐘聲</button>
                 </div>
               </div>
             </div>
@@ -2789,14 +2789,6 @@
               <!-- 頂部說明、班級範圍與總開關 -->
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);">
                 <div style="flex: 1; min-width: 260px;">
-                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
-                    <span id="reactionSettingsScopeBadge" style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--accent-color); background: rgba(0, 122, 255, 0.1); border: 1px solid rgba(0, 122, 255, 0.25); padding: 4px 10px; border-radius: 10px;">
-                      🏫 套用範圍：載入中...
-                    </span>
-                    <span id="reactionActiveRateLimitBadge" style="display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 10px;">
-                      🛡️ 目前情境防洗版：每人 1 秒最多按 3 個
-                    </span>
-                  </div>
                   <p style="font-size: 14px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
                     老師可依課堂活動需求，隨時一鍵切換全班白板右下角的「即時互動回饋」情境組合，並可針對<strong>每一個情境個別設定「1 秒最多可按幾個」</strong>，學生端將即時同步更新！
                   </p>
@@ -2839,13 +2831,13 @@
                     <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: var(--text-primary); background: var(--bg-card); padding: 4px 10px; border-radius: 10px; border: 1px solid rgba(236, 72, 153, 0.35);">
                       <span>⏱️ 此情境 1 秒最多可按：</span>
                       <select id="reactionActiveMaxPerSecSelect" onchange="window.app.setActivePresetMaxPerSec(this.value)" style="border: none; background: transparent; font-size: 14px; font-weight: 800; color: #ec4899; cursor: pointer; outline: none;">
-                        <option value="1">1 個 / 秒（單擊表決）</option>
-                        <option value="2">2 個 / 秒（溫和互動）</option>
-                        <option value="3" selected>3 個 / 秒（預設推薦）</option>
+                        <option value="1">1 個 / 秒</option>
+                        <option value="2">2 個 / 秒</option>
+                        <option value="3" selected>3 個 / 秒</option>
                         <option value="4">4 個 / 秒</option>
-                        <option value="5">5 個 / 秒（熱烈互動）</option>
-                        <option value="8">8 個 / 秒（高潮喝采）</option>
-                        <option value="10">10 個 / 秒（全場狂歡）</option>
+                        <option value="5">5 個 / 秒</option>
+                        <option value="8">8 個 / 秒</option>
+                        <option value="10">10 個 / 秒</option>
                       </select>
                     </label>
                   </div>
@@ -5867,7 +5859,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=422"></script>
+  <script src="js/app.js?v=423"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
