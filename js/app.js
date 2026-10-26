@@ -18227,6 +18227,59 @@ class App {
     if (modal) modal.style.display = 'none';
   }
 
+  // ===== 題庫範例下載與匯出格式選擇通用彈窗 =====
+  openBankFormatPickerModal({ title = '請選擇檔案格式', icon = '📥', desc = '請點選您想要下載或匯出的格式：', options = [] } = {}) {
+    let modal = document.getElementById('bankFormatPickerModal');
+    if (!modal) return;
+
+    const iconEl = document.getElementById('bankFormatPickerIcon');
+    const titleEl = document.getElementById('bankFormatPickerTitleText');
+    const descEl = document.getElementById('bankFormatPickerDesc');
+    const optionsContainer = document.getElementById('bankFormatPickerOptions');
+
+    if (iconEl) iconEl.textContent = icon;
+    if (titleEl) titleEl.textContent = title;
+    if (descEl) descEl.textContent = desc;
+
+    if (optionsContainer) {
+      optionsContainer.innerHTML = options.map((opt, idx) => `
+        <button type="button" class="format-picker-option-card" data-idx="${idx}">
+          <span style="font-size: 26px; flex-shrink: 0; line-height: 1;">${opt.icon || '📄'}</span>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); margin-bottom: 3px; display: flex; align-items: center; gap: 6px;">
+              <span>${this.escapeHtml ? this.escapeHtml(opt.title) : opt.title}</span>
+              ${opt.badge ? `<span style="font-size: 11px; padding: 2px 7px; border-radius: 6px; background: var(--accent-color); color: white; font-weight: bold;">${opt.badge}</span>` : ''}
+            </div>
+            <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">${this.escapeHtml ? this.escapeHtml(opt.desc) : opt.desc}</div>
+          </div>
+          <span style="font-size: 16px; color: var(--accent-color); font-weight: bold; flex-shrink: 0;">➔</span>
+        </button>
+      `).join('');
+
+      // 綁定點擊事件
+      options.forEach((opt, idx) => {
+        const btn = optionsContainer.querySelector(`[data-idx="${idx}"]`);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            this.closeBankFormatPickerModal();
+            if (typeof opt.action === 'function') {
+              opt.action();
+            }
+          });
+        }
+      });
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  closeBankFormatPickerModal() {
+    const modal = document.getElementById('bankFormatPickerModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
   toggleSelectAllSingleItemTargets(forcedState = undefined) {
     const chks = Array.from(document.querySelectorAll('.single-item-copy-target-chk'));
     const anyUnchecked = chks.some(c => !c.checked);

@@ -1,4 +1,18 @@
 # System Log
+## 2026-10-26 - 題庫範例檔與匯出整合格式選擇彈窗、頁首按鈕圓角統一與登出圖示文案優化
+- 影響檔案：`index.html`, `css/style.css`, `css/presentation.css`, `js/app.js`, `js/quiz.js`, `js/video_quiz.js`, `js/word_cloud.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **選擇題、影片出題與文字雲題庫範例下載與匯出功能整合 (`index.html`, `js/app.js`, `js/quiz.js`, `js/video_quiz.js`, `js/word_cloud.js`)**：
+     - 將原本佔用版面之獨立按鈕（「範例檔 (JSON)」、「範例檔 (CSV)」、「匯出 JSON」、「匯出 CSV」）整合成「`⬇️ 下載範例檔`」與「`📤 匯出題庫`」兩大簡明按鈕。
+     - 於 `js/app.js` 實作通用格式選擇彈窗 `openBankFormatPickerModal()`，並於 `index.html` 加入 `#bankFormatPickerModal`（高層級 `z-index: 20000`、連動全域色系主題變數、字體 `>= 14px`）。
+     - 點擊「`⬇️ 下載範例檔`」即可彈出清楚卡片讓教師選擇下載 JSON、CSV（或 TXT）範例檔。
+     - 點擊「`📤 匯出題庫`」即可讓教師自由選擇欲備份匯出的檔案格式（JSON、CSV 或 TXT）。
+  2. **頁首上方按鈕圓角與登出按鈕全面一致 (`css/style.css`, `css/presentation.css`)**：
+     - 將頁首「📢 教師分享」、「🔔 公告 (0)」、「📽️ 同步簡報」、「⚙️ 管理後台」之 `border-radius` 由原先的 `20px` 統一調整為 `10px !important`，與「登出」按鈕風格徹底對齊。
+  3. **登出按鈕圖示與文案更新 (`index.html`)**：
+     - 將登出按鈕文字由原「登出管理」精簡為標準的「`登出`」。
+     - 將原黃色鎖頭圖示更新為通用標準的門與箭頭登出圖示（`<svg>` 向量圖示，隨主題色自動繼承顏色）。
+
 ## 2026-10-26 - 清除選擇題題庫重複長方形測試題目、防範測試污染與新增清除重複工具
 - 影響檔案：`index.html`, `js/quiz.js`, `tests/video-quiz.spec.mjs`, `SYSTEM_LOG.md`。
 - 修改項目：

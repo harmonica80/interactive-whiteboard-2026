@@ -7,8 +7,8 @@
   <link rel="icon" type="image/png" href="favicon.png?v=2">
   <link rel="shortcut icon" href="favicon.ico?v=2">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
-  <link rel="stylesheet" href="css/style.css?v=405">
-  <link rel="stylesheet" href="css/presentation.css?v=3117">
+  <link rel="stylesheet" href="css/style.css?v=406">
+  <link rel="stylesheet" href="css/presentation.css?v=3118">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -64,7 +64,7 @@
           <button type="button" class="switch-class-mobile-btn mobile-only" id="mobileSwitchClassBtn" onclick="window.app && window.app.openClassModal()" title="切換班級/回一次性課堂">🏫</button>
           <!-- 管理後台按鈕移至右上角 -->
           <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️<span class="admin-btn-text"> 管理後台</span></button>
-          <button type="button" class="menu-tab admin-logout-top-btn" id="topBarAdminLogoutBtn" onclick="logoutAdmin()" style="display: none;" title="一鍵登出管理員模式，鎖定後台">🔓<span class="admin-btn-text"> 登出管理</span></button>
+          <button type="button" class="menu-tab admin-logout-top-btn" id="topBarAdminLogoutBtn" onclick="logoutAdmin()" style="display: none;" title="登出管理員模式，鎖定後台"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 3px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span class="admin-btn-text">登出</span></button>
         </div>
         <div class="theme-switcher">
           <button class="theme-btn light active" data-theme="light" data-theme-label="淺色系" title="淺色系"></button>
@@ -3132,17 +3132,11 @@
                       <button type="button" class="presentation-tool-btn" onclick="openQuizFormatModal()" style="font-size: 14px;" title="查看題庫格式規範">
                         📋 範例格式說明
                       </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.downloadSampleTemplateJSON()" style="font-size: 14px;" title="下載標準 JSON 格式範例檔">
-                        ⬇️ 範例檔 (JSON)
+                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.openDownloadSampleModal()" style="font-size: 14px;" title="下載題庫範例格式檔 (支援選擇 JSON / CSV / TXT 格式)">
+                        ⬇️ 下載範例檔
                       </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.downloadSampleTemplateCSV()" style="font-size: 14px;" title="下載標準 CSV 格式範例檔">
-                        ⬇️ 範例檔 (CSV)
-                      </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.exportQuizzesJSON()" style="font-size: 14px;" title="將目前所有題目匯出為 JSON 備份檔">
-                        📤 匯出 JSON
-                      </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.exportQuizzesCSV()" style="font-size: 14px;" title="將目前所有題目匯出為 CSV 試算表檔">
-                        📤 匯出 CSV
+                      <button type="button" class="presentation-tool-btn" onclick="window.quiz.openExportModal()" style="font-size: 14px;" title="匯出目前題庫備份檔 (支援選擇 JSON / CSV / TXT 格式)">
+                        📤 匯出題庫
                       </button>
                       <button type="button" class="presentation-tool-btn" onclick="document.getElementById('quizBankFileInput').click()" style="font-size: 14px;" title="匯入 JSON、CSV 或 TXT 題庫檔案">
                         📥 匯入題庫
@@ -3250,17 +3244,11 @@
                       <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.openFormatGuideModal()" style="font-size: 14px;" title="查看 JSON 與 CSV 題庫格式規範">
                         📋 範例格式說明
                       </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.downloadSampleTemplateJSON()" style="font-size: 14px;" title="下載標準 JSON 格式範例檔">
-                        ⬇️ 範例檔 (JSON)
+                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.openDownloadSampleModal()" style="font-size: 14px;" title="下載影片測驗範例格式檔 (支援選擇 JSON / CSV 格式)">
+                        ⬇️ 下載範例檔
                       </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.downloadSampleTemplateCSV()" style="font-size: 14px;" title="下載標準 CSV 格式範例檔">
-                        ⬇️ 範例檔 (CSV)
-                      </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.exportQuizzesJSON()" style="font-size: 14px;" title="將目前所有測驗匯出為 JSON 備份檔">
-                        📤 匯出 JSON
-                      </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.exportQuizzesCSV()" style="font-size: 14px;" title="將目前所有測驗匯出為 CSV 試算表檔">
-                        📤 匯出 CSV
+                      <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.openExportModal()" style="font-size: 14px;" title="匯出目前影片測驗題庫備份檔 (支援選擇 JSON / CSV 格式)">
+                        📤 匯出題庫
                       </button>
                       <button type="button" class="presentation-tool-btn" onclick="window.videoQuiz.openImportModal()" style="font-size: 14px;" title="匯入 JSON 或 CSV 題庫檔案">
                         📥 匯入題庫
@@ -4003,17 +3991,11 @@
                       <button type="button" class="presentation-tool-btn" onclick="openWordCloudFormatModal()" style="font-size: 14px;" title="查看文字雲題庫格式規範">
                         📋 範例格式說明
                       </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.downloadSampleTemplateJSON()" style="font-size: 14px;" title="下載標準 JSON 格式範例檔">
-                        ⬇️ 範例檔 (JSON)
+                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.openDownloadSampleModal()" style="font-size: 14px;" title="下載文字雲範例格式檔 (支援選擇 JSON / CSV 格式)">
+                        ⬇️ 下載範例檔
                       </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.downloadSampleTemplateCSV()" style="font-size: 14px;" title="下載標準 CSV 格式範例檔">
-                        ⬇️ 範例檔 (CSV)
-                      </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.exportWordCloudJSON()" style="font-size: 14px;" title="將目前所有文字雲題目匯出為 JSON 備份檔">
-                        📤 匯出 JSON
-                      </button>
-                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.exportWordCloudCSV()" style="font-size: 14px;" title="將目前所有文字雲題目匯出為 CSV 試算表檔">
-                        📤 匯出 CSV
+                      <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.openExportModal()" style="font-size: 14px;" title="匯出目前文字雲題庫備份檔 (支援選擇 JSON / CSV 格式)">
+                        📤 匯出題庫
                       </button>
                       <button type="button" class="presentation-tool-btn" onclick="document.getElementById('wcBankFileInput').click()" style="font-size: 14px;" title="匯入 JSON、CSV 或 TXT 題庫檔案">
                         📥 匯入題庫
@@ -5826,12 +5808,12 @@ Python</pre>
   <script src="js/focus_question_bank.js?v=381"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
-  <script src="js/quiz.js?v=389"></script>
-  <script src="js/app.js?v=418"></script>
+  <script src="js/quiz.js?v=390"></script>
+  <script src="js/app.js?v=419"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
-  <script src="js/video_quiz.js?v=389"></script>
-  <script src="js/word_cloud.js?v=397"></script>
+  <script src="js/video_quiz.js?v=390"></script>
+  <script src="js/word_cloud.js?v=398"></script>
   <script src="js/presentation_core.js?v=3118"></script>
   
   <!-- 問題彈出視窗 -->
@@ -7203,6 +7185,31 @@ Python</pre>
       <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 14px;">
         <button type="button" onclick="window.app.closeSingleItemCopyModal()" style="padding: 8px 16px; font-size: 14px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);">取消</button>
         <button type="button" id="btnConfirmSingleItemCopy" onclick="window.app.confirmSingleItemCopy()" style="padding: 8px 22px; font-size: 14px; font-weight: bold; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer;">🚀 確認複製</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 題庫範例下載與匯出格式選擇通用彈窗 -->
+  <div id="bankFormatPickerModal" class="video-quiz-overlay" style="display: none; z-index: 20000;" onclick="if(event.target===this) window.app && window.app.closeBankFormatPickerModal()">
+    <div class="video-quiz-card" style="max-width: 500px; padding: 22px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 id="bankFormatPickerTitle" style="margin: 0; font-size: 17px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <span id="bankFormatPickerIcon">⬇️</span>
+          <span id="bankFormatPickerTitleText">請選擇檔案格式</span>
+        </h3>
+        <button type="button" onclick="window.app.closeBankFormatPickerModal()" style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: var(--text-secondary); line-height: 1;" title="關閉">✕</button>
+      </div>
+
+      <p id="bankFormatPickerDesc" style="margin: 0 0 16px 0; font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+        請選擇您要下載或匯出的檔案格式：
+      </p>
+
+      <div id="bankFormatPickerOptions" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- 動態渲染格式選項按鈕 -->
+      </div>
+
+      <div style="margin-top: 18px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="window.app.closeBankFormatPickerModal()" style="padding: 8px 18px; font-size: 14px; font-weight: bold;">關閉</button>
       </div>
     </div>
   </div>

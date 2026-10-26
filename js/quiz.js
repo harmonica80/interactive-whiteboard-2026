@@ -1238,6 +1238,84 @@ class Quiz {
     container.addEventListener('dragover', container._dragOverHandler);
   }
 
+  // 開啟下載範例檔格式選擇彈窗
+  openDownloadSampleModal() {
+    if (!window.app || typeof window.app.openBankFormatPickerModal !== 'function') {
+      this.downloadSampleTemplateJSON();
+      return;
+    }
+    window.app.openBankFormatPickerModal({
+      title: '下載選擇題測驗範例檔',
+      icon: '⬇️',
+      desc: '請選擇您想要下載的範例檔格式，編輯完成後即可直接匯入：',
+      options: [
+        {
+          icon: '📄',
+          title: 'JSON 格式範例檔 (.json)',
+          desc: '完整結構格式，支援單選、複選、連連看配對題與多選項設定',
+          badge: '推薦',
+          action: () => this.downloadSampleTemplateJSON()
+        },
+        {
+          icon: '📊',
+          title: 'CSV 試算表範例檔 (.csv)',
+          desc: '以分號分隔選項，可直接使用 Excel 或 Google 試算表開啟編輯',
+          badge: '常用',
+          action: () => this.downloadSampleTemplateCSV()
+        },
+        {
+          icon: '📝',
+          title: 'TXT 純文字範例檔 (.txt)',
+          desc: '第一行問句、第二行題型、後續每行一個選項，簡明好上手',
+          badge: '純文字',
+          action: () => this.exportQuizBankTxt()
+        }
+      ]
+    });
+  }
+
+  // 開啟匯出題庫格式選擇彈窗
+  openExportModal() {
+    const keys = Object.keys(this.historyBank || {});
+    if (keys.length === 0) {
+      if (window.app) window.app.showNotification('提示', '題庫目前沒有任何題目可供匯出！');
+      return;
+    }
+
+    if (!window.app || typeof window.app.openBankFormatPickerModal !== 'function') {
+      this.exportQuizzesJSON();
+      return;
+    }
+    window.app.openBankFormatPickerModal({
+      title: '匯出選擇題測驗題庫',
+      icon: '📤',
+      desc: `目前題庫共 ${keys.length} 道題目，請選擇匯出備份格式：`,
+      options: [
+        {
+          icon: '📄',
+          title: '匯出 JSON 格式備份檔 (.json)',
+          desc: '完整保留所有題目的題目問句、選項、題型、配對與自訂排序資訊',
+          badge: '推薦備份',
+          action: () => this.exportQuizzesJSON()
+        },
+        {
+          icon: '📊',
+          title: '匯出 CSV 試算表檔 (.csv)',
+          desc: '適合使用 Excel 或試算表開啟查閱、修改或彙整題庫',
+          badge: 'Excel 試算表',
+          action: () => this.exportQuizzesCSV()
+        },
+        {
+          icon: '📝',
+          title: '匯出 TXT 純文字檔 (.txt)',
+          desc: '純文字題目清單格式，適合快速複製或備忘閱讀',
+          badge: '純文字',
+          action: () => this.exportAllQuizBankTxt()
+        }
+      ]
+    });
+  }
+
   // 下載題庫 JSON 範例格式檔
   downloadSampleTemplateJSON() {
     const templateData = [

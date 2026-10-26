@@ -4910,6 +4910,70 @@
       ];
     }
 
+    // 開啟下載範例檔格式選擇彈窗
+    openDownloadSampleModal() {
+      if (!window.app || typeof window.app.openBankFormatPickerModal !== 'function') {
+        this.downloadSampleTemplateJSON();
+        return;
+      }
+      window.app.openBankFormatPickerModal({
+        title: '下載影片出題測驗範例檔',
+        icon: '⬇️',
+        desc: '請選擇您想要下載的範例檔格式，編輯時間點與題目後即可直接匯入：',
+        options: [
+          {
+            icon: '📄',
+            title: 'JSON 格式範例檔 (.json)',
+            desc: '支援 YouTube 影片網址、多時間標籤、單選、複選、文字簡答與自訂題組',
+            badge: '推薦',
+            action: () => this.downloadSampleTemplateJSON()
+          },
+          {
+            icon: '📊',
+            title: 'CSV 試算表範例檔 (.csv)',
+            desc: '包含時間標籤、題型與分號分隔選項，可使用 Excel 或試算表開啟編輯',
+            badge: '常用',
+            action: () => this.downloadSampleTemplateCSV()
+          }
+        ]
+      });
+    }
+
+    // 開啟匯出題庫格式選擇彈窗
+    openExportModal() {
+      const quizzes = this.quizzes || [];
+      if (quizzes.length === 0) {
+        if (window.app) window.app.showNotification('提示', '目前沒有影片測驗題目可供匯出！');
+        return;
+      }
+
+      if (!window.app || typeof window.app.openBankFormatPickerModal !== 'function') {
+        this.exportQuizzesJSON();
+        return;
+      }
+      window.app.openBankFormatPickerModal({
+        title: '匯出影片出題測驗題庫',
+        icon: '📤',
+        desc: `目前共 ${quizzes.length} 組影片測驗，請選擇匯出備份格式：`,
+        options: [
+          {
+            icon: '📄',
+            title: '匯出 JSON 格式備份檔 (.json)',
+            desc: '完整備份影片來源、播放秒數範圍、時間點出題、各類題型與選項',
+            badge: '推薦備份',
+            action: () => this.exportQuizzesJSON()
+          },
+          {
+            icon: '📊',
+            title: '匯出 CSV 試算表檔 (.csv)',
+            desc: '匯出為試算表清單，適合檢視各題時間戳記與題目問答內容',
+            badge: 'Excel 試算表',
+            action: () => this.exportQuizzesCSV()
+          }
+        ]
+      });
+    }
+
     // 下載 JSON 格式範例檔案
     downloadSampleTemplateJSON() {
       const templateData = this.getSampleTemplateJSON();

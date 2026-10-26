@@ -710,6 +710,69 @@
       window.app?.showNotification('➕ 建立新題目', '請在上方出題框輸入題目標題或引導詞，完成後點選「🚀 發布」或「💾 儲存至歷史題庫」！');
     }
 
+    // 開啟下載範例檔格式選擇彈窗
+    openDownloadSampleModal() {
+      if (!window.app || typeof window.app.openBankFormatPickerModal !== 'function') {
+        this.downloadSampleTemplateJSON();
+        return;
+      }
+      window.app.openBankFormatPickerModal({
+        title: '下載文字雲題目範例檔',
+        icon: '⬇️',
+        desc: '請選擇您想要下載的範例檔格式，編輯後即可匯入出題：',
+        options: [
+          {
+            icon: '📄',
+            title: 'JSON 格式範例檔 (.json)',
+            desc: '完整文字雲題目結構，包含標題、每人作答次數限制與詞雲形狀',
+            badge: '推薦',
+            action: () => this.downloadSampleTemplateJSON()
+          },
+          {
+            icon: '📊',
+            title: 'CSV 試算表範例檔 (.csv)',
+            desc: '可直接使用 Excel 或 Google 試算表開啟編輯文字雲題目清單',
+            badge: '常用',
+            action: () => this.downloadSampleTemplateCSV()
+          }
+        ]
+      });
+    }
+
+    // 開啟匯出題庫格式選擇彈窗
+    openExportModal() {
+      const keys = Object.keys(this.historyBank || {});
+      if (keys.length === 0) {
+        if (window.app) window.app.showNotification('提示', '目前文字雲題庫中沒有題目可供匯出！');
+        return;
+      }
+      if (!window.app || typeof window.app.openBankFormatPickerModal !== 'function') {
+        this.exportWordCloudJSON();
+        return;
+      }
+      window.app.openBankFormatPickerModal({
+        title: '匯出文字雲題庫',
+        icon: '📤',
+        desc: `目前文字雲題庫共 ${keys.length} 道題目，請選擇匯出備份格式：`,
+        options: [
+          {
+            icon: '📄',
+            title: '匯出 JSON 格式備份檔 (.json)',
+            desc: '完整保留所有文字雲題目設定、作答次數限制與形狀配置',
+            badge: '推薦備份',
+            action: () => this.exportWordCloudJSON()
+          },
+          {
+            icon: '📊',
+            title: '匯出 CSV 試算表檔 (.csv)',
+            desc: '適合使用 Excel 或試算表開啟檢視或批次調整題目',
+            badge: 'Excel 試算表',
+            action: () => this.exportWordCloudCSV()
+          }
+        ]
+      });
+    }
+
     // 下載文字雲題庫 JSON 範例檔
     downloadSampleTemplateJSON() {
       const templateData = [
