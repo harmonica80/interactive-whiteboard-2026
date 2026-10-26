@@ -17252,6 +17252,9 @@ class App {
       resetBtn.title = isOneOff ? '清除一次性課堂自訂頭像，還原為系統預設' : '清除此班級專屬頭像，還原為系統預設';
     }
 
+    const pendingNotice = document.getElementById('adminClassAvatarPendingNotice');
+    if (pendingNotice) pendingNotice.style.display = 'none';
+
     this._pendingCustomAvatarSheetData = null;
 
     try {
@@ -17517,7 +17520,13 @@ class App {
       saveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    this.showNotification('👀 圖鑑已切分', `48 格頭像已成功切分預覽！請檢視效果並點擊「${actionHint}」。`);
+    const pendingNotice = document.getElementById('adminClassAvatarPendingNotice');
+    const pendingText = document.getElementById('adminClassAvatarPendingNoticeText');
+    if (pendingNotice && pendingText) {
+      pendingText.textContent = `48 格頭像已成功切分預覽！請檢視效果並點擊「${actionHint}」。`;
+      pendingNotice.style.display = 'flex';
+      pendingNotice.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   applyPresetAvatarSheet(presetKey) {
@@ -17621,7 +17630,15 @@ class App {
     const classCode = select ? select.value : '';
     const isOneOff = (classCode === 'default');
     const actionHint = isOneOff ? '儲存並套用一次性課堂頭像' : '儲存並套用班級頭像';
-    this.showNotification('✨ 已載入精選圖鑑', `已載入「${preset.name}」48 款角色頭像！請檢視預覽並點擊「${actionHint}」。`);
+
+    // 顯示於快速切換精選圖鑑下方之常駐提示橫條（替代易消逝之彈窗）
+    const pendingNotice = document.getElementById('adminClassAvatarPendingNotice');
+    const pendingText = document.getElementById('adminClassAvatarPendingNoticeText');
+    if (pendingNotice && pendingText) {
+      pendingText.textContent = `已載入「${preset.name}」48 款角色頭像！請檢視預覽並點擊「${actionHint}」。`;
+      pendingNotice.style.display = 'flex';
+      pendingNotice.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   async saveAdminClassAvatars() {
@@ -17660,6 +17677,9 @@ class App {
       this.showNotification('🎉 儲存成功', `${targetLabel}的 ${typeInfo}48 款專屬頭像已成功生效！`);
       if (saveBtn) saveBtn.style.display = 'none';
 
+      const pendingNotice = document.getElementById('adminClassAvatarPendingNotice');
+      if (pendingNotice) pendingNotice.style.display = 'none';
+
       this.onAdminAvatarClassChange(classCode);
     } catch (err) {
       this.showNotification('儲存失敗', err.message || '儲存頭像時發生錯誤');
@@ -17694,6 +17714,8 @@ class App {
       }
 
       this.showNotification('已還原', `${targetLabel}已還原為系統預設頭像！`);
+      const pendingNotice = document.getElementById('adminClassAvatarPendingNotice');
+      if (pendingNotice) pendingNotice.style.display = 'none';
       this.onAdminAvatarClassChange(classCode);
     } catch (err) {
       this.showNotification('還原失敗', err.message || '還原系統預設頭像時發生錯誤');

@@ -2000,6 +2000,17 @@
                   </div>
                 </div>
 
+                <!-- 待儲存提示訊息橫條 (按快速切換精選圖鑑或上傳後顯示於此，常駐提醒避免遺漏點擊儲存) -->
+                <div id="adminClassAvatarPendingNotice" style="display: none; margin-bottom: 12px; padding: 10px 14px; background: rgba(0, 122, 255, 0.08); border: 1.5px solid var(--accent-color); border-radius: 10px; color: var(--text-primary); font-size: 14px; line-height: 1.5; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                  <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 260px;">
+                    <span style="font-size: 18px; flex-shrink: 0;">✨</span>
+                    <span id="adminClassAvatarPendingNoticeText" style="font-weight: bold; color: var(--text-primary);"></span>
+                  </div>
+                  <button type="button" class="presentation-tool-btn active" onclick="window.app.saveAdminClassAvatars()" style="padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: bold; white-space: nowrap; margin: 0; box-shadow: 0 2px 8px rgba(0,122,255,0.25);">
+                    💾 立即儲存套用
+                  </button>
+                </div>
+
                 <!-- 目前班級頭像狀態與動作列 -->
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
                   <div id="adminClassAvatarStatusInfo" style="font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
@@ -5883,7 +5894,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=429"></script>
+  <script src="js/app.js?v=430"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
