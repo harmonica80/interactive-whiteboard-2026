@@ -979,6 +979,17 @@ window.ClassRoomManager = {
       if (!itemData && window.parent && window.parent.whiteboardArchives) {
         itemData = window.parent.whiteboardArchives[itemId];
       }
+    } else if (moduleType === 'presentationMaterial') {
+      const snap = await rawRef(srcPath(`presentation_materials/${itemId}`)).once('value');
+      itemData = snap.val();
+      if (!itemData) {
+        const pSnap = await rawRef(srcPath('presentation_materials')).once('value');
+        const pVal = pSnap.val();
+        if (pVal) itemData = pVal[itemId];
+      }
+      if (!itemData && window.presentationManager && window.presentationManager.materialsBank) {
+        itemData = window.presentationManager.materialsBank[itemId];
+      }
     }
 
     if (!itemData) {
@@ -1111,6 +1122,14 @@ window.ClassRoomManager = {
           createdAt: Date.now()
         };
         await rawRef(tgtPath(tCode, `whiteboard_archives/${newId}`)).set(newArchiveItem);
+      } else if (moduleType === 'presentationMaterial') {
+        const newMaterialItem = {
+          ...itemData,
+          id: newId,
+          createdAt: Date.now()
+        };
+        delete newMaterialItem.submissions;
+        await rawRef(tgtPath(tCode, `presentation_materials/${newId}`)).set(newMaterialItem);
       }
 
       copiedTargets.push(tCode);

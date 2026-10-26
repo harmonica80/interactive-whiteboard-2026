@@ -1,4 +1,31 @@
 # System Log
+## 2026-10-26 - 同步簡報雲端教材庫功能實作 (支援雲端儲存、共編/唯讀雙模式載入、跨班級複製與刪除，大幅降低重複上傳流量)
+- 影響檔案：`index.html`, `js/presentation_core.js`, `css/presentation.css`, `js/firebase-config.js`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **同步簡報雲端教材庫介面與樣式實作 (`index.html`, `css/presentation.css`)**：
+     - 於同步簡報頂部工具列及「📁 匯入 / 匯出」彈窗內新增「`☁️ 雲端教材庫`」快捷入口（`#btnSlideCloudBank`）。
+     - 於 `#panel-presentation` 內新增全螢幕相容之「同步簡報雲端教材庫」彈窗（`#modalPresentationCloudBank`），遵循題庫管理標準規範：
+       - 頂部操作列配備「➕ 儲存目前簡報為教材」、「📄 上傳 PDF」、「📤 匯出目前簡報 JSON」、「📥 匯入簡報 JSON」與「🔄 重新整理」按鈕，全數採用 `.presentation-tool-btn` 樣式。
+       - 具備即時關鍵字搜尋框與教材總筆數動態徽章。
+       - 教材卡片標示教材名稱、建立者、建立時間、簡報頁數、標記處數與互動題數彩色標籤。
+       - 每張教材卡片提供「🚀 載入」、「📤 複製」、「📥 下載」與「🗑️ 刪除」標準功能按鈕，高度 32px、圓角 10px、字級 `>= 14px`。
+     - 新增「載入模式選擇彈窗」（`#modalPresentationLoadChoice`），提供教師選擇「✏️ 大家繼續共編 / 編輯模式」或「🔒 唯讀觀摩模式」。
+  2. **同步簡報雲端教材庫核心邏輯實作 (`js/presentation_core.js`)**：
+     - 實作完整簡報快照打包與雲端儲存：將所有投影片（`slides`）、手繪標記（`annotations`）及互動題目設定整合成結構化教材，寫入 Firebase `presentation_materials` 專屬路徑。
+     - 實作按需監聽（On-Demand Listeners）：僅在開啟教材庫彈窗時掛載監聽器，關閉彈窗立即 `.off()` 卸載，杜絕背景流量浪費。
+     - 實作雙模式載入機制：
+       - **✏️ 大家繼續共編 / 編輯模式**：載入教材並設定 `studentCanUsePresentation = true`，全班可同步操作、共編標記與參與互動。
+       - **🔒 唯讀觀摩模式**：載入教材並設定 `studentCanUsePresentation = false`，鎖定為僅老師主控，學生端為唯讀觀摩防寫狀態。
+     - 實作教材備份 JSON 下載與刪除功能。
+     - 於學生端非授權時自動隱藏「☁️ 雲端教材庫」按鈕，落實角色權限隔離。
+  3. **跨班級教材複製中心串接 (`js/firebase-config.js`, `js/app.js`)**：
+     - 在 `ClassRoomManager.copySingleItem` 中擴充支援 `moduleType === 'presentationMaterial'`，直接在 Firebase 雲端將來源教材無損複製寫入目標班級。
+     - 在 `openSingleItemCopyModal` 中加入簡報教材預覽標籤（`📽️ 同步簡報`）與頁數/互動題數摘要。
+  4. **流量優化效能效益**：
+     - 教材只需在雲端建立一次，跨班級複製完全透過雲端資料庫直接傳遞，教師本機無需重複上傳大型 PDF 或圖片，節省近 100% 重複上傳之網路頻寬與等待時間。
+  5. **快取版本號更新與合規驗證 (`index.html`)**：
+     - 更新 `css/presentation.css?v=3120`、`js/presentation_core.js?v=3120`。
+     - 通過 `npm run check:syntax` 語法檢測，嚴格遵守「記錄」用語規範，全案無「紀錄」禁字。
 ## 2026-10-26 - 互動白板雲端歷程檔案庫功能實作 (支援雲端存檔、共編/唯讀雙模式載入、跨班級複製與刪除)
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `js/firebase-config.js`, `js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：

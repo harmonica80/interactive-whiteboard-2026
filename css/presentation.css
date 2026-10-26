@@ -1670,3 +1670,21 @@
   visibility: visible !important;
   z-index: 10000 !important;
 }
+
+/* 簡報雲端教材卡片 */
+.presentation-bank-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  gap: 12px;
+  transition: all 0.15s ease;
+}
+
+.presentation-bank-card:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}

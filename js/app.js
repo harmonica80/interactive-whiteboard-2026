@@ -18199,6 +18199,18 @@ class App {
         const oCount = arc.objectCount !== undefined ? arc.objectCount : 0;
         previewTitle = `🎨 ${arc.title || '白板歷程筆記'}（${cCount} 個畫布 / ${pCount} 個分頁 / ${oCount} 個物件）`;
       }
+    } else if (moduleType === 'presentationMaterial') {
+      typeName = '簡報教材';
+      badgeText = '📽️ 同步簡報';
+      let mat = null;
+      if (window.presentationManager && window.presentationManager.materialsBank) {
+        mat = window.presentationManager.materialsBank[itemId];
+      }
+      if (mat) {
+        const sCount = mat.slideCount || (mat.slides ? mat.slides.length : 0);
+        const qCount = mat.questionCount !== undefined ? mat.questionCount : 0;
+        previewTitle = `📽️ ${mat.title || '簡報教材'}（${sCount} 頁簡報${qCount > 0 ? ` / ${qCount} 道互動題` : ''}）`;
+      }
     }
 
     if (titleModal) {
