@@ -1,4 +1,11 @@
 # System Log
+## 2026-10-26 - 清理更新歷程歷史版本卡片殘留之最新版本標籤
+- 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修正版本更新歷程彈窗（`#changelogModal`）歷史版本卡片標籤 (`index.html`)**：
+     - 嚴格依照 `AGENTS.md` 規範，確保全系統更新歷程僅有最上方最新版本卡片（`ver 3.10.11`）顯示「最新版本」紅色徽章（`.changelog-badge-latest`）與高亮藍框（`.is-latest`）。
+     - 全面清理 `ver 3.10.10` 及 `ver 3.9.13` ~ `ver 3.9.6` 等所有歷史版本卡片中殘留的「最新版本」標籤與裝飾星號，恢復簡潔清晰的歷史版本卡片樣式。
+
 ## 2026-10-26 - 修復互動白板全班跟隨預設畫布同步問題、新增畫布重新命名功能與專注力大廳空狀態說明
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
