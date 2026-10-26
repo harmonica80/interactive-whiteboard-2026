@@ -1,4 +1,15 @@
 # System Log
+## 2026-10-26 - 教師分享前台快捷控場按鈕修正連結至「最新消息」管理工作區
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修正「教師分享」前台控場快捷按鈕目標功能**：
+     - 修復教師在前台「📢 教師分享」頁面時，頂部教師管理捷徑列之「`⚙️ 教師分享管理`」按鈕原先跳轉至 `shareMaterials`（課程進度與教材）之問題。
+     - 修正目標為 `shareNews`（最新消息），點擊後直接切換至管理後台之「A. 最新消息」管理頁面，自動設定分類為最新消息並切換至內容管理子頁籤。
+     - 更新 `index.html` 之 `js/app.js` 快取版本參數至 `?v=427`。
+  2. **合規檢測**：
+     - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-26 - 更新三大精選頭像圖鑑為全新無跨格精準圖檔 (修復切分裁切時鄰近角色邊緣溢出問題)
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatar_preset_fruits.png`, `images/avatar_preset_snacks.png`, `images/avatar_preset_taiwan.png`。
 - 修改項目：

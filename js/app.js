@@ -5862,7 +5862,7 @@ class App {
       'panel-lucky-wheel': { key: 'gameWheel', label: '⚙️ 抽人設定' },
       'panel-word-cloud': { key: 'gameWordCloud', label: '⚙️ 文字雲出題設定' },
       'panel-focus-game': { key: 'gameFocus', label: '⚙️ 專注力設定' },
-      'panel-teacher-shares': { key: 'shareMaterials', label: '⚙️ 教師分享管理' }
+      'panel-teacher-shares': { key: 'shareNews', label: '⚙️ 教師分享管理' }
     };
 
     const pillsHtml = [];
