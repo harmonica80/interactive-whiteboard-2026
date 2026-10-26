@@ -8,7 +8,7 @@
   <link rel="shortcut icon" href="favicon.ico?v=2">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
   <link rel="stylesheet" href="css/style.css?v=408">
-  <link rel="stylesheet" href="css/presentation.css?v=3122">
+  <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -727,19 +727,9 @@
 
       <!-- 📽️ 同步互動簡報 (Synchronized Interactive Presentation) -->
       <div class="panel-card presentation-panel-card" id="panel-presentation">
-        <!-- 頂部導航與控制列 (圖 4：控制功能移至頂部排成同一行，圖 2：移除關閉按鈕) -->
+        <!-- 頂部導航與控制列 (圖 2：移除第一行標題節省空間，控制鈕與學生互動權限鈕整合成同一行) -->
         <div class="presentation-header">
-          <div class="presentation-header-left">
-            <span class="presentation-main-title">📽️ 同步簡報</span>
-            <span class="presentation-live-badge" id="presentationLiveBadge" style="display: none;">同步廣播中</span>
-            <!-- 老師決定是否開放學生操作簡報 (圖 4 & Item 1，預設僅老師) -->
-            <button type="button" class="presentation-perm-btn is-inactive" id="btnToggleStudentPresentation" style="display: none;" title="點擊切換是否開放學生自由操作簡報">
-              <span>🔒 僅老師進行</span>
-            </button>
-          </div>
-
-          <!-- 簡報控制功能往上移，在頂部排成同一行 (Item 5, 如圖 4) -->
-          <div class="presentation-header-controls" id="presentationHeaderControls">
+          <div class="presentation-header-controls" id="presentationHeaderControls" style="width: 100%; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
             <div class="presentation-nav-group">
               <button type="button" class="presentation-tool-btn" id="btnSlideNew" title="建立新簡報（清空當前所有簡報頁面並建立全新簡報）">➕ 新簡報</button>
               <button type="button" class="presentation-tool-btn" id="btnSlidePrev" title="上一頁">◀</button>
@@ -759,6 +749,11 @@
                   <rect x="11.4" y="11.4" width="3.6" height="3.6" rx="0.8"/>
                 </svg>
               </button>
+              <!-- 老師決定是否開放學生參與互動與操作 (圖 2：移至第二行後方，預設開啟) -->
+              <button type="button" class="presentation-perm-btn is-active" id="btnToggleStudentPresentation" style="display: none;" title="點擊切換：目前設定學生可以參與簡報中的互動">
+                <span>🔓 學生可以參與簡報中的互動</span>
+              </button>
+              <span class="presentation-live-badge" id="presentationLiveBadge" style="display: none;">同步廣播中</span>
             </div>
 
             <div class="presentation-tools-group">
@@ -780,7 +775,7 @@
               <button type="button" class="presentation-tool-btn" id="btnSlideToolLaser" title="發光雷射筆，滑鼠移動即時同步全班視線">🔴 雷射筆</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideClearAnnotations" title="清除本頁標記">清除標記</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideFullscreen" title="進入/退出全螢幕">⛶ 全螢幕</button>
-              <button type="button" class="presentation-tool-btn" id="btnSlideSettings" title="設定外部 URL 與多題互動">⚙️ 本頁設定</button>
+              <button type="button" class="presentation-tool-btn" id="btnSlideSettings" title="設定本頁外部連結與學生端互動">⚙️ 本頁外部連結與學生端互動設定</button>
               <button type="button" class="presentation-tool-btn" id="btnSlideCloudBank" onclick="window.presentationManager && window.presentationManager.openCloudBankModal()" title="同步簡報雲端教材庫（線上存檔、載入、跨班複製）">☁️ 雲端教材庫</button>
               <button type="button" class="presentation-tool-btn purple" id="btnSlideImportExport" title="匯入 PDF / 匯入匯出 JSON 備份">📁 匯入 / 匯出</button>
               <button type="button" class="presentation-tool-btn danger" id="btnSlideResetSubmissions" title="清空本頁作答記錄">重置回應</button>
@@ -1010,7 +1005,7 @@
     <div class="presentation-modal-card" style="max-width: 640px; max-height: 90vh;">
       <div class="presentation-modal-header">
         <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-          ⚙️ 本頁設定
+          ⚙️ 本頁外部連結與學生端互動設定
         </h3>
         <button type="button" onclick="window.presentationManager.closeSlideSettingsModal()" style="border: none; background: none; font-size: 18px; cursor: pointer; color: var(--text-secondary);">✕</button>
       </div>
@@ -5877,7 +5872,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
   <script src="js/word_cloud.js?v=399"></script>
-  <script src="js/presentation_core.js?v=3122"></script>
+  <script src="js/presentation_core.js?v=3123"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

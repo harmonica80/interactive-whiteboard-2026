@@ -19,7 +19,7 @@
       this.currentSlideIndex = 0;
       this.isPresenting = false; // 是否向全班同步廣播
       this.isRemoteBroadcastingActive = false; // 是否接收到他人主持廣播
-      this.studentCanUsePresentation = false; // 預設僅老師可主控簡報 (Item 1)
+      this.studentCanUsePresentation = true; // 預設值為「學生可以參與簡報中的互動」(需求 2)
       this.localIsHost = false; // 本機是否為簡報主控/主持端 (老師端生命週期持久化)
       try {
         if (sessionStorage.getItem('wb_presentation_host') === 'true') {
@@ -257,7 +257,7 @@
               studentCanUsePresentation: this.studentCanUsePresentation
             }).catch(() => {});
           }
-          this.notify('權限更新', this.studentCanUsePresentation ? '已開放同學可操作簡報與參與互動作答！' : '已設定為僅老師進行（同學僅能觀看，無法作答）。');
+          this.notify('權限更新', this.studentCanUsePresentation ? '已設定為「學生可以參與簡報中的互動」！' : '已設定為「僅老師操作簡報，同學不能參與簡報中的互動」。');
         };
       }
 
@@ -528,13 +528,13 @@
           if (this.studentCanUsePresentation) {
             els.btnToggleStudentPresentation.classList.add('is-active');
             els.btnToggleStudentPresentation.classList.remove('is-inactive');
-            els.btnToggleStudentPresentation.innerHTML = '<span>🔓 同學可操作</span>';
-            els.btnToggleStudentPresentation.title = '點擊切換：目前開放同學可切換簡報與參與互動作答';
+            els.btnToggleStudentPresentation.innerHTML = '<span>🔓 學生可以參與簡報中的互動</span>';
+            els.btnToggleStudentPresentation.title = '點擊切換：目前設定學生可以參與簡報中的互動';
           } else {
             els.btnToggleStudentPresentation.classList.remove('is-active');
             els.btnToggleStudentPresentation.classList.add('is-inactive');
-            els.btnToggleStudentPresentation.innerHTML = '<span>🔒 僅老師進行</span>';
-            els.btnToggleStudentPresentation.title = '點擊切換：目前鎖定僅老師主控，同學僅能觀看無法作答';
+            els.btnToggleStudentPresentation.innerHTML = '<span>🔒 僅老師操作簡報，同學不能參與簡報中的互動</span>';
+            els.btnToggleStudentPresentation.title = '點擊切換：目前設定僅老師操作簡報，同學不能參與簡報中的互動';
           }
         } else {
           // 學生端相同位置維持顯示狀態，但設為唯讀不可修改 (.is-student-readonly)
@@ -542,13 +542,13 @@
           if (this.studentCanUsePresentation) {
             els.btnToggleStudentPresentation.classList.add('is-active');
             els.btnToggleStudentPresentation.classList.remove('is-inactive');
-            els.btnToggleStudentPresentation.innerHTML = '<span>🔓 同學可操作</span>';
-            els.btnToggleStudentPresentation.title = '目前開放同學可切換簡報與參與題目作答';
+            els.btnToggleStudentPresentation.innerHTML = '<span>🔓 學生可以參與簡報中的互動</span>';
+            els.btnToggleStudentPresentation.title = '目前設定：學生可以參與簡報中的互動';
           } else {
             els.btnToggleStudentPresentation.classList.remove('is-active');
             els.btnToggleStudentPresentation.classList.add('is-inactive');
-            els.btnToggleStudentPresentation.innerHTML = '<span>🔒 僅老師進行</span>';
-            els.btnToggleStudentPresentation.title = '目前由老師主控簡報，同學僅能觀看';
+            els.btnToggleStudentPresentation.innerHTML = '<span>🔒 僅老師操作簡報，同學不能參與簡報中的互動</span>';
+            els.btnToggleStudentPresentation.title = '目前設定：僅老師操作簡報，同學不能參與簡報中的互動';
           }
         }
       }
@@ -601,26 +601,26 @@
         if (els.screenBg) els.screenBg.style.display = 'none';
       }
 
-      // 翻頁控制：若為學生且處於「僅老師進行」模式，鎖定翻頁；若「同學可操作」，允許同學自由點閱與切換
+      // 翻頁控制：若為學生且處於「僅老師操作簡報」模式，鎖定翻頁；若「學生可以參與簡報中的互動」，允許同學自由點閱與切換
       const isStudentPageLocked = !teacher && this.isRemoteBroadcastingActive && !this.studentCanUsePresentation;
       if (isStudentPageLocked) {
         if (els.btnPrev) {
           els.btnPrev.disabled = true;
           els.btnPrev.style.opacity = '0.4';
           els.btnPrev.style.cursor = 'not-allowed';
-          els.btnPrev.title = '目前設定為「僅老師進行」，簡報頁面由老師統一控制';
+          els.btnPrev.title = '目前設定為「僅老師操作簡報，同學不能參與簡報中的互動」，簡報頁面由老師統一控制';
         }
         if (els.btnNext) {
           els.btnNext.disabled = true;
           els.btnNext.style.opacity = '0.4';
           els.btnNext.style.cursor = 'not-allowed';
-          els.btnNext.title = '目前設定為「僅老師進行」，簡報頁面由老師統一控制';
+          els.btnNext.title = '目前設定為「僅老師操作簡報，同學不能參與簡報中的互動」，簡報頁面由老師統一控制';
         }
         if (els.btnGridOverview) {
           els.btnGridOverview.disabled = true;
           els.btnGridOverview.style.opacity = '0.4';
           els.btnGridOverview.style.cursor = 'not-allowed';
-          els.btnGridOverview.title = '目前設定為「僅老師進行」';
+          els.btnGridOverview.title = '目前設定為「僅老師操作簡報，同學不能參與簡報中的互動」';
         }
         if (els.thumbnailsList) {
           els.thumbnailsList.classList.add('is-sync-locked');
@@ -1377,11 +1377,11 @@
       return this.slides[this.currentSlideIndex] || null;
     }
 
-    // 翻到下一頁 (若為僅老師進行，學生端鎖定跟隨；若同學可操作，則允許自行翻頁)
+    // 翻到下一頁 (若為僅老師操作簡報，學生端鎖定跟隨；若學生可參與互動，則允許自行翻頁)
     nextSlide() {
       if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
         if (!this.studentCanUsePresentation) {
-          this.notify('提示', '目前設定為「僅老師進行」，簡報頁面由老師主控跟隨。');
+          this.notify('提示', '目前設定為「僅老師操作簡報，同學不能參與簡報中的互動」，簡報頁面由老師主控跟隨。');
           return;
         }
       }
@@ -1395,7 +1395,7 @@
     prevSlide() {
       if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
         if (!this.studentCanUsePresentation) {
-          this.notify('提示', '目前設定為「僅老師進行」，簡報頁面由老師主控跟隨。');
+          this.notify('提示', '目前設定為「僅老師操作簡報，同學不能參與簡報中的互動」，簡報頁面由老師主控跟隨。');
           return;
         }
       }
@@ -1409,7 +1409,7 @@
     goToSlide(index) {
       if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
         if (!this.studentCanUsePresentation) {
-          this.notify('提示', '目前設定為「僅老師進行」，簡報頁面由老師主控跟隨。');
+          this.notify('提示', '目前設定為「僅老師操作簡報，同學不能參與簡報中的互動」，簡報頁面由老師主控跟隨。');
           return;
         }
       }
@@ -1852,7 +1852,7 @@
 
       // 檢查非同步廣播與互動權限 (需求 1：僅老師可進行 vs 同學可操作)
       // 1. 老師端隨時可預覽作答
-      // 2. 學生端：必須在「同學可操作」(this.studentCanUsePresentation === true) 的授權下，且 (處於同步廣播中 或 本頁允許非同步作答)
+      // 2. 學生端：必須在「學生可以參與簡報中的互動」(this.studentCanUsePresentation === true) 的授權下，且 (處於同步廣播中 或 本頁允許非同步作答)
       let isAllowedToAnswer = false;
       if (isTeacherUser) {
         isAllowedToAnswer = true;
@@ -1877,7 +1877,7 @@
               <div style="font-size: 26px; margin-bottom: 6px;">🔒</div>
               <div style="font-weight: 700; color: var(--text-primary); font-size: 14px;">目前為觀摩模式</div>
               <div style="font-size: 14px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5;">
-                目前設定為「<strong>僅老師進行</strong>」，同學僅能觀看簡報，尚未開放互動作答。
+                目前設定為「<strong>僅老師操作簡報，同學不能參與簡報中的互動</strong>」，同學僅能觀看簡報。
               </div>
             `;
           } else {
@@ -3161,7 +3161,7 @@
         this.annotations = JSON.parse(JSON.stringify(material.annotations || {}));
         this.currentSlideIndex = 0;
 
-        // 2. 依模式更新權限 (共編 vs 唯讀)
+        // 2. 依模式更新權限 (需求 3：學生可以參與互動 vs 僅老師操作簡報)
         const isReadOnly = mode === 'readonly';
         this.studentCanUsePresentation = !isReadOnly;
         if (typeof db !== 'undefined') {
@@ -3171,21 +3171,19 @@
         }
         this.updatePermissionsUI();
 
-        // 3. 渲染本地畫面
+        // 3. 渲染本地畫面 (需求 1：載入後先不自動開啟同步廣播，待老師點擊開始同步再廣播)
+        this.isPresenting = false;
+        this.updateSyncButtonUI();
         this.render();
-
-        // 4. 開啟同步廣播，將新載入的簡報同步至 Firebase
-        this.isPresenting = true;
-        this.broadcastLiveState(true);
 
         this.closeLoadChoiceModal();
         this.closeCloudBankModal();
 
         this.notify(
-          isReadOnly ? '🔒 唯讀模式已載入' : '✅ 共編模式已載入',
+          '載入完成',
           isReadOnly
-            ? `簡報「${material.title}」已載入！已鎖定為僅老師主控，學生端為唯讀觀摩狀態。`
-            : `簡報「${material.title}」已載入！全班可同步操作、共編標記與參與互動。`
+            ? `簡報「${material.title}」已載入！已設定為「僅老師操作簡報，同學不能參與簡報中的互動」。點擊上方「🚀 開始同步」即可向全班廣播。`
+            : `簡報「${material.title}」已載入！已設定為「學生可以參與簡報中的互動」。點擊上方「🚀 開始同步」即可向全班廣播。`
         );
       } catch (err) {
         console.error('confirmLoadMaterial error:', err);
