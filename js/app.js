@@ -802,7 +802,9 @@ class App {
           <div class="avatar-grid-item ${activeClass}" 
                onclick="window.app.selectAvatar('${customId}')" 
                title="${typeTitle}"
-               data-avatar-id="${customId}">
+               data-avatar-id="${customId}"
+               onmouseenter="window.app.showAvatarHoverPreview(event, '${customId}')"
+               onmouseleave="window.app.hideAvatarHoverPreview()">
             <span class="cute-avatar-icon" style="width: 100%; height: 100%; background-image: url('${customSheet.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
           </div>
         `;
@@ -824,7 +826,9 @@ class App {
         <div class="avatar-grid-item ${activeClass}" 
              onclick="window.app.selectAvatar(${i})" 
              title="${avatar.emoji} ${avatar.name}"
-             data-avatar-id="${i}">
+             data-avatar-id="${i}"
+             onmouseenter="window.app.showAvatarHoverPreview(event, ${i})"
+             onmouseleave="window.app.hideAvatarHoverPreview()">
           <span class="cute-avatar-icon" style="width: 100%; height: 100%; ${pos}"></span>
         </div>
       `;
@@ -887,6 +891,7 @@ class App {
   }
 
   closeStudentNameModal() {
+    this.hideAvatarHoverPreview();
     const modal = document.getElementById('studentNameModal');
     if (modal) modal.classList.remove('active');
     const dupAlert = document.getElementById('studentNameDuplicateAlert');
@@ -896,6 +901,90 @@ class App {
     this.matchedExistingStudent = null;
     this.pendingDuplicateName = null;
     this.updateStudentNameUI();
+  }
+
+  showAvatarHoverPreview(event, avatarId, overrideUrl = null, overrideTitle = null) {
+    if (!this._avatarPreviewScrollBound) {
+      this._avatarPreviewScrollBound = true;
+      window.addEventListener('scroll', () => this.hideAvatarHoverPreview(), { passive: true });
+      document.addEventListener('scroll', () => this.hideAvatarHoverPreview(), { passive: true, capture: true });
+    }
+
+    const tooltip = document.getElementById('avatarHoverPreviewTooltip');
+    const imgEl = document.getElementById('avatarHoverPreviewImg');
+    const titleEl = document.getElementById('avatarHoverPreviewTitle');
+    if (!tooltip || !imgEl) return;
+
+    let bgUrl = '';
+    let bgSize = '';
+    let bgPos = '';
+    let title = '';
+
+    if (typeof avatarId === 'string' && avatarId.startsWith('custom_')) {
+      const idx = parseInt(avatarId.replace('custom_', ''), 10) || 0;
+      const sheet = this.currentClassCustomAvatars;
+      const url = overrideUrl || (sheet && sheet.url);
+      if (!url) return;
+      const col = idx % 8;
+      const row = Math.floor(idx / 8);
+      const x = ((col / 7) * 100).toFixed(2);
+      const y = ((row / 5) * 100).toFixed(2);
+      bgUrl = url;
+      bgSize = '800% 600%';
+      bgPos = `${x}% ${y}%`;
+      const sheetName = overrideTitle || (sheet && sheet.name) || '專屬角色';
+      title = `🏫 ${sheetName} #${idx + 1}`;
+    } else {
+      const idx = Math.max(0, Math.min(95, parseInt(avatarId, 10) || 0));
+      const avatar = this.CUTE_AVATARS[idx] || { name: `可愛生物 #${idx + 1}`, emoji: '🐾' };
+      const col = idx % 8;
+      const row = Math.floor(idx / 8);
+      const x = ((col / 7) * 100).toFixed(2);
+      const y = ((row / 11) * 100).toFixed(2);
+      bgUrl = 'images/avatars_sheet.png?v=339';
+      bgSize = '800% 1200%';
+      bgPos = `${x}% ${y}%`;
+      title = `${avatar.emoji} ${avatar.name} (#${idx + 1})`;
+    }
+
+    imgEl.style.backgroundImage = `url('${bgUrl}')`;
+    imgEl.style.backgroundSize = bgSize;
+    imgEl.style.backgroundPosition = bgPos;
+    if (titleEl) titleEl.textContent = title;
+
+    tooltip.style.display = 'block';
+
+    const target = event.currentTarget || event.target;
+    const rect = target.getBoundingClientRect();
+    const tooltipWidth = 176;
+    const tooltipHeight = 196;
+
+    let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+    let top = rect.top - tooltipHeight - 12;
+
+    // 若上方超出視窗頂部，則改放於下方
+    if (top < 10) {
+      top = rect.bottom + 12;
+    }
+
+    // 視窗左右防出界
+    if (left < 10) left = 10;
+    if (left + tooltipWidth > window.innerWidth - 10) {
+      left = window.innerWidth - tooltipWidth - 10;
+    }
+
+    tooltip.style.left = `${Math.round(left)}px`;
+    tooltip.style.top = `${Math.round(top)}px`;
+    tooltip.style.opacity = '1';
+    tooltip.style.transform = 'scale(1)';
+  }
+
+  hideAvatarHoverPreview() {
+    const tooltip = document.getElementById('avatarHoverPreviewTooltip');
+    if (!tooltip) return;
+    tooltip.style.opacity = '0';
+    tooltip.style.transform = 'scale(0.96)';
+    tooltip.style.display = 'none';
   }
 
   // 依姓名尋找課堂中已存在的學生記錄 (用以支援改天重新進入或多裝置同名身分綁定)
@@ -17203,8 +17292,12 @@ class App {
             const row = Math.floor(i / 8);
             const x = ((col / 7) * 100).toFixed(2);
             const y = ((row / 5) * 100).toFixed(2);
+            const roleTitle = data.name ? `${data.name} #${i + 1}` : `專屬角色 #${i + 1}`;
             html += `
-              <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="專屬角色 #${i + 1}">
+              <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box; cursor: pointer;" 
+                   title="${roleTitle}"
+                   onmouseenter="window.app.showAvatarHoverPreview(event, 'custom_${i}', '${data.url}', '${data.name || ''}')"
+                   onmouseleave="window.app.hideAvatarHoverPreview()">
                 <span style="width: 100%; height: 100%; display: block; border-radius: 50%; background-image: url('${data.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
               </div>
             `;
@@ -17238,7 +17331,10 @@ class App {
             const avatar = this.CUTE_AVATARS[i] || { name: `可愛生物 #${i + 1}`, emoji: '🐾' };
             const pos = this.getAvatarPositionStyle(i);
             html += `
-              <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="${avatar.emoji} ${avatar.name} (#${i + 1})">
+              <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box; cursor: pointer;" 
+                   title="${avatar.emoji} ${avatar.name} (#${i + 1})"
+                   onmouseenter="window.app.showAvatarHoverPreview(event, ${i})"
+                   onmouseleave="window.app.hideAvatarHoverPreview()">
                 <span class="cute-avatar-icon" style="width: 100%; height: 100%; border-radius: 50%; ${pos}"></span>
               </div>
             `;
@@ -17398,7 +17494,10 @@ class App {
         const x = ((col / (cols - 1)) * 100).toFixed(2);
         const y = ((row / (rows - 1)) * 100).toFixed(2);
         html += `
-          <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="角色 #${i + 1}">
+          <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box; cursor: pointer;" 
+               title="角色 #${i + 1}"
+               onmouseenter="window.app.showAvatarHoverPreview(event, 'custom_${i}', '${dataUrl}', '上傳角色')"
+               onmouseleave="window.app.hideAvatarHoverPreview()">
             <span style="width: 100%; height: 100%; display: block; border-radius: 50%; background-image: url('${dataUrl}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
           </div>
         `;
@@ -17497,7 +17596,10 @@ class App {
         const x = ((col / (preset.cols - 1)) * 100).toFixed(2);
         const y = ((row / (preset.rows - 1)) * 100).toFixed(2);
         html += `
-          <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="${preset.name} #${i + 1}">
+          <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box; cursor: pointer;" 
+               title="${preset.name} #${i + 1}"
+               onmouseenter="window.app.showAvatarHoverPreview(event, 'custom_${i}', '${preset.url}', '${preset.name}')"
+               onmouseleave="window.app.hideAvatarHoverPreview()">
             <span style="width: 100%; height: 100%; display: block; border-radius: 50%; background-image: url('${preset.url}'); background-size: ${preset.cols * 100}% ${preset.rows * 100}%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
           </div>
         `;
