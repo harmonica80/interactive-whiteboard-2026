@@ -1,4 +1,21 @@
 # System Log
+## 2026-10-26 - 修復互動白板全班跟隨預設畫布同步問題、新增畫布重新命名功能與專注力大廳空狀態說明
+- 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修復互動白板全班跟隨模式下同學端預設載入畫布錯誤問題 (`js/whiteboard_core.js`)**：
+     - 排查原因：原先學生端進入白板時僅依賴 `settings.activeCanvasId`，若老師端重新載入預設在主白板但未主動寫入 settings，或曾新增過畫布導致 settings 殘留非主白板 ID，同學端載入時會錯入其他畫布。
+     - 實作 `syncStudentToTeacherView()` 動態同步機制：優先取得在線活躍老師之 Presence 實際畫布（`canvasId`）與頁面（`pageId`），若無在線老師則防呆檢查該畫布是否存在於 `canvases`，杜絕載入不存在或殘留舊畫布之問題。
+     - 老師端初始化載入與點擊切換「全班跟隨」按鈕時，自動即時將老師當前實際畫布與分頁同步更新至雲端 `settings`。
+  2. **互動白板新增「✏️ 重新命名」畫布功能 (`whiteboard.html`, `js/whiteboard_core.js`)**：
+     - 於頂部畫布選單右側新增「`✏️ 重新命名`」按鈕（`#btnRenameCanvas`），依權限設定於老師端或開放學生管理時動態顯示。
+     - 點擊後彈出全螢幕友善的自訂彈窗，支援教師與授權學生自訂修改目前畫布名稱，並即時連動全班畫布下拉選單與雲端 Firebase 儲存。
+  3. **專注力測驗前台加入空狀態說明與後台捷徑按鈕 (`index.html`, `js/app.js`)**：
+     - 於前台專注力測驗大廳下方加入與影片出題測驗對齊之提示卡片（`#focusStudentIdleNotice`），清楚呈現「目前尚無進行中的全班同步測驗」說明。
+     - 當教師進入前台視角時，自動動態顯示「`⚙️ 前往管理後台發起或管理專注力測驗`」按鈕，支援一鍵直達後台專注力出題設定。
+  4. **快取版本號更新與合規驗證**：
+     - 更新 `index.html` 之 `whiteboard.html?v=3011` 與 `js/app.js?v=421`。
+     - 嚴格遵守「記錄」用語規範，並通過 `npm run check:syntax` 語法檢查。
+
 ## 2026-10-26 - 選擇題與文字雲題庫按鈕樣式、前台視角標籤圓角及後台狀態標籤圓角統一
 - 影響檔案：`index.html`, `css/style.css`, `js/quiz.js`, `js/word_cloud.js`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

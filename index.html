@@ -699,10 +699,24 @@
           <!-- 遊戲大廳面板，平常沒開始時顯示 -->
           <div id="focusGameLobby">
             <!-- 學生視角 lobby -->
-            <div id="studentGameLobby" style="text-align: center; padding: 24px;">
+            <div id="studentGameLobby" style="text-align: center; padding: 24px 20px 10px 20px;">
               <div style="font-size: 48px; margin-bottom: 12px;">🧠</div>
               <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-primary); font-weight: bold;">專注力測驗大廳</h3>
               <p style="color: var(--text-secondary); font-size: 14px;">等待老師發起專注力活動... 請保持此頁面開啟喔！</p>
+            </div>
+
+            <!-- 未發起遊戲時的說明與後台快捷按鈕 (如同影片出題測驗紅框) -->
+            <div id="focusStudentIdleNotice" style="text-align: center; padding: 36px 20px; background: var(--bg-input); border-radius: 12px; border: 1px dashed var(--border-color); margin: 0 auto 16px auto; max-width: 600px;">
+              <div style="font-size: 40px; margin-bottom: 10px;">📺</div>
+              <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">目前尚無進行中的全班同步測驗</div>
+              <div style="font-size: 14px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 16px auto; line-height: 1.5;">
+                當老師在管理後台發起測驗時，專注力測驗將自動在此同步播放。
+              </div>
+              <div id="focusAdminQuickLinkWrapper" style="display: none;">
+                <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.openAdminFeature ? window.app.openAdminFeature('gameFocus') : window.app.switchToTab('panel-admin')" style="font-size: 14px; font-weight: bold; padding: 8px 20px; cursor: pointer; border-radius: 10px;" title="前往管理後台發起或管理專注力測驗">
+                  ⚙️ 前往管理後台發起或管理專注力測驗
+                </button>
+              </div>
             </div>
             
             <!-- 即時排行榜顯示區 (Lobby 下方) -->
@@ -719,7 +733,7 @@
       <!-- 互動白板 -->
       <div class="panel-card" id="panel-whiteboard">
         <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
-          <iframe id="whiteboardFrame" src="whiteboard.html?v=3010" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板" allow="fullscreen" allowfullscreen></iframe>
+          <iframe id="whiteboardFrame" src="whiteboard.html?v=3011" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板" allow="fullscreen" allowfullscreen></iframe>
         </div>
       </div>
 
@@ -5809,7 +5823,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=420"></script>
+  <script src="js/app.js?v=421"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=390"></script>

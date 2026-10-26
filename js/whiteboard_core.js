@@ -106,6 +106,7 @@
     canvasSelect: document.getElementById('canvasSelect'),
     pagesTabs: document.getElementById('pagesTabs'),
     btnAddCanvas: document.getElementById('btnAddCanvas'),
+    btnRenameCanvas: document.getElementById('btnRenameCanvas'),
     btnDeleteCanvas: document.getElementById('btnDeleteCanvas'),
     btnAddPage: document.getElementById('btnAddPage'),
     btnToggleStudentPages: document.getElementById('btnToggleStudentPages'),
@@ -228,6 +229,44 @@
 
     roomRef = db.ref('whiteboard_v2');
 
+    // 學生端動態同步至老師當前畫布與分頁
+    function syncStudentToTeacherView() {
+      if (isTeacherUser() || !state.settings.followTeacher) return;
+
+      let targetCanvasId = null;
+      let targetPageId = null;
+
+      // 優先跟隨在線活躍老師的 Presence (最即時精確)
+      if (state.onlineUsers) {
+        const now = Date.now();
+        const onlineTeacher = Object.values(state.onlineUsers).find(u => 
+          u && u.role === 'teacher' && u.canvasId && (now - (u.lastActive || 0) < 60000)
+        );
+        if (onlineTeacher) {
+          targetCanvasId = onlineTeacher.canvasId;
+          targetPageId = onlineTeacher.pageId || 'page_1';
+        }
+      }
+
+      // 若無活躍在線老師，以 settings.activeCanvasId 與 activePageId 為備用
+      if (!targetCanvasId) {
+        targetCanvasId = state.settings.activeCanvasId || 'main';
+        targetPageId = state.settings.activePageId || 'page_1';
+      }
+
+      // 防呆檢查：確認目標畫布存在於 state.canvases 中，不存在則退回主白板
+      if (state.canvases && Object.keys(state.canvases).length > 0) {
+        if (!state.canvases[targetCanvasId]) {
+          targetCanvasId = state.canvases['main'] ? 'main' : Object.keys(state.canvases)[0];
+          targetPageId = (state.canvases[targetCanvasId]?.pages?.[0]) || 'page_1';
+        }
+      }
+
+      if (targetCanvasId && (state.activeCanvasId !== targetCanvasId || state.activePageId !== targetPageId)) {
+        switchCanvasAndPage(targetCanvasId, targetPageId, false);
+      }
+    }
+
     // 1. 同步全域設定 (權限、當前畫布、頁面)
     roomRef.child('settings').on('value', (snap) => {
       const val = snap.val();
@@ -238,14 +277,18 @@
       renderCanvasSelector();
       renderPagesTabs();
 
-      // 若啟用了「全班跟隨老師視角」且當前使用者是學生，強制切換到老師當前頁
-      if (!isTeacherUser() && state.settings.followTeacher) {
-        if (state.settings.activeCanvasId && state.settings.activePageId) {
-          if (state.activeCanvasId !== state.settings.activeCanvasId || state.activePageId !== state.settings.activePageId) {
-            switchCanvasAndPage(state.settings.activeCanvasId, state.settings.activePageId, false);
-          }
+      // 老師端進入若開啟全班跟隨，自動將老師端當前畫布與分頁同步至 settings
+      if (isTeacherUser() && state.settings.followTeacher) {
+        if (state.activeCanvasId && state.activePageId) {
+          roomRef.child('settings').update({
+            activeCanvasId: state.activeCanvasId,
+            activePageId: state.activePageId
+          });
         }
       }
+
+      // 學生端執行跟隨同步
+      syncStudentToTeacherView();
     });
 
     // 2. 同步畫布清單
@@ -255,6 +298,7 @@
       state.canvases = val;
       renderCanvasSelector();
       renderPagesTabs();
+      syncStudentToTeacherView();
     });
 
     // 3. 同步一鍵召集全班事件
@@ -288,6 +332,7 @@
     roomRef.child('presence').on('value', (snap) => {
       state.onlineUsers = snap.val() || {};
       renderParticipantsList();
+      syncStudentToTeacherView();
     });
 
     // 綁定當前畫布頁面的即時物件監聽
@@ -507,6 +552,7 @@
 
       // 畫布增減控制 (學生端依據老師設定開放或隱藏)
       if (els.btnAddCanvas) els.btnAddCanvas.style.display = state.settings.studentCanManagePages ? 'inline-flex' : 'none';
+      if (els.btnRenameCanvas) els.btnRenameCanvas.style.display = state.settings.studentCanManagePages ? 'inline-flex' : 'none';
       if (els.btnAddPage) els.btnAddPage.style.display = state.settings.studentCanManagePages ? 'inline-flex' : 'none';
 
       // 唯讀提示 Banner (個別鎖定優先，否則全班唯讀)
@@ -540,6 +586,7 @@
       if (els.btnSummonAll) els.btnSummonAll.style.display = state.settings.followTeacher ? 'none' : 'inline-flex';
       if (els.btnClearOrEnd) els.btnClearOrEnd.style.display = 'inline-flex';
       if (els.btnAddCanvas) els.btnAddCanvas.style.display = 'inline-flex';
+      if (els.btnRenameCanvas) els.btnRenameCanvas.style.display = 'inline-flex';
       if (els.btnAddPage) els.btnAddPage.style.display = 'inline-flex';
 
       els.readonlyBanner.style.display = 'none';
@@ -2542,7 +2589,15 @@
       if (!isTeacherUser()) return;
       state.settings.followTeacher = !state.settings.followTeacher;
       applySettingsUI();
-      if (roomRef) roomRef.child('settings').update({ followTeacher: state.settings.followTeacher });
+      if (roomRef) {
+        const updatePayload = { followTeacher: state.settings.followTeacher };
+        if (state.settings.followTeacher) {
+          updatePayload.activeCanvasId = state.activeCanvasId;
+          updatePayload.activePageId = state.activePageId;
+        }
+        roomRef.child('settings').update(updatePayload);
+      }
+      flashToast(state.settings.followTeacher ? '👥 已開啟全班跟隨模式（同學畫面將強制跟隨老師畫布與頁面）' : '🔓 已切換為同學自由瀏覽模式');
     };
   }
 
@@ -2690,6 +2745,31 @@
       flashToast(`✅ 已新增畫布「${name.trim()}」`);
     });
   };
+
+  // 重新命名目前畫布 (全螢幕友好)
+  if (els.btnRenameCanvas) {
+    els.btnRenameCanvas.onclick = () => {
+      if (!canManagePages()) {
+        flashToast('⚠️ 老師未開放學生修改畫布名稱');
+        return;
+      }
+      const cur = state.canvases[state.activeCanvasId];
+      const curName = (cur && cur.name) || state.activeCanvasId;
+      showWhiteboardPrompt('✏️ 重新命名畫布', '請輸入新的畫布名稱：', curName, (newName) => {
+        if (!newName || !newName.trim()) return;
+        const trimmed = newName.trim();
+        if (cur) {
+          cur.name = trimmed;
+          state.canvases[state.activeCanvasId] = cur;
+          renderCanvasSelector();
+          if (roomRef) {
+            roomRef.child('canvases').child(state.activeCanvasId).child('name').set(trimmed);
+          }
+          flashToast(`✅ 畫布名稱已更新為「${trimmed}」`);
+        }
+      });
+    };
+  }
 
   // 刪除目前畫布 (Item 2，全螢幕友好)
   if (els.btnDeleteCanvas) {

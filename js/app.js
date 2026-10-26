@@ -5812,6 +5812,16 @@ class App {
       topLogoutBtn.style.display = this.isAdmin ? 'inline-flex' : 'none';
     }
 
+    const focusQuickLink = document.getElementById('focusAdminQuickLinkWrapper');
+    if (focusQuickLink) {
+      focusQuickLink.style.display = this.isAdmin ? 'block' : 'none';
+    }
+
+    const vqQuickLink = document.getElementById('vqAdminQuickLinkWrapper');
+    if (vqQuickLink) {
+      vqQuickLink.style.display = this.isAdmin ? 'block' : 'none';
+    }
+
     const quickBar = document.getElementById('teacherQuickControlBar');
     if (!quickBar) return;
 
