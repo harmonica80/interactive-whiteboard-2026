@@ -756,7 +756,7 @@
 
 /* ===== 右側邊欄 (即時回應) ===== */
 .presentation-right-sidebar {
-  width: 250px;
+  width: 260px;
   background: var(--bg-card);
   border-left: 1px solid var(--border-color);
   display: flex;
@@ -1441,12 +1441,12 @@
 /* 即時提交底欄與縮圖成果 (圖 4) */
 .presentation-submissions-footer-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 10px 12px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
   background: var(--bg-input);
   border-top: 1px solid var(--border-color);
+  border-radius: 8px;
 }
 
 .presentation-selected-count-badge {

@@ -8,7 +8,7 @@
   <link rel="shortcut icon" href="favicon.ico?v=2">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
   <link rel="stylesheet" href="css/style.css?v=408">
-  <link rel="stylesheet" href="css/presentation.css?v=3120">
+  <link rel="stylesheet" href="css/presentation.css?v=3121">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -930,9 +930,11 @@
             </div>
             <!-- 底欄：已選計數、比較與下載按鈕 -->
             <div class="presentation-submissions-footer-actions">
-              <span class="presentation-selected-count-badge" id="txtSelectedCountBadge">已選 0</span>
-              <button type="button" class="presentation-sub-footer-btn" id="btnCompareSubmissions" title="對比選取同學的作答成果">🆚 比較</button>
-              <button type="button" class="presentation-sub-footer-btn" id="btnDownloadResponses" title="下載本頁回應記錄 CSV">⬇ 下載回應</button>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                <span class="presentation-selected-count-badge" id="txtSelectedCountBadge" style="flex: 1; text-align: center; display: inline-flex; align-items: center; justify-content: center;">已選 0</span>
+                <button type="button" class="presentation-sub-footer-btn" id="btnCompareSubmissions" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; text-align: center;" title="對比選取同學的作答成果">🆚 比較</button>
+              </div>
+              <button type="button" class="presentation-sub-footer-btn" id="btnDownloadResponses" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; text-align: center;" title="下載本頁回應記錄 CSV">⬇ 下載本頁回應</button>
             </div>
           </aside>
         </div>
@@ -1210,15 +1212,6 @@
           <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
             <button type="button" class="presentation-tool-btn active" onclick="window.presentationManager.promptSaveCurrentPresentation()" style="height: 34px; padding: 0 14px; font-size: 14px; border-radius: 10px;" title="將目前簡報的所有投影片、標記與互動題儲存為一筆雲端教材">
               ➕ 儲存目前簡報為教材
-            </button>
-            <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.triggerPdfUpload()" style="height: 34px; padding: 0 12px; font-size: 14px; border-radius: 10px;" title="上傳 PDF 檔案設為簡報">
-              📄 上傳 PDF
-            </button>
-            <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.exportJsonBackup()" style="height: 34px; padding: 0 12px; font-size: 14px; border-radius: 10px;" title="匯出目前簡報為本機 JSON 備份檔">
-              📤 匯出目前簡報 JSON
-            </button>
-            <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.triggerJsonImport()" style="height: 34px; padding: 0 12px; font-size: 14px; border-radius: 10px;" title="從本機匯入簡報 JSON 備份檔">
-              📥 匯入簡報 JSON
             </button>
             <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.refreshCloudBankList()" style="height: 34px; padding: 0 10px; font-size: 14px; border-radius: 10px;" title="重新整理雲端教材清單">
               🔄 重新整理
@@ -5884,7 +5877,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
   <script src="js/word_cloud.js?v=399"></script>
-  <script src="js/presentation_core.js?v=3120"></script>
+  <script src="js/presentation_core.js?v=3121"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

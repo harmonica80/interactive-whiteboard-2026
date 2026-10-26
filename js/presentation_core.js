@@ -428,6 +428,16 @@
         };
       }
 
+      // 雲端教材庫點擊背景關閉
+      const modalCloudBank = els.modalCloudBank || document.getElementById('modalPresentationCloudBank');
+      if (modalCloudBank) {
+        modalCloudBank.addEventListener('click', (e) => {
+          if (e.target === modalCloudBank) {
+            this.closeCloudBankModal();
+          }
+        });
+      }
+
       // 畫布繪製與雷射筆滑鼠事件
       this.bindCanvasEvents();
       this.bindStudentDrawCanvasEvents();
