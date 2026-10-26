@@ -17123,6 +17123,12 @@ class App {
     const previewGrid = document.getElementById('adminClassAvatarPreviewGrid');
     const fileInput = document.getElementById('adminAvatarSheetFileInput');
     if (fileInput) fileInput.value = '';
+    const nameDisplay = document.getElementById('adminAvatarFileNameDisplay');
+    if (nameDisplay) {
+      nameDisplay.textContent = '未選擇任何檔案';
+      nameDisplay.style.color = 'var(--text-secondary)';
+      nameDisplay.style.fontWeight = 'normal';
+    }
     const saveBtn = document.getElementById('btnSaveClassAvatars');
     if (saveBtn) saveBtn.style.display = 'none';
 
@@ -17197,6 +17203,18 @@ class App {
 
   onAdminAvatarFileSelected(event) {
     const file = event.target.files && event.target.files[0];
+    const nameDisplay = document.getElementById('adminAvatarFileNameDisplay');
+    if (nameDisplay) {
+      if (file) {
+        nameDisplay.textContent = file.name;
+        nameDisplay.style.color = 'var(--text-primary)';
+        nameDisplay.style.fontWeight = 'bold';
+      } else {
+        nameDisplay.textContent = '未選擇任何檔案';
+        nameDisplay.style.color = 'var(--text-secondary)';
+        nameDisplay.style.fontWeight = 'normal';
+      }
+    }
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
