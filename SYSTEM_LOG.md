@@ -1,4 +1,23 @@
 # System Log
+## 2026-10-26 - 選擇題與文字雲題庫按鈕樣式、前台視角標籤圓角及後台狀態標籤圓角統一
+- 影響檔案：`index.html`, `css/style.css`, `js/quiz.js`, `js/word_cloud.js`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **選擇題測驗與文字雲題庫清單項目按鈕樣式全面統一 (`js/quiz.js`, `js/word_cloud.js`)**：
+     - 將選擇題測驗「歷次題目庫」與「題庫管理」清單內每題右側的「載入出題」、「編輯」、「複製」、「刪除」操作按鈕全面替換為 `.presentation-tool-btn`（`.active` / `.danger`），高度統一為 32px，圓角統一為 `10px`，文字大小提升至 `>= 14px`。
+     - 題目卡片內的題型徽章（`badge`）與選項預覽文字大小同步提升至 `14px`，圓角統一為 `8px`。
+     - 同步優化即時文字雲題庫清單之項目按鈕樣式，對齊 `.presentation-tool-btn` 與 `10px` 圓角標準。
+  2. **所有單元前台視角教師管理模式標籤與捷徑列圓角統一 (`css/style.css`, `index.html`)**：
+     - 將前台快捷控場列中的 `.teacher-quick-badge`（「👨‍🏫 教師管理模式（前台視角）」）圓角由 20px 調整為 `10px`，與同列之功能按鈕一致。
+     - 將活動進行中提示晶片 `.teacher-quick-activity-chip` 圓角由 18px 調整為 `10px`，內部按鈕調整為 `8px`。
+     - 將分頁管理快捷鍵 `.teacher-quick-tab-shortcut` 及返回按鈕 `.teacher-quick-btn` 圓角統一為 `10px`。
+     - 同步調整專注力遊戲與搶答遊戲覆蓋層內的前台控場列容器（`#focusGameTeacherCloseBtn`、`#buzzGameTeacherCloseBtn`）圓角為 `10px`，並統一套用 `.teacher-quick-badge` 樣式。
+  3. **後台進行中活動與無活動狀態標籤圓角統一 (`js/app.js`)**：
+     - 將後台右上角「🟢 目前無進行中的測驗或互動」狀態標籤的圓角由 20px 調整為 `10px`，字級提升至 `14px`。
+     - 將活動進行中的提示標籤 `.admin-active-activity-pill` 圓角由 20px 統一調整為 `10px`，字級提升至 `14px`，內部按鈕圓角由 6px 調整為 `8px`。
+  4. **快取版本號更新與合規驗證 (`index.html`)**：
+     - 更新 `style.css?v=408`、`quiz.js?v=391`、`app.js?v=420`、`word_cloud.js?v=399`。
+     - 通過 `npm run check:syntax` 語法檢測，並確認無「紀錄」禁字。
+
 ## 2026-10-26 - 後台全域 CSS 樣式統一、按鈕風格與圓角規範對齊及字級下限全面合規
 - 影響檔案：`index.html`, `css/style.css`, `css/presentation.css`, `SYSTEM_LOG.md`。
 - 修改項目：

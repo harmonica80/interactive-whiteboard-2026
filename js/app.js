@@ -5727,8 +5727,8 @@ class App {
 
     if (activeItems.length === 0) {
       container.innerHTML = `
-        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; color: var(--text-muted); background: rgba(52, 199, 89, 0.08); border: 1px solid rgba(52, 199, 89, 0.25);">
-          <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #34c759;"></span>
+        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px; font-size: 14px; color: var(--text-muted); background: rgba(52, 199, 89, 0.08); border: 1px solid rgba(52, 199, 89, 0.25);">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #34c759;"></span>
           <span>目前無進行中的測驗或互動</span>
         </div>
       `;
@@ -5736,12 +5736,12 @@ class App {
     }
 
     container.innerHTML = activeItems.map(item => `
-      <div class="admin-active-activity-pill" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(255, 59, 48, 0.08); border: 1.5px solid #ff3b30; border-radius: 20px; font-size: 12px; color: #d70015; font-weight: bold; box-shadow: 0 1px 6px rgba(255,59,48,0.15); flex-wrap: nowrap;">
-        <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ff3b30; animation: blinkPulse 1.2s infinite; flex-shrink: 0;"></span>
+      <div class="admin-active-activity-pill" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(255, 59, 48, 0.08); border: 1.5px solid #ff3b30; border-radius: 10px; font-size: 14px; color: #d70015; font-weight: bold; box-shadow: 0 1px 6px rgba(255,59,48,0.15); flex-wrap: nowrap;">
+        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; animation: blinkPulse 1.2s infinite; flex-shrink: 0;"></span>
         <span style="white-space: nowrap;">${item.icon} ${item.title} (${item.status})</span>
-        <button type="button" onclick="${item.previewAction}" title="一鍵切換至前台學生畫面預覽" style="background: rgba(0, 122, 255, 0.12); border: 1px solid #007aff; color: #0062cc; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">👁️ 前台畫面</button>
-        <button type="button" onclick="${item.settingAction}" title="進入此項目的後台控場頁面" style="background: white; border: 1px solid #ff3b30; color: #d70015; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⚙️ 設定</button>
-        <button type="button" onclick="${item.stopAction}" title="直接強制停止此活動" style="background: #ff3b30; border: none; color: white; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⏹️ 停止</button>
+        <button type="button" onclick="${item.previewAction}" title="一鍵切換至前台學生畫面預覽" style="background: rgba(0, 122, 255, 0.12); border: 1px solid #007aff; color: #0062cc; border-radius: 8px; padding: 3px 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">👁️ 前台畫面</button>
+        <button type="button" onclick="${item.settingAction}" title="進入此項目的後台控場頁面" style="background: white; border: 1px solid #ff3b30; color: #d70015; border-radius: 8px; padding: 3px 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⚙️ 設定</button>
+        <button type="button" onclick="${item.stopAction}" title="直接強制停止此活動" style="background: #ff3b30; border: none; color: white; border-radius: 8px; padding: 3px 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⏹️ 停止</button>
       </div>
     `).join('');
   }

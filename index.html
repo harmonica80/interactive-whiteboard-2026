@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=2">
   <link rel="shortcut icon" href="favicon.ico?v=2">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
-  <link rel="stylesheet" href="css/style.css?v=407">
+  <link rel="stylesheet" href="css/style.css?v=408">
   <link rel="stylesheet" href="css/presentation.css?v=3119">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -5808,12 +5808,12 @@ Python</pre>
   <script src="js/focus_question_bank.js?v=381"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
-  <script src="js/quiz.js?v=390"></script>
-  <script src="js/app.js?v=419"></script>
+  <script src="js/quiz.js?v=391"></script>
+  <script src="js/app.js?v=420"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=390"></script>
-  <script src="js/word_cloud.js?v=398"></script>
+  <script src="js/word_cloud.js?v=399"></script>
   <script src="js/presentation_core.js?v=3118"></script>
   
   <!-- 問題彈出視窗 -->
@@ -6233,8 +6233,8 @@ Python</pre>
     <div id="focusGameOverlayContent" style="width: 95%; max-width: 600px; padding: 24px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--border-color); position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; max-height: calc(100vh - 105px); overflow-y: auto;">
       
       <!-- 教師前台預覽快捷控場列（僅對已登入管理員顯示，支援一鍵切回後台或結束遊戲） -->
-      <div id="focusGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: var(--bg-card); border: 1.5px solid var(--accent-color); border-radius: 12px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-        <span style="font-size: 14px; font-weight: 800; color: var(--accent-color); display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
+      <div id="focusGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: var(--bg-card); border: 1.5px solid var(--accent-color); border-radius: 10px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <span class="teacher-quick-badge" style="display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <button type="button" class="presentation-tool-btn active" onclick="window.app.returnToAdminFromPreview()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="返回後台控場管理工作區">↩️ 返回後台控場</button>
           <button type="button" class="presentation-tool-btn" onclick="window.app.openAdminDashboardDirect()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="開啟後台總覽">🗂️ 後台總覽</button>
@@ -6359,8 +6359,8 @@ Python</pre>
     <div id="buzzGameOverlayContent" style="width: 95%; max-width: 650px; padding: 30px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); border: 1px solid var(--border-color); position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; max-height: calc(100vh - 105px); overflow-y: auto; overflow-x: hidden;">
       
       <!-- 教師前台預覽快捷控場列，僅對教師顯示 -->
-      <div id="buzzGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: var(--bg-card); border: 1.5px solid var(--accent-color); border-radius: 12px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-        <span style="font-size: 14px; font-weight: 800; color: var(--accent-color); display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
+      <div id="buzzGameTeacherCloseBtn" style="display: none; width: 100%; margin-bottom: 14px; padding: 8px 12px; background: var(--bg-card); border: 1.5px solid var(--accent-color); border-radius: 10px; box-sizing: border-box; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <span class="teacher-quick-badge" style="display: inline-flex; align-items: center; gap: 4px;">👨‍🏫 教師管理模式（前台視角）</span>
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <button type="button" class="presentation-tool-btn active" onclick="window.app.returnToAdminFromPreview()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="返回後台控場管理工作區">↩️ 返回後台控場</button>
           <button type="button" class="presentation-tool-btn" onclick="window.app.openAdminDashboardDirect()" style="font-size: 14px; font-weight: bold; padding: 6px 12px;" title="開啟後台總覽">🗂️ 後台總覽</button>

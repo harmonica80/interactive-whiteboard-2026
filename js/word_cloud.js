@@ -992,10 +992,10 @@
               </div>
             </div>
             <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap;">
-              <button type="button" class="action-btn" onclick="window.wordCloud?.loadFromHistory('${key}', true)" style="background: var(--accent-color); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="帶入此題並立即開動">🚀 載入出題</button>
-              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.loadFromHistory('${key}', false)" style="padding: 5px 10px; font-size: 14px; font-weight: bold;" title="帶入設定至出題框">📝 載入修改</button>
-              <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" style="padding: 5px 8px; font-size: 14px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級題庫">📤 複製</button>
-              <button type="button" class="btn btn-secondary" onclick="window.wordCloud?.deleteHistoryItem('${key}')" style="padding: 5px 8px; font-size: 14px; color: var(--danger-color);" title="刪除此題">🗑️</button>
+              <button type="button" class="presentation-tool-btn active" onclick="window.wordCloud?.loadFromHistory('${key}', true)" style="height: 32px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="帶入此題並立即開動">🚀 載入出題</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.loadFromHistory('${key}', false)" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="帶入設定至出題框">📝 載入修改</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openSingleItemCopyModal('wordCloud', '${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; color: var(--accent-color); border-color: var(--accent-color); display: flex; align-items: center; gap: 4px;" title="複製此題到其他班級題庫">📤 複製</button>
+              <button type="button" class="presentation-tool-btn danger" onclick="window.wordCloud?.deleteHistoryItem('${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 4px;" title="刪除此題">🗑️</button>
             </div>
           </div>
         `;

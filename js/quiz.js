@@ -870,18 +870,18 @@ class Quiz {
             <input type="checkbox" class="quiz-history-checkbox" value="${key}" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-color); flex-shrink: 0;">
             <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
+                <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 14px; padding: 2px 8px; border-radius: 8px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
                 <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(questionText)}</span>
               </div>
-              <div style="font-size: 11px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+              <div style="font-size: 14px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                 選項：${this.escapeHtml(optionsStr)}
               </div>
             </div>
           </div>
-          <div style="display: flex; gap: 6px; flex-shrink: 0;">
-            <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="padding: 4px 8px; font-size: 11px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級歷次題庫">📤 複製</button>
-            <button type="button" class="btn btn-secondary" onclick="window.quiz.loadQuizFromHistory('${key}')" style="padding: 4px 8px; font-size: 11px; font-weight: bold;" title="帶入此題到出題框">🚀 載入</button>
-            <button type="button" class="btn btn-secondary" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="padding: 4px 8px; font-size: 11px; color: var(--danger-color);" title="刪除此題">✕</button>
+          <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
+            <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; color: var(--accent-color); border-color: var(--accent-color);" title="複製此題到其他班級歷次題庫">📤 複製</button>
+            <button type="button" class="presentation-tool-btn active" onclick="window.quiz.loadQuizFromHistory('${key}')" style="height: 32px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: bold;" title="帶入此題到出題框">🚀 載入</button>
+            <button type="button" class="presentation-tool-btn danger" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px;" title="刪除此題">✕</button>
           </div>
         </div>
       `;
@@ -1148,19 +1148,19 @@ class Quiz {
             <span class="drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 16px; user-select: none; flex-shrink: 0;" title="按住拖曳調整題目順序">☰</span>
             <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden; min-width: 0; flex: 1;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
+                <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 14px; padding: 2px 8px; border-radius: 8px; font-weight: bold; flex-shrink: 0;">${badgeText}</span>
                 <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${this.escapeHtml(questionText)}</span>
               </div>
-              <div style="font-size: 12px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+              <div style="font-size: 14px; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                 選項：${this.escapeHtml(optionsStr)}
               </div>
             </div>
           </div>
           <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
-            <button type="button" class="action-btn" onclick="window.quiz.loadQuizFromHistory('${key}')" style="background: var(--accent-color); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="帶入此題到出題框">🚀 載入出題</button>
-            <button type="button" class="btn btn-secondary" onclick="window.quiz.openEditBankQuestionModal('${key}')" style="padding: 5px 10px; font-size: 12px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 4px;" title="直接編輯此題內容與選項">✏️ 編輯</button>
-            <button type="button" class="btn btn-secondary" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--accent-color); font-weight: bold;" title="複製此題到其他班級題庫">📤 複製</button>
-            <button type="button" class="btn btn-secondary" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="padding: 5px 8px; font-size: 11.5px; color: var(--danger-color);" title="刪除此題">🗑️</button>
+            <button type="button" class="presentation-tool-btn active" onclick="window.quiz.loadQuizFromHistory('${key}')" style="height: 32px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="帶入此題到出題框">🚀 載入出題</button>
+            <button type="button" class="presentation-tool-btn" onclick="window.quiz.openEditBankQuestionModal('${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;" title="直接編輯此題內容與選項">✏️ 編輯</button>
+            <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openSingleItemCopyModal('quiz', '${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; color: var(--accent-color); border-color: var(--accent-color); display: flex; align-items: center; gap: 4px;" title="複製此題到其他班級題庫">📤 複製</button>
+            <button type="button" class="presentation-tool-btn danger" onclick="window.quiz.deleteQuizHistoryItem('${key}')" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 4px;" title="刪除此題">🗑️</button>
           </div>
         </div>
       `;
