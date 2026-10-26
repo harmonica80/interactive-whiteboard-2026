@@ -941,7 +941,7 @@ class App {
       const row = Math.floor(idx / 8);
       const x = ((col / 7) * 100).toFixed(2);
       const y = ((row / 11) * 100).toFixed(2);
-      bgUrl = 'images/avatars_sheet.png?v=339';
+      bgUrl = 'images/avatars_sheet.png?v=431';
       bgSize = '800% 1200%';
       bgPos = `${x}% ${y}%`;
       title = `${avatar.emoji} ${avatar.name} (#${idx + 1})`;

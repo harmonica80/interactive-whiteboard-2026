@@ -1,4 +1,20 @@
 # System Log
+## 2026-10-26 - 更新「森林海洋」48款頭像為精準零重疊新版圖檔 (採用與台灣特色小吃相同之128×128標準網格座標)
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatars_sheet2_raw.jpg`, `images/avatars_sheet2.png`, `images/avatars_sheet.png`, `images/avatars/avatar_48.png` ~ `avatar_95.png`, `scripts/process-forest-ocean.ps1`, `scripts/verify-all-avatars.ps1`。
+- 修改項目：
+  1. **替換全新製作之「森林海洋」48 款精準對齊圖鑑**：
+     - 使用者重新提供已確認無重疊、精準對齊之 1024×768 原始圖檔（`images/avatars_sheet2_raw.jpg`）。
+     - 全面採用與「台灣特色小吃版」相同之標準等距網格座標系統（8 欄 × 6 列，每格均勻 128×128 像素），徹底根除舊版不規則格位裁切時產生的位置偏差與相鄰角色溢出問題。
+     - 透過 BFS 泛洪邊界去背演算法精準去除純黑背景，在保留所有角色細節與柔和邊緣的同時，達到各格位外圍 100% 純透明。
+     - 重新切分產生 48 張 128×128 獨立透明 PNG（`images/avatars/avatar_48.png` ~ `avatar_95.png`）。
+     - 重新合成森林海洋雪碧圖（`images/avatars_sheet2.png`）與全系統 96 款統一雪碧圖（`images/avatars_sheet.png`，1024×1536）。
+     - 通過邊界像素自動化檢測：所有垂直分割線（x=128, 256, 384, 512, 640, 768, 896）與水平分割線（y=128, 256, 384, 512, 640, 768）非透明像素數皆為 0，達到零滲透零重疊。
+     - 更新 `css/style.css`、`js/app.js` 與 `index.html` 之快取版本參數（`avatars_sheet.png?v=431`、`style.css?v=411`、`app.js?v=431`）。
+  2. **合規檢測**：
+     - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
+     - 通過邊界零滲透自動化驗證腳本 `scripts/verify-all-avatars.ps1`。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-26 - 班級專屬頭像切換與上傳提示改為常駐橫條顯示於動作列上方避免漏按儲存
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
