@@ -3063,7 +3063,12 @@
                 <button class="add-option-btn" onclick="addOption()">+ 新增選項</button>
                 <button id="startQuizBtn" class="start-quiz-btn" onclick="startQuiz()">🚀 開始測驗</button>
               </div>
-              <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="display: none; margin-top: 10px; padding: 12px; width: 100%; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color);">結束測驗</button>
+              <div id="quizActiveActionRow" style="display: none; margin-top: 10px; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button id="endQuizBtn" class="end-quiz-btn" onclick="endQuiz()" style="flex: 2; min-width: 140px; padding: 12px; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; background: var(--danger-color); font-size: 15px;">結束測驗</button>
+                <button type="button" id="quizGoToFrontendBtn" class="presentation-tool-btn" onclick="window.app && window.app.switchToTab('panel-quiz')" style="flex: 1; min-width: 140px; padding: 12px; font-weight: bold; border-radius: 10px; cursor: pointer; font-size: 15px; justify-content: center; box-sizing: border-box;" title="前往前台學生測驗視角畫面">
+                  👁️ 前台測驗畫面
+                </button>
+              </div>
 
               <!-- 5. 選擇題測驗雙頁籤：歷次題目庫 與 題庫管理 (圖 2) -->
               <div id="quizHistorySection" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
@@ -3198,6 +3203,9 @@
                       </button>
                       <button class="presentation-tool-btn active" onclick="window.videoQuiz.showCurrentQuestionAnalytics()" style="font-size: 14px;">
                         📊 查看答題統計
+                      </button>
+                      <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.switchToTab('panel-video-quiz')" style="font-size: 14px; font-weight: bold;" title="前往前台學生測驗視角畫面">
+                        👁️ 前台測驗畫面
                       </button>
                       <button class="presentation-tool-btn danger" id="vqAdminForceStopBtn" onclick="window.videoQuiz.stopSyncQuiz()" style="font-size: 14px;">
                         ⏹️ 結束全班測驗
@@ -5807,7 +5815,7 @@ Python</pre>
   <script src="js/focus_question_bank.js?v=381"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
-  <script src="js/quiz.js?v=387"></script>
+  <script src="js/quiz.js?v=388"></script>
   <script src="js/app.js?v=418"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>

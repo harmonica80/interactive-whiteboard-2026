@@ -357,6 +357,8 @@ class Quiz {
       }
       if (quizForm) quizForm.style.display = 'none';
       if (endQuizBtn) endQuizBtn.style.display = 'block';
+      const activeActionRow = document.getElementById('quizActiveActionRow');
+      if (activeActionRow) activeActionRow.style.display = 'flex';
       
       // 顯示答題選項
       if (answerOptions) {
@@ -439,6 +441,8 @@ class Quiz {
       }
       if (quizForm) quizForm.style.display = 'block';
       if (endQuizBtn) endQuizBtn.style.display = 'none';
+      const activeActionRow = document.getElementById('quizActiveActionRow');
+      if (activeActionRow) activeActionRow.style.display = 'none';
       if (answerOptions) {
         answerOptions.style.display = 'none';
         answerOptions.innerHTML = '';
@@ -465,6 +469,8 @@ class Quiz {
     if (quizStatus) quizStatus.innerHTML = '';
     if (quizForm) quizForm.style.display = 'block';
     if (endQuizBtn) endQuizBtn.style.display = 'none';
+    const activeActionRow = document.getElementById('quizActiveActionRow');
+    if (activeActionRow) activeActionRow.style.display = 'none';
     if (answerOptions) {
       answerOptions.style.display = 'none';
       answerOptions.innerHTML = '';

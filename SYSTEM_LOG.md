@@ -1,4 +1,15 @@
 # System Log
+## 2026-10-26 - 選擇題與影片測驗後台測驗進行中新增「前台測驗畫面」捷徑按鈕
+- 影響檔案：`index.html`, `js/quiz.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **選擇題測驗後台測驗進行中操作列新增「前台測驗畫面」按鈕 (`index.html`, `js/quiz.js`)**：
+     - 在後台「結束測驗」按鈕旁新增「👁️ 前台測驗畫面」按鈕（以 `#quizActiveActionRow` 包裹兩者），點擊直達前台 `#panel-quiz` 畫面。
+     - 於 `js/quiz.js` 中的 `updateUI()` 與 `clearQuizResults()` 精確控制測驗進行時顯示、測驗結束/清除時隱藏。
+     - 按鈕採用 `.presentation-tool-btn` 規範，文字大小為 15px，連動全域色系主題。
+  2. **影片出題測驗後台全班同步進行中控制列新增「前台測驗畫面」按鈕 (`index.html`)**：
+     - 在 `#vqAdminActiveControls` 控場列（「結束全班測驗」與「查看答題統計」旁）新增「👁️ 前台測驗畫面」按鈕，點擊直達前台 `#panel-video-quiz` 影片測驗畫面。
+     - 按鈕採用 `.presentation-tool-btn` 規範，文字大小 `>= 14px`，並連動全域主題變數。
+
 ## 2026-10-26 - 影片出題與選擇題測驗發起自動切換前台、空狀態後台導航捷徑優化
 - 影響檔案：`index.html`, `js/quiz.js`, `js/video_quiz.js`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
