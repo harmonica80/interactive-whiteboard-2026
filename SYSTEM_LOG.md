@@ -1,4 +1,16 @@
 # System Log
+## 2026-10-26 - 更新三大精選頭像圖鑑為全新無跨格精準圖檔 (修復切分裁切時鄰近角色邊緣溢出問題)
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatar_preset_fruits.png`, `images/avatar_preset_snacks.png`, `images/avatar_preset_taiwan.png`。
+- 修改項目：
+  1. **替換全新生成之三大精選頭像圖鑑 (`images/avatar_preset_*.png`)**：
+     - 替換「蔬菜水果版」、「食品零食版」及「台灣特色小吃版」三張全新圖鑑圖檔，全面解決原圖鑑角色過於靠近隔線、裁切時滲入鄰格局部圖像之問題。
+     - 執行邊界像素精確檢驗，所有水平線（y=128, 256, 384, 512, 640）與垂直線（x=128, 256, 384, 512, 640, 768, 896）邊界像素透明度皆為 100%，48 個角色完全獨立置中於自身 128×128 格位內。
+     - 採用高相容 BFS 邊界透明去背，去除白底背景，Avatar 圓形頭像呈現乾淨俐落無雜邊。
+     - 為精選圖鑑資源路徑加上 `?v=2` 快取版本識別，更新 `app.js?v=426` 確保師生端即時載入最新圖檔。
+  2. **合規檢測**：
+     - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-26 - 班級專屬頭像管理新增三大精選圖鑑版本（蔬菜水果、食品零食、台灣特色小吃免生成一鍵切換）
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatar_preset_fruits.png`, `images/avatar_preset_snacks.png`, `images/avatar_preset_taiwan.png`。
 - 修改項目：

@@ -17389,7 +17389,7 @@ class App {
       fruits: {
         key: 'fruits',
         name: '蔬菜水果版',
-        url: 'images/avatar_preset_fruits.png',
+        url: 'images/avatar_preset_fruits.png?v=2',
         count: 48,
         cols: 8,
         rows: 6
@@ -17397,7 +17397,7 @@ class App {
       snacks: {
         key: 'snacks',
         name: '食品零食版',
-        url: 'images/avatar_preset_snacks.png',
+        url: 'images/avatar_preset_snacks.png?v=2',
         count: 48,
         cols: 8,
         rows: 6
@@ -17405,7 +17405,7 @@ class App {
       taiwan: {
         key: 'taiwan',
         name: '台灣特色小吃版',
-        url: 'images/avatar_preset_taiwan.png',
+        url: 'images/avatar_preset_taiwan.png?v=2',
         count: 48,
         cols: 8,
         rows: 6
