@@ -8,7 +8,7 @@
   <link rel="shortcut icon" href="favicon.ico?v=2">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
   <link rel="stylesheet" href="css/style.css?v=408">
-  <link rel="stylesheet" href="css/presentation.css?v=3121">
+  <link rel="stylesheet" href="css/presentation.css?v=3122">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -1254,11 +1254,11 @@
           請選擇載入簡報後的課堂授課模式：
         </p>
         <div style="display: flex; flex-direction: column; gap: 12px;">
-          <button type="button" class="presentation-tool-btn active" onclick="window.presentationManager.confirmLoadMaterial('edit')" style="height: 44px; font-size: 14px; border-radius: 10px; font-weight: bold; justify-content: flex-start; padding: 0 16px;">
-            ✏️ 大家繼續共編 / 編輯模式（全班可共同書寫標記與參與互動）
+          <button type="button" class="presentation-tool-btn active" onclick="window.presentationManager.confirmLoadMaterial('edit')" style="min-height: 44px; height: auto; padding: 10px 16px; font-size: 14px; border-radius: 10px; font-weight: bold; justify-content: flex-start; text-align: left; line-height: 1.4;">
+            ✏️ 老師進行同步簡報時，同學可以參與互動
           </button>
-          <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.confirmLoadMaterial('readonly')" style="height: 44px; font-size: 14px; border-radius: 10px; font-weight: bold; justify-content: flex-start; padding: 0 16px; border-color: var(--accent-color); color: var(--accent-color);">
-            🔒 唯讀觀摩模式（鎖定為僅老師進行，學生端唯讀防寫）
+          <button type="button" class="presentation-tool-btn" onclick="window.presentationManager.confirmLoadMaterial('readonly')" style="min-height: 44px; height: auto; padding: 10px 16px; font-size: 14px; border-radius: 10px; font-weight: bold; justify-content: flex-start; text-align: left; line-height: 1.4; border-color: var(--accent-color); color: var(--accent-color);">
+            🔒 老師進行同步簡報時，同學僅能觀看，無法參與互動
           </button>
         </div>
       </div>
@@ -5877,7 +5877,7 @@ Python</pre>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
   <script src="js/word_cloud.js?v=399"></script>
-  <script src="js/presentation_core.js?v=3121"></script>
+  <script src="js/presentation_core.js?v=3122"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

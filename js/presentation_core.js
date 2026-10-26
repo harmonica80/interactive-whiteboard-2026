@@ -122,13 +122,9 @@
       return false;
     }
 
-    // 檢查當前使用者是否有權限操作與控制簡報 (圖 2: 學生端在「僅老師進行」設定下不可控制)
+    // 檢查當前使用者是否有權限操作與控制簡報管理/編輯工具 (僅老師與主持人具備)
     canControlPresentation() {
-      // 老師端/主控端隨時具備控制簡報權限
-      if (this.isTeacher() || this.localIsHost) return true;
-      // 學生端在跟隨遠端廣播時一律不可操作主控工具
-      if (this.isRemoteBroadcastingActive) return false;
-      return Boolean(this.studentCanUsePresentation);
+      return Boolean(this.isTeacher() || this.localIsHost);
     }
 
     // 取得當前使用者資訊
@@ -249,18 +245,19 @@
       const { els } = this;
       if (!els.panel) return;
 
-      // 老師端切換學生權限按鈕 (Item 1)
+      // 老師端切換學生權限按鈕 (Item 1：是否開放同學參與題目回覆與切換簡報)
       if (els.btnToggleStudentPresentation) {
         els.btnToggleStudentPresentation.onclick = () => {
           if (!this.isTeacher()) return;
           this.studentCanUsePresentation = !this.studentCanUsePresentation;
           this.updatePermissionsUI();
+          this.renderStudentInteraction();
           if (typeof db !== 'undefined') {
             db.ref('presentation/settings').update({
               studentCanUsePresentation: this.studentCanUsePresentation
             }).catch(() => {});
           }
-          this.notify('權限更新', this.studentCanUsePresentation ? '已開放學生可自主操作簡報！' : '已設定為僅老師進行簡報。');
+          this.notify('權限更新', this.studentCanUsePresentation ? '已開放同學可操作簡報與參與互動作答！' : '已設定為僅老師進行（同學僅能觀看，無法作答）。');
         };
       }
 
@@ -438,6 +435,26 @@
         });
       }
 
+      // 匯入/匯出簡報彈窗點擊背景關閉 (需求 3)
+      const modalImportExport = els.modalImportExport || document.getElementById('modalPresentationImportExport');
+      if (modalImportExport) {
+        modalImportExport.addEventListener('click', (e) => {
+          if (e.target === modalImportExport) {
+            this.closeImportExportModal();
+          }
+        });
+      }
+
+      // 載入教材授課模式選擇彈窗點擊背景關閉
+      const modalLoadChoice = els.modalLoadChoice || document.getElementById('modalPresentationLoadChoice');
+      if (modalLoadChoice) {
+        modalLoadChoice.addEventListener('click', (e) => {
+          if (e.target === modalLoadChoice) {
+            this.closeLoadChoiceModal();
+          }
+        });
+      }
+
       // 畫布繪製與雷射筆滑鼠事件
       this.bindCanvasEvents();
       this.bindStudentDrawCanvasEvents();
@@ -498,48 +515,64 @@
       });
     }
 
-    // 權限 UI 更新 (圖 2: 學生端在「僅老師進行」設定下徹底隱藏主控功能)
+    // 權限 UI 更新 (需求 1：僅老師可進行 vs 同學可操作)
     updatePermissionsUI() {
       const { els } = this;
-      const teacher = (this.isTeacher() || this.localIsHost) && (!this.isRemoteBroadcastingActive || this.localIsHost);
-      const canControl = this.canControlPresentation();
+      const teacher = Boolean((this.isTeacher() || this.localIsHost) && (!this.isRemoteBroadcastingActive || this.localIsHost));
 
-      // 老師專用開關按鈕
+      // 老師專用開關按鈕 / 學生端唯讀狀態提示 (遵循 AGENTS.md 師生權限隔離與透明化)
       if (els.btnToggleStudentPresentation) {
+        els.btnToggleStudentPresentation.style.display = 'inline-flex';
         if (teacher) {
-          els.btnToggleStudentPresentation.style.display = 'inline-flex';
+          els.btnToggleStudentPresentation.classList.remove('is-student-readonly');
           if (this.studentCanUsePresentation) {
             els.btnToggleStudentPresentation.classList.add('is-active');
             els.btnToggleStudentPresentation.classList.remove('is-inactive');
-            els.btnToggleStudentPresentation.innerHTML = '<span>🔓 學生可操作</span>';
+            els.btnToggleStudentPresentation.innerHTML = '<span>🔓 同學可操作</span>';
+            els.btnToggleStudentPresentation.title = '點擊切換：目前開放同學可切換簡報與參與互動作答';
           } else {
             els.btnToggleStudentPresentation.classList.remove('is-active');
             els.btnToggleStudentPresentation.classList.add('is-inactive');
             els.btnToggleStudentPresentation.innerHTML = '<span>🔒 僅老師進行</span>';
+            els.btnToggleStudentPresentation.title = '點擊切換：目前鎖定僅老師主控，同學僅能觀看無法作答';
           }
         } else {
-          els.btnToggleStudentPresentation.style.display = 'none';
+          // 學生端相同位置維持顯示狀態，但設為唯讀不可修改 (.is-student-readonly)
+          els.btnToggleStudentPresentation.classList.add('is-student-readonly');
+          if (this.studentCanUsePresentation) {
+            els.btnToggleStudentPresentation.classList.add('is-active');
+            els.btnToggleStudentPresentation.classList.remove('is-inactive');
+            els.btnToggleStudentPresentation.innerHTML = '<span>🔓 同學可操作</span>';
+            els.btnToggleStudentPresentation.title = '目前開放同學可切換簡報與參與題目作答';
+          } else {
+            els.btnToggleStudentPresentation.classList.remove('is-active');
+            els.btnToggleStudentPresentation.classList.add('is-inactive');
+            els.btnToggleStudentPresentation.innerHTML = '<span>🔒 僅老師進行</span>';
+            els.btnToggleStudentPresentation.title = '目前由老師主控簡報，同學僅能觀看';
+          }
         }
       }
 
-      // 控制工具在非授權學生端隱藏
-      const ctrlDisplay = canControl ? 'inline-flex' : 'none';
-      if (els.btnSlideNew) els.btnSlideNew.style.display = ctrlDisplay;
-      if (els.btnAddColor) els.btnAddColor.style.display = ctrlDisplay;
-      if (els.btnAddImage) els.btnAddImage.style.display = ctrlDisplay;
-      if (els.btnStartSync) els.btnStartSync.style.display = ctrlDisplay;
-      if (els.btnToolPen) els.btnToolPen.style.display = ctrlDisplay;
-      if (els.btnToolLaser) els.btnToolLaser.style.display = ctrlDisplay;
-      if (els.btnClearAnnotations) els.btnClearAnnotations.style.display = ctrlDisplay;
-      if (els.btnSettings) els.btnSettings.style.display = ctrlDisplay;
-      if (els.btnCloudBank) els.btnCloudBank.style.display = ctrlDisplay;
-      if (els.btnImportExport) els.btnImportExport.style.display = ctrlDisplay;
-      if (els.btnResetSubmissions) els.btnResetSubmissions.style.display = ctrlDisplay;
+      // 老師專屬管理/編輯功能：只有老師可見，學生永遠不可見
+      const teacherDisplay = teacher ? 'inline-flex' : 'none';
+      if (els.btnSlideNew) els.btnSlideNew.style.display = teacherDisplay;
+      if (els.btnAddColor) els.btnAddColor.style.display = teacherDisplay;
+      if (els.btnAddImage) els.btnAddImage.style.display = teacherDisplay;
+      if (els.btnStartSync) els.btnStartSync.style.display = teacherDisplay;
+      if (els.btnToolPen) els.btnToolPen.style.display = teacherDisplay;
+      if (els.btnToolLaser) els.btnToolLaser.style.display = teacherDisplay;
+      if (els.btnClearAnnotations) els.btnClearAnnotations.style.display = teacherDisplay;
+      if (els.btnSettings) els.btnSettings.style.display = teacherDisplay;
+      if (els.btnCloudBank) els.btnCloudBank.style.display = teacherDisplay;
+      if (els.btnImportExport) els.btnImportExport.style.display = teacherDisplay;
+      if (els.btnResetSubmissions) els.btnResetSubmissions.style.display = teacherDisplay;
       const purgeBtn = document.getElementById('btnSlidePurgeCache');
-      if (purgeBtn) purgeBtn.style.display = ctrlDisplay;
+      if (purgeBtn) purgeBtn.style.display = teacherDisplay;
+
+      // 右側作答即時管理側欄：只有老師可見
       const expandRight = document.getElementById('btnExpandRightSidebar');
       if (els.rightSidebar) {
-        if (!canControl) {
+        if (!teacher) {
           els.rightSidebar.style.display = 'none';
           if (expandRight) expandRight.style.display = 'none';
         } else {
@@ -555,38 +588,39 @@
         expandLeft.style.display = leftSidebar.classList.contains('is-collapsed') ? 'inline-flex' : 'none';
       }
 
-      // 若非授權學生且老師未廣播時，畫面呈現提示
-      if (!canControl && !this.isPresenting) {
+      // 若學生且老師未廣播時，畫面呈現提示
+      if (!teacher && !this.isPresenting) {
         if (els.emptyHint) {
           els.emptyHint.innerHTML = `
-            <span style="font-size: 38px;">🔒</span>
-            <span style="font-weight: 700; color: var(--text-secondary); font-size: 16px;">目前設定為「僅老師進行簡報」</span>
-            <span style="font-size: 14px; color: var(--text-muted);">請等待老師開啟同步簡報或開放操作權限</span>
+            <span style="font-size: 38px;">📺</span>
+            <span style="font-weight: 700; color: var(--text-secondary); font-size: 16px;">目前尚無進行中的同步簡報</span>
+            <span style="font-size: 14px; color: var(--text-muted);">當老師開啟同步簡報時，畫面將自動同步於此播放</span>
           `;
           els.emptyHint.style.display = 'flex';
         }
         if (els.screenBg) els.screenBg.style.display = 'none';
       }
 
-      // 圖 1: 學生端在老師簡報同步廣播時不能自行操作，若老師停止同步則可自行操作
-      if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
+      // 翻頁控制：若為學生且處於「僅老師進行」模式，鎖定翻頁；若「同學可操作」，允許同學自由點閱與切換
+      const isStudentPageLocked = !teacher && this.isRemoteBroadcastingActive && !this.studentCanUsePresentation;
+      if (isStudentPageLocked) {
         if (els.btnPrev) {
           els.btnPrev.disabled = true;
           els.btnPrev.style.opacity = '0.4';
           els.btnPrev.style.cursor = 'not-allowed';
-          els.btnPrev.title = '跟隨老師同步中，由老師控制翻頁';
+          els.btnPrev.title = '目前設定為「僅老師進行」，簡報頁面由老師統一控制';
         }
         if (els.btnNext) {
           els.btnNext.disabled = true;
           els.btnNext.style.opacity = '0.4';
           els.btnNext.style.cursor = 'not-allowed';
-          els.btnNext.title = '跟隨老師同步中，由老師控制翻頁';
+          els.btnNext.title = '目前設定為「僅老師進行」，簡報頁面由老師統一控制';
         }
         if (els.btnGridOverview) {
           els.btnGridOverview.disabled = true;
           els.btnGridOverview.style.opacity = '0.4';
           els.btnGridOverview.style.cursor = 'not-allowed';
-          els.btnGridOverview.title = '跟隨老師同步中';
+          els.btnGridOverview.title = '目前設定為「僅老師進行」';
         }
         if (els.thumbnailsList) {
           els.thumbnailsList.classList.add('is-sync-locked');
@@ -899,6 +933,7 @@
           if (typeof val.studentCanUsePresentation === 'boolean') {
             this.studentCanUsePresentation = val.studentCanUsePresentation;
             this.updatePermissionsUI();
+            this.renderStudentInteraction();
           }
         }
       });
@@ -1342,11 +1377,13 @@
       return this.slides[this.currentSlideIndex] || null;
     }
 
-    // 翻到下一頁 (圖 1: 同步廣播中鎖定學生端自行操作)
+    // 翻到下一頁 (若為僅老師進行，學生端鎖定跟隨；若同學可操作，則允許自行翻頁)
     nextSlide() {
       if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
-        this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
-        return;
+        if (!this.studentCanUsePresentation) {
+          this.notify('提示', '目前設定為「僅老師進行」，簡報頁面由老師主控跟隨。');
+          return;
+        }
       }
       if (this.currentSlideIndex < this.slides.length - 1) {
         this.currentSlideIndex++;
@@ -1357,8 +1394,10 @@
     // 翻到上一頁
     prevSlide() {
       if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
-        this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
-        return;
+        if (!this.studentCanUsePresentation) {
+          this.notify('提示', '目前設定為「僅老師進行」，簡報頁面由老師主控跟隨。');
+          return;
+        }
       }
       if (this.currentSlideIndex > 0) {
         this.currentSlideIndex--;
@@ -1369,8 +1408,10 @@
     // 跳轉到指定頁
     goToSlide(index) {
       if (this.isRemoteBroadcastingActive && !this.isTeacher()) {
-        this.notify('提示', '目前正處於跟隨老師同步簡報中，頁面由老師統一控制。若老師停止同步即可自由點閱。');
-        return;
+        if (!this.studentCanUsePresentation) {
+          this.notify('提示', '目前設定為「僅老師進行」，簡報頁面由老師主控跟隨。');
+          return;
+        }
       }
       if (index >= 0 && index < this.slides.length) {
         this.currentSlideIndex = index;
@@ -1809,10 +1850,17 @@
       const hasQuestions = questions.length > 0;
       const isTeacherUser = this.isTeacher() || this.localIsHost || (this.isPresenting && !this.isRemoteBroadcastingActive);
 
-      // 檢查非同步廣播作答權限 (需求 2：預設必須在同步廣播時才能作答，老師可設定是否允許非同步作答)
-      const isAllowedToAnswer = isTeacherUser || this.isRemoteBroadcastingActive || Boolean(slide.allowAsyncAnswer);
+      // 檢查非同步廣播與互動權限 (需求 1：僅老師可進行 vs 同學可操作)
+      // 1. 老師端隨時可預覽作答
+      // 2. 學生端：必須在「同學可操作」(this.studentCanUsePresentation === true) 的授權下，且 (處於同步廣播中 或 本頁允許非同步作答)
+      let isAllowedToAnswer = false;
+      if (isTeacherUser) {
+        isAllowedToAnswer = true;
+      } else if (this.studentCanUsePresentation) {
+        isAllowedToAnswer = this.isRemoteBroadcastingActive || Boolean(slide.allowAsyncAnswer);
+      }
 
-      // 若不允許作答 (學生端且不在同步廣播中，且此頁未開啟非同步作答)
+      // 若不允許作答
       if (!isAllowedToAnswer) {
         if (this.els.studentDrawBar) this.els.studentDrawBar.style.display = 'none';
         if (this.els.studentDrawCanvas) {
@@ -1824,14 +1872,24 @@
           const lockedCard = document.createElement('div');
           lockedCard.className = 'presentation-student-dialog';
           lockedCard.style.cssText = 'padding: 16px 20px; text-align: center; background: rgba(255, 255, 255, 0.96); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-left: 4px solid #f59e0b; max-width: 360px;';
-          lockedCard.innerHTML = `
-            <div style="font-size: 26px; margin-bottom: 6px;">🔒</div>
-            <div style="font-weight: 700; color: var(--text-primary); font-size: 14px;">隨堂作答暫未開放</div>
-            <div style="font-size: 14px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5;">
-              本頁互動題目設定為「<strong>僅限老師同步廣播時作答</strong>」。<br>
-              請等待老師開啟同步簡報，系統將自動開啟作答！
-            </div>
-          `;
+          if (!this.studentCanUsePresentation) {
+            lockedCard.innerHTML = `
+              <div style="font-size: 26px; margin-bottom: 6px;">🔒</div>
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 14px;">目前為觀摩模式</div>
+              <div style="font-size: 14px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5;">
+                目前設定為「<strong>僅老師進行</strong>」，同學僅能觀看簡報，尚未開放互動作答。
+              </div>
+            `;
+          } else {
+            lockedCard.innerHTML = `
+              <div style="font-size: 26px; margin-bottom: 6px;">🔒</div>
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 14px;">隨堂作答暫未開放</div>
+              <div style="font-size: 14px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5;">
+                本頁互動題目設定為「<strong>僅限老師同步廣播時作答</strong>」。<br>
+                請等待老師開啟同步簡報，系統將自動開啟作答！
+              </div>
+            `;
+          }
           area.appendChild(lockedCard);
         }
         return;

@@ -112,8 +112,14 @@
   color: #ffffff;
 }
 
-.presentation-perm-btn:hover {
+.presentation-perm-btn:hover:not(.is-student-readonly) {
   filter: brightness(0.96);
+}
+
+.presentation-perm-btn.is-student-readonly {
+  cursor: default;
+  opacity: 0.92;
+  pointer-events: none;
 }
 
 .presentation-header-controls {
