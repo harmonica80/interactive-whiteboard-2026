@@ -1,4 +1,20 @@
 # System Log
+## 2026-10-26 - 後台全域 CSS 樣式統一、按鈕風格與圓角規範對齊及字級下限全面合規
+- 影響檔案：`index.html`, `css/style.css`, `css/presentation.css`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **全系統後台操作按鈕全面統一為 `.presentation-tool-btn` 風格與 10px 圓角規範 (`css/presentation.css`, `css/style.css`, `index.html`)**：
+     - 將 `.presentation-tool-btn` 的 `border-radius` 由 8px 統一為 `10px`，並擴充語意修飾類別 `.presentation-tool-btn.success` 與 `.presentation-tool-btn.warning`，完整支援四大主題色。
+     - 將全域按鈕類別 `.preset-btn` 的圓角由 6px 統一提升至 `10px`。
+     - 將課堂模式狀態列標籤（`#modeOneOffDisplay` / `.mode-display-pill`）圓角由 20px 調整為 `10px`，姓名頭像標籤（`.user-display-tag`）由 16px 調整為 `8px`。
+     - 管理後台（`#panel-admin`）全模組按鈕（倒數計時、班級管理、音效設定、系統重設備份、安全設定、功能模組開關、即時回饋、隨堂測驗、影片測驗、搶答管理、專注力測驗、隨機抽人、即時文字雲、提問管理、圖片管理、影片管理、教師分享管理等）全面統一採用 `.presentation-tool-btn` 及其狀態修飾類別（`.active`, `.danger`, `.success`, `.warning`），圓角皆為標準 `10px`。
+  2. **文字大小下限全面確保 `>= 14px` (`index.html`)**：
+     - 嚴格依照 `AGENTS.md` 核心規範，對後台全域程式碼進行靜態排查，徹底消除所有小於 14px（11px, 12px, 13px）之樣式，52 處細節標籤、次級提示、輸入框與次按鈕全面提升至 `>= 14px`，確保大螢幕投影與行動裝置之最佳可讀性。
+  3. **色系主題全面連動與 CSS 快取更新 (`css/style.css`, `index.html`)**：
+     - 消除寫死之固定色碼（如 hover 背景與邊框），全面綁定 `var(--accent-color)`、`var(--accent-hover)`、`var(--border-color)`、`var(--bg-input)` 與 `var(--bg-card)` 等主題變數。
+     - 更新 `index.html` 之 CSS 快取版本參數（`style.css?v=407`、`presentation.css?v=3119`）。
+  4. **嚴格用語規範遵循**：
+     - 全專案檔案、程式碼註解、樣式與日誌嚴格統一使用「記錄」，杜絕「紀錄」字樣。
+
 ## 2026-10-26 - 題庫範例檔與匯出整合格式選擇彈窗、頁首按鈕圓角統一與登出圖示文案優化
 - 影響檔案：`index.html`, `css/style.css`, `css/presentation.css`, `js/app.js`, `js/quiz.js`, `js/video_quiz.js`, `js/word_cloud.js`, `SYSTEM_LOG.md`。
 - 修改項目：
