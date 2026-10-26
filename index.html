@@ -1970,7 +1970,7 @@
                   </div>
                   <div style="flex: 1; min-width: 260px;">
                     <label style="display: block; font-size: 14px; font-weight: bold; margin-bottom: 6px; color: var(--text-primary);">
-                      2️⃣ 選擇 8×6 (48格) 頭像圖鑑圖檔：
+                      2️⃣ 自行上傳 8×6 (48格) 頭像圖鑑圖檔：
                     </label>
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                       <button type="button" class="presentation-tool-btn" onclick="document.getElementById('adminAvatarSheetFileInput').click()" style="padding: 7px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin: 0;">
@@ -1979,6 +1979,24 @@
                       <span id="adminAvatarFileNameDisplay" style="font-size: 14px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px;">未選擇任何檔案</span>
                       <input type="file" id="adminAvatarSheetFileInput" accept="image/png,image/jpeg,image/webp" onchange="window.app.onAdminAvatarFileSelected(event)" style="display: none;">
                     </div>
+                  </div>
+                </div>
+
+                <!-- 快速套用精選內建圖鑑版本（免自行生成） -->
+                <div style="margin-bottom: 12px; padding: 10px 14px; background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                  <div style="font-size: 14px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                    <span>🌟 快速切換精選圖鑑（免自行生成）：</span>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" id="btnPresetAvatarFruits" class="presentation-tool-btn" onclick="window.app.applyPresetAvatarSheet('fruits')" style="padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="套用 48 款蔬菜水果角色頭像圖鑑">
+                      🥦 蔬菜水果版 (48款)
+                    </button>
+                    <button type="button" id="btnPresetAvatarSnacks" class="presentation-tool-btn" onclick="window.app.applyPresetAvatarSheet('snacks')" style="padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="套用 48 款食品零食角色頭像圖鑑">
+                      🍔 食品零食版 (48款)
+                    </button>
+                    <button type="button" id="btnPresetAvatarTaiwan" class="presentation-tool-btn" onclick="window.app.applyPresetAvatarSheet('taiwan')" style="padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="套用 48 款台灣特色小吃角色頭像圖鑑">
+                      🧋 台灣特色小吃版 (48款)
+                    </button>
                   </div>
                 </div>
 
@@ -5865,7 +5883,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=424"></script>
+  <script src="js/app.js?v=425"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>

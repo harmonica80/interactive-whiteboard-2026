@@ -649,6 +649,11 @@ class App {
     if (tab0) {
       if (this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
         tab0.style.display = 'inline-block';
+        if (this.currentClassCustomAvatars.name) {
+          tab0.textContent = `🏫 班級專屬 (${this.currentClassCustomAvatars.name})`;
+        } else {
+          tab0.textContent = '🏫 班級專屬 (48款)';
+        }
       } else {
         tab0.style.display = 'none';
         if (this.currentAvatarTab === 0) {
@@ -788,10 +793,11 @@ class App {
         const row = Math.floor(i / 8);
         const x = ((col / 7) * 100).toFixed(2);
         const y = ((row / 5) * 100).toFixed(2);
+        const typeTitle = customSheet.name ? `🏫 ${customSheet.name} #${i + 1}` : `🏫 班級角色 #${i + 1}`;
         html += `
           <div class="avatar-grid-item ${activeClass}" 
                onclick="window.app.selectAvatar('${customId}')" 
-               title="🏫 班級角色 #${i + 1}"
+               title="${typeTitle}"
                data-avatar-id="${customId}">
             <span class="cute-avatar-icon" style="width: 100%; height: 100%; background-image: url('${customSheet.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
           </div>
@@ -17141,19 +17147,31 @@ class App {
 
       if (data && data.url) {
         if (badge) {
-          badge.textContent = `已設定班級專屬頭像 (48款)`;
+          const typeName = data.name ? `（${data.name} 48款）` : '(48款)';
+          badge.textContent = `已設定班級專屬頭像 ${typeName}`;
           badge.style.background = 'rgba(0, 122, 255, 0.15)';
           badge.style.color = '#007aff';
         }
         if (resetBtn) resetBtn.style.display = 'inline-block';
+
+        const btnFruits = document.getElementById('btnPresetAvatarFruits');
+        const btnSnacks = document.getElementById('btnPresetAvatarSnacks');
+        const btnTaiwan = document.getElementById('btnPresetAvatarTaiwan');
+        if (btnFruits) btnFruits.classList.toggle('active', data.presetKey === 'fruits');
+        if (btnSnacks) btnSnacks.classList.toggle('active', data.presetKey === 'snacks');
+        if (btnTaiwan) btnTaiwan.classList.toggle('active', data.presetKey === 'taiwan');
 
         // 渲染目前已上傳的 48 格預覽
         if (previewSection && previewGrid) {
           previewSection.style.display = 'block';
           const pTitle = document.getElementById('adminClassAvatarPreviewTitle');
           const pSub = document.getElementById('adminClassAvatarPreviewSub');
-          if (pTitle) pTitle.textContent = '👀 目前班級專屬頭像（自訂 48 格圖鑑）：';
-          if (pSub) pSub.textContent = '使用老師上傳之班級專屬角色圖鑑';
+          if (pTitle) {
+            pTitle.textContent = data.name 
+              ? `👀 目前班級專屬頭像（${data.name} 48 格圖鑑）：`
+              : '👀 目前班級專屬頭像（自訂 48 格圖鑑）：';
+          }
+          if (pSub) pSub.textContent = data.name ? `使用系統精選「${data.name}」` : '使用老師上傳之班級專屬角色圖鑑';
           let html = '';
           for (let i = 0; i < 48; i++) {
             const col = i % 8;
@@ -17175,6 +17193,13 @@ class App {
           badge.style.color = '#28a745';
         }
         if (resetBtn) resetBtn.style.display = 'none';
+
+        const btnFruits = document.getElementById('btnPresetAvatarFruits');
+        const btnSnacks = document.getElementById('btnPresetAvatarSnacks');
+        const btnTaiwan = document.getElementById('btnPresetAvatarTaiwan');
+        if (btnFruits) btnFruits.classList.remove('active');
+        if (btnSnacks) btnSnacks.classList.remove('active');
+        if (btnTaiwan) btnTaiwan.classList.remove('active');
 
         // 渲染系統預設 96 款可愛生物頭像圖鑑
         if (previewSection && previewGrid) {
@@ -17215,6 +17240,13 @@ class App {
         nameDisplay.style.fontWeight = 'normal';
       }
     }
+    const btnFruits = document.getElementById('btnPresetAvatarFruits');
+    const btnSnacks = document.getElementById('btnPresetAvatarSnacks');
+    const btnTaiwan = document.getElementById('btnPresetAvatarTaiwan');
+    if (btnFruits) btnFruits.classList.remove('active');
+    if (btnSnacks) btnSnacks.classList.remove('active');
+    if (btnTaiwan) btnTaiwan.classList.remove('active');
+
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -17352,9 +17384,101 @@ class App {
     this.showNotification('👀 圖鑑已切分', '48 格頭像已成功切分預覽！請檢視效果並點擊「儲存並套用班級頭像」。');
   }
 
+  applyPresetAvatarSheet(presetKey) {
+    const presets = {
+      fruits: {
+        key: 'fruits',
+        name: '蔬菜水果版',
+        url: 'images/avatar_preset_fruits.png',
+        count: 48,
+        cols: 8,
+        rows: 6
+      },
+      snacks: {
+        key: 'snacks',
+        name: '食品零食版',
+        url: 'images/avatar_preset_snacks.png',
+        count: 48,
+        cols: 8,
+        rows: 6
+      },
+      taiwan: {
+        key: 'taiwan',
+        name: '台灣特色小吃版',
+        url: 'images/avatar_preset_taiwan.png',
+        count: 48,
+        cols: 8,
+        rows: 6
+      }
+    };
+
+    const preset = presets[presetKey];
+    if (!preset) return;
+
+    this._pendingCustomAvatarSheetData = {
+      presetKey: preset.key,
+      name: preset.name,
+      url: preset.url,
+      count: preset.count,
+      cols: preset.cols,
+      rows: preset.rows,
+      updatedAt: Date.now()
+    };
+
+    const btnFruits = document.getElementById('btnPresetAvatarFruits');
+    const btnSnacks = document.getElementById('btnPresetAvatarSnacks');
+    const btnTaiwan = document.getElementById('btnPresetAvatarTaiwan');
+    if (btnFruits) btnFruits.classList.toggle('active', presetKey === 'fruits');
+    if (btnSnacks) btnSnacks.classList.toggle('active', presetKey === 'snacks');
+    if (btnTaiwan) btnTaiwan.classList.toggle('active', presetKey === 'taiwan');
+
+    const nameDisplay = document.getElementById('adminAvatarFileNameDisplay');
+    if (nameDisplay) {
+      nameDisplay.textContent = `已選用精選圖鑑：${preset.name}`;
+      nameDisplay.style.color = 'var(--accent-color)';
+      nameDisplay.style.fontWeight = 'bold';
+    }
+
+    const fileInput = document.getElementById('adminAvatarSheetFileInput');
+    if (fileInput) fileInput.value = '';
+
+    const previewSection = document.getElementById('adminClassAvatarPreviewSection');
+    const previewGrid = document.getElementById('adminClassAvatarPreviewGrid');
+    const saveBtn = document.getElementById('btnSaveClassAvatars');
+
+    if (previewSection && previewGrid) {
+      previewSection.style.display = 'block';
+      const pTitle = document.getElementById('adminClassAvatarPreviewTitle');
+      const pSub = document.getElementById('adminClassAvatarPreviewSub');
+      if (pTitle) pTitle.textContent = `👀 待儲存頭像切分即時預覽（${preset.name}，共 48 格）：`;
+      if (pSub) pSub.textContent = '請檢視無誤後點擊上方「💾 儲存並套用班級頭像」';
+
+      let html = '';
+      for (let i = 0; i < preset.count; i++) {
+        const col = i % preset.cols;
+        const row = Math.floor(i / preset.cols);
+        const x = ((col / (preset.cols - 1)) * 100).toFixed(2);
+        const y = ((row / (preset.rows - 1)) * 100).toFixed(2);
+        html += `
+          <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box;" title="${preset.name} #${i + 1}">
+            <span style="width: 100%; height: 100%; display: block; border-radius: 50%; background-image: url('${preset.url}'); background-size: ${preset.cols * 100}% ${preset.rows * 100}%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
+          </div>
+        `;
+      }
+      previewGrid.innerHTML = html;
+    }
+
+    if (saveBtn) {
+      saveBtn.style.display = 'inline-block';
+      saveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    this.showNotification('✨ 已載入精選圖鑑', `已載入「${preset.name}」48 款角色頭像！請檢視預覽並點擊「儲存並套用班級頭像」。`);
+  }
+
   async saveAdminClassAvatars() {
     if (!this._pendingCustomAvatarSheetData) {
-      this.showNotification('尚未選擇圖片', '請先選擇欲上傳的 8×6 (48格) 頭像圖鑑圖檔！');
+      this.showNotification('尚未選擇圖片', '請先選擇欲上傳或套用的 8×6 (48格) 頭像圖鑑圖檔！');
       return;
     }
 
@@ -17381,7 +17505,8 @@ class App {
         this.updateClassCustomAvatarUI();
       }
 
-      this.showNotification('🎉 儲存成功', `班級【${classCode}】的 48 款專屬頭像已成功生效！`);
+      const typeInfo = this._pendingCustomAvatarSheetData.name ? `「${this._pendingCustomAvatarSheetData.name}」` : '';
+      this.showNotification('🎉 儲存成功', `班級【${classCode}】的 ${typeInfo}48 款專屬頭像已成功生效！`);
       if (saveBtn) saveBtn.style.display = 'none';
 
       this.onAdminAvatarClassChange(classCode);
