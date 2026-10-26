@@ -192,14 +192,59 @@
     btnExportZip: document.getElementById('btnExportZip'),
     btnExportJson: document.getElementById('btnExportJson'),
     btnImportJson: document.getElementById('btnImportJson'),
-    jsonFileInput: document.getElementById('jsonFileInput')
+    jsonFileInput: document.getElementById('jsonFileInput'),
+    // 白板雲端歷程檔案庫
+    btnCloudArchive: document.getElementById('btnCloudArchive'),
+    btnOpenCloudArchiveFromExport: document.getElementById('btnOpenCloudArchiveFromExport'),
+    whiteboardArchiveModal: document.getElementById('whiteboardArchiveModal'),
+    btnCloseWbArchiveModal: document.getElementById('btnCloseWbArchiveModal'),
+    btnSaveCurrentWbToCloud: document.getElementById('btnSaveCurrentWbToCloud'),
+    btnArchiveExportJson: document.getElementById('btnArchiveExportJson'),
+    btnArchiveImportJson: document.getElementById('btnArchiveImportJson'),
+    btnRefreshWbArchives: document.getElementById('btnRefreshWbArchives'),
+    wbArchiveCountBadge: document.getElementById('wbArchiveCountBadge'),
+    wbArchiveSearchInput: document.getElementById('wbArchiveSearchInput'),
+    wbArchiveListContainer: document.getElementById('wbArchiveListContainer'),
+    wbArchiveLoadChoiceModal: document.getElementById('wbArchiveLoadChoiceModal'),
+    btnCloseWbLoadChoiceModal: document.getElementById('btnCloseWbLoadChoiceModal'),
+    wbLoadChoiceArchiveTitle: document.getElementById('wbLoadChoiceArchiveTitle'),
+    btnConfirmLoadEdit: document.getElementById('btnConfirmLoadEdit'),
+    btnConfirmLoadReadonly: document.getElementById('btnConfirmLoadReadonly'),
+    btnCancelLoadChoice: document.getElementById('btnCancelLoadChoice')
   };
+
+  // ===== 班級代碼同步 =====
+  if (!window.currentClassCode) {
+    if (window.parent && window.parent.currentClassCode) {
+      window.currentClassCode = window.parent.currentClassCode;
+    } else if (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function') {
+      window.currentClassCode = window.ClassRoomManager.getActiveClassCode();
+    }
+  }
 
   // ===== Firebase 資料庫參照 =====
   let db = (window.parent && window.parent.db) || (window.firebase && firebase.database ? firebase.database() : null);
   let roomRef = null;
   let objectsRef = null;
   let myPresenceRef = null;
+  let archivesRef = null;
+  const archiveBank = {};
+  window.whiteboardArchives = archiveBank;
+  if (window.parent) {
+    window.parent.whiteboardArchives = archiveBank;
+  }
+  let archiveSearchQuery = '';
+  let pendingLoadArchiveId = null;
+
+  function getArchivesRef() {
+    if (db) {
+      return db.ref('whiteboard_archives');
+    }
+    if (window.parent && window.parent.db) {
+      return window.parent.db.ref('whiteboard_archives');
+    }
+    return null;
+  }
 
   function updateMyPresence() {
     if (!myPresenceRef) return;
@@ -228,6 +273,22 @@
     }
 
     roomRef = db.ref('whiteboard_v2');
+
+    // 監聽白板雲端歷程檔案庫
+    archivesRef = getArchivesRef();
+    if (archivesRef) {
+      archivesRef.on('value', (snap) => {
+        const val = snap.val() || {};
+        Object.keys(archiveBank).forEach(k => delete archiveBank[k]);
+        Object.assign(archiveBank, val);
+        if (window.parent) {
+          window.parent.whiteboardArchives = archiveBank;
+        }
+        if (typeof renderWhiteboardArchiveList === 'function') {
+          renderWhiteboardArchiveList();
+        }
+      });
+    }
 
     // 學生端動態同步至老師當前畫布與分頁
     function syncStudentToTeacherView() {
@@ -549,6 +610,8 @@
       if (els.btnFollowMode) els.btnFollowMode.style.display = 'none';
       if (els.btnSummonAll) els.btnSummonAll.style.display = 'none';
       if (els.btnClearOrEnd) els.btnClearOrEnd.style.display = 'none';
+      if (els.btnCloudArchive) els.btnCloudArchive.style.display = 'none';
+      if (els.btnSaveCurrentWbToCloud) els.btnSaveCurrentWbToCloud.style.display = 'none';
 
       // 畫布增減控制 (學生端依據老師設定開放或隱藏)
       if (els.btnAddCanvas) els.btnAddCanvas.style.display = state.settings.studentCanManagePages ? 'inline-flex' : 'none';
@@ -588,6 +651,8 @@
       if (els.btnAddCanvas) els.btnAddCanvas.style.display = 'inline-flex';
       if (els.btnRenameCanvas) els.btnRenameCanvas.style.display = 'inline-flex';
       if (els.btnAddPage) els.btnAddPage.style.display = 'inline-flex';
+      if (els.btnCloudArchive) els.btnCloudArchive.style.display = 'inline-flex';
+      if (els.btnSaveCurrentWbToCloud) els.btnSaveCurrentWbToCloud.style.display = 'inline-flex';
 
       els.readonlyBanner.style.display = 'none';
       disableDrawingTools(false);
@@ -3110,6 +3175,63 @@
   if (els.btnExportZip) els.btnExportZip.onclick = exportCanvasToZip;
   if (els.btnExportJson) els.btnExportJson.onclick = exportCanvasToJson;
 
+  // ===== 白板雲端歷程檔案庫事件 =====
+  if (els.btnCloudArchive) {
+    els.btnCloudArchive.onclick = openWhiteboardArchiveModal;
+  }
+  if (els.btnOpenCloudArchiveFromExport) {
+    els.btnOpenCloudArchiveFromExport.onclick = () => {
+      if (els.exportModal) els.exportModal.classList.remove('open');
+      openWhiteboardArchiveModal();
+    };
+  }
+  if (els.btnCloseWbArchiveModal) {
+    els.btnCloseWbArchiveModal.onclick = closeWhiteboardArchiveModal;
+  }
+  if (els.btnSaveCurrentWbToCloud) {
+    els.btnSaveCurrentWbToCloud.onclick = saveCurrentWhiteboardToCloud;
+  }
+  if (els.btnArchiveExportJson) {
+    els.btnArchiveExportJson.onclick = exportCanvasToJson;
+  }
+  if (els.btnArchiveImportJson && els.jsonFileInput) {
+    els.btnArchiveImportJson.onclick = () => els.jsonFileInput.click();
+  }
+  if (els.btnRefreshWbArchives) {
+    els.btnRefreshWbArchives.onclick = () => {
+      renderWhiteboardArchiveList();
+      flashToast('🔄 已重新整理歷程清單');
+    };
+  }
+  if (els.wbArchiveSearchInput) {
+    els.wbArchiveSearchInput.oninput = (e) => {
+      archiveSearchQuery = e.target.value;
+      renderWhiteboardArchiveList();
+    };
+  }
+
+  // 載入模式選擇對話框事件
+  if (els.btnConfirmLoadEdit) {
+    els.btnConfirmLoadEdit.onclick = () => {
+      if (pendingLoadArchiveId) {
+        const id = pendingLoadArchiveId;
+        closeArchiveLoadChoice();
+        loadWhiteboardArchive(id, 'edit');
+      }
+    };
+  }
+  if (els.btnConfirmLoadReadonly) {
+    els.btnConfirmLoadReadonly.onclick = () => {
+      if (pendingLoadArchiveId) {
+        const id = pendingLoadArchiveId;
+        closeArchiveLoadChoice();
+        loadWhiteboardArchive(id, 'readonly');
+      }
+    };
+  }
+  if (els.btnCancelLoadChoice) els.btnCancelLoadChoice.onclick = closeArchiveLoadChoice;
+  if (els.btnCloseWbLoadChoiceModal) els.btnCloseWbLoadChoiceModal.onclick = closeArchiveLoadChoice;
+
   if (els.btnImportJson && els.jsonFileInput) {
     els.btnImportJson.onclick = () => els.jsonFileInput.click();
     els.jsonFileInput.onchange = async (e) => {
@@ -3298,6 +3420,333 @@
     a.click();
     flashToast('✅ JSON 備份檔已匯出！');
     if (els.exportModal) els.exportModal.classList.remove('open');
+  }
+
+  // ===== 白板雲端歷程檔案庫管理 (存檔、載入、跨班複製、刪除) =====
+  function openWhiteboardArchiveModal() {
+    if (!els.whiteboardArchiveModal) return;
+    els.whiteboardArchiveModal.classList.add('open');
+    els.whiteboardArchiveModal.style.display = 'flex';
+    renderWhiteboardArchiveList();
+  }
+
+  function closeWhiteboardArchiveModal() {
+    if (!els.whiteboardArchiveModal) return;
+    els.whiteboardArchiveModal.classList.remove('open');
+    els.whiteboardArchiveModal.style.display = 'none';
+  }
+
+  function renderWhiteboardArchiveList() {
+    if (!els.wbArchiveListContainer) return;
+    const keys = Object.keys(archiveBank || {});
+
+    if (els.wbArchiveCountBadge) {
+      els.wbArchiveCountBadge.textContent = `共 ${keys.length} 筆歷程檔案`;
+    }
+
+    if (keys.length === 0) {
+      els.wbArchiveListContainer.innerHTML = `
+        <div style="color: var(--text-muted); text-align: center; font-size: 14px; padding: 36px 20px; background: var(--bg-card); border-radius: 10px; border: 1.5px dashed var(--border-color); line-height: 1.6;">
+          目前尚無儲存的白板歷程檔案。<br>
+          您可以點選上方「➕ 儲存目前白板」將課堂的畫布筆記永久儲存在雲端！
+        </div>
+      `;
+      return;
+    }
+
+    // 依建立時間倒序
+    const sortedKeys = keys.sort((a, b) => {
+      const itemA = archiveBank[a];
+      const itemB = archiveBank[b];
+      return (itemB.createdAt || 0) - (itemA.createdAt || 0);
+    });
+
+    const query = (archiveSearchQuery || '').toLowerCase().trim();
+    const filteredKeys = sortedKeys.filter(k => {
+      if (!query) return true;
+      const item = archiveBank[k];
+      if (!item) return false;
+      const title = (item.title || '').toLowerCase();
+      const creator = (item.createdBy || '').toLowerCase();
+      return title.includes(query) || creator.includes(query);
+    });
+
+    if (filteredKeys.length === 0) {
+      els.wbArchiveListContainer.innerHTML = `
+        <div style="color: var(--text-muted); text-align: center; font-size: 14px; padding: 24px 20px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border-color);">
+          查無符合「${escapeHtml(archiveSearchQuery)}」的歷程檔案
+        </div>
+      `;
+      return;
+    }
+
+    els.wbArchiveListContainer.innerHTML = filteredKeys.map(k => {
+      const item = archiveBank[k];
+      const cCount = item.canvasCount || (item.canvases ? Object.keys(item.canvases).length : 1);
+      const pCount = item.pageCount || (item.pages ? Object.keys(item.pages).length : 1);
+      const oCount = item.objectCount !== undefined ? item.objectCount : 0;
+      const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleString('zh-TW', { hour12: false }) : '未知時間';
+
+      return `
+        <div class="wb-archive-card" data-archive-id="${k}">
+          <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-weight: 700; font-size: 15px; color: var(--text-primary);">${escapeHtml(item.title || '白板歷程筆記')}</span>
+              <span style="background: rgba(102, 126, 234, 0.12); color: var(--accent-color); font-size: 14px; padding: 2px 8px; border-radius: 6px; font-weight: 600;">🎨 ${cCount} 畫布</span>
+              <span style="background: rgba(52, 199, 89, 0.12); color: var(--success-color); font-size: 14px; padding: 2px 8px; border-radius: 6px; font-weight: 600;">📄 ${pCount} 頁</span>
+              <span style="background: rgba(249, 115, 22, 0.12); color: #f97316; font-size: 14px; padding: 2px 8px; border-radius: 6px; font-weight: 600;">✏️ ${oCount} 物件</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; font-size: 14px; color: var(--text-secondary); flex-wrap: wrap;">
+              <span>👤 建立者：${escapeHtml(item.createdBy || '老師')}</span>
+              <span>🕒 時間：${dateStr}</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="presentation-tool-btn active btn-wb-load-archive" data-id="${k}" style="height: 32px; padding: 0 12px; font-size: 14px; border-radius: 10px; font-weight: bold;" title="載入此白板檔案">🚀 載入</button>
+            <button type="button" class="presentation-tool-btn btn-wb-copy-archive" data-id="${k}" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold; color: var(--accent-color); border-color: var(--accent-color);" title="複製此白板歷程到其他班級">📤 複製</button>
+            <button type="button" class="presentation-tool-btn btn-wb-download-archive" data-id="${k}" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px; font-weight: bold;" title="下載此歷程的 JSON 檔案">📥 下載</button>
+            <button type="button" class="presentation-tool-btn danger btn-wb-delete-archive" data-id="${k}" style="height: 32px; padding: 0 10px; font-size: 14px; border-radius: 10px;" title="刪除此歷程">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 綁定卡片按鈕事件
+    els.wbArchiveListContainer.querySelectorAll('.btn-wb-load-archive').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-id');
+        openArchiveLoadChoice(id);
+      };
+    });
+
+    els.wbArchiveListContainer.querySelectorAll('.btn-wb-copy-archive').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-id');
+        copyWhiteboardArchive(id);
+      };
+    });
+
+    els.wbArchiveListContainer.querySelectorAll('.btn-wb-download-archive').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-id');
+        downloadWhiteboardArchiveJSON(id);
+      };
+    });
+
+    els.wbArchiveListContainer.querySelectorAll('.btn-wb-delete-archive').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-id');
+        deleteWhiteboardArchive(id);
+      };
+    });
+  }
+
+  // 儲存目前白板為雲端歷程
+  async function saveCurrentWhiteboardToCloud() {
+    if (!roomRef) {
+      flashToast('⚠️ 資料庫未連線，無法儲存');
+      return;
+    }
+
+    const now = new Date();
+    const defaultTitle = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} 課堂筆記`;
+
+    showWhiteboardPrompt('☁️ 儲存白板為雲端歷程檔案', '請輸入此筆記存檔名稱：', defaultTitle, async (title) => {
+      if (!title || !title.trim()) return;
+      const finalTitle = title.trim();
+      flashToast('正在打包雲端歷程檔案...');
+
+      try {
+        const curCanvases = state.canvases || { main: { id: 'main', name: '主白板', pages: ['page_1'] } };
+        const allPagesData = {};
+        let totalPages = 0;
+        let totalObjects = 0;
+
+        for (const cId of Object.keys(curCanvases)) {
+          const c = curCanvases[cId];
+          const pages = (c && c.pages) || ['page_1'];
+          for (const pId of pages) {
+            totalPages++;
+            const pageKey = `${cId}_${pId}`;
+            if (cId === state.activeCanvasId && pId === state.activePageId) {
+              allPagesData[pageKey] = { objects: { ...state.objects } };
+              totalObjects += Object.keys(state.objects || {}).length;
+            } else {
+              const snap = await roomRef.child('pages').child(pageKey).once('value');
+              const val = snap.val() || { objects: {} };
+              allPagesData[pageKey] = val;
+              totalObjects += Object.keys((val && val.objects) || {}).length;
+            }
+          }
+        }
+
+        const archiveId = `wb_arc_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        const archiveData = {
+          id: archiveId,
+          title: finalTitle,
+          createdAt: Date.now(),
+          createdBy: myName || '老師',
+          canvasCount: Object.keys(curCanvases).length,
+          pageCount: totalPages,
+          objectCount: totalObjects,
+          activeCanvasId: state.activeCanvasId,
+          activePageId: state.activePageId,
+          canvases: curCanvases,
+          pages: allPagesData
+        };
+
+        const ref = getArchivesRef();
+        if (!ref) throw new Error('雲端歷程資料庫未就緒');
+        await ref.child(archiveId).set(archiveData);
+        flashToast('✅ 白板歷程檔案已成功儲存至雲端！');
+      } catch (err) {
+        console.error('儲存白板歷程失敗:', err);
+        flashToast('❌ 儲存失敗：' + err.message);
+      }
+    });
+  }
+
+  // 選擇載入模式 (大家繼續編輯 vs 唯讀觀摩模式)
+  function openArchiveLoadChoice(archiveId) {
+    const archive = archiveBank[archiveId];
+    if (!archive) return;
+    pendingLoadArchiveId = archiveId;
+    if (els.wbLoadChoiceArchiveTitle) {
+      els.wbLoadChoiceArchiveTitle.textContent = archive.title || '白板歷程筆記';
+    }
+    if (els.wbArchiveLoadChoiceModal) {
+      els.wbArchiveLoadChoiceModal.classList.add('open');
+      els.wbArchiveLoadChoiceModal.style.display = 'flex';
+    }
+  }
+
+  function closeArchiveLoadChoice() {
+    pendingLoadArchiveId = null;
+    if (els.wbArchiveLoadChoiceModal) {
+      els.wbArchiveLoadChoiceModal.classList.remove('open');
+      els.wbArchiveLoadChoiceModal.style.display = 'none';
+    }
+  }
+
+  // 載入白板歷程檔案
+  async function loadWhiteboardArchive(archiveId, mode = 'edit') {
+    if (!roomRef) return;
+    const archive = archiveBank[archiveId];
+    if (!archive) {
+      flashToast('❌ 找不到該歷程檔案！');
+      return;
+    }
+
+    flashToast('正在載入白板歷程檔案...');
+
+    try {
+      const canvasesData = archive.canvases || { main: { id: 'main', name: archive.title || '主白板', pages: ['page_1'] } };
+      const pagesData = archive.pages || {};
+
+      // 1. 寫入 pages 與 canvases 到 Firebase
+      await roomRef.child('pages').set(pagesData);
+      await roomRef.child('canvases').set(canvasesData);
+
+      // 2. 模式設定 (唯讀 vs 共編)
+      const isReadOnly = mode === 'readonly';
+      const settingsUpdate = {
+        studentCanEdit: !isReadOnly,
+        canMoveOthers: !isReadOnly
+      };
+      await roomRef.child('settings').update(settingsUpdate);
+      state.settings.studentCanEdit = !isReadOnly;
+      state.settings.canMoveOthers = !isReadOnly;
+      applySettingsUI();
+
+      // 3. 切換至存檔的起始頁面
+      state.canvases = canvasesData;
+      const targetCanvasId = archive.activeCanvasId && canvasesData[archive.activeCanvasId] ? archive.activeCanvasId : Object.keys(canvasesData)[0];
+      const targetCanvas = canvasesData[targetCanvasId] || { pages: ['page_1'] };
+      const targetPageId = archive.activePageId && targetCanvas.pages && targetCanvas.pages.includes(archive.activePageId) ? archive.activePageId : (targetCanvas.pages[0] || 'page_1');
+
+      switchCanvasAndPage(targetCanvasId, targetPageId, true);
+
+      closeWhiteboardArchiveModal();
+      flashToast(isReadOnly ? '🔒 已載入白板歷程（學生唯讀觀摩模式）！' : '✅ 已載入白板歷程（大家可繼續編輯）！');
+    } catch (err) {
+      console.error('載入白板歷程失敗:', err);
+      flashToast('❌ 載入失敗：' + err.message);
+    }
+  }
+
+  // 下載白板歷程 JSON
+  function downloadWhiteboardArchiveJSON(archiveId) {
+    const archive = archiveBank[archiveId];
+    if (!archive) return;
+    const backupData = {
+      app: '即時互動白板',
+      version: '3.10.12',
+      title: archive.title,
+      exportTime: new Date(archive.createdAt || Date.now()).toISOString(),
+      canvasCount: archive.canvasCount,
+      pageCount: archive.pageCount,
+      objectCount: archive.objectCount,
+      canvases: archive.canvases,
+      pages: archive.pages
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.download = `${archive.title || '白板歷程'}_備份.json`;
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    flashToast('✅ 歷程檔案 JSON 已下載！');
+  }
+
+  // 刪除白板歷程
+  function deleteWhiteboardArchive(archiveId) {
+    const archive = archiveBank[archiveId];
+    if (!archive) return;
+    showWhiteboardConfirm('🗑️ 刪除白板歷程', `確定要刪除「${archive.title || '此歷程檔案'}」嗎？刪除後無法復原。`, () => {
+      const ref = getArchivesRef();
+      if (ref) {
+        ref.child(archiveId).remove().then(() => {
+          flashToast('🗑️ 歷程檔案已刪除');
+        }).catch(err => {
+          flashToast('❌ 刪除失敗：' + err.message);
+        });
+      }
+    });
+  }
+
+  // 跨班複製白板歷程
+  async function copyWhiteboardArchive(archiveId) {
+    const archive = archiveBank[archiveId];
+    if (!archive) return;
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+
+    if (window.parent && window.parent.app && typeof window.parent.app.openSingleItemCopyModal === 'function') {
+      window.parent.app.openSingleItemCopyModal('whiteboardArchive', archiveId);
+      return;
+    }
+
+    // 獨立視窗模式：使用原生 Prompt 選擇目標班級
+    if (window.ClassRoomManager && typeof window.ClassRoomManager.copySingleItem === 'function') {
+      showWhiteboardPrompt('📤 跨班複製白板歷程', '請輸入欲複製到的目標班級代碼（留空代表免代碼公開大廳）：', '', async (tgtCode) => {
+        try {
+          flashToast('正在複製到目標班級...');
+          await window.ClassRoomManager.copySingleItem({
+            moduleType: 'whiteboardArchive',
+            itemId: archiveId,
+            targetCodes: [tgtCode ? tgtCode.trim() : ''],
+            sourceCode: window.currentClassCode || ''
+          });
+          flashToast('🎉 成功複製白板歷程至目標班級！');
+        } catch (err) {
+          flashToast('❌ 複製失敗：' + err.message);
+        }
+      });
+      return;
+    }
+
+    flashToast('⚠️ 班級管理器未就緒');
   }
 
   // 通用畫布頁面渲染至離線 Canvas

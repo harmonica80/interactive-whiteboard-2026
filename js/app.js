@@ -18183,6 +18183,22 @@ class App {
         const limitText = limitVal === 0 ? '不限次數' : `每人限 ${limitVal} 次`;
         previewTitle = `【${wc.imageUrl ? '圖文題' : '文字題'}】${wc.title || '即時互動文字雲'}（${limitText}）`;
       }
+    } else if (moduleType === 'whiteboardArchive') {
+      typeName = '白板歷程檔案';
+      badgeText = '🎨 互動白板';
+      let arc = null;
+      if (window.whiteboardArchives && window.whiteboardArchives[itemId]) {
+        arc = window.whiteboardArchives[itemId];
+      }
+      if (!arc && window.whiteboardCore && window.whiteboardCore.archiveBank) {
+        arc = window.whiteboardCore.archiveBank[itemId];
+      }
+      if (arc) {
+        const cCount = arc.canvasCount || (arc.canvases ? Object.keys(arc.canvases).length : 1);
+        const pCount = arc.pageCount || (arc.pages ? Object.keys(arc.pages).length : 1);
+        const oCount = arc.objectCount !== undefined ? arc.objectCount : 0;
+        previewTitle = `🎨 ${arc.title || '白板歷程筆記'}（${cCount} 個畫布 / ${pCount} 個分頁 / ${oCount} 個物件）`;
+      }
     }
 
     if (titleModal) {

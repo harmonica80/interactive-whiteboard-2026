@@ -336,6 +336,71 @@
       border-color: var(--accent-hover);
     }
 
+    /* 題庫管理風格通用工具列按鈕 (與主系統 100% 統一連動主題色) */
+    .presentation-tool-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .presentation-tool-btn:hover {
+      background: var(--bg-input);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .presentation-tool-btn.active {
+      background: var(--accent-color);
+      color: #ffffff;
+      border-color: var(--accent-color);
+    }
+
+    .presentation-tool-btn.active:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .presentation-tool-btn.danger {
+      color: var(--danger-color);
+      border-color: rgba(220, 53, 69, 0.35);
+      background: rgba(220, 53, 69, 0.08);
+    }
+
+    .presentation-tool-btn.danger:hover {
+      background: rgba(220, 53, 69, 0.16);
+    }
+
+    /* 白板歷程卡片 */
+    .wb-archive-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      gap: 12px;
+      transition: all 0.15s ease;
+    }
+
+    .wb-archive-card:hover {
+      border-color: var(--accent-color);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
     /* 頁籤清單 */
     .pages-tabs-wrapper {
       display: flex;
@@ -1598,6 +1663,7 @@
           <button class="btn-pill" id="btnAddCanvas">+ 畫布</button>
           <button class="btn-pill" id="btnRenameCanvas" title="修改目前畫布名稱">✏️ 重新命名</button>
           <button class="btn-pill btn-danger" id="btnDeleteCanvas" title="刪除目前畫布" style="display:none;">🗑️ 刪除畫布</button>
+          <button class="btn-pill" id="btnCloudArchive" title="白板雲端歷程檔案庫管理">☁️ 雲端存檔庫</button>
           <button class="btn-pill purple" id="btnExport" title="匯入與匯出畫布資料">
             <span>📁 匯入 / 匯出</span>
           </button>
@@ -1953,6 +2019,11 @@
           <button class="btn-close" id="btnCloseExportModal">✕</button>
         </div>
         <div style="padding: 24px; display: flex; flex-direction: column; gap: 14px;">
+          <!-- 0. 雲端歷程檔案管理 -->
+          <button class="btn-export-choice btn-export-primary" id="btnOpenCloudArchiveFromExport" style="background: var(--accent-color); color: #fff;">
+            <span style="font-size: 20px;">☁️</span>
+            <span>白板雲端歷程檔案庫（線上存檔、載入、跨班複製）</span>
+          </button>
           <!-- 1. 匯出目前畫布為 PDF (所有頁面) -->
           <button class="btn-export-choice btn-export-primary" id="btnExportPdf">
             <span style="font-size: 20px;">📄</span>
@@ -2018,7 +2089,83 @@
         </div>
       </div>
     </div>
-    <!-- 8. 白板專屬全螢幕友好通用彈窗 (支援輸入名稱與確認對話框，避免原生 prompt/confirm/alert 造成全螢幕被強制中斷退回視窗) -->
+    <!-- 8. 白板雲端歷程檔案庫彈窗 (圖 1 題庫管理樣式) -->
+    <div class="modal-overlay" id="whiteboardArchiveModal" style="display: none; z-index: 20000;">
+      <div class="modal-card" style="max-width: 820px; width: 92%;">
+        <div class="modal-header">
+          <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">☁️</span>
+            <span style="font-size: 16px; font-weight: 700;">白板雲端歷程檔案庫</span>
+          </div>
+          <button class="btn-close" id="btnCloseWbArchiveModal" title="關閉">✕</button>
+        </div>
+        
+        <div style="padding: 18px 24px 24px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; max-height: calc(85vh - 70px);">
+          <!-- 頂部操作按鈕列 (題庫管理工具列樣式) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button type="button" class="presentation-tool-btn active" id="btnSaveCurrentWbToCloud" style="height: 34px; padding: 0 14px; font-size: 14px; border-radius: 10px;" title="將目前課堂白板包含所有畫布與分頁儲存為一筆雲端歷程">
+                ➕ 儲存目前白板
+              </button>
+              <button type="button" class="presentation-tool-btn" id="btnArchiveExportJson" style="height: 34px; padding: 0 12px; font-size: 14px; border-radius: 10px;" title="匯出目前白板為本機 JSON 備份檔">
+                📤 匯出目前白板 JSON
+              </button>
+              <button type="button" class="presentation-tool-btn" id="btnArchiveImportJson" style="height: 34px; padding: 0 12px; font-size: 14px; border-radius: 10px;" title="從本機匯入白板備份檔">
+                📥 匯入白板 JSON
+              </button>
+              <button type="button" class="presentation-tool-btn" id="btnRefreshWbArchives" style="height: 34px; padding: 0 10px; font-size: 14px; border-radius: 10px;" title="重新整理雲端歷程清單">
+                🔄 重新整理
+              </button>
+            </div>
+            <span id="wbArchiveCountBadge" style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">共 0 筆歷程檔案</span>
+          </div>
+
+          <!-- 搜尋過濾列 -->
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="wbArchiveSearchInput" placeholder="🔍 搜尋歷程名稱、建立者姓名..." style="flex: 1; height: 38px; padding: 0 14px; border-radius: 10px; border: 1.5px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 14px; outline: none; transition: border-color 0.2s;">
+          </div>
+
+          <!-- 歷程檔案卡片清單容器 -->
+          <div id="wbArchiveListContainer" style="display: flex; flex-direction: column; gap: 10px; min-height: 180px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
+            <!-- 動態渲染歷程卡片 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. 載入模式選擇對話框 (大家繼續編輯 vs 唯讀觀摩模式) -->
+    <div class="modal-overlay" id="wbArchiveLoadChoiceModal" style="display: none; z-index: 21000;">
+      <div class="modal-card" style="max-width: 500px; width: 92%;">
+        <div class="modal-header">
+          <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">🚀</span>
+            <span style="font-size: 16px; font-weight: 700;">載入白板歷程檔案</span>
+          </div>
+          <button class="btn-close" id="btnCloseWbLoadChoiceModal">✕</button>
+        </div>
+        <div style="padding: 20px 24px;">
+          <p style="font-size: 14px; color: var(--text-primary); margin: 0 0 6px 0; font-weight: 600;">
+            即將載入：<span id="wbLoadChoiceArchiveTitle" style="color: var(--accent-color);">--</span>
+          </p>
+          <p style="font-size: 14px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.5;">
+            請選擇載入白板後的課堂共編模式：
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button type="button" class="presentation-tool-btn active" id="btnConfirmLoadEdit" style="height: 44px; font-size: 14px; border-radius: 10px; font-weight: bold; justify-content: flex-start; padding: 0 16px;">
+              ✏️ 大家繼續編輯（全班可共同書寫、移動自己物件與新增頁面）
+            </button>
+            <button type="button" class="presentation-tool-btn" id="btnConfirmLoadReadonly" style="height: 44px; font-size: 14px; border-radius: 10px; font-weight: bold; justify-content: flex-start; padding: 0 16px; border-color: var(--accent-color); color: var(--accent-color);">
+              🔒 唯讀觀摩模式（鎖定學生編輯權限，供全班檢視複習）
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 12px 24px; justify-content: flex-end;">
+          <button class="btn-secondary" id="btnCancelLoadChoice" style="height: 34px; padding: 0 16px; font-size: 14px; border-radius: 10px;">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. 白板專屬全螢幕友好通用彈窗 (支援輸入名稱與確認對話框，避免原生 prompt/confirm/alert 造成全螢幕被強制中斷退回視窗) -->
     <div class="modal-overlay" id="whiteboardDialogModal" style="display: none; z-index: 99999;">
       <div class="modal-card" style="max-width: 420px;">
         <div class="modal-header">
@@ -2041,6 +2188,6 @@
 
   </div>
 
-  <script src="js/whiteboard_core.js?v=3010"></script>
+  <script src="js/whiteboard_core.js?v=3011"></script>
 </body>
 </html>

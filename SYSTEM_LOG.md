@@ -1,4 +1,28 @@
 # System Log
+## 2026-10-26 - 互動白板雲端歷程檔案庫功能實作 (支援雲端存檔、共編/唯讀雙模式載入、跨班級複製與刪除)
+- 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `js/firebase-config.js`, `js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **互動白板雲端歷程檔案庫介面與樣式實作 (`whiteboard.html`)**：
+     - 於頂部工具列及匯入/匯出彈窗內新增「`☁️ 雲端存檔庫`」入口按鈕（`#btnCloudArchive`、`#btnOpenCloudArchiveFromExport`）。
+     - 新增全螢幕相容之「白板雲端歷程檔案庫」彈窗（`#whiteboardArchiveModal`），完全遵循圖 1 題庫管理規範：
+       - 頂部操作列配備「➕ 儲存目前白板」、「📤 匯出目前白板 JSON」、「📥 匯入白板 JSON」與「🔄 重新整理」按鈕，全數採用 `.presentation-tool-btn` 樣式。
+       - 具備即時搜尋框（支援依筆記名稱與建立者篩選）與檔案筆數徽章。
+       - 歷程卡片完整顯示名稱、建立者、建立時間、畫布數、分頁數與物件數彩色標籤。
+       - 每張卡片提供「🚀 載入」、「📤 複製」、「📥 下載」與「🗑️ 刪除」標準功能按鈕，高度 32px、圓角 10px、字級 `>= 14px`。
+     - 新增「載入模式選擇對話框」（`#wbArchiveLoadChoiceModal`），提供教師選擇「✏️ 大家繼續編輯」或「🔒 唯讀觀摩模式」。
+  2. **互動白板雲端歷程核心邏輯實作 (`js/whiteboard_core.js`)**：
+     - 實作完整白板快照打包與雲端儲存：將所有畫布（`canvases`）與所有頁面之物件（`pages`）整合成結構化歷程，寫入 Firebase `whiteboard_archives` 專屬路徑。
+     - 實作雙模式載入機制：
+       - **✏️ 大家繼續編輯**：將存檔畫布與頁面還原至當前課堂，開啟學生編輯權限，全班可繼續共同繪圖與貼便利貼。
+       - **🔒 唯讀觀摩模式**：將存檔內容還原至白板，並將學生編輯權限鎖定為唯讀狀態，提供全班觀摩複習。
+     - 實作歷程檔案本機 JSON 備份下載與刪除功能。
+     - 連動全域 CSS 主題變數，並依學生端唯讀原則於同學端隱藏教師專屬之雲端存檔與管理控制項。
+  3. **跨班級教材複製中心串接 (`js/firebase-config.js`, `js/app.js`)**：
+     - 在 `ClassRoomManager.copySingleItem` 中擴充支援 `moduleType === 'whiteboardArchive'`，支援從來源路徑複製白板歷程並乾淨寫入目標班級。
+     - 在 `openSingleItemCopyModal` 中加入白板歷程檔案預覽標籤（`🎨 互動白板`）與畫布/分頁/物件數量摘要呈現。
+  4. **快取版本號更新與合規驗證 (`index.html`, `whiteboard.html`)**：
+     - 更新 `whiteboard.html?v=3011`、`js/whiteboard_core.js?v=3011`。
+     - 通過 `npm run check:syntax` 語法檢查，嚴格遵循「記錄」用語規範，全案無「紀錄」禁字。
 ## 2026-10-26 - 清理更新歷程歷史版本卡片殘留之最新版本標籤
 - 影響檔案：`index.html`, `SYSTEM_LOG.md`。
 - 修改項目：

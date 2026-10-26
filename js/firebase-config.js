@@ -965,6 +965,20 @@ window.ClassRoomManager = {
       if (!itemData && window.wordCloud && window.wordCloud.historyBank) {
         itemData = window.wordCloud.historyBank[itemId];
       }
+    } else if (moduleType === 'whiteboardArchive') {
+      const snap = await rawRef(srcPath(`whiteboard_archives/${itemId}`)).once('value');
+      itemData = snap.val();
+      if (!itemData) {
+        const pSnap = await rawRef(srcPath('whiteboard_archives')).once('value');
+        const pVal = pSnap.val();
+        if (pVal) itemData = pVal[itemId];
+      }
+      if (!itemData && window.whiteboardArchives) {
+        itemData = window.whiteboardArchives[itemId];
+      }
+      if (!itemData && window.parent && window.parent.whiteboardArchives) {
+        itemData = window.parent.whiteboardArchives[itemId];
+      }
     }
 
     if (!itemData) {
@@ -1090,6 +1104,13 @@ window.ClassRoomManager = {
         delete newWcItem.savedWords;
         delete newWcItem.totalSubmissions;
         await rawRef(tgtPath(tCode, `quiz/wordCloud/history/${newId}`)).set(newWcItem);
+      } else if (moduleType === 'whiteboardArchive') {
+        const newArchiveItem = {
+          ...itemData,
+          id: newId,
+          createdAt: Date.now()
+        };
+        await rawRef(tgtPath(tCode, `whiteboard_archives/${newId}`)).set(newArchiveItem);
       }
 
       copiedTargets.push(tCode);

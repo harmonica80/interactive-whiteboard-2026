@@ -6438,7 +6438,7 @@ Python</pre>
         const isAdmin = window.app && window.app.isAdmin;
         const userName = window.app && window.app.getCurrentUserName ? window.app.getCurrentUserName() : '';
         const uid = window.app && window.app.getUserId ? window.app.getUserId() : '';
-        iframe.src = `whiteboard.html?v=3010&role=${isAdmin ? 'teacher' : 'student'}&name=${encodeURIComponent(userName)}&uid=${encodeURIComponent(uid)}`;
+        iframe.src = `whiteboard.html?v=3011&role=${isAdmin ? 'teacher' : 'student'}&name=${encodeURIComponent(userName)}&uid=${encodeURIComponent(uid)}`;
       }
     });
   </script>
