@@ -32,7 +32,7 @@
           <h1 class="header-title">📚 即時互動白板</h1>
           <button class="menu-tab teacher-share-top-btn desktop-only" data-target="panel-teacher-shares" title="教師分享">📢 教師分享</button>
           <button type="button" id="btnLoginSharesNotice" class="desktop-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" title="查看最新課堂公告">🔔 公告 (<span id="txtLoginSharesNoticeCount">0</span>)</button>
-          <button class="menu-tab presentation-top-btn desktop-only" data-target="panel-presentation" title="同步簡報">📽️ 同步簡報</button>
+          <button class="menu-tab presentation-top-btn desktop-only" data-target="panel-presentation" title="同步簡報">📊 同步簡報</button>
         </div>
         <p class="header-subtitle" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span>課堂互動、提問、測驗、分享</span>
@@ -57,7 +57,7 @@
         </div>
         <div class="header-buttons">
           <button class="menu-tab teacher-share-top-btn mobile-only" data-target="panel-teacher-shares" title="教師分享">教師分享</button>
-          <button class="menu-tab presentation-top-btn mobile-only" data-target="panel-presentation" title="同步簡報">📽️ 簡報</button>
+          <button class="menu-tab presentation-top-btn mobile-only" data-target="panel-presentation" title="同步簡報">📊 簡報</button>
           <button type="button" id="mobileLoginSharesNoticeBtn" class="mobile-only btn-login-shares-notice" onclick="window.app && window.app.openLoginSharesModal(true)" style="display: none;" title="查看最新課堂公告">🔔 (<span id="txtMobileLoginSharesNoticeCount">0</span>)</button>
           <!-- 連線狀態指示圖示移至鈴鐺右側 -->
           <div id="connectionStatus" class="connection-status disconnected" title="連線狀態：連線中..."></div>
@@ -872,7 +872,7 @@
                 
                 <!-- 空白無頁面提示 -->
                 <div class="presentation-screen-empty-hint" id="presentationEmptyHint">
-                  <span style="font-size: 36px;">📽️</span>
+                  <span style="font-size: 36px;">📊</span>
                   <span>從左側新增頁面開始建立簡報</span>
                 </div>
 
@@ -2724,7 +2724,7 @@
                 <!-- 同步簡報 -->
                 <div class="whiteboard-feature-card" data-feature-key="panel-presentation">
                   <div class="wf-card-info">
-                    <div class="wf-card-title">📽️ 同步簡報</div>
+                    <div class="wf-card-title">📊 同步簡報</div>
                     <div class="wf-card-desc">前台頂部多頁同步簡報展示、翻頁廣播與全螢幕播放系統</div>
                   </div>
                   <label class="ios-switch">
@@ -5867,12 +5867,12 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=421"></script>
+  <script src="js/app.js?v=422"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
   <script src="js/word_cloud.js?v=399"></script>
-  <script src="js/presentation_core.js?v=3123"></script>
+  <script src="js/presentation_core.js?v=3124"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">

@@ -1,4 +1,14 @@
 # System Log
+## 2026-10-26 - 同步簡報圖示更新為通用簡報圖示 (替換投影機圖示為經典簡報圖示 📊，避免與影片分享混淆)
+- 影響檔案：`index.html`, `js/presentation_core.js`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **同步簡報圖示更新為通用簡報圖示 📊 (`index.html`, `js/presentation_core.js`, `js/app.js`)**：
+     - 將同步簡報於頂部主功能分頁標籤（電腦版與手機版）、空畫布提示、後台管理功能卡片以及跨班級複製中心之圖示由原攝影投影機 `📽️` 更新為教育與簡報軟體最通用的「`📊 同步簡報`」。
+     - 徹底解決原圖示與「`🎥 影片分享`」及「`🎬 影片出題測驗`」在系統 Emoji 渲染下過於雷同難以辨識的問題。
+  2. **合規檢測**：
+     - 通過 `node --check js/presentation_core.js`、`node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-26 - 同步簡報載入模式免自動廣播、頂部版面整合節省空間、互動權限文案與設定名稱優化
 - 影響檔案：`index.html`, `js/presentation_core.js`, `SYSTEM_LOG.md`。
 - 修改項目：

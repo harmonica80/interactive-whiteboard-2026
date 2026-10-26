@@ -1640,7 +1640,7 @@
             `;
           } else {
             els.emptyHint.innerHTML = `
-              <span style="font-size: 36px;">📽️</span>
+              <span style="font-size: 36px;">📊</span>
               <span>從左側新增頁面開始建立簡報</span>
             `;
           }

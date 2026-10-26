@@ -18201,7 +18201,7 @@ class App {
       }
     } else if (moduleType === 'presentationMaterial') {
       typeName = '簡報教材';
-      badgeText = '📽️ 同步簡報';
+      badgeText = '📊 同步簡報';
       let mat = null;
       if (window.presentationManager && window.presentationManager.materialsBank) {
         mat = window.presentationManager.materialsBank[itemId];
@@ -18209,7 +18209,7 @@ class App {
       if (mat) {
         const sCount = mat.slideCount || (mat.slides ? mat.slides.length : 0);
         const qCount = mat.questionCount !== undefined ? mat.questionCount : 0;
-        previewTitle = `📽️ ${mat.title || '簡報教材'}（${sCount} 頁簡報${qCount > 0 ? ` / ${qCount} 道互動題` : ''}）`;
+        previewTitle = `📊 ${mat.title || '簡報教材'}（${sCount} 頁簡報${qCount > 0 ? ` / ${qCount} 道互動題` : ''}）`;
       }
     }
 
