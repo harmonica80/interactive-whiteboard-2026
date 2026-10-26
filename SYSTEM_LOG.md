@@ -1,4 +1,14 @@
 # System Log
+## 2026-10-26 - 專注力測驗前台大廳排版優化 (移除內層框線底色、與影片出題前台格式統一置中)
+- 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **專注力測驗前台大廳介面優化 (`index.html`)**：
+     - 移除 `#studentGameLobby` 內層原有的白色/卡片底色與框線卡片容器。
+     - 直接於外層虛線框（`var(--bg-input)`，`1px dashed var(--border-color)`）內將腦袋圖示 `🧠`、大廳標題、說明文字與後台快捷按鈕置中排版，達到與影片出題前台視角完全一致的視覺體驗。
+  2. **合規檢測**：
+     - 通過 `npm run check:syntax` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-26 - 互動白板匯出/匯入彈窗優化、雲端檔案庫按鈕清理與命名調整
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `SYSTEM_LOG.md`。
 - 修改項目：
