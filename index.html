@@ -4628,16 +4628,19 @@
           </div>
         </div>
 
-        <!-- 96款可愛頭像挑選區 (單張雪碧圖高效裁切載入) -->
+        <!-- 可愛頭像挑選區 (單張雪碧圖高效裁切載入，支援 240+ 款角色) -->
         <div style="background: var(--bg-input); padding: 12px; border-radius: 14px; border: 1px solid var(--border-color);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
             <div style="font-size: 14px; font-weight: bold; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">
-              <span>🐾 挑選可愛頭像 (共 96 款)：</span>
+              <span id="txtAvatarTotalCountTitle">🐾 挑選可愛頭像 (共 240 款)：</span>
             </div>
             <div style="display: flex; gap: 4px; flex-wrap: wrap;">
               <button type="button" class="btn-avatar-tab" id="btnAvatarTab0" onclick="window.app.switchAvatarSheetTab(0)" style="display: none; padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-weight: bold;">🏫 班級專屬 (48)</button>
               <button type="button" class="btn-avatar-tab active" id="btnAvatarTab1" onclick="window.app.switchAvatarSheetTab(1)" style="padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--accent-color); color: #fff; cursor: pointer; font-weight: bold;">🐱 萌寵奇幻 (48)</button>
               <button type="button" class="btn-avatar-tab" id="btnAvatarTab2" onclick="window.app.switchAvatarSheetTab(2)" style="padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-weight: bold;">🦁 森林海洋 (48)</button>
+              <button type="button" class="btn-avatar-tab" id="btnAvatarTab3" onclick="window.app.switchAvatarSheetTab(3)" style="padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-weight: bold;">🥦 蔬菜水果 (48)</button>
+              <button type="button" class="btn-avatar-tab" id="btnAvatarTab4" onclick="window.app.switchAvatarSheetTab(4)" style="padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-weight: bold;">🍔 食品零食 (48)</button>
+              <button type="button" class="btn-avatar-tab" id="btnAvatarTab5" onclick="window.app.switchAvatarSheetTab(5)" style="padding: 3px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-weight: bold;">🧋 台灣特色小吃 (48)</button>
             </div>
           </div>
           <!-- 8欄可捲動頭像格狀容器 -->
@@ -5958,7 +5961,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=438"></script>
+  <script src="js/app.js?v=439"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>

@@ -243,9 +243,18 @@ class App {
     ).trim();
   }
 
-  // ===== 可愛生物頭像管理 (96款透明背景雪碧圖與班級專屬頭像) =====
+  // ===== 可愛生物頭像管理 (經典96款雪碧圖 + 3套精選主題144款 + 班級專屬48款，共240~288款) =====
+  isPresetAvatarId(id) {
+    return typeof id === 'string' && /^(?:preset_)?(fruits|snacks|taiwan)_\d+$/.test(id);
+  }
+
+  isCustomOrPresetAvatarId(id) {
+    if (typeof id !== 'string') return false;
+    return id.startsWith('custom_') || this.isPresetAvatarId(id);
+  }
+
   setCurrentUserAvatar(avatarId) {
-    if (typeof avatarId === 'string' && avatarId.startsWith('custom_')) {
+    if (this.isCustomOrPresetAvatarId(avatarId)) {
       localStorage.setItem('user_avatar', avatarId);
       return avatarId;
     }
@@ -256,7 +265,7 @@ class App {
 
   getCurrentUserAvatar() {
     const saved = localStorage.getItem('user_avatar');
-    if (saved && typeof saved === 'string' && saved.startsWith('custom_')) {
+    if (saved && this.isCustomOrPresetAvatarId(saved)) {
       return saved;
     }
     if (saved !== null && saved !== undefined && saved !== '') {
@@ -285,19 +294,33 @@ class App {
   }
 
   renderAvatarHtml(avatarId, size = 20, extraClass = '') {
-    if (typeof avatarId === 'string' && avatarId.startsWith('custom_')) {
-      const idx = parseInt(avatarId.replace('custom_', ''), 10) || 0;
-      const customSheet = this.currentClassCustomAvatars;
-      if (customSheet && customSheet.url) {
+    if (typeof avatarId === 'string') {
+      const presetMatch = avatarId.match(/^(?:preset_)?(fruits|snacks|taiwan)_(\d+)$/);
+      if (presetMatch) {
+        const pType = presetMatch[1];
+        const idx = parseInt(presetMatch[2], 10) || 0;
         const col = idx % 8;
         const row = Math.floor(idx / 8);
         const x = ((col / 7) * 100).toFixed(2);
         const y = ((row / 5) * 100).toFixed(2);
-        return `<span class="${extraClass}" style="width: ${size}px; height: ${size}px; background-image: url('${customSheet.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; display: inline-block; border-radius: 50%; vertical-align: middle; flex-shrink: 0; background-repeat: no-repeat;" data-avatar-id="${avatarId}"></span>`;
+        const pUrl = `images/avatar_preset_${pType}.webp?v=4`;
+        return `<span class="cute-avatar-icon ${extraClass}" style="width: ${size}px; height: ${size}px; background-image: url('${pUrl}'); background-size: 800% 600%; background-position: ${x}% ${y}%;" data-avatar-id="${avatarId}"></span>`;
       }
-      const safeFallback = idx % 96;
-      const posStyle = this.getAvatarPositionStyle(safeFallback);
-      return `<span class="cute-avatar-icon ${extraClass}" style="width: ${size}px; height: ${size}px; ${posStyle}" data-avatar-id="${safeFallback}"></span>`;
+
+      if (avatarId.startsWith('custom_')) {
+        const idx = parseInt(avatarId.replace('custom_', ''), 10) || 0;
+        const customSheet = this.currentClassCustomAvatars;
+        if (customSheet && customSheet.url) {
+          const col = idx % 8;
+          const row = Math.floor(idx / 8);
+          const x = ((col / 7) * 100).toFixed(2);
+          const y = ((row / 5) * 100).toFixed(2);
+          return `<span class="cute-avatar-icon ${extraClass}" style="width: ${size}px; height: ${size}px; background-image: url('${customSheet.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%;" data-avatar-id="${avatarId}"></span>`;
+        }
+        const safeFallback = idx % 96;
+        const posStyle = this.getAvatarPositionStyle(safeFallback);
+        return `<span class="cute-avatar-icon ${extraClass}" style="width: ${size}px; height: ${size}px; ${posStyle}" data-avatar-id="${safeFallback}"></span>`;
+      }
     }
 
     const safeId = Math.max(0, Math.min(95, parseInt(avatarId, 10) || 0));
@@ -307,7 +330,7 @@ class App {
 
   getUserAvatar(userId, userName, itemAvatar) {
     if (itemAvatar !== undefined && itemAvatar !== null && itemAvatar !== '') {
-      if (typeof itemAvatar === 'string' && itemAvatar.startsWith('custom_')) return itemAvatar;
+      if (this.isCustomOrPresetAvatarId(itemAvatar)) return itemAvatar;
       const parsed = parseInt(itemAvatar, 10);
       if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
     }
@@ -318,7 +341,7 @@ class App {
     if (userId && this.registeredStudents && this.registeredStudents[userId]) {
       const s = this.registeredStudents[userId];
       if (s.avatar !== undefined && s.avatar !== null && s.avatar !== '') {
-        if (typeof s.avatar === 'string' && s.avatar.startsWith('custom_')) return s.avatar;
+        if (this.isCustomOrPresetAvatarId(s.avatar)) return s.avatar;
         const parsed = parseInt(s.avatar, 10);
         if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
       }
@@ -327,7 +350,7 @@ class App {
       for (const p of Object.values(this.onlinePresence)) {
         if (p && ((userId && p.userId === userId) || (userName && p.userName === userName))) {
           if (p.avatar !== undefined && p.avatar !== null && p.avatar !== '') {
-            if (typeof p.avatar === 'string' && p.avatar.startsWith('custom_')) return p.avatar;
+            if (this.isCustomOrPresetAvatarId(p.avatar)) return p.avatar;
             const parsed = parseInt(p.avatar, 10);
             if (!isNaN(parsed) && parsed >= 0 && parsed < 96) return parsed;
           }
@@ -612,6 +635,55 @@ class App {
     { id: 95, name: '純真小幽靈', emoji: '👻' }
   ];
 
+  // ===== 3 大精選主題圖鑑中繼資料 (蔬菜水果 48 款 + 食品零食 48 款 + 台灣特色小吃 48 款) =====
+  PRESET_AVATARS = {
+    fruits: {
+      key: 'fruits',
+      name: '蔬菜水果',
+      emoji: '🥦',
+      url: 'images/avatar_preset_fruits.webp?v=4',
+      count: 48,
+      items: [
+        '元氣紅蘋果', '鮮甜黃香蕉', '多汁香橙', '金鑽鳳梨', '紫晶葡萄', '清涼西瓜', '酸甜檸檬', '香甜芒果',
+        '水蜜桃寶', '紅潤小櫻桃', '元氣草莓', '陽光藍莓', '奇異果寶', '香甜哈密瓜', '脆甜紅心芭樂', '熟成木瓜',
+        '酪梨寶寶', '香甜無花果', '脆甜胡蘿蔔', '金黃香甜玉米', '翠綠綠花椰', '清甜高麗菜', '鮮紅小番茄', '爽脆小黃瓜',
+        '五彩甜椒', '紫亮茄子', '脆口洋蔥', '辛香大蒜', '白玉蘿蔔', '鮮綠青椒', '金黃南瓜', '香甜烤地瓜',
+        '綿密芋頭', '鮮嫩綠竹筍', '香醇香菇', '萌萌小洋菇', '翠綠豌豆', '清脆四季豆', '爽口脆蓮藕', '清熱苦瓜',
+        '養生秋葵', '翠綠嫩蘆筍', '鮮脆芹菜', '青蔥寶寶', '暖胃老薑', '鮮紅辣椒', '香甜栗子', '秋收黑菱角'
+      ]
+    },
+    snacks: {
+      key: 'snacks',
+      name: '食品零食',
+      emoji: '🍔',
+      url: 'images/avatar_preset_snacks.webp?v=4',
+      count: 48,
+      items: [
+        '酥香現烤可頌', '厚切金黃吐司', '香濃起司堡', '酥脆金黃薯條', '香濃牽絲披薩', '美味德式熱狗', '現炸酥脆炸雞', '炙燒嫩煎牛排',
+        '粉彩甜甜圈', '草莓杯子蛋糕', '濃郁熔岩黑巧', '繽紛馬卡龍', '香濃焦糖布丁', '鮮果香甜可麗餅', '軟Ｑ紅豆麻糬', '金黃鯛魚燒',
+        '香脆海苔仙貝', '酥脆波浪洋芋片', '奶油爆米花', '酥脆蛋捲', '手工香酥曲奇', '泡芙甜心', '脆皮雪糕', '雙球冰淇淋',
+        '草莓百匯聖代', '鮮果Ｑ嫩果凍', '彩虹旋轉棒棒糖', '酸甜小熊軟糖', '特級太妃糖', '香滑鮮奶酪', '濃郁抹茶磅蛋糕', '義式提拉米蘇',
+        '焦糖肉桂捲', '酥香葡式蛋塔', '經典比利時鬆餅', '法式焦脆可麗露', '瑞士生乳捲', '香酥烤蘋果派', '經典黑森林蛋糕', '法式瑪德蓮',
+        '堅果燕麥脆餅', '抹茶草莓大福', '法式蝴蝶酥', '彩虹千層蛋糕', '藍莓重乳酪塔', '雪莓娘大福', '粉彩棉花糖', '焦糖烤布蕾'
+      ]
+    },
+    taiwan: {
+      key: 'taiwan',
+      name: '台灣特色小吃',
+      emoji: '🧋',
+      url: 'images/avatar_preset_taiwan.webp?v=4',
+      count: 48,
+      items: [
+        '波霸黑糖珍奶', '十八摺小籠包', '九層塔鹽酥雞', '紅燒牛肉麵', '特級古早味滷肉飯', '酥脆蚵仔煎', '香烤大腸包小腸', '黃金酥脆臭豆腐',
+        '炭火窯烤胡椒餅', '香脆超大雞排', '彰化香Ｑ肉圓', '大腸蚵仔麵線', '外酥內嫩蔥抓餅', '傳統虎咬豬刈包', '冬瓜排骨酥湯', '淡水阿給',
+        '黃金酥炸鮮蚵', '府城筒仔米糕', '台式烤香腸', '台南度小月擔仔麵', '溫體牛肉湯', '清爽天然愛玉冰', '盛夏芒果雪花冰', '九份芋圓仙草凍',
+        '基隆廟口甜不辣', '花蓮炸蛋蔥油餅', '生炒鱔魚意麵', '香酥土魠魚羹', '炭烤頂級烏魚子', '爆漿脆皮車輪餅', '八里香酥雙胞胎', '傳統米血糕',
+        '超商五香茶葉蛋', '香濃木瓜牛奶', '古早味冬瓜檸檬', '旗山香蕉香芋冰', '手工黑糖芋圓', '新竹海瑞貢丸湯', '鹿港手工鮮肉包', '東港頂級黑鮪魚',
+        '旗津炭烤小卷', '宜蘭三星蔥油餅', '大溪黑豆干', '淡水特級鐵蛋', '台南金黃棺材板', '金門香酥貢糖', '澎湖黑糖糕', '嘉義火雞肉飯'
+      ]
+    }
+  };
+
   generateRandomCuteName() {
     const randomId = Math.floor(Math.random() * 96);
     const targetTab = randomId < 48 ? 1 : 2;
@@ -670,8 +742,9 @@ class App {
   // ===== 學生姓名與頭像設定彈窗 =====
   updateClassCustomAvatarUI() {
     const tab0 = document.getElementById('btnAvatarTab0');
+    const hasCustom = Boolean(this.currentClassCustomAvatars && this.currentClassCustomAvatars.url);
     if (tab0) {
-      if (this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
+      if (hasCustom) {
         tab0.style.display = 'inline-block';
         const isClass = (window.ClassRoomManager && typeof window.ClassRoomManager.isClassMode === 'function')
           ? window.ClassRoomManager.isClassMode()
@@ -680,7 +753,7 @@ class App {
         if (this.currentClassCustomAvatars.name) {
           tab0.textContent = `${prefix} (${this.currentClassCustomAvatars.name})`;
         } else {
-          tab0.textContent = `${prefix} (48款)`;
+          tab0.textContent = `${prefix} (48)`;
         }
       } else {
         tab0.style.display = 'none';
@@ -688,6 +761,13 @@ class App {
           this.switchAvatarSheetTab(1);
         }
       }
+    }
+
+    // 動態更新頭像總數計算：基礎 240 款（5 大分類 × 48 款），若有班級專屬自訂則為 288 款
+    const titleSpan = document.getElementById('txtAvatarTotalCountTitle');
+    if (titleSpan) {
+      const totalCount = hasCustom ? 288 : 240;
+      titleSpan.textContent = `🐾 挑選可愛頭像 (共 ${totalCount} 款)：`;
     }
   }
 
@@ -729,8 +809,19 @@ class App {
 
     this.updateClassCustomAvatarUI();
     this.selectedAvatarId = this.getCurrentUserAvatar();
-    if (typeof this.selectedAvatarId === 'string' && this.selectedAvatarId.startsWith('custom_') && this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
-      this.currentAvatarTab = 0;
+    if (typeof this.selectedAvatarId === 'string') {
+      if (this.selectedAvatarId.startsWith('custom_') && this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
+        this.currentAvatarTab = 0;
+      } else if (this.selectedAvatarId.startsWith('fruits_') || this.selectedAvatarId.startsWith('preset_fruits_')) {
+        this.currentAvatarTab = 3;
+      } else if (this.selectedAvatarId.startsWith('snacks_') || this.selectedAvatarId.startsWith('preset_snacks_')) {
+        this.currentAvatarTab = 4;
+      } else if (this.selectedAvatarId.startsWith('taiwan_') || this.selectedAvatarId.startsWith('preset_taiwan_')) {
+        this.currentAvatarTab = 5;
+      } else {
+        const parsedNum = parseInt(this.selectedAvatarId, 10);
+        this.currentAvatarTab = (!isNaN(parsedNum) && parsedNum >= 48) ? 2 : 1;
+      }
     } else {
       const parsedNum = parseInt(this.selectedAvatarId, 10);
       this.currentAvatarTab = (!isNaN(parsedNum) && parsedNum >= 48) ? 2 : 1;
@@ -754,10 +845,33 @@ class App {
 
     let displayName = '可愛生物';
     let displayEmoji = '🐾';
-    if (typeof avatarId === 'string' && avatarId.startsWith('custom_')) {
-      const idx = parseInt(avatarId.replace('custom_', ''), 10) || 0;
-      displayName = `班級角色 #${idx + 1}`;
-      displayEmoji = '🏫';
+
+    if (typeof avatarId === 'string') {
+      const presetMatch = avatarId.match(/^(?:preset_)?(fruits|snacks|taiwan)_(\d+)$/);
+      if (presetMatch) {
+        const pType = presetMatch[1];
+        const idx = parseInt(presetMatch[2], 10) || 0;
+        const meta = this.PRESET_AVATARS && this.PRESET_AVATARS[pType];
+        if (meta && meta.items && meta.items[idx]) {
+          displayName = meta.items[idx];
+          displayEmoji = meta.emoji;
+        } else {
+          const catName = meta ? meta.name : pType;
+          displayName = `${catName} #${idx + 1}`;
+          displayEmoji = meta ? meta.emoji : '✨';
+        }
+      } else if (avatarId.startsWith('custom_')) {
+        const idx = parseInt(avatarId.replace('custom_', ''), 10) || 0;
+        const sheet = this.currentClassCustomAvatars;
+        const sheetName = (sheet && sheet.name) ? sheet.name : '班級角色';
+        displayName = `${sheetName} #${idx + 1}`;
+        displayEmoji = '🏫';
+      } else {
+        const parsed = parseInt(avatarId, 10) || 0;
+        const avatar = this.CUTE_AVATARS[parsed] || { name: `可愛生物 #${parsed + 1}`, emoji: '🐾' };
+        displayName = avatar.name;
+        displayEmoji = avatar.emoji;
+      }
     } else {
       const avatar = this.CUTE_AVATARS[avatarId] || { name: `可愛生物 #${parseInt(avatarId, 10) + 1}`, emoji: '🐾' };
       displayName = avatar.name;
@@ -774,24 +888,18 @@ class App {
 
   switchAvatarSheetTab(tabNumber, updateActive = true) {
     this.currentAvatarTab = tabNumber;
-    const btn0 = document.getElementById('btnAvatarTab0');
-    const btn1 = document.getElementById('btnAvatarTab1');
-    const btn2 = document.getElementById('btnAvatarTab2');
-
-    const setTabStyle = (btn, isActive) => {
-      if (!btn) return;
-      if (isActive) {
-        btn.style.background = 'var(--accent-color)';
-        btn.style.color = '#fff';
-      } else {
-        btn.style.background = 'var(--bg-card)';
-        btn.style.color = 'var(--text-secondary)';
+    for (let i = 0; i <= 5; i++) {
+      const btn = document.getElementById(`btnAvatarTab${i}`);
+      if (btn) {
+        if (tabNumber === i) {
+          btn.style.background = 'var(--accent-color)';
+          btn.style.color = '#fff';
+        } else {
+          btn.style.background = 'var(--bg-card)';
+          btn.style.color = 'var(--text-secondary)';
+        }
       }
-    };
-
-    setTabStyle(btn0, tabNumber === 0);
-    setTabStyle(btn1, tabNumber === 1);
-    setTabStyle(btn2, tabNumber === 2);
+    }
 
     this.renderAvatarPickerGrid(tabNumber);
   }
@@ -805,7 +913,7 @@ class App {
       const customSheet = this.currentClassCustomAvatars;
       if (!customSheet || !customSheet.url) {
         grid.innerHTML = `
-          <div style="grid-column: span 8; text-align: center; color: var(--text-secondary); font-size: 13px; padding: 24px 10px;">
+          <div style="grid-column: span 8; text-align: center; color: var(--text-secondary); font-size: 14px; padding: 24px 10px;">
             🏫 本班級目前尚未上傳專屬頭像，請老師至管理後台設定！
           </div>
         `;
@@ -824,7 +932,7 @@ class App {
         const typeTitle = customSheet.name ? `🏫 ${customSheet.name} #${i + 1}` : `🏫 班級角色 #${i + 1}`;
         html += `
           <div class="avatar-grid-item ${activeClass}" 
-               onclick="window.app.selectAvatar('${customId}')" 
+               onclick="window.app.selectAvatar('${customId}', true)" 
                title="${typeTitle}"
                data-avatar-id="${customId}"
                onmouseenter="window.app.showAvatarHoverPreview(event, '${customId}')"
@@ -837,6 +945,38 @@ class App {
       return;
     }
 
+    // 內建三大主題圖鑑 (Tab 3: 蔬菜水果, Tab 4: 食品零食, Tab 5: 台灣特色小吃)
+    const presetKeyMap = { 3: 'fruits', 4: 'snacks', 5: 'taiwan' };
+    if (presetKeyMap[tabNumber]) {
+      const pKey = presetKeyMap[tabNumber];
+      const meta = this.PRESET_AVATARS[pKey];
+      let html = '';
+      for (let i = 0; i < 48; i++) {
+        const avatarId = `${pKey}_${i}`;
+        const isActive = String(this.selectedAvatarId) === avatarId;
+        const activeClass = isActive ? 'active' : '';
+        const col = i % 8;
+        const row = Math.floor(i / 8);
+        const x = ((col / 7) * 100).toFixed(2);
+        const y = ((row / 5) * 100).toFixed(2);
+        const itemName = (meta.items && meta.items[i]) ? meta.items[i] : `${meta.name} #${i + 1}`;
+        const fullTitle = `${meta.emoji} ${itemName}`;
+        html += `
+          <div class="avatar-grid-item ${activeClass}" 
+               onclick="window.app.selectAvatar('${avatarId}', true)" 
+               title="${fullTitle}"
+               data-avatar-id="${avatarId}"
+               onmouseenter="window.app.showAvatarHoverPreview(event, '${avatarId}')"
+               onmouseleave="window.app.hideAvatarHoverPreview()">
+            <span class="cute-avatar-icon" style="width: 100%; height: 100%; background-image: url('${meta.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
+          </div>
+        `;
+      }
+      grid.innerHTML = html;
+      return;
+    }
+
+    // 經典 96 款萌寵 (Tab 1: 0~47 萌寵奇幻, Tab 2: 48~95 森林海洋)
     const startId = tabNumber === 1 ? 0 : 48;
     const endId = tabNumber === 1 ? 48 : 96;
 
@@ -848,7 +988,7 @@ class App {
       const pos = this.getAvatarPositionStyle(i);
       html += `
         <div class="avatar-grid-item ${activeClass}" 
-             onclick="window.app.selectAvatar(${i})" 
+             onclick="window.app.selectAvatar(${i}, true)" 
              title="${avatar.emoji} ${avatar.name}"
              data-avatar-id="${i}"
              onmouseenter="window.app.showAvatarHoverPreview(event, ${i})"
@@ -861,9 +1001,15 @@ class App {
   }
 
   selectAvatar(id, updateName = false) {
-    if (typeof id === 'string' && id.startsWith('custom_')) {
-      this.selectedAvatarId = id;
-      this.setCurrentUserAvatar(id);
+    if (typeof id === 'string') {
+      if (this.isCustomOrPresetAvatarId(id)) {
+        this.selectedAvatarId = id;
+        this.setCurrentUserAvatar(id);
+      } else {
+        const parsed = parseInt(id, 10);
+        this.selectedAvatarId = (!isNaN(parsed) && parsed >= 0 && parsed < 96) ? parsed : 0;
+        this.setCurrentUserAvatar(this.selectedAvatarId);
+      }
     } else {
       this.selectedAvatarId = Math.max(0, Math.min(95, parseInt(id, 10) || 0));
       this.setCurrentUserAvatar(this.selectedAvatarId);
@@ -888,9 +1034,18 @@ class App {
     if (updateName) {
       const input = document.getElementById('inputStudentModalName');
       if (input) {
-        if (typeof this.selectedAvatarId === 'string' && this.selectedAvatarId.startsWith('custom_')) {
-          const idx = parseInt(this.selectedAvatarId.replace('custom_', ''), 10) || 0;
-          input.value = `班級夥伴_${idx + 1}`;
+        if (typeof this.selectedAvatarId === 'string') {
+          const presetMatch = this.selectedAvatarId.match(/^(?:preset_)?(fruits|snacks|taiwan)_(\d+)$/);
+          if (presetMatch) {
+            const pType = presetMatch[1];
+            const idx = parseInt(presetMatch[2], 10) || 0;
+            const meta = this.PRESET_AVATARS && this.PRESET_AVATARS[pType];
+            const name = (meta && meta.items && meta.items[idx]) ? meta.items[idx] : `${meta ? meta.name : pType}_${idx + 1}`;
+            input.value = name;
+          } else if (this.selectedAvatarId.startsWith('custom_')) {
+            const idx = parseInt(this.selectedAvatarId.replace('custom_', ''), 10) || 0;
+            input.value = `班級夥伴_${idx + 1}`;
+          }
         } else {
           const avatar = this.CUTE_AVATARS[this.selectedAvatarId];
           if (avatar) input.value = avatar.name;
@@ -903,15 +1058,32 @@ class App {
   randomPickAvatar() {
     if (this.currentAvatarTab === 0 && this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
       const randCustom = Math.floor(Math.random() * 48);
-      this.selectAvatar(`custom_${randCustom}`);
+      this.selectAvatar(`custom_${randCustom}`, true);
       return;
     }
-    const randomId = Math.floor(Math.random() * 96);
-    const targetTab = randomId < 48 ? 1 : 2;
-    if (targetTab !== this.currentAvatarTab) {
-      this.switchAvatarSheetTab(targetTab);
+    if (this.currentAvatarTab === 3) {
+      const randIdx = Math.floor(Math.random() * 48);
+      this.selectAvatar(`fruits_${randIdx}`, true);
+      return;
     }
-    this.selectAvatar(randomId);
+    if (this.currentAvatarTab === 4) {
+      const randIdx = Math.floor(Math.random() * 48);
+      this.selectAvatar(`snacks_${randIdx}`, true);
+      return;
+    }
+    if (this.currentAvatarTab === 5) {
+      const randIdx = Math.floor(Math.random() * 48);
+      this.selectAvatar(`taiwan_${randIdx}`, true);
+      return;
+    }
+    if (this.currentAvatarTab === 2) {
+      const randId = 48 + Math.floor(Math.random() * 48);
+      this.selectAvatar(randId, true);
+      return;
+    }
+    // 預設 Tab 1 或一般情況
+    const randId = Math.floor(Math.random() * 48);
+    this.selectAvatar(randId, true);
   }
 
   closeStudentNameModal() {
@@ -958,6 +1130,21 @@ class App {
       bgPos = `${x}% ${y}%`;
       const sheetName = overrideTitle || (sheet && sheet.name) || '專屬角色';
       title = `🏫 ${sheetName} #${idx + 1}`;
+    } else if (typeof avatarId === 'string' && /^(?:preset_)?(fruits|snacks|taiwan)_(\d+)$/.test(avatarId)) {
+      const match = avatarId.match(/^(?:preset_)?(fruits|snacks|taiwan)_(\d+)$/);
+      const pType = match[1];
+      const idx = parseInt(match[2], 10) || 0;
+      const meta = this.PRESET_AVATARS && this.PRESET_AVATARS[pType];
+      const col = idx % 8;
+      const row = Math.floor(idx / 8);
+      const x = ((col / 7) * 100).toFixed(2);
+      const y = ((row / 5) * 100).toFixed(2);
+      bgUrl = `images/avatar_preset_${pType}.webp?v=4`;
+      bgSize = '800% 600%';
+      bgPos = `${x}% ${y}%`;
+      const itemName = (meta && meta.items && meta.items[idx]) ? meta.items[idx] : `${meta ? meta.name : pType} #${idx + 1}`;
+      const emoji = meta ? meta.emoji : '✨';
+      title = `${emoji} ${itemName}`;
     } else {
       const idx = Math.max(0, Math.min(95, parseInt(avatarId, 10) || 0));
       const avatar = this.CUTE_AVATARS[idx] || { name: `可愛生物 #${idx + 1}`, emoji: '🐾' };
@@ -18131,18 +18318,72 @@ class App {
       }
 
       const label = document.getElementById('adminEditStudentAvatarLabel');
-      if (label) label.textContent = `當前頭像代號: ${this.editingStudentAvatarId}`;
+      if (label) {
+        let currentLabel = String(this.editingStudentAvatarId);
+        if (typeof this.editingStudentAvatarId === 'string') {
+          const match = this.editingStudentAvatarId.match(/^(?:preset_)?(fruits|snacks|taiwan)_(\d+)$/);
+          if (match && this.PRESET_AVATARS && this.PRESET_AVATARS[match[1]]) {
+            const meta = this.PRESET_AVATARS[match[1]];
+            const idx = parseInt(match[2], 10) || 0;
+            currentLabel = `${meta.emoji} ${meta.items[idx] || (meta.name + ' #' + (idx + 1))}`;
+          } else if (this.editingStudentAvatarId.startsWith('custom_')) {
+            currentLabel = `🏫 班級角色 #${parseInt(this.editingStudentAvatarId.replace('custom_', ''), 10) + 1}`;
+          }
+        } else {
+          const a = this.CUTE_AVATARS[this.editingStudentAvatarId];
+          if (a) currentLabel = `${a.emoji} ${a.name}`;
+        }
+        label.textContent = `當前頭像: ${currentLabel}`;
+      }
 
-      // 渲染頭像選項
+      // 渲染頭像選項 (包含所有已開放的 240~288 款頭像角色)
       const grid = document.getElementById('adminEditStudentAvatarGrid');
       if (grid) {
-        const avatarCount = (this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) ? 48 : 96;
+        const avatarOptions = [];
+        // 班級專屬 (48款)
+        if (this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) {
+          for (let i = 0; i < 48; i++) {
+            avatarOptions.push({ id: `custom_${i}`, label: `🏫 班級角色 #${i + 1}` });
+          }
+        }
+        // 萌寵奇幻 (0~47) 與 森林海洋 (48~95)
+        for (let i = 0; i < 96; i++) {
+          const a = this.CUTE_AVATARS[i];
+          avatarOptions.push({ id: i, label: a ? `${a.emoji} ${a.name}` : `萌寵 #${i + 1}` });
+        }
+        // 蔬菜水果 (48款)
+        if (this.PRESET_AVATARS && this.PRESET_AVATARS.fruits) {
+          for (let i = 0; i < 48; i++) {
+            const name = this.PRESET_AVATARS.fruits.items[i] || `蔬菜水果 #${i + 1}`;
+            avatarOptions.push({ id: `fruits_${i}`, label: `🥦 ${name}` });
+          }
+        }
+        // 食品零食 (48款)
+        if (this.PRESET_AVATARS && this.PRESET_AVATARS.snacks) {
+          for (let i = 0; i < 48; i++) {
+            const name = this.PRESET_AVATARS.snacks.items[i] || `食品零食 #${i + 1}`;
+            avatarOptions.push({ id: `snacks_${i}`, label: `🍔 ${name}` });
+          }
+        }
+        // 台灣特色小吃 (48款)
+        if (this.PRESET_AVATARS && this.PRESET_AVATARS.taiwan) {
+          for (let i = 0; i < 48; i++) {
+            const name = this.PRESET_AVATARS.taiwan.items[i] || `台灣小吃 #${i + 1}`;
+            avatarOptions.push({ id: `taiwan_${i}`, label: `🧋 ${name}` });
+          }
+        }
+
         let html = '';
-        for (let i = 0; i < avatarCount; i++) {
-          const isSelected = (i === this.editingStudentAvatarId);
-          const avatarHtml = this.renderAvatarHtml(i, 40);
+        for (const opt of avatarOptions) {
+          const isSelected = (String(opt.id) === String(this.editingStudentAvatarId));
+          const avatarHtml = this.renderAvatarHtml(opt.id, 36);
+          const safeIdAttr = String(opt.id).replace(/'/g, "\\'");
           html += `
-            <div class="edit-student-avatar-item" data-avatar-id="${i}" onclick="window.app.adminSelectEditStudentAvatar(${i})" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; border: 2px solid ${isSelected ? 'var(--accent-color)' : 'transparent'}; background: var(--bg-card); box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.15s ease;">
+            <div class="edit-student-avatar-item ${isSelected ? 'active' : ''}" 
+                 data-avatar-id="${opt.id}" 
+                 onclick="window.app.adminSelectEditStudentAvatar('${safeIdAttr}')" 
+                 title="${opt.label}" 
+                 style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; border: 2px solid ${isSelected ? 'var(--accent-color)' : 'transparent'}; background: var(--bg-card); box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.15s ease;">
               ${avatarHtml}
             </div>
           `;
@@ -18169,11 +18410,28 @@ class App {
   adminSelectEditStudentAvatar(avatarId) {
     this.editingStudentAvatarId = avatarId;
     const label = document.getElementById('adminEditStudentAvatarLabel');
-    if (label) label.textContent = `已選擇頭像代號: ${avatarId}`;
+    if (label) {
+      let displayName = String(avatarId);
+      if (typeof avatarId === 'string') {
+        const match = avatarId.match(/^(?:preset_)?(fruits|snacks|taiwan)_(\d+)$/);
+        if (match && this.PRESET_AVATARS && this.PRESET_AVATARS[match[1]]) {
+          const meta = this.PRESET_AVATARS[match[1]];
+          const idx = parseInt(match[2], 10) || 0;
+          const name = (meta.items && meta.items[idx]) ? meta.items[idx] : `${meta.name} #${idx + 1}`;
+          displayName = `${meta.emoji} ${name}`;
+        } else if (avatarId.startsWith('custom_')) {
+          displayName = `🏫 班級角色 #${parseInt(avatarId.replace('custom_', ''), 10) + 1}`;
+        }
+      } else {
+        const a = this.CUTE_AVATARS[avatarId];
+        if (a) displayName = `${a.emoji} ${a.name}`;
+      }
+      label.textContent = `已選擇頭像: ${displayName}`;
+    }
 
     document.querySelectorAll('.edit-student-avatar-item').forEach(item => {
-      const id = parseInt(item.dataset.avatarId, 10);
-      if (id === avatarId) {
+      const id = item.dataset.avatarId;
+      if (String(id) === String(avatarId)) {
         item.style.borderColor = 'var(--accent-color)';
         item.style.transform = 'scale(1.1)';
       } else {
@@ -18688,7 +18946,7 @@ class App {
       fruits: {
         key: 'fruits',
         name: '蔬菜水果版',
-        url: 'images/avatar_preset_fruits.png?v=2',
+        url: 'images/avatar_preset_fruits.webp?v=4',
         count: 48,
         cols: 8,
         rows: 6
@@ -18696,7 +18954,7 @@ class App {
       snacks: {
         key: 'snacks',
         name: '食品零食版',
-        url: 'images/avatar_preset_snacks.png?v=3',
+        url: 'images/avatar_preset_snacks.webp?v=4',
         count: 48,
         cols: 8,
         rows: 6
@@ -18704,7 +18962,7 @@ class App {
       taiwan: {
         key: 'taiwan',
         name: '台灣特色小吃版',
-        url: 'images/avatar_preset_taiwan.png?v=2',
+        url: 'images/avatar_preset_taiwan.webp?v=4',
         count: 48,
         cols: 8,
         rows: 6

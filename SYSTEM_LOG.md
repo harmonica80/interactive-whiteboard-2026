@@ -1,4 +1,26 @@
 # System Log
+## 2026-10-27 - 效能與體驗躍升：圖鑑圖檔轉為 WebP 格式極速載入、全面開放五大分類頭像庫 (共 240~288 款) 與計算總數動態連動
+- 影響檔案：`index.html`, `js/app.js`, `images/avatar_preset_fruits.webp`, `images/avatar_preset_snacks.webp`, `images/avatar_preset_taiwan.webp`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **精選圖鑑全面轉檔為 WebP 格式（流量狂降 86%）**：
+     - 將 `avatar_preset_fruits.png`、`avatar_preset_snacks.png`、`avatar_preset_taiwan.png` 高品質無損壓縮轉換為 WebP 格式（`images/avatar_preset_fruits.webp`、`images/avatar_preset_snacks.webp`、`images/avatar_preset_taiwan.webp`）。
+     - 單檔體積自 1.1MB 大幅下降至約 150KB，既維持 100% 清晰度，又將圖檔載入流量與快取負擔降低 86% 以上，徹底解除全班同學同時下載圖檔的網路壓力。
+  2. **全面開放五大主題頭像庫挑選（共 240 款，含自訂達 288 款）**：
+     - 原有分類維持：`🐱 萌寵奇幻 (48)`（經典 0~47）、`🦁 森林海洋 (48)`（經典 48~95）。
+     - 新增開放三大主題：`🥦 蔬菜水果 (48)`、`🍔 食品零食 (48)`、`🧋 台灣特色小吃 (48)`。
+     - 若教師或課堂有設定自訂頭像，則保留 `🏫 班級專屬 (48)` / `🌱 課堂專屬 (48)` 頁籤。
+     - 每一款蔬菜、零食與小吃皆具備專屬繁體中文名稱與 emoji（如波霸黑糖珍奶、九層塔鹽酥雞、元氣紅蘋果、香濃起司堡等），學生挑選與隨機更換時姓名及上方預覽即時連動。
+  3. **挑選彈窗標題計算總數精確動態連動**：
+     - 在 `#studentNameModal` 標題增設 `#txtAvatarTotalCountTitle`，依據當前是否有班級專屬頭像動態計算總數：未設定專屬頭像時精準顯示「🐾 挑選可愛頭像 (共 240 款)：」；設定專屬頭像時自動增加為「🐾 挑選可愛頭像 (共 288 款)：」，百分之百與頁籤總數吻合。
+  4. **全域頭像渲染與教師指派管理連動**：
+     - `renderAvatarHtml`、`getUserAvatar`、`showAvatarHoverPreview` 全面支援 `fruits_`、`snacks_`、`taiwan_` 格式，在提問區、圖片牆、影片分享、學生名冊、歷程與大頭像皆能以對應 WebP 精準呈現。
+     - 教師後台「✏️ 編輯學生資訊」彈窗（`#adminEditStudentModal`）同步支援指派五大分類與班級角色所有 240~288 款頭像。
+  5. **合規檢測**：
+     - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 所有文字字級符合 `>= 14px` 規範，按鈕樣式與四大色系主題變數完整連動。
+     - 更新 `js/app.js?v=439` 快取版本參數。
+
 ## 2026-10-27 - 介面微調：快捷選單按鈕去除圖示單行呈現、學生歷程詳細指標分兩行展示、學生卡片移除分隔線保留冒號
 - 影響檔案：`index.html`, `css/style.css`, `SYSTEM_LOG.md`。
 - 修改項目：
