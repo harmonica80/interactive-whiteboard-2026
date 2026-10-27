@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=416">
+  <link rel="stylesheet" href="css/style.css?v=417">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -7400,27 +7400,33 @@ Python</pre>
       </div>
 
       <!-- 統計數據指標列 -->
-      <div style="padding: 12px 24px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; overflow-x: auto; flex-wrap: wrap;">
-        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
-          <span>🔥</span> 歷程總計：<strong id="studentHistoryTotalCount" style="color: var(--accent-color);">0</strong>
+      <div style="padding: 12px 24px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+        <!-- 第一行：歷程總計 -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="student-stat-pill" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px; font-weight: bold;">
+            <span>🔥</span> 歷程總計：<strong id="studentHistoryTotalCount" style="color: var(--accent-color); font-size: 15px;">0</strong>
+          </div>
         </div>
-        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
-          <span>🙋</span> 提問：<strong id="studentHistoryQCount">0</strong>
-        </div>
-        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
-          <span>💬</span> 留言：<strong id="studentHistoryCommentCount">0</strong>
-        </div>
-        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
-          <span>🖼️</span> 圖片：<strong id="studentHistoryImgCount">0</strong>
-        </div>
-        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
-          <span>🎥</span> 影片：<strong id="studentHistoryVidCount">0</strong>
-        </div>
-        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
-          <span>📝</span> 測驗作答：<strong id="studentHistoryQuizCount">0</strong>
-        </div>
-        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
-          <span>💭</span> 文字雲：<strong id="studentHistoryWcCount">0</strong>
+        <!-- 第二行：分項活動指標 -->
+        <div style="display: flex; gap: 8px; overflow-x: auto; flex-wrap: wrap; align-items: center;">
+          <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+            <span>🙋</span> 提問：<strong id="studentHistoryQCount">0</strong>
+          </div>
+          <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+            <span>💬</span> 留言：<strong id="studentHistoryCommentCount">0</strong>
+          </div>
+          <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+            <span>🖼️</span> 圖片：<strong id="studentHistoryImgCount">0</strong>
+          </div>
+          <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+            <span>🎥</span> 影片：<strong id="studentHistoryVidCount">0</strong>
+          </div>
+          <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+            <span>📝</span> 測驗作答：<strong id="studentHistoryQuizCount">0</strong>
+          </div>
+          <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+            <span>💭</span> 文字雲：<strong id="studentHistoryWcCount">0</strong>
+          </div>
         </div>
       </div>
 
@@ -7567,11 +7573,9 @@ Python</pre>
         <!-- 🌟 管理後台與登出 (置於底部同一行，縮短操作滑鼠路徑) -->
         <div style="display: flex; align-items: center; gap: 8px;">
           <button type="button" class="fab-footer-action-btn fab-admin-entry-btn" id="fabAdminEntryBtn" onclick="window.app && window.app.handleAdminEntryClick(); window.app && window.app.toggleQuickInfoMenu(false)" title="進入管理後台">
-            <span class="fab-item-icon">⚙️</span>
             <span>管理後台</span>
           </button>
           <button type="button" class="fab-footer-action-btn fab-admin-logout-btn" id="fabAdminLogoutBtn" onclick="logoutAdmin(); window.app && window.app.toggleQuickInfoMenu(false)" style="display: none;" title="登出管理員模式，鎖定後台">
-            <span class="fab-item-icon">🚪</span>
             <span>登出</span>
           </button>
         </div>

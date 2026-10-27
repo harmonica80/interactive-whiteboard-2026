@@ -8153,10 +8153,11 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
 .fab-footer-action-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   font-size: 14px;
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 5px 10px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
@@ -8164,6 +8165,7 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   cursor: pointer;
   text-decoration: none;
   transition: all 0.15s ease;
+  white-space: nowrap;
   line-height: 1.2;
 }
 
@@ -8542,8 +8544,6 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
 .admin-student-stat-tag.admin-student-stat-total {
   font-weight: 700;
   color: var(--accent-color);
-  padding-right: 6px;
-  border-right: 1.5px solid var(--border-color);
   margin-right: 2px;
 }
 
