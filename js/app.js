@@ -156,6 +156,10 @@ class App {
     
     // 記錄目前選按的功能選單（預設是提問區）
     this.activeTabId = 'panel-questions';
+    this.adminStudentViewMode = 'card';
+    try {
+      this.adminStudentViewMode = localStorage.getItem('admin_student_view_mode') || 'card';
+    } catch (e) {}
     
     // 檢查並恢復同分頁未逾時的管理員登入狀態（支援切換班級與重整後免重複輸入密碼）
     this.restoreAdminSessionIfValid();
@@ -6014,7 +6018,7 @@ class App {
 
     const fabLogoutBtn = document.getElementById('fabAdminLogoutBtn');
     if (fabLogoutBtn) {
-      fabLogoutBtn.style.display = this.isAdmin ? 'flex' : 'none';
+      fabLogoutBtn.style.display = this.isAdmin ? 'inline-flex' : 'none';
     }
 
     const fabQuickBtn = document.getElementById('fabQuickInfoBtn');
@@ -17675,68 +17679,140 @@ class App {
       return 0;
     });
 
+    const isListView = (this.adminStudentViewMode === 'list');
+    container.className = isListView ? 'admin-students-list-view' : 'admin-students-grid';
+
+    // 更新視圖切換按鈕狀態
+    const btnCard = document.getElementById('btnStudentViewCard');
+    const btnList = document.getElementById('btnStudentViewList');
+    if (btnCard) btnCard.classList.toggle('active', !isListView);
+    if (btnList) btnList.classList.toggle('active', isListView);
+
     if (filtered.length === 0) {
       container.innerHTML = `
-        <div style="text-align: center; color: var(--text-secondary); font-size: 15px; padding: 40px; grid-column: 1 / -1; background: var(--bg-card); border-radius: 12px; border: 1px dashed var(--border-color);">
+        <div style="text-align: center; color: var(--text-secondary); font-size: 15px; padding: 40px; grid-column: 1 / -1; width: 100%; background: var(--bg-card); border-radius: 12px; border: 1px dashed var(--border-color);">
           ${query ? '🔍 查無符合搜尋條件的同學。' : '🌱 目前課堂名冊尚無同學資料。當同學進入白板並設定名稱後，將自動登記於此！'}
         </div>
       `;
       return;
     }
 
-    container.innerHTML = filtered.map(s => {
-      const timeObj = this.formatFullDateTime(s.lastLoginAt);
-      const avatarHtml = this.renderAvatarHtml(s.avatar, 44);
-      const safeUid = String(s.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      const safeName = this.escapeHtml(s.name);
-      const safeNameAttr = String(s.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    if (isListView) {
+      container.innerHTML = filtered.map(s => {
+        const timeObj = this.formatFullDateTime(s.lastLoginAt);
+        const avatarHtml = this.renderAvatarHtml(s.avatar, 36);
+        const safeUid = String(s.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeName = this.escapeHtml(s.name);
+        const safeNameAttr = String(s.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
-      return `
-        <div class="admin-student-card" id="student_card_${s.uid}">
-          <div class="admin-student-card-header">
-            <div class="admin-student-card-avatar" title="頭像代號: ${s.avatar}">
-              ${avatarHtml}
-            </div>
-            <div class="admin-student-card-info">
-              <div class="admin-student-card-name-row">
-                <span class="admin-student-card-name" title="${safeName}">${safeName}</span>
+        return `
+          <div class="admin-student-list-row" id="student_row_${s.uid}">
+            <div class="admin-student-list-left">
+              <div class="admin-student-list-avatar" title="頭像代號: ${s.avatar}">
+                ${avatarHtml}
+              </div>
+              <div class="admin-student-list-name-box">
+                <span class="admin-student-list-name" title="${safeName}">${safeName}</span>
                 <span class="admin-student-online-badge ${s.isOnline ? 'online' : 'offline'}" title="${s.isOnline ? '連線中' : '目前離線'}">
                   ${s.isOnline ? '🟢 線上' : '⚪ 離線'}
                 </span>
               </div>
-              <div class="admin-student-card-time" title="登入/最後活動時間：${timeObj.full}">
+            </div>
+
+            <div class="admin-student-list-mid">
+              <div class="admin-student-list-time" title="登入/最後活動時間：${timeObj.full}">
                 <span>⏰</span>
                 <span>${timeObj.relative}</span>
                 <span style="font-size: 13px; opacity: 0.65;">(${timeObj.full.split(' ')[0]})</span>
               </div>
+
+              <div class="admin-student-list-stats">
+                <span class="admin-student-stat-tag admin-student-stat-total" title="歷程總互動次數">🔥 <strong>${s.activityTotal}</strong> 歷程：</span>
+                <span class="admin-student-stat-tag" title="提問數">🙋 <strong>${s.stats.qCount}</strong></span>
+                <span class="admin-student-stat-tag" title="留言互動數">💬 <strong>${s.stats.cCount}</strong></span>
+                <span class="admin-student-stat-tag" title="圖片分享數">🖼️ <strong>${s.stats.imgCount}</strong></span>
+                <span class="admin-student-stat-tag" title="影片分享數">🎥 <strong>${s.stats.vidCount}</strong></span>
+                <span class="admin-student-stat-tag" title="測驗作答數">📝 <strong>${s.stats.quizCount}</strong></span>
+              </div>
+            </div>
+
+            <div class="admin-student-list-actions">
+              <button type="button" onclick="window.app.adminOpenStudentHistoryModal('${safeUid}')" title="查閱 ${safeName} 的完整參與歷程">
+                📜 歷程
+              </button>
+              <button type="button" onclick="window.app.adminOpenEditStudentModal('${safeUid}')" title="編輯 ${safeName} 的姓名與頭像">
+                ✏️ 編輯
+              </button>
+              <button type="button" class="btn-del-student" onclick="window.app.adminDeleteStudent('${safeUid}', '${safeNameAttr}')" title="自名冊刪除此同學">
+                🗑️ 刪除
+              </button>
             </div>
           </div>
+        `;
+      }).join('');
+    } else {
+      container.innerHTML = filtered.map(s => {
+        const timeObj = this.formatFullDateTime(s.lastLoginAt);
+        const avatarHtml = this.renderAvatarHtml(s.avatar, 44);
+        const safeUid = String(s.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeName = this.escapeHtml(s.name);
+        const safeNameAttr = String(s.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
-          <!-- 參與活動摘要小標籤 -->
-          <div class="admin-student-card-stats">
-            <span class="admin-student-stat-tag" title="歷程總互動次數">🔥 <strong>${s.activityTotal}</strong> 歷程</span>
-            <span class="admin-student-stat-tag" title="提問數">🙋 <strong>${s.stats.qCount}</strong></span>
-            <span class="admin-student-stat-tag" title="留言互動數">💬 <strong>${s.stats.cCount}</strong></span>
-            <span class="admin-student-stat-tag" title="圖片分享數">🖼️ <strong>${s.stats.imgCount}</strong></span>
-            <span class="admin-student-stat-tag" title="影片分享數">🎥 <strong>${s.stats.vidCount}</strong></span>
-            <span class="admin-student-stat-tag" title="測驗作答數">📝 <strong>${s.stats.quizCount}</strong></span>
-          </div>
+        return `
+          <div class="admin-student-card" id="student_card_${s.uid}">
+            <div class="admin-student-card-header">
+              <div class="admin-student-card-avatar" title="頭像代號: ${s.avatar}">
+                ${avatarHtml}
+              </div>
+              <div class="admin-student-card-info">
+                <div class="admin-student-card-name-row">
+                  <span class="admin-student-card-name" title="${safeName}">${safeName}</span>
+                  <span class="admin-student-online-badge ${s.isOnline ? 'online' : 'offline'}" title="${s.isOnline ? '連線中' : '目前離線'}">
+                    ${s.isOnline ? '🟢 線上' : '⚪ 離線'}
+                  </span>
+                </div>
+                <div class="admin-student-card-time" title="登入/最後活動時間：${timeObj.full}">
+                  <span>⏰</span>
+                  <span>${timeObj.relative}</span>
+                  <span style="font-size: 13px; opacity: 0.65;">(${timeObj.full.split(' ')[0]})</span>
+                </div>
+              </div>
+            </div>
 
-          <!-- 操作按鈕組 -->
-          <div class="admin-student-card-actions">
-            <button type="button" onclick="window.app.adminOpenStudentHistoryModal('${safeUid}')" title="查閱 ${safeName} 的完整參與歷程">
-              📜 歷程
-            </button>
-            <button type="button" onclick="window.app.adminOpenEditStudentModal('${safeUid}')" title="編輯 ${safeName} 的姓名與頭像">
-              ✏️ 編輯
-            </button>
-            <button type="button" class="btn-del-student" onclick="window.app.adminDeleteStudent('${safeUid}', '${safeNameAttr}')" title="自名冊刪除此同學">
-              🗑️ 刪除
-            </button>
+            <!-- 參與活動摘要小標籤 -->
+            <div class="admin-student-card-stats">
+              <span class="admin-student-stat-tag admin-student-stat-total" title="歷程總互動次數">🔥 <strong>${s.activityTotal}</strong> 歷程：</span>
+              <span class="admin-student-stat-tag" title="提問數">🙋 <strong>${s.stats.qCount}</strong></span>
+              <span class="admin-student-stat-tag" title="留言互動數">💬 <strong>${s.stats.cCount}</strong></span>
+              <span class="admin-student-stat-tag" title="圖片分享數">🖼️ <strong>${s.stats.imgCount}</strong></span>
+              <span class="admin-student-stat-tag" title="影片分享數">🎥 <strong>${s.stats.vidCount}</strong></span>
+              <span class="admin-student-stat-tag" title="測驗作答數">📝 <strong>${s.stats.quizCount}</strong></span>
+            </div>
+
+            <!-- 操作按鈕組 -->
+            <div class="admin-student-card-actions">
+              <button type="button" onclick="window.app.adminOpenStudentHistoryModal('${safeUid}')" title="查閱 ${safeName} 的完整參與歷程">
+                📜 歷程
+              </button>
+              <button type="button" onclick="window.app.adminOpenEditStudentModal('${safeUid}')" title="編輯 ${safeName} 的姓名與頭像">
+                ✏️ 編輯
+              </button>
+              <button type="button" class="btn-del-student" onclick="window.app.adminDeleteStudent('${safeUid}', '${safeNameAttr}')" title="自名冊刪除此同學">
+                🗑️ 刪除
+              </button>
+            </div>
           </div>
-        </div>
-      `;
-    }).join('');
+        `;
+      }).join('');
+    }
+  }
+
+  setAdminStudentViewMode(mode) {
+    this.adminStudentViewMode = (mode === 'list') ? 'list' : 'card';
+    try {
+      localStorage.setItem('admin_student_view_mode', this.adminStudentViewMode);
+    } catch (e) {}
+    this.renderAdminStudentsList();
   }
 
   onAdminStudentSearchChange(val) {
