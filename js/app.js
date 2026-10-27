@@ -1012,11 +1012,14 @@ class App {
     const target = String(name || '').trim().toLowerCase();
     if (!target) return null;
 
-    // 1. 優先查詢已登錄學生名冊 (quiz/students)
+    // 1. 優先查詢已登錄學生名冊 (quiz/students，含新舊姓名相容)
     const studentsMap = this.registeredStudents || {};
     for (const [uid, data] of Object.entries(studentsMap)) {
       if (data && data.name && String(data.name).trim().toLowerCase() === target) {
         return { uid, name: data.name, avatar: data.avatar, ...data };
+      }
+      if (data && Array.isArray(data.previousNames) && data.previousNames.some(pn => String(pn).trim().toLowerCase() === target)) {
+        return { uid, name: data.name, avatar: data.avatar, ...data, matchedPreviousName: true };
       }
     }
 
@@ -3414,12 +3417,46 @@ class App {
       this.renderAdminShares();
     });
 
-    // 監聽課堂學生名冊 (用於檢查姓名是否重複與序號建議)
+    // 監聽課堂學生名冊 (用於檢查姓名是否重複與序號建議，並即時同步教師修改)
     this.registeredStudents = {};
     db.ref('quiz/students').on('value', (snapshot) => {
       this.registeredStudents = snapshot.val() || {};
       if (this.activeTabId === 'panel-admin' && this.currentAdminFeatureKey === 'classStudents') {
         this.renderAdminStudentsList();
+      }
+
+      // 學生端自動即時感知教師修改姓名或頭像並同步至本機與介面
+      if (!this.isAdmin) {
+        const myUid = this.getUserId();
+        const myRemoteData = this.registeredStudents[myUid];
+        if (myRemoteData && myRemoteData.name) {
+          const currentLocalName = this.getCurrentUserName();
+          const currentLocalAvatar = this.getCurrentUserAvatar();
+          const remoteName = String(myRemoteData.name).trim();
+          const remoteAvatar = myRemoteData.avatar !== undefined ? myRemoteData.avatar : currentLocalAvatar;
+
+          if (currentLocalName && (remoteName !== currentLocalName || remoteAvatar !== currentLocalAvatar)) {
+            if (window.ClassRoomManager && typeof window.ClassRoomManager.setUserName === 'function') {
+              window.ClassRoomManager.setUserName(remoteName);
+            }
+            localStorage.setItem('user_nickname', remoteName);
+            localStorage.setItem('user_name', remoteName);
+            localStorage.setItem('comment_nickname', remoteName);
+            if (myRemoteData.avatar !== undefined) {
+              this.setCurrentUserAvatar(remoteAvatar);
+            }
+            this.updateStudentNameUI();
+            if (this.myPresenceRef) {
+              this.myPresenceRef.update({
+                userName: remoteName,
+                avatar: remoteAvatar
+              }).catch(() => {});
+            }
+            if (remoteName !== currentLocalName) {
+              this.showNotification('姓名已更新', `老師已將您的姓名更新為「${remoteName}」！`);
+            }
+          }
+        }
       }
     });
 
@@ -10016,12 +10053,36 @@ class App {
         });
         myPresenceRef.onDisconnect().remove();
 
-        // 登入或重新連線時，自動為一般學生更新名冊中的最新登入日期與時間
-        if (curUserName && !this.isAdmin && typeof db !== 'undefined' && db && curUserUid) {
-          db.ref('quiz/students').child(curUserUid).update({
-            name: curUserName,
-            avatar: this.getCurrentUserAvatar(),
-            lastLoginAt: Date.now()
+        // 登入或重新連線時，優先檢查雲端是否有老師更新過的名冊記錄 (防止本地舊名覆蓋老師新設的姓名)
+        if (!this.isAdmin && typeof db !== 'undefined' && db && curUserUid) {
+          db.ref('quiz/students').child(curUserUid).once('value').then(snap => {
+            const remoteData = snap.val();
+            if (remoteData && remoteData.name && remoteData.name !== curUserName) {
+              const newRemoteName = String(remoteData.name).trim();
+              if (window.ClassRoomManager && typeof window.ClassRoomManager.setUserName === 'function') {
+                window.ClassRoomManager.setUserName(newRemoteName);
+              }
+              localStorage.setItem('user_nickname', newRemoteName);
+              localStorage.setItem('user_name', newRemoteName);
+              localStorage.setItem('comment_nickname', newRemoteName);
+              if (remoteData.avatar !== undefined) {
+                this.setCurrentUserAvatar(remoteData.avatar);
+              }
+              this.updateStudentNameUI();
+              if (this.myPresenceRef) {
+                this.myPresenceRef.update({
+                  userName: newRemoteName,
+                  avatar: remoteData.avatar !== undefined ? remoteData.avatar : this.getCurrentUserAvatar()
+                }).catch(() => {});
+              }
+              db.ref('quiz/students').child(curUserUid).update({ lastLoginAt: Date.now() }).catch(() => {});
+            } else if (curUserName) {
+              db.ref('quiz/students').child(curUserUid).update({
+                name: curUserName,
+                avatar: this.getCurrentUserAvatar(),
+                lastLoginAt: Date.now()
+              }).catch(() => {});
+            }
           }).catch(() => {});
         }
 
@@ -18067,24 +18128,46 @@ class App {
     }
 
     const avatarId = this.editingStudentAvatarId !== undefined ? this.editingStudentAvatarId : 0;
+    const oldStudent = (this.registeredStudents && this.registeredStudents[uid]) || {};
+    const oldName = oldStudent.name || '';
+    const prevNames = Array.isArray(oldStudent.previousNames) ? [...oldStudent.previousNames] : [];
+    if (oldName && oldName !== newName && !prevNames.includes(oldName)) {
+      prevNames.push(oldName);
+    }
 
     try {
+      // 1. 更新名冊 (保留更名歷程以便日後多設備登入辨識)
       await db.ref('quiz/students').child(uid).update({
         name: newName,
         avatar: avatarId,
+        previousNames: prevNames,
         updatedAt: Date.now()
       });
 
       if (!this.registeredStudents) this.registeredStudents = {};
       this.registeredStudents[uid] = {
-        ...(this.registeredStudents[uid] || {}),
+        ...oldStudent,
         name: newName,
         avatar: avatarId,
+        previousNames: prevNames,
         updatedAt: Date.now()
       };
 
+      // 2. 批次同步更新該生既有發布之提問、圖片與影片作者標籤 (保持課堂視覺一致性)
+      if (oldName && oldName !== newName) {
+        (this.questions || []).filter(q => q && q.userId === uid).forEach(q => {
+          db.ref('questions').child(q.id).update({ user: newName, avatar: avatarId }).catch(() => {});
+        });
+        (this.images || []).filter(img => img && img.userId === uid).forEach(img => {
+          db.ref('images').child(img.id).update({ user: newName, avatar: avatarId }).catch(() => {});
+        });
+        (this.videos || []).filter(v => v && v.userId === uid).forEach(v => {
+          db.ref('videos').child(v.id).update({ user: newName, avatar: avatarId }).catch(() => {});
+        });
+      }
+
       this.closeAdminEditStudentModal();
-      this.showNotification('成功', `已成功更新學生「${newName}」的姓名與頭像！`);
+      this.showNotification('成功', `已成功更新學生「${newName}」的姓名與頭像，並同步既有發布作品作者標籤！`);
       this.renderAdminStudentsList();
     } catch (e) {
       this.showNotification('錯誤', '更新失敗: ' + e.message);
