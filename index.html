@@ -5874,7 +5874,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=433"></script>
+  <script src="js/app.js?v=434"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
@@ -7341,8 +7341,8 @@ Python</pre>
         <button type="button" class="fab-quick-menu-close" onclick="window.app && window.app.toggleQuickInfoMenu(false)">✕</button>
       </div>
       <div class="fab-quick-menu-items">
-        <!-- 🌟 管理後台與登出 (收錄於此，維持前台極致清爽) -->
-        <button type="button" class="fab-quick-menu-item fab-admin-entry-btn" id="fabAdminEntryBtn" onclick="window.app && window.app.switchToTab('panel-admin'); window.app && window.app.toggleQuickInfoMenu(false)" title="進入管理後台 (教師專區)">
+        <!-- 🌟 管理後台與登出 (收錄於此，維持前台極致清爽，未登入時安全攔截密碼驗證) -->
+        <button type="button" class="fab-quick-menu-item fab-admin-entry-btn" id="fabAdminEntryBtn" onclick="window.app && window.app.handleAdminEntryClick(); window.app && window.app.toggleQuickInfoMenu(false)" title="進入管理後台 (教師專區)">
           <span class="fab-item-icon">⚙️</span>
           <span class="fab-item-text" style="font-weight: bold; color: var(--accent-color);">管理後台</span>
           <span class="fab-item-badge" style="font-size: 11px; background: rgba(0, 122, 255, 0.12); color: var(--accent-color); padding: 1px 6px; border-radius: 8px; font-weight: bold;">教師專區</span>

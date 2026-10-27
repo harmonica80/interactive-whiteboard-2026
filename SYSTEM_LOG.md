@@ -1,4 +1,19 @@
 # System Log
+## 2026-10-27 - 緊急修復：強化管理後台存取權限全域安全攔截 (杜絕未驗證密碼直通後台問題)
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **全域攔截管理後台分頁切換 (`switchToTab('panel-admin')`)**：
+     - 在 `switchToTab()` 函式入口處加入嚴格身分校驗（`if (targetId === 'panel-admin' && !this.isAdmin)`），未完成密碼驗證前一律中斷切換並自動彈出管理員密碼驗證視窗（`#adminPasswordModal`），徹底防範因直接呼叫方法而繞過權限檢查的漏洞。
+  2. **修正 💡 教室資訊選單「管理後台」按鈕事件**：
+     - 將 `#fabAdminEntryBtn` 的點擊事件由直接呼叫 `switchToTab('panel-admin')` 改為綁定專用處理方法 `window.app.handleAdminEntryClick()`。
+     - 若使用者已具備管理員權限，直接切換進入管理後台；若為學生或尚未登入狀態，主動彈出密碼輸入彈窗要求驗證。
+  3. **出題設定捷徑整合與驗證後精準導航**：
+     - 同步為 `openAdminFeature(featureKey)` 加入管理員身分防護；若尚未登入，系統暫存目標設定項目（`pendingAdminFeature`）並引導輸入密碼，於驗證成功後直接無縫開啟目標出題管理面板。
+  4. **合規檢測**：
+     - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢驗。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 更新 `js/app.js?v=434` 快取版本參數。
+
 ## 2026-10-27 - 優化右下角個人懸浮大頭像 (移除外圍框線底色與名字編輯鉛筆圖示，最大化空間利用)
 - 影響檔案：`index.html`, `css/style.css`, `SYSTEM_LOG.md`。
 - 修改項目：

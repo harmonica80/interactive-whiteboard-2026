@@ -1940,7 +1940,21 @@ class App {
     }
   }
   
+  handleAdminEntryClick() {
+    if (this.isAdmin) {
+      this.switchToTab('panel-admin');
+    } else {
+      this.openAdminPasswordModal();
+    }
+  }
+
   switchToTab(targetId) {
+    // 嚴格安全防護：未登入教師/管理員身分時，禁止切換進入管理後台
+    if (targetId === 'panel-admin' && !this.isAdmin) {
+      this.openAdminPasswordModal();
+      return;
+    }
+
     const fsEl = document.fullscreenElement;
     const targetPanel = document.getElementById(targetId);
     if (fsEl && fsEl !== document.documentElement && targetPanel && !fsEl.contains(targetPanel)) {
@@ -3052,6 +3066,7 @@ class App {
   }
   
   closeAdminPasswordModal() {
+    this.pendingAdminFeature = null;
     const modal = document.getElementById('adminPasswordModal');
     if (modal) {
       modal.style.display = 'none';
@@ -5563,6 +5578,13 @@ class App {
 
     const cfg = adminFeatureConfig[featureKey];
     if (!cfg) return;
+
+    // 嚴格安全防護：未登入教師/管理員身分時，暫存目標功能並彈出密碼驗證
+    if (!this.isAdmin) {
+      this.pendingAdminFeature = featureKey;
+      this.openAdminPasswordModal();
+      return;
+    }
 
     this.currentAdminFeatureKey = featureKey;
     this.lastAdminFeatureKey = featureKey;
@@ -20644,8 +20666,14 @@ async function submitAdminPassword() {
       }
       if (window.videoQuiz) window.videoQuiz.setAdminState(true);
       if (window.quiz && typeof window.quiz.setAdminState === 'function') window.quiz.setAdminState(true);
+      const targetFeature = window.app.pendingAdminFeature;
+      window.app.pendingAdminFeature = null;
       window.app.closeAdminPasswordModal(); // 關閉彈窗
-      window.app.switchToTab('panel-admin'); // 自動進入「管理後台」分頁
+      if (targetFeature && typeof window.app.openAdminFeature === 'function') {
+        window.app.openAdminFeature(targetFeature);
+      } else {
+        window.app.switchToTab('panel-admin'); // 自動進入「管理後台」分頁
+      }
       window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
       window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
       window.app.updateFocusGameAdminOptions();
@@ -20705,8 +20733,14 @@ async function submitAdminPassword() {
       }
       if (window.videoQuiz) window.videoQuiz.setAdminState(true);
       if (window.quiz && typeof window.quiz.setAdminState === 'function') window.quiz.setAdminState(true);
+      const targetFeature = window.app.pendingAdminFeature;
+      window.app.pendingAdminFeature = null;
       window.app.closeAdminPasswordModal();
-      window.app.switchToTab('panel-admin');
+      if (targetFeature && typeof window.app.openAdminFeature === 'function') {
+        window.app.openAdminFeature(targetFeature);
+      } else {
+        window.app.switchToTab('panel-admin');
+      }
       window.app.updateAdminActiveActivitiesUI();
       window.app.renderFirebaseQuotaBanners();
       window.app.scheduleCurrentClassStorageSync();
