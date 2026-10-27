@@ -1,4 +1,26 @@
 # System Log
+## 2026-10-27 - 網頁瀏覽器分頁圖示 (Favicon) 全面升級為左上角「📚 書本」高解析向量與多尺寸圖標
+- 影響檔案：`index.html`, `whiteboard.html`, `teacher-guide.html`, `favicon.svg`, `favicon.png`, `favicon.ico`, `favicon-32x32.png`, `favicon-16x16.png`, `apple-touch-icon.png`, `scripts/build-favicons.ps1`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **瀏覽器分頁圖示與系統左上角「📚 即時互動白板」完美一致化**：
+     - 將全系統網頁分頁圖示（Favicon）替換為與左上角系統標題完全一致的三本立體書籍（綠色、紅色、藍色）高解析度設計。
+     - 引入原生向量 `favicon.svg`，支援現代瀏覽器（Chrome, Edge, Firefox, Safari）在任何高 DPI 螢幕與分頁列上呈現 100% 銳利無鋸齒的向量漸層質感。
+     - 透過微軟官方 Fluent Emoji 向量規範重新生成多規格透明背景圖檔：
+       - `favicon.svg`：純向量 SVG 圖標。
+       - `favicon.png`：256×256 高畫質 PNG 圖標。
+       - `apple-touch-icon.png`：180×180 適用於 iOS/iPadOS 主畫面捷徑圖標。
+       - `favicon-32x32.png` 與 `favicon-16x16.png`：標準分頁列快速預覽圖標。
+       - `favicon.ico`：包含 16×16、32×32、48×48 多重解析度封包，兼顧傳統瀏覽器與各類書籤收藏相容性。
+  2. **全面補齊各子頁面 Favicon 標籤**：
+     - `index.html`：更新圖示引用為全新版本（`?v=4`）。
+     - `whiteboard.html`：補齊 Favicon 宣告，確保學生或教師另開互動白板子視窗時分頁圖示維持高度一致。
+     - `teacher-guide.html`：同步導入全新分頁圖示。
+  3. **自動化建置腳本記錄**：
+     - 新增 `scripts/build-favicons.ps1`，完整記錄高畫質向量轉檔與 ICO 封裝流程。
+  4. **合規檢測**：
+     - 通過 `npm run check:syntax` 與 `node --check js/app.js` 檢驗。
+     - 嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-27 - 介面視覺極致清爽化重構 (右下角懸浮個人64×64大頭像HUD、管理後台收納至💡選單、課堂狀態列極簡化) 與四款白底頭像圖鑑全面替換重製
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatars_sheet1.png`, `images/avatars_sheet2.png`, `images/avatars_sheet.png`, `images/avatar_preset_snacks.png`, `images/avatars/avatar_0.png` ~ `avatar_95.png`, `scripts/process-white-uploads.ps1`。
 - 修改項目：
