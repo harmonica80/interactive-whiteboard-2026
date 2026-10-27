@@ -1,4 +1,19 @@
 # System Log
+## 2026-10-27 - 優化右下角個人懸浮大頭像 (移除外圍框線底色與名字編輯鉛筆圖示，最大化空間利用)
+- 影響檔案：`index.html`, `css/style.css`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **移除最外圍圓角矩形框線與底色**：
+     - 將 `#floatingStudentAvatarContainer` 外層的框線、卡片底色、內距（padding）與陰影全部移除（`background: transparent; border: none; padding: 0; box-shadow: none;`），消除多餘的雙層框感，使 64×64 大頭像與姓名標籤直接俐落懸浮於畫面上。
+     - 頭像主體維持獨立立體圓角卡片（`border-radius: 16px; background: #ffffff;`），懸停時呈現自然輕柔放大與陰影高亮。
+  2. **移除姓名標籤右側鉛筆圖示並釋放姓名寬度上限**：
+     - 自 `#floatingStudentNameTag` 移除右側編輯鉛筆符號（`✎`），將其佔據的空間全數回饋給學生姓名顯示。
+     - 姓名標籤最大寬度放寬至 `max-width: 140px`（文字寬度 `max-width: 120px`），確保 5~7 字的學生姓名（如「圓滾知更鳥」）完整顯示不被截斷為省略號。
+     - 手機版自適應優化：頭像平滑縮放至 52×52，外圍容器維持純淨無邊框。
+  3. **合規檢測**：
+     - 通過 `npm run check:syntax` 與 `node --check js/app.js`。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 更新 `css/style.css?v=414` 快取版本參數。
+
 ## 2026-10-27 - 網頁瀏覽器分頁圖示 (Favicon) 全面升級為左上角「📚 書本」高解析向量與多尺寸圖標
 - 影響檔案：`index.html`, `whiteboard.html`, `teacher-guide.html`, `favicon.svg`, `favicon.png`, `favicon.ico`, `favicon-32x32.png`, `favicon-16x16.png`, `apple-touch-icon.png`, `scripts/build-favicons.ps1`, `SYSTEM_LOG.md`。
 - 修改項目：
