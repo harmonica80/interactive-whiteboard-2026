@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=414">
+  <link rel="stylesheet" href="css/style.css?v=415">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1555,7 +1555,7 @@
                 <div class="admin-cat-title">
                   <span>🏫</span>
                   <span>班級管理</span>
-                  <span class="admin-cat-badge">7 個功能</span>
+                  <span class="admin-cat-badge">8 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -1628,6 +1628,16 @@
                     </div>
                     <div class="admin-feature-card-title">G. 功能模組啟用設定</div>
                     <div class="admin-feature-card-desc">自訂各教學功能模組啟用狀態（提問、圖片、影片、測驗、抽人、文字雲、白板、同步簡報、專注力等），未啟用之功能前台選單與後台總覽皆自動隱藏。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+
+                  <!-- H. 學生名冊與參與歷程管理 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('classStudents')">
+                    <div class="admin-feature-icon-box">
+                      <img src="images/admin_icons/class_students.svg" width="64" height="64" alt="學生名冊與參與歷程管理">
+                    </div>
+                    <div class="admin-feature-card-title">H. 學生名冊與參與歷程管理</div>
+                    <div class="admin-feature-card-desc">檢視本班同學名單、近期登入時間、在線狀態，支援修改姓名與頭像、刪除學生，並可查閱每位同學之發問、上傳、留言與測驗作答歷程。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
                 </div>
@@ -2790,6 +2800,69 @@
                 <button type="button" id="btnSaveWhiteboardFeatures" onclick="window.app && window.app.saveWhiteboardFeaturesSettings()" class="presentation-tool-btn active" style="padding: 10px 24px; font-size: 14px; font-weight: bold; border-radius: 10px;">
                   💾 儲存並套用功能啟用設定
                 </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- H. 學生名冊與參與歷程管理 (可折疊區塊) -->
+          <div class="admin-section admin-section-collapsible collapsed" id="adminClassStudentsSection">
+            <div class="admin-section-header">
+              <h3>🧑‍🎓 H. 學生名冊與參與歷程管理</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <!-- 頂部班級範圍、統計與操作按鈕 -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);">
+                <div>
+                  <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span id="adminStudentsClassScopeBadge" style="background: rgba(0, 122, 255, 0.12); color: var(--accent-color); padding: 3px 10px; border-radius: 8px; font-size: 14px; font-weight: bold;">🏫 當前班級：載入中...</span>
+                    <span id="adminStudentsTotalCountBadge" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">共 0 位同學</span>
+                  </div>
+                  <p style="font-size: 14px; color: var(--text-secondary); margin: 6px 0 0 0; line-height: 1.5;">
+                    💡 檢視當前班級已登錄同學名單、近期登入日期與時間。點擊「📜 歷程」可查閱該同學的提問、圖片分享、影片、留言互動與測驗作答記錄；亦可進行姓名與頭像編修或刪除。
+                  </p>
+                </div>
+
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.refreshAdminStudentsList()" title="重新由雲端同步最新學生名冊" style="font-size: 14px; border-radius: 10px; padding: 6px 14px;">
+                    🔄 重新整理名冊
+                  </button>
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.exportStudentsReportCsv()" title="匯出本班學生名冊與歷程統計為 CSV 檔" style="font-size: 14px; border-radius: 10px; padding: 6px 14px;">
+                    📥 匯出學生名冊
+                  </button>
+                </div>
+              </div>
+
+              <!-- 搜尋與排序過濾列 -->
+              <div style="background: var(--bg-input); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                <div style="flex: 1; min-width: 220px; display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 14px; color: var(--text-muted);">🔍</span>
+                  <input type="text" id="adminStudentSearchInput" class="question-input" placeholder="搜尋學生姓名或 UID..." oninput="window.app && window.app.onAdminStudentSearchChange(this.value)" style="margin: 0; width: 100%; font-size: 14px;">
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <label for="adminStudentSortSelect" style="font-size: 14px; color: var(--text-secondary); margin: 0; white-space: nowrap;">排序：</label>
+                    <select id="adminStudentSortSelect" class="question-input" onchange="window.app && window.app.onAdminStudentSortChange(this.value)" style="margin: 0; padding: 6px 12px; font-size: 14px; border-radius: 8px; cursor: pointer;">
+                      <option value="recentLogin">⏰ 最近登入時間 (最新優先)</option>
+                      <option value="name">🔤 學生姓名 (筆畫 / A-Z)</option>
+                      <option value="activity">🔥 參與活躍度 (歷程總數)</option>
+                      <option value="online">🟢 在線狀態優先</option>
+                    </select>
+                  </div>
+
+                  <label for="adminStudentFilterOnline" style="display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-primary); cursor: pointer; user-select: none; margin: 0;">
+                    <input type="checkbox" id="adminStudentFilterOnline" onchange="window.app && window.app.onAdminStudentFilterOnlineChange(this.checked)" style="width: 16px; height: 16px; cursor: pointer;">
+                    <span>僅顯示在線同學</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- 學生名冊網格容器 -->
+              <div id="adminStudentsListContainer" class="admin-students-grid">
+                <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 30px; grid-column: 1 / -1;">
+                  載入學生名冊中...
+                </div>
               </div>
             </div>
           </div>
@@ -5874,7 +5947,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=434"></script>
+  <script src="js/app.js?v=435"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
@@ -7288,6 +7361,127 @@ Python</pre>
 
       <div style="margin-top: 18px; display: flex; justify-content: flex-end;">
         <button type="button" class="btn btn-secondary" onclick="window.app.closeBankFormatPickerModal()" style="padding: 8px 18px; font-size: 14px; font-weight: bold;">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🧑‍🎓 學生參與歷程檢視器彈窗 -->
+  <div id="studentHistoryModal" class="modal-overlay" style="display: none; z-index: 21500;" onclick="if(event.target===this) window.app && window.app.closeStudentHistoryModal()">
+    <div class="modal-content student-history-modal-content" style="max-width: 820px; width: 94%; max-height: 90vh; display: flex; flex-direction: column; padding: 0; border-radius: 16px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-hover);">
+      <!-- 頂部學生摘要 Header -->
+      <div class="student-history-header" style="background: var(--bg-primary); padding: 18px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div id="studentHistoryAvatarBox" style="width: 58px; height: 58px; border-radius: 16px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); border: 1.5px solid var(--border-color); flex-shrink: 0; overflow: hidden;">
+            <!-- 大頭像 -->
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h3 id="studentHistoryName" style="margin: 0; font-size: 20px; font-weight: bold; color: var(--text-primary);">同學姓名</h3>
+              <span id="studentHistoryOnlineBadge" style="font-size: 14px; padding: 2px 8px; border-radius: 12px; font-weight: bold; background: rgba(16, 185, 129, 0.15); color: #10b981;">🟢 線上</span>
+            </div>
+            <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <span>⏰ 最近登入：<strong id="studentHistoryLastLogin" style="color: var(--text-primary);">--</strong></span>
+              <span>🔑 UID: <code id="studentHistoryUid" style="font-size: 13px; opacity: 0.8;">--</code></span>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="modal-close" onclick="window.app && window.app.closeStudentHistoryModal()" style="font-size: 20px; background: none; border: none; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <!-- 統計數據指標列 -->
+      <div style="padding: 12px 24px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; overflow-x: auto; flex-wrap: wrap;">
+        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+          <span>🔥</span> 歷程總計：<strong id="studentHistoryTotalCount" style="color: var(--accent-color);">0</strong>
+        </div>
+        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+          <span>🙋</span> 提問：<strong id="studentHistoryQCount">0</strong>
+        </div>
+        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+          <span>💬</span> 留言：<strong id="studentHistoryCommentCount">0</strong>
+        </div>
+        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+          <span>🖼️</span> 圖片：<strong id="studentHistoryImgCount">0</strong>
+        </div>
+        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+          <span>🎥</span> 影片：<strong id="studentHistoryVidCount">0</strong>
+        </div>
+        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+          <span>📝</span> 測驗作答：<strong id="studentHistoryQuizCount">0</strong>
+        </div>
+        <div class="student-stat-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 14px;">
+          <span>💭</span> 文字雲：<strong id="studentHistoryWcCount">0</strong>
+        </div>
+      </div>
+
+      <!-- 歷程分類篩選頁籤 -->
+      <div style="padding: 10px 24px 0 24px; background: var(--bg-card); display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid var(--border-color);">
+        <button type="button" class="student-history-filter-btn active" data-filter="all" onclick="window.app && window.app.filterStudentHistory('all')">全部歷程</button>
+        <button type="button" class="student-history-filter-btn" data-filter="question" onclick="window.app && window.app.filterStudentHistory('question')">🙋 提問</button>
+        <button type="button" class="student-history-filter-btn" data-filter="comment" onclick="window.app && window.app.filterStudentHistory('comment')">💬 留言</button>
+        <button type="button" class="student-history-filter-btn" data-filter="media" onclick="window.app && window.app.filterStudentHistory('media')">🖼️ 圖片/影片</button>
+        <button type="button" class="student-history-filter-btn" data-filter="quiz" onclick="window.app && window.app.filterStudentHistory('quiz')">📝 測驗作答</button>
+        <button type="button" class="student-history-filter-btn" data-filter="wordcloud" onclick="window.app && window.app.filterStudentHistory('wordcloud')">💭 文字雲</button>
+      </div>
+
+      <!-- 歷程動態時間軸容器 -->
+      <div id="studentHistoryTimeline" style="flex: 1; overflow-y: auto; padding: 18px 24px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 30px;">
+          載入同學歷程中...
+        </div>
+      </div>
+
+      <!-- 底部 Footer -->
+      <div style="padding: 14px 24px; background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.exportSingleStudentReportTxt()" style="font-size: 14px; border-radius: 8px;">
+          📄 匯出此同學完整歷程 (TXT)
+        </button>
+        <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.closeStudentHistoryModal()" style="padding: 6px 20px; font-size: 14px; border-radius: 8px;">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🧑‍🎓 編輯學生姓名與頭像彈窗 -->
+  <div id="adminEditStudentModal" class="modal-overlay" style="display: none; z-index: 21500;" onclick="if(event.target===this) window.app && window.app.closeAdminEditStudentModal()">
+    <div class="modal-content" style="max-width: 500px; width: 92%; padding: 22px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-hover);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <span>✏️</span> 編輯學生資訊
+        </h3>
+        <button type="button" class="modal-close" onclick="window.app && window.app.closeAdminEditStudentModal()" style="font-size: 18px; background: none; border: none; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <input type="hidden" id="adminEditStudentUid" value="">
+
+      <!-- 姓名輸入 -->
+      <div style="margin-bottom: 16px;">
+        <label for="adminEditStudentNameInput" style="display: block; font-size: 14px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">
+          同學姓名 / 暱稱：
+        </label>
+        <input type="text" id="adminEditStudentNameInput" class="question-input" placeholder="請輸入姓名" style="margin: 0; width: 100%; font-size: 15px; font-weight: bold;" maxlength="30">
+      </div>
+
+      <!-- 頭像選取 -->
+      <div style="margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 14px; font-weight: bold; color: var(--text-primary); margin: 0;">
+            指派頭像角色：
+          </label>
+          <span id="adminEditStudentAvatarLabel" style="font-size: 14px; color: var(--accent-color); font-weight: bold;">--</span>
+        </div>
+        <div id="adminEditStudentAvatarGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; max-height: 220px; overflow-y: auto; padding: 8px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-input);">
+          <!-- 動態渲染頭像選項 -->
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+        <button type="button" onclick="window.app && window.app.closeAdminEditStudentModal()" style="padding: 8px 16px; font-size: 14px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);">
+          取消
+        </button>
+        <button type="button" onclick="window.app && window.app.adminSaveStudentEdit()" class="presentation-tool-btn active" style="padding: 8px 22px; font-size: 14px; font-weight: bold; border-radius: 8px;">
+          💾 儲存修改
+        </button>
       </div>
     </div>
   </div>

@@ -363,10 +363,11 @@ class App {
     // 同步記錄至當前課堂學生名冊，方便防範重名與跨裝置顯示
     const myUid = this.getUserId();
     if (myUid && db) {
-      db.ref('quiz/students').child(myUid).set({
+      db.ref('quiz/students').child(myUid).update({
         name: trimmed,
         avatar: avatarId,
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        lastLoginAt: Date.now()
       }).catch(() => {});
     }
 
@@ -3417,6 +3418,9 @@ class App {
     this.registeredStudents = {};
     db.ref('quiz/students').on('value', (snapshot) => {
       this.registeredStudents = snapshot.val() || {};
+      if (this.activeTabId === 'panel-admin' && this.currentAdminFeatureKey === 'classStudents') {
+        this.renderAdminStudentsList();
+      }
     });
 
     // 監聽課堂重設廣播信號 (一次性課堂清除資料時連帶清除學生端已登入姓名，避免舊名稱累積佔用)
@@ -5500,6 +5504,12 @@ class App {
         category: '班級管理',
         icon: 'images/admin_icons/system_reset.svg'
       },
+      classStudents: {
+        id: 'adminClassStudentsSection',
+        title: 'H. 學生名冊與參與歷程管理',
+        category: '班級管理',
+        icon: 'images/admin_icons/class_students.svg'
+      },
       classReaction: {
         id: 'adminReactionSettingsSection',
         title: 'D. 即時互動回饋設定',
@@ -5603,6 +5613,7 @@ class App {
       systemReset: 'adminCatBlock1',
       classSecurity: 'adminCatBlock1',
       whiteboardFeatures: 'adminCatBlock1',
+      classStudents: 'adminCatBlock1',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
@@ -5721,6 +5732,11 @@ class App {
     // 即時互動回饋設定專屬 UI 同步
     if (featureKey === 'classReaction') {
       this.updateReactionSettingsUI();
+    }
+
+    // 學生名冊與參與歷程管理專屬 UI 同步
+    if (featureKey === 'classStudents') {
+      this.renderAdminStudentsList();
     }
 
     // 提問管理與教師分享管理：更新 Firebase 空間與流量監測儀表板及附檔開關狀態
@@ -9986,12 +10002,24 @@ class App {
         // 註冊個人連線 Session（輕量化只寫入必要欄位）
         myPresenceRef = presenceRef.push();
         this.myPresenceRef = myPresenceRef;
+        const curUserName = (this.getCurrentUserName() || '').trim();
+        const curUserUid = this.getUserId();
         myPresenceRef.set({
-          userId: this.getUserId(),
-          userName: (this.getCurrentUserName() || '').slice(0, 20),
+          userId: curUserUid,
+          userName: curUserName.slice(0, 20),
+          avatar: this.getCurrentUserAvatar(),
           timestamp: firebase.database.ServerValue.TIMESTAMP
         });
         myPresenceRef.onDisconnect().remove();
+
+        // 登入或重新連線時，自動為一般學生更新名冊中的最新登入日期與時間
+        if (curUserName && !this.isAdmin && typeof db !== 'undefined' && db && curUserUid) {
+          db.ref('quiz/students').child(curUserUid).update({
+            name: curUserName,
+            avatar: this.getCurrentUserAvatar(),
+            lastLoginAt: Date.now()
+          }).catch(() => {});
+        }
 
         // 啟動定時心跳（45 秒一次）
         if (heartbeatTimer) clearInterval(heartbeatTimer);
@@ -17223,7 +17251,878 @@ class App {
       this.renderAdminClassList(classList);
       this.initCrossClassCopySection(classList);
       this.populateAdminClassAvatarDropdown();
+      if (this.activeTabId === 'panel-admin' && this.currentAdminFeatureKey === 'classStudents') {
+        this.renderAdminStudentsList();
+      }
     });
+  }
+
+  // ===== 管理後台：學生名冊與參與歷程管理業務 =====
+  formatFullDateTime(ts) {
+    if (!ts) return { full: '尚未登入或無記錄', relative: '無記錄' };
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return { full: '無效日期', relative: '無效日期' };
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
+    let rel = '';
+    if (diffSec < 60) rel = '剛才';
+    else if (diffSec < 3600) rel = `${Math.floor(diffSec / 60)} 分鐘前`;
+    else if (diffSec < 86400 && isToday) rel = `今天 ${hours}:${minutes}`;
+    else if (diffSec < 172800) rel = `昨天 ${hours}:${minutes}`;
+    else rel = `${year}/${month}/${day} ${hours}:${minutes}`;
+
+    return {
+      full: `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`,
+      relative: rel
+    };
+  }
+
+  getStudentActivityHistory(studentUid, studentName) {
+    const activities = [];
+    const targetUid = String(studentUid || '').trim();
+    const targetName = String(studentName || '').trim().toLowerCase();
+
+    const isMatch = (itemUid, itemName) => {
+      if (targetUid && itemUid && String(itemUid).trim() === targetUid) return true;
+      if (targetName && itemName && String(itemName).trim().toLowerCase() === targetName) return true;
+      return false;
+    };
+
+    // 1. 提問 (Questions)
+    const questions = this.questions || [];
+    questions.forEach(q => {
+      if (isMatch(q.userId, q.user || q.userName)) {
+        activities.push({
+          id: `q_${q.id}`,
+          type: 'question',
+          typeName: '提問',
+          icon: '🙋',
+          timestamp: q.timestamp || 0,
+          title: q.text || '（無提問文字）',
+          details: `獲得 ${q.likesCount || (q.likes ? Object.keys(q.likes).length : 0)} 個讚 · ${q.comments ? Object.keys(q.comments).length : 0} 則留言`,
+          attachment: q.photoUrl || q.fileUrl || null
+        });
+      }
+
+      // 檢查此提問下的留言
+      if (q.comments && typeof q.comments === 'object') {
+        Object.entries(q.comments).forEach(([cid, c]) => {
+          if (c && isMatch(c.userId, c.user || c.userName)) {
+            activities.push({
+              id: `c_${q.id}_${cid}`,
+              type: 'comment',
+              typeName: '留言互動',
+              icon: '💬',
+              timestamp: c.timestamp || 0,
+              title: c.text || '',
+              details: `回應提問「${(q.text || '').slice(0, 30)}...」`
+            });
+          }
+        });
+      }
+    });
+
+    // 2. 圖片分享 (Images)
+    const images = this.images || [];
+    images.forEach(img => {
+      if (isMatch(img.userId, img.user || img.userName)) {
+        activities.push({
+          id: `img_${img.id}`,
+          type: 'media',
+          typeName: '圖片分享',
+          icon: '🖼️',
+          timestamp: img.timestamp || 0,
+          title: `上傳圖片至相簿【${img.folder || '一般相簿'}】`,
+          details: img.url ? '點擊可預覽大圖' : '',
+          attachment: img.url || null
+        });
+      }
+
+      // 檢查此圖片下的留言
+      if (img.comments && typeof img.comments === 'object') {
+        Object.entries(img.comments).forEach(([cid, c]) => {
+          if (c && isMatch(c.userId, c.user || c.userName)) {
+            activities.push({
+              id: `c_img_${img.id}_${cid}`,
+              type: 'comment',
+              typeName: '留言互動',
+              icon: '💬',
+              timestamp: c.timestamp || 0,
+              title: c.text || '',
+              details: `回應圖片作品（相簿：${img.folder || '一般相簿'}）`
+            });
+          }
+        });
+      }
+    });
+
+    // 3. 影片分享 (Videos)
+    const videos = this.videos || [];
+    videos.forEach(v => {
+      if (isMatch(v.userId, v.user || v.userName)) {
+        activities.push({
+          id: `vid_${v.id}`,
+          type: 'media',
+          typeName: '影片分享',
+          icon: '🎥',
+          timestamp: v.timestamp || 0,
+          title: v.title || '（無影片標題）',
+          details: v.youtubeId ? `YouTube ID: ${v.youtubeId}` : ''
+        });
+      }
+
+      // 檢查此影片下的留言
+      if (v.comments && typeof v.comments === 'object') {
+        Object.entries(v.comments).forEach(([cid, c]) => {
+          if (c && isMatch(c.userId, c.user || c.userName)) {
+            activities.push({
+              id: `c_vid_${v.id}_${cid}`,
+              type: 'comment',
+              typeName: '留言互動',
+              icon: '💬',
+              timestamp: c.timestamp || 0,
+              title: c.text || '',
+              details: `回應影片「${(v.title || '').slice(0, 30)}...」`
+            });
+          }
+        });
+      }
+    });
+
+    // 4. 隨堂測驗作答 (Quiz Answers)
+    if (this.quizAnswers && typeof this.quizAnswers === 'object') {
+      Object.entries(this.quizAnswers).forEach(([ansId, ans]) => {
+        if (ans && isMatch(ans.userId, ans.userName || ans.name)) {
+          activities.push({
+            id: `qa_${ansId}`,
+            type: 'quiz',
+            typeName: '隨堂測驗',
+            icon: '📝',
+            timestamp: ans.timestamp || 0,
+            title: `測驗作答：選擇【${ans.answer || ans.choice || '已提交'}】`,
+            details: ans.isCorrect !== undefined ? (ans.isCorrect ? '✅ 答對' : '❌ 答錯') : '已作答提交'
+          });
+        }
+      });
+    }
+
+    // 5. 影片測驗作答 (Video Quiz Answers)
+    if (window.videoQuiz && window.videoQuiz.answers && typeof window.videoQuiz.answers === 'object') {
+      Object.entries(window.videoQuiz.answers).forEach(([ansId, ans]) => {
+        if (ans && isMatch(ans.userId, ans.userName || ans.name)) {
+          activities.push({
+            id: `vqa_${ansId}`,
+            type: 'quiz',
+            typeName: '影片出題作答',
+            icon: '🎬',
+            timestamp: ans.timestamp || 0,
+            title: `影片題目作答：【${ans.questionTitle || '影片測驗題'}】`,
+            details: `作答內容：${ans.answer || ans.text || '已提交'} ${ans.isCorrect !== undefined ? (ans.isCorrect ? '· ✅ 答對' : '· ❌ 答錯') : ''}`
+          });
+        }
+      });
+    }
+
+    // 6. 文字雲投稿 (Word Cloud Submissions)
+    if (window.wordCloud && window.wordCloud.submissions && typeof window.wordCloud.submissions === 'object') {
+      Object.entries(window.wordCloud.submissions).forEach(([subId, sub]) => {
+        if (sub && isMatch(sub.userId, sub.userName || sub.user)) {
+          activities.push({
+            id: `wc_${subId}`,
+            type: 'wordcloud',
+            typeName: '文字雲發想',
+            icon: '💭',
+            timestamp: sub.timestamp || 0,
+            title: `投稿詞彙：「${sub.text || sub.word || ''}」`,
+            details: `活動標題：${sub.activityTitle || '即時文字雲'}`
+          });
+        }
+      });
+    }
+
+    // 7. 同步簡報回應 (Presentation Submissions)
+    if (window.presentationCore && window.presentationCore.submissions && typeof window.presentationCore.submissions === 'object') {
+      Object.entries(window.presentationCore.submissions).forEach(([slideId, pageMap]) => {
+        if (pageMap && typeof pageMap === 'object') {
+          Object.entries(pageMap).forEach(([pUid, sub]) => {
+            if (sub && isMatch(pUid, sub.userName || sub.name)) {
+              activities.push({
+                id: `pres_${slideId}_${pUid}`,
+                type: 'quiz',
+                typeName: '同步簡報互動',
+                icon: '📊',
+                timestamp: sub.timestamp || 0,
+                title: `簡報互動回應：${Array.isArray(sub.answers) ? sub.answers.join(', ') : (sub.answers || '已提交回應')}`,
+                details: `頁面：${slideId}`
+              });
+            }
+          });
+        }
+      });
+    }
+
+    // 依時間倒序（最新優先）
+    activities.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    return activities;
+  }
+
+  renderAdminStudentsList() {
+    const container = document.getElementById('adminStudentsListContainer');
+    if (!container) return;
+
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+    
+    // 更新範圍標籤
+    const scopeBadge = document.getElementById('adminStudentsClassScopeBadge');
+    if (scopeBadge) {
+      scopeBadge.textContent = classCode ? `🏫 當前班級：${classCode}` : '🌱 一次性課堂';
+    }
+
+    // 彙整學生清單 (Map by uid)
+    const studentsMap = new Map();
+
+    // 1. 登記在 quiz/students 的學生
+    const regStudents = this.registeredStudents || {};
+    Object.entries(regStudents).forEach(([uid, data]) => {
+      if (data && data.name) {
+        studentsMap.set(uid, {
+          uid,
+          name: String(data.name).trim(),
+          avatar: data.avatar !== undefined ? data.avatar : 0,
+          lastLoginAt: data.lastLoginAt || data.updatedAt || null,
+          createdAt: data.createdAt || data.updatedAt || null
+        });
+      }
+    });
+
+    // 2. 補充 presence 在線名冊
+    const presenceData = this.onlinePresence || {};
+    Object.values(presenceData).forEach(p => {
+      if (p && p.userId && p.userName && !studentsMap.has(p.userId)) {
+        studentsMap.set(p.userId, {
+          uid: p.userId,
+          name: String(p.userName).trim(),
+          avatar: p.avatar !== undefined ? p.avatar : 0,
+          lastLoginAt: p.timestamp || Date.now(),
+          createdAt: p.timestamp || Date.now()
+        });
+      }
+    });
+
+    // 3. 補充曾發布提問、圖片、影片但可能未在名冊的同學
+    const extraItems = [
+      ...(this.questions || []),
+      ...(this.images || []),
+      ...(this.videos || [])
+    ];
+    extraItems.forEach(item => {
+      if (item && item.userId && item.user && !studentsMap.has(item.userId)) {
+        studentsMap.set(item.userId, {
+          uid: item.userId,
+          name: String(item.user).trim(),
+          avatar: item.avatar !== undefined ? item.avatar : 0,
+          lastLoginAt: item.timestamp || null,
+          createdAt: item.timestamp || null
+        });
+      }
+    });
+
+    // 檢查線上在線狀態 Set
+    const onlineUids = new Set();
+    Object.values(presenceData).forEach(p => {
+      if (p && p.userId) onlineUids.add(p.userId);
+    });
+
+    // 計算每位同學的歷程統計
+    const studentList = Array.from(studentsMap.values()).map(s => {
+      const isOnline = onlineUids.has(s.uid);
+      const activities = this.getStudentActivityHistory(s.uid, s.name);
+      
+      let qCount = 0, cCount = 0, imgCount = 0, vidCount = 0, quizCount = 0, wcCount = 0;
+      let latestActivityTime = s.lastLoginAt || 0;
+
+      activities.forEach(act => {
+        if (act.type === 'question') qCount++;
+        else if (act.type === 'comment') cCount++;
+        else if (act.type === 'media') {
+          if (act.icon === '🖼️') imgCount++;
+          else if (act.icon === '🎥') vidCount++;
+        } else if (act.type === 'quiz') quizCount++;
+        else if (act.type === 'wordcloud') wcCount++;
+
+        if (act.timestamp && act.timestamp > latestActivityTime) {
+          latestActivityTime = act.timestamp;
+        }
+      });
+
+      return {
+        ...s,
+        isOnline,
+        lastLoginAt: s.lastLoginAt || latestActivityTime || null,
+        activityTotal: activities.length,
+        stats: { qCount, cCount, imgCount, vidCount, quizCount, wcCount }
+      };
+    });
+
+    // 更新總數徽章
+    const countBadge = document.getElementById('adminStudentsTotalCountBadge');
+    if (countBadge) {
+      countBadge.textContent = `共 ${studentList.length} 位同學 (目前 ${onlineUids.size} 位在線)`;
+    }
+
+    // 依搜尋條件過濾
+    const query = this.adminStudentSearchQuery || '';
+    let filtered = studentList;
+    if (query) {
+      filtered = filtered.filter(s =>
+        s.name.toLowerCase().includes(query) ||
+        s.uid.toLowerCase().includes(query)
+      );
+    }
+
+    if (this.adminStudentFilterOnlineOnly) {
+      filtered = filtered.filter(s => s.isOnline);
+    }
+
+    // 排序
+    const sortOrder = this.adminStudentSortOrder || 'recentLogin';
+    filtered.sort((a, b) => {
+      if (sortOrder === 'recentLogin') {
+        return (b.lastLoginAt || 0) - (a.lastLoginAt || 0);
+      } else if (sortOrder === 'name') {
+        return a.name.localeCompare(b.name, 'zh-Hant');
+      } else if (sortOrder === 'activity') {
+        return b.activityTotal - a.activityTotal;
+      } else if (sortOrder === 'online') {
+        if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
+        return (b.lastLoginAt || 0) - (a.lastLoginAt || 0);
+      }
+      return 0;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); font-size: 15px; padding: 40px; grid-column: 1 / -1; background: var(--bg-card); border-radius: 12px; border: 1px dashed var(--border-color);">
+          ${query ? '🔍 查無符合搜尋條件的同學。' : '🌱 目前課堂名冊尚無同學資料。當同學進入白板並設定名稱後，將自動登記於此！'}
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = filtered.map(s => {
+      const timeObj = this.formatFullDateTime(s.lastLoginAt);
+      const avatarHtml = this.renderAvatarHtml(s.avatar, 44);
+
+      return `
+        <div class="admin-student-card" id="student_card_${s.uid}">
+          <div class="admin-student-card-header">
+            <div class="admin-student-card-avatar" title="頭像代號: ${s.avatar}">
+              ${avatarHtml}
+            </div>
+            <div class="admin-student-card-info">
+              <div class="admin-student-card-name-row">
+                <span class="admin-student-card-name" title="${this.escapeHtml(s.name)}">${this.escapeHtml(s.name)}</span>
+                <span class="admin-student-online-badge ${s.isOnline ? 'online' : 'offline'}" title="${s.isOnline ? '連線中' : '目前離線'}">
+                  ${s.isOnline ? '🟢 線上' : '⚪ 離線'}
+                </span>
+              </div>
+              <div class="admin-student-card-time" title="登入/最後活動時間：${timeObj.full}">
+                <span>⏰</span>
+                <span>${timeObj.relative}</span>
+                <span style="font-size: 13px; opacity: 0.65;">(${timeObj.full.split(' ')[0]})</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 參與活動摘要小標籤 -->
+          <div class="admin-student-card-stats">
+            <span class="admin-student-stat-tag" title="歷程總互動次數">🔥 <strong>${s.activityTotal}</strong> 歷程</span>
+            <span class="admin-student-stat-tag" title="提問數">🙋 <strong>${s.stats.qCount}</strong></span>
+            <span class="admin-student-stat-tag" title="留言互動數">💬 <strong>${s.stats.cCount}</strong></span>
+            <span class="admin-student-stat-tag" title="圖片分享數">🖼️ <strong>${s.stats.imgCount}</strong></span>
+            <span class="admin-student-stat-tag" title="影片分享數">🎥 <strong>${s.stats.vidCount}</strong></span>
+            <span class="admin-student-stat-tag" title="測驗作答數">📝 <strong>${s.stats.quizCount}</strong></span>
+          </div>
+
+          <!-- 操作按鈕組 -->
+          <div class="admin-student-card-actions">
+            <button type="button" onclick="window.app.adminOpenStudentHistoryModal('${s.uid}')" title="查閱 ${this.escapeHtml(s.name)} 的完整參與歷程">
+              📜 歷程
+            </button>
+            <button type="button" onclick="window.app.adminOpenEditStudentModal('${s.uid}')" title="編輯 ${this.escapeHtml(s.name)} 的姓名與頭像">
+              ✏️ 編輯
+            </button>
+            <button type="button" class="btn-del-student" onclick="window.app.adminDeleteStudent('${s.uid}', '${this.escapeHtml(s.name)}')" title="自名冊刪除此同學">
+              🗑️ 刪除
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  onAdminStudentSearchChange(val) {
+    this.adminStudentSearchQuery = String(val || '').trim().toLowerCase();
+    this.renderAdminStudentsList();
+  }
+
+  onAdminStudentSortChange(val) {
+    this.adminStudentSortOrder = val;
+    this.renderAdminStudentsList();
+  }
+
+  onAdminStudentFilterOnlineChange(checked) {
+    this.adminStudentFilterOnlineOnly = Boolean(checked);
+    this.renderAdminStudentsList();
+  }
+
+  async refreshAdminStudentsList() {
+    try {
+      const snap = await db.ref('quiz/students').once('value');
+      this.registeredStudents = snap.val() || {};
+      this.renderAdminStudentsList();
+      this.showNotification('名冊已更新', '已重新同步雲端最新學生名冊！');
+    } catch (e) {
+      this.showNotification('錯誤', '同步失敗: ' + e.message);
+    }
+  }
+
+  adminOpenStudentHistoryModal(studentUid) {
+    const regStudents = this.registeredStudents || {};
+    let student = regStudents[studentUid];
+    if (!student) {
+      const p = Object.values(this.onlinePresence || {}).find(x => x && x.userId === studentUid);
+      if (p) student = { uid: studentUid, name: p.userName, avatar: p.avatar };
+      else {
+        const item = [...(this.questions || []), ...(this.images || []), ...(this.videos || [])].find(x => x && x.userId === studentUid);
+        if (item) student = { uid: studentUid, name: item.user, avatar: item.avatar };
+        else student = { uid: studentUid, name: '同學', avatar: 0 };
+      }
+    }
+
+    const studentName = student.name || '同學';
+    const studentAvatar = student.avatar !== undefined ? student.avatar : 0;
+    const activities = this.getStudentActivityHistory(studentUid, studentName);
+    this.currentStudentHistoryActivities = activities;
+    this.currentHistoryStudent = { uid: studentUid, name: studentName, avatar: studentAvatar, lastLoginAt: student.lastLoginAt };
+
+    // 填充 Header
+    const avatarBox = document.getElementById('studentHistoryAvatarBox');
+    if (avatarBox) avatarBox.innerHTML = this.renderAvatarHtml(studentAvatar, 54);
+
+    const nameEl = document.getElementById('studentHistoryName');
+    if (nameEl) nameEl.textContent = studentName;
+
+    const uidEl = document.getElementById('studentHistoryUid');
+    if (uidEl) uidEl.textContent = studentUid;
+
+    const isOnline = Object.values(this.onlinePresence || {}).some(p => p && p.userId === studentUid);
+    const badgeEl = document.getElementById('studentHistoryOnlineBadge');
+    if (badgeEl) {
+      badgeEl.textContent = isOnline ? '🟢 線上' : '⚪ 離線';
+      badgeEl.style.color = isOnline ? '#10b981' : 'var(--text-muted)';
+      badgeEl.style.background = isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(150, 150, 150, 0.15)';
+    }
+
+    const timeObj = this.formatFullDateTime(student.lastLoginAt || (activities[0] ? activities[0].timestamp : null));
+    const loginEl = document.getElementById('studentHistoryLastLogin');
+    if (loginEl) loginEl.textContent = timeObj.full;
+
+    // 統計數據
+    let qCount = 0, cCount = 0, imgCount = 0, vidCount = 0, quizCount = 0, wcCount = 0;
+    activities.forEach(a => {
+      if (a.type === 'question') qCount++;
+      else if (a.type === 'comment') cCount++;
+      else if (a.type === 'media') {
+        if (a.icon === '🖼️') imgCount++;
+        else if (a.icon === '🎥') vidCount++;
+      } else if (a.type === 'quiz') quizCount++;
+      else if (a.type === 'wordcloud') wcCount++;
+    });
+
+    const setElText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setElText('studentHistoryTotalCount', activities.length);
+    setElText('studentHistoryQCount', qCount);
+    setElText('studentHistoryCommentCount', cCount);
+    setElText('studentHistoryImgCount', imgCount);
+    setElText('studentHistoryVidCount', vidCount);
+    setElText('studentHistoryQuizCount', quizCount);
+    setElText('studentHistoryWcCount', wcCount);
+
+    // 預設切換至全部
+    this.filterStudentHistory('all');
+
+    const modal = document.getElementById('studentHistoryModal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  filterStudentHistory(category = 'all') {
+    this.currentStudentHistoryFilter = category;
+
+    // 更新頁籤 active 樣式
+    document.querySelectorAll('.student-history-filter-btn').forEach(btn => {
+      if (btn.dataset.filter === category) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+
+    const timeline = document.getElementById('studentHistoryTimeline');
+    if (!timeline) return;
+
+    const all = this.currentStudentHistoryActivities || [];
+    let items = all;
+    if (category === 'question') items = all.filter(a => a.type === 'question');
+    else if (category === 'comment') items = all.filter(a => a.type === 'comment');
+    else if (category === 'media') items = all.filter(a => a.type === 'media');
+    else if (category === 'quiz') items = all.filter(a => a.type === 'quiz');
+    else if (category === 'wordcloud') items = all.filter(a => a.type === 'wordcloud');
+
+    if (items.length === 0) {
+      timeline.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); font-size: 15px; padding: 40px; background: var(--bg-card); border-radius: 12px; border: 1px dashed var(--border-color);">
+          🌱 該分類目前尚無參與記錄。
+        </div>
+      `;
+      return;
+    }
+
+    timeline.innerHTML = items.map(a => {
+      const timeObj = this.formatFullDateTime(a.timestamp);
+      let badgeClass = 'badge-question';
+      if (a.type === 'comment') badgeClass = 'badge-comment';
+      else if (a.type === 'media') badgeClass = (a.icon === '🖼️' ? 'badge-image' : 'badge-video');
+      else if (a.type === 'quiz') badgeClass = 'badge-quiz';
+      else if (a.type === 'wordcloud') badgeClass = 'badge-wordcloud';
+
+      return `
+        <div class="student-activity-item">
+          <div class="student-activity-header">
+            <span class="student-activity-badge ${badgeClass}">
+              <span>${a.icon}</span>
+              <span>${a.typeName}</span>
+            </span>
+            <span class="student-activity-time" title="${timeObj.full}">
+              ⏰ ${timeObj.full} (${timeObj.relative})
+            </span>
+          </div>
+
+          <div class="student-activity-body">
+            ${this.escapeHtml(a.title)}
+          </div>
+
+          ${a.details ? `
+            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.4;">
+              ${this.escapeHtml(a.details)}
+            </div>
+          ` : ''}
+
+          ${a.attachment ? `
+            <div style="margin-top: 6px;">
+              <img src="${a.attachment}" alt="附件縮圖" style="max-height: 100px; border-radius: 8px; border: 1px solid var(--border-color); background: #ffffff; cursor: pointer;" onclick="window.app && window.app.showImageModal('${a.attachment}')">
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  closeStudentHistoryModal() {
+    const modal = document.getElementById('studentHistoryModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  exportSingleStudentReportTxt() {
+    const s = this.currentHistoryStudent;
+    if (!s) return;
+    const activities = this.currentStudentHistoryActivities || [];
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '一次性課堂');
+
+    let txt = `========================================\n`;
+    txt += `  學生參與學習歷程報告\n`;
+    txt += `========================================\n`;
+    txt += `班級代碼: ${classCode}\n`;
+    txt += `學生姓名: ${s.name}\n`;
+    txt += `學生 UID: ${s.uid}\n`;
+    txt += `匯出日期: ${new Date().toLocaleString()}\n`;
+    txt += `歷程總數: ${activities.length} 項\n`;
+    txt += `----------------------------------------\n\n`;
+
+    activities.forEach((a, idx) => {
+      const timeStr = a.timestamp ? new Date(a.timestamp).toLocaleString() : '無記錄時間';
+      txt += `[${idx + 1}] 【${a.typeName}】 ${timeStr}\n`;
+      txt += `    內容: ${a.title}\n`;
+      if (a.details) txt += `    詳情: ${a.details}\n`;
+      txt += `\n`;
+    });
+
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `學生學習歷程_${s.name}_${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.showNotification('匯出成功', `已匯出 ${s.name} 的學習歷程報告！`);
+  }
+
+  exportStudentsReportCsv() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '一次性課堂');
+
+    // 取得所有學生資料
+    const regStudents = this.registeredStudents || {};
+    const studentsMap = new Map();
+    Object.entries(regStudents).forEach(([uid, data]) => {
+      if (data && data.name) {
+        studentsMap.set(uid, {
+          uid,
+          name: String(data.name).trim(),
+          avatar: data.avatar !== undefined ? data.avatar : 0,
+          lastLoginAt: data.lastLoginAt || data.updatedAt || null
+        });
+      }
+    });
+
+    // 補充在線 presence
+    Object.values(this.onlinePresence || {}).forEach(p => {
+      if (p && p.userId && p.userName && !studentsMap.has(p.userId)) {
+        studentsMap.set(p.userId, {
+          uid: p.userId,
+          name: String(p.userName).trim(),
+          avatar: p.avatar !== undefined ? p.avatar : 0,
+          lastLoginAt: p.timestamp || Date.now()
+        });
+      }
+    });
+
+    const onlineUids = new Set();
+    Object.values(this.onlinePresence || {}).forEach(p => {
+      if (p && p.userId) onlineUids.add(p.userId);
+    });
+
+    let csv = '\uFEFF'; // UTF-8 BOM
+    csv += '學生UID,班級代碼,學生姓名,目前在線狀態,近期登入時間,歷程總數,提問數,留言互動數,圖片分享數,影片分享數,測驗作答數,文字雲發想數\n';
+
+    studentsMap.forEach(s => {
+      const isOnline = onlineUids.has(s.uid) ? '線上' : '離線';
+      const activities = this.getStudentActivityHistory(s.uid, s.name);
+      let qCount = 0, cCount = 0, imgCount = 0, vidCount = 0, quizCount = 0, wcCount = 0;
+      let latestTime = s.lastLoginAt || 0;
+
+      activities.forEach(act => {
+        if (act.type === 'question') qCount++;
+        else if (act.type === 'comment') cCount++;
+        else if (act.type === 'media') {
+          if (act.icon === '🖼️') imgCount++;
+          else if (act.icon === '🎥') vidCount++;
+        } else if (act.type === 'quiz') quizCount++;
+        else if (act.type === 'wordcloud') wcCount++;
+        if (act.timestamp && act.timestamp > latestTime) latestTime = act.timestamp;
+      });
+
+      const timeStr = latestTime ? new Date(latestTime).toLocaleString() : '無記錄';
+      const safeName = `"${String(s.name).replace(/"/g, '""')}"`;
+
+      csv += `"${s.uid}","${classCode}",${safeName},"${isOnline}","${timeStr}",${activities.length},${qCount},${cCount},${imgCount},${vidCount},${quizCount},${wcCount}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `班級學生名冊與參與歷程_${classCode}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.showNotification('匯出成功', `已成功匯出班級學生名冊與歷程統計 CSV 檔！`);
+  }
+
+  adminOpenEditStudentModal(studentUid) {
+    const regStudents = this.registeredStudents || {};
+    let student = regStudents[studentUid];
+    if (!student) {
+      const p = Object.values(this.onlinePresence || {}).find(x => x && x.userId === studentUid);
+      if (p) student = { uid: studentUid, name: p.userName, avatar: p.avatar };
+      else student = { uid: studentUid, name: '同學', avatar: 0 };
+    }
+
+    this.editingStudentUid = studentUid;
+    this.editingStudentAvatarId = student.avatar !== undefined ? student.avatar : 0;
+
+    const inputUid = document.getElementById('adminEditStudentUid');
+    if (inputUid) inputUid.value = studentUid;
+
+    const inputName = document.getElementById('adminEditStudentNameInput');
+    if (inputName) {
+      inputName.value = student.name || '';
+      inputName.focus();
+    }
+
+    const label = document.getElementById('adminEditStudentAvatarLabel');
+    if (label) label.textContent = `當前頭像代號: ${this.editingStudentAvatarId}`;
+
+    // 渲染頭像選項
+    const grid = document.getElementById('adminEditStudentAvatarGrid');
+    if (grid) {
+      const avatarCount = (this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) ? 48 : 96;
+      let html = '';
+      for (let i = 0; i < avatarCount; i++) {
+        const isSelected = (i === this.editingStudentAvatarId);
+        const avatarHtml = this.renderAvatarHtml(i, 40);
+        html += `
+          <div class="edit-student-avatar-item" data-avatar-id="${i}" onclick="window.app.adminSelectEditStudentAvatar(${i})" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; border: 2px solid ${isSelected ? 'var(--accent-color)' : 'transparent'}; background: var(--bg-card); box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.15s ease;">
+            ${avatarHtml}
+          </div>
+        `;
+      }
+      grid.innerHTML = html;
+    }
+
+    const modal = document.getElementById('adminEditStudentModal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  adminSelectEditStudentAvatar(avatarId) {
+    this.editingStudentAvatarId = avatarId;
+    const label = document.getElementById('adminEditStudentAvatarLabel');
+    if (label) label.textContent = `已選擇頭像代號: ${avatarId}`;
+
+    document.querySelectorAll('.edit-student-avatar-item').forEach(item => {
+      const id = parseInt(item.dataset.avatarId, 10);
+      if (id === avatarId) {
+        item.style.borderColor = 'var(--accent-color)';
+        item.style.transform = 'scale(1.1)';
+      } else {
+        item.style.borderColor = 'transparent';
+        item.style.transform = 'scale(1)';
+      }
+    });
+  }
+
+  closeAdminEditStudentModal() {
+    const modal = document.getElementById('adminEditStudentModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async adminSaveStudentEdit() {
+    const uid = this.editingStudentUid;
+    if (!uid) return;
+
+    const inputName = document.getElementById('adminEditStudentNameInput');
+    const newName = inputName ? inputName.value.trim() : '';
+    if (!newName) {
+      this.showNotification('提示', '請輸入學生姓名（不可為空）！');
+      if (inputName) inputName.focus();
+      return;
+    }
+
+    const avatarId = this.editingStudentAvatarId !== undefined ? this.editingStudentAvatarId : 0;
+
+    try {
+      await db.ref('quiz/students').child(uid).update({
+        name: newName,
+        avatar: avatarId,
+        updatedAt: Date.now()
+      });
+
+      if (!this.registeredStudents) this.registeredStudents = {};
+      this.registeredStudents[uid] = {
+        ...(this.registeredStudents[uid] || {}),
+        name: newName,
+        avatar: avatarId,
+        updatedAt: Date.now()
+      };
+
+      this.closeAdminEditStudentModal();
+      this.showNotification('成功', `已成功更新學生「${newName}」的姓名與頭像！`);
+      this.renderAdminStudentsList();
+    } catch (e) {
+      this.showNotification('錯誤', '更新失敗: ' + e.message);
+    }
+  }
+
+  adminDeleteStudent(uid, studentName) {
+    if (!uid) return;
+
+    const modalSubtext = `
+      確定要從本班名冊中刪除同學「<strong style="color: var(--accent-color);">${this.escapeHtml(studentName)}</strong>」嗎？<br>
+      <span style="color: var(--text-secondary); font-size: 14px; margin-top: 6px; display: block;">
+        刪除後，該同學下次連線時將需重新設定姓名。
+      </span>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 12px; background: rgba(255, 59, 48, 0.08); padding: 8px 12px; border-radius: 8px; border: 1px dashed var(--danger-color); font-size: 14px; color: var(--danger-color);">
+        <input type="checkbox" id="chkDeleteStudentContent" style="width: 18px; height: 18px; cursor: pointer;">
+        <span style="font-weight: bold;">一併清理此同學發布之所有提問、圖片與留言記錄</span>
+      </label>
+    `;
+
+    this.showConfirmModal(
+      '🗑️',
+      '刪除學生確認',
+      modalSubtext,
+      async () => {
+        const cleanContent = Boolean(document.getElementById('chkDeleteStudentContent')?.checked);
+
+        try {
+          // 1. 自名冊刪除
+          await db.ref('quiz/students').child(uid).remove();
+
+          if (this.registeredStudents && this.registeredStudents[uid]) {
+            delete this.registeredStudents[uid];
+          }
+
+          // 2. 若勾選清理發布內容
+          if (cleanContent) {
+            // 清理提問
+            const qList = (this.questions || []).filter(q => q && q.userId === uid);
+            for (const q of qList) {
+              await db.ref('questions').child(q.id).remove().catch(() => {});
+            }
+
+            // 清理圖片
+            const imgList = (this.images || []).filter(img => img && img.userId === uid);
+            for (const img of imgList) {
+              await db.ref('images').child(img.id).remove().catch(() => {});
+            }
+
+            // 清理影片
+            const vidList = (this.videos || []).filter(v => v && v.userId === uid);
+            for (const v of vidList) {
+              await db.ref('videos').child(v.id).remove().catch(() => {});
+            }
+
+            // 清理留言
+            ['questions', 'images', 'videos'].forEach(node => {
+              const items = this[node] || [];
+              items.forEach(item => {
+                if (item && item.comments) {
+                  Object.entries(item.comments).forEach(([cid, c]) => {
+                    if (c && c.userId === uid) {
+                      db.ref('comments').child(node).child(item.id).child(cid).remove().catch(() => {});
+                    }
+                  });
+                }
+              });
+            });
+          }
+
+          this.showNotification('成功', `已將同學「${studentName}」自本班名冊中刪除！`);
+          this.renderAdminStudentsList();
+        } catch (e) {
+          this.showNotification('錯誤', '刪除失敗: ' + e.message);
+        }
+      }
+    );
   }
 
   // ===== 管理後台：班級專屬頭像管理業務 =====
