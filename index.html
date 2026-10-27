@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=2">
   <link rel="shortcut icon" href="favicon.ico?v=2">
   <link rel="apple-touch-icon" href="favicon.png?v=2">
-  <link rel="stylesheet" href="css/style.css?v=412">
+  <link rel="stylesheet" href="css/style.css?v=413">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -62,9 +62,7 @@
           <!-- 連線狀態指示圖示移至鈴鐺右側 -->
           <div id="connectionStatus" class="connection-status disconnected" title="連線狀態：連線中..."></div>
           <button type="button" class="switch-class-mobile-btn mobile-only" id="mobileSwitchClassBtn" onclick="window.app && window.app.openClassModal()" title="切換班級/回一次性課堂">🏫</button>
-          <!-- 管理後台按鈕移至右上角 -->
-          <button class="menu-tab admin-top-btn" id="adminTabBtn" data-target="panel-admin" title="管理後台">⚙️<span class="admin-btn-text"> 管理後台</span></button>
-          <button type="button" class="menu-tab admin-logout-top-btn" id="topBarAdminLogoutBtn" onclick="logoutAdmin()" style="display: none;" title="登出管理員模式，鎖定後台"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 3px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span class="admin-btn-text">登出</span></button>
+          <!-- 管理後台與登出按鈕已收錄至右下角 💡 教室資訊選單頂部，右上角維持極致清爽 -->
         </div>
         <div class="theme-switcher">
           <button class="theme-btn light active" data-theme="light" data-theme-label="淺色系" title="淺色系"></button>
@@ -78,35 +76,15 @@
     <!-- 課堂模式與班級狀態列 -->
     <div class="class-mode-bar" id="classModeBar">
       <div class="class-mode-info">
-        <!-- 一次性模式下顯示 -->
+        <!-- 一次性模式下顯示 (回歸純粹空間標籤，個人頭像統一呈現於右下角 64x64 懸浮卡片) -->
         <div id="modeOneOffDisplay" class="mode-display-pill one-off">
           <span class="mode-icon">🌱</span>
           <span class="mode-title">一次性課堂</span>
-          <span class="user-display-tag" id="displayUserNameTagOneOff" style="display: none; cursor: pointer;" onclick="window.app && window.app.openStudentNameModal()" title="點擊修改您的姓名、暱稱與頭像">
-            <span class="display-user-avatar" id="displayUserAvatarOneOff"></span>
-            <span class="display-user-name" id="displayUserNameOneOff">訪客</span>
-            <span style="font-size: 14px; opacity: 0.7;">✏️</span>
-          </span>
-          <button type="button" class="user-display-tag btn-set-name-prompt" id="btnSetStudentNameOneOff" style="display: none; cursor: pointer;" onclick="window.app && window.app.openStudentNameModal()" title="尚未設定姓名，點擊設定您的名稱與頭像">
-            <span class="set-name-icon">👤</span>
-            <span class="set-name-text">設定名稱</span>
-            <span style="font-size: 14px; opacity: 0.8;">✏️</span>
-          </button>
         </div>
-        <!-- 專屬班級模式下顯示 -->
+        <!-- 專屬班級模式下顯示 (回歸純粹空間標籤) -->
         <div id="modeClassDisplay" class="mode-display-pill classroom" style="display: none;">
           <span class="mode-icon">🏫</span>
           <span class="mode-title">班級：<strong id="displayClassCode">--</strong></span>
-          <span class="user-display-tag" id="displayUserNameTag" style="display: none; cursor: pointer;" onclick="window.app && window.app.openStudentNameModal()" title="點擊修改您的姓名、暱稱與頭像">
-            <span class="display-user-avatar" id="displayUserAvatar"></span>
-            <span class="display-user-name" id="displayUserName">訪客</span>
-            <span style="font-size: 14px; opacity: 0.7;">✏️</span>
-          </span>
-          <button type="button" class="user-display-tag btn-set-name-prompt" id="btnSetStudentNameClass" style="display: none; cursor: pointer;" onclick="window.app && window.app.openStudentNameModal()" title="尚未設定姓名，點擊設定您的名稱與頭像">
-            <span class="set-name-icon">👤</span>
-            <span class="set-name-text">設定名稱</span>
-            <span style="font-size: 14px; opacity: 0.8;">✏️</span>
-          </button>
         </div>
       </div>
 
@@ -5894,7 +5872,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=432"></script>
+  <script src="js/app.js?v=433"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
@@ -7315,6 +7293,17 @@ Python</pre>
   <!-- 即時互動漂浮回饋全螢幕層 (不阻擋任何點擊與白板繪圖) -->
   <div id="liveReactionsOverlay" class="live-reactions-overlay" aria-hidden="true"></div>
 
+  <!-- 右下角個人專屬大頭像懸浮卡片 (64x64 HUD) -->
+  <div id="floatingStudentAvatarContainer" class="floating-student-avatar-container" onclick="window.app && window.app.openStudentNameModal()" title="點擊設定您的姓名與頭像">
+    <div class="floating-student-avatar-box" id="floatingStudentAvatarBox">
+      <!-- 渲染 64x64 頭像 -->
+    </div>
+    <div class="floating-student-name-tag" id="floatingStudentNameTag">
+      <span class="floating-student-name-text" id="floatingStudentNameText">訪客</span>
+      <span class="floating-student-edit-icon">✎</span>
+    </div>
+  </div>
+
   <!-- 即時互動表情符號快捷列 (右下角懸浮 Dock) -->
   <div id="liveReactionDock" class="live-reaction-dock collapsed" data-position="right">
     <!-- 1 秒超過 3 次時的溫馨防洗版提示 -->
@@ -7347,10 +7336,21 @@ Python</pre>
     <!-- 彈出式卡片選單 (圖 1 風格) -->
     <div id="fabQuickInfoMenu" class="fab-quick-info-menu" style="display: none;">
       <div class="fab-quick-menu-header">
-        <span class="fab-quick-menu-title">💡 教室資訊與資源</span>
+        <span class="fab-quick-menu-title">💡 教室資訊與功能</span>
         <button type="button" class="fab-quick-menu-close" onclick="window.app && window.app.toggleQuickInfoMenu(false)">✕</button>
       </div>
       <div class="fab-quick-menu-items">
+        <!-- 🌟 管理後台與登出 (收錄於此，維持前台極致清爽) -->
+        <button type="button" class="fab-quick-menu-item fab-admin-entry-btn" id="fabAdminEntryBtn" onclick="window.app && window.app.switchToTab('panel-admin'); window.app && window.app.toggleQuickInfoMenu(false)" title="進入管理後台 (教師專區)">
+          <span class="fab-item-icon">⚙️</span>
+          <span class="fab-item-text" style="font-weight: bold; color: var(--accent-color);">管理後台</span>
+          <span class="fab-item-badge" style="font-size: 11px; background: rgba(0, 122, 255, 0.12); color: var(--accent-color); padding: 1px 6px; border-radius: 8px; font-weight: bold;">教師專區</span>
+        </button>
+        <button type="button" class="fab-quick-menu-item fab-admin-logout-btn" id="fabAdminLogoutBtn" onclick="logoutAdmin(); window.app && window.app.toggleQuickInfoMenu(false)" style="display: none; color: var(--danger-color);" title="登出管理員模式，鎖定後台">
+          <span class="fab-item-icon">🚪</span>
+          <span class="fab-item-text" style="font-weight: bold; color: var(--danger-color);">登出管理員</span>
+        </button>
+        <div style="border-top: 1px solid var(--border-color); margin: 3px 0;"></div>
         <button type="button" class="fab-quick-menu-item" onclick="window.app && window.app.navigateToGuideTab()">
           <span class="fab-item-icon">🛠️</span>
           <span class="fab-item-text">建立自己的白板</span>

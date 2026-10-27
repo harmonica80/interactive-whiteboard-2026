@@ -1,4 +1,29 @@
 # System Log
+## 2026-10-27 - 介面視覺極致清爽化重構 (右下角懸浮個人64×64大頭像HUD、管理後台收納至💡選單、課堂狀態列極簡化) 與四款白底頭像圖鑑全面替換重製
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatars_sheet1.png`, `images/avatars_sheet2.png`, `images/avatars_sheet.png`, `images/avatar_preset_snacks.png`, `images/avatars/avatar_0.png` ~ `avatar_95.png`, `scripts/process-white-uploads.ps1`。
+- 修改項目：
+  1. **右下角新增專屬「個人身分懸浮卡片 (64×64 HUD)」**：
+     - 新增 `#floatingStudentAvatarContainer` 懸浮於右下角即時互動 Dock 之上方（桌面版 `64×64`，手機版自動響應為 `52×52`），以高質感雙層圓角立體卡片襯底呈現使用者目前頭像。
+     - 卡片下方整合學生姓名標籤（如：`機智小狐狸 ✎`，未設定時提示 `設定姓名 ✎`），點擊可一鍵開啟「設定您的姓名與頭像」彈窗。
+     - 樣式全面連動系統四大色系主題變數（`var(--bg-card)`、`var(--text-primary)`、`var(--border-color)`、`var(--shadow)`、`var(--accent-color)`）。
+  2. **頂部右上角精簡與管理後台收納至 💡 教室資訊選單**：
+     - 自頂部工具列右上角移除原本擠壓版面的「⚙️ 管理後台」按鈕與「登出」按鈕，右上角僅保留「線上人數」與「四大色系切換」，水平視野大幅釋放，徹底告別筆電與平板螢幕上的按鈕擠壓折行。
+     - 將「⚙️ 管理後台」與「🚪 登出管理員」收錄至右下角「💡 教室資訊與功能」選單（`#fabQuickInfoMenu`）的最頂端，並附帶「教師專區」顯目徽章，老師點擊 💡 即可直達後台，兼顧學生前台視覺整潔與教師管理隱私便利。
+     - 教師登入管理員模式後，右下角 💡 按鈕右上角即時浮現 `⚙️` 專屬管理狀態小徽章提示。
+  3. **第二列課堂狀態列極簡化**：
+     - 自課堂模式列（`#classModeBar`）左側膠囊移除原本重複的小頭像與姓名標籤，回歸乾淨純粹的課堂空間標籤（專屬模式：`🏫 班級：CY303`，一次性模式：`🌱 一次性課堂`），職責分工明確。
+  4. **全套頭像圖鑑以全新白底來源檔全面替換重製**：
+     - 使用者重新提供純白底色高品質圖鑑圖檔，替換原先由黑底去背處理之版本，徹底杜絕深色邊緣殘留暗影。
+     - 重製「食品零食版」精選圖鑑（`images/avatar_preset_snacks.png?v=3`）。
+     - 重製「萌寵奇幻」雪碧圖（`images/avatars_sheet1.png`）與 0~47 號獨立 PNG 圖檔。
+     - 重製「森林海洋」雪碧圖（`images/avatars_sheet2.png`）與 48~95 號獨立 PNG 圖檔。
+     - 重新合成全系統 96 款統一雪碧圖（`images/avatars_sheet.png?v=433`）。
+     - 通過 `verify-all-avatars.ps1` 自動化檢測，全系統 96 款單圖外圍四邊與雙圖鑑所有格線非透明像素數皆為 0（100% 零滲透零溢出）。
+     - 更新 `css/style.css?v=413` 與 `js/app.js?v=433` 快取版本參數。
+  5. **合規檢測**：
+     - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+
 ## 2026-10-27 - 更新「萌寵奇幻」48款頭像為精準零重疊新版圖檔並同步校正角色對照中繼資料
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatars_sheet1.png`, `images/avatars_sheet.png`, `images/avatars/avatar_0.png` ~ `avatar_47.png`, `scripts/process-cute-fantasy.ps1`, `scripts/verify-all-avatars.ps1`。
 - 修改項目：

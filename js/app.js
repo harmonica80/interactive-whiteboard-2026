@@ -454,6 +454,25 @@ class App {
       if (displayUserNameTagMobile) displayUserNameTagMobile.style.display = 'none';
       if (btnSetStudentNameMobile) btnSetStudentNameMobile.style.display = 'inline-flex';
     }
+
+    // 4. 右下角懸浮個人大頭像卡片 (64x64 HUD)
+    const floatingAvatarBox = document.getElementById('floatingStudentAvatarBox');
+    const floatingNameText = document.getElementById('floatingStudentNameText');
+    const floatingAvatarContainer = document.getElementById('floatingStudentAvatarContainer');
+
+    if (floatingAvatarBox) {
+      floatingAvatarBox.innerHTML = this.renderAvatarHtml(avatarId, 64, 'floating-avatar-img');
+    }
+    if (floatingNameText) {
+      floatingNameText.textContent = userName || '設定姓名';
+    }
+    if (floatingAvatarContainer) {
+      if (userName) {
+        floatingAvatarContainer.title = `您的身分：${userName} (點擊更換頭像與名稱)`;
+      } else {
+        floatingAvatarContainer.title = '尚未設定姓名，點擊設定您的名稱與頭像';
+      }
+    }
   }
 
   isClassMode() {
@@ -5912,6 +5931,22 @@ class App {
     const topLogoutBtn = document.getElementById('topBarAdminLogoutBtn');
     if (topLogoutBtn) {
       topLogoutBtn.style.display = this.isAdmin ? 'inline-flex' : 'none';
+    }
+
+    const fabLogoutBtn = document.getElementById('fabAdminLogoutBtn');
+    if (fabLogoutBtn) {
+      fabLogoutBtn.style.display = this.isAdmin ? 'flex' : 'none';
+    }
+
+    const fabQuickBtn = document.getElementById('fabQuickInfoBtn');
+    if (fabQuickBtn) {
+      if (this.isAdmin) {
+        fabQuickBtn.classList.add('is-admin-active');
+        fabQuickBtn.title = '教室資訊與相關資源 (管理員模式中)';
+      } else {
+        fabQuickBtn.classList.remove('is-admin-active');
+        fabQuickBtn.title = '教室資訊與相關資源 (點擊展開)';
+      }
     }
 
     const focusQuickLink = document.getElementById('focusAdminQuickLinkWrapper');
@@ -17542,7 +17577,7 @@ class App {
       snacks: {
         key: 'snacks',
         name: '食品零食版',
-        url: 'images/avatar_preset_snacks.png?v=2',
+        url: 'images/avatar_preset_snacks.png?v=3',
         count: 48,
         cols: 8,
         rows: 6
