@@ -1,4 +1,19 @@
 # System Log
+## 2026-10-27 - 問題修復：修正學生管理卡片「📜 歷程」與「✏️ 編輯」彈窗無法開啟之問題
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修正全域彈窗 `.modal-overlay.active` 樣式啟用狀態**：
+     - 原 `adminOpenStudentHistoryModal()` 與 `adminOpenEditStudentModal()` 僅調整 `modal.style.display = 'flex'`，因未同步加入 `modal.classList.add('active')`，導致被 `.modal-overlay` 預設的 `opacity: 0; visibility: hidden;` 隱藏，使點擊後呈現無反應狀態。
+     - 補齊 `modal.classList.add('active')` 與關閉時 `modal.classList.remove('active')`，並加入全螢幕容器動態掛載與防呆校驗，確保彈窗能正常彈出與縮放動畫流暢播放。
+  2. **強化學生卡片按鈕參數跳脫安全性**：
+     - 在 `renderAdminStudentsList()` 中對卡片上的 `safeUid`、`safeName` 與 `safeNameAttr` 進行完整的引號與特殊字元跳脫處理，避免因特殊字元破壞行內 `onclick` 事件。
+  3. **鍵盤快速鍵與全螢幕操作一致性**：
+     - 在全域 `Escape` 鍵盤監聽事件中加入 `studentHistoryModal` 與 `adminEditStudentModal` 的關閉邏輯。
+  4. **合規檢測**：
+     - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 更新 `js/app.js?v=436` 快取版本參數。
+
 ## 2026-10-27 - 班級管理新增「學生名冊與參與歷程管理」功能 (支援登入時間追蹤、歷程檢視、編輯刪除與名冊匯出)
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `images/admin_icons/class_students.svg`, `SYSTEM_LOG.md`。
 - 修改項目：

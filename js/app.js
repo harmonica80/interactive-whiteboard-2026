@@ -3657,6 +3657,10 @@ class App {
         adminPasswordModal.classList.remove('active');
         if (studentNameModal) studentNameModal.classList.remove('active');
         if (itemEditModal) itemEditModal.classList.remove('active');
+        const studentHistoryModal = document.getElementById('studentHistoryModal');
+        if (studentHistoryModal && studentHistoryModal.classList.contains('active')) this.closeStudentHistoryModal();
+        const adminEditStudentModal = document.getElementById('adminEditStudentModal');
+        if (adminEditStudentModal && adminEditStudentModal.classList.contains('active')) this.closeAdminEditStudentModal();
         this.activeQuestionId = null;
         this.activeImageId = null;
         this.activeVideoId = null;
@@ -17622,6 +17626,9 @@ class App {
     container.innerHTML = filtered.map(s => {
       const timeObj = this.formatFullDateTime(s.lastLoginAt);
       const avatarHtml = this.renderAvatarHtml(s.avatar, 44);
+      const safeUid = String(s.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeName = this.escapeHtml(s.name);
+      const safeNameAttr = String(s.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
       return `
         <div class="admin-student-card" id="student_card_${s.uid}">
@@ -17631,7 +17638,7 @@ class App {
             </div>
             <div class="admin-student-card-info">
               <div class="admin-student-card-name-row">
-                <span class="admin-student-card-name" title="${this.escapeHtml(s.name)}">${this.escapeHtml(s.name)}</span>
+                <span class="admin-student-card-name" title="${safeName}">${safeName}</span>
                 <span class="admin-student-online-badge ${s.isOnline ? 'online' : 'offline'}" title="${s.isOnline ? '連線中' : '目前離線'}">
                   ${s.isOnline ? '🟢 線上' : '⚪ 離線'}
                 </span>
@@ -17656,13 +17663,13 @@ class App {
 
           <!-- 操作按鈕組 -->
           <div class="admin-student-card-actions">
-            <button type="button" onclick="window.app.adminOpenStudentHistoryModal('${s.uid}')" title="查閱 ${this.escapeHtml(s.name)} 的完整參與歷程">
+            <button type="button" onclick="window.app.adminOpenStudentHistoryModal('${safeUid}')" title="查閱 ${safeName} 的完整參與歷程">
               📜 歷程
             </button>
-            <button type="button" onclick="window.app.adminOpenEditStudentModal('${s.uid}')" title="編輯 ${this.escapeHtml(s.name)} 的姓名與頭像">
+            <button type="button" onclick="window.app.adminOpenEditStudentModal('${safeUid}')" title="編輯 ${safeName} 的姓名與頭像">
               ✏️ 編輯
             </button>
-            <button type="button" class="btn-del-student" onclick="window.app.adminDeleteStudent('${s.uid}', '${this.escapeHtml(s.name)}')" title="自名冊刪除此同學">
+            <button type="button" class="btn-del-student" onclick="window.app.adminDeleteStudent('${safeUid}', '${safeNameAttr}')" title="自名冊刪除此同學">
               🗑️ 刪除
             </button>
           </div>
@@ -17698,72 +17705,85 @@ class App {
   }
 
   adminOpenStudentHistoryModal(studentUid) {
-    const regStudents = this.registeredStudents || {};
-    let student = regStudents[studentUid];
-    if (!student) {
-      const p = Object.values(this.onlinePresence || {}).find(x => x && x.userId === studentUid);
-      if (p) student = { uid: studentUid, name: p.userName, avatar: p.avatar };
-      else {
-        const item = [...(this.questions || []), ...(this.images || []), ...(this.videos || [])].find(x => x && x.userId === studentUid);
-        if (item) student = { uid: studentUid, name: item.user, avatar: item.avatar };
-        else student = { uid: studentUid, name: '同學', avatar: 0 };
+    try {
+      const regStudents = this.registeredStudents || {};
+      let student = regStudents[studentUid];
+      if (!student) {
+        const p = Object.values(this.onlinePresence || {}).find(x => x && x.userId === studentUid);
+        if (p) student = { uid: studentUid, name: p.userName, avatar: p.avatar };
+        else {
+          const item = [...(this.questions || []), ...(this.images || []), ...(this.videos || [])].find(x => x && x.userId === studentUid);
+          if (item) student = { uid: studentUid, name: item.user, avatar: item.avatar };
+          else student = { uid: studentUid, name: '同學', avatar: 0 };
+        }
       }
+
+      const studentName = student.name || '同學';
+      const studentAvatar = student.avatar !== undefined ? student.avatar : 0;
+      const activities = this.getStudentActivityHistory(studentUid, studentName);
+      this.currentStudentHistoryActivities = activities;
+      this.currentHistoryStudent = { uid: studentUid, name: studentName, avatar: studentAvatar, lastLoginAt: student.lastLoginAt };
+
+      // 填充 Header
+      const avatarBox = document.getElementById('studentHistoryAvatarBox');
+      if (avatarBox) avatarBox.innerHTML = this.renderAvatarHtml(studentAvatar, 54);
+
+      const nameEl = document.getElementById('studentHistoryName');
+      if (nameEl) nameEl.textContent = studentName;
+
+      const uidEl = document.getElementById('studentHistoryUid');
+      if (uidEl) uidEl.textContent = studentUid;
+
+      const isOnline = Object.values(this.onlinePresence || {}).some(p => p && p.userId === studentUid);
+      const badgeEl = document.getElementById('studentHistoryOnlineBadge');
+      if (badgeEl) {
+        badgeEl.textContent = isOnline ? '🟢 線上' : '⚪ 離線';
+        badgeEl.style.color = isOnline ? '#10b981' : 'var(--text-muted)';
+        badgeEl.style.background = isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(150, 150, 150, 0.15)';
+      }
+
+      const timeObj = this.formatFullDateTime(student.lastLoginAt || (activities[0] ? activities[0].timestamp : null));
+      const loginEl = document.getElementById('studentHistoryLastLogin');
+      if (loginEl) loginEl.textContent = timeObj.full;
+
+      // 統計數據
+      let qCount = 0, cCount = 0, imgCount = 0, vidCount = 0, quizCount = 0, wcCount = 0;
+      activities.forEach(a => {
+        if (a.type === 'question') qCount++;
+        else if (a.type === 'comment') cCount++;
+        else if (a.type === 'media') {
+          if (a.icon === '🖼️') imgCount++;
+          else if (a.icon === '🎥') vidCount++;
+        } else if (a.type === 'quiz') quizCount++;
+        else if (a.type === 'wordcloud') wcCount++;
+      });
+
+      const setElText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setElText('studentHistoryTotalCount', activities.length);
+      setElText('studentHistoryQCount', qCount);
+      setElText('studentHistoryCommentCount', cCount);
+      setElText('studentHistoryImgCount', imgCount);
+      setElText('studentHistoryVidCount', vidCount);
+      setElText('studentHistoryQuizCount', quizCount);
+      setElText('studentHistoryWcCount', wcCount);
+
+      // 預設切換至全部
+      this.filterStudentHistory('all');
+
+      const modal = document.getElementById('studentHistoryModal');
+      if (modal) {
+        const fsEl = document.fullscreenElement;
+        if (fsEl && fsEl !== document.documentElement) {
+          if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+        } else if (modal.parentElement !== document.body) {
+          document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+      }
+    } catch (err) {
+      console.error('adminOpenStudentHistoryModal error:', err);
     }
-
-    const studentName = student.name || '同學';
-    const studentAvatar = student.avatar !== undefined ? student.avatar : 0;
-    const activities = this.getStudentActivityHistory(studentUid, studentName);
-    this.currentStudentHistoryActivities = activities;
-    this.currentHistoryStudent = { uid: studentUid, name: studentName, avatar: studentAvatar, lastLoginAt: student.lastLoginAt };
-
-    // 填充 Header
-    const avatarBox = document.getElementById('studentHistoryAvatarBox');
-    if (avatarBox) avatarBox.innerHTML = this.renderAvatarHtml(studentAvatar, 54);
-
-    const nameEl = document.getElementById('studentHistoryName');
-    if (nameEl) nameEl.textContent = studentName;
-
-    const uidEl = document.getElementById('studentHistoryUid');
-    if (uidEl) uidEl.textContent = studentUid;
-
-    const isOnline = Object.values(this.onlinePresence || {}).some(p => p && p.userId === studentUid);
-    const badgeEl = document.getElementById('studentHistoryOnlineBadge');
-    if (badgeEl) {
-      badgeEl.textContent = isOnline ? '🟢 線上' : '⚪ 離線';
-      badgeEl.style.color = isOnline ? '#10b981' : 'var(--text-muted)';
-      badgeEl.style.background = isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(150, 150, 150, 0.15)';
-    }
-
-    const timeObj = this.formatFullDateTime(student.lastLoginAt || (activities[0] ? activities[0].timestamp : null));
-    const loginEl = document.getElementById('studentHistoryLastLogin');
-    if (loginEl) loginEl.textContent = timeObj.full;
-
-    // 統計數據
-    let qCount = 0, cCount = 0, imgCount = 0, vidCount = 0, quizCount = 0, wcCount = 0;
-    activities.forEach(a => {
-      if (a.type === 'question') qCount++;
-      else if (a.type === 'comment') cCount++;
-      else if (a.type === 'media') {
-        if (a.icon === '🖼️') imgCount++;
-        else if (a.icon === '🎥') vidCount++;
-      } else if (a.type === 'quiz') quizCount++;
-      else if (a.type === 'wordcloud') wcCount++;
-    });
-
-    const setElText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setElText('studentHistoryTotalCount', activities.length);
-    setElText('studentHistoryQCount', qCount);
-    setElText('studentHistoryCommentCount', cCount);
-    setElText('studentHistoryImgCount', imgCount);
-    setElText('studentHistoryVidCount', vidCount);
-    setElText('studentHistoryQuizCount', quizCount);
-    setElText('studentHistoryWcCount', wcCount);
-
-    // 預設切換至全部
-    this.filterStudentHistory('all');
-
-    const modal = document.getElementById('studentHistoryModal');
-    if (modal) modal.style.display = 'flex';
   }
 
   filterStudentHistory(category = 'all') {
@@ -17837,7 +17857,10 @@ class App {
 
   closeStudentHistoryModal() {
     const modal = document.getElementById('studentHistoryModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
   }
 
   exportSingleStudentReportTxt() {
@@ -17949,48 +17972,61 @@ class App {
   }
 
   adminOpenEditStudentModal(studentUid) {
-    const regStudents = this.registeredStudents || {};
-    let student = regStudents[studentUid];
-    if (!student) {
-      const p = Object.values(this.onlinePresence || {}).find(x => x && x.userId === studentUid);
-      if (p) student = { uid: studentUid, name: p.userName, avatar: p.avatar };
-      else student = { uid: studentUid, name: '同學', avatar: 0 };
-    }
-
-    this.editingStudentUid = studentUid;
-    this.editingStudentAvatarId = student.avatar !== undefined ? student.avatar : 0;
-
-    const inputUid = document.getElementById('adminEditStudentUid');
-    if (inputUid) inputUid.value = studentUid;
-
-    const inputName = document.getElementById('adminEditStudentNameInput');
-    if (inputName) {
-      inputName.value = student.name || '';
-      inputName.focus();
-    }
-
-    const label = document.getElementById('adminEditStudentAvatarLabel');
-    if (label) label.textContent = `當前頭像代號: ${this.editingStudentAvatarId}`;
-
-    // 渲染頭像選項
-    const grid = document.getElementById('adminEditStudentAvatarGrid');
-    if (grid) {
-      const avatarCount = (this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) ? 48 : 96;
-      let html = '';
-      for (let i = 0; i < avatarCount; i++) {
-        const isSelected = (i === this.editingStudentAvatarId);
-        const avatarHtml = this.renderAvatarHtml(i, 40);
-        html += `
-          <div class="edit-student-avatar-item" data-avatar-id="${i}" onclick="window.app.adminSelectEditStudentAvatar(${i})" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; border: 2px solid ${isSelected ? 'var(--accent-color)' : 'transparent'}; background: var(--bg-card); box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.15s ease;">
-            ${avatarHtml}
-          </div>
-        `;
+    try {
+      const regStudents = this.registeredStudents || {};
+      let student = regStudents[studentUid];
+      if (!student) {
+        const p = Object.values(this.onlinePresence || {}).find(x => x && x.userId === studentUid);
+        if (p) student = { uid: studentUid, name: p.userName, avatar: p.avatar };
+        else student = { uid: studentUid, name: '同學', avatar: 0 };
       }
-      grid.innerHTML = html;
-    }
 
-    const modal = document.getElementById('adminEditStudentModal');
-    if (modal) modal.style.display = 'flex';
+      this.editingStudentUid = studentUid;
+      this.editingStudentAvatarId = student.avatar !== undefined ? student.avatar : 0;
+
+      const inputUid = document.getElementById('adminEditStudentUid');
+      if (inputUid) inputUid.value = studentUid;
+
+      const inputName = document.getElementById('adminEditStudentNameInput');
+      if (inputName) {
+        inputName.value = student.name || '';
+        setTimeout(() => inputName.focus(), 60);
+      }
+
+      const label = document.getElementById('adminEditStudentAvatarLabel');
+      if (label) label.textContent = `當前頭像代號: ${this.editingStudentAvatarId}`;
+
+      // 渲染頭像選項
+      const grid = document.getElementById('adminEditStudentAvatarGrid');
+      if (grid) {
+        const avatarCount = (this.currentClassCustomAvatars && this.currentClassCustomAvatars.url) ? 48 : 96;
+        let html = '';
+        for (let i = 0; i < avatarCount; i++) {
+          const isSelected = (i === this.editingStudentAvatarId);
+          const avatarHtml = this.renderAvatarHtml(i, 40);
+          html += `
+            <div class="edit-student-avatar-item" data-avatar-id="${i}" onclick="window.app.adminSelectEditStudentAvatar(${i})" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; border: 2px solid ${isSelected ? 'var(--accent-color)' : 'transparent'}; background: var(--bg-card); box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.15s ease;">
+              ${avatarHtml}
+            </div>
+          `;
+        }
+        grid.innerHTML = html;
+      }
+
+      const modal = document.getElementById('adminEditStudentModal');
+      if (modal) {
+        const fsEl = document.fullscreenElement;
+        if (fsEl && fsEl !== document.documentElement) {
+          if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+        } else if (modal.parentElement !== document.body) {
+          document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+      }
+    } catch (err) {
+      console.error('adminOpenEditStudentModal error:', err);
+    }
   }
 
   adminSelectEditStudentAvatar(avatarId) {
@@ -18012,7 +18048,10 @@ class App {
 
   closeAdminEditStudentModal() {
     const modal = document.getElementById('adminEditStudentModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
   }
 
   async adminSaveStudentEdit() {
