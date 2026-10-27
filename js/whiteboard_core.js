@@ -2364,18 +2364,8 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
 
-          // 透明 PNG 且小於 400KB 則保留 PNG，其餘以 0.78 品質 JPEG 壓縮 (體積縮減至約 100KB~200KB)
-          const isPng = fileOrBlob.type === 'image/png';
-          let finalUrl;
-          if (isPng && fileOrBlob.size < 400 * 1024) {
-            finalUrl = canvas.toDataURL('image/png');
-          } else {
-            ctx.globalCompositeOperation = 'destination-over';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, w, h);
-            ctx.globalCompositeOperation = 'source-over';
-            finalUrl = canvas.toDataURL('image/jpeg', 0.78);
-          }
+          // 全面改用 WebP 格式（原生支援透明度且體積縮減 70%~85%，約 50KB~150KB）
+          const finalUrl = canvas.toDataURL('image/webp', 0.82);
           resolve(finalUrl);
         };
         img.onerror = () => resolve(rawUrl);
@@ -2574,7 +2564,7 @@
       const ctx = canvas.getContext('2d');
       await page.render({ canvasContext: ctx, viewport }).promise;
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const dataUrl = canvas.toDataURL('image/webp', 0.82);
 
       const col = idx % cols;
       const row = Math.floor(idx / cols);

@@ -4056,7 +4056,7 @@ body {
   display: inline-block;
   vertical-align: middle;
   border-radius: 50%;
-  background-image: url('../images/avatars_sheet.png?v=432');
+  background-image: url('../images/avatars_sheet.webp?v=433');
   background-size: 800% 1200%;
   background-repeat: no-repeat;
   flex-shrink: 0;

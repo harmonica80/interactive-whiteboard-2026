@@ -325,7 +325,7 @@
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
-          const compressedUrl = canvas.toDataURL('image/jpeg', 0.85);
+          const compressedUrl = canvas.toDataURL('image/webp', 0.82);
 
           this.uploadedImageUrl = compressedUrl;
           this.renderQuestionImagePreview(compressedUrl);

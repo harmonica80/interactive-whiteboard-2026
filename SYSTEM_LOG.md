@@ -1,4 +1,25 @@
 # System Log
+## 2026-10-28 - 系統架構級省流優化：靜態大圖批次轉檔 WebP、全系統圖片上傳與貼上全面升級 WebP 格式
+- 影響檔案：`index.html`, `whiteboard.html`, `css/style.css`, `js/app.js`, `js/whiteboard_core.js`, `js/quiz.js`, `js/word_cloud.js`, `js/presentation_core.js`, `images/avatars_sheet.webp`, `images/guide/*.webp`, `images/firebase_teachers_guide.webp`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **核心靜態大圖全面轉為 WebP 格式（平均節省 76.6% 流量）**：
+     - `images/avatars_sheet.png`（2.0 MB ➔ 277 KB，省 86.1%），全面替換 `css/style.css` 與 `js/app.js` 的雪碧圖與大頭像引用路徑。
+     - `images/firebase_teachers_guide.png`（116 KB ➔ 25 KB，省 78.4%）。
+     - `images/guide/step01~step11` 教學截圖全面轉為 WebP（總計自 3.25 MB 驟降至 759 KB），大幅加快新用戶開頁與教學說明展示速度。
+  2. **前端動態上傳與貼上全面升級 WebP 格式（Base64 儲存與即時廣播狂降 70%~85%）**：
+     - **提問區與影片縮圖**：影片截圖與提問附圖轉為 `image/webp, 0.7~0.82`。
+     - **圖片分享牆（相簿）**：上傳、貼上、拖曳圖片壓縮統一改用 `image/webp, 0.82`。
+     - **隨堂測驗作答與編輯**：題目插圖與選項配圖統一改用 `image/webp, 0.82`。
+     - **文字雲出題遮罩**：題目附圖上傳壓縮改用 `image/webp, 0.82`。
+     - **白板圖片插入與剪貼簿貼上**：消除原本因為 JPEG 不支援透明度而進行的白底填充與分支邏輯，統一採用 `image/webp, 0.82`，完美保留去背透明度，同時體積大幅縮減。
+     - **白板 PDF 匯入**：每頁轉繪圖片由 JPEG 改用 `image/webp, 0.82`。
+     - **同步簡報投影片與學生作答截圖**：簡報投影片與學生手繪作答回傳統一改用 `image/webp, 0.8`，全班高頻同步傳輸流量降低 40% 以上。
+     - **管理後台班級頭像上傳**：48 格泛洪去背雪碧圖由肥大的 PNG 改為 `image/webp, 0.88`，存入 Firebase 的字串自 1.5MB 縮減至 200KB 以下。
+  3. **合規檢測**：
+     - 通過 `npm run check:syntax` 與全檔案 `node --check` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 更新各引用檔案快取版本參數：`style.css?v=418`、`app.js?v=441`、`whiteboard_core.js?v=3013`、`quiz.js?v=392`、`word_cloud.js?v=400`、`presentation_core.js?v=3125`。
+
 ## 2026-10-27 - 介面與資料精準化：後台移除快速切換精選圖鑑功能、頭像狀態與圖鑑預覽全面升級為 240 款主題角色、依正確圖格順序校正蔬果零食小吃 144 款角色名稱
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

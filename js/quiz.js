@@ -1806,7 +1806,7 @@ class Quiz {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      const dataUrl = canvas.toDataURL('image/webp', 0.82);
       this.insertEditorImageHtml(dataUrl);
     };
     img.src = src;
@@ -2086,7 +2086,7 @@ class Quiz {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      const dataUrl = canvas.toDataURL('image/webp', 0.82);
       this.setOptionImage(dataUrl);
       if (window.app) window.app.showNotification('成功', '已成功設定選項圖片！');
     };
