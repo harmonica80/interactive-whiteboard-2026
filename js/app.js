@@ -644,12 +644,12 @@ class App {
       url: 'images/avatar_preset_fruits.webp?v=4',
       count: 48,
       items: [
-        '元氣紅蘋果', '鮮甜黃香蕉', '多汁香橙', '金鑽鳳梨', '紫晶葡萄', '清涼西瓜', '酸甜檸檬', '香甜芒果',
-        '水蜜桃寶', '紅潤小櫻桃', '元氣草莓', '陽光藍莓', '奇異果寶', '香甜哈密瓜', '脆甜紅心芭樂', '熟成木瓜',
-        '酪梨寶寶', '香甜無花果', '脆甜胡蘿蔔', '金黃香甜玉米', '翠綠綠花椰', '清甜高麗菜', '鮮紅小番茄', '爽脆小黃瓜',
-        '五彩甜椒', '紫亮茄子', '脆口洋蔥', '辛香大蒜', '白玉蘿蔔', '鮮綠青椒', '金黃南瓜', '香甜烤地瓜',
-        '綿密芋頭', '鮮嫩綠竹筍', '香醇香菇', '萌萌小洋菇', '翠綠豌豆', '清脆四季豆', '爽口脆蓮藕', '清熱苦瓜',
-        '養生秋葵', '翠綠嫩蘆筍', '鮮脆芹菜', '青蔥寶寶', '暖胃老薑', '鮮紅辣椒', '香甜栗子', '秋收黑菱角'
+        '元氣蘋果', '鮮甜香蕉', '多汁橘子', '晶瑩葡萄', '甜心草莓', '清涼西瓜', '金鑽鳳梨', '酸甜檸檬',
+        '水潤梨子', '粉甜水蜜桃', '嬌豔櫻桃', '活力藍莓', '香甜芒果', '陽光奇異果', '營養酪梨', '水嫩番茄',
+        '脆甜紅蘿蔔', '翠綠青花菜', '清甜高麗菜', '金黃玉米', '紫亮茄子', '爽脆小黃瓜', '暖黃南瓜', '繽紛甜椒',
+        '鮮嫩香菇', '脆口洋蔥', '辛香大蒜', '圓滾馬鈴薯', '香甜地瓜', '可愛櫻桃蘿蔔', '鮮翠青江菜', '翠綠菠菜',
+        '鮮甜大白菜', '圓滾豌豆', '嫩綠蘆筍', '純白花椰菜', '爽脆蓮藕', '脆香芹菜', '活力辣椒', '乖巧蕪菁',
+        '鮮紅甜菜根', '香醇木瓜', '艷麗火龍果', '鮮脆芭樂', '晶瑩荔枝', '清涼椰子', '酸甜李子', '星星楊桃'
       ]
     },
     snacks: {
@@ -659,12 +659,12 @@ class App {
       url: 'images/avatar_preset_snacks.webp?v=4',
       count: 48,
       items: [
-        '酥香現烤可頌', '厚切金黃吐司', '香濃起司堡', '酥脆金黃薯條', '香濃牽絲披薩', '美味德式熱狗', '現炸酥脆炸雞', '炙燒嫩煎牛排',
-        '粉彩甜甜圈', '草莓杯子蛋糕', '濃郁熔岩黑巧', '繽紛馬卡龍', '香濃焦糖布丁', '鮮果香甜可麗餅', '軟Ｑ紅豆麻糬', '金黃鯛魚燒',
-        '香脆海苔仙貝', '酥脆波浪洋芋片', '奶油爆米花', '酥脆蛋捲', '手工香酥曲奇', '泡芙甜心', '脆皮雪糕', '雙球冰淇淋',
-        '草莓百匯聖代', '鮮果Ｑ嫩果凍', '彩虹旋轉棒棒糖', '酸甜小熊軟糖', '特級太妃糖', '香滑鮮奶酪', '濃郁抹茶磅蛋糕', '義式提拉米蘇',
-        '焦糖肉桂捲', '酥香葡式蛋塔', '經典比利時鬆餅', '法式焦脆可麗露', '瑞士生乳捲', '香酥烤蘋果派', '經典黑森林蛋糕', '法式瑪德蓮',
-        '堅果燕麥脆餅', '抹茶草莓大福', '法式蝴蝶酥', '彩虹千層蛋糕', '藍莓重乳酪塔', '雪莓娘大福', '粉彩棉花糖', '焦糖烤布蕾'
+        '墨西哥塔可餅', '美味漢堡', '香濃披薩', '金黃薯條', '經典熱狗', '酥脆炸雞腿', '奶油爆米花', '酥脆蝴蝶餅',
+        '草莓甜甜圈', '巧克力甜甜圈', '櫻桃杯子蛋糕', '草莓鮮奶油蛋糕', '醇黑巧克力', '巧克力豆餅乾', '草莓馬卡龍', '抹茶馬卡龍',
+        '甜筒冰淇淋', '巧克力冰棒', '彩虹冰棒', '酥香可頌麵包', '奶油吐司', '活力三明治', '蜂蜜鬆餅', '比利時格子鬆餅',
+        '鮭魚握壽司', '鮪魚握壽司', '海苔壽司捲', '三角飯糰', '濃郁日式拉麵', '黃金煎餃', '鮮肉小籠包', '招牌燒賣',
+        '墨西哥捲餅', '巧克力閃電泡芙', '香草霜淇淋', '焦糖布丁', '香醇拿鐵咖啡', '香濃起司', '草莓麻糬', '巧克力松露球',
+        '熱騰騰白飯', '太陽荷包蛋', '珍珠奶茶', '草莓鬆餅', '巧克力夾心餅乾', '香酥炸雞塊', '起司玉米片', '鮮榨柳橙汁'
       ]
     },
     taiwan: {
@@ -674,12 +674,12 @@ class App {
       url: 'images/avatar_preset_taiwan.webp?v=4',
       count: 48,
       items: [
-        '波霸黑糖珍奶', '十八摺小籠包', '九層塔鹽酥雞', '紅燒牛肉麵', '特級古早味滷肉飯', '酥脆蚵仔煎', '香烤大腸包小腸', '黃金酥脆臭豆腐',
-        '炭火窯烤胡椒餅', '香脆超大雞排', '彰化香Ｑ肉圓', '大腸蚵仔麵線', '外酥內嫩蔥抓餅', '傳統虎咬豬刈包', '冬瓜排骨酥湯', '淡水阿給',
-        '黃金酥炸鮮蚵', '府城筒仔米糕', '台式烤香腸', '台南度小月擔仔麵', '溫體牛肉湯', '清爽天然愛玉冰', '盛夏芒果雪花冰', '九份芋圓仙草凍',
-        '基隆廟口甜不辣', '花蓮炸蛋蔥油餅', '生炒鱔魚意麵', '香酥土魠魚羹', '炭烤頂級烏魚子', '爆漿脆皮車輪餅', '八里香酥雙胞胎', '傳統米血糕',
-        '超商五香茶葉蛋', '香濃木瓜牛奶', '古早味冬瓜檸檬', '旗山香蕉香芋冰', '手工黑糖芋圓', '新竹海瑞貢丸湯', '鹿港手工鮮肉包', '東港頂級黑鮪魚',
-        '旗津炭烤小卷', '宜蘭三星蔥油餅', '大溪黑豆干', '淡水特級鐵蛋', '台南金黃棺材板', '金門香酥貢糖', '澎湖黑糖糕', '嘉義火雞肉飯'
+        '波霸珍珠奶茶', '鮮汁小籠包', '傳統刈包', '香酥蔥油餅', '酥脆雞排飯', '麻辣臭豆腐', '紅燒牛肉麵', '招牌蚵仔煎',
+        '經典滷肉飯', '芒果剉冰', '綜合芋圓', '紅豆湯圓', '草莓剉冰', '彩色湯圓', '金黃鳳梨酥', '鳳梨蛋糕',
+        '炭烤香腸', '古早味肉燥飯', '草莓大福', '酥皮蛋餅', '炭烤胡椒餅', '香Ｑ肉粽', '酥香蔥抓餅', '濃郁芝麻包',
+        '道地牛肉麵', '雞絲涼麵', '台南擔仔麵', '香濃麻醬麵', '鮮蝦麵', '鮮甜虱目魚湯', 'Ｑ彈貢丸湯', '鮮美魚丸湯',
+        '香酥炸蝦', '炭火烤玉米', '香煎蘿蔔糕', '九層塔鹽酥雞', '風味割包', '脆皮鯛魚燒', '酥脆炸薯條', '涼拌臭豆腐',
+        '酥香蛋塔', '起司蛋餅', '家常蒸豆腐', '紅豆豆花', '綜合水果剉冰', '巧克甜甜圈', '甜心馬卡龍', '繽紛彩虹冰棒'
       ]
     }
   };
@@ -18683,13 +18683,6 @@ class App {
         }
         if (resetBtn) resetBtn.style.display = 'inline-block';
 
-        const btnFruits = document.getElementById('btnPresetAvatarFruits');
-        const btnSnacks = document.getElementById('btnPresetAvatarSnacks');
-        const btnTaiwan = document.getElementById('btnPresetAvatarTaiwan');
-        if (btnFruits) btnFruits.classList.toggle('active', data.presetKey === 'fruits');
-        if (btnSnacks) btnSnacks.classList.toggle('active', data.presetKey === 'snacks');
-        if (btnTaiwan) btnTaiwan.classList.toggle('active', data.presetKey === 'taiwan');
-
         // 渲染目前已上傳的 48 格預覽
         if (previewSection && previewGrid) {
           previewSection.style.display = 'block';
@@ -18700,7 +18693,7 @@ class App {
               ? `👀 目前${scopeLabel}專屬頭像（${data.name} 48 格圖鑑）：`
               : `👀 目前${scopeLabel}專屬頭像（自訂 48 格圖鑑）：`;
           }
-          if (pSub) pSub.textContent = data.name ? `使用系統精選「${data.name}」` : (isOneOff ? '使用老師上傳之公開課堂角色圖鑑' : '使用老師上傳之班級專屬角色圖鑑');
+          if (pSub) pSub.textContent = data.name ? `使用「${data.name}」` : (isOneOff ? '使用老師上傳之公開課堂角色圖鑑' : '使用老師上傳之班級專屬角色圖鑑');
           let html = '';
           for (let i = 0; i < 48; i++) {
             const col = i % 8;
@@ -18721,27 +18714,21 @@ class App {
         }
       } else {
         if (badge) {
-          badge.textContent = '使用系統預設 96 款可愛生物';
+          badge.textContent = '使用系統預設 240 款主題角色';
           badge.style.background = 'rgba(52, 199, 89, 0.12)';
           badge.style.color = '#28a745';
         }
         if (resetBtn) resetBtn.style.display = 'none';
 
-        const btnFruits = document.getElementById('btnPresetAvatarFruits');
-        const btnSnacks = document.getElementById('btnPresetAvatarSnacks');
-        const btnTaiwan = document.getElementById('btnPresetAvatarTaiwan');
-        if (btnFruits) btnFruits.classList.remove('active');
-        if (btnSnacks) btnSnacks.classList.remove('active');
-        if (btnTaiwan) btnTaiwan.classList.remove('active');
-
-        // 渲染系統預設 96 款可愛生物頭像圖鑑
+        // 渲染系統預設 240 款主題角色頭像圖鑑
         if (previewSection && previewGrid) {
           previewSection.style.display = 'block';
           const pTitle = document.getElementById('adminClassAvatarPreviewTitle');
           const pSub = document.getElementById('adminClassAvatarPreviewSub');
-          if (pTitle) pTitle.textContent = `👀 目前${scopeLabel}使用頭像（系統預設 96 款可愛生物）：`;
-          if (pSub) pSub.textContent = '含「萌寵奇幻 48 款」與「森林海洋 48 款」共 96 款圖鑑';
+          if (pTitle) pTitle.textContent = `👀 目前${scopeLabel}使用頭像（系統預設 240 款主題角色）：`;
+          if (pSub) pSub.textContent = '含萌寵奇幻 (48)、森林海洋 (48)、蔬菜水果 (48)、食品零食 (48)、台灣特色小吃 (48) 共 240 款圖鑑';
           let html = '';
+          // 1. 經典 96 款 (萌寵奇幻 48 + 森林海洋 48)
           for (let i = 0; i < 96; i++) {
             const avatar = this.CUTE_AVATARS[i] || { name: `可愛生物 #${i + 1}`, emoji: '🐾' };
             const pos = this.getAvatarPositionStyle(i);
@@ -18754,6 +18741,67 @@ class App {
               </div>
             `;
           }
+
+          // 2. 蔬菜水果 48 款
+          const fruitMeta = this.PRESET_AVATARS && this.PRESET_AVATARS.fruits;
+          if (fruitMeta) {
+            for (let i = 0; i < 48; i++) {
+              const col = i % 8;
+              const row = Math.floor(i / 8);
+              const x = ((col / 7) * 100).toFixed(2);
+              const y = ((row / 5) * 100).toFixed(2);
+              const name = (fruitMeta.items && fruitMeta.items[i]) ? fruitMeta.items[i] : `蔬菜水果 #${i + 1}`;
+              html += `
+                <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box; cursor: pointer;" 
+                     title="${fruitMeta.emoji} ${name} (#${i + 1})"
+                     onmouseenter="window.app.showAvatarHoverPreview(event, 'fruits_${i}')"
+                     onmouseleave="window.app.hideAvatarHoverPreview()">
+                  <span class="cute-avatar-icon" style="width: 100%; height: 100%; border-radius: 50%; background-image: url('${fruitMeta.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
+                </div>
+              `;
+            }
+          }
+
+          // 3. 食品零食 48 款
+          const snackMeta = this.PRESET_AVATARS && this.PRESET_AVATARS.snacks;
+          if (snackMeta) {
+            for (let i = 0; i < 48; i++) {
+              const col = i % 8;
+              const row = Math.floor(i / 8);
+              const x = ((col / 7) * 100).toFixed(2);
+              const y = ((row / 5) * 100).toFixed(2);
+              const name = (snackMeta.items && snackMeta.items[i]) ? snackMeta.items[i] : `食品零食 #${i + 1}`;
+              html += `
+                <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box; cursor: pointer;" 
+                     title="${snackMeta.emoji} ${name} (#${i + 1})"
+                     onmouseenter="window.app.showAvatarHoverPreview(event, 'snacks_${i}')"
+                     onmouseleave="window.app.hideAvatarHoverPreview()">
+                  <span class="cute-avatar-icon" style="width: 100%; height: 100%; border-radius: 50%; background-image: url('${snackMeta.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
+                </div>
+              `;
+            }
+          }
+
+          // 4. 台灣特色小吃 48 款
+          const taiwanMeta = this.PRESET_AVATARS && this.PRESET_AVATARS.taiwan;
+          if (taiwanMeta) {
+            for (let i = 0; i < 48; i++) {
+              const col = i % 8;
+              const row = Math.floor(i / 8);
+              const x = ((col / 7) * 100).toFixed(2);
+              const y = ((row / 5) * 100).toFixed(2);
+              const name = (taiwanMeta.items && taiwanMeta.items[i]) ? taiwanMeta.items[i] : `台灣小吃 #${i + 1}`;
+              html += `
+                <div style="aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); display: flex; align-items: center; justify-content: center; padding: 4px; box-sizing: border-box; cursor: pointer;" 
+                     title="${taiwanMeta.emoji} ${name} (#${i + 1})"
+                     onmouseenter="window.app.showAvatarHoverPreview(event, 'taiwan_${i}')"
+                     onmouseleave="window.app.hideAvatarHoverPreview()">
+                  <span class="cute-avatar-icon" style="width: 100%; height: 100%; border-radius: 50%; background-image: url('${taiwanMeta.url}'); background-size: 800% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;"></span>
+                </div>
+              `;
+            }
+          }
+
           previewGrid.innerHTML = html;
         }
       }

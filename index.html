@@ -1973,25 +1973,7 @@
                   </div>
                 </div>
 
-                <!-- 快速套用精選內建圖鑑版本（免自行生成） -->
-                <div style="margin-bottom: 12px; padding: 10px 14px; background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-                  <div style="font-size: 14px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                    <span>🌟 快速切換精選圖鑑（免自行生成）：</span>
-                  </div>
-                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <button type="button" id="btnPresetAvatarFruits" class="presentation-tool-btn" onclick="window.app.applyPresetAvatarSheet('fruits')" style="padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="套用 48 款蔬菜水果角色頭像圖鑑">
-                      🥦 蔬菜水果版 (48款)
-                    </button>
-                    <button type="button" id="btnPresetAvatarSnacks" class="presentation-tool-btn" onclick="window.app.applyPresetAvatarSheet('snacks')" style="padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="套用 48 款食品零食角色頭像圖鑑">
-                      🍔 食品零食版 (48款)
-                    </button>
-                    <button type="button" id="btnPresetAvatarTaiwan" class="presentation-tool-btn" onclick="window.app.applyPresetAvatarSheet('taiwan')" style="padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="套用 48 款台灣特色小吃角色頭像圖鑑">
-                      🧋 台灣特色小吃版 (48款)
-                    </button>
-                  </div>
-                </div>
-
-                <!-- 待儲存提示訊息橫條 (按快速切換精選圖鑑或上傳後顯示於此，常駐提醒避免遺漏點擊儲存) -->
+                <!-- 待儲存提示訊息橫條 (上傳圖檔後顯示於此，常駐提醒避免遺漏點擊儲存) -->
                 <div id="adminClassAvatarPendingNotice" style="display: none; margin-bottom: 12px; padding: 10px 14px; background: rgba(0, 122, 255, 0.08); border: 1.5px solid var(--accent-color); border-radius: 10px; color: var(--text-primary); font-size: 14px; line-height: 1.5; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                   <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 260px;">
                     <span style="font-size: 18px; flex-shrink: 0;">✨</span>
@@ -2006,7 +1988,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
                   <div id="adminClassAvatarStatusInfo" style="font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
                     <span>📌 目前狀態：</span>
-                    <span id="badgeClassAvatarStatus" style="font-weight: bold; padding: 3px 10px; border-radius: 8px; font-size: 14px; background: rgba(52, 199, 89, 0.12); color: #28a745;">使用系統預設 96 款可愛生物</span>
+                    <span id="badgeClassAvatarStatus" style="font-weight: bold; padding: 3px 10px; border-radius: 8px; font-size: 14px; background: rgba(52, 199, 89, 0.12); color: #28a745;">使用系統預設 240 款主題角色</span>
                   </div>
                   <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <button type="button" id="btnSaveClassAvatars" class="presentation-tool-btn active" onclick="window.app.saveAdminClassAvatars()" style="padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: bold; display: none;" title="儲存為此班級的專屬頭像">
@@ -5961,7 +5943,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=391"></script>
-  <script src="js/app.js?v=439"></script>
+  <script src="js/app.js?v=440"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
