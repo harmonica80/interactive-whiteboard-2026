@@ -1,4 +1,16 @@
 # System Log
+## 2026-10-28 - 修復學生名冊「合併帳號」彈窗來源帳號無法勾選核選與合併按鈕失效問題
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **來源帳號核選勾選修復**：
+     - 解決原先在核選 checkbox 時因觸發 `onchange` 重建整份候選清單 DOM（`container.innerHTML`），導致事件冒泡時節點失效並自動解除勾選的問題。
+     - 改為整列點擊切換（`adminMergeToggleRow`）搭配獨立事件阻斷（`event.stopPropagation()`），並以差量樣式更新（`style.background` 與 `style.borderColor`）直接連動單一列與核選框，不再全量重建 DOM，保證核選精準流暢。
+  2. **合併按鈕可用性與名冊快取強化**：
+     - 在開啟合併彈窗時優先取用名冊當前已即時彙整之學生清單（`this.lastAdminStudentsList`），確保名冊畫面上呈現之學生 100% 完整帶入目標下拉選單與來源候選清單中。
+     - 強化目標帳號預設選取防呆機制（精準綁定 `preselectedTargetUid`），並於勾選來源帳號時即時啟用「🔀 確認執行合併」按鈕（同步動態切換不透明度與滑鼠游標為 `pointer`）。
+  3. **合規檢測**：
+     - 通過 `npm run check:syntax` 與 `node --check` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
 ## 2026-10-28 - 互動白板向量形狀與筆劃物件懸停/選取視覺優化：移除光暈暈開樣式，統一採用簡潔虛線外框與俐落控制點
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：

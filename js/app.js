@@ -17829,6 +17829,8 @@ class App {
       };
     });
 
+    this.lastAdminStudentsList = studentList;
+
     // 更新總數徽章
     const countBadge = document.getElementById('adminStudentsTotalCountBadge');
     if (countBadge) {
@@ -18591,45 +18593,55 @@ class App {
     this.mergeSelectedSourceUids = new Set();
     this.mergeSourceSearchQuery = '';
 
-    // 彙整目前名冊中所有學生清單
-    const studentsMap = new Map();
-    const regStudents = this.registeredStudents || {};
-    Object.entries(regStudents).forEach(([uid, data]) => {
-      if (data && data.name) {
-        studentsMap.set(uid, {
-          uid,
-          name: String(data.name).trim(),
-          avatar: data.avatar !== undefined ? data.avatar : 0,
-          previousNames: Array.isArray(data.previousNames) ? [...data.previousNames] : []
-        });
-      }
-    });
+    // 優先使用名冊已即時彙整之 studentList 清單
+    let students = [];
+    if (Array.isArray(this.lastAdminStudentsList) && this.lastAdminStudentsList.length > 0) {
+      students = this.lastAdminStudentsList.map(s => ({
+        uid: s.uid,
+        name: s.name,
+        avatar: s.avatar !== undefined ? s.avatar : 0,
+        previousNames: Array.isArray(s.previousNames) ? [...s.previousNames] : []
+      }));
+    } else {
+      const studentsMap = new Map();
+      const regStudents = this.registeredStudents || {};
+      Object.entries(regStudents).forEach(([uid, data]) => {
+        if (data && data.name) {
+          studentsMap.set(uid, {
+            uid,
+            name: String(data.name).trim(),
+            avatar: data.avatar !== undefined ? data.avatar : 0,
+            previousNames: Array.isArray(data.previousNames) ? [...data.previousNames] : []
+          });
+        }
+      });
 
-    const presenceData = this.onlinePresence || {};
-    Object.values(presenceData).forEach(p => {
-      if (p && p.userId && p.userName && !studentsMap.has(p.userId)) {
-        studentsMap.set(p.userId, {
-          uid: p.userId,
-          name: String(p.userName).trim(),
-          avatar: p.avatar !== undefined ? p.avatar : 0,
-          previousNames: []
-        });
-      }
-    });
+      const presenceData = this.onlinePresence || {};
+      Object.values(presenceData).forEach(p => {
+        if (p && p.userId && p.userName && !studentsMap.has(p.userId)) {
+          studentsMap.set(p.userId, {
+            uid: p.userId,
+            name: String(p.userName).trim(),
+            avatar: p.avatar !== undefined ? p.avatar : 0,
+            previousNames: []
+          });
+        }
+      });
 
-    const extraItems = [...(this.questions || []), ...(this.images || []), ...(this.videos || [])];
-    extraItems.forEach(item => {
-      if (item && item.userId && item.user && !studentsMap.has(item.userId)) {
-        studentsMap.set(item.userId, {
-          uid: item.userId,
-          name: String(item.user).trim(),
-          avatar: item.avatar !== undefined ? item.avatar : 0,
-          previousNames: []
-        });
-      }
-    });
+      const extraItems = [...(this.questions || []), ...(this.images || []), ...(this.videos || [])];
+      extraItems.forEach(item => {
+        if (item && item.userId && item.user && !studentsMap.has(item.userId)) {
+          studentsMap.set(item.userId, {
+            uid: item.userId,
+            name: String(item.user).trim(),
+            avatar: item.avatar !== undefined ? item.avatar : 0,
+            previousNames: []
+          });
+        }
+      });
+      students = Array.from(studentsMap.values());
+    }
 
-    const students = Array.from(studentsMap.values());
     if (students.length < 2) {
       this.showNotification('提示', '名冊中需有至少 2 位同學才能進行帳號合併！');
       return;
@@ -18642,9 +18654,14 @@ class App {
     const targetSelect = document.getElementById('adminMergeTargetSelect');
     if (targetSelect) {
       targetSelect.innerHTML = students.map(s => {
-        const isSelected = (preselectedTargetUid && s.uid === preselectedTargetUid);
-        return `<option value="${s.uid}" ${isSelected ? 'selected' : ''}>${this.escapeHtml(s.name)} (UID: ${s.uid.slice(0, 8)}...)</option>`;
+        return `<option value="${s.uid}">${this.escapeHtml(s.name)} (UID: ${s.uid.slice(0, 8)}...)</option>`;
       }).join('');
+
+      if (preselectedTargetUid && students.some(s => s.uid === preselectedTargetUid)) {
+        targetSelect.value = preselectedTargetUid;
+      } else if (students.length > 0) {
+        targetSelect.value = students[0].uid;
+      }
     }
 
     const searchInput = document.getElementById('adminMergeSourceSearchInput');
@@ -18741,22 +18758,30 @@ class App {
         : '';
 
       return `
-        <label style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: ${isChecked ? 'rgba(102, 126, 234, 0.12)' : 'var(--bg-card)'}; border: 1px solid ${isChecked ? 'var(--accent-color)' : 'var(--border-color)'}; cursor: pointer; user-select: none;">
-          <input type="checkbox" onchange="window.app.adminMergeOnSourceToggle('${safeUid}', this.checked)" ${isChecked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-color);">
-          <div style="flex-shrink: 0;">${avatarHtml}</div>
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-weight: 500; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+        <div class="admin-merge-source-row" id="merge_row_${s.uid}" onclick="window.app.adminMergeToggleRow('${safeUid}')" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: ${isChecked ? 'rgba(102, 126, 234, 0.14)' : 'var(--bg-card)'}; border: 1.5px solid ${isChecked ? 'var(--accent-color)' : 'var(--border-color)'}; cursor: pointer; user-select: none; transition: background 0.15s ease, border-color 0.15s ease;">
+          <input type="checkbox" id="merge_chk_${s.uid}" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); window.app.adminMergeOnSourceToggle('${safeUid}', this.checked);" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-color); flex-shrink: 0;">
+          <div style="flex-shrink: 0; pointer-events: none;">${avatarHtml}</div>
+          <div style="flex: 1; min-width: 0; pointer-events: none;">
+            <div style="font-weight: 600; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
               <span>${safeName}</span>
               ${prevNames}
-              <span style="font-size: 14px; color: var(--text-muted);">UID: ${s.uid.slice(0, 8)}...</span>
+              <span style="font-size: 14px; color: var(--text-muted); font-weight: normal;">UID: ${s.uid.slice(0, 8)}...</span>
             </div>
             <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;">
-              包含歷程記錄：<strong>${act.length}</strong> 筆
+              包含歷程記錄：<strong style="color: var(--accent-color);">${act.length}</strong> 筆
             </div>
           </div>
-        </label>
+        </div>
       `;
     }).join('');
+  }
+
+  adminMergeToggleRow(uid) {
+    const chk = document.getElementById(`merge_chk_${uid}`);
+    if (chk) {
+      chk.checked = !chk.checked;
+      this.adminMergeOnSourceToggle(uid, chk.checked);
+    }
   }
 
   adminMergeOnSourceToggle(uid, checked) {
@@ -18766,7 +18791,17 @@ class App {
     } else {
       this.mergeSelectedSourceUids.delete(uid);
     }
-    this.renderAdminMergeSourceList();
+
+    const row = document.getElementById(`merge_row_${uid}`);
+    if (row) {
+      row.style.background = checked ? 'rgba(102, 126, 234, 0.14)' : 'var(--bg-card)';
+      row.style.borderColor = checked ? 'var(--accent-color)' : 'var(--border-color)';
+    }
+    const chk = document.getElementById(`merge_chk_${uid}`);
+    if (chk && chk.checked !== checked) {
+      chk.checked = checked;
+    }
+
     this.adminUpdateMergeSummary();
   }
 
@@ -18788,9 +18823,18 @@ class App {
     candidates.forEach(s => {
       if (selectAll) this.mergeSelectedSourceUids.add(s.uid);
       else this.mergeSelectedSourceUids.delete(s.uid);
+
+      const row = document.getElementById(`merge_row_${s.uid}`);
+      if (row) {
+        row.style.background = selectAll ? 'rgba(102, 126, 234, 0.14)' : 'var(--bg-card)';
+        row.style.borderColor = selectAll ? 'var(--accent-color)' : 'var(--border-color)';
+      }
+      const chk = document.getElementById(`merge_chk_${s.uid}`);
+      if (chk) {
+        chk.checked = selectAll;
+      }
     });
 
-    this.renderAdminMergeSourceList();
     this.adminUpdateMergeSummary();
   }
 
@@ -18807,6 +18851,8 @@ class App {
     if (!target || sourceUids.length === 0) {
       summaryBox.innerHTML = `<span style="color: var(--text-secondary); font-size: 14px;">請先勾選至少 1 個欲合併進來的來源帳號...</span>`;
       btnConfirm.disabled = true;
+      btnConfirm.style.opacity = '0.5';
+      btnConfirm.style.cursor = 'not-allowed';
       return;
     }
 
@@ -18841,6 +18887,8 @@ class App {
       </div>
     `;
     btnConfirm.disabled = false;
+    btnConfirm.style.opacity = '1';
+    btnConfirm.style.cursor = 'pointer';
   }
 
   async adminExecuteMergeStudents() {
