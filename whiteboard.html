@@ -1294,6 +1294,134 @@
       border-radius: 2px;
     }
 
+    /* 物件編輯變形與 8 個控制點 + 旋轉把手 + 影像裁切 */
+    .wb-transform-overlay {
+      position: absolute;
+      border: 1.5px solid var(--accent-color, #2563eb);
+      pointer-events: none;
+      z-index: 1000;
+      box-sizing: border-box;
+      border-radius: 4px;
+    }
+    
+    .wb-rot-stem {
+      position: absolute;
+      top: -24px;
+      left: 50%;
+      width: 0;
+      height: 24px;
+      border-left: 1.5px solid var(--accent-color, #2563eb);
+      pointer-events: none;
+      transform: translateX(-50%);
+    }
+
+    .wb-handle {
+      position: absolute;
+      pointer-events: auto;
+      box-sizing: border-box;
+      z-index: 1001;
+      user-select: none;
+      touch-action: none;
+    }
+
+    /* 旋轉控制點 */
+    .wb-handle-rot {
+      top: -36px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg-card, #ffffff);
+      border: 2px solid var(--accent-color, #2563eb);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      color: var(--accent-color, #2563eb);
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+    .wb-handle-rot:hover {
+      background: var(--accent-color, #2563eb);
+      color: #ffffff;
+      transform: translateX(-50%) scale(1.15);
+    }
+    .wb-handle-rot:active {
+      cursor: grabbing;
+    }
+
+    /* 4 個頂點放大/縮小控制點 */
+    .wb-handle-corner {
+      width: 12px;
+      height: 12px;
+      background: #ffffff;
+      border: 2px solid var(--accent-color, #2563eb);
+      border-radius: 3px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      transition: transform 0.1s ease;
+    }
+    .wb-handle-corner:hover {
+      transform: scale(1.25);
+      background: var(--accent-color, #2563eb);
+    }
+    .wb-handle-nw { top: -6px; left: -6px; cursor: nwse-resize; }
+    .wb-handle-ne { top: -6px; right: -6px; cursor: nesw-resize; }
+    .wb-handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+    .wb-handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+
+    /* 4 個邊中間節點：一般物件邊界調節 */
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-edge {
+      width: 10px;
+      height: 10px;
+      background: #ffffff;
+      border: 1.5px solid var(--accent-color, #2563eb);
+      border-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-edge:hover {
+      background: var(--accent-color, #2563eb);
+      transform: scale(1.2);
+    }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-n { top: -5px; left: calc(50% - 5px); cursor: ns-resize; }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-s { bottom: -5px; left: calc(50% - 5px); cursor: ns-resize; }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-w { left: -5px; top: calc(50% - 5px); cursor: ew-resize; }
+    .wb-transform-overlay:not(.is-image-object) .wb-handle-e { right: -5px; top: calc(50% - 5px); cursor: ew-resize; }
+
+    /* 影像物件專屬：4 個邊中間節點為「裁切節點」 */
+    .wb-transform-overlay.is-image-object .wb-handle-edge {
+      background: var(--accent-color, #2563eb);
+      border: 1.5px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      transition: background 0.12s, transform 0.12s;
+    }
+    .wb-transform-overlay.is-image-object .wb-handle-n,
+    .wb-transform-overlay.is-image-object .wb-handle-s {
+      width: 24px;
+      height: 7px;
+      border-radius: 4px;
+      left: calc(50% - 12px);
+      cursor: ns-resize;
+    }
+    .wb-transform-overlay.is-image-object .wb-handle-n { top: -4.5px; }
+    .wb-transform-overlay.is-image-object .wb-handle-s { bottom: -4.5px; }
+
+    .wb-transform-overlay.is-image-object .wb-handle-w,
+    .wb-transform-overlay.is-image-object .wb-handle-e {
+      width: 7px;
+      height: 24px;
+      border-radius: 4px;
+      top: calc(50% - 12px);
+      cursor: ew-resize;
+    }
+    .wb-transform-overlay.is-image-object .wb-handle-w { left: -4.5px; }
+    .wb-transform-overlay.is-image-object .wb-handle-e { right: -4.5px; }
+
+    .wb-transform-overlay.is-image-object .wb-handle-edge:hover {
+      background: #10b981;
+      transform: scale(1.15);
+    }
+
     /* 選取物件操作與對齊工具列 (Item 5 & Item 9) */
     .selection-action-bar {
       position: absolute;
@@ -1737,6 +1865,8 @@
           <div id="htmlLayer"></div>
           <!-- 拖曳框選虛線框 (Item 9) -->
           <div id="selectionMarquee" class="selection-marquee" style="display:none;"></div>
+          <!-- 物件變形與控制點覆蓋層 (8 個控制點 + 旋轉把手 + 裁切) -->
+          <div id="wbTransformOverlay" class="wb-transform-overlay" style="display:none;"></div>
         </div>
 
         <!-- 選取物件懸浮操作與對齊工具列 (Item 5 & Item 9) -->
@@ -1758,6 +1888,10 @@
             <span class="action-divider"></span>
             <button class="action-btn" id="btnDistributeH" title="水平平均分配間距">⏸️ 水平均分</button>
             <button class="action-btn" id="btnDistributeV" title="垂直平均分配間距">⏸️ 垂直均分</button>
+          </div>
+          <div class="action-btn-group" id="groupTransformActions">
+            <button class="action-btn" id="btnResetRotation" style="display:none;" title="重設旋轉角度為 0 度">🔄 轉正</button>
+            <button class="action-btn" id="btnResetCrop" style="display:none;" title="重設裁切 (恢復完整全圖)">✂️ 重設裁切</button>
           </div>
           <span class="action-divider"></span>
           <button class="action-btn btn-action-danger" id="btnActionDelete" title="刪除選取物件">🗑️ 刪除</button>
@@ -2179,6 +2313,6 @@
 
   </div>
 
-  <script src="js/whiteboard_core.js?v=3013"></script>
+  <script src="js/whiteboard_core.js?v=3014"></script>
 </body>
 </html>

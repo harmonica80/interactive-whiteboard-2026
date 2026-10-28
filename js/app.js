@@ -17929,6 +17929,9 @@ class App {
               <button type="button" onclick="window.app.adminOpenEditStudentModal('${safeUid}')" title="編輯 ${safeName} 的姓名與頭像">
                 ✏️ 編輯
               </button>
+              <button type="button" onclick="window.app.adminOpenMergeStudentsModal('${safeUid}')" title="將其他重複帳號或舊名歷程合併至 ${safeName}">
+                🔀 合併
+              </button>
               <button type="button" class="btn-del-student" onclick="window.app.adminDeleteStudent('${safeUid}', '${safeNameAttr}')" title="自名冊刪除此同學">
                 🗑️ 刪除
               </button>
@@ -17982,6 +17985,9 @@ class App {
               </button>
               <button type="button" onclick="window.app.adminOpenEditStudentModal('${safeUid}')" title="編輯 ${safeName} 的姓名與頭像">
                 ✏️ 編輯
+              </button>
+              <button type="button" onclick="window.app.adminOpenMergeStudentsModal('${safeUid}')" title="將其他重複帳號或舊名歷程合併至 ${safeName}">
+                🔀 合併
               </button>
               <button type="button" class="btn-del-student" onclick="window.app.adminDeleteStudent('${safeUid}', '${safeNameAttr}')" title="自名冊刪除此同學">
                 🗑️ 刪除
@@ -18578,6 +18584,503 @@ class App {
         }
       }
     );
+  }
+
+  // ===== 學生名冊管理：合併帳號與歷程整併功能 =====
+  adminOpenMergeStudentsModal(preselectedTargetUid) {
+    this.mergeSelectedSourceUids = new Set();
+    this.mergeSourceSearchQuery = '';
+
+    // 彙整目前名冊中所有學生清單
+    const studentsMap = new Map();
+    const regStudents = this.registeredStudents || {};
+    Object.entries(regStudents).forEach(([uid, data]) => {
+      if (data && data.name) {
+        studentsMap.set(uid, {
+          uid,
+          name: String(data.name).trim(),
+          avatar: data.avatar !== undefined ? data.avatar : 0,
+          previousNames: Array.isArray(data.previousNames) ? [...data.previousNames] : []
+        });
+      }
+    });
+
+    const presenceData = this.onlinePresence || {};
+    Object.values(presenceData).forEach(p => {
+      if (p && p.userId && p.userName && !studentsMap.has(p.userId)) {
+        studentsMap.set(p.userId, {
+          uid: p.userId,
+          name: String(p.userName).trim(),
+          avatar: p.avatar !== undefined ? p.avatar : 0,
+          previousNames: []
+        });
+      }
+    });
+
+    const extraItems = [...(this.questions || []), ...(this.images || []), ...(this.videos || [])];
+    extraItems.forEach(item => {
+      if (item && item.userId && item.user && !studentsMap.has(item.userId)) {
+        studentsMap.set(item.userId, {
+          uid: item.userId,
+          name: String(item.user).trim(),
+          avatar: item.avatar !== undefined ? item.avatar : 0,
+          previousNames: []
+        });
+      }
+    });
+
+    const students = Array.from(studentsMap.values());
+    if (students.length < 2) {
+      this.showNotification('提示', '名冊中需有至少 2 位同學才能進行帳號合併！');
+      return;
+    }
+
+    students.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+    this.mergeStudentsCache = students;
+
+    // 填充目標主帳號下拉選單
+    const targetSelect = document.getElementById('adminMergeTargetSelect');
+    if (targetSelect) {
+      targetSelect.innerHTML = students.map(s => {
+        const isSelected = (preselectedTargetUid && s.uid === preselectedTargetUid);
+        return `<option value="${s.uid}" ${isSelected ? 'selected' : ''}>${this.escapeHtml(s.name)} (UID: ${s.uid.slice(0, 8)}...)</option>`;
+      }).join('');
+    }
+
+    const searchInput = document.getElementById('adminMergeSourceSearchInput');
+    if (searchInput) searchInput.value = '';
+
+    const modal = document.getElementById('adminMergeStudentsModal');
+    if (modal) modal.style.display = 'flex';
+
+    this.adminMergeOnTargetChange();
+  }
+
+  closeAdminMergeStudentsModal() {
+    const modal = document.getElementById('adminMergeStudentsModal');
+    if (modal) modal.style.display = 'none';
+    this.mergeSelectedSourceUids = new Set();
+  }
+
+  adminMergeOnTargetChange() {
+    const targetSelect = document.getElementById('adminMergeTargetSelect');
+    if (!targetSelect) return;
+    const targetUid = targetSelect.value;
+    const target = (this.mergeStudentsCache || []).find(s => s.uid === targetUid);
+
+    // 渲染目標帳號資訊卡片
+    const previewEl = document.getElementById('adminMergeTargetPreview');
+    if (previewEl && target) {
+      const act = this.getStudentActivityHistory(target.uid, target.name);
+      const avatarHtml = this.renderAvatarHtml(target.avatar, 36);
+      const prevNamesText = (target.previousNames && target.previousNames.length > 0)
+        ? `<span style="font-size: 14px; color: var(--text-muted); margin-left: 6px;">(曾用名：${this.escapeHtml(target.previousNames.join('、'))})</span>`
+        : '';
+      previewEl.innerHTML = `
+        <div style="flex-shrink: 0;">${avatarHtml}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: bold; color: var(--text-primary); font-size: 14px;">
+            ${this.escapeHtml(target.name)} ${prevNamesText}
+          </div>
+          <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;">
+            UID: <code style="font-size: 14px;">${target.uid}</code> · 現有歷程記錄：<strong>${act.length}</strong> 筆
+          </div>
+        </div>
+      `;
+    }
+
+    // 若原先勾選的來源包含了新選擇的目標帳號，將其移除
+    if (this.mergeSelectedSourceUids && this.mergeSelectedSourceUids.has(targetUid)) {
+      this.mergeSelectedSourceUids.delete(targetUid);
+    }
+
+    this.renderAdminMergeSourceList();
+    this.adminUpdateMergeSummary();
+  }
+
+  adminMergeOnSourceSearch(query) {
+    this.mergeSourceSearchQuery = String(query || '').trim().toLowerCase();
+    this.renderAdminMergeSourceList();
+  }
+
+  renderAdminMergeSourceList() {
+    const container = document.getElementById('adminMergeSourceList');
+    if (!container) return;
+
+    const targetSelect = document.getElementById('adminMergeTargetSelect');
+    const targetUid = targetSelect ? targetSelect.value : '';
+    const q = this.mergeSourceSearchQuery || '';
+
+    // 過濾候選來源清單 (排除目標主帳號)
+    const candidates = (this.mergeStudentsCache || []).filter(s => {
+      if (s.uid === targetUid) return false;
+      if (!q) return true;
+      const matchName = s.name.toLowerCase().includes(q);
+      const matchUid = s.uid.toLowerCase().includes(q);
+      const matchPrev = s.previousNames && s.previousNames.some(p => p.toLowerCase().includes(q));
+      return matchName || matchUid || matchPrev;
+    });
+
+    if (candidates.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); padding: 18px; font-size: 14px;">
+          查無符合條件的來源學生帳號
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = candidates.map(s => {
+      const isChecked = this.mergeSelectedSourceUids && this.mergeSelectedSourceUids.has(s.uid);
+      const act = this.getStudentActivityHistory(s.uid, s.name);
+      const avatarHtml = this.renderAvatarHtml(s.avatar, 30);
+      const safeUid = String(s.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeName = this.escapeHtml(s.name);
+      const prevNames = (s.previousNames && s.previousNames.length > 0)
+        ? `<span style="font-size: 14px; color: var(--text-muted);">(曾用名: ${this.escapeHtml(s.previousNames.join(','))})</span>`
+        : '';
+
+      return `
+        <label style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: ${isChecked ? 'rgba(102, 126, 234, 0.12)' : 'var(--bg-card)'}; border: 1px solid ${isChecked ? 'var(--accent-color)' : 'var(--border-color)'}; cursor: pointer; user-select: none;">
+          <input type="checkbox" onchange="window.app.adminMergeOnSourceToggle('${safeUid}', this.checked)" ${isChecked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-color);">
+          <div style="flex-shrink: 0;">${avatarHtml}</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 500; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span>${safeName}</span>
+              ${prevNames}
+              <span style="font-size: 14px; color: var(--text-muted);">UID: ${s.uid.slice(0, 8)}...</span>
+            </div>
+            <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;">
+              包含歷程記錄：<strong>${act.length}</strong> 筆
+            </div>
+          </div>
+        </label>
+      `;
+    }).join('');
+  }
+
+  adminMergeOnSourceToggle(uid, checked) {
+    if (!this.mergeSelectedSourceUids) this.mergeSelectedSourceUids = new Set();
+    if (checked) {
+      this.mergeSelectedSourceUids.add(uid);
+    } else {
+      this.mergeSelectedSourceUids.delete(uid);
+    }
+    this.renderAdminMergeSourceList();
+    this.adminUpdateMergeSummary();
+  }
+
+  adminMergeToggleSelectAll(selectAll) {
+    if (!this.mergeSelectedSourceUids) this.mergeSelectedSourceUids = new Set();
+    const targetSelect = document.getElementById('adminMergeTargetSelect');
+    const targetUid = targetSelect ? targetSelect.value : '';
+    const q = this.mergeSourceSearchQuery || '';
+
+    const candidates = (this.mergeStudentsCache || []).filter(s => {
+      if (s.uid === targetUid) return false;
+      if (!q) return true;
+      const matchName = s.name.toLowerCase().includes(q);
+      const matchUid = s.uid.toLowerCase().includes(q);
+      const matchPrev = s.previousNames && s.previousNames.some(p => p.toLowerCase().includes(q));
+      return matchName || matchUid || matchPrev;
+    });
+
+    candidates.forEach(s => {
+      if (selectAll) this.mergeSelectedSourceUids.add(s.uid);
+      else this.mergeSelectedSourceUids.delete(s.uid);
+    });
+
+    this.renderAdminMergeSourceList();
+    this.adminUpdateMergeSummary();
+  }
+
+  adminUpdateMergeSummary() {
+    const summaryBox = document.getElementById('adminMergeSummaryBox');
+    const btnConfirm = document.getElementById('btnConfirmMergeStudents');
+    if (!summaryBox || !btnConfirm) return;
+
+    const targetSelect = document.getElementById('adminMergeTargetSelect');
+    const targetUid = targetSelect ? targetSelect.value : '';
+    const target = (this.mergeStudentsCache || []).find(s => s.uid === targetUid);
+    const sourceUids = Array.from(this.mergeSelectedSourceUids || []);
+
+    if (!target || sourceUids.length === 0) {
+      summaryBox.innerHTML = `<span style="color: var(--text-secondary); font-size: 14px;">請先勾選至少 1 個欲合併進來的來源帳號...</span>`;
+      btnConfirm.disabled = true;
+      return;
+    }
+
+    const sources = sourceUids.map(uid => (this.mergeStudentsCache || []).find(s => s.uid === uid)).filter(Boolean);
+    let totalMigratedActivities = 0;
+    const combinedNames = new Set(target.previousNames || []);
+    if (target.name) combinedNames.add(target.name);
+
+    sources.forEach(s => {
+      const act = this.getStudentActivityHistory(s.uid, s.name);
+      totalMigratedActivities += act.length;
+      if (s.name) combinedNames.add(s.name);
+      if (s.previousNames) s.previousNames.forEach(pn => combinedNames.add(pn));
+    });
+
+    // 移除目標主帳號名稱自身（曾用名不包含目前主要名稱）
+    combinedNames.delete(target.name);
+
+    const targetExistingAct = this.getStudentActivityHistory(target.uid, target.name).length;
+    const finalTotalAct = targetExistingAct + totalMigratedActivities;
+
+    summaryBox.innerHTML = `
+      <div style="font-weight: bold; color: var(--text-primary); font-size: 14px; margin-bottom: 6px;">
+        ⚡ 合併執行摘要預覽：
+      </div>
+      <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+        • 保留主帳號：<strong style="color: var(--accent-color);">${this.escapeHtml(target.name)}</strong><br>
+        • 合併來源帳號：已勾選 <strong>${sources.length}</strong> 個帳號（${this.escapeHtml(sources.map(s => s.name).join('、'))}）<br>
+        • 歷程記錄整合：將全數遷移 <strong>+${totalMigratedActivities}</strong> 筆記錄（合併後總計 <strong>${finalTotalAct}</strong> 筆歷程）<br>
+        • 曾用名關聯綁定：將登記「<strong>${this.escapeHtml(Array.from(combinedNames).join('、') || '無')}</strong>」，日後該同學若以這些舊名登入將自動辨識綁定至主帳號！<br>
+        • 帳號清理：合併完成後將自動刪除這 <strong>${sources.length}</strong> 個來源帳號，使名冊乾淨精準。
+      </div>
+    `;
+    btnConfirm.disabled = false;
+  }
+
+  async adminExecuteMergeStudents() {
+    const targetSelect = document.getElementById('adminMergeTargetSelect');
+    const targetUid = targetSelect ? targetSelect.value : '';
+    const target = (this.mergeStudentsCache || []).find(s => s.uid === targetUid);
+    const sourceUids = Array.from(this.mergeSelectedSourceUids || []);
+
+    if (!target || sourceUids.length === 0) {
+      this.showNotification('提示', '請先選擇保留的主帳號並勾選欲合併的來源帳號！');
+      return;
+    }
+
+    const sources = sourceUids.map(uid => (this.mergeStudentsCache || []).find(s => s.uid === uid)).filter(Boolean);
+    const targetName = target.name;
+    const targetAvatar = target.avatar !== undefined ? target.avatar : 0;
+
+    const btnConfirm = document.getElementById('btnConfirmMergeStudents');
+    if (btnConfirm) {
+      btnConfirm.disabled = true;
+      btnConfirm.innerHTML = '⏳ 正在合併歷程記錄...';
+    }
+
+    try {
+      // 1. 整理曾用名集合
+      const combinedPrevNames = new Set(target.previousNames || []);
+      sources.forEach(s => {
+        if (s.name && s.name !== targetName) combinedPrevNames.add(s.name);
+        if (Array.isArray(s.previousNames)) s.previousNames.forEach(pn => {
+          if (pn && pn !== targetName) combinedPrevNames.add(pn);
+        });
+      });
+      combinedPrevNames.delete(targetName);
+      const newPreviousNamesList = Array.from(combinedPrevNames);
+
+      // 2. 遷移各教學單元之歷程記錄
+      const sourceUidSet = new Set(sourceUids);
+      const sourceNameSet = new Set(sources.map(s => s.name.toLowerCase()));
+
+      const isSourceMatch = (uId, uName) => {
+        if (uId && sourceUidSet.has(String(uId).trim())) return true;
+        if (uName && sourceNameSet.has(String(uName).trim().toLowerCase())) return true;
+        return false;
+      };
+
+      // 2A. 提問與提問留言
+      (this.questions || []).forEach(q => {
+        if (q && isSourceMatch(q.userId, q.user || q.userName)) {
+          db.ref('questions').child(q.id).update({
+            userId: targetUid,
+            user: targetName,
+            avatar: targetAvatar
+          }).catch(() => {});
+          q.userId = targetUid;
+          q.user = targetName;
+          q.avatar = targetAvatar;
+        }
+
+        if (q && q.comments && typeof q.comments === 'object') {
+          Object.entries(q.comments).forEach(([cid, c]) => {
+            if (c && isSourceMatch(c.userId, c.user || c.userName)) {
+              db.ref('questions').child(q.id).child('comments').child(cid).update({
+                userId: targetUid,
+                user: targetName,
+                userName: targetName,
+                avatar: targetAvatar
+              }).catch(() => {});
+              c.userId = targetUid;
+              c.user = targetName;
+              c.userName = targetName;
+              c.avatar = targetAvatar;
+            }
+          });
+        }
+      });
+
+      // 2B. 圖片分享與圖片留言
+      (this.images || []).forEach(img => {
+        if (img && isSourceMatch(img.userId, img.user || img.userName)) {
+          db.ref('images').child(img.id).update({
+            userId: targetUid,
+            user: targetName,
+            avatar: targetAvatar
+          }).catch(() => {});
+          img.userId = targetUid;
+          img.user = targetName;
+          img.avatar = targetAvatar;
+        }
+
+        if (img && img.comments && typeof img.comments === 'object') {
+          Object.entries(img.comments).forEach(([cid, c]) => {
+            if (c && isSourceMatch(c.userId, c.user || c.userName)) {
+              db.ref('comments').child('images').child(img.id).child(cid).update({
+                userId: targetUid,
+                user: targetName,
+                userName: targetName,
+                avatar: targetAvatar
+              }).catch(() => {});
+              c.userId = targetUid;
+              c.user = targetName;
+              c.userName = targetName;
+              c.avatar = targetAvatar;
+            }
+          });
+        }
+      });
+
+      // 2C. 影片分享與影片留言
+      (this.videos || []).forEach(v => {
+        if (v && isSourceMatch(v.userId, v.user || v.userName)) {
+          db.ref('videos').child(v.id).update({
+            userId: targetUid,
+            user: targetName,
+            avatar: targetAvatar
+          }).catch(() => {});
+          v.userId = targetUid;
+          v.user = targetName;
+          v.avatar = targetAvatar;
+        }
+
+        if (v && v.comments && typeof v.comments === 'object') {
+          Object.entries(v.comments).forEach(([cid, c]) => {
+            if (c && isSourceMatch(c.userId, c.user || c.userName)) {
+              db.ref('comments').child('videos').child(v.id).child(cid).update({
+                userId: targetUid,
+                user: targetName,
+                userName: targetName,
+                avatar: targetAvatar
+              }).catch(() => {});
+              c.userId = targetUid;
+              c.user = targetName;
+              c.userName = targetName;
+              c.avatar = targetAvatar;
+            }
+          });
+        }
+      });
+
+      // 2D. 隨堂測驗作答 (Quiz Answers)
+      if (this.quizAnswers && typeof this.quizAnswers === 'object') {
+        Object.entries(this.quizAnswers).forEach(([ansId, ans]) => {
+          if (ans && isSourceMatch(ans.userId, ans.userName || ans.name)) {
+            db.ref('quiz/answers').child(ansId).update({
+              userId: targetUid,
+              userName: targetName,
+              name: targetName
+            }).catch(() => {});
+            ans.userId = targetUid;
+            ans.userName = targetName;
+            ans.name = targetName;
+          }
+        });
+      }
+
+      // 2E. 影片出題測驗作答 (Video Quiz)
+      if (window.videoQuiz && window.videoQuiz.answers && typeof window.videoQuiz.answers === 'object') {
+        Object.entries(window.videoQuiz.answers).forEach(([ansId, ans]) => {
+          if (ans && isSourceMatch(ans.userId, ans.userName || ans.name)) {
+            db.ref('videoQuiz/answers').child(ansId).update({
+              userId: targetUid,
+              userName: targetName,
+              name: targetName
+            }).catch(() => {});
+            ans.userId = targetUid;
+            ans.userName = targetName;
+            ans.name = targetName;
+          }
+        });
+      }
+
+      // 2F. 文字雲投稿 (Word Cloud)
+      if (window.wordCloud && window.wordCloud.submissions && typeof window.wordCloud.submissions === 'object') {
+        Object.entries(window.wordCloud.submissions).forEach(([subId, sub]) => {
+          if (sub && isSourceMatch(sub.userId, sub.userName || sub.user)) {
+            db.ref('wordCloud/submissions').child(subId).update({
+              userId: targetUid,
+              userName: targetName,
+              user: targetName
+            }).catch(() => {});
+            sub.userId = targetUid;
+            sub.userName = targetName;
+            sub.user = targetName;
+          }
+        });
+      }
+
+      // 2G. 同步簡報回應 (Presentation Submissions)
+      if (window.presentationCore && window.presentationCore.submissions && typeof window.presentationCore.submissions === 'object') {
+        Object.entries(window.presentationCore.submissions).forEach(([slideId, pageMap]) => {
+          if (pageMap && typeof pageMap === 'object') {
+            Object.entries(pageMap).forEach(([pUid, sub]) => {
+              if (sub && isSourceMatch(pUid, sub.userName || sub.name)) {
+                db.ref('presentation/submissions').child(slideId).child(pUid).remove().catch(() => {});
+                db.ref('presentation/submissions').child(slideId).child(targetUid).set({
+                  ...sub,
+                  userId: targetUid,
+                  userName: targetName,
+                  name: targetName
+                }).catch(() => {});
+              }
+            });
+          }
+        });
+      }
+
+      // 3. 更新目標主帳號之曾用名名冊
+      await db.ref('quiz/students').child(targetUid).update({
+        previousNames: newPreviousNamesList,
+        updatedAt: Date.now()
+      });
+
+      if (!this.registeredStudents) this.registeredStudents = {};
+      if (this.registeredStudents[targetUid]) {
+        this.registeredStudents[targetUid].previousNames = newPreviousNamesList;
+        this.registeredStudents[targetUid].updatedAt = Date.now();
+      }
+
+      // 4. 刪除被合併的來源帳號
+      for (const sUid of sourceUids) {
+        await db.ref('quiz/students').child(sUid).remove().catch(() => {});
+        if (this.registeredStudents[sUid]) {
+          delete this.registeredStudents[sUid];
+        }
+        if (this.onlinePresence && this.onlinePresence[sUid]) {
+          delete this.onlinePresence[sUid];
+        }
+      }
+
+      this.closeAdminMergeStudentsModal();
+      this.showNotification('成功', `已成功將 ${sourceUids.length} 個帳號合併至「${targetName}」，所有歷程記錄與曾用名已全數整併完畢！`);
+      this.renderAdminStudentsList();
+    } catch (e) {
+      console.error('Merge students error:', e);
+      this.showNotification('錯誤', '帳號合併失敗: ' + e.message);
+    } finally {
+      if (btnConfirm) {
+        btnConfirm.disabled = false;
+        btnConfirm.innerHTML = '🔀 確認執行合併';
+      }
+    }
   }
 
   // ===== 管理後台：班級專屬頭像管理業務 =====

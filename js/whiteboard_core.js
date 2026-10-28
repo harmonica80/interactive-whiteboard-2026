@@ -168,8 +168,11 @@
     pdfFileInput: document.getElementById('pdfFileInput'),
     // Selection Marquee & Floating Action Bar
     selectionMarquee: document.getElementById('selectionMarquee'),
+    wbTransformOverlay: document.getElementById('wbTransformOverlay'),
     selectionActionBar: document.getElementById('selectionActionBar'),
     groupMultiAlign: document.getElementById('groupMultiAlign'),
+    btnResetRotation: document.getElementById('btnResetRotation'),
+    btnResetCrop: document.getElementById('btnResetCrop'),
     btnLayerFront: document.getElementById('btnLayerFront'),
     btnLayerForward: document.getElementById('btnLayerForward'),
     btnLayerBackward: document.getElementById('btnLayerBackward'),
@@ -1167,7 +1170,17 @@
     el.style.top = obj.y + 'px';
     el.style.width = (obj.width || 200) + 'px';
     el.style.minHeight = (obj.height || 140) + 'px';
+    el.style.height = (obj.height || 140) + 'px';
     if (obj.bg) el.style.background = obj.bg;
+
+    // 支援旋轉角度 (Rotation)
+    if (obj.rotation) {
+      el.style.transform = `rotate(${obj.rotation}deg)`;
+      el.style.transformOrigin = 'center center';
+    } else {
+      el.style.transform = '';
+      el.style.transformOrigin = '';
+    }
 
     // 作者標籤
     const badgeHtml = `<div class="obj-author-badge" id="badge_obj_${obj.id}" style="display:${state.showAuthorBadge ? 'block' : 'none'};">${escapeHtml(obj.author || '同學')}</div>`;
@@ -1206,10 +1219,41 @@
     el.style.width = (obj.width || 320) + 'px';
     el.style.height = (obj.height || 200) + 'px';
 
+    // 支援旋轉角度 (Rotation)
+    if (obj.rotation) {
+      el.style.transform = `rotate(${obj.rotation}deg)`;
+      el.style.transformOrigin = 'center center';
+    } else {
+      el.style.transform = '';
+      el.style.transformOrigin = '';
+    }
+
     const badgeHtml = `<div class="obj-author-badge" id="badge_obj_${obj.id}" style="display:${state.showAuthorBadge ? 'block' : 'none'};">${escapeHtml(obj.author || '同學')}</div>`;
+
+    // 支援影像邊界裁切呈現 (Crop)
+    const crop = obj.crop || { top: 0, right: 0, bottom: 0, left: 0 };
+    const hasCrop = (crop.top || 0) > 0 || (crop.right || 0) > 0 || (crop.bottom || 0) > 0 || (crop.left || 0) > 0;
+
+    let imgHtml = '';
+    if (hasCrop) {
+      const wRatio = Math.max(0.05, (100 - (crop.left || 0) - (crop.right || 0)) / 100);
+      const hRatio = Math.max(0.05, (100 - (crop.top || 0) - (crop.bottom || 0)) / 100);
+      const fullImgW = (obj.width || 320) / wRatio;
+      const fullImgH = (obj.height || 200) / hRatio;
+      const imgLeft = -fullImgW * ((crop.left || 0) / 100);
+      const imgTop = -fullImgH * ((crop.top || 0) / 100);
+      imgHtml = `
+        <div class="board-image-crop-wrap" style="width: 100%; height: 100%; overflow: hidden; position: relative; border-radius: 6px;">
+          <img src="${obj.src}" alt="${escapeHtml(obj.title || '圖片')}" loading="lazy" style="position: absolute; width: ${Math.round(fullImgW)}px; height: ${Math.round(fullImgH)}px; left: ${Math.round(imgLeft)}px; top: ${Math.round(imgTop)}px; max-width: none; max-height: none; pointer-events: none;" />
+        </div>
+      `;
+    } else {
+      imgHtml = `<img src="${obj.src}" alt="${escapeHtml(obj.title || '圖片')}" loading="lazy" style="width: 100%; height: 100%; border-radius: 6px; pointer-events: none; display: block;" />`;
+    }
+
     el.innerHTML = `
       ${badgeHtml}
-      <img src="${obj.src}" alt="${escapeHtml(obj.title || '圖片')}" loading="lazy" />
+      ${imgHtml}
     `;
   }
 
@@ -1319,6 +1363,16 @@
       el.setAttribute('stroke', col);
       el.setAttribute('stroke-width', '1');
       el.setAttribute('stroke-linejoin', 'round');
+    }
+
+    // 支援 SVG 旋轉角度 (Rotation)
+    const b = getObjBounds(obj);
+    const cx = Math.round(b.x + b.width / 2);
+    const cy = Math.round(b.y + b.height / 2);
+    if (obj.rotation) {
+      el.setAttribute('transform', `rotate(${obj.rotation} ${cx} ${cy})`);
+    } else {
+      el.removeAttribute('transform');
     }
 
     // SVG 物件作者標籤 (置於起點上方)
@@ -1606,6 +1660,370 @@
     });
   }
 
+  function scaleSvgPath(d, oldB, newX, newY, newW, newH) {
+    if (!d || !oldB || oldB.width <= 0 || oldB.height <= 0) return d;
+    const sx = newW / oldB.width;
+    const sy = newH / oldB.height;
+    return d.replace(/([ML])\s*(-?[\d.]+)\s*[, ]\s*(-?[\d.]+)/g, (_, cmd, x, y) => {
+      const nx = newX + (parseFloat(x) - oldB.x) * sx;
+      const ny = newY + (parseFloat(y) - oldB.y) * sy;
+      return `${cmd} ${nx.toFixed(1)} ${ny.toFixed(1)}`;
+    });
+  }
+
+  function pointsToSvgPath(pts) {
+    if (!pts || pts.length === 0) return '';
+    return pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  }
+
+  // ===== 互動白板物件變形覆蓋層 (8 個控制點 + 旋轉把手 + 影像裁切) =====
+  let isTransformInitialized = false;
+
+  function initTransformOverlay() {
+    if (isTransformInitialized) return;
+    const overlay = els.wbTransformOverlay || document.getElementById('wbTransformOverlay');
+    if (!overlay) return;
+    isTransformInitialized = true;
+
+    overlay.innerHTML = `
+      <div class="wb-rot-stem"></div>
+      <div class="wb-handle wb-handle-rot" data-handle="rot" title="旋轉物件 (拖曳旋轉，按住 Shift 鍵以 15 度吸附)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+      </div>
+      <div class="wb-handle wb-handle-corner wb-handle-nw" data-handle="nw" title="放大 / 縮小"></div>
+      <div class="wb-handle wb-handle-corner wb-handle-ne" data-handle="ne" title="放大 / 縮小"></div>
+      <div class="wb-handle wb-handle-corner wb-handle-se" data-handle="se" title="放大 / 縮小"></div>
+      <div class="wb-handle wb-handle-corner wb-handle-sw" data-handle="sw" title="放大 / 縮小"></div>
+      <div class="wb-handle wb-handle-edge wb-handle-n" data-handle="n"></div>
+      <div class="wb-handle wb-handle-edge wb-handle-e" data-handle="e"></div>
+      <div class="wb-handle wb-handle-edge wb-handle-s" data-handle="s"></div>
+      <div class="wb-handle wb-handle-edge wb-handle-w" data-handle="w"></div>
+    `;
+
+    overlay.querySelectorAll('.wb-handle').forEach(handle => {
+      handle.addEventListener('pointerdown', (e) => onHandlePointerDown(e, handle.dataset.handle));
+    });
+
+    if (els.btnResetRotation) {
+      els.btnResetRotation.onclick = () => {
+        const selectedId = state.selectedObjId;
+        const obj = state.objects[selectedId];
+        if (!obj || !canModifyObject(obj)) return;
+        const beforeSnap = JSON.parse(JSON.stringify(obj));
+        obj.rotation = 0;
+        renderObject(obj);
+        pushObjectUpdate(obj);
+        pushHistoryAction({ type: 'update', before: [beforeSnap], after: [JSON.parse(JSON.stringify(obj))] });
+        updateSelectionActionBar();
+        updateTransformOverlay();
+        flashToast('🔄 物件已轉正為 0 度');
+      };
+    }
+
+    if (els.btnResetCrop) {
+      els.btnResetCrop.onclick = () => {
+        const selectedId = state.selectedObjId;
+        const obj = state.objects[selectedId];
+        if (!obj || obj.type !== 'image' || !canModifyObject(obj)) return;
+        const beforeSnap = JSON.parse(JSON.stringify(obj));
+        const crop = obj.crop || { top: 0, right: 0, bottom: 0, left: 0 };
+        const visW_ratio = Math.max(0.05, (100 - (crop.left || 0) - (crop.right || 0)) / 100);
+        const visH_ratio = Math.max(0.05, (100 - (crop.top || 0) - (crop.bottom || 0)) / 100);
+        const fullW = obj.width / visW_ratio;
+        const fullH = obj.height / visH_ratio;
+        const rad = (obj.rotation || 0) * Math.PI / 180;
+        const dLocalX = -((crop.left || 0) / 100) * fullW;
+        const dLocalY = -((crop.top || 0) / 100) * fullH;
+        obj.x = Math.round(obj.x + dLocalX * Math.cos(rad) - dLocalY * Math.sin(rad));
+        obj.y = Math.round(obj.y + dLocalX * Math.sin(rad) + dLocalY * Math.cos(rad));
+        obj.width = Math.round(fullW);
+        obj.height = Math.round(fullH);
+        obj.crop = { top: 0, right: 0, bottom: 0, left: 0 };
+        renderObject(obj);
+        pushObjectUpdate(obj);
+        pushHistoryAction({ type: 'update', before: [beforeSnap], after: [JSON.parse(JSON.stringify(obj))] });
+        updateSelectionActionBar();
+        updateTransformOverlay();
+        flashToast('✂️ 圖片裁切已重設為完整全圖');
+      };
+    }
+  }
+
+  function updateTransformOverlay() {
+    const overlay = els.wbTransformOverlay || document.getElementById('wbTransformOverlay');
+    if (!overlay) return;
+    if (!isTransformInitialized) initTransformOverlay();
+
+    const selectedIds = state.selectedObjIds || [];
+    if (selectedIds.length !== 1 || state.currentTool !== 'select') {
+      overlay.style.display = 'none';
+      return;
+    }
+
+    const obj = state.objects[selectedIds[0]];
+    if (!obj) {
+      overlay.style.display = 'none';
+      return;
+    }
+
+    const b = getObjBounds(obj);
+    overlay.style.left = b.x + 'px';
+    overlay.style.top = b.y + 'px';
+    overlay.style.width = Math.max(10, b.width) + 'px';
+    overlay.style.height = Math.max(10, b.height) + 'px';
+    overlay.style.transform = obj.rotation ? `rotate(${obj.rotation}deg)` : 'none';
+    overlay.style.transformOrigin = 'center center';
+    overlay.style.display = 'block';
+
+    const isImage = (obj.type === 'image');
+    if (isImage) {
+      overlay.classList.add('is-image-object');
+      const hn = overlay.querySelector('.wb-handle-n');
+      const hs = overlay.querySelector('.wb-handle-s');
+      const hw = overlay.querySelector('.wb-handle-w');
+      const he = overlay.querySelector('.wb-handle-e');
+      if (hn) hn.title = '✂️ 裁切上方 (拖曳調整裁切邊界)';
+      if (hs) hs.title = '✂️ 裁切下方 (拖曳調整裁切邊界)';
+      if (hw) hw.title = '✂️ 裁切左側 (拖曳調整裁切邊界)';
+      if (he) he.title = '✂️ 裁切右側 (拖曳調整裁切邊界)';
+    } else {
+      overlay.classList.remove('is-image-object');
+      const hn = overlay.querySelector('.wb-handle-n');
+      const hs = overlay.querySelector('.wb-handle-s');
+      const hw = overlay.querySelector('.wb-handle-w');
+      const he = overlay.querySelector('.wb-handle-e');
+      if (hn) hn.title = '調整高度';
+      if (hs) hs.title = '調整高度';
+      if (hw) hw.title = '調整寬度';
+      if (he) he.title = '調整寬度';
+    }
+
+    const editable = canModifyObject(obj);
+    overlay.querySelectorAll('.wb-handle').forEach(h => {
+      h.style.display = editable ? 'flex' : 'none';
+    });
+    const rotStem = overlay.querySelector('.wb-rot-stem');
+    if (rotStem) rotStem.style.display = editable ? 'block' : 'none';
+  }
+
+  function onHandlePointerDown(e, handleType) {
+    const selectedIds = state.selectedObjIds || [];
+    if (selectedIds.length !== 1) return;
+    const obj = state.objects[selectedIds[0]];
+    if (!obj || !canModifyObject(obj)) {
+      flashToast('⚠️ 僅能編輯自己建立的物件或需老師權限');
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const initialObj = JSON.parse(JSON.stringify(obj));
+    const initialBounds = getObjBounds(initialObj);
+    const initialCenter = {
+      x: initialBounds.x + initialBounds.width / 2,
+      y: initialBounds.y + initialBounds.height / 2
+    };
+    const startPointer = screenToWorld(e.clientX, e.clientY);
+    let hasModified = false;
+
+    function onMove(me) {
+      hasModified = true;
+      const curPointer = screenToWorld(me.clientX, me.clientY);
+      const rot = initialObj.rotation || 0;
+      const rad = rot * Math.PI / 180;
+
+      if (handleType === 'rot') {
+        const theta = Math.atan2(curPointer.y - initialCenter.y, curPointer.x - initialCenter.x);
+        let deg = Math.round(((theta * 180 / Math.PI + 90) % 360 + 360) % 360);
+        if (me.shiftKey) deg = Math.round(deg / 15) * 15;
+        obj.rotation = deg;
+      } else if (['nw', 'ne', 'se', 'sw'].includes(handleType)) {
+        const opposite = { nw: 'se', ne: 'sw', se: 'nw', sw: 'ne' };
+        const cornerSign = { nw: { x: -1, y: -1 }, ne: { x: 1, y: -1 }, se: { x: 1, y: 1 }, sw: { x: -1, y: 1 } };
+        const opp = opposite[handleType];
+        const anchorSign = cornerSign[opp];
+        const anchorLocal = { x: anchorSign.x * initialBounds.width / 2, y: anchorSign.y * initialBounds.height / 2 };
+        const anchorWorld = {
+          x: initialCenter.x + anchorLocal.x * Math.cos(rad) - anchorLocal.y * Math.sin(rad),
+          y: initialCenter.y + anchorLocal.x * Math.sin(rad) + anchorLocal.y * Math.cos(rad)
+        };
+        const vWorld = { x: curPointer.x - anchorWorld.x, y: curPointer.y - anchorWorld.y };
+        const vLocalX = vWorld.x * Math.cos(-rad) - vWorld.y * Math.sin(-rad);
+        const vLocalY = vWorld.x * Math.sin(-rad) + vWorld.y * Math.cos(-rad);
+        let newW = Math.max(25, -anchorSign.x * vLocalX);
+        let newH = Math.max(25, -anchorSign.y * vLocalY);
+
+        if (obj.type === 'image' || me.shiftKey) {
+          const ratio = initialBounds.width / Math.max(1, initialBounds.height);
+          if (Math.abs(newW - initialBounds.width) > Math.abs(newH - initialBounds.height)) {
+            newH = Math.max(20, newW / ratio);
+          } else {
+            newW = Math.max(20, newH * ratio);
+          }
+        }
+
+        const localCenterOffset = { x: -anchorSign.x * newW / 2, y: -anchorSign.y * newH / 2 };
+        const newCenter = {
+          x: anchorWorld.x + localCenterOffset.x * Math.cos(rad) - localCenterOffset.y * Math.sin(rad),
+          y: anchorWorld.y + localCenterOffset.x * Math.sin(rad) + localCenterOffset.y * Math.cos(rad)
+        };
+        const newX = Math.round(newCenter.x - newW / 2);
+        const newY = Math.round(newCenter.y - newH / 2);
+        newW = Math.round(newW);
+        newH = Math.round(newH);
+
+        if (obj.type === 'sticky' || obj.type === 'image' || obj.type === 'rect') {
+          obj.x = newX;
+          obj.y = newY;
+          obj.width = newW;
+          obj.height = newH;
+        } else if (obj.type === 'circle') {
+          obj.cx = Math.round(newCenter.x);
+          obj.cy = Math.round(newCenter.y);
+          obj.rx = Math.max(5, Math.round(newW / 2));
+          obj.ry = Math.max(5, Math.round(newH / 2));
+        } else if (obj.type === 'arrow') {
+          const sx = newW / Math.max(1, initialBounds.width);
+          const sy = newH / Math.max(1, initialBounds.height);
+          obj.x1 = Math.round(newX + (initialObj.x1 - initialBounds.x) * sx);
+          obj.y1 = Math.round(newY + (initialObj.y1 - initialBounds.y) * sy);
+          obj.x2 = Math.round(newX + (initialObj.x2 - initialBounds.x) * sx);
+          obj.y2 = Math.round(newY + (initialObj.y2 - initialBounds.y) * sy);
+        } else if (obj.type === 'pen') {
+          const sx = newW / Math.max(1, initialBounds.width);
+          const sy = newH / Math.max(1, initialBounds.height);
+          if (initialObj.points) {
+            obj.points = initialObj.points.map(p => ({
+              x: Math.round(newX + (p.x - initialBounds.x) * sx),
+              y: Math.round(newY + (p.y - initialBounds.y) * sy)
+            }));
+            obj.d = pointsToSvgPath(obj.points);
+          } else {
+            obj.d = scaleSvgPath(initialObj.d, initialBounds, newX, newY, newW, newH);
+          }
+        }
+      } else if (['n', 's', 'e', 'w'].includes(handleType)) {
+        const dx = curPointer.x - startPointer.x;
+        const dy = curPointer.y - startPointer.y;
+        const localDx = dx * Math.cos(-rad) - dy * Math.sin(-rad);
+        const localDy = dx * Math.sin(-rad) + dy * Math.cos(-rad);
+
+        if (obj.type === 'image') {
+          // 影像物件：四個邊中間節點為「裁切 (Crop)」
+          const c = initialObj.crop || { top: 0, right: 0, bottom: 0, left: 0 };
+          const visW_ratio = Math.max(0.05, (100 - (c.left || 0) - (c.right || 0)) / 100);
+          const visH_ratio = Math.max(0.05, (100 - (c.top || 0) - (c.bottom || 0)) / 100);
+          const fullW = initialBounds.width / visW_ratio;
+          const fullH = initialBounds.height / visH_ratio;
+
+          if (handleType === 'e') {
+            const deltaCropRight_pct = (-localDx / fullW) * 100;
+            const targetCropRight = Math.max(0, Math.min(85 - (c.left || 0), (c.right || 0) + deltaCropRight_pct));
+            const newW = Math.max(25, fullW * (100 - (c.left || 0) - targetCropRight) / 100);
+            obj.width = Math.round(newW);
+            obj.crop = { ...c, right: Math.round(targetCropRight * 10) / 10 };
+          } else if (handleType === 'w') {
+            const deltaCropLeft_pct = (localDx / fullW) * 100;
+            const targetCropLeft = Math.max(0, Math.min(85 - (c.right || 0), (c.left || 0) + deltaCropLeft_pct));
+            const newW = Math.max(25, fullW * (100 - targetCropLeft - (c.right || 0)) / 100);
+            const dLocalX = (targetCropLeft - (c.left || 0)) / 100 * fullW;
+            obj.x = Math.round(initialObj.x + dLocalX * Math.cos(rad));
+            obj.y = Math.round(initialObj.y + dLocalX * Math.sin(rad));
+            obj.width = Math.round(newW);
+            obj.crop = { ...c, left: Math.round(targetCropLeft * 10) / 10 };
+          } else if (handleType === 's') {
+            const deltaCropBottom_pct = (-localDy / fullH) * 100;
+            const targetCropBottom = Math.max(0, Math.min(85 - (c.top || 0), (c.bottom || 0) + deltaCropBottom_pct));
+            const newH = Math.max(25, fullH * (100 - (c.top || 0) - targetCropBottom) / 100);
+            obj.height = Math.round(newH);
+            obj.crop = { ...c, bottom: Math.round(targetCropBottom * 10) / 10 };
+          } else if (handleType === 'n') {
+            const deltaCropTop_pct = (localDy / fullH) * 100;
+            const targetCropTop = Math.max(0, Math.min(85 - (c.bottom || 0), (c.top || 0) + deltaCropTop_pct));
+            const newH = Math.max(25, fullH * (100 - targetCropTop - (c.bottom || 0)) / 100);
+            const dLocalY = (targetCropTop - (c.top || 0)) / 100 * fullH;
+            obj.x = Math.round(initialObj.x - dLocalY * Math.sin(rad));
+            obj.y = Math.round(initialObj.y + dLocalY * Math.cos(rad));
+            obj.height = Math.round(newH);
+            obj.crop = { ...c, top: Math.round(targetCropTop * 10) / 10 };
+          }
+        } else {
+          // 非影像物件：邊界拉伸 (Resize Dimension)
+          if (handleType === 'e') {
+            const newW = Math.max(25, initialBounds.width + localDx);
+            const shift = (newW - initialBounds.width) / 2;
+            if (obj.type === 'circle') {
+              obj.rx = Math.max(5, Math.round(newW / 2));
+              obj.cx = Math.round(initialCenter.x + shift * Math.cos(rad));
+              obj.cy = Math.round(initialCenter.y + shift * Math.sin(rad));
+            } else {
+              obj.width = Math.round(newW);
+              obj.x = Math.round(initialObj.x + shift * Math.cos(rad) - shift);
+              obj.y = Math.round(initialObj.y + shift * Math.sin(rad));
+            }
+          } else if (handleType === 'w') {
+            const newW = Math.max(25, initialBounds.width - localDx);
+            const shift = -(newW - initialBounds.width) / 2;
+            if (obj.type === 'circle') {
+              obj.rx = Math.max(5, Math.round(newW / 2));
+              obj.cx = Math.round(initialCenter.x + shift * Math.cos(rad));
+              obj.cy = Math.round(initialCenter.y + shift * Math.sin(rad));
+            } else {
+              obj.width = Math.round(newW);
+              obj.x = Math.round(initialObj.x + shift * Math.cos(rad) - shift);
+              obj.y = Math.round(initialObj.y + shift * Math.sin(rad));
+            }
+          } else if (handleType === 's') {
+            const newH = Math.max(25, initialBounds.height + localDy);
+            const shift = (newH - initialBounds.height) / 2;
+            if (obj.type === 'circle') {
+              obj.ry = Math.max(5, Math.round(newH / 2));
+              obj.cx = Math.round(initialCenter.x - shift * Math.sin(rad));
+              obj.cy = Math.round(initialCenter.y + shift * Math.cos(rad));
+            } else {
+              obj.height = Math.round(newH);
+              obj.x = Math.round(initialObj.x - shift * Math.sin(rad));
+              obj.y = Math.round(initialObj.y + shift * Math.cos(rad) - shift);
+            }
+          } else if (handleType === 'n') {
+            const newH = Math.max(25, initialBounds.height - localDy);
+            const shift = -(newH - initialBounds.height) / 2;
+            if (obj.type === 'circle') {
+              obj.ry = Math.max(5, Math.round(newH / 2));
+              obj.cx = Math.round(initialCenter.x - shift * Math.sin(rad));
+              obj.cy = Math.round(initialCenter.y + shift * Math.cos(rad));
+            } else {
+              obj.height = Math.round(newH);
+              obj.x = Math.round(initialObj.x - shift * Math.sin(rad));
+              obj.y = Math.round(initialObj.y + shift * Math.cos(rad) - shift);
+            }
+          }
+        }
+      }
+
+      renderObject(obj);
+      updateTransformOverlay();
+      updateSelectionActionBar();
+    }
+
+    function onUp() {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      if (hasModified) {
+        pushObjectUpdate(obj);
+        pushHistoryAction({ type: 'update', before: [initialObj], after: [JSON.parse(JSON.stringify(obj))] });
+        updateSelectionVisuals();
+        updateSelectionActionBar();
+      }
+    }
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
   // ===== 選取管理與外觀視覺 =====
   function selectObject(id, addToSelection) {
     if (addToSelection) {
@@ -1615,12 +2033,14 @@
     }
     updateSelectionVisuals();
     updateSelectionActionBar();
+    updateTransformOverlay();
   }
 
   function deselectAll() {
     state.selectedObjIds = [];
     updateSelectionVisuals();
     updateSelectionActionBar();
+    updateTransformOverlay();
   }
 
   function updateSelectionVisuals() {
@@ -1753,12 +2173,14 @@
     const selectedIds = state.selectedObjIds || [];
     if (selectedIds.length === 0) {
       els.selectionActionBar.style.display = 'none';
+      if (typeof updateTransformOverlay === 'function') updateTransformOverlay();
       return;
     }
 
     const objs = selectedIds.map(id => state.objects[id]).filter(Boolean);
     if (objs.length === 0) {
       els.selectionActionBar.style.display = 'none';
+      if (typeof updateTransformOverlay === 'function') updateTransformOverlay();
       return;
     }
 
@@ -1772,7 +2194,8 @@
     });
 
     const midX = (minX + maxX) / 2;
-    const topY = minY;
+    const singleObj = objs.length === 1 ? objs[0] : null;
+    const topY = minY - (singleObj ? 32 : 0);
     const vpPos = worldToViewport(midX, topY);
 
     els.selectionActionBar.style.left = Math.round(vpPos.x) + 'px';
@@ -1781,6 +2204,20 @@
 
     if (els.groupMultiAlign) {
       els.groupMultiAlign.style.display = objs.length > 1 ? 'inline-flex' : 'none';
+    }
+
+    // 更新轉正與重設裁切按鈕狀態
+    if (els.btnResetRotation) {
+      els.btnResetRotation.style.display = (singleObj && singleObj.rotation) ? 'inline-flex' : 'none';
+    }
+    if (els.btnResetCrop) {
+      const c = singleObj && singleObj.type === 'image' && singleObj.crop;
+      const hasCrop = c && ((c.top || 0) > 0 || (c.right || 0) > 0 || (c.bottom || 0) > 0 || (c.left || 0) > 0);
+      els.btnResetCrop.style.display = hasCrop ? 'inline-flex' : 'none';
+    }
+
+    if (typeof updateTransformOverlay === 'function') {
+      updateTransformOverlay();
     }
   }
 
@@ -4085,6 +4522,7 @@
     applySettingsUI();
     setTool('select');
     initFloatingToolbarControls();
+    initTransformOverlay();
   });
 
 })();
