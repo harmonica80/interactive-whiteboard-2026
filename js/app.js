@@ -17892,9 +17892,13 @@ class App {
         const safeUid = String(s.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safeName = this.escapeHtml(s.name);
         const safeNameAttr = String(s.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const isSelected = Boolean(this.adminSelectedStudentUids && this.adminSelectedStudentUids.has(s.uid));
 
         return `
-          <div class="admin-student-list-row" id="student_row_${s.uid}">
+          <div class="admin-student-list-row ${isSelected ? 'is-selected' : ''}" id="student_row_${s.uid}" style="${isSelected ? 'background: rgba(102, 126, 234, 0.12); border-color: var(--accent-color);' : ''}">
+            <div style="display: flex; align-items: center; flex-shrink: 0; padding-right: 4px;">
+              <input type="checkbox" id="student_chk_${safeUid}" class="admin-student-checkbox" ${isSelected ? 'checked' : ''} onchange="window.app.adminToggleStudentSelection('${safeUid}', this.checked)" title="核選此同學帳號進行合併" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-color);">
+            </div>
             <div class="admin-student-list-left">
               <div class="admin-student-list-avatar" title="頭像代號: ${s.avatar}">
                 ${avatarHtml}
@@ -17948,10 +17952,14 @@ class App {
         const safeUid = String(s.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safeName = this.escapeHtml(s.name);
         const safeNameAttr = String(s.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const isSelected = Boolean(this.adminSelectedStudentUids && this.adminSelectedStudentUids.has(s.uid));
 
         return `
-          <div class="admin-student-card" id="student_card_${s.uid}">
-            <div class="admin-student-card-header">
+          <div class="admin-student-card ${isSelected ? 'is-selected' : ''}" id="student_card_${s.uid}" style="${isSelected ? 'background: rgba(102, 126, 234, 0.12); border-color: var(--accent-color);' : ''}">
+            <div class="admin-student-card-header" style="position: relative;">
+              <div style="display: flex; align-items: center; flex-shrink: 0; margin-right: 6px;">
+                <input type="checkbox" id="student_chk_${safeUid}" class="admin-student-checkbox" ${isSelected ? 'checked' : ''} onchange="window.app.adminToggleStudentSelection('${safeUid}', this.checked)" title="核選此同學帳號進行合併" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-color);">
+              </div>
               <div class="admin-student-card-avatar" title="頭像代號: ${s.avatar}">
                 ${avatarHtml}
               </div>
@@ -17999,6 +18007,7 @@ class App {
         `;
       }).join('');
     }
+    this.adminUpdateStudentSelectionUI();
   }
 
   setAdminStudentViewMode(mode) {
@@ -18022,6 +18031,88 @@ class App {
   onAdminStudentFilterOnlineChange(checked) {
     this.adminStudentFilterOnlineOnly = Boolean(checked);
     this.renderAdminStudentsList();
+  }
+
+  adminToggleStudentSelection(uid, isChecked) {
+    if (!this.adminSelectedStudentUids) this.adminSelectedStudentUids = new Set();
+    if (isChecked) {
+      this.adminSelectedStudentUids.add(uid);
+    } else {
+      this.adminSelectedStudentUids.delete(uid);
+    }
+
+    const row = document.getElementById(`student_row_${uid}`);
+    if (row) {
+      row.style.background = isChecked ? 'rgba(102, 126, 234, 0.12)' : '';
+      row.style.borderColor = isChecked ? 'var(--accent-color)' : '';
+      row.classList.toggle('is-selected', isChecked);
+    }
+    const card = document.getElementById(`student_card_${uid}`);
+    if (card) {
+      card.style.background = isChecked ? 'rgba(102, 126, 234, 0.12)' : '';
+      card.style.borderColor = isChecked ? 'var(--accent-color)' : '';
+      card.classList.toggle('is-selected', isChecked);
+    }
+    const chk = document.getElementById(`student_chk_${uid}`);
+    if (chk && chk.checked !== isChecked) {
+      chk.checked = isChecked;
+    }
+
+    this.adminUpdateStudentSelectionUI();
+  }
+
+  adminToggleSelectAllStudents(selectAll) {
+    if (!this.adminSelectedStudentUids) this.adminSelectedStudentUids = new Set();
+    const students = this.lastAdminStudentsList || [];
+    students.forEach(s => {
+      if (selectAll) {
+        this.adminSelectedStudentUids.add(s.uid);
+      } else {
+        this.adminSelectedStudentUids.delete(s.uid);
+      }
+      const row = document.getElementById(`student_row_${s.uid}`);
+      if (row) {
+        row.style.background = selectAll ? 'rgba(102, 126, 234, 0.12)' : '';
+        row.style.borderColor = selectAll ? 'var(--accent-color)' : '';
+        row.classList.toggle('is-selected', selectAll);
+      }
+      const card = document.getElementById(`student_card_${s.uid}`);
+      if (card) {
+        card.style.background = selectAll ? 'rgba(102, 126, 234, 0.12)' : '';
+        card.style.borderColor = selectAll ? 'var(--accent-color)' : '';
+        card.classList.toggle('is-selected', selectAll);
+      }
+      const chk = document.getElementById(`student_chk_${s.uid}`);
+      if (chk) {
+        chk.checked = selectAll;
+      }
+    });
+
+    this.adminUpdateStudentSelectionUI();
+  }
+
+  adminUpdateStudentSelectionUI() {
+    const btn = document.getElementById('adminMergeStudentsToolbarBtn');
+    const textSpan = document.getElementById('adminMergeStudentsToolbarBtnText');
+    const count = this.adminSelectedStudentUids ? this.adminSelectedStudentUids.size : 0;
+    if (btn) {
+      if (count >= 2) {
+        btn.classList.add('active');
+        btn.style.boxShadow = '0 0 0 2px var(--accent-color)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.boxShadow = '';
+      }
+    }
+    if (textSpan) {
+      if (count >= 2) {
+        textSpan.textContent = `合併已選帳號 (${count} 位)`;
+      } else if (count === 1) {
+        textSpan.textContent = `合併帳號 (已選 1 位)`;
+      } else {
+        textSpan.textContent = `合併帳號`;
+      }
+    }
   }
 
   async refreshAdminStudentsList() {
@@ -18650,32 +18741,57 @@ class App {
     students.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
     this.mergeStudentsCache = students;
 
+    // 判斷保留的主帳號 (目標帳號) 與欲合併之來源帳號
+    const selectedFromRoster = Array.from(this.adminSelectedStudentUids || []).filter(uid => students.some(s => s.uid === uid));
+
+    let targetUid = preselectedTargetUid;
+    if (!targetUid && selectedFromRoster.length > 0) {
+      targetUid = selectedFromRoster[0];
+    }
+    if (!targetUid || !students.some(s => s.uid === targetUid)) {
+      targetUid = students[0].uid;
+    }
+
+    // 若名冊中已核選多位同學，將其餘核選同學自動帶入為來源勾選
+    selectedFromRoster.forEach(uid => {
+      if (uid !== targetUid) {
+        this.mergeSelectedSourceUids.add(uid);
+      }
+    });
+
     // 填充目標主帳號下拉選單
     const targetSelect = document.getElementById('adminMergeTargetSelect');
     if (targetSelect) {
       targetSelect.innerHTML = students.map(s => {
         return `<option value="${s.uid}">${this.escapeHtml(s.name)} (UID: ${s.uid.slice(0, 8)}...)</option>`;
       }).join('');
-
-      if (preselectedTargetUid && students.some(s => s.uid === preselectedTargetUid)) {
-        targetSelect.value = preselectedTargetUid;
-      } else if (students.length > 0) {
-        targetSelect.value = students[0].uid;
-      }
+      targetSelect.value = targetUid;
     }
 
     const searchInput = document.getElementById('adminMergeSourceSearchInput');
     if (searchInput) searchInput.value = '';
 
     const modal = document.getElementById('adminMergeStudentsModal');
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+      const fsEl = document.fullscreenElement;
+      if (fsEl && fsEl !== document.documentElement) {
+        if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+      } else if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
 
     this.adminMergeOnTargetChange();
   }
 
   closeAdminMergeStudentsModal() {
     const modal = document.getElementById('adminMergeStudentsModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
     this.mergeSelectedSourceUids = new Set();
   }
 
@@ -19118,6 +19234,8 @@ class App {
       }
 
       this.closeAdminMergeStudentsModal();
+      this.adminSelectedStudentUids = new Set();
+      this.adminUpdateStudentSelectionUI();
       this.showNotification('成功', `已成功將 ${sourceUids.length} 個帳號合併至「${targetName}」，所有歷程記錄與曾用名已全數整併完畢！`);
       this.renderAdminStudentsList();
     } catch (e) {

@@ -2833,10 +2833,18 @@
                   </button>
                 </div>
 
-                <!-- 🔀 合併帳號功能按鈕 -->
-                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenMergeStudentsModal()" style="font-size: 14px; padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" title="將同位同學之多重或舊姓名帳號合併至指定主帳號">
-                  <span>🔀</span> 合併帳號
-                </button>
+                <!-- 🔀 合併帳號功能按鈕與核選快捷按鈕 -->
+                <div style="display: inline-flex; align-items: center; gap: 6px;">
+                  <button type="button" id="adminMergeStudentsToolbarBtn" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenMergeStudentsModal()" style="font-size: 14px; padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" title="將同位同學之多重或舊姓名帳號合併至指定主帳號">
+                    <span>🔀</span> <span id="adminMergeStudentsToolbarBtnText">合併帳號</span>
+                  </button>
+                  <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminToggleSelectAllStudents(true)" style="padding: 5px 10px; font-size: 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);" title="核選名冊中全部同學進行合併">
+                    全選
+                  </button>
+                  <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminToggleSelectAllStudents(false)" style="padding: 5px 10px; font-size: 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);" title="清除名冊核選狀態">
+                    清除
+                  </button>
+                </div>
 
                 <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                   <div style="display: flex; align-items: center; gap: 6px;">
@@ -5948,7 +5956,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=443"></script>
+  <script src="js/app.js?v=444"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
