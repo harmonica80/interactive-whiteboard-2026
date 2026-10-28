@@ -701,7 +701,7 @@
       <!-- 互動白板 -->
       <div class="panel-card" id="panel-whiteboard">
         <div class="panel-body" style="padding: 0; position: relative; height: calc(100vh - 120px); min-height: 600px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;">
-          <iframe id="whiteboardFrame" src="whiteboard.html?v=3012" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板" allow="fullscreen" allowfullscreen></iframe>
+          <iframe id="whiteboardFrame" src="whiteboard.html?v=3013" style="width: 100%; flex: 1; height: 100%; min-height: 600px; border: none; display: block;" title="互動白板" allow="fullscreen" allowfullscreen></iframe>
         </div>
       </div>
 
@@ -6584,7 +6584,7 @@ Python</pre>
         const isAdmin = window.app && window.app.isAdmin;
         const userName = window.app && window.app.getCurrentUserName ? window.app.getCurrentUserName() : '';
         const uid = window.app && window.app.getUserId ? window.app.getUserId() : '';
-        iframe.src = `whiteboard.html?v=3012&role=${isAdmin ? 'teacher' : 'student'}&name=${encodeURIComponent(userName)}&uid=${encodeURIComponent(uid)}`;
+        iframe.src = `whiteboard.html?v=3013&role=${isAdmin ? 'teacher' : 'student'}&name=${encodeURIComponent(userName)}&uid=${encodeURIComponent(uid)}`;
       }
     });
   </script>

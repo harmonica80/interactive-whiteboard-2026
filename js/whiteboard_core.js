@@ -169,6 +169,7 @@
     // Selection Marquee & Floating Action Bar
     selectionMarquee: document.getElementById('selectionMarquee'),
     wbTransformOverlay: document.getElementById('wbTransformOverlay'),
+    wbHoverBox: document.getElementById('wbHoverBox'),
     selectionActionBar: document.getElementById('selectionActionBar'),
     groupMultiAlign: document.getElementById('groupMultiAlign'),
     btnResetRotation: document.getElementById('btnResetRotation'),
@@ -991,6 +992,9 @@
   function updateWorldTransform() {
     els.canvasWorld.style.transform = `translate(${state.view.x}px, ${state.view.y}px) scale(${state.view.zoom})`;
     if (els.zoomVal) els.zoomVal.textContent = Math.round(state.view.zoom * 100) + '%';
+    if (typeof hideSvgHoverBox === 'function') {
+      hideSvgHoverBox();
+    }
     if (typeof updateSelectionActionBar === 'function') {
       updateSelectionActionBar();
     }
@@ -1098,7 +1102,7 @@
     if (toolName !== 'select') {
       if (typeof deselectAll === 'function') deselectAll();
       document.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
-      document.querySelectorAll('.hover-svg-outline').forEach(el => el.classList.remove('hover-svg-outline'));
+      if (typeof hideSvgHoverBox === 'function') hideSvgHoverBox();
     }
 
     const btns = els.floatingToolbar.querySelectorAll('.tool-btn[data-tool]');
@@ -1391,17 +1395,46 @@
     badgeEl.style.display = state.showAuthorBadge ? 'block' : 'none';
   }
 
+  // ===== SVG 與 HTML 物件懸停虛線外框 =====
+  function showSvgHoverBox(obj) {
+    const hoverBox = els.wbHoverBox || document.getElementById('wbHoverBox');
+    if (!hoverBox || !obj) return;
+    const b = getObjBounds(obj);
+    const pad = 3;
+    hoverBox.style.left = (b.x - pad) + 'px';
+    hoverBox.style.top = (b.y - pad) + 'px';
+    hoverBox.style.width = Math.max(10, b.width + pad * 2) + 'px';
+    hoverBox.style.height = Math.max(10, b.height + pad * 2) + 'px';
+    hoverBox.style.transform = obj.rotation ? `rotate(${obj.rotation}deg)` : 'none';
+    hoverBox.style.transformOrigin = 'center center';
+    hoverBox.style.display = 'block';
+  }
+
+  function hideSvgHoverBox() {
+    const hoverBox = els.wbHoverBox || document.getElementById('wbHoverBox');
+    if (hoverBox) hoverBox.style.display = 'none';
+  }
+
   // ===== 物件拖曳與點選互動 (DOM & SVG) =====
-  function setupHoverEffects(el, isSvg) {
+  function setupHoverEffects(el, obj, isSvg) {
     el.addEventListener('pointerenter', () => {
-      if (state.currentTool === 'select' && !state.isMarqueeSelecting) {
-        if (isSvg) el.classList.add('hover-svg-outline');
-        else el.classList.add('hover-target-outline');
+      if (state.currentTool !== 'select' || state.isMarqueeSelecting) return;
+      // 若該物件已被選中，已有變形控制點與外框，不需顯示懸停外框
+      if (state.selectedObjIds && state.selectedObjIds.includes(obj.id)) return;
+
+      if (isSvg) {
+        showSvgHoverBox(obj);
+      } else {
+        el.classList.add('hover-target-outline');
       }
     });
+
     el.addEventListener('pointerleave', () => {
-      if (isSvg) el.classList.remove('hover-svg-outline');
-      else el.classList.remove('hover-target-outline');
+      if (isSvg) {
+        hideSvgHoverBox();
+      } else {
+        el.classList.remove('hover-target-outline');
+      }
     });
   }
 
@@ -1534,6 +1567,8 @@
     if (e.target.tagName === 'A' || e.target.classList.contains('sticky-content')) return;
     if (state.currentTool !== 'select') return;
 
+    hideSvgHoverBox();
+
     if (!canModifyObject(obj)) {
       flashToast('⚠️ 老師已設定僅能移動自己建立的物件');
       return;
@@ -1645,12 +1680,12 @@
   }
 
   function bindObjectInteraction(el, obj) {
-    setupHoverEffects(el, false);
+    setupHoverEffects(el, obj, false);
     el.addEventListener('pointerdown', (e) => handleObjectPointerDown(e, obj, el, false));
   }
 
   function bindSvgInteraction(el, obj) {
-    setupHoverEffects(el, true);
+    setupHoverEffects(el, obj, true);
     el.addEventListener('pointerdown', (e) => handleObjectPointerDown(e, obj, el, true));
   }
 
@@ -2046,13 +2081,16 @@
   function updateSelectionVisuals() {
     document.querySelectorAll('.selected-border').forEach(el => el.classList.remove('selected-border'));
     document.querySelectorAll('.selected-svg-outline').forEach(el => el.classList.remove('selected-svg-outline'));
+    document.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+    hideSvgHoverBox();
 
-    (state.selectedObjIds || []).forEach(id => {
-      const htmlEl = document.getElementById(`html_obj_${id}`);
-      if (htmlEl) htmlEl.classList.add('selected-border');
-      const svgEl = document.getElementById(`svg_obj_${id}`);
-      if (svgEl) svgEl.classList.add('selected-svg-outline');
-    });
+    // 多選時對 HTML 物件加上 selected-border，單選由 Transform Overlay 統一呈現外框與 8 控制點
+    if (state.selectedObjIds && state.selectedObjIds.length > 1) {
+      state.selectedObjIds.forEach(id => {
+        const htmlEl = document.getElementById(`html_obj_${id}`);
+        if (htmlEl) htmlEl.classList.add('selected-border');
+      });
+    }
   }
 
   // 計算物件的世界座標包圍盒 (Bounding Box)

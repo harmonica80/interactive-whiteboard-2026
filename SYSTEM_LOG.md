@@ -1,4 +1,16 @@
 # System Log
+## 2026-10-28 - 互動白板向量形狀與筆劃物件懸停/選取視覺優化：移除光暈暈開樣式，統一採用簡潔虛線外框與俐落控制點
+- 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `index.html`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **懸停視覺統一（Hover State）**：
+     - 移除箭頭、矩形、圓形與筆劃物件原本的 `filter: drop-shadow` 藍色光暈暈開樣式（`.hover-svg-outline`）。
+     - 引入 `#wbHoverBox`（`2px dashed #0284c7; border-radius: 4px`），使滑鼠滑過 SVG 物件時呈現與影像、便利貼物件完全一致的簡潔矩形虛線框，並支援旋轉角度同步對齊。
+  2. **選取視覺純淨化（Selection State）**：
+     - 移除箭頭、矩形、圓形與筆劃物件原本的 `.selected-svg-outline` 光暈樣式。
+     - 點選物件時不再產生任何光暈或外散暈開效果，純粹呈現乾淨的變形外框、8 個編輯控制點與頂端旋轉點。
+  3. **合規檢測**：
+     - 通過 `npm run check:syntax` 與 `node --check` 語法檢測。
+     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
 ## 2026-10-28 - 互動白板物件 8 控制點 + 旋轉把手 + 影像邊界裁切，與學生名冊「合併帳號」歷程整併功能
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
