@@ -1,4 +1,10 @@
 # System Log
+## 2026-10-30 - 學生端課堂點數徽章移至頭像右上角並移除星星圖示
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. `#floatingStudentPointsBadge` 自姓名標籤移出，改以 `.floating-student-avatar-wrap` 定位容器絕對定位疊於頭像右上角（圓角數字徽章，外框連動 `var(--bg-card)`），姓名標籤空間完整留給姓名。
+  2. 移除點數前方 ⭐️ 圖示，僅顯示數字（`updateStudentPointsDisplay` 與頭像渲染同步調整）。
+  3. 更新 `css/style.css?v=422`、`js/app.js?v=447` 快取版本參數；通過 `node --check`。
 ## 2026-10-30 - 版本更新歷程改為收合式（僅最新版本預設展開）
 - 影響檔案：`js/app.js`, `css/style.css`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：
