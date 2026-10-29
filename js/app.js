@@ -19670,11 +19670,8 @@ class App {
   async updateAttendanceHistoryCountBadge() {
     const badge = document.getElementById('adminAttendanceHistoryCountBadge');
     if (!badge) return;
-    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
-      ? window.ClassRoomManager.getActiveClassCode()
-      : (window.currentClassCode || 'default');
     try {
-      const snap = await db.ref('attendance').child(classCode).child('sessions').once('value');
+      const snap = await db.ref('attendance/sessions').once('value');
       const val = snap.val() || {};
       badge.textContent = `共 ${Object.keys(val).length} 次點名記錄`;
     } catch (e) {
@@ -19764,12 +19761,8 @@ class App {
     if (!container) return;
     container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 14px;">載入歷史點名記錄中...</div>';
 
-    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
-      ? window.ClassRoomManager.getActiveClassCode()
-      : (window.currentClassCode || 'default');
-
     try {
-      const snap = await db.ref('attendance').child(classCode).child('sessions').once('value');
+      const snap = await db.ref('attendance/sessions').once('value');
       const sessions = snap.val() || {};
       const list = Object.values(sessions).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
@@ -20403,13 +20396,13 @@ class App {
     const sessionId = `att_${now}`;
     const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
       ? window.ClassRoomManager.getActiveClassCode()
-      : (window.currentClassCode || 'default');
+      : (window.currentClassCode || '');
 
     const sessionData = {
       id: sessionId,
       title: sessionTitle,
       timestamp: now,
-      classCode,
+      classCode: classCode || 'default',
       stats: { total, present, late, leave, absent, presentRate },
       records
     };
@@ -20422,7 +20415,7 @@ class App {
 
     try {
       const updates = {};
-      updates[`attendance/${classCode}/sessions/${sessionId}`] = sessionData;
+      updates[`attendance/sessions/${sessionId}`] = sessionData;
 
       // 若勾選自動獎勵點數，為出席同學 +1 點
       if (autoReward) {
@@ -20469,12 +20462,8 @@ class App {
     if (!container) return;
     container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 14px;">載入歷史點名記錄中...</div>';
 
-    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
-      ? window.ClassRoomManager.getActiveClassCode()
-      : (window.currentClassCode || 'default');
-
     try {
-      const snap = await db.ref('attendance').child(classCode).child('sessions').once('value');
+      const snap = await db.ref('attendance/sessions').once('value');
       const sessions = snap.val() || {};
       const list = Object.values(sessions).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
@@ -20526,13 +20515,12 @@ class App {
       '刪除點名記錄',
       '確定要刪除這筆歷史點名記錄嗎？刪除後無法恢復。',
       async () => {
-        const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
-          ? window.ClassRoomManager.getActiveClassCode()
-          : (window.currentClassCode || 'default');
         try {
-          await db.ref('attendance').child(classCode).child('sessions').child(sessionId).remove();
+          await db.ref('attendance/sessions').child(sessionId).remove();
           this.showNotification('已刪除', '歷史點名記錄已刪除！');
           this.renderAttendanceHistoryList();
+          this.renderEmbedAttendanceHistory();
+          this.updateAttendanceHistoryCountBadge();
         } catch (e) {
           this.showNotification('錯誤', '刪除失敗: ' + e.message);
         }
@@ -20545,12 +20533,8 @@ class App {
     if (!container) return;
     container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 14px;">計算全班出缺勤統計中...</div>';
 
-    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
-      ? window.ClassRoomManager.getActiveClassCode()
-      : (window.currentClassCode || 'default');
-
     try {
-      const snap = await db.ref('attendance').child(classCode).child('sessions').once('value');
+      const snap = await db.ref('attendance/sessions').once('value');
       const sessions = snap.val() || {};
       const sessionList = Object.values(sessions);
       const students = this.lastAdminStudentsList || [];
@@ -20645,10 +20629,10 @@ class App {
   async exportAttendanceReportCsv() {
     const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
       ? window.ClassRoomManager.getActiveClassCode()
-      : (window.currentClassCode || 'default');
+      : (window.currentClassCode || '一次性課堂');
 
     try {
-      const snap = await db.ref('attendance').child(classCode).child('sessions').once('value');
+      const snap = await db.ref('attendance/sessions').once('value');
       const sessions = snap.val() || {};
       const sessionList = Object.values(sessions).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       const students = this.lastAdminStudentsList || [];
