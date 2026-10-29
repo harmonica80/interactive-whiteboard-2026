@@ -8903,19 +8903,34 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   transform: translateY(0) scale(1) !important;
 }
 
+/* 頭像外層定位容器：讓點數徽章疊在頭像右上角 */
+.floating-student-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .floating-student-points-badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  box-sizing: border-box;
   background: #f59e0b;
   color: #ffffff;
   font-size: 14px;
   font-weight: bold;
-  padding: 1px 7px;
-  border-radius: 10px;
-  margin-left: 5px;
-  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.35);
-  flex-shrink: 0;
+  line-height: 1;
+  padding: 0 7px;
+  border-radius: 12px;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.45);
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .admin-student-stat-points {

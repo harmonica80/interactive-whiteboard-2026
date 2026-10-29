@@ -500,7 +500,7 @@ class App {
       const st = (this.registeredStudents || {})[myUid];
       const pts = st ? (parseInt(st.points, 10) || 0) : 0;
       floatingPointsBadge.style.display = 'inline-flex';
-      floatingPointsBadge.textContent = `⭐️ ${pts}`;
+      floatingPointsBadge.textContent = `${pts}`;
     }
     if (floatingAvatarContainer) {
       if (userName) {
@@ -19351,7 +19351,7 @@ class App {
     const badge = document.getElementById('floatingStudentPointsBadge');
     if (badge) {
       badge.style.display = 'inline-flex';
-      badge.textContent = `⭐️ ${newPoints}`;
+      badge.textContent = `${newPoints}`;
     }
 
     if (this.studentPreviousPoints !== undefined && newPoints > this.studentPreviousPoints) {

@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=421">
+  <link rel="stylesheet" href="css/style.css?v=422">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -6038,7 +6038,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=446"></script>
+  <script src="js/app.js?v=447"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
@@ -7864,12 +7864,15 @@ Python</pre>
 
   <!-- 右下角個人專屬大頭像懸浮卡片 (64x64 HUD) -->
   <div id="floatingStudentAvatarContainer" class="floating-student-avatar-container" onclick="window.app && window.app.openStudentNameModal()" title="點擊設定您的姓名與頭像">
-    <div class="floating-student-avatar-box" id="floatingStudentAvatarBox">
-      <!-- 渲染 64x64 頭像 -->
+    <div class="floating-student-avatar-wrap">
+      <div class="floating-student-avatar-box" id="floatingStudentAvatarBox">
+        <!-- 渲染 64x64 頭像 -->
+      </div>
+      <!-- ⭐️ 課堂點數：顯示於頭像右上角 -->
+      <span class="floating-student-points-badge" id="floatingStudentPointsBadge" style="display: none;" title="目前課堂點數">0</span>
     </div>
     <div class="floating-student-name-tag" id="floatingStudentNameTag">
       <span class="floating-student-name-text" id="floatingStudentNameText">訪客</span>
-      <span class="floating-student-points-badge" id="floatingStudentPointsBadge" style="display: none; background: #f59e0b; color: #ffffff; font-size: 14px; font-weight: bold; padding: 1px 7px; border-radius: 10px; margin-left: 5px; box-shadow: 0 1px 4px rgba(245, 158, 11, 0.35);">⭐️ 0</span>
     </div>
   </div>
 
