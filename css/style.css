@@ -8845,3 +8845,162 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   word-break: break-word;
 }
 
+/* ==========================================================================
+   課堂點數與線上點名系統樣式 (Phase 1)
+   ========================================================================== */
+.student-points-award-toast.active {
+  display: flex !important;
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+.floating-student-points-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-left: 5px;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.35);
+  flex-shrink: 0;
+}
+
+.admin-student-stat-points {
+  cursor: pointer;
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #d97706 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  font-weight: bold;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-student-stat-points:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25);
+}
+
+.attendance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  gap: 10px;
+  flex-wrap: wrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.attendance-row.status-present {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.attendance-row.status-late {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.attendance-row.status-leave {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.attendance-row.status-absent {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.attendance-status-btn {
+  padding: 5px 10px;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.attendance-status-btn.active.btn-present {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.attendance-status-btn.active.btn-late {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #f59e0b;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.attendance-status-btn.active.btn-leave {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.attendance-status-btn.active.btn-absent {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.leaderboard-item:hover {
+  transform: translateX(3px);
+  box-shadow: var(--shadow);
+}
+
+.leaderboard-rank {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 15px;
+  flex-shrink: 0;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+}
+
+.leaderboard-rank.rank-1 {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.leaderboard-rank.rank-2 {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.4);
+}
+
+.leaderboard-rank.rank-3 {
+  background: linear-gradient(135deg, #b45309, #78350f);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.4);
+}
+
