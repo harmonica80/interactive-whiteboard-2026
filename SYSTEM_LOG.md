@@ -1,4 +1,10 @@
 # System Log
+## 2026-10-30 - 版本更新歷程改為收合式（僅最新版本預設展開）
+- 影響檔案：`js/app.js`, `css/style.css`, `index.html`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. 新增 `initChangelogAccordion()`：每次開啟 `#changelogModal` 時僅展開 `.is-latest` 卡片，其餘版本預設收合；點擊標題列（或鍵盤 Enter / 空白鍵）即可展開 / 收合。
+  2. 標題左側新增 ▸ 展開指示箭頭（展開時旋轉並套用主題強調色），樣式連動四大色系主題變數。
+  3. 更新 `css/style.css?v=421`、`js/app.js?v=446` 快取版本參數；通過 `node --check` 與 `npm run check:syntax`。
 ## 2026-10-30 - 版本躍升 ver 3.20.01：💡 選單顯示目前版本號與彙整版本更新歷程
 - 影響檔案：`index.html`, `css/style.css`, `README.md`, `SYSTEM_LOG.md`。
 - 修改項目：
