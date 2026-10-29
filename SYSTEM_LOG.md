@@ -1,4 +1,13 @@
 # System Log
+## 2026-10-30 - 修復線上點名歷史記錄與出缺勤總覽統計 Firebase 路徑錯誤
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 問題原因：
+  - 系統底層的 `db.ref(path)` 已具備「專屬班級」與「一次性課堂」的雙軌透明代理（若為專屬班級自動加 `classes/{code}/`，一次性課堂則保持原路徑）。
+  - 在一次性課堂模式下，`classCode` 為空字串 `""`，原點名邏輯呼叫 `db.ref('attendance').child(classCode)`，將空字串傳入 `.child("")`，導致 Firebase 丟出 `child failed: path argument was an invalid path = "". Paths must be non-empty strings` 錯誤。
+- 修改項目：
+  1. 統一將點名記錄路徑改為 `db.ref('attendance/sessions')`，完全交由系統透明分流代理自動處理，專屬班級自動存於 `classes/{code}/attendance/sessions`，一次性課堂自動存於 `attendance/sessions`，徹底消除路徑空字串問題。
+  2. 同步修復儲存點名、歷史列表查詢、刪除點名、出缺勤統計與 CSV 匯出邏輯。
+  3. 通過 `node --check` 語法檢測與「記錄」用語無禁字檢查，更新 `js/app.js?v=449` 快取版本。
 ## 2026-10-30 - 班級管理獨立「I. 學生積分管理」與「J. 線上點名與出缺勤管理」兩大專屬功能
 - 影響檔案：`index.html`, `js/app.js`, `images/admin_icons/class_points.svg`, `images/admin_icons/class_attendance.svg`, `SYSTEM_LOG.md`。
 - 修改項目：
