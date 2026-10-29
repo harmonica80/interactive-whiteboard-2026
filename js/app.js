@@ -3648,8 +3648,14 @@ class App {
     this.registeredStudents = {};
     db.ref('quiz/students').on('value', (snapshot) => {
       this.registeredStudents = snapshot.val() || {};
-      if (this.activeTabId === 'panel-admin' && this.currentAdminFeatureKey === 'classStudents') {
-        this.renderAdminStudentsList();
+      if (this.activeTabId === 'panel-admin') {
+        if (this.currentAdminFeatureKey === 'classStudents') {
+          this.renderAdminStudentsList();
+        } else if (this.currentAdminFeatureKey === 'classPoints') {
+          this.renderAdminPointsPanel();
+        } else if (this.currentAdminFeatureKey === 'classAttendance') {
+          this.renderAdminAttendancePanel();
+        }
       }
 
       // 學生端自動即時感知教師修改姓名或頭像並同步至本機與介面
@@ -5784,6 +5790,18 @@ class App {
         category: '班級管理',
         icon: 'images/admin_icons/class_students.svg'
       },
+      classPoints: {
+        id: 'adminClassPointsSection',
+        title: 'I. 學生積分管理',
+        category: '班級管理',
+        icon: 'images/admin_icons/class_points.svg'
+      },
+      classAttendance: {
+        id: 'adminClassAttendanceSection',
+        title: 'J. 線上點名與出缺勤管理',
+        category: '班級管理',
+        icon: 'images/admin_icons/class_attendance.svg'
+      },
       classReaction: {
         id: 'adminReactionSettingsSection',
         title: 'D. 即時互動回饋設定',
@@ -5888,6 +5906,8 @@ class App {
       classSecurity: 'adminCatBlock1',
       whiteboardFeatures: 'adminCatBlock1',
       classStudents: 'adminCatBlock1',
+      classPoints: 'adminCatBlock1',
+      classAttendance: 'adminCatBlock1',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
@@ -6011,6 +6031,16 @@ class App {
     // 學生名冊與參與歷程管理專屬 UI 同步
     if (featureKey === 'classStudents') {
       this.renderAdminStudentsList();
+    }
+
+    // 學生積分管理專屬 UI 同步
+    if (featureKey === 'classPoints') {
+      this.renderAdminPointsPanel();
+    }
+
+    // 線上點名與出缺勤管理專屬 UI 同步
+    if (featureKey === 'classAttendance') {
+      this.renderAdminAttendancePanel();
     }
 
     // 提問管理與教師分享管理：更新 Firebase 空間與流量監測儀表板及附檔開關狀態
@@ -17548,8 +17578,14 @@ class App {
       this.renderAdminClassList(classList);
       this.initCrossClassCopySection(classList);
       this.populateAdminClassAvatarDropdown();
-      if (this.activeTabId === 'panel-admin' && this.currentAdminFeatureKey === 'classStudents') {
-        this.renderAdminStudentsList();
+      if (this.activeTabId === 'panel-admin') {
+        if (this.currentAdminFeatureKey === 'classStudents') {
+          this.renderAdminStudentsList();
+        } else if (this.currentAdminFeatureKey === 'classPoints') {
+          this.renderAdminPointsPanel();
+        } else if (this.currentAdminFeatureKey === 'classAttendance') {
+          this.renderAdminAttendancePanel();
+        }
       }
     });
   }
@@ -19390,7 +19426,418 @@ class App {
     }, 3800);
   }
 
-  // ===== 教師端：課堂點數加減分業務 =====
+  // ===== 教師端：學生積分管理專屬全頁面板業務 =====
+  renderAdminPointsPanel() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    const scopeBadge = document.getElementById('adminPointsClassScopeBadge');
+    if (scopeBadge) {
+      scopeBadge.textContent = classCode ? `🏫 當前班級：${classCode}` : '🌱 一次性課堂';
+    }
+
+    // 取得當前學生清單與點數
+    let students = (this.lastAdminStudentsList || []).map(s => ({
+      uid: s.uid,
+      name: s.name,
+      avatar: s.avatar,
+      isOnline: s.isOnline,
+      points: parseInt(s.points, 10) || 0,
+      pointsLog: s.pointsLog || {}
+    }));
+
+    if (students.length === 0) {
+      const reg = this.registeredStudents || {};
+      students = Object.entries(reg).map(([uid, d]) => ({
+        uid,
+        name: d.name || '同學',
+        avatar: d.avatar !== undefined ? d.avatar : 0,
+        isOnline: false,
+        points: parseInt(d.points, 10) || 0,
+        pointsLog: d.pointsLog || {}
+      }));
+    }
+
+    let totalPoints = 0;
+    students.forEach(s => { totalPoints += s.points; });
+
+    const totalBadge = document.getElementById('adminPointsTotalStatsBadge');
+    if (totalBadge) {
+      totalBadge.textContent = `共 ${students.length} 位同學 · 累計發放：${totalPoints} 點`;
+    }
+
+    // 1. 渲染左側排行榜 (依點數排序)
+    const rankList = [...students].sort((a, b) => b.points - a.points);
+    const rankContainer = document.getElementById('adminPointsLeaderboardPreview');
+    if (rankContainer) {
+      if (rankList.length === 0) {
+        rankContainer.innerHTML = `
+          <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 36px; background: var(--bg-input); border-radius: 10px;">
+            🌱 目前尚無同學點數記錄。
+          </div>
+        `;
+      } else {
+        rankContainer.innerHTML = rankList.slice(0, 15).map((s, idx) => {
+          const rank = idx + 1;
+          let rankBadgeHtml = `<div class="leaderboard-rank" style="width: 28px; height: 28px; font-size: 14px;">${rank}</div>`;
+          if (rank === 1) rankBadgeHtml = `<div class="leaderboard-rank rank-1" style="width: 28px; height: 28px; font-size: 16px;">🥇</div>`;
+          else if (rank === 2) rankBadgeHtml = `<div class="leaderboard-rank rank-2" style="width: 28px; height: 28px; font-size: 16px;">🥈</div>`;
+          else if (rank === 3) rankBadgeHtml = `<div class="leaderboard-rank rank-3" style="width: 28px; height: 28px; font-size: 16px;">🥉</div>`;
+
+          const avatarHtml = this.renderAvatarHtml(s.avatar, 34);
+          const safeName = this.escapeHtml(s.name);
+          return `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                ${rankBadgeHtml}
+                <div style="flex-shrink: 0;">${avatarHtml}</div>
+                <span style="font-weight: bold; font-size: 14px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
+              </div>
+              <div style="font-weight: 800; font-size: 15px; color: #d97706; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <span>⭐️</span>
+                <span>${s.points}</span>
+                <span style="font-size: 14px; font-weight: normal; color: var(--text-secondary);">點</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // 2. 渲染右側快捷給點列表
+    this.renderAdminPointsStudentList(students);
+  }
+
+  onAdminPointsFilterChange(val) {
+    this.adminPointsSearchQuery = String(val || '').trim().toLowerCase();
+    const students = this.lastAdminStudentsList || [];
+    this.renderAdminPointsStudentList(students);
+  }
+
+  renderAdminPointsStudentList(students) {
+    const listContainer = document.getElementById('adminPointsStudentsList');
+    if (!listContainer) return;
+
+    let filtered = students || [];
+    const q = this.adminPointsSearchQuery || '';
+    if (q) {
+      filtered = filtered.filter(s => s.name.toLowerCase().includes(q) || s.uid.toLowerCase().includes(q));
+    }
+
+    if (filtered.length === 0) {
+      listContainer.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 36px; background: var(--bg-input); border-radius: 10px;">
+          ${q ? '🔍 查無符合搜尋條件的同學。' : '🌱 目前名冊尚無同學資料。'}
+        </div>
+      `;
+      return;
+    }
+
+    listContainer.innerHTML = filtered.map(s => {
+      const safeUid = String(s.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeName = this.escapeHtml(s.name);
+      const avHtml = this.renderAvatarHtml(s.avatar, 34);
+
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; gap: 8px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 140px; flex: 1;">
+            <div style="flex-shrink: 0;">${avHtml}</div>
+            <div>
+              <div style="font-weight: bold; font-size: 14px; color: var(--text-primary);">${safeName}</div>
+              <div style="font-size: 14px; color: #d97706; font-weight: 600;">⭐️ ${s.points || 0} 點</div>
+            </div>
+          </div>
+          <div style="display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;">
+            <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 1, '主動發言')" title="快速為 ${safeName} +1 點" style="padding: 4px 10px; font-size: 14px; font-weight: bold; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
+              +1
+            </button>
+            <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 2, '表現優良')" title="快速為 ${safeName} +2 點" style="padding: 4px 10px; font-size: 14px; font-weight: bold; background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; cursor: pointer;">
+              +2
+            </button>
+            <button type="button" class="presentation-tool-btn" onclick="window.app.adminOpenPointsAdjustModal('${safeUid}')" title="自訂為 ${safeName} 加減點數" style="padding: 4px 10px; font-size: 14px; background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; cursor: pointer;">
+              ⭐️ 給點
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ===== 教師端：線上點名與出缺勤管理專屬全頁面板業務 =====
+  renderAdminAttendancePanel() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    const scopeBadge = document.getElementById('adminAttendancePanelScopeBadge');
+    if (scopeBadge) {
+      scopeBadge.textContent = classCode ? `🏫 當前班級：${classCode}` : '🌱 一次性課堂';
+    }
+
+    const container = document.getElementById('adminAttendanceEmbeddedContainer');
+    if (!container) return;
+
+    // 內嵌線上點名工作介面：本次點名 / 歷史記錄 / 出缺勤統計
+    container.innerHTML = `
+      <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
+        <button type="button" id="btnEmbedAttCurrent" class="presentation-tool-btn active" onclick="window.app && window.app.switchEmbedAttendanceTab('current')" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;">
+          ⚡ 本次課堂點名
+        </button>
+        <button type="button" id="btnEmbedAttHistory" class="presentation-tool-btn" onclick="window.app && window.app.switchEmbedAttendanceTab('history')" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;">
+          📜 歷史點名記錄
+        </button>
+        <button type="button" id="btnEmbedAttSummary" class="presentation-tool-btn" onclick="window.app && window.app.switchEmbedAttendanceTab('summary')" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;">
+          📊 出缺勤總覽統計
+        </button>
+      </div>
+
+      <!-- 頁籤 1：本次課堂點名 -->
+      <div id="embedAttendanceCurrent">
+        <div style="display: flex; flex-direction: column; gap: 10px; background: var(--bg-input); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px;">
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <label for="adminAttendanceSessionTitleEmbed" style="font-size: 14px; font-weight: bold; color: var(--text-primary); white-space: nowrap; margin: 0;">點名單名稱：</label>
+            <input type="text" id="adminAttendanceSessionTitleEmbed" class="question-input" style="flex: 1; min-width: 180px; margin: 0; font-size: 14px; padding: 6px 10px; border-radius: 8px;">
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceAutoDetectOnline(); window.app && window.app.syncEmbedAttendanceFromSession();" style="padding: 5px 10px; font-size: 14px; background: rgba(0, 122, 255, 0.12); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; font-weight: bold;" title="偵測目前在線同學自動標記為出席，離線同學標記為缺席">
+                ⚡ 一鍵在線偵測
+              </button>
+              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceSetAllStatus('present'); window.app && window.app.syncEmbedAttendanceFromSession();" style="padding: 5px 10px; font-size: 14px; background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
+                🟢 全員出席
+              </button>
+              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceSetAllStatus('absent'); window.app && window.app.syncEmbedAttendanceFromSession();" style="padding: 5px 10px; font-size: 14px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; cursor: pointer;">
+                🔴 全員缺席
+              </button>
+            </div>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-primary); cursor: pointer; user-select: none; margin: 0;">
+              <input type="checkbox" id="chkAttendanceAutoRewardPointsEmbed" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-color);">
+              <span>出席同學自動獎勵 <strong>+1 點</strong></span>
+            </label>
+          </div>
+        </div>
+
+        <div id="attendanceEmbedStatsBar" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; font-size: 14px;">
+          <!-- 統計數據 -->
+        </div>
+
+        <div id="attendanceEmbedStudentsList" style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 6px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-input);">
+          <!-- 點名名單 -->
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 14px;">
+          <button type="button" id="btnSaveAttendanceSessionEmbed" onclick="window.app && window.app.saveEmbedAttendanceSession()" class="presentation-tool-btn active" style="padding: 8px 22px; font-size: 14px; font-weight: bold; border-radius: 8px;">
+            💾 儲存並發布點名記錄
+          </button>
+        </div>
+      </div>
+
+      <!-- 頁籤 2：歷史點名記錄 -->
+      <div id="embedAttendanceHistory" style="display: none;">
+        <div id="attendanceEmbedHistoryList" style="max-height: 480px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- 歷史記錄清單 -->
+        </div>
+      </div>
+
+      <!-- 頁籤 3：出缺勤總覽統計 -->
+      <div id="embedAttendanceSummary" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 14px; color: var(--text-secondary);">
+            全班出缺勤次數累計與個別出席率一覽：
+          </div>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.exportAttendanceReportCsv()" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;">
+            📥 匯出出缺勤報表 (CSV)
+          </button>
+        </div>
+        <div id="attendanceEmbedSummaryTable" style="max-height: 440px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
+          <!-- 統計表格 -->
+        </div>
+      </div>
+    `;
+
+    // 初始化點名 session 並同步
+    this.initCurrentAttendanceSession();
+    const titleInputModal = document.getElementById('adminAttendanceSessionTitle');
+    const titleInputEmbed = document.getElementById('adminAttendanceSessionTitleEmbed');
+    if (titleInputEmbed && titleInputModal) {
+      titleInputEmbed.value = titleInputModal.value;
+    }
+    this.syncEmbedAttendanceFromSession();
+    this.updateAttendanceHistoryCountBadge();
+  }
+
+  async updateAttendanceHistoryCountBadge() {
+    const badge = document.getElementById('adminAttendanceHistoryCountBadge');
+    if (!badge) return;
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || 'default');
+    try {
+      const snap = await db.ref('attendance').child(classCode).child('sessions').once('value');
+      const val = snap.val() || {};
+      badge.textContent = `共 ${Object.keys(val).length} 次點名記錄`;
+    } catch (e) {
+      badge.textContent = '共 0 次點名記錄';
+    }
+  }
+
+  syncEmbedAttendanceFromSession() {
+    if (!this.currentAttendanceSession || !this.currentAttendanceSession.records) return;
+    const bar = document.getElementById('attendanceEmbedStatsBar');
+    const modalBar = document.getElementById('attendanceCurrentStatsBar');
+    if (bar && modalBar) {
+      bar.innerHTML = modalBar.innerHTML;
+    }
+
+    const listContainer = document.getElementById('attendanceEmbedStudentsList');
+    if (!listContainer) return;
+
+    const entries = Object.entries(this.currentAttendanceSession.records);
+    if (entries.length === 0) {
+      listContainer.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 30px;">
+          🌱 目前名冊尚無學生可點名。
+        </div>
+      `;
+      return;
+    }
+
+    listContainer.innerHTML = entries.map(([uid, r]) => {
+      const safeUid = String(uid).replace(/'/g, "\\'");
+      const safeName = this.escapeHtml(r.name);
+      const avHtml = this.renderAvatarHtml(r.avatar !== undefined ? r.avatar : 0, 32);
+      const isOnline = Boolean(r.isOnline);
+
+      return `
+        <div class="attendance-row status-${r.status}" id="att_embed_row_${uid}">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 140px; flex: 1;">
+            <div style="flex-shrink: 0;">${avHtml}</div>
+            <div style="font-weight: 600; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+              <span>${safeName}</span>
+              <span style="font-size: 14px; color: ${isOnline ? '#10b981' : 'var(--text-muted)'}; font-weight: normal;">
+                ${isOnline ? '🟢 線上' : '⚪ 離線'}
+              </span>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+            <button type="button" class="attendance-status-btn btn-present ${r.status === 'present' ? 'active' : ''}" onclick="window.app && window.app.adminAttendanceSetStudentStatus('${safeUid}', 'present'); window.app && window.app.syncEmbedAttendanceFromSession();">🟢 出席</button>
+            <button type="button" class="attendance-status-btn btn-late ${r.status === 'late' ? 'active' : ''}" onclick="window.app && window.app.adminAttendanceSetStudentStatus('${safeUid}', 'late'); window.app && window.app.syncEmbedAttendanceFromSession();">🟡 遲到</button>
+            <button type="button" class="attendance-status-btn btn-leave ${r.status === 'leave' ? 'active' : ''}" onclick="window.app && window.app.adminAttendanceSetStudentStatus('${safeUid}', 'leave'); window.app && window.app.syncEmbedAttendanceFromSession();">🔵 請假</button>
+            <button type="button" class="attendance-status-btn btn-absent ${r.status === 'absent' ? 'active' : ''}" onclick="window.app && window.app.adminAttendanceSetStudentStatus('${safeUid}', 'absent'); window.app && window.app.syncEmbedAttendanceFromSession();">🔴 缺席</button>
+          </div>
+
+          <div style="width: 120px; flex-shrink: 0;">
+            <input type="text" placeholder="備註..." value="${this.escapeHtml(r.remark || '')}" oninput="window.app && window.app.adminAttendanceSetStudentRemark('${safeUid}', this.value)" style="width: 100%; font-size: 14px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  switchEmbedAttendanceTab(tab) {
+    const cur = document.getElementById('embedAttendanceCurrent');
+    const hist = document.getElementById('embedAttendanceHistory');
+    const sum = document.getElementById('embedAttendanceSummary');
+    const bCur = document.getElementById('btnEmbedAttCurrent');
+    const bHist = document.getElementById('btnEmbedAttHistory');
+    const bSum = document.getElementById('btnEmbedAttSummary');
+
+    if (cur) cur.style.display = (tab === 'current') ? 'block' : 'none';
+    if (hist) hist.style.display = (tab === 'history') ? 'block' : 'none';
+    if (sum) sum.style.display = (tab === 'summary') ? 'block' : 'none';
+
+    if (bCur) bCur.classList.toggle('active', tab === 'current');
+    if (bHist) bHist.classList.toggle('active', tab === 'history');
+    if (bSum) bSum.classList.toggle('active', tab === 'summary');
+
+    if (tab === 'history') {
+      this.renderEmbedAttendanceHistory();
+    } else if (tab === 'summary') {
+      this.renderEmbedAttendanceSummary();
+    }
+  }
+
+  async renderEmbedAttendanceHistory() {
+    const container = document.getElementById('attendanceEmbedHistoryList');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 14px;">載入歷史點名記錄中...</div>';
+
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || 'default');
+
+    try {
+      const snap = await db.ref('attendance').child(classCode).child('sessions').once('value');
+      const sessions = snap.val() || {};
+      const list = Object.values(sessions).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 36px; background: var(--bg-input); border-radius: 10px;">
+            🌱 尚無歷史點名記錄。可切換至「本次課堂點名」發起點名！
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(sess => {
+        const timeObj = this.formatFullDateTime(sess.timestamp);
+        const stats = sess.stats || {};
+        const safeTitle = this.escapeHtml(sess.title);
+        const safeId = String(sess.id || '').replace(/'/g, "\\'");
+
+        return `
+          <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="font-weight: bold; font-size: 15px; color: var(--text-primary);">
+                📋 ${safeTitle}
+                <span style="font-size: 14px; font-weight: normal; color: var(--text-muted); margin-left: 6px;">${timeObj.full}</span>
+              </div>
+              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminDeleteAttendanceSession('${safeId}').then(() => window.app.renderEmbedAttendanceHistory())" style="padding: 3px 8px; font-size: 14px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; cursor: pointer;">
+                🗑️ 刪除記錄
+              </button>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 14px;">
+              <span style="color: var(--text-secondary);">名冊總額：<strong>${stats.total || 0}</strong> 人</span>
+              <span style="color: #10b981; font-weight: bold;">🟢 出席：${stats.present || 0} (${stats.presentRate || '0%'})</span>
+              <span style="color: #d97706; font-weight: bold;">🟡 遲到：${stats.late || 0}</span>
+              <span style="color: #3b82f6; font-weight: bold;">🔵 請假：${stats.leave || 0}</span>
+              <span style="color: #ef4444; font-weight: bold;">🔴 缺席：${stats.absent || 0}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      container.innerHTML = `<div style="text-align: center; color: var(--danger-color); padding: 20px; font-size: 14px;">載入記錄失敗: ${e.message}</div>`;
+    }
+  }
+
+  async renderEmbedAttendanceSummary() {
+    const container = document.getElementById('attendanceEmbedSummaryTable');
+    if (!container) return;
+    await this.renderAttendanceSummaryTable();
+    const modalTableContainer = document.getElementById('attendanceSummaryTableContainer');
+    if (modalTableContainer) {
+      container.innerHTML = modalTableContainer.innerHTML;
+    }
+  }
+
+  async saveEmbedAttendanceSession() {
+    const titleInput = document.getElementById('adminAttendanceSessionTitleEmbed');
+    const autoRewardChk = document.getElementById('chkAttendanceAutoRewardPointsEmbed');
+    const modalTitle = document.getElementById('adminAttendanceSessionTitle');
+    const modalAutoReward = document.getElementById('chkAttendanceAutoRewardPoints');
+
+    if (modalTitle && titleInput) modalTitle.value = titleInput.value;
+    if (modalAutoReward && autoRewardChk) modalAutoReward.checked = autoRewardChk.checked;
+
+    await this.adminSaveAttendanceSession();
+    this.switchEmbedAttendanceTab('history');
+    this.updateAttendanceHistoryCountBadge();
+  }
+
   async adminQuickAdjustPoints(uid, amount, reason) {
     if (!uid) return;
     try {
