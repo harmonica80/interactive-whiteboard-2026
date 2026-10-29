@@ -787,6 +787,34 @@ class App {
     modal.style.display = 'flex';
     const body = modal.querySelector('.changelog-modal-body');
     if (body) body.scrollTop = 0;
+    this.initChangelogAccordion(modal);
+  }
+
+  // 版本更新歷程收合式（手風琴）：每次開啟時僅展開最新版本，其餘預設收合
+  initChangelogAccordion(modal) {
+    const cards = modal.querySelectorAll('.changelog-version-card');
+    cards.forEach((card) => {
+      const header = card.querySelector('.changelog-card-header');
+      if (!header) return;
+      const setExpanded = (expanded) => {
+        card.classList.toggle('is-expanded', expanded);
+        header.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      };
+      if (!header.dataset.accordionBound) {
+        header.dataset.accordionBound = '1';
+        header.setAttribute('role', 'button');
+        header.setAttribute('tabindex', '0');
+        header.title = '點擊展開 / 收合';
+        header.addEventListener('click', () => setExpanded(!card.classList.contains('is-expanded')));
+        header.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setExpanded(!card.classList.contains('is-expanded'));
+          }
+        });
+      }
+      setExpanded(card.classList.contains('is-latest'));
+    });
   }
 
   // 關閉版本更新重點歷程彈跳視窗
