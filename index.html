@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=419">
+  <link rel="stylesheet" href="css/style.css?v=420">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -4740,12 +4740,84 @@
       <!-- 更新歷程內容區 (可滾動) -->
       <div class="changelog-modal-body">
         
-        <!-- ver 3.10.11 -->
+        <!-- ver 3.20.01 -->
         <div class="changelog-version-card is-latest">
           <div class="changelog-card-header">
             <div class="changelog-version-title">
-              <span>🌟 ver 3.10.11</span>
+              <span>🌟 ver 3.20.01</span>
               <span class="changelog-badge-latest">最新版本</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="changelog-badge-tag">課堂計點與榮譽榜</span>
+              <span class="changelog-badge-tag">線上點名與出缺勤</span>
+              <span class="changelog-badge-tag">學生名冊與歷程</span>
+              <span class="changelog-badge-tag">白板物件控制點</span>
+              <span class="changelog-badge-tag">雲端檔案庫</span>
+              <span class="changelog-badge-tag">WebP 省流</span>
+            </div>
+          </div>
+          <ul class="changelog-item-list">
+            <li><strong>⭐️ 課堂計點與榮譽排行榜：</strong>
+              <ul>
+                <li><strong>教師自訂加減分</strong>：學生名冊每位同學顯示點數徽章與「+1 / +2」快捷給點；「⭐️ 課堂給點」彈窗支援多選或全班批次加扣分、常用數值與事由標籤。</li>
+                <li><strong>學生端激勵特效</strong>：右下角個人頭像卡片即時顯示累計點數，獲得加分時彈出金幣星星動畫與提示音效。</li>
+                <li><strong>🏆 課堂榮譽榜</strong>：Top 10 / 全班排名切換、前三名專屬獎牌，支援全螢幕投影；名冊新增「課堂點數」排序，個人歷程新增「點數記錄」篩選。</li>
+              </ul>
+            </li>
+            <li><strong>📋 線上點名與出缺勤統計：</strong>
+              <ul>
+                <li>一鍵偵測在線同學自動初盤，支援出席 / 遲到 / 請假 / 缺席四態切換與個別備註，可設定出席自動獎勵 +1 點。</li>
+                <li>保存歷次點名記錄，自動彙整全班出席率與各狀態次數，並可匯出出缺勤報表（CSV）。</li>
+              </ul>
+            </li>
+            <li><strong>👥 學生名冊與參與歷程管理：</strong>
+              <ul>
+                <li>班級管理新增學生名冊：登入時間追蹤、在線狀態、搜尋排序、卡片 / 列表雙視圖、編輯姓名頭像、刪除與名冊 CSV 匯出。</li>
+                <li>個人歷程彈窗整合提問、圖片、留言、測驗、影片、文字雲等全方位參與記錄，支援分類篩選與匯出。</li>
+                <li><strong>合併帳號</strong>：名冊可直接核選多個帳號合併至保留帳號，自動整併提問、作答、點數與點名記錄，讓同學歷程統計更準確。</li>
+                <li>學生更名全端雙向即時同步，換設備登入也能維持同一份歷程。</li>
+              </ul>
+            </li>
+            <li><strong>🖌️ 互動白板物件編輯升級：</strong>
+              <ul>
+                <li>選取物件時提供四角縮放控制點與旋轉把手，影像物件另可拖曳四邊中點進行裁切。</li>
+                <li>箭頭、矩形、圓形、筆畫物件改用與影像、便利貼一致的簡潔虛線懸停框，移除暈開光暈樣式。</li>
+                <li>修復全班跟隨預設畫布問題，新增畫布重新命名。</li>
+              </ul>
+            </li>
+            <li><strong>☁️ 雲端歷程檔案庫與教材庫：</strong>
+              <ul>
+                <li>互動白板與同步簡報皆可雲端存檔，支援共編 / 唯讀雙模式載入、跨班級複製與刪除，大幅減少重複上傳流量。</li>
+                <li>同步簡報權限重構（老師專屬編輯、同學僅限作答與翻頁），載入教材免自動廣播。</li>
+              </ul>
+            </li>
+            <li><strong>⚡ 效能與網路流量優化：</strong>
+              <ul>
+                <li>靜態大圖與頭像圖鑑全面轉為 WebP 格式；上傳與貼上的圖片於前端壓縮為 WebP，大幅降低儲存與傳輸流量。</li>
+                <li>同步簡報同步流量優化、白板延遲同步與影片資料分離，並自動清理過期雲端暫存。</li>
+              </ul>
+            </li>
+            <li><strong>🎨 介面與頭像體驗：</strong>
+              <ul>
+                <li>右下角新增個人頭像懸浮卡片，管理後台與登出收納至 💡 教室資訊選單，頂部版面更清爽。</li>
+                <li>頭像庫擴充為萌寵奇幻、森林海洋、蔬菜水果、食品零食、台灣特色小吃五大分類共 240 款，並校正全部角色名稱。</li>
+                <li>同步簡報、文字雲支援全螢幕切換與檔案上傳後自動恢復全螢幕；前後台按鈕全面連動四大色系主題，文字大小統一 14px 以上。</li>
+                <li>選擇題與文字雲題庫管理、題庫匯入匯出、轉盤音效升級、聽歌搶答新增經典台語 / 日劇 / 韓劇分類。</li>
+              </ul>
+            </li>
+            <li><strong>🔐 安全性強化：</strong>
+              <ul>
+                <li>管理後台全域權限攔截，未驗證密碼一律無法進入後台；教室邀請提供短網址與雙 QR Code。</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ver 3.10.11 -->
+        <div class="changelog-version-card">
+          <div class="changelog-card-header">
+            <div class="changelog-version-title">
+              <span>ver 3.10.11</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <span class="changelog-badge-tag">右下角 FAB 燈泡快捷選單</span>
@@ -7853,6 +7925,7 @@ Python</pre>
         <button type="button" class="fab-quick-menu-item" onclick="window.app && window.app.openChangelogModal(); window.app && window.app.toggleQuickInfoMenu(false)">
           <span class="fab-item-icon">📄</span>
           <span class="fab-item-text">版本更新歷程</span>
+          <span class="fab-item-version" id="fabAppVersionLabel" title="目前系統版本">ver 3.20.01</span>
         </button>
       </div>
       <div class="fab-quick-menu-license" style="padding: 10px 8px 6px 8px; border-top: 1px solid var(--border-color, rgba(0,0,0,0.08)); font-size: 14px; color: var(--text-secondary, #64748b); line-height: 1.5; text-align: left;">

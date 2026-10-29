@@ -8135,6 +8135,25 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   text-overflow: ellipsis;
 }
 
+/* 💡 選單內「版本更新歷程」右側之目前版本號標籤 */
+.fab-item-version {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  background: var(--bg-input, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 999px;
+  padding: 2px 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.fab-quick-menu-item:hover .fab-item-version {
+  color: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
+}
+
 .fab-item-arrow {
   font-size: 14px;
   color: var(--text-secondary, #94a3b8);
