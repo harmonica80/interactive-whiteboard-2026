@@ -1,4 +1,15 @@
 # System Log
+## 2026-10-30 - 班級管理獨立「I. 學生積分管理」與「J. 線上點名與出缺勤管理」兩大專屬功能
+- 影響檔案：`index.html`, `js/app.js`, `images/admin_icons/class_points.svg`, `images/admin_icons/class_attendance.svg`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **班級管理功能擴充為 10 個功能**：
+     - 新增「I. 學生積分管理」（`classPoints`）：配置專屬向量圖示（`images/admin_icons/class_points.svg`）、全頁折疊區塊（`#adminClassPointsSection`），內建左側榮譽排行榜一覽與右側學生快捷給點名冊、搜尋過濾與大螢幕榮譽榜投影。
+     - 新增「J. 線上點名與出缺勤管理」（`classAttendance`）：配置專屬向量圖示（`images/admin_icons/class_attendance.svg`）、全頁折疊區塊（`#adminClassAttendanceSection`），內建本次點名、智慧在線偵測、歷次點名記錄檢視刪除與全班出缺勤總覽統計與 CSV 匯出。
+  2. **學生名冊介面精簡**：
+     - 將「H. 學生名冊與參與歷程管理」頂部原本並列的點名與給點按鈕，轉化為前往「⭐️ 學生積分管理 ➔」與「📋 線上點名管理 ➔」專屬功能的導引按鈕，使各模組職責清晰分明。
+  3. **快速切換選單與權限連動**：
+     - 後台單頁模式「快速切換」下拉選單補齊「I. 學生積分管理」與「J. 線上點名與出缺勤管理」選項，切換時自動同步即時資料與載入面板。
+  4. 通過語法檢測（零錯誤）與嚴格用語規範（零違規），更新 `js/app.js?v=448` 快取版本。
 ## 2026-10-30 - 學生端課堂點數徽章移至頭像右上角並移除星星圖示
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
