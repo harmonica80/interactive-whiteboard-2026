@@ -17814,17 +17814,18 @@ class App {
       Object.entries(stData.pointsLog).forEach(([logId, pl]) => {
         if (pl) {
           const amt = parseInt(pl.amount, 10) || 0;
+          const cleanReason = (pl.reason || '').trim();
           activities.push({
             id: `pt_${logId}`,
             logId: logId,
             studentUid: targetUid,
             amount: amt,
-            reason: pl.reason || '課堂給點',
+            reason: cleanReason,
             type: 'point',
             typeName: '點數記錄',
             icon: amt >= 0 ? '⭐️' : '⚠️',
             timestamp: pl.timestamp || 0,
-            title: `${amt >= 0 ? '+' : ''}${amt} 點：${pl.reason || '課堂給點'}`,
+            title: `${amt >= 0 ? '+' : ''}${amt} 點${cleanReason ? `：${cleanReason}` : ''}`,
             details: `登記時間：${this.formatFullDateTime(pl.timestamp).full}`
           });
         }
@@ -19612,10 +19613,10 @@ class App {
             <button type="button" class="presentation-tool-btn" onclick="window.app.adminOpenStudentPointsHistoryModal('${safeUid}')" title="查閱、編輯或刪除 ${safeName} 的點數記錄" style="padding: 4px 10px; font-size: 14px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; white-space: nowrap;">
               📜 點數記錄
             </button>
-            <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 1, '主動發言')" title="快速為 ${safeName} +1 點" style="padding: 4px 10px; font-size: 14px; font-weight: bold; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
+            <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 1, '')" title="快速為 ${safeName} +1 點" style="padding: 4px 10px; font-size: 14px; font-weight: bold; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
               +1
             </button>
-            <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 2, '表現優良')" title="快速為 ${safeName} +2 點" style="padding: 4px 10px; font-size: 14px; font-weight: bold; background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; cursor: pointer;">
+            <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 2, '')" title="快速為 ${safeName} +2 點" style="padding: 4px 10px; font-size: 14px; font-weight: bold; background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; cursor: pointer;">
               +2
             </button>
             <button type="button" class="presentation-tool-btn" onclick="window.app.adminOpenPointsAdjustModal('${safeUid}')" title="自訂為 ${safeName} 加減點數" style="padding: 4px 10px; font-size: 14px; background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; cursor: pointer;">
@@ -19896,20 +19897,21 @@ class App {
     this.updateAttendanceHistoryCountBadge();
   }
 
-  async adminQuickAdjustPoints(uid, amount, reason) {
+  async adminQuickAdjustPoints(uid, amount, reason = '') {
     if (!uid) return;
     try {
       const student = (this.lastAdminStudentsList || []).find(s => s.uid === uid) || (this.registeredStudents || {})[uid];
       const curPts = student ? (parseInt(student.points, 10) || 0) : 0;
       const newPts = Math.max(0, curPts + amount);
       const studentName = student ? student.name : '同學';
+      const cleanReason = (reason !== undefined && reason !== null) ? String(reason).trim() : '';
 
       const logId = db.ref('quiz/students').child(uid).child('pointsLog').push().key;
       const updates = {};
       updates[`quiz/students/${uid}/points`] = newPts;
       updates[`quiz/students/${uid}/pointsLog/${logId}`] = {
         amount,
-        reason: reason || (amount >= 0 ? '表現優良' : '課堂提醒'),
+        reason: cleanReason,
         timestamp: Date.now()
       };
 
@@ -19919,9 +19921,20 @@ class App {
         if (!this.registeredStudents[uid].pointsLog) this.registeredStudents[uid].pointsLog = {};
         this.registeredStudents[uid].pointsLog[logId] = updates[`quiz/students/${uid}/pointsLog/${logId}`];
       }
+      if (this.lastAdminStudentsList) {
+        const s = this.lastAdminStudentsList.find(x => x.uid === uid);
+        if (s) s.points = newPts;
+      }
 
-      this.showNotification('點數已調整', `已成功為「${studentName}」${amount >= 0 ? '+' : ''}${amount} 點！(目前共 ${newPts} 點)`);
+      this.showNotification('點數已調整', `已成功為「${studentName}」${amount >= 0 ? '+' : ''}${amount} 點！${cleanReason ? `(${cleanReason}) ` : ''}(目前共 ${newPts} 點)`);
       this.renderAdminStudentsList();
+      if (this.currentPointsHistoryUid && document.getElementById('adminStudentPointsHistoryModal')?.classList.contains('active')) {
+        this.renderStudentPointsHistoryList(this.currentPointsHistoryUid);
+      }
+      if (document.getElementById('studentHistoryModal')?.classList.contains('active') && this.currentHistoryStudent && this.currentHistoryStudent.uid === uid) {
+        this.currentStudentHistoryActivities = this.getStudentActivityHistory(uid, this.currentHistoryStudent.name);
+        this.filterStudentHistory(this.currentStudentHistoryFilter || 'all');
+      }
     } catch (e) {
       console.error('adminQuickAdjustPoints error:', e);
       this.showNotification('錯誤', '點數調整失敗: ' + e.message);
@@ -20474,7 +20487,7 @@ class App {
       return {
         logId,
         amount: parseInt(pl.amount, 10) || 0,
-        reason: pl.reason || '課堂給點',
+        reason: (pl.reason || '').trim(),
         timestamp: pl.timestamp || 0
       };
     });
@@ -20506,7 +20519,7 @@ class App {
               ${isPositive ? '+' : ''}${log.amount} 點
             </div>
             <div>
-              <div style="font-size: 15px; font-weight: bold; color: var(--text-primary);">${this.escapeHtml(log.reason)}</div>
+              ${log.reason ? `<div style="font-size: 15px; font-weight: bold; color: var(--text-primary);">${this.escapeHtml(log.reason)}</div>` : ''}
               <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;" title="${timeObj.full}">
                 ⏰ ${timeObj.full} (${timeObj.relative})
               </div>
@@ -20545,7 +20558,7 @@ class App {
       const timeObj = this.formatFullDateTime(pl.timestamp || Date.now());
       promptEl.innerHTML = `
         <div>同學：<strong>${this.escapeHtml(student.name || '同學')}</strong></div>
-        <div style="margin-top: 4px; font-size: 14px;">原始登記：<strong>${(parseInt(pl.amount, 10) || 0) >= 0 ? '+' : ''}${pl.amount} 點</strong> (${this.escapeHtml(pl.reason || '課堂給點')}) · ${timeObj.full}</div>
+        <div style="margin-top: 4px; font-size: 14px;">原始登記：<strong>${(parseInt(pl.amount, 10) || 0) >= 0 ? '+' : ''}${pl.amount} 點</strong>${pl.reason ? ` (${this.escapeHtml(pl.reason)})` : ''} · ${timeObj.full}</div>
       `;
     }
 
@@ -20583,7 +20596,7 @@ class App {
     const reasonInput = document.getElementById('adminEditPointLogReason');
 
     const newAmount = parseInt(amtInput ? amtInput.value : 1, 10);
-    const newReason = (reasonInput ? reasonInput.value : '').trim() || '課堂給點';
+    const newReason = (reasonInput ? reasonInput.value : '').trim();
 
     if (isNaN(newAmount) || newAmount === 0) {
       this.showNotification('提示', '請輸入有效的調整點數（不可為 0）！');
@@ -20623,7 +20636,7 @@ class App {
       }
 
       this.closeAdminEditPointLogModal();
-      this.showNotification('修改成功', `已成功修改為 ${newAmount >= 0 ? '+' : ''}${newAmount} 點（${newReason}）！(目前累積 ${newPts} 點)`);
+      this.showNotification('修改成功', `已成功修改為 ${newAmount >= 0 ? '+' : ''}${newAmount} 點${newReason ? `（${newReason}）` : ''}！(目前累積 ${newPts} 點)`);
 
       // 刷新相關介面
       if (document.getElementById('adminStudentPointsHistoryModal')?.classList.contains('active')) {
@@ -20651,13 +20664,13 @@ class App {
     const student = (this.registeredStudents || {})[uid] || (this.lastAdminStudentsList || []).find(s => s.uid === uid);
     const pl = (student && student.pointsLog && student.pointsLog[logId]) ? student.pointsLog[logId] : null;
     const amt = pl ? (parseInt(pl.amount, 10) || 0) : 0;
-    const reason = pl ? pl.reason : '點數記錄';
+    const reason = pl ? (pl.reason || '').trim() : '';
     const studentName = student ? student.name : '同學';
 
     this.showConfirmModal(
       '🗑️',
       '刪除點數記錄',
-      `確定要刪除「${studentName}」的這筆記錄嗎？\n內容：${amt >= 0 ? '+' : ''}${amt} 點（${reason}）\n刪除後學生總點數將自動重新計算。`,
+      `確定要刪除「${studentName}」的這筆記錄嗎？\n內容：${amt >= 0 ? '+' : ''}${amt} 點${reason ? `（${reason}）` : ''}\n刪除後學生總點數將自動重新計算。`,
       async () => {
         try {
           const curPts = student ? (parseInt(student.points, 10) || 0) : 0;
