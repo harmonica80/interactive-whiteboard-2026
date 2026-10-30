@@ -1,4 +1,17 @@
 # System Log
+## 2026-10-30 - 修復分組管理：自動分組彈窗樣式啟用、強化拖曳放置區與新增點擊一鍵換組選單
+- 影響檔案：`js/group_manager.js`, `css/style.css`, `index.html`, `SYSTEM_LOG.md`
+- 修改項目：
+  1. **修復「自動分組」彈窗顯示問題**：
+     - 補齊 `.modal-overlay` 之 `active` class 與全螢幕相容層級掛載，確保開啟時立即正常浮現。
+  2. **修復與全面升級組員分配操作（雙軌換組機制）**：
+     - **拖曳放置（Drag & Drop）強化**：為小組卡片與內層組員放置區雙重綁定 `dragover` / `drop` 事件，防止子元素阻擋放置偵測；拖曳時高亮邊框與背景回饋。
+     - **新增點擊一鍵換組選單 (Click-to-Assign)**：每個學生名牌增加「`⇄`」快捷按鈕，點擊即展開組別選單，支援 iPad、平板與大螢幕觸控操作。
+     - **未分配名單「⚡ 自動補位」**：一鍵將未分配學生均勻輪流補入目前各小組。
+  3. **通過語法檢驗與規範檢查**：
+     - 通過 `node --check` 與 `npm run check:syntax`。
+     - 更新快取版本參數至 `v=460`。
+
 ## 2026-10-30 - 學生分組管理系統 (Phase 1 & Phase 2)：自動分組、手動調整、歷史分組載入與小組積分轉移
 - 影響檔案：index.html, css/style.css, js/app.js, js/group_manager.js, images/admin_icons/class_groups.svg, SYSTEM_LOG.md
 - 修改項目：

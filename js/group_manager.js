@@ -3,7 +3,7 @@
  * 支援功能：
  * 1. 自動分組 (依每組人數 / 依總組數；範圍可限定全班或僅目前線上學生)
  * 2. 未到課學生處理：可選保留於組內或暫移至未分配清單
- * 3. 手動拖曳調整、換組、指派組長、自訂組名與代表色
+ * 3. 雙軌分配：支援拖曳換組 (Drag & Drop) + 點擊選單換組 (Click-to-Assign)
  * 4. 歷史分組快照存取、歷程載入、線上名單差異比對與一鍵補位/剔除
  * 5. 小組獨立積分池 (groupPoints) 與日誌 (groupPointsLog)
  * 6. 小組積分轉移至個人：支援「全額均分」與「全員同額獎勵」
@@ -19,7 +19,6 @@
       this.historyGroupSets = []; // 歷史分組快照清單
       this.groupListenerRef = null;
       this.isInitialized = false;
-      this.activeTab = 'active'; // 'active' | 'history'
       this.draggedStudentUid = null;
       this.draggedFromGroupId = null;
 
@@ -43,11 +42,49 @@
     init(appInstance) {
       this.app = appInstance || window.app;
       this.isInitialized = true;
-      this.bindEvents();
+      this.bindGlobalEvents();
     }
 
-    bindEvents() {
-      // 監聽鍵盤快捷或全域通知事件
+    bindGlobalEvents() {
+      // 點擊全域關閉學生換組快顯選單
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.student-assign-menu') && !e.target.closest('.btn-quick-assign')) {
+          this.closeAllAssignMenus();
+        }
+      });
+    }
+
+    closeAllAssignMenus() {
+      document.querySelectorAll('.student-assign-menu').forEach((el) => el.remove());
+    }
+
+    // 通用彈窗開啟 (支援全螢幕掛載與 active class)
+    openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) {
+        console.warn(`[GroupManager] Modal ${modalId} not found`);
+        return;
+      }
+      const fsEl = document.fullscreenElement;
+      if (fsEl && fsEl !== document.documentElement) {
+        if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+      } else if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+      modal.style.opacity = '1';
+      modal.style.visibility = 'visible';
+    }
+
+    // 通用彈窗關閉
+    closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+      modal.style.opacity = '';
+      modal.style.visibility = '';
     }
 
     // 取得當前班級代碼
@@ -74,7 +111,35 @@
       const path = classCode ? `classes/${classCode}/activeGroups` : 'groups/activeGroups';
       this.groupListenerRef = db.ref(path);
       this.groupListenerRef.on('value', (snapshot) => {
-        this.activeGroupSet = snapshot.val() || null;
+        const val = snapshot.val();
+        this.activeGroupSet = val || null;
+
+        // 若雲端尚無分組資料，但目前有名冊同學，自動初始化 activeGroupSet
+        if (!this.activeGroupSet) {
+          const allUids = Object.keys(this.getAllStudentsMap());
+          this.activeGroupSet = {
+            id: `set_${Date.now()}`,
+            name: '未分組',
+            updatedAt: Date.now(),
+            groups: {},
+            unassignedUids: allUids
+          };
+        } else {
+          // 確保未分配清單補齊名冊中新增的學生
+          const allUids = Object.keys(this.getAllStudentsMap());
+          const assignedSet = new Set();
+          Object.values(this.activeGroupSet.groups || {}).forEach((g) => {
+            (g.memberUids || []).forEach((u) => assignedSet.add(u));
+          });
+          const unassignedSet = new Set(this.activeGroupSet.unassignedUids || []);
+          allUids.forEach((uid) => {
+            if (!assignedSet.has(uid)) {
+              unassignedSet.add(uid);
+            }
+          });
+          this.activeGroupSet.unassignedUids = Array.from(unassignedSet);
+        }
+
         this.renderAdminPanel();
         if (this.app && typeof this.app.updateFloatingStudentGroupBadge === 'function') {
           this.app.updateFloatingStudentGroupBadge();
@@ -148,14 +213,6 @@
     // ==========================================
     // 核心功能 1：自動分組演算法
     // ==========================================
-    /**
-     * @param {Object} options
-     * @param {'bySize'|'byCount'} options.mode - 分組模式：依每組人數 (bySize) 或依總組數 (byCount)
-     * @param {number} options.value - 人數或組數
-     * @param {'online'|'all'} options.scope - 篩選範圍：僅線上學生 (online) 或全班學生 (all)
-     * @param {'keep'|'unassign'} options.unassignedHandling - 未到課學生處理：保留於組內 (keep) 或暫移未分配區 (unassign)
-     * @param {string} options.setName - 分組方案名稱 (可選)
-     */
     async createAutoGroups(options = {}) {
       const mode = options.mode || 'bySize';
       const value = Math.max(1, parseInt(options.value, 10) || 4);
@@ -170,6 +227,8 @@
       if (allUids.length === 0) {
         if (this.app && this.app.showNotification) {
           this.app.showNotification('⚠️ 目前名冊尚無任何學生，無法進行分組。');
+        } else {
+          alert('目前名冊尚無任何學生，無法進行分組。');
         }
         return false;
       }
@@ -190,13 +249,14 @@
         if (targetUids.length === 0) {
           if (this.app && this.app.showNotification) {
             this.app.showNotification('⚠️ 目前無任何線上學生，請確認同學已連線登入。');
+          } else {
+            alert('目前無任何線上學生，請確認同學已連線登入。');
           }
           return false;
         }
       } else {
         // 全班參與
         if (unassignedHandling === 'unassign') {
-          // 若老師要求將未上線學生移出組別，則僅在線者入組，離線者入 unassigned
           allUids.forEach((uid) => {
             if (onlineSet.has(uid)) {
               targetUids.push(uid);
@@ -205,7 +265,6 @@
             }
           });
         } else {
-          // 未上線學生亦保留在組內
           targetUids = [...allUids];
         }
       }
@@ -245,7 +304,6 @@
       targetUids.forEach((uid, idx) => {
         const targetGKey = groupKeys[idx % groupCount];
         groups[targetGKey].memberUids.push(uid);
-        // 預設第一位組員暫定為組長，老師可自由更換
         if (!groups[targetGKey].captainUid) {
           groups[targetGKey].captainUid = uid;
         }
@@ -266,10 +324,58 @@
       return true;
     }
 
+    // 將未分配學生自動補位至現有組別
+    async autoFillUnassigned() {
+      if (!this.activeGroupSet) return;
+      const unassigned = [...(this.activeGroupSet.unassignedUids || [])];
+      if (unassigned.length === 0) {
+        if (this.app && this.app.showNotification) {
+          this.app.showNotification('💡 目前未分配名單為空，無須補位。');
+        }
+        return;
+      }
+
+      const groupKeys = Object.keys(this.activeGroupSet.groups || {});
+      if (groupKeys.length === 0) {
+        // 若完全沒有組別，直接建立 2 組自動分配
+        await this.createAutoGroups({ mode: 'byCount', value: 2, scope: 'all' });
+        return;
+      }
+
+      // 依序分發至成員最少的小組
+      unassigned.forEach((uid) => {
+        // 找出目前成員數最少的組別
+        let minGroup = null;
+        let minCount = Infinity;
+        groupKeys.forEach((gid) => {
+          const g = this.activeGroupSet.groups[gid];
+          const count = (g.memberUids || []).length;
+          if (count < minCount) {
+            minCount = count;
+            minGroup = g;
+          }
+        });
+
+        if (minGroup) {
+          if (!minGroup.memberUids) minGroup.memberUids = [];
+          minGroup.memberUids.push(uid);
+          if (!minGroup.captainUid) minGroup.captainUid = uid;
+        }
+      });
+
+      this.activeGroupSet.unassignedUids = [];
+      this.activeGroupSet.updatedAt = Date.now();
+      await this.saveActiveGroupSet(this.activeGroupSet);
+      this.renderAdminPanel();
+
+      if (this.app && this.app.showNotification) {
+        this.app.showNotification(`⚡ 已將 ${unassigned.length} 位同學自動補位至各小組！`);
+      }
+    }
+
     // ==========================================
     // 核心功能 2：手動分組、換組、自訂與調整
     // ==========================================
-    // 新增一組空白小組
     async createEmptyGroup(customName, customColor) {
       if (!this.activeGroupSet) {
         this.activeGroupSet = {
@@ -301,7 +407,6 @@
       this.renderAdminPanel();
     }
 
-    // 刪除指定小組 (組員自動退回未分配清單)
     async deleteGroup(groupId) {
       if (!this.activeGroupSet || !this.activeGroupSet.groups || !this.activeGroupSet.groups[groupId]) return;
       const group = this.activeGroupSet.groups[groupId];
@@ -321,7 +426,6 @@
       this.renderAdminPanel();
     }
 
-    // 更新組別名稱或顏色
     async updateGroupInfo(groupId, { name, color, captainUid }) {
       if (!this.activeGroupSet || !this.activeGroupSet.groups || !this.activeGroupSet.groups[groupId]) return;
       const g = this.activeGroupSet.groups[groupId];
@@ -334,13 +438,21 @@
       this.renderAdminPanel();
     }
 
-    // 移動單一學生至指定組別 (或移至未分配清單)
+    // 移動單一學生至指定組別 (或移至未分配清單 targetGroupId = null)
     async moveStudentToGroup(studentUid, targetGroupId) {
-      if (!this.activeGroupSet) return;
+      if (!this.activeGroupSet) {
+        this.activeGroupSet = {
+          id: `set_${Date.now()}`,
+          name: '課堂分組',
+          updatedAt: Date.now(),
+          groups: {},
+          unassignedUids: Object.keys(this.getAllStudentsMap())
+        };
+      }
       if (!this.activeGroupSet.unassignedUids) this.activeGroupSet.unassignedUids = [];
       const groups = this.activeGroupSet.groups || {};
 
-      // 1. 從所有現有小組與未分配清單中移出該學生
+      // 1. 從所有組別與未分配名冊中移出
       this.activeGroupSet.unassignedUids = this.activeGroupSet.unassignedUids.filter((u) => u !== studentUid);
       Object.values(groups).forEach((g) => {
         if (Array.isArray(g.memberUids)) {
@@ -351,8 +463,11 @@
         }
       });
 
-      // 2. 加入目標小組或未分配清單
+      // 2. 加入目標小組或回歸未分配
       if (targetGroupId && groups[targetGroupId]) {
+        if (!Array.isArray(groups[targetGroupId].memberUids)) {
+          groups[targetGroupId].memberUids = [];
+        }
         groups[targetGroupId].memberUids.push(studentUid);
         if (!groups[targetGroupId].captainUid) {
           groups[targetGroupId].captainUid = studentUid;
@@ -366,9 +481,8 @@
       this.renderAdminPanel();
     }
 
-    // 一鍵清空目前分組 (全部組員回歸未分配)
+    // 一鍵清空目前分組
     async clearActiveGroups() {
-      if (!this.activeGroupSet) return;
       const allStudents = Object.keys(this.getAllStudentsMap());
       this.activeGroupSet = {
         id: `set_${Date.now()}`,
@@ -416,11 +530,12 @@
     // ==========================================
     // 核心功能 3：歷史分組記錄庫與載入
     // ==========================================
-    // 將當前活躍組別儲存為歷史分組快照
     async saveCurrentToHistory(customName) {
-      if (!this.activeGroupSet || !this.activeGroupSet.groups) {
+      if (!this.activeGroupSet || !this.activeGroupSet.groups || Object.keys(this.activeGroupSet.groups).length === 0) {
         if (this.app && this.app.showNotification) {
           this.app.showNotification('⚠️ 目前尚未建立小組，無法儲存為歷史記錄。');
+        } else {
+          alert('目前尚未建立小組，無法儲存為歷史記錄。');
         }
         return false;
       }
@@ -452,7 +567,6 @@
       return true;
     }
 
-    // 取得歷史分組快照清單
     async fetchHistoryGroupSets() {
       const db = this.getDb();
       const classCode = this.getActiveClassCode();
@@ -465,12 +579,6 @@
       return this.historyGroupSets;
     }
 
-    // 載入指定歷史分組快照
-    /**
-     * @param {string} setId
-     * @param {Object} options
-     * @param {'keep'|'unassign'} options.unassignedHandling - 未到課學生處理：'keep' (保留組內) 或 'unassign' (移出至未分配)
-     */
     async loadHistoryGroupSet(setId, options = {}) {
       const db = this.getDb();
       const classCode = this.getActiveClassCode();
@@ -492,7 +600,7 @@
       const clonedGroups = JSON.parse(JSON.stringify(data.groups));
       const unassignedUids = [...(data.unassignedUids || [])];
 
-      // 重設或保留積分（歷史載入時小組積分預設歸 0 重新開展活動）
+      // 重設或保留積分（歷史載入時小組積分歸 0 重新開展活動）
       Object.values(clonedGroups).forEach((g) => {
         g.points = 0;
         g.pointsLog = {};
@@ -513,7 +621,7 @@
         }
       });
 
-      // 檢查是否有新加入但未在歷史記錄裡的學生，自動排入未分配清單
+      // 檢查新學生
       const currentAllStudents = Object.keys(this.getAllStudentsMap());
       const historicalAllUids = new Set(unassignedUids);
       Object.values(clonedGroups).forEach((g) => {
@@ -542,7 +650,6 @@
       return true;
     }
 
-    // 刪除歷史分組記錄
     async deleteHistoryGroupSet(setId) {
       const db = this.getDb();
       const classCode = this.getActiveClassCode();
@@ -558,7 +665,6 @@
       return true;
     }
 
-    // 匯出分組名冊為 CSV
     exportGroupSetCsv(groupSetData) {
       const data = groupSetData || this.activeGroupSet;
       if (!data || !data.groups) {
@@ -586,7 +692,6 @@
         });
       });
 
-      // 未分配學生
       (data.unassignedUids || []).forEach((uid) => {
         const st = studentsMap[uid] || {};
         rows.push([
@@ -613,7 +718,6 @@
     // ==========================================
     // 核心功能 4：小組獨立積分與轉移機制
     // ==========================================
-    // 為小組加減積分
     async addGroupPoints(groupId, deltaPoints, reason = '課堂小組表現優異') {
       const delta = parseInt(deltaPoints, 10);
       if (isNaN(delta) || delta === 0) return;
@@ -653,14 +757,6 @@
       }
     }
 
-    // 小組積分轉移/派發至每位組員
-    /**
-     * @param {string} groupId - 目標小組 ID
-     * @param {Object} options
-     * @param {'split'|'equalReward'} options.method - 'split' (全額均分) 或 'equalReward' (全員等額獎勵)
-     * @param {string} options.reason - 自訂轉移事由
-     * @param {boolean} options.resetGroupPoints - 是否將小組積分歸零 (預設 true)
-     */
     async transferGroupPointsToMembers(groupId, options = {}) {
       if (!this.activeGroupSet || !this.activeGroupSet.groups || !this.activeGroupSet.groups[groupId]) return;
       const g = this.activeGroupSet.groups[groupId];
@@ -688,15 +784,11 @@
       let perMemberDelta = 0;
       if (method === 'split') {
         perMemberDelta = Math.floor(currentGroupPoints / members.length);
-        if (perMemberDelta <= 0) {
-          perMemberDelta = 1; // 至少發給 1 點
-        }
+        if (perMemberDelta <= 0) perMemberDelta = 1;
       } else {
-        // 全員獲得與小組等額獎勵
         perMemberDelta = currentGroupPoints;
       }
 
-      // 批次透過 app.adminQuickAdjustPoints 為每位學生加點並記錄
       for (const uid of members) {
         const fullReason = `${reasonPrefix}：【${g.name}】獲分配 +${perMemberDelta} 點`;
         if (this.app && typeof this.app.adminQuickAdjustPoints === 'function') {
@@ -704,7 +796,6 @@
         }
       }
 
-      // 歸零或扣除小組積分
       if (resetGroupPoints) {
         g.points = 0;
         if (!g.pointsLog) g.pointsLog = {};
@@ -739,9 +830,6 @@
       }
     }
 
-    // ==========================================
-    // 儲存與同步輔助
-    // ==========================================
     async saveActiveGroupSet(setData) {
       this.activeGroupSet = setData;
       const classCode = this.getActiveClassCode();
@@ -777,43 +865,17 @@
       const groupList = Object.values(groups);
       const unassignedUids = (this.activeGroupSet && this.activeGroupSet.unassignedUids) || [];
 
-      // 若目前無分組且無未分配清單，初次引導
-      if (groupList.length === 0 && unassignedUids.length === 0 && Object.keys(studentsMap).length > 0) {
-        container.innerHTML = `
-          <div style="text-align: center; padding: 48px 20px; background: var(--bg-input); border: 2px dashed var(--border-color); border-radius: 14px;">
-            <div style="font-size: 40px; margin-bottom: 12px;">👥</div>
-            <div style="font-size: 17px; font-weight: bold; color: var(--text-primary); margin-bottom: 8px;">課堂尚未進行分組</div>
-            <p style="font-size: 14px; color: var(--text-secondary); max-width: 460px; margin: 0 auto 20px auto; line-height: 1.6;">
-              支援依「每組人數」或「總組數」快速自動分組，亦可載入過往歷史分組記錄。
-            </p>
-            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-              <button type="button" class="presentation-tool-btn purple" onclick="window.groupManager.openAutoGroupModal()" style="font-size: 14px; padding: 8px 18px; border-radius: 8px;">
-                ⚡ 立即自動分組
-              </button>
-              <button type="button" class="presentation-tool-btn" onclick="window.groupManager.createEmptyGroup()" style="font-size: 14px; padding: 8px 18px; border-radius: 8px;">
-                ➕ 新增空組別手動分配
-              </button>
-              <button type="button" class="presentation-tool-btn" onclick="window.groupManager.openHistoryModal()" style="font-size: 14px; padding: 8px 18px; border-radius: 8px;">
-                📂 從歷史記錄載入
-              </button>
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      // 主工作區 HTML：上方操作列 + 左側/主區小組網格 + 右側未分配側欄
+      // 主工作區 HTML：小組網格 + 未分配側欄
       container.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 18px;">
-          <!-- 分組主工作區卡片佈局 -->
-          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start;" class="group-workspace-grid">
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start;" class="group-workspace-grid">
             
             <!-- 左側：小組卡片清單網格 -->
             <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                 <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                   <span>📋 課堂小組 (${groupList.length} 組)</span>
-                  <span style="font-size: 14px; font-weight: normal; color: var(--text-secondary);">可拖曳學生名牌換組</span>
+                  <span style="font-size: 14px; font-weight: normal; color: var(--text-secondary);">拖曳名牌換組或點擊名牌「⇄」快捷換組</span>
                 </div>
                 <div style="display: flex; gap: 6px;">
                   <button type="button" class="presentation-tool-btn" onclick="window.groupManager.createEmptyGroup()" style="font-size: 14px; padding: 5px 12px; border-radius: 6px;" title="新增一個新組別">
@@ -826,11 +888,12 @@
               </div>
 
               ${groupList.length === 0 ? `
-                <div style="text-align: center; padding: 36px; background: var(--bg-input); border-radius: 12px; color: var(--text-secondary); font-size: 14px;">
-                  目前無小組，請點擊上方「⚡ 自動分組」或「➕ 新增組別」。
+                <div style="text-align: center; padding: 48px 20px; background: var(--bg-input); border: 2px dashed var(--border-color); border-radius: 12px; color: var(--text-secondary); font-size: 15px;">
+                  <div style="font-size: 32px; margin-bottom: 8px;">👥</div>
+                  目前尚未建立小組，請點擊上方<strong>「⚡ 自動分組」</strong>或<strong>「➕ 新增組別」</strong>開始分組。
                 </div>
               ` : `
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px;" id="groupCardsContainer">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px;" id="groupCardsContainer">
                   ${groupList.map((g) => this.renderSingleGroupCard(g, studentsMap, onlineSet)).join('')}
                 </div>
               `}
@@ -846,25 +909,26 @@
                   </span>
                 </div>
                 ${unassignedUids.length > 0 ? `
-                  <button type="button" class="presentation-tool-btn" onclick="window.groupManager.openAutoGroupModal({ forceUnassignedOnly: true })" style="font-size: 14px; padding: 3px 8px; border-radius: 6px;" title="將未分配同學自動分入現有組別">
+                  <button type="button" class="presentation-tool-btn purple" onclick="window.groupManager.autoFillUnassigned()" style="font-size: 14px; padding: 4px 10px; border-radius: 6px;" title="將未分配同學均勻自動補位至現有組別">
                     ⚡ 自動補位
                   </button>
                 ` : ''}
               </div>
 
               <div id="unassignedDropZone" 
-                   ondragover="event.preventDefault(); this.style.borderColor='var(--accent-color)';" 
-                   ondragleave="this.style.borderColor='var(--border-color)';" 
+                   data-group-id=""
+                   ondragover="window.groupManager.onDragOver(event)" 
+                   ondragleave="window.groupManager.onDragLeave(event)" 
                    ondrop="window.groupManager.onDropToGroup(event, null)" 
-                   style="display: flex; flex-direction: column; gap: 8px; min-height: 180px; max-height: 520px; overflow-y: auto; padding: 6px; border: 2px dashed var(--border-color); border-radius: 8px; transition: border-color 0.2s;">
+                   style="display: flex; flex-direction: column; gap: 8px; min-height: 220px; max-height: 560px; overflow-y: auto; padding: 8px; border: 2px dashed var(--border-color); border-radius: 8px; transition: all 0.2s;">
                 ${unassignedUids.length === 0 ? `
-                  <div style="text-align: center; color: var(--text-muted); font-size: 14px; margin: auto; padding: 20px;">
+                  <div style="text-align: center; color: var(--text-muted); font-size: 14px; margin: auto; padding: 24px;">
                     全班同學皆已入組 🎉
                   </div>
                 ` : unassignedUids.map((uid) => this.renderStudentChip(uid, studentsMap[uid], onlineSet.has(uid), null)).join('')}
               </div>
               <div style="font-size: 14px; color: var(--text-muted); line-height: 1.4;">
-                💡 提示：將上方學生名牌直接拖入左側小組即可完成加入。
+                💡 提示：可拖曳名牌，或點擊名牌右側<strong>「⇄」</strong>直接選擇組別！
               </div>
             </div>
 
@@ -883,10 +947,11 @@
       const points = parseInt(group.points, 10) || 0;
 
       return `
-        <div class="group-admin-card" 
+        <div class="group-admin-card drop-target-group" 
              id="card_${group.id}" 
-             ondragover="event.preventDefault(); this.classList.add('drag-hover');" 
-             ondragleave="this.classList.remove('drag-hover');" 
+             data-group-id="${group.id}"
+             ondragover="window.groupManager.onDragOver(event)" 
+             ondragleave="window.groupManager.onDragLeave(event)" 
              ondrop="window.groupManager.onDropToGroup(event, '${safeGid}')" 
              style="background: var(--bg-card); border: 1px solid var(--border-color); border-top: 4px solid ${color}; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow); transition: all 0.2s;">
           
@@ -915,11 +980,15 @@
             </div>
           </div>
 
-          <!-- 組員清單區域 -->
-          <div style="display: flex; flex-direction: column; gap: 6px; min-height: 80px; padding: 6px; background: var(--bg-input); border-radius: 8px;">
+          <!-- 組員清單區域 (Drop 放置區) -->
+          <div class="group-members-drop-area"
+               data-group-id="${group.id}"
+               ondragover="window.groupManager.onDragOver(event)" 
+               ondrop="window.groupManager.onDropToGroup(event, '${safeGid}')" 
+               style="display: flex; flex-direction: column; gap: 6px; min-height: 86px; padding: 8px; background: var(--bg-input); border-radius: 8px; border: 1px dashed transparent; transition: all 0.2s;">
             ${members.length === 0 ? `
-              <div style="text-align: center; color: var(--text-muted); font-size: 14px; margin: auto; padding: 14px;">
-                尚未指派組員 (拖曳名牌至此)
+              <div style="text-align: center; color: var(--text-muted); font-size: 14px; margin: auto; padding: 14px; pointer-events: none;">
+                尚未指派組員 (拖曳名牌至此，或點名牌 ⇄)
               </div>
             ` : members.map((uid) => this.renderStudentChip(uid, studentsMap[uid], onlineSet.has(uid), group.id, captainUid === uid)).join('')}
           </div>
@@ -940,7 +1009,7 @@
       `;
     }
 
-    // 渲染學生標籤晶片 (支援 HTML5 拖曳)
+    // 渲染學生標籤晶片 (支援 HTML5 拖曳 + 點擊快捷換組)
     renderStudentChip(uid, studentData, isOnline, currentGroupId, isCaptain = false) {
       const safeUid = String(uid).replace(/'/g, "\\'");
       const safeName = this.escapeHtml((studentData && studentData.name) || uid);
@@ -952,15 +1021,16 @@
 
       return `
         <div class="student-drag-chip" 
+             id="chip_${safeUid}"
+             data-student-uid="${safeUid}"
              draggable="true" 
              ondragstart="window.groupManager.onDragStart(event, '${safeUid}', '${currentGroupId || ''}')" 
-             style="display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; cursor: grab; user-select: none; gap: 6px; font-size: 14px;">
+             style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: grab; user-select: none; gap: 6px; font-size: 14px; position: relative;">
           
           <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
-            <div style="flex-shrink: 0;">${avatarHtml}</div>
-            <!-- 線上綠點或離線灰點 -->
+            <div style="flex-shrink: 0; pointer-events: none;">${avatarHtml}</div>
             <span style="width: 8px; height: 8px; border-radius: 50%; background: ${isOnline ? '#10b981' : '#9ca3af'}; flex-shrink: 0;" title="${isOnline ? '線上連線中' : '目前離線'}"></span>
-            <span style="font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <span style="font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none;">
               ${safeName}
             </span>
             ${isCaptain ? `
@@ -970,9 +1040,15 @@
             ` : ''}
           </div>
 
-          <!-- 右側微型動作：設為組長 / 移出組別 -->
-          <div style="display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">
+          <!-- 右側動作列：點數、快捷換組選單、設為組長、移出組別 -->
+          <div style="display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;">
             <span style="font-size: 14px; color: var(--text-muted); margin-right: 2px;" title="個人點數">⭐️${points}</span>
+            
+            <!-- ⚡ 快捷換組按鈕 (觸控與滑鼠皆能一秒點擊換組) -->
+            <button type="button" class="btn-quick-assign presentation-tool-btn" onclick="window.groupManager.toggleStudentAssignMenu(event, '${safeUid}')" title="點擊選擇要移入的組別" style="padding: 2px 6px; font-size: 14px; border-radius: 4px; background: var(--bg-input); color: var(--accent-color); border: 1px solid var(--border-color);">
+              ⇄
+            </button>
+
             ${currentGroupId ? `
               ${!isCaptain ? `
                 <button type="button" class="chip-action-btn" onclick="event.stopPropagation(); window.groupManager.updateGroupInfo('${currentGroupId}', { captainUid: '${safeUid}' })" title="設為組長" style="background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px;">
@@ -990,23 +1066,120 @@
     }
 
     // ==========================================
+    // 點擊快捷換組選單 (Click-to-Assign)
+    // ==========================================
+    toggleStudentAssignMenu(event, studentUid) {
+      event.stopPropagation();
+      this.closeAllAssignMenus();
+
+      const chip = document.getElementById(`chip_${studentUid}`);
+      if (!chip) return;
+
+      const groups = (this.activeGroupSet && this.activeGroupSet.groups) || {};
+      const groupList = Object.values(groups);
+
+      const menu = document.createElement('div');
+      menu.className = 'student-assign-menu';
+      menu.style.cssText = `
+        position: absolute;
+        top: 100%;
+        right: 0;
+        z-index: 22000;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: var(--shadow-hover);
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 140px;
+        font-size: 14px;
+      `;
+
+      let menuItemsHtml = `<div style="font-weight: bold; font-size: 13px; color: var(--text-secondary); padding: 4px 6px;">選擇分配組別：</div>`;
+
+      if (groupList.length === 0) {
+        menuItemsHtml += `<div style="color: var(--text-muted); padding: 4px 6px;">目前尚無小組</div>`;
+      } else {
+        groupList.forEach((g) => {
+          const isMember = (g.memberUids || []).includes(studentUid);
+          menuItemsHtml += `
+            <button type="button" 
+                    onclick="window.groupManager.moveStudentToGroup('${studentUid}', '${g.id}'); window.groupManager.closeAllAssignMenus();" 
+                    style="display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; border: none; border-radius: 6px; background: ${isMember ? 'var(--bg-hover)' : 'transparent'}; color: var(--text-primary); cursor: pointer; text-align: left; font-size: 14px;">
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${g.color || '#3b82f6'};"></span>
+                <span>${this.escapeHtml(g.name)}</span>
+              </span>
+              ${isMember ? '<span style="color: #10b981; font-weight: bold;">✓</span>' : ''}
+            </button>
+          `;
+        });
+      }
+
+      menuItemsHtml += `
+        <div style="border-top: 1px solid var(--border-color); margin: 2px 0;"></div>
+        <button type="button" 
+                onclick="window.groupManager.moveStudentToGroup('${studentUid}', null); window.groupManager.closeAllAssignMenus();" 
+                style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: none; border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; text-align: left; font-size: 14px;">
+          <span>⏳ 移至未分配</span>
+        </button>
+      `;
+
+      menu.innerHTML = menuItemsHtml;
+      chip.appendChild(menu);
+    }
+
+    // ==========================================
     // 拖曳互動事件 (Drag & Drop)
     // ==========================================
     onDragStart(event, studentUid, fromGroupId) {
       this.draggedStudentUid = studentUid;
       this.draggedFromGroupId = fromGroupId || null;
-      event.dataTransfer.setData('text/plain', studentUid);
-      event.dataTransfer.effectAllowed = 'move';
+      window.__draggedStudentUid = studentUid; // 雙重全域備份保險
+      try {
+        event.dataTransfer.setData('text/plain', studentUid);
+        event.dataTransfer.effectAllowed = 'move';
+      } catch (e) {}
+    }
+
+    onDragOver(event) {
+      event.preventDefault();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = 'move';
+      }
+      const card = event.currentTarget.closest('.group-admin-card') || event.currentTarget;
+      if (card && card.classList) {
+        card.classList.add('drag-hover');
+      }
+    }
+
+    onDragLeave(event) {
+      const card = event.currentTarget.closest('.group-admin-card') || event.currentTarget;
+      if (card && card.classList) {
+        card.classList.remove('drag-hover');
+      }
     }
 
     onDropToGroup(event, targetGroupId) {
       event.preventDefault();
+      event.stopPropagation();
       document.querySelectorAll('.group-admin-card').forEach((el) => el.classList.remove('drag-hover'));
-      const studentUid = this.draggedStudentUid || event.dataTransfer.getData('text/plain');
+      document.querySelectorAll('#unassignedDropZone').forEach((el) => {
+        el.style.borderColor = 'var(--border-color)';
+      });
+
+      let studentUid = this.draggedStudentUid || window.__draggedStudentUid;
+      if (!studentUid && event.dataTransfer) {
+        studentUid = event.dataTransfer.getData('text/plain');
+      }
+
       if (!studentUid) return;
 
       this.moveStudentToGroup(studentUid, targetGroupId);
       this.draggedStudentUid = null;
+      window.__draggedStudentUid = null;
       this.draggedFromGroupId = null;
     }
 
@@ -1020,11 +1193,8 @@
 
     // 開啟「自動分組設定彈窗」
     openAutoGroupModal(options = {}) {
-      const modal = document.getElementById('adminAutoGroupModal');
-      if (!modal) return;
-      modal.style.display = 'flex';
+      this.openModal('adminAutoGroupModal');
 
-      const stats = this.getActiveStats();
       const onlineCount = this.getOnlineStudentUidsSet().size;
       const totalStudents = Object.keys(this.getAllStudentsMap()).length;
 
@@ -1035,11 +1205,9 @@
     }
 
     closeAutoGroupModal() {
-      const modal = document.getElementById('adminAutoGroupModal');
-      if (modal) modal.style.display = 'none';
+      this.closeModal('adminAutoGroupModal');
     }
 
-    // 確認執行自動分組
     async confirmAutoGroup() {
       const modeEl = document.querySelector('input[name="autoGroupMode"]:checked');
       const mode = modeEl ? modeEl.value : 'bySize';
@@ -1067,16 +1235,13 @@
 
     // 開啟「歷史分組庫彈窗」
     async openHistoryModal() {
-      const modal = document.getElementById('adminGroupHistoryModal');
-      if (!modal) return;
-      modal.style.display = 'flex';
+      this.openModal('adminGroupHistoryModal');
       await this.fetchHistoryGroupSets();
       this.renderHistoryModalList();
     }
 
     closeHistoryModal() {
-      const modal = document.getElementById('adminGroupHistoryModal');
-      if (modal) modal.style.display = 'none';
+      this.closeModal('adminGroupHistoryModal');
     }
 
     renderHistoryModalList() {
@@ -1122,7 +1287,6 @@
       }).join('');
     }
 
-    // 提示套用歷史分組與未到課學生處理
     promptLoadHistorySet(setId, setName) {
       const choice = confirm(
         `確定要重新套用歷史分組「${setName}」嗎？\n\n【確定】：保留未在線學生於原組別中等候上線。\n【取消】：僅將目前在線學生排入組別，未上線者移出至未分配名單。`
@@ -1131,7 +1295,6 @@
       this.loadHistoryGroupSet(setId, { unassignedHandling: choice ? 'keep' : 'unassign' });
     }
 
-    // 開啟「儲存當前分組為歷史記錄彈窗」
     openSaveHistoryModal() {
       const defaultName = (this.activeGroupSet && this.activeGroupSet.name) || `課堂分組 (${new Date().toLocaleDateString('zh-TW')})`;
       const name = prompt('請輸入此分組方案的歷史記錄名稱：', defaultName);
@@ -1140,7 +1303,6 @@
       }
     }
 
-    // 開啟「小組給點彈窗」
     openGroupPointsModal(groupId) {
       if (!this.activeGroupSet || !this.activeGroupSet.groups || !this.activeGroupSet.groups[groupId]) return;
       const g = this.activeGroupSet.groups[groupId];
@@ -1152,15 +1314,11 @@
       this.addGroupPoints(groupId, val, reason || '課堂小組活動表現優異');
     }
 
-    // 開啟「小組積分結算轉移彈窗」
     openTransferModal(groupId) {
-      const modal = document.getElementById('adminGroupTransferModal');
-      if (!modal) return;
       if (!this.activeGroupSet || !this.activeGroupSet.groups || !this.activeGroupSet.groups[groupId]) return;
       const g = this.activeGroupSet.groups[groupId];
-
       this.currentTransferGroupId = groupId;
-      modal.style.display = 'flex';
+      this.openModal('adminGroupTransferModal');
 
       const infoEl = document.getElementById('groupTransferTargetInfo');
       if (infoEl) {
@@ -1173,8 +1331,7 @@
     }
 
     closeTransferModal() {
-      const modal = document.getElementById('adminGroupTransferModal');
-      if (modal) modal.style.display = 'none';
+      this.closeModal('adminGroupTransferModal');
       this.currentTransferGroupId = null;
     }
 
@@ -1210,11 +1367,9 @@
     }
   }
 
-  // 掛載於全域
   window.GroupManager = GroupManager;
   window.groupManager = new GroupManager();
 
-  // 頁面載入後自動掛載
   document.addEventListener('DOMContentLoaded', () => {
     if (window.app) {
       window.groupManager.init(window.app);
