@@ -1,4 +1,14 @@
 # System Log
+## 2026-10-30 - 學生名冊移除線上點名與積分功能，並新增同學端積分數字顯示控制開關
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **學生名冊介面清理**：
+     - 自「H. 學生名冊與參與歷程管理」徹底移除點名與給點按鈕（含頂部快捷跳轉按鈕、學生清單每列/每卡上的點數標籤與 `+1`/`+2`/`給點` 按鈕），功能完全收納至專屬的「I. 學生積分管理」與「J. 線上點名與出缺勤管理」。
+  2. **同學端積分數字顯示控制開關**：
+     - 在「I. 學生積分管理」頂部新增「同學端顯示積分數字」核取開關（`#adminShowStudentPointsToggle`，預設開啟）。
+     - 老師切換開關時，即時將設定儲存至雲端 `settings/points/showStudentPoints`。
+     - 學生端透過 `initPointsSettingsListener()` 即時監聽：關閉時自動隱藏右下角個人頭像右上角的積分徽章（`#floatingStudentPointsBadge`），開啟時即時顯示當前累計積分數字。
+  3. 通過 `node --check` 語法檢測與「記錄」用語無禁字檢查，更新 `js/app.js?v=450` 快取版本。
 ## 2026-10-30 - 修復線上點名歷史記錄與出缺勤總覽統計 Firebase 路徑錯誤
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 問題原因：
