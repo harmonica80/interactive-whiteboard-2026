@@ -19854,9 +19854,17 @@ class App {
                 📋 ${safeTitle}
                 <span style="font-size: 14px; font-weight: normal; color: var(--text-muted); margin-left: 6px;">${timeObj.full}</span>
               </div>
-              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminDeleteAttendanceSession('${safeId}').then(() => window.app.renderEmbedAttendanceHistory())" style="padding: 3px 8px; font-size: 14px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; cursor: pointer;">
-                🗑️ 刪除記錄
-              </button>
+              <div style="display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminViewAttendanceDetail('${safeId}')" title="檢視本次點名詳細記錄" style="padding: 3px 8px; font-size: 14px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; cursor: pointer;">
+                  🔍 檢視明細
+                </button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenEditAttendanceSession('${safeId}')" title="編修本次點名狀態與名單" style="padding: 3px 8px; font-size: 14px; background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; cursor: pointer;">
+                  ✏️ 編修記錄
+                </button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminDeleteAttendanceSession('${safeId}').then(() => window.app.renderEmbedAttendanceHistory())" title="刪除這筆歷史點名記錄" style="padding: 3px 8px; font-size: 14px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; cursor: pointer;">
+                  🗑️ 刪除記錄
+                </button>
+              </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 14px;">
               <span style="color: var(--text-secondary);">名冊總額：<strong>${stats.total || 0}</strong> 人</span>
@@ -21175,9 +21183,17 @@ class App {
                 📋 ${safeTitle}
                 <span style="font-size: 14px; font-weight: normal; color: var(--text-muted); margin-left: 6px;">${timeObj.full}</span>
               </div>
-              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminDeleteAttendanceSession('${safeId}')" style="padding: 3px 8px; font-size: 14px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; cursor: pointer;">
-                🗑️ 刪除記錄
-              </button>
+              <div style="display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminViewAttendanceDetail('${safeId}')" title="檢視本次點名詳細記錄" style="padding: 3px 8px; font-size: 14px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; cursor: pointer;">
+                  🔍 檢視明細
+                </button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenEditAttendanceSession('${safeId}')" title="編修本次點名狀態與名單" style="padding: 3px 8px; font-size: 14px; background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; cursor: pointer;">
+                  ✏️ 編修記錄
+                </button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminDeleteAttendanceSession('${safeId}')" title="刪除這筆歷史點名記錄" style="padding: 3px 8px; font-size: 14px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; cursor: pointer;">
+                  🗑️ 刪除記錄
+                </button>
+              </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 14px;">
               <span style="color: var(--text-secondary);">名冊總額：<strong>${stats.total || 0}</strong> 人</span>
@@ -21212,6 +21228,427 @@ class App {
         }
       }
     );
+  }
+
+  // ===== 教師端：歷史點名詳細記錄檢視業務 =====
+  async adminViewAttendanceDetail(sessionId) {
+    if (!sessionId) return;
+    try {
+      const snap = await db.ref(`attendance/sessions/${sessionId}`).once('value');
+      const sess = snap.val();
+      if (!sess) {
+        this.showNotification('提示', '找不到該筆點名記錄！');
+        return;
+      }
+
+      this.currentViewingAttendanceSession = sess;
+      this.currentAttendanceDetailFilter = 'all';
+      this.attendanceDetailSearchQuery = '';
+
+      const timeObj = this.formatFullDateTime(sess.timestamp);
+      const titleEl = document.getElementById('adminAttDetailTitle');
+      const metaEl = document.getElementById('adminAttDetailMeta');
+      const editBtn = document.getElementById('btnAdminAttDetailEditCurrent');
+      const exportBtn = document.getElementById('btnAdminAttDetailExportSingleCsv');
+      const searchInput = document.getElementById('adminAttDetailSearchInput');
+
+      if (titleEl) titleEl.innerHTML = `<span>📋</span> ${this.escapeHtml(sess.title || '課堂點名')}`;
+      if (metaEl) {
+        metaEl.textContent = `⏰ 建立時間：${timeObj.full} · 🏫 班級：${sess.classCode || '一次性課堂'}`;
+      }
+      if (editBtn) {
+        editBtn.onclick = () => {
+          this.closeAdminAttendanceDetailModal();
+          this.adminOpenEditAttendanceSession(sessionId);
+        };
+      }
+      if (exportBtn) {
+        exportBtn.onclick = () => this.adminExportSingleAttendanceSessionCsv(sessionId);
+      }
+      if (searchInput) searchInput.value = '';
+
+      this.renderAttendanceDetailStats(sess);
+      this.renderAttendanceDetailList('all');
+
+      const modal = document.getElementById('adminAttendanceDetailModal');
+      if (modal) {
+        const fsEl = document.fullscreenElement;
+        if (fsEl && fsEl !== document.documentElement) {
+          if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+        } else if (modal.parentElement !== document.body) {
+          document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+      }
+    } catch (e) {
+      console.error('adminViewAttendanceDetail error:', e);
+      this.showNotification('錯誤', '載入點名明細失敗: ' + e.message);
+    }
+  }
+
+  closeAdminAttendanceDetailModal() {
+    const modal = document.getElementById('adminAttendanceDetailModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+    this.currentViewingAttendanceSession = null;
+  }
+
+  renderAttendanceDetailStats(sess) {
+    const statsRow = document.getElementById('adminAttDetailStatsRow');
+    if (!statsRow) return;
+    const stats = sess.stats || {};
+    statsRow.innerHTML = `
+      <span style="color: var(--text-secondary);">名冊總額：<strong style="color: var(--text-primary);">${stats.total || 0}</strong> 人</span>
+      <span style="color: #10b981; font-weight: bold;">🟢 出席：${stats.present || 0} (${stats.presentRate || '0%'})</span>
+      <span style="color: #d97706; font-weight: bold;">🟡 遲到：${stats.late || 0}</span>
+      <span style="color: #3b82f6; font-weight: bold;">🔵 請假：${stats.leave || 0}</span>
+      <span style="color: #ef4444; font-weight: bold;">🔴 缺席：${stats.absent || 0}</span>
+    `;
+  }
+
+  filterAttendanceDetailStatus(status) {
+    this.currentAttendanceDetailFilter = status;
+    document.querySelectorAll('#adminAttDetailFilterButtons button').forEach(btn => {
+      if (btn.dataset.filter === status) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    this.renderAttendanceDetailList(status, this.attendanceDetailSearchQuery || '');
+  }
+
+  onAttendanceDetailSearch(query) {
+    this.attendanceDetailSearchQuery = String(query || '').trim().toLowerCase();
+    this.renderAttendanceDetailList(this.currentAttendanceDetailFilter || 'all', this.attendanceDetailSearchQuery);
+  }
+
+  renderAttendanceDetailList(filterStatus = 'all', searchQuery = '') {
+    const container = document.getElementById('attendanceDetailStudentList');
+    if (!container) return;
+    const sess = this.currentViewingAttendanceSession;
+    if (!sess || !sess.records) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 30px; grid-column: 1 / -1;">🌱 此點名記錄尚無學生作答記錄。</div>';
+      return;
+    }
+
+    const records = sess.records || {};
+    let list = Object.entries(records).map(([uid, r]) => {
+      const st = (this.registeredStudents || {})[uid] || (this.lastAdminStudentsList || []).find(s => s.uid === uid) || {};
+      return {
+        uid,
+        name: r.name || st.name || '同學',
+        avatar: r.avatar !== undefined ? r.avatar : (st.avatar !== undefined ? st.avatar : 0),
+        status: r.status || 'absent',
+        checkInTime: r.checkInTime || null
+      };
+    });
+
+    if (filterStatus !== 'all') {
+      list = list.filter(item => item.status === filterStatus);
+    }
+
+    if (searchQuery) {
+      list = list.filter(item => item.name.toLowerCase().includes(searchQuery) || item.uid.toLowerCase().includes(searchQuery));
+    }
+
+    if (list.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 36px; background: var(--bg-input); border-radius: 10px; grid-column: 1 / -1;">
+          🔍 查無符合條件的學生記錄。
+        </div>
+      `;
+      return;
+    }
+
+    const statusBadgeMap = {
+      present: '<span style="font-size: 13px; font-weight: bold; padding: 2px 8px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);">🟢 出席</span>',
+      late: '<span style="font-size: 13px; font-weight: bold; padding: 2px 8px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35);">🟡 遲到</span>',
+      leave: '<span style="font-size: 13px; font-weight: bold; padding: 2px 8px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35);">🔵 請假</span>',
+      absent: '<span style="font-size: 13px; font-weight: bold; padding: 2px 8px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35);">🔴 缺席</span>'
+    };
+
+    container.innerHTML = list.map(item => {
+      const avHtml = this.renderAvatarHtml(item.avatar, 32);
+      const badge = statusBadgeMap[item.status] || statusBadgeMap.absent;
+      const timeStr = item.checkInTime ? this.formatFullDateTime(item.checkInTime).full : '未打卡';
+
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+            <div style="flex-shrink: 0;">${avHtml}</div>
+            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <div style="font-weight: bold; font-size: 14px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis;" title="${this.escapeHtml(item.name)}">
+                ${this.escapeHtml(item.name)}
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;" title="${timeStr}">
+                ${item.checkInTime ? `⏰ ${timeStr.slice(11)}` : '未打卡'}
+              </div>
+            </div>
+          </div>
+          <div style="flex-shrink: 0;">
+            ${badge}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ===== 教師端：歷史點名記錄編修業務 =====
+  async adminOpenEditAttendanceSession(sessionId) {
+    if (!sessionId) return;
+    try {
+      const snap = await db.ref(`attendance/sessions/${sessionId}`).once('value');
+      const sess = snap.val();
+      if (!sess) {
+        this.showNotification('提示', '找不到該筆點名記錄！');
+        return;
+      }
+
+      this.currentEditingAttendanceSession = JSON.parse(JSON.stringify(sess));
+      this.editAttendanceSearchQuery = '';
+
+      const titleInput = document.getElementById('adminEditAttendanceTitleInput');
+      const searchInput = document.getElementById('adminEditAttendanceSearchInput');
+      if (titleInput) titleInput.value = sess.title || '';
+      if (searchInput) searchInput.value = '';
+
+      this.renderEditAttendanceLiveStats();
+      this.renderEditAttendanceStudentList();
+
+      const modal = document.getElementById('adminEditAttendanceSessionModal');
+      if (modal) {
+        const fsEl = document.fullscreenElement;
+        if (fsEl && fsEl !== document.documentElement) {
+          if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+        } else if (modal.parentElement !== document.body) {
+          document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+      }
+    } catch (e) {
+      console.error('adminOpenEditAttendanceSession error:', e);
+      this.showNotification('錯誤', '載入編輯失敗: ' + e.message);
+    }
+  }
+
+  closeAdminEditAttendanceSessionModal() {
+    const modal = document.getElementById('adminEditAttendanceSessionModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+    this.currentEditingAttendanceSession = null;
+  }
+
+  renderEditAttendanceLiveStats() {
+    const row = document.getElementById('adminEditAttendanceLiveStatsRow');
+    if (!row) return;
+    const sess = this.currentEditingAttendanceSession;
+    if (!sess || !sess.records) return;
+
+    const records = sess.records;
+    const total = Object.keys(records).length;
+    let present = 0, late = 0, leave = 0, absent = 0;
+    Object.values(records).forEach(r => {
+      if (r.status === 'present') present++;
+      else if (r.status === 'late') late++;
+      else if (r.status === 'leave') leave++;
+      else if (r.status === 'absent') absent++;
+    });
+    const presentRate = total > 0 ? `${Math.round((present / total) * 100)}%` : '0%';
+
+    row.innerHTML = `
+      <span style="color: var(--text-secondary);">名冊總額：<strong style="color: var(--text-primary);">${total}</strong> 人</span>
+      <span style="color: #10b981; font-weight: bold;">🟢 出席：${present} (${presentRate})</span>
+      <span style="color: #d97706; font-weight: bold;">🟡 遲到：${late}</span>
+      <span style="color: #3b82f6; font-weight: bold;">🔵 請假：${leave}</span>
+      <span style="color: #ef4444; font-weight: bold;">🔴 缺席：${absent}</span>
+    `;
+  }
+
+  onEditAttendanceSearch(query) {
+    this.editAttendanceSearchQuery = String(query || '').trim().toLowerCase();
+    this.renderEditAttendanceStudentList();
+  }
+
+  renderEditAttendanceStudentList() {
+    const container = document.getElementById('adminEditAttendanceStudentList');
+    if (!container) return;
+    const sess = this.currentEditingAttendanceSession;
+    if (!sess || !sess.records) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 30px;">🌱 無學生點名記錄。</div>';
+      return;
+    }
+
+    const records = sess.records;
+    let list = Object.entries(records).map(([uid, r]) => {
+      const st = (this.registeredStudents || {})[uid] || (this.lastAdminStudentsList || []).find(s => s.uid === uid) || {};
+      return {
+        uid,
+        name: r.name || st.name || '同學',
+        avatar: r.avatar !== undefined ? r.avatar : (st.avatar !== undefined ? st.avatar : 0),
+        status: r.status || 'absent'
+      };
+    });
+
+    const q = this.editAttendanceSearchQuery || '';
+    if (q) {
+      list = list.filter(item => item.name.toLowerCase().includes(q) || item.uid.toLowerCase().includes(q));
+    }
+
+    if (list.length === 0) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 30px;">🔍 查無符合條件的學生。</div>';
+      return;
+    }
+
+    container.innerHTML = list.map(item => {
+      const safeUid = String(item.uid).replace(/'/g, "\\'");
+      const avHtml = this.renderAvatarHtml(item.avatar, 34);
+
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; gap: 8px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 140px; flex: 1;">
+            <div style="flex-shrink: 0;">${avHtml}</div>
+            <div style="font-weight: bold; font-size: 15px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${this.escapeHtml(item.name)}
+            </div>
+          </div>
+          <div style="display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;">
+            <button type="button" class="presentation-tool-btn ${item.status === 'present' ? 'active' : ''}" onclick="window.app && window.app.adminSetStudentEditAttendanceStatus('${safeUid}', 'present')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; ${item.status === 'present' ? 'background: #10b981; color: #fff; font-weight: bold;' : ''}">
+              🟢 出席
+            </button>
+            <button type="button" class="presentation-tool-btn ${item.status === 'late' ? 'active' : ''}" onclick="window.app && window.app.adminSetStudentEditAttendanceStatus('${safeUid}', 'late')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; ${item.status === 'late' ? 'background: #f59e0b; color: #fff; font-weight: bold;' : ''}">
+              🟡 遲到
+            </button>
+            <button type="button" class="presentation-tool-btn ${item.status === 'leave' ? 'active' : ''}" onclick="window.app && window.app.adminSetStudentEditAttendanceStatus('${safeUid}', 'leave')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; ${item.status === 'leave' ? 'background: #3b82f6; color: #fff; font-weight: bold;' : ''}">
+              🔵 請假
+            </button>
+            <button type="button" class="presentation-tool-btn ${item.status === 'absent' ? 'active' : ''}" onclick="window.app && window.app.adminSetStudentEditAttendanceStatus('${safeUid}', 'absent')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; ${item.status === 'absent' ? 'background: #ef4444; color: #fff; font-weight: bold;' : ''}">
+              🔴 缺席
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  adminSetStudentEditAttendanceStatus(uid, status) {
+    const sess = this.currentEditingAttendanceSession;
+    if (!sess || !sess.records || !sess.records[uid]) return;
+    sess.records[uid].status = status;
+    if (status === 'present' && !sess.records[uid].checkInTime) {
+      sess.records[uid].checkInTime = Date.now();
+    }
+    this.renderEditAttendanceLiveStats();
+    this.renderEditAttendanceStudentList();
+  }
+
+  adminSetAllEditAttendanceStatus(status) {
+    const sess = this.currentEditingAttendanceSession;
+    if (!sess || !sess.records) return;
+    const now = Date.now();
+    Object.keys(sess.records).forEach(uid => {
+      sess.records[uid].status = status;
+      if (status === 'present' && !sess.records[uid].checkInTime) {
+        sess.records[uid].checkInTime = now;
+      }
+    });
+    this.renderEditAttendanceLiveStats();
+    this.renderEditAttendanceStudentList();
+  }
+
+  async adminSaveEditAttendanceSession() {
+    const sess = this.currentEditingAttendanceSession;
+    if (!sess || !sess.id || !sess.records) return;
+
+    const titleInput = document.getElementById('adminEditAttendanceTitleInput');
+    const newTitle = (titleInput ? titleInput.value : '').trim() || sess.title || '課堂點名';
+
+    const records = sess.records;
+    const total = Object.keys(records).length;
+    let present = 0, late = 0, leave = 0, absent = 0;
+    Object.values(records).forEach(r => {
+      if (r.status === 'present') present++;
+      else if (r.status === 'late') late++;
+      else if (r.status === 'leave') leave++;
+      else if (r.status === 'absent') absent++;
+    });
+    const presentRate = total > 0 ? `${Math.round((present / total) * 100)}%` : '0%';
+    const stats = { total, present, late, leave, absent, presentRate };
+
+    const btn = document.getElementById('btnSaveEditAttendanceSession');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ 正在儲存...';
+    }
+
+    try {
+      const updates = {};
+      updates[`attendance/sessions/${sess.id}/title`] = newTitle;
+      updates[`attendance/sessions/${sess.id}/stats`] = stats;
+      updates[`attendance/sessions/${sess.id}/records`] = records;
+
+      await db.ref().update(updates);
+
+      this.closeAdminEditAttendanceSessionModal();
+      this.showNotification('儲存成功', `已成功修改點名記錄「${newTitle}」！`);
+
+      this.renderAttendanceHistoryList();
+      this.renderEmbedAttendanceHistory();
+      this.renderEmbedAttendanceSummary();
+      this.updateAttendanceHistoryCountBadge();
+
+      if (this.currentViewingAttendanceSession && this.currentViewingAttendanceSession.id === sess.id) {
+        this.adminViewAttendanceDetail(sess.id);
+      }
+    } catch (e) {
+      console.error('adminSaveEditAttendanceSession error:', e);
+      this.showNotification('錯誤', '儲存修改失敗: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '💾 儲存修改';
+      }
+    }
+  }
+
+  async adminExportSingleAttendanceSessionCsv(sessionId) {
+    if (!sessionId) return;
+    try {
+      const snap = await db.ref(`attendance/sessions/${sessionId}`).once('value');
+      const sess = snap.val();
+      if (!sess) return;
+
+      const timeObj = this.formatFullDateTime(sess.timestamp);
+      const records = sess.records || {};
+      const statusTextMap = { present: '出席', late: '遲到', leave: '請假', absent: '缺席' };
+
+      let csv = '\uFEFF';
+      csv += `課堂點名詳細記錄 - ${sess.title}\n`;
+      csv += `點名時間,${timeObj.full}\n`;
+      csv += `名冊總額,${sess.stats?.total || 0},出席,${sess.stats?.present || 0},遲到,${sess.stats?.late || 0},請假,${sess.stats?.leave || 0},缺席,${sess.stats?.absent || 0},出席率,${sess.stats?.presentRate || '0%'}\n\n`;
+      csv += '座號/序號,學生姓名,UID,出缺勤狀態,簽到時間\n';
+
+      Object.entries(records).forEach(([uid, r], idx) => {
+        const checkTime = r.checkInTime ? this.formatFullDateTime(r.checkInTime).full : '未打卡';
+        csv += `${idx + 1},"${(r.name || '同學').replace(/"/g, '""')}","${uid}","${statusTextMap[r.status] || '缺席'}","${checkTime}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${sess.title || '課堂點名'}_${timeObj.full.slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showNotification('匯出成功', '已成功匯出該堂點名名冊 CSV 報表！');
+    } catch (e) {
+      this.showNotification('錯誤', '匯出 CSV 失敗: ' + e.message);
+    }
   }
 
   async renderAttendanceSummaryTable() {

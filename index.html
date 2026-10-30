@@ -6168,7 +6168,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=454"></script>
+  <script src="js/app.js?v=455"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
@@ -8110,6 +8110,119 @@ Python</pre>
         <div id="attendanceSummaryTableContainer" style="max-height: 440px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
           <!-- 動態載入出缺勤匯總表格 -->
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📋 歷史點名詳細記錄檢視彈窗 -->
+  <div id="adminAttendanceDetailModal" class="modal-overlay" style="display: none; z-index: 21600;" onclick="if(event.target===this) window.app && window.app.closeAdminAttendanceDetailModal()">
+    <div class="modal-content" style="max-width: 720px; width: 94%; max-height: 90vh; display: flex; flex-direction: column; padding: 0; border-radius: 16px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-hover);">
+      <div style="background: var(--bg-primary); padding: 18px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h3 id="adminAttDetailTitle" style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>📋</span> 課堂點名詳細記錄
+          </h3>
+          <div id="adminAttDetailMeta" style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">
+            ⏰ 建立時間：-- · 🏫 班級：--
+          </div>
+        </div>
+        <button type="button" class="modal-close" onclick="window.app && window.app.closeAdminAttendanceDetailModal()" style="font-size: 20px; background: none; border: none; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <!-- 統計指標列 -->
+      <div id="adminAttDetailStatsRow" style="padding: 12px 24px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; overflow-x: auto; flex-wrap: wrap; align-items: center; font-size: 14px;">
+        <!-- 動態渲染各項人數統計 -->
+      </div>
+
+      <!-- 篩選與搜尋列 -->
+      <div style="padding: 12px 24px 8px 24px; background: var(--bg-card); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="adminAttDetailFilterButtons">
+          <button type="button" class="presentation-tool-btn active" data-filter="all" onclick="window.app && window.app.filterAttendanceDetailStatus('all')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px;">全部</button>
+          <button type="button" class="presentation-tool-btn" data-filter="present" onclick="window.app && window.app.filterAttendanceDetailStatus('present')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; color: #10b981;">🟢 出席</button>
+          <button type="button" class="presentation-tool-btn" data-filter="late" onclick="window.app && window.app.filterAttendanceDetailStatus('late')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; color: #d97706;">🟡 遲到</button>
+          <button type="button" class="presentation-tool-btn" data-filter="leave" onclick="window.app && window.app.filterAttendanceDetailStatus('leave')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; color: #3b82f6;">🔵 請假</button>
+          <button type="button" class="presentation-tool-btn" data-filter="absent" onclick="window.app && window.app.filterAttendanceDetailStatus('absent')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; color: #ef4444;">🔴 缺席</button>
+        </div>
+        <input type="text" id="adminAttDetailSearchInput" placeholder="搜尋姓名..." oninput="window.app && window.app.onAttendanceDetailSearch(this.value)" style="font-size: 14px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); width: 140px;">
+      </div>
+
+      <!-- 學生點名名單清單容器 -->
+      <div id="attendanceDetailStudentList" style="flex: 1; overflow-y: auto; padding: 16px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; align-content: start;">
+        <!-- 動態渲染每位學生卡片 -->
+      </div>
+
+      <!-- 底部 Footer -->
+      <div style="padding: 14px 24px; background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" id="btnAdminAttDetailEditCurrent" class="presentation-tool-btn" style="font-size: 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: bold;">
+            ✏️ 前往編修此記錄
+          </button>
+          <button type="button" id="btnAdminAttDetailExportSingleCsv" class="presentation-tool-btn" style="font-size: 14px; border-radius: 8px;">
+            📥 匯出此堂點名名單 (CSV)
+          </button>
+        </div>
+        <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.closeAdminAttendanceDetailModal()" style="padding: 6px 20px; font-size: 14px; border-radius: 8px;">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✏️ 編修歷史點名記錄彈窗 -->
+  <div id="adminEditAttendanceSessionModal" class="modal-overlay" style="display: none; z-index: 21700;" onclick="if(event.target===this) window.app && window.app.closeAdminEditAttendanceSessionModal()">
+    <div class="modal-content" style="max-width: 780px; width: 94%; max-height: 90vh; display: flex; flex-direction: column; padding: 0; border-radius: 16px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-hover);">
+      <div style="background: var(--bg-primary); padding: 18px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>✏️</span> 編修歷史點名記錄
+          </h3>
+          <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">
+            可修改點名名稱並微調各同學的出缺勤狀態，儲存後自動更新全班出缺勤統計。
+          </div>
+        </div>
+        <button type="button" class="modal-close" onclick="window.app && window.app.closeAdminEditAttendanceSessionModal()" style="font-size: 20px; background: none; border: none; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <!-- 標題編輯與即時統計列 -->
+      <div style="padding: 14px 24px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <label for="adminEditAttendanceTitleInput" style="font-size: 14px; font-weight: bold; color: var(--text-primary); flex-shrink: 0;">
+            📝 點名名稱：
+          </label>
+          <input type="text" id="adminEditAttendanceTitleInput" class="question-input" style="margin: 0; flex: 1; min-width: 200px; font-size: 15px; padding: 6px 12px; border-radius: 8px;">
+        </div>
+
+        <div id="adminEditAttendanceLiveStatsRow" style="display: flex; gap: 10px; overflow-x: auto; flex-wrap: wrap; align-items: center; font-size: 14px;">
+          <!-- 即時動態統計 -->
+        </div>
+      </div>
+
+      <!-- 快捷批次操作列 -->
+      <div style="padding: 10px 24px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminSetAllEditAttendanceStatus('present')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; color: #10b981;">
+            🟢 全設為出席
+          </button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminSetAllEditAttendanceStatus('absent')" style="padding: 4px 10px; font-size: 14px; border-radius: 6px; color: #ef4444;">
+            🔴 全設為缺席
+          </button>
+        </div>
+        <input type="text" id="adminEditAttendanceSearchInput" placeholder="搜尋學生..." oninput="window.app && window.app.onEditAttendanceSearch(this.value)" style="font-size: 14px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); width: 140px;">
+      </div>
+
+      <!-- 學生出缺勤狀態四態編輯清單 -->
+      <div id="adminEditAttendanceStudentList" style="flex: 1; overflow-y: auto; padding: 16px 24px; display: flex; flex-direction: column; gap: 8px;">
+        <!-- 動態渲染每位學生四態切換按鈕組 -->
+      </div>
+
+      <!-- 底部 Footer -->
+      <div style="padding: 14px 24px; background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
+        <button type="button" onclick="window.app && window.app.closeAdminEditAttendanceSessionModal()" style="padding: 8px 18px; font-size: 14px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);">
+          取消
+        </button>
+        <button type="button" id="btnSaveEditAttendanceSession" onclick="window.app && window.app.adminSaveEditAttendanceSession()" class="presentation-tool-btn active" style="padding: 8px 24px; font-size: 14px; font-weight: bold; border-radius: 8px;">
+          💾 儲存修改
+        </button>
       </div>
     </div>
   </div>
