@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=457">
+  <link rel="stylesheet" href="css/style.css?v=458">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -2935,6 +2935,15 @@
                   </button>
                   <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenCustomPointReasonsModal()" title="自訂或編輯給點時的常用快速事由標籤" style="font-size: 14px; border-radius: 10px; padding: 6px 14px;">
                     🏷️ 編輯給點事由
+                  </button>
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenPointsSettlementModal()" title="將目前點數先儲存到點數歷程並設定名稱，儲存完成後清空目前點數重新開始" style="font-size: 14px; border-radius: 10px; padding: 6px 14px; background: rgba(99, 102, 241, 0.12); color: #6366f1; border: 1.5px solid rgba(99, 102, 241, 0.4); font-weight: bold; cursor: pointer;">
+                    📦 結算點數並記錄到點數歷程
+                  </button>
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenPointsSettlementHistoryModal()" title="查閱全班歷次點數結算記錄與明細" style="font-size: 14px; border-radius: 10px; padding: 6px 14px;">
+                    📜 點數歷程記錄
+                  </button>
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminClearAllStudentPoints()" title="將目前所有同學的點數清空歸零，重新開始" style="font-size: 14px; border-radius: 10px; padding: 6px 14px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1.5px solid rgba(239, 68, 68, 0.35); font-weight: bold; cursor: pointer;">
+                    🗑️ 點數清空
                   </button>
                 </div>
               </div>
@@ -6168,7 +6177,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=457"></script>
+  <script src="js/app.js?v=458"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
@@ -7935,6 +7944,99 @@ Python</pre>
       <!-- 底部 Footer -->
       <div style="padding: 12px 24px; background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center;">
         <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.closeAdminStudentPointsHistoryModal()" style="padding: 6px 20px; font-size: 14px; border-radius: 8px;">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📦 結算點數並記錄到點數歷程彈窗 -->
+  <div id="adminPointsSettlementModal" class="modal-overlay" style="display: none; z-index: 21600;" onclick="if(event.target===this) window.app && window.app.closeAdminPointsSettlementModal()">
+    <div class="modal-content" style="max-width: 620px; width: 94%; max-height: 90vh; overflow-y: auto; padding: 22px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-hover);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <span>📦</span> 結算點數並記錄到點數歷程
+        </h3>
+        <button type="button" class="modal-close" onclick="window.app && window.app.closeAdminPointsSettlementModal()" style="font-size: 18px; background: none; border: none; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <!-- 摘要說明與當前統計 -->
+      <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <span id="adminPointsSettlementScopeBadge" style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🏫 當前班級：載入中</span>
+          <span id="adminPointsSettlementStatsBadge" style="font-size: 14px; color: #d97706; font-weight: bold;">共 0 位同學 · 累計發放：0 點</span>
+        </div>
+        <p style="margin: 8px 0 0 0; font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+          💡 系統將為目前同學的點數建立專屬結算記錄並封存至<strong>點數歷程</strong>；儲存完成後，全班同學目前點數將全數歸零，重新開始計點。
+        </p>
+      </div>
+
+      <!-- 歷程名稱輸入 -->
+      <div style="margin-bottom: 16px;">
+        <label for="adminPointsSettlementTitleInput" style="display: block; font-size: 14px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">
+          🏷️ 點數歷程名稱：
+        </label>
+        <input type="text" id="adminPointsSettlementTitleInput" class="question-input" placeholder="例如：第一次段考課堂表現結算、10月份課堂積分結算" style="margin: 0; width: 100%; font-size: 15px; padding: 10px 14px; border-radius: 8px;">
+        
+        <!-- 快速帶入推薦標籤 -->
+        <div style="margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 14px; color: var(--text-secondary);">💡 快速帶入：</span>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.fillPointsSettlementTitle('第一次段考課堂表現結算')" style="padding: 3px 8px; font-size: 13px; border-radius: 6px;">第一次段考結算</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.fillPointsSettlementTitle('第二次段考課堂表現結算')" style="padding: 3px 8px; font-size: 13px; border-radius: 6px;">第二次段考結算</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.fillPointsSettlementTitle('期末總結算')" style="padding: 3px 8px; font-size: 13px; border-radius: 6px;">期末總結算</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.fillPointsSettlementTitle('本月課堂積分結算')" style="padding: 3px 8px; font-size: 13px; border-radius: 6px;">本月積分結算</button>
+        </div>
+      </div>
+
+      <!-- 本次結算學生名冊與點數預覽清單 -->
+      <div style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 14px; font-weight: bold; color: var(--text-primary);">📋 本次結算點數預覽（由高至低）：</span>
+          <span id="adminPointsSettlementPreviewCount" style="font-size: 14px; color: var(--text-secondary);">共 0 人</span>
+        </div>
+        <div id="adminPointsSettlementPreviewList" style="max-height: 220px; overflow-y: auto; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+          <!-- 動態渲染名單 -->
+        </div>
+      </div>
+
+      <!-- 底部按鈕列 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 14px; flex-wrap: wrap; gap: 10px;">
+        <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenPointsSettlementHistoryModal()" style="padding: 8px 14px; font-size: 14px; border-radius: 8px;">
+          📜 查看歷史結算歷程
+        </button>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" onclick="window.app && window.app.closeAdminPointsSettlementModal()" style="padding: 8px 16px; font-size: 14px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);">
+            取消
+          </button>
+          <button type="button" id="btnConfirmPointsSettlement" onclick="window.app && window.app.adminExecutePointsSettlement()" class="presentation-tool-btn" style="padding: 8px 22px; font-size: 14px; font-weight: bold; border-radius: 8px; background: rgba(99, 102, 241, 0.15); color: #6366f1; border: 1.5px solid rgba(99, 102, 241, 0.4);">
+            📦 確認結算並歸零重置
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📜 班級點數結算歷程記錄彈窗 -->
+  <div id="adminPointsSettlementHistoryModal" class="modal-overlay" style="display: none; z-index: 21650;" onclick="if(event.target===this) window.app && window.app.closeAdminPointsSettlementHistoryModal()">
+    <div class="modal-content" style="max-width: 720px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 22px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-hover);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>📜</span> 班級點數歷程記錄
+          </h3>
+          <span id="adminPointsSettlementHistoryCountBadge" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">共 0 次結算記錄</span>
+        </div>
+        <button type="button" class="modal-close" onclick="window.app && window.app.closeAdminPointsSettlementHistoryModal()" style="font-size: 18px; background: none; border: none; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <!-- 歷史結算記錄清單列表 -->
+      <div id="adminPointsSettlementHistoryListContainer" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- 動態渲染每次結算卡片 -->
+      </div>
+
+      <!-- 底部 Footer -->
+      <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 14px; display: flex; justify-content: flex-end;">
+        <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.closeAdminPointsSettlementHistoryModal()" style="padding: 8px 22px; font-size: 14px; border-radius: 8px;">
           關閉
         </button>
       </div>

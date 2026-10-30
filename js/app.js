@@ -17815,18 +17815,24 @@ class App {
         if (pl) {
           const amt = parseInt(pl.amount, 10) || 0;
           const cleanReason = (pl.reason || '').trim();
+          const isSettlement = pl.isSettlement || cleanReason.startsWith('【結算】');
           activities.push({
             id: `pt_${logId}`,
             logId: logId,
             studentUid: targetUid,
             amount: amt,
             reason: cleanReason,
+            isSettlement: isSettlement,
             type: 'point',
-            typeName: '點數記錄',
-            icon: amt >= 0 ? '⭐️' : '⚠️',
+            typeName: isSettlement ? '點數結算歷程' : '點數記錄',
+            icon: isSettlement ? '📦' : (amt >= 0 ? '⭐️' : '⚠️'),
             timestamp: pl.timestamp || 0,
-            title: `${amt >= 0 ? '+' : ''}${amt} 點${cleanReason ? `：${cleanReason}` : ''}`,
-            details: `登記時間：${this.formatFullDateTime(pl.timestamp).full}`
+            title: isSettlement
+              ? `結算點數：${amt} 點${cleanReason ? `（${cleanReason}）` : ''}`
+              : `${amt >= 0 ? '+' : ''}${amt} 點${cleanReason ? `：${cleanReason}` : ''}`,
+            details: isSettlement
+              ? `結算登記時間：${this.formatFullDateTime(pl.timestamp).full} · 點數已歸零重計`
+              : `登記時間：${this.formatFullDateTime(pl.timestamp).full}`
           });
         }
       });
@@ -20520,16 +20526,23 @@ class App {
       const isPositive = log.amount >= 0;
       const safeLogId = String(log.logId).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
+      const isSettlement = log.isSettlement || (log.reason && log.reason.startsWith('【結算】'));
+      const badgeHtml = isSettlement
+        ? `<div style="font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 8px; flex-shrink: 0; background: rgba(99, 102, 241, 0.15); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.35);">
+            📦 結算 ${log.amount} 點
+          </div>`
+        : `<div style="font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 8px; flex-shrink: 0; background: ${isPositive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${isPositive ? '#10b981' : '#ef4444'}; border: 1px solid ${isPositive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'};">
+            ${isPositive ? '+' : ''}${log.amount} 點
+          </div>`;
+
       return `
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; gap: 12px; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 12px; min-width: 220px; flex: 1;">
-            <div style="font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 8px; flex-shrink: 0; background: ${isPositive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${isPositive ? '#10b981' : '#ef4444'}; border: 1px solid ${isPositive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'};">
-              ${isPositive ? '+' : ''}${log.amount} 點
-            </div>
+            ${badgeHtml}
             <div>
               ${log.reason ? `<div style="font-size: 15px; font-weight: bold; color: var(--text-primary);">${this.escapeHtml(log.reason)}</div>` : ''}
               <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;" title="${timeObj.full}">
-                ⏰ ${timeObj.full} (${timeObj.relative})
+                ⏰ ${isSettlement ? '結算登記時間：' : ''}${timeObj.full} (${timeObj.relative})${isSettlement ? ' · 點數已歸零重計' : ''}
               </div>
             </div>
           </div>
@@ -20620,8 +20633,10 @@ class App {
     try {
       const student = (this.registeredStudents || {})[uid] || (this.lastAdminStudentsList || []).find(s => s.uid === uid);
       const curPts = student ? (parseInt(student.points, 10) || 0) : 0;
+      const pl = (student && student.pointsLog && student.pointsLog[logId]) ? student.pointsLog[logId] : null;
+      const isSettlement = pl ? (pl.isSettlement || (pl.reason && pl.reason.startsWith('【結算】'))) : false;
       const delta = newAmount - oldAmount;
-      const newPts = Math.max(0, curPts + delta);
+      const newPts = isSettlement ? curPts : Math.max(0, curPts + delta);
 
       const updates = {};
       updates[`quiz/students/${uid}/points`] = newPts;
@@ -20682,7 +20697,8 @@ class App {
       async () => {
         try {
           const curPts = student ? (parseInt(student.points, 10) || 0) : 0;
-          const newPts = Math.max(0, curPts - amt);
+          const isSettlement = pl ? (pl.isSettlement || (pl.reason && pl.reason.startsWith('【結算】'))) : false;
+          const newPts = isSettlement ? curPts : Math.max(0, curPts - amt);
 
           const updates = {};
           updates[`quiz/students/${uid}/points`] = newPts;
@@ -20716,6 +20732,484 @@ class App {
         } catch (err) {
           console.error('adminDeletePointLog error:', err);
           this.showNotification('錯誤', '刪除點數記錄失敗: ' + err.message);
+        }
+      }
+    );
+  }
+
+  // ===== 教師端：點數清空與結算歷程業務 =====
+  async adminClearAllStudentPoints() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    // 取得當前學生清單與點數
+    let students = (this.lastAdminStudentsList || []).map(s => ({
+      uid: s.uid,
+      name: s.name,
+      points: parseInt(s.points, 10) || 0
+    }));
+
+    if (students.length === 0) {
+      const reg = this.registeredStudents || {};
+      students = Object.entries(reg).map(([uid, d]) => ({
+        uid,
+        name: d.name || '同學',
+        points: parseInt(d.points, 10) || 0
+      }));
+    }
+
+    let totalPoints = 0;
+    students.forEach(s => { totalPoints += s.points; });
+
+    if (totalPoints === 0 && students.every(s => s.points === 0)) {
+      this.showNotification('提示', '目前全班同學點數皆為 0 點，無需清空。');
+      return;
+    }
+
+    this.showConfirmModal(
+      '🗑️',
+      '清空全班目前點數',
+      `確定要清空目前的所有同學點數嗎？\n\n全班共 ${students.length} 位同學、累計 ${totalPoints} 點將全數歸零，重新開始。\n\n⚠️ 注意：此操作僅將目前點數歸零。若希望保留當前點數記錄供日後查閱，建議先點擊「結算點數並記錄到點數歷程」。`,
+      async () => {
+        try {
+          const updates = {};
+          students.forEach(s => {
+            updates[`quiz/students/${s.uid}/points`] = 0;
+          });
+
+          await db.ref().update(updates);
+
+          students.forEach(s => {
+            if (this.registeredStudents && this.registeredStudents[s.uid]) {
+              this.registeredStudents[s.uid].points = 0;
+            }
+            s.points = 0;
+          });
+          if (this.lastAdminStudentsList) {
+            this.lastAdminStudentsList.forEach(s => { s.points = 0; });
+          }
+
+          this.showNotification('點數已清空', '已成功清空全班目前點數！所有同學點數已歸零，可重新開始計點。');
+          this.renderAdminPointsPanel();
+          this.renderAdminStudentsList();
+        } catch (err) {
+          console.error('adminClearAllStudentPoints error:', err);
+          this.showNotification('錯誤', '清空點數失敗: ' + err.message);
+        }
+      }
+    );
+  }
+
+  adminOpenPointsSettlementModal() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    // 取得當前學生清單與點數
+    let students = (this.lastAdminStudentsList || []).map(s => ({
+      uid: s.uid,
+      name: s.name,
+      avatar: s.avatar,
+      points: parseInt(s.points, 10) || 0
+    }));
+
+    if (students.length === 0) {
+      const reg = this.registeredStudents || {};
+      students = Object.entries(reg).map(([uid, d]) => ({
+        uid,
+        name: d.name || '同學',
+        avatar: d.avatar !== undefined ? d.avatar : 0,
+        points: parseInt(d.points, 10) || 0
+      }));
+    }
+
+    let totalPoints = 0;
+    students.forEach(s => { totalPoints += s.points; });
+
+    const scopeBadge = document.getElementById('adminPointsSettlementScopeBadge');
+    if (scopeBadge) {
+      scopeBadge.textContent = classCode ? `🏫 當前班級：${classCode}` : '🌱 一次性課堂';
+    }
+
+    const statsBadge = document.getElementById('adminPointsSettlementStatsBadge');
+    if (statsBadge) {
+      statsBadge.textContent = `共 ${students.length} 位同學 · 累計發放：${totalPoints} 點`;
+    }
+
+    // 預設填入名稱
+    const titleInput = document.getElementById('adminPointsSettlementTitleInput');
+    if (titleInput) {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      titleInput.value = `${y}/${m}/${d} 課堂積分結算`;
+    }
+
+    // 渲染預覽清單 (依點數排序)
+    const previewList = document.getElementById('adminPointsSettlementPreviewList');
+    const previewCount = document.getElementById('adminPointsSettlementPreviewCount');
+    const rankList = [...students].sort((a, b) => b.points - a.points);
+
+    if (previewCount) {
+      const scoredCount = rankList.filter(s => s.points > 0).length;
+      previewCount.textContent = `共 ${rankList.length} 人 (${scoredCount} 人有得分)`;
+    }
+
+    if (previewList) {
+      if (rankList.length === 0) {
+        previewList.innerHTML = `<div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 20px;">尚無學生名單</div>`;
+      } else {
+        previewList.innerHTML = rankList.map((s, idx) => {
+          const avHtml = this.renderAvatarHtml(s.avatar, 30);
+          const safeName = this.escapeHtml(s.name);
+          return `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border-color); font-size: 14px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: bold; width: 22px; color: var(--text-secondary);">${idx + 1}.</span>
+                <div>${avHtml}</div>
+                <span style="font-weight: bold; color: var(--text-primary);">${safeName}</span>
+              </div>
+              <div style="font-weight: bold; color: ${s.points > 0 ? '#d97706' : 'var(--text-secondary)'};">
+                ⭐️ ${s.points} 點
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    const modal = document.getElementById('adminPointsSettlementModal');
+    if (modal) {
+      const fsEl = document.fullscreenElement;
+      if (fsEl && fsEl !== document.documentElement) {
+        if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+      } else if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+  }
+
+  closeAdminPointsSettlementModal() {
+    const modal = document.getElementById('adminPointsSettlementModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+
+  fillPointsSettlementTitle(title) {
+    const input = document.getElementById('adminPointsSettlementTitleInput');
+    if (input) {
+      input.value = title;
+      input.focus();
+    }
+  }
+
+  async adminExecutePointsSettlement() {
+    const titleInput = document.getElementById('adminPointsSettlementTitleInput');
+    const cleanTitle = (titleInput ? titleInput.value : '').trim();
+    if (!cleanTitle) {
+      this.showNotification('提示', '請輸入點數歷程名稱！');
+      if (titleInput) titleInput.focus();
+      return;
+    }
+
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    // 取得當前學生清單與點數
+    let students = (this.lastAdminStudentsList || []).map(s => ({
+      uid: s.uid,
+      name: s.name,
+      avatar: s.avatar,
+      points: parseInt(s.points, 10) || 0
+    }));
+
+    if (students.length === 0) {
+      const reg = this.registeredStudents || {};
+      students = Object.entries(reg).map(([uid, d]) => ({
+        uid,
+        name: d.name || '同學',
+        avatar: d.avatar !== undefined ? d.avatar : 0,
+        points: parseInt(d.points, 10) || 0
+      }));
+    }
+
+    let totalPoints = 0;
+    students.forEach(s => { totalPoints += s.points; });
+
+    const btn = document.getElementById('btnConfirmPointsSettlement');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ 正在結算並寫入歷程...';
+    }
+
+    try {
+      const timestamp = Date.now();
+      const settlementId = 'stl_' + timestamp + '_' + Math.random().toString(36).substr(2, 5);
+
+      const settlementData = {
+        id: settlementId,
+        title: cleanTitle,
+        classCode: classCode || '',
+        timestamp: timestamp,
+        totalStudents: students.length,
+        totalPoints: totalPoints,
+        students: students.map(s => ({
+          uid: s.uid,
+          name: s.name,
+          avatar: s.avatar,
+          points: s.points
+        }))
+      };
+
+      const updates = {};
+      // 1. 班級總結算歷程
+      updates[`points/settlements/${settlementId}`] = settlementData;
+
+      // 2. 寫入每位同學的個人點數歷程 pointsLog，並將當前點數歸零
+      students.forEach(s => {
+        updates[`quiz/students/${s.uid}/points`] = 0;
+
+        const logKey = db.ref('quiz/students').child(s.uid).child('pointsLog').push().key;
+        updates[`quiz/students/${s.uid}/pointsLog/${logKey}`] = {
+          amount: s.points,
+          settledPoints: s.points,
+          isSettlement: true,
+          settlementId: settlementId,
+          reason: `【結算】${cleanTitle}`,
+          timestamp: timestamp
+        };
+
+        // 更新本地快取
+        if (this.registeredStudents && this.registeredStudents[s.uid]) {
+          this.registeredStudents[s.uid].points = 0;
+          if (!this.registeredStudents[s.uid].pointsLog) this.registeredStudents[s.uid].pointsLog = {};
+          this.registeredStudents[s.uid].pointsLog[logKey] = updates[`quiz/students/${s.uid}/pointsLog/${logKey}`];
+        }
+        s.points = 0;
+      });
+
+      if (this.lastAdminStudentsList) {
+        this.lastAdminStudentsList.forEach(s => { s.points = 0; });
+      }
+
+      await db.ref().update(updates);
+
+      this.closeAdminPointsSettlementModal();
+      this.showNotification('結算完成', `已成功結算並儲存至點數歷程「${cleanTitle}」！共結算 ${totalPoints} 點，全班點數已歸零重新開始。`);
+
+      this.renderAdminPointsPanel();
+      this.renderAdminStudentsList();
+      if (this.currentPointsHistoryUid && document.getElementById('adminStudentPointsHistoryModal')?.classList.contains('active')) {
+        this.renderStudentPointsHistoryList(this.currentPointsHistoryUid);
+      }
+      if (document.getElementById('studentHistoryModal')?.classList.contains('active') && this.currentHistoryStudent) {
+        this.currentStudentHistoryActivities = this.getStudentActivityHistory(this.currentHistoryStudent.uid, this.currentHistoryStudent.name);
+        this.filterStudentHistory(this.currentStudentHistoryFilter || 'all');
+      }
+    } catch (err) {
+      console.error('adminExecutePointsSettlement error:', err);
+      this.showNotification('錯誤', '結算失敗: ' + err.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '📦 確認結算並歸零重置';
+      }
+    }
+  }
+
+  async adminOpenPointsSettlementHistoryModal() {
+    const modal = document.getElementById('adminPointsSettlementHistoryModal');
+    if (modal) {
+      const fsEl = document.fullscreenElement;
+      if (fsEl && fsEl !== document.documentElement) {
+        if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+      } else if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+    await this.renderPointsSettlementHistoryList();
+  }
+
+  closeAdminPointsSettlementHistoryModal() {
+    const modal = document.getElementById('adminPointsSettlementHistoryModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+
+  async renderPointsSettlementHistoryList() {
+    const container = document.getElementById('adminPointsSettlementHistoryListContainer');
+    const badge = document.getElementById('adminPointsSettlementHistoryCountBadge');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 36px;">
+        ⏳ 正在載入歷史結算歷程...
+      </div>
+    `;
+
+    try {
+      const snap = await db.ref('points/settlements').once('value');
+      const data = snap.val() || {};
+      const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+        ? window.ClassRoomManager.getActiveClassCode()
+        : (window.currentClassCode || '');
+
+      let list = Object.values(data);
+      if (classCode) {
+        list = list.filter(item => !item.classCode || item.classCode === classCode);
+      }
+
+      list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      if (badge) badge.textContent = `共 ${list.length} 次結算記錄`;
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-secondary); font-size: 15px; padding: 48px; background: var(--bg-input); border-radius: 12px; border: 1px dashed var(--border-color);">
+            🌱 尚無點數結算歷程記錄。<br>
+            <span style="font-size: 14px; opacity: 0.8; margin-top: 6px; display: inline-block;">可在積分管理工具列點擊「📦 結算點數並記錄到點數歷程」建立新結算。</span>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(item => {
+        const timeObj = this.formatFullDateTime(item.timestamp);
+        const safeTitle = this.escapeHtml(item.title || '課堂積分結算');
+        const safeId = this.escapeHtml(item.id);
+        const totalPts = item.totalPoints || 0;
+        const totalStu = item.totalStudents || (item.students ? item.students.length : 0);
+
+        return `
+          <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; box-shadow: var(--shadow);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 18px;">📦</span>
+                  <h4 style="margin: 0; font-size: 16px; font-weight: bold; color: var(--text-primary);">${safeTitle}</h4>
+                </div>
+                <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">
+                  ⏰ 結算時間：${timeObj.full} (${timeObj.relative}) · 班級：${item.classCode ? `🏫 ${item.classCode}` : '🌱 一次性課堂'}
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px; flex-wrap: wrap; font-size: 14px;">
+                  <span style="background: rgba(99, 102, 241, 0.12); color: #6366f1; padding: 2px 8px; border-radius: 6px; font-weight: bold;">
+                    共 ${totalStu} 位同學
+                  </span>
+                  <span style="background: rgba(245, 158, 11, 0.15); color: #d97706; padding: 2px 8px; border-radius: 6px; font-weight: bold;">
+                    ⭐️ 累計結算：${totalPts} 點
+                  </span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.toggleSettlementDetail('${safeId}')" style="padding: 5px 12px; font-size: 14px; border-radius: 6px;">
+                  🔍 結算名單
+                </button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.exportPointsSettlementCSV('${safeId}')" style="padding: 5px 12px; font-size: 14px; border-radius: 6px;">
+                  📥 匯出 CSV
+                </button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminDeletePointsSettlement('${safeId}')" style="padding: 5px 12px; font-size: 14px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px;">
+                  🗑️ 刪除記錄
+                </button>
+              </div>
+            </div>
+            <!-- 可展開之名單明細 -->
+            <div id="settlement_detail_${safeId}" style="display: none; margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+              <div style="font-weight: bold; font-size: 14px; color: var(--text-primary); margin-bottom: 8px;">
+                🏆 結算學生排名一覽：
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; max-height: 240px; overflow-y: auto;">
+                ${(item.students || []).sort((a, b) => b.points - a.points).map((st, idx) => {
+                  const avHtml = this.renderAvatarHtml(st.avatar, 28);
+                  return `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border-color); font-size: 14px;">
+                      <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
+                        <span style="font-weight: bold; width: 20px; color: var(--text-secondary);">${idx + 1}.</span>
+                        <div>${avHtml}</div>
+                        <span style="font-weight: bold; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(st.name)}</span>
+                      </div>
+                      <span style="font-weight: bold; color: #d97706; flex-shrink: 0;">⭐️ ${st.points} 點</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('renderPointsSettlementHistoryList error:', err);
+      container.innerHTML = `<div style="text-align: center; color: #ef4444; font-size: 14px; padding: 24px;">載入結算歷程失敗: ${err.message}</div>`;
+    }
+  }
+
+  toggleSettlementDetail(settlementId) {
+    const el = document.getElementById(`settlement_detail_${settlementId}`);
+    if (el) {
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  async exportPointsSettlementCSV(settlementId) {
+    try {
+      const snap = await db.ref(`points/settlements/${settlementId}`).once('value');
+      const item = snap.val();
+      if (!item) {
+        this.showNotification('提示', '查無此結算記錄！');
+        return;
+      }
+
+      let csv = '\uFEFF'; // UTF-8 BOM
+      csv += '名次,學生姓名,結算點數,結算歷程名稱,結算時間,班級代碼\n';
+
+      const timeStr = this.formatFullDateTime(item.timestamp).full;
+      const sortedStudents = (item.students || []).sort((a, b) => b.points - a.points);
+
+      sortedStudents.forEach((st, idx) => {
+        const safeName = `"${String(st.name || '').replace(/"/g, '""')}"`;
+        const safeTitle = `"${String(item.title || '').replace(/"/g, '""')}"`;
+        csv += `${idx + 1},${safeName},${st.points},${safeTitle},"${timeStr}","${item.classCode || ''}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const dateStr = new Date(item.timestamp).toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `點數結算歷程_${item.title || '結算'}_${dateStr}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('exportPointsSettlementCSV error:', e);
+      this.showNotification('錯誤', '匯出 CSV 失敗: ' + e.message);
+    }
+  }
+
+  adminDeletePointsSettlement(settlementId) {
+    this.showConfirmModal(
+      '🗑️',
+      '刪除點數結算記錄',
+      '確定要刪除這筆點數結算記錄嗎？\n\n刪除後此筆結算歷史明細將被移除（不會影響目前同學正在累積的點數）。',
+      async () => {
+        try {
+          await db.ref(`points/settlements/${settlementId}`).remove();
+          this.showNotification('已刪除', '已成功刪除該筆點數結算記錄！');
+          await this.renderPointsSettlementHistoryList();
+        } catch (err) {
+          console.error('adminDeletePointsSettlement error:', err);
+          this.showNotification('錯誤', '刪除結算記錄失敗: ' + err.message);
         }
       }
     );
