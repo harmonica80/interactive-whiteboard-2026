@@ -1244,7 +1244,7 @@ class App {
     const target = String(name || '').trim().toLowerCase();
     if (!target) return null;
 
-    // 1. 優先查詢已登錄學生名冊 (quiz/students，含新舊姓名相容)
+    // 1. 優先查詢學生名冊 (quiz/students，含新舊姓名相容)
     const studentsMap = this.registeredStudents || {};
     for (const [uid, data] of Object.entries(studentsMap)) {
       if (data && data.name && String(data.name).trim().toLowerCase() === target) {
@@ -2129,7 +2129,7 @@ class App {
       });
     });
 
-    // 綁定選單左右平滑滾動導覽箭頭按鈕
+    // 綁定選單左右平滑捲動導覽箭頭按鈕
     const container = document.getElementById('functionMenuContainer');
     const btnLeft = document.getElementById('menuScrollLeft');
     const btnRight = document.getElementById('menuScrollRight');
@@ -6056,7 +6056,7 @@ class App {
       this.scheduleCurrentClassStorageSync();
     }
 
-    // 滾動至後台頂部
+    // 捲動至後台頂部
     const panelAdmin = document.getElementById('panel-admin');
     if (panelAdmin) {
       panelAdmin.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -7355,7 +7355,7 @@ class App {
       this.lastQuestionSubmitTime = now;
       
       this.askBtn.disabled = true;
-      this.askBtn.textContent = hasAttachment ? '上傳附件中...' : '提交中...';
+      this.askBtn.textContent = hasAttachment ? '上傳附件中...' : '送出中...';
       
       const author = this.getCurrentUserName() || '同學';
       const uid = this.getUserId();
@@ -7385,7 +7385,7 @@ class App {
         this.questionInput.focus();
         this.askBtn.disabled = false;
         this.askBtn.textContent = '提問';
-        this.showNotification('成功', hasAttachment ? '問題與附件已成功提交！' : '問題已提交！');
+        this.showNotification('成功', hasAttachment ? '問題與附件已成功送出！' : '問題已送出！');
       } catch (error) {
         console.error('提問失敗:', error);
         this.askBtn.disabled = false;
@@ -9583,7 +9583,7 @@ class App {
       item.addEventListener('dragstart', (e) => {
         e.dataTransfer.effectAllowed = 'move';
         item.classList.add('dragging');
-        // 為了移動端的拖放或未來需要，設定屬性
+        // 為了行動裝置端的拖放或未來需要，設定屬性
         container.setAttribute('data-dragging-id', item.getAttribute('data-id'));
       });
 
@@ -10382,7 +10382,7 @@ class App {
       if (snapshot.exists()) {
         const data = snapshot.val();
         const keys = Object.keys(data);
-        // 由列表中的第一位用戶負責打掃過期幽靈節點，避免所有學生同時送出 remove 請求
+        // 由列表中的第一位使用者負責打掃過期幽靈節點，避免所有學生同時送出 remove 請求
         if (keys.length > 0 && data[keys[0]] && data[keys[0]].userId === currentUserId) {
           isFirstClient = true;
         }
@@ -17746,8 +17746,8 @@ class App {
             typeName: '隨堂測驗',
             icon: '📝',
             timestamp: ans.timestamp || 0,
-            title: `測驗作答：選擇【${ans.answer || ans.choice || '已提交'}】`,
-            details: ans.isCorrect !== undefined ? (ans.isCorrect ? '✅ 答對' : '❌ 答錯') : '已作答提交'
+            title: `測驗作答：選擇【${ans.answer || ans.choice || '已送出'}】`,
+            details: ans.isCorrect !== undefined ? (ans.isCorrect ? '✅ 答對' : '❌ 答錯') : '已作答送出'
           });
         }
       });
@@ -17764,7 +17764,7 @@ class App {
             icon: '🎬',
             timestamp: ans.timestamp || 0,
             title: `影片題目作答：【${ans.questionTitle || '影片測驗題'}】`,
-            details: `作答內容：${ans.answer || ans.text || '已提交'} ${ans.isCorrect !== undefined ? (ans.isCorrect ? '· ✅ 答對' : '· ❌ 答錯') : ''}`
+            details: `作答內容：${ans.answer || ans.text || '已送出'} ${ans.isCorrect !== undefined ? (ans.isCorrect ? '· ✅ 答對' : '· ❌ 答錯') : ''}`
           });
         }
       });
@@ -17799,7 +17799,7 @@ class App {
                 typeName: '同步簡報互動',
                 icon: '📊',
                 timestamp: sub.timestamp || 0,
-                title: `簡報互動回應：${Array.isArray(sub.answers) ? sub.answers.join(', ') : (sub.answers || '已提交回應')}`,
+                title: `簡報互動回應：${Array.isArray(sub.answers) ? sub.answers.join(', ') : (sub.answers || '已送出回應')}`,
                 details: `頁面：${slideId}`
               });
             }
@@ -19667,7 +19667,7 @@ class App {
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceAutoDetectOnline(); window.app && window.app.syncEmbedAttendanceFromSession();" style="padding: 5px 10px; font-size: 14px; background: rgba(0, 122, 255, 0.12); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; font-weight: bold;" title="偵測目前在線上的同學自動標記為出席，離線同學標記為缺席">
+              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceAutoDetectOnline(); window.app && window.app.syncEmbedAttendanceFromSession();" style="padding: 5px 10px; font-size: 14px; background: rgba(0, 122, 255, 0.12); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; font-weight: bold;" title="偵測目前線上同學自動標記為出席，離線同學標記為缺席">
                     ⚡ 一鍵偵測線上學生
               </button>
               <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceSetAllStatus('present'); window.app && window.app.syncEmbedAttendanceFromSession();" style="padding: 5px 10px; font-size: 14px; background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
@@ -20646,7 +20646,7 @@ class App {
       this.closeAdminEditPointLogModal();
       this.showNotification('修改成功', `已成功修改為 ${newAmount >= 0 ? '+' : ''}${newAmount} 點${newReason ? `（${newReason}）` : ''}！(目前累積 ${newPts} 點)`);
 
-      // 刷新相關介面
+      // 重新整理相關介面
       if (document.getElementById('adminStudentPointsHistoryModal')?.classList.contains('active')) {
         this.renderStudentPointsHistoryList(uid);
       }
@@ -20703,7 +20703,7 @@ class App {
 
           this.showNotification('已刪除', `已成功刪除該筆點數記錄！(目前累積 ${newPts} 點)`);
 
-          // 刷新相關介面
+          // 重新整理相關介面
           if (document.getElementById('adminStudentPointsHistoryModal')?.classList.contains('active')) {
             this.renderStudentPointsHistoryList(uid);
           }
@@ -25211,7 +25211,7 @@ function resetAll() {
     db.ref('whiteboard_room').remove(),
     db.ref('whiteboard_v2').remove(),
     db.ref('system/quotaStats/classStorageMap').child(classKey).set(0),
-    db.ref('quiz/resetTimestamp').set(Date.now()) // 廣播重設事件至所有線上學生客戶端
+    db.ref('quiz/resetTimestamp').set(Date.now()) // 廣播重設事件至所有線上學生端
   ];
 
   if (isOneOff) {

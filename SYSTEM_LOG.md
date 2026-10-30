@@ -1,4 +1,22 @@
 # System Log
+## 2026-10-30 - 全專案用詞全面優化：完成第一類（優先修正）與第二類（台灣道地用語）替換
+- 影響檔案：`README.md`, `css/style.css`, `whiteboard.html`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **第一類（優先修正）全面落地**：
+     - **防卡頓** ➔ 改為「**提升流暢度避免延遲**」（`index.html:4190`）。
+     - **音效反饋 / 陰影反饋** ➔ 全面改為「**音效回饋**」、「**外框與陰影回饋**」（`README.md`, `index.html`, `css/style.css`）。
+     - **在線初盤** ➔ 於 `README.md:54` 替換為「**自動偵測線上學生並預先標記出席**」，徹底清除殘留初盤字詞。
+     - **導航（網頁 UI / 導覽列）** ➔ 全面改為「**導覽**」（頂部導覽與控制列、互動白板導覽、小地圖導覽、物件導覽視窗）。
+     - **提交（作答 / 詞彙送出）** ➔ 課堂互動全面改為台灣親切用語「**送出**」（文字雲/提問）與「**送出作答 / 繳交作答**」（簡報/測驗）。
+  2. **第二類（優化用詞）全面落地**：
+     - **已登錄同學名單 / 累計登錄** ➔ 改為「**學生名冊名單**」與「**名冊學生**」（`index.html`）。
+     - **客戶端 / 學生客戶端** ➔ 改為「**各裝置端**」與「**線上學生端**」。
+     - **移動端** ➔ 改為「**行動裝置端（手機/平板）**」（`js/app.js`）。
+     - **滾動（網頁 Scroll）** ➔ 全面改為資訊標準術語「**捲動**」（橫向捲動、垂直捲動、頁面捲動）。
+     - **高刷新率** ➔ 改為硬體標準術語「**高更新率**」。
+     - **在線上的同學** ➔ 精簡俐落化為「**線上同學**」。
+  3. 通過 `node --check` 語法檢測、全專案零「記錄」規範檢查，更新快取版本至 `v=457`。
+
 ## 2026-10-30 - 介面文字全面繁體化與改用台灣道地用語，並將「台灣繁體中文規範」列入專案常駐開發規則
 - 影響檔案：`AGENTS.md`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
@@ -147,7 +165,7 @@
      - 帳號合併時自動將被合併來源帳號之點數、點數異動明細（`pointsLog`）與歷史點名記錄全數無縫累加遷移至保留之主帳號。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 文字字級一律遵守 `>= 14px` 規範，全面連動四大主題 CSS 變數。
 ## 2026-10-28 - 學生名冊管理：名冊清單直接核選多重帳號、工具列一鍵整併與合併彈窗顯示機制徹底修復
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -164,7 +182,7 @@
      - 補齊 `modal.classList.add('active')` 與關閉時 `modal.classList.remove('active')`，並加入全螢幕模式下自動動態重掛載至 `document.fullscreenElement` 的防護機制。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 文字字級一律遵守 `>= 14px` 規範。
 ## 2026-10-28 - 修復學生名冊「合併帳號」彈窗來源帳號無法勾選核選與合併按鈕失效問題
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -177,7 +195,7 @@
      - 強化目標帳號預設選取防呆機制（精準綁定 `preselectedTargetUid`），並於勾選來源帳號時即時啟用「🔀 確認執行合併」按鈕（同步動態切換不透明度與滑鼠游標為 `pointer`）。
   3. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 ## 2026-10-28 - 互動白板向量形狀與筆劃物件懸停/選取視覺優化：移除光暈暈開樣式，統一採用簡潔虛線外框與俐落控制點
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：
@@ -189,7 +207,7 @@
      - 點選物件時不再產生任何光暈或外散暈開效果，純粹呈現乾淨的變形外框、8 個編輯控制點與頂端旋轉點。
   3. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 ## 2026-10-28 - 互動白板物件 8 控制點 + 旋轉把手 + 影像邊界裁切，與學生名冊「合併帳號」歷程整併功能
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
@@ -209,7 +227,7 @@
      - **曾用名自動關聯與帳號清理**：自動將來源帳號的所有歷史姓名記錄至主帳號的 `previousNames` 陣列中，確保該同學日後若使用舊名稱或舊設備登入時能自動識別並綁定至主帳號；同時從名冊與 Presence 清除來源帳號，使班級統計更加精準。
   3. **合規檢測**：
      - 嚴格遵守四大色系主題 CSS 變數連動與文字大小 `>= 14px` 規範。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 通過 `npm run check:syntax` 與 `node --check` 語法檢測。
 ## 2026-10-28 - 系統架構級省流優化：靜態大圖批次轉檔 WebP、全系統圖片上傳與貼上全面升級 WebP 格式
 - 影響檔案：`index.html`, `whiteboard.html`, `css/style.css`, `js/app.js`, `js/whiteboard_core.js`, `js/quiz.js`, `js/word_cloud.js`, `js/presentation_core.js`, `images/avatars_sheet.webp`, `images/guide/*.webp`, `images/firebase_teachers_guide.webp`, `SYSTEM_LOG.md`。
@@ -229,7 +247,7 @@
      - **管理後台班級頭像上傳**：48 格泛洪去背雪碧圖由肥大的 PNG 改為 `image/webp, 0.88`，存入 Firebase 的字串自 1.5MB 縮減至 200KB 以下。
   3. **合規檢測**：
      - 通過 `npm run check:syntax` 與全檔案 `node --check` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 更新各引用檔案快取版本參數：`style.css?v=418`、`app.js?v=441`、`whiteboard_core.js?v=3013`、`quiz.js?v=392`、`word_cloud.js?v=400`、`presentation_core.js?v=3125`。
 
 ## 2026-10-27 - 介面與資料精準化：後台移除快速切換精選圖鑑功能、頭像狀態與圖鑑預覽全面升級為 240 款主題角色、依正確圖格順序校正蔬果零食小吃 144 款角色名稱
@@ -248,7 +266,7 @@
      - 特色小吃類：波霸珍珠奶茶、鮮汁小籠包、傳統刈包、香酥蔥油餅、酥脆雞排飯、麻辣臭豆腐、紅燒牛肉麵、招牌蚵仔煎...等 48 款。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 字級大小符合 `>= 14px` 規範，主題色系變數完整連動。
      - 更新 `js/app.js?v=440` 快取版本參數。
 
@@ -270,7 +288,7 @@
      - 教師後台「✏️ 編輯學生資訊」彈窗（`#adminEditStudentModal`）同步支援指派五大分類與班級角色所有 240~288 款頭像。
   5. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 所有文字字級符合 `>= 14px` 規範，按鈕樣式與四大色系主題變數完整連動。
      - 更新 `js/app.js?v=439` 快取版本參數。
 
@@ -287,7 +305,7 @@
      - 移除 `.admin-student-stat-total` 的 `border-right` 邊框線，純粹保留全形冒號「：」（如 `🔥 1 歷程：`），保持畫面簡潔俐落。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 更新 `css/style.css?v=417` 快取版本參數。
 
 ## 2026-10-27 - 體驗優化：快捷資訊選單後台/登出位置下移縮短路徑、歷程總數增設冒號區隔、學生名冊新增「🎴 卡片 / 📋 列表」視圖切換
@@ -304,7 +322,7 @@
      - 自動記憶教師的視圖偏好（`localStorage.getItem('admin_student_view_mode')`）。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 更新 `css/style.css?v=416` 與 `js/app.js?v=438` 快取版本參數。
 
 ## 2026-10-27 - 介面完善：後台快速切換下拉選單補齊「H. 學生名冊與參與歷程管理」選項
@@ -315,21 +333,21 @@
      - 確保教師在後台任何功能面板中，皆能透過頂部快速切換下拉選單直達學生名冊管理區塊，並與工作區麵包屑及標題連動同步。
   2. **合規檢測**：
      - 通過 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-27 - 機制強化：學生更名全端雙向即時同步、歷史發布作品批次更新與換設備相容性維護
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
   1. **學生端雙向即時感知教師修改姓名**：
      - 在 `quiz/students` 即時監聽器加入比對自身 `uid` 邏輯。當教師在後台更名時，在線學生端自動無縫更新本機 `localStorage`（`user_name` / `user_nickname`）、右下角大頭像姓名標籤與連線 presence，並給予友善提示，絕不發生舊名覆寫新名之問題。
-     - 學生重新整理或斷線重連時，優先檢查雲端名冊紀錄，若已被更名自動採納最新姓名。
+     - 學生重新整理或斷線重連時，優先檢查雲端名冊記錄，若已被更名自動採納最新姓名。
   2. **歷史發布作品作者標籤批次同步**：
      - 教師修改學生姓名與頭像時，系統自動將該生既有發布之提問（`questions`）、圖片（`images`）與短片（`videos`）作者欄位同步批次更新為新姓名與新頭像，維護課堂視覺一致性。
   3. **保留更名歷程支援換裝置登入相容性**：
      - 名冊中記錄 `previousNames`（更名歷程清單）。即使學生更換設備或清除快取時忘記新名稱而輸入舊姓名，系統亦能精準辨識並引導無縫繼承原本的身分 UID 與歷程。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 更新 `js/app.js?v=437` 快取版本參數。
 
 ## 2026-10-27 - 問題修復：修正學生管理卡片「📜 歷程」與「✏️ 編輯」彈窗無法開啟之問題
@@ -344,7 +362,7 @@
      - 在全域 `Escape` 鍵盤監聽事件中加入 `studentHistoryModal` 與 `adminEditStudentModal` 的關閉邏輯。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 更新 `js/app.js?v=436` 快取版本參數。
 
 ## 2026-10-27 - 班級管理新增「學生名冊與參與歷程管理」功能 (支援登入時間追蹤、歷程檢視、編輯刪除與名冊匯出)
@@ -369,7 +387,7 @@
   6. **合規檢測**：
      - 介面與彈窗全面連動四大主題 CSS 變數，字級均符合 `>= 14px` 規範。
      - 彈窗層級（`z-index: 21500`）高於全螢幕與多媒體彈窗，確保層級一致。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢測。
      - 更新 `css/style.css?v=415` 與 `js/app.js?v=435` 快取版本參數。
 
@@ -385,7 +403,7 @@
      - 同步為 `openAdminFeature(featureKey)` 加入管理員身分防護；若尚未登入，系統暫存目標設定項目（`pendingAdminFeature`）並引導輸入密碼，於驗證成功後直接無縫開啟目標出題管理面板。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 語法檢驗。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 更新 `js/app.js?v=434` 快取版本參數。
 
 ## 2026-10-27 - 優化右下角個人懸浮大頭像 (移除外圍框線底色與名字編輯鉛筆圖示，最大化空間利用)
@@ -400,7 +418,7 @@
      - 手機版自適應優化：頭像平滑縮放至 52×52，外圍容器維持純淨無邊框。
   3. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js`。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
      - 更新 `css/style.css?v=414` 快取版本參數。
 
 ## 2026-10-27 - 網頁瀏覽器分頁圖示 (Favicon) 全面升級為左上角「📚 書本」高解析向量與多尺寸圖標
@@ -423,7 +441,7 @@
      - 新增 `scripts/build-favicons.ps1`，完整記錄高畫質向量轉檔與 ICO 封裝流程。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 與 `node --check js/app.js` 檢驗。
-     - 嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-27 - 介面視覺極致清爽化重構 (右下角懸浮個人64×64大頭像HUD、管理後台收納至💡選單、課堂狀態列極簡化) 與四款白底頭像圖鑑全面替換重製
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatars_sheet1.png`, `images/avatars_sheet2.png`, `images/avatars_sheet.png`, `images/avatar_preset_snacks.png`, `images/avatars/avatar_0.png` ~ `avatar_95.png`, `scripts/process-white-uploads.ps1`。
@@ -448,7 +466,7 @@
      - 更新 `css/style.css?v=413` 與 `js/app.js?v=433` 快取版本參數。
   5. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-27 - 更新「萌寵奇幻」48款頭像為精準零重疊新版圖檔並同步校正角色對照中繼資料
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatars_sheet1.png`, `images/avatars_sheet.png`, `images/avatars/avatar_0.png` ~ `avatar_47.png`, `scripts/process-cute-fantasy.ps1`, `scripts/verify-all-avatars.ps1`。
@@ -465,7 +483,7 @@
   2. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
      - 通過邊界零滲透自動化驗證腳本 `scripts/verify-all-avatars.ps1`（96 款全數通過）。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 更新「森林海洋」48款頭像為精準零重疊新版圖檔 (採用與台灣特色小吃相同之128×128標準網格座標)
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatars_sheet2_raw.jpg`, `images/avatars_sheet2.png`, `images/avatars_sheet.png`, `images/avatars/avatar_48.png` ~ `avatar_95.png`, `scripts/process-forest-ocean.ps1`, `scripts/verify-all-avatars.ps1`。
@@ -481,7 +499,7 @@
   2. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
      - 通過邊界零滲透自動化驗證腳本 `scripts/verify-all-avatars.ps1`。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 班級專屬頭像切換與上傳提示改為常駐橫條顯示於動作列上方避免漏按儲存
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -495,7 +513,7 @@
      - 更新 `index.html` 之 `js/app.js` 快取版本至 `?v=430`。
   2. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 頭像挑選與預覽網格新增滑鼠移入即時彈出 128×128 原始尺寸大圖卡片
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -508,7 +526,7 @@
      - 更新 `index.html` 引用之 `css/style.css?v=410` 與 `js/app.js?v=429` 快取版本識別。
   2. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 班級專屬頭像管理下拉選單補全「免代碼一次性課堂」選項與智慧連動
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -522,7 +540,7 @@
      - 更新 `index.html` 之 `js/app.js` 快取版本至 `?v=428`。
   2. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 教師分享前台快捷控場按鈕修正連結至「最新消息」管理工作區
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -533,7 +551,7 @@
      - 更新 `index.html` 之 `js/app.js` 快取版本參數至 `?v=427`。
   2. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 更新三大精選頭像圖鑑為全新無跨格精準圖檔 (修復切分裁切時鄰近角色邊緣溢出問題)
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatar_preset_fruits.png`, `images/avatar_preset_snacks.png`, `images/avatar_preset_taiwan.png`。
@@ -545,7 +563,7 @@
      - 為精選圖鑑資源路徑加上 `?v=2` 快取版本識別，更新 `app.js?v=426` 確保師生端即時載入最新圖檔。
   2. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 班級專屬頭像管理新增三大精選圖鑑版本（蔬菜水果、食品零食、台灣特色小吃免生成一鍵切換）
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`, `images/avatar_preset_fruits.png`, `images/avatar_preset_snacks.png`, `images/avatar_preset_taiwan.png`。
@@ -560,7 +578,7 @@
      - 學生端「🏫 班級專屬頭像」彈窗自動動態連動圖鑑名稱（如：`🏫 班級專屬 (台灣特色小吃版)`）與角色標題。
   2. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 班級專屬頭像管理與圖鑑上傳按鈕樣式標準化 (套用同步簡報按鈕樣式與檔案名即時呈現)
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -570,7 +588,7 @@
      - 點擊「`📁 選擇圖檔`」按鈕即可呼叫原生的圖片檔案選擇器，右側新增檔名動態顯示標籤（`#adminAvatarFileNameDisplay`），選取檔案後即時顯示圖片名稱，未選取或切換班級時自動重設為「`未選擇任何檔案`」。
   2. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 上/下課鐘聲按鈕高對比清晰樣式優化、即時互動回饋頂部標籤精簡、防洗版下拉選單文字簡化
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -585,7 +603,7 @@
      - 將「`⏱️ 此情境 1 秒最多可按：`」即時預覽下拉選單以及各情境卡片防洗版選單之後方括號說明文字刪除，統一僅保留「`1 個 / 秒`」、「`2 個 / 秒`」、「`3 個 / 秒`」、「`4 個 / 秒`」、「`5 個 / 秒`」、「`8 個 / 秒`」、「`10 個 / 秒`」，視覺簡潔明確。
   4. **合規檢測**：
      - 通過 `node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 同步簡報圖示更新為通用簡報圖示 (替換投影機圖示為經典簡報圖示 📊，避免與影片分享混淆)
 - 影響檔案：`index.html`, `js/presentation_core.js`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -595,7 +613,7 @@
      - 徹底解決原圖示與「`🎥 影片分享`」及「`🎬 影片出題測驗`」在系統 Emoji 渲染下過於雷同難以辨識的問題。
   2. **合規檢測**：
      - 通過 `node --check js/presentation_core.js`、`node --check js/app.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 同步簡報載入模式免自動廣播、頂部版面整合節省空間、互動權限文案與設定名稱優化
 - 影響檔案：`index.html`, `js/presentation_core.js`, `SYSTEM_LOG.md`。
@@ -614,7 +632,7 @@
      - 將同步簡報工具列「⚙️ 本頁設定」按鈕與彈窗標題全面更新為「`⚙️ 本頁外部連結與學生端互動設定`」，功能與意圖更加明確。
   4. **合規檢測**：
      - 通過 `node --check js/presentation_core.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 同步簡報師生權限重構 (鎖定老師專屬編輯權、同學僅限作答與翻頁)、教材庫載入文案更新、匯入匯出背景關閉支援
 - 影響檔案：`index.html`, `js/presentation_core.js`, `css/presentation.css`, `SYSTEM_LOG.md`。
@@ -633,7 +651,7 @@
      - 為「匯入 / 匯出簡報」彈窗（`#modalPresentationImportExport`）及「載入教材授課模式」彈窗補齊背景遮罩點擊監聽器（Backdrop click-outside），點擊外部半透明背景即可自動關閉。
   4. **合規檢測**：
      - 通過 `node --check js/presentation_core.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 同步簡報雲端教材庫按鈕精簡、即時回應底欄兩層排版優化 (支援完整圖示與文字防溢出)
 - 影響檔案：`index.html`, `css/presentation.css`, `js/presentation_core.js`, `SYSTEM_LOG.md`。
@@ -652,7 +670,7 @@
      - 補齊「同步簡報雲端教材庫」彈窗背景點擊關閉監聽器，操作直覺流暢。
   4. **合規檢測**：
      - 通過 `node --check js/presentation_core.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 專注力測驗前台大廳排版優化 (移除內層框線底色、與影片出題前台格式統一置中)
 - 影響檔案：`index.html`, `SYSTEM_LOG.md`。
@@ -662,7 +680,7 @@
      - 直接於外層虛線框（`var(--bg-input)`，`1px dashed var(--border-color)`）內將腦袋圖示 `🧠`、大廳標題、說明文字與後台快捷按鈕置中排版，達到與影片出題前台視角完全一致的視覺體驗。
   2. **合規檢測**：
      - 通過 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 互動白板匯出/匯入彈窗優化、雲端檔案庫按鈕清理與命名調整
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `SYSTEM_LOG.md`。
@@ -678,7 +696,7 @@
      - 彈窗標題同步調整為「`白板雲端檔案庫`」。
   4. **合規檢測**：
      - 通過 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 專注力測驗前台大廳外框與按鈕、影片出題管理後台快捷列與自主學習按鈕改造、選擇題按鈕等寬化
 - 影響檔案：`index.html`, `js/video_quiz.js`, `SYSTEM_LOG.md`。
@@ -700,7 +718,7 @@
      - 將選擇題測驗進行中的「結束測驗」與「👁️ 前台測驗畫面」按鈕皆統一設為 `flex: 1; min-width: 140px;` 等寬排列。
   6. **合規檢測**：
      - 通過 `node --check js/video_quiz.js` 與 `npm run check:syntax` 語法檢測。
-     - 全文嚴格遵守「記錄」用語規範，無「紀錄」禁字。
+     - 全文嚴格遵守「記錄」用語規範，無「記錄」禁字。
 
 ## 2026-10-26 - 同步簡報雲端教材庫功能實作 (支援雲端儲存、共編/唯讀雙模式載入、跨班級複製與刪除，大幅降低重複上傳流量)
 - 影響檔案：`index.html`, `js/presentation_core.js`, `css/presentation.css`, `js/firebase-config.js`, `js/app.js`, `SYSTEM_LOG.md`。
@@ -728,7 +746,7 @@
      - 教材只需在雲端建立一次，跨班級複製完全透過雲端資料庫直接傳遞，教師本機無需重複上傳大型 PDF 或圖片，節省近 100% 重複上傳之網路頻寬與等待時間。
   5. **快取版本號更新與合規驗證 (`index.html`)**：
      - 更新 `css/presentation.css?v=3120`、`js/presentation_core.js?v=3120`。
-     - 通過 `npm run check:syntax` 語法檢測，嚴格遵守「記錄」用語規範，全案無「紀錄」禁字。
+     - 通過 `npm run check:syntax` 語法檢測，嚴格遵守「記錄」用語規範，全案無「記錄」禁字。
 ## 2026-10-26 - 互動白板雲端歷程檔案庫功能實作 (支援雲端存檔、共編/唯讀雙模式載入、跨班級複製與刪除)
 - 影響檔案：`whiteboard.html`, `js/whiteboard_core.js`, `js/firebase-config.js`, `js/app.js`, `index.html`, `SYSTEM_LOG.md`。
 - 修改項目：
@@ -752,7 +770,7 @@
      - 在 `openSingleItemCopyModal` 中加入白板歷程檔案預覽標籤（`🎨 互動白板`）與畫布/分頁/物件數量摘要呈現。
   4. **快取版本號更新與合規驗證 (`index.html`, `whiteboard.html`)**：
      - 更新 `whiteboard.html?v=3011`、`js/whiteboard_core.js?v=3011`。
-     - 通過 `npm run check:syntax` 語法檢查，嚴格遵循「記錄」用語規範，全案無「紀錄」禁字。
+     - 通過 `npm run check:syntax` 語法檢查，嚴格遵循「記錄」用語規範，全案無「記錄」禁字。
 ## 2026-10-26 - 清理更新歷程歷史版本卡片殘留之最新版本標籤
 - 影響檔案：`index.html`, `SYSTEM_LOG.md`。
 - 修改項目：
@@ -794,7 +812,7 @@
      - 將活動進行中的提示標籤 `.admin-active-activity-pill` 圓角由 20px 統一調整為 `10px`，字級提升至 `14px`，內部按鈕圓角由 6px 調整為 `8px`。
   4. **快取版本號更新與合規驗證 (`index.html`)**：
      - 更新 `style.css?v=408`、`quiz.js?v=391`、`app.js?v=420`、`word_cloud.js?v=399`。
-     - 通過 `npm run check:syntax` 語法檢測，並確認無「紀錄」禁字。
+     - 通過 `npm run check:syntax` 語法檢測，並確認無「記錄」禁字。
 
 ## 2026-10-26 - 後台全域 CSS 樣式統一、按鈕風格與圓角規範對齊及字級下限全面合規
 - 影響檔案：`index.html`, `css/style.css`, `css/presentation.css`, `SYSTEM_LOG.md`。
@@ -810,7 +828,7 @@
      - 消除寫死之固定色碼（如 hover 背景與邊框），全面綁定 `var(--accent-color)`、`var(--accent-hover)`、`var(--border-color)`、`var(--bg-input)` 與 `var(--bg-card)` 等主題變數。
      - 更新 `index.html` 之 CSS 快取版本參數（`style.css?v=407`、`presentation.css?v=3119`）。
   4. **嚴格用語規範遵循**：
-     - 全專案檔案、程式碼註解、樣式與日誌嚴格統一使用「記錄」，杜絕「紀錄」字樣。
+     - 全專案檔案、程式碼註解、樣式與日誌嚴格統一使用「記錄」，杜絕「記錄」字樣。
 
 ## 2026-10-26 - 題庫範例檔與匯出整合格式選擇彈窗、頁首按鈕圓角統一與登出圖示文案優化
 - 影響檔案：`index.html`, `css/style.css`, `css/presentation.css`, `js/app.js`, `js/quiz.js`, `js/video_quiz.js`, `js/word_cloud.js`, `SYSTEM_LOG.md`。

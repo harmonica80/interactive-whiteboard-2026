@@ -3356,7 +3356,7 @@ body {
   border: 1px dashed var(--accent-color) !important;
 }
 
-/* 舒爾特方格按鈕點選反饋 */
+/* 舒爾特方格按鈕點選回饋 */
 .schulte-btn:active {
   transform: scale(0.9) !important;
   background: var(--accent-color) !important;
@@ -4915,7 +4915,7 @@ body {
   color: #ffffff;
 }
 
-/* 全頁專屬工作區頂部導航 */
+/* 全頁專屬工作區頂部導覽 */
 .admin-workspace-nav {
   display: flex;
   justify-content: space-between;
