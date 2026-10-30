@@ -17816,6 +17816,10 @@ class App {
           const amt = parseInt(pl.amount, 10) || 0;
           activities.push({
             id: `pt_${logId}`,
+            logId: logId,
+            studentUid: targetUid,
+            amount: amt,
+            reason: pl.reason || '課堂給點',
             type: 'point',
             typeName: '點數記錄',
             icon: amt >= 0 ? '⭐️' : '⚠️',
@@ -18280,7 +18284,7 @@ class App {
       if (loginEl) loginEl.textContent = timeObj.full;
 
       // 統計數據
-      let qCount = 0, cCount = 0, imgCount = 0, vidCount = 0, quizCount = 0, wcCount = 0;
+      let qCount = 0, cCount = 0, imgCount = 0, vidCount = 0, quizCount = 0, wcCount = 0, ptCount = 0;
       activities.forEach(a => {
         if (a.type === 'question') qCount++;
         else if (a.type === 'comment') cCount++;
@@ -18289,6 +18293,7 @@ class App {
           else if (a.icon === '🎥') vidCount++;
         } else if (a.type === 'quiz') quizCount++;
         else if (a.type === 'wordcloud') wcCount++;
+        else if (a.type === 'point') ptCount++;
       });
 
       const setElText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -18299,6 +18304,7 @@ class App {
       setElText('studentHistoryVidCount', vidCount);
       setElText('studentHistoryQuizCount', quizCount);
       setElText('studentHistoryWcCount', wcCount);
+      setElText('studentHistoryPointCount', ptCount);
 
       // 預設切換至全部
       this.filterStudentHistory('all');
@@ -18338,6 +18344,7 @@ class App {
     else if (category === 'media') items = all.filter(a => a.type === 'media');
     else if (category === 'quiz') items = all.filter(a => a.type === 'quiz');
     else if (category === 'wordcloud') items = all.filter(a => a.type === 'wordcloud');
+    else if (category === 'point') items = all.filter(a => a.type === 'point');
 
     if (items.length === 0) {
       timeline.innerHTML = `
@@ -18355,10 +18362,26 @@ class App {
       else if (a.type === 'media') badgeClass = (a.icon === '🖼️' ? 'badge-image' : 'badge-video');
       else if (a.type === 'quiz') badgeClass = 'badge-quiz';
       else if (a.type === 'wordcloud') badgeClass = 'badge-wordcloud';
+      else if (a.type === 'point') badgeClass = 'badge-point';
+
+      const targetUid = a.studentUid || (this.currentHistoryStudent ? this.currentHistoryStudent.uid : '');
+      const safeUid = String(targetUid).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeLogId = String(a.logId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+      const pointActionHtml = (a.type === 'point' && a.logId) ? `
+        <div style="display: inline-flex; align-items: center; gap: 6px; margin-left: auto;">
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminPromptEditPointLog('${safeUid}', '${safeLogId}')" title="編輯此筆點數記錄" style="font-size: 14px; padding: 3px 8px; border-radius: 6px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); cursor: pointer;">
+            ✏️ 編輯
+          </button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminDeletePointLog('${safeUid}', '${safeLogId}')" title="刪除此筆點數記錄" style="font-size: 14px; padding: 3px 8px; border-radius: 6px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); cursor: pointer;">
+            🗑️ 刪除
+          </button>
+        </div>
+      ` : '';
 
       return `
         <div class="student-activity-item">
-          <div class="student-activity-header">
+          <div class="student-activity-header" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span class="student-activity-badge ${badgeClass}">
               <span>${a.icon}</span>
               <span>${a.typeName}</span>
@@ -18366,6 +18389,7 @@ class App {
             <span class="student-activity-time" title="${timeObj.full}">
               ⏰ ${timeObj.full} (${timeObj.relative})
             </span>
+            ${pointActionHtml}
           </div>
 
           <div class="student-activity-body">
@@ -19574,6 +19598,9 @@ class App {
             </div>
           </div>
           <div style="display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;">
+            <button type="button" class="presentation-tool-btn" onclick="window.app.adminOpenStudentPointsHistoryModal('${safeUid}')" title="查閱、編輯或刪除 ${safeName} 的點數記錄" style="padding: 4px 10px; font-size: 14px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; white-space: nowrap;">
+              📜 點數記錄
+            </button>
             <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 1, '主動發言')" title="快速為 ${safeName} +1 點" style="padding: 4px 10px; font-size: 14px; font-weight: bold; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
               +1
             </button>
@@ -20041,6 +20068,13 @@ class App {
       this.closeAdminPointsAdjustModal();
       this.showNotification('成功', `已成功為 ${targetList.length} 位同學${amount >= 0 ? '+' : ''}${amount} 點！`);
       this.renderAdminStudentsList();
+      if (this.currentPointsHistoryUid && document.getElementById('adminStudentPointsHistoryModal')?.classList.contains('active')) {
+        this.renderStudentPointsHistoryList(this.currentPointsHistoryUid);
+      }
+      if (document.getElementById('studentHistoryModal')?.classList.contains('active') && this.currentHistoryStudent) {
+        this.currentStudentHistoryActivities = this.getStudentActivityHistory(this.currentHistoryStudent.uid, this.currentHistoryStudent.name);
+        this.filterStudentHistory(this.currentStudentHistoryFilter || 'all');
+      }
     } catch (e) {
       console.error('adminSavePointsAdjust error:', e);
       this.showNotification('錯誤', '給點失敗: ' + e.message);
@@ -20050,6 +20084,288 @@ class App {
         btn.innerHTML = '💾 確認送出給點';
       }
     }
+  }
+
+  // ===== 教師端：學生點數記錄檢視、編輯與刪除業務 =====
+  adminOpenStudentPointsHistoryModal(uid) {
+    if (!uid) return;
+    this.currentPointsHistoryUid = uid;
+    this.renderStudentPointsHistoryList(uid);
+
+    const modal = document.getElementById('adminStudentPointsHistoryModal');
+    if (modal) {
+      const fsEl = document.fullscreenElement;
+      if (fsEl && fsEl !== document.documentElement) {
+        if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+      } else if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+  }
+
+  closeAdminStudentPointsHistoryModal() {
+    const modal = document.getElementById('adminStudentPointsHistoryModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+    this.currentPointsHistoryUid = null;
+  }
+
+  renderStudentPointsHistoryList(uid) {
+    if (!uid) return;
+    const student = (this.registeredStudents || {})[uid] || (this.lastAdminStudentsList || []).find(s => s.uid === uid) || { uid, name: '同學', points: 0 };
+    const safeUid = String(uid).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const safeName = this.escapeHtml(student.name || '同學');
+    const curPts = parseInt(student.points, 10) || 0;
+
+    const nameEl = document.getElementById('adminPointHistoryStudentName');
+    const badgeEl = document.getElementById('adminPointHistoryTotalBadge');
+    const countEl = document.getElementById('adminPointHistoryCountLabel');
+    const avBox = document.getElementById('adminPointHistoryAvatarBox');
+    const addBtn = document.getElementById('adminPointHistoryAddBtn');
+    const container = document.getElementById('adminPointHistoryListContainer');
+
+    if (nameEl) nameEl.textContent = student.name || '同學';
+    if (badgeEl) badgeEl.textContent = `⭐️ ${curPts} 點`;
+    if (avBox) avBox.innerHTML = this.renderAvatarHtml(student.avatar, 42);
+    if (addBtn) {
+      addBtn.onclick = () => this.adminOpenPointsAdjustModal(uid);
+    }
+
+    if (!container) return;
+
+    const pointsLogObj = (student.pointsLog && typeof student.pointsLog === 'object') ? student.pointsLog : {};
+    const logs = Object.entries(pointsLogObj).map(([logId, pl]) => {
+      return {
+        logId,
+        amount: parseInt(pl.amount, 10) || 0,
+        reason: pl.reason || '課堂給點',
+        timestamp: pl.timestamp || 0
+      };
+    });
+
+    // 依時間倒序排列
+    logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    if (countEl) countEl.textContent = `共 ${logs.length} 筆點數記錄 · 累計目前 ${curPts} 點`;
+
+    if (logs.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); font-size: 15px; padding: 36px; background: var(--bg-input); border-radius: 12px; border: 1px dashed var(--border-color);">
+          🌱 目前尚無任何點數記錄。<br>
+          <span style="font-size: 14px; opacity: 0.8; margin-top: 6px; display: inline-block;">可點擊右上角「⭐️ 給點 / 加減分」為 ${safeName} 建立點數記錄。</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = logs.map(log => {
+      const timeObj = this.formatFullDateTime(log.timestamp);
+      const isPositive = log.amount >= 0;
+      const safeLogId = String(log.logId).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; gap: 12px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 12px; min-width: 220px; flex: 1;">
+            <div style="font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 8px; flex-shrink: 0; background: ${isPositive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${isPositive ? '#10b981' : '#ef4444'}; border: 1px solid ${isPositive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'};">
+              ${isPositive ? '+' : ''}${log.amount} 點
+            </div>
+            <div>
+              <div style="font-size: 15px; font-weight: bold; color: var(--text-primary);">${this.escapeHtml(log.reason)}</div>
+              <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;" title="${timeObj.full}">
+                ⏰ ${timeObj.full} (${timeObj.relative})
+              </div>
+            </div>
+          </div>
+          <div style="display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminPromptEditPointLog('${safeUid}', '${safeLogId}')" title="編輯這筆記錄的點數與事由" style="padding: 5px 12px; font-size: 14px; background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; cursor: pointer;">
+              ✏️ 編輯
+            </button>
+            <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminDeletePointLog('${safeUid}', '${safeLogId}')" title="刪除這筆點數記錄並重新計算總點數" style="padding: 5px 12px; font-size: 14px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; cursor: pointer;">
+              🗑️ 刪除
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  adminPromptEditPointLog(uid, logId) {
+    if (!uid || !logId) return;
+    const student = (this.registeredStudents || {})[uid] || (this.lastAdminStudentsList || []).find(s => s.uid === uid) || { uid, name: '同學', points: 0 };
+    const pl = (student.pointsLog && student.pointsLog[logId]) ? student.pointsLog[logId] : { amount: 1, reason: '', timestamp: Date.now() };
+
+    this.currentEditingPointLog = {
+      uid,
+      logId,
+      oldAmount: parseInt(pl.amount, 10) || 0,
+      oldReason: pl.reason || ''
+    };
+
+    const promptEl = document.getElementById('adminEditPointLogTargetPrompt');
+    const amtInput = document.getElementById('adminEditPointLogAmount');
+    const reasonInput = document.getElementById('adminEditPointLogReason');
+
+    if (promptEl) {
+      const timeObj = this.formatFullDateTime(pl.timestamp || Date.now());
+      promptEl.innerHTML = `
+        <div>同學：<strong>${this.escapeHtml(student.name || '同學')}</strong></div>
+        <div style="margin-top: 4px; font-size: 14px;">原始登記：<strong>${(parseInt(pl.amount, 10) || 0) >= 0 ? '+' : ''}${pl.amount} 點</strong> (${this.escapeHtml(pl.reason || '課堂給點')}) · ${timeObj.full}</div>
+      `;
+    }
+
+    if (amtInput) amtInput.value = pl.amount !== undefined ? pl.amount : 1;
+    if (reasonInput) reasonInput.value = pl.reason || '';
+
+    const modal = document.getElementById('adminEditPointLogModal');
+    if (modal) {
+      const fsEl = document.fullscreenElement;
+      if (fsEl && fsEl !== document.documentElement) {
+        if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+      } else if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+  }
+
+  closeAdminEditPointLogModal() {
+    const modal = document.getElementById('adminEditPointLogModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+    this.currentEditingPointLog = null;
+  }
+
+  async adminSaveEditPointLog() {
+    if (!this.currentEditingPointLog) return;
+    const { uid, logId, oldAmount } = this.currentEditingPointLog;
+    if (!uid || !logId) return;
+
+    const amtInput = document.getElementById('adminEditPointLogAmount');
+    const reasonInput = document.getElementById('adminEditPointLogReason');
+
+    const newAmount = parseInt(amtInput ? amtInput.value : 1, 10);
+    const newReason = (reasonInput ? reasonInput.value : '').trim() || '課堂給點';
+
+    if (isNaN(newAmount) || newAmount === 0) {
+      this.showNotification('提示', '請輸入有效的調整點數（不可為 0）！');
+      return;
+    }
+
+    const btn = document.getElementById('btnSaveEditPointLog');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ 正在儲存...';
+    }
+
+    try {
+      const student = (this.registeredStudents || {})[uid] || (this.lastAdminStudentsList || []).find(s => s.uid === uid);
+      const curPts = student ? (parseInt(student.points, 10) || 0) : 0;
+      const delta = newAmount - oldAmount;
+      const newPts = Math.max(0, curPts + delta);
+
+      const updates = {};
+      updates[`quiz/students/${uid}/points`] = newPts;
+      updates[`quiz/students/${uid}/pointsLog/${logId}/amount`] = newAmount;
+      updates[`quiz/students/${uid}/pointsLog/${logId}/reason`] = newReason;
+
+      await db.ref().update(updates);
+
+      if (this.registeredStudents && this.registeredStudents[uid]) {
+        this.registeredStudents[uid].points = newPts;
+        if (!this.registeredStudents[uid].pointsLog) this.registeredStudents[uid].pointsLog = {};
+        if (this.registeredStudents[uid].pointsLog[logId]) {
+          this.registeredStudents[uid].pointsLog[logId].amount = newAmount;
+          this.registeredStudents[uid].pointsLog[logId].reason = newReason;
+        }
+      }
+      if (this.lastAdminStudentsList) {
+        const s = this.lastAdminStudentsList.find(x => x.uid === uid);
+        if (s) s.points = newPts;
+      }
+
+      this.closeAdminEditPointLogModal();
+      this.showNotification('修改成功', `已成功修改為 ${newAmount >= 0 ? '+' : ''}${newAmount} 點（${newReason}）！(目前累積 ${newPts} 點)`);
+
+      // 刷新相關介面
+      if (document.getElementById('adminStudentPointsHistoryModal')?.classList.contains('active')) {
+        this.renderStudentPointsHistoryList(uid);
+      }
+      if (document.getElementById('studentHistoryModal')?.classList.contains('active') && this.currentHistoryStudent && this.currentHistoryStudent.uid === uid) {
+        this.currentStudentHistoryActivities = this.getStudentActivityHistory(uid, this.currentHistoryStudent.name);
+        this.filterStudentHistory(this.currentStudentHistoryFilter || 'all');
+      }
+      this.renderAdminPointsPanel();
+      this.renderAdminStudentsList();
+    } catch (e) {
+      console.error('adminSaveEditPointLog error:', e);
+      this.showNotification('錯誤', '儲存點數修改失敗: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '💾 儲存修改';
+      }
+    }
+  }
+
+  adminDeletePointLog(uid, logId) {
+    if (!uid || !logId) return;
+    const student = (this.registeredStudents || {})[uid] || (this.lastAdminStudentsList || []).find(s => s.uid === uid);
+    const pl = (student && student.pointsLog && student.pointsLog[logId]) ? student.pointsLog[logId] : null;
+    const amt = pl ? (parseInt(pl.amount, 10) || 0) : 0;
+    const reason = pl ? pl.reason : '點數記錄';
+    const studentName = student ? student.name : '同學';
+
+    this.showConfirmModal(
+      '🗑️',
+      '刪除點數記錄',
+      `確定要刪除「${studentName}」的這筆記錄嗎？\n內容：${amt >= 0 ? '+' : ''}${amt} 點（${reason}）\n刪除後學生總點數將自動重新計算。`,
+      async () => {
+        try {
+          const curPts = student ? (parseInt(student.points, 10) || 0) : 0;
+          const newPts = Math.max(0, curPts - amt);
+
+          const updates = {};
+          updates[`quiz/students/${uid}/points`] = newPts;
+          updates[`quiz/students/${uid}/pointsLog/${logId}`] = null;
+
+          await db.ref().update(updates);
+
+          if (this.registeredStudents && this.registeredStudents[uid]) {
+            this.registeredStudents[uid].points = newPts;
+            if (this.registeredStudents[uid].pointsLog) {
+              delete this.registeredStudents[uid].pointsLog[logId];
+            }
+          }
+          if (this.lastAdminStudentsList) {
+            const s = this.lastAdminStudentsList.find(x => x.uid === uid);
+            if (s) s.points = newPts;
+          }
+
+          this.showNotification('已刪除', `已成功刪除該筆點數記錄！(目前累積 ${newPts} 點)`);
+
+          // 刷新相關介面
+          if (document.getElementById('adminStudentPointsHistoryModal')?.classList.contains('active')) {
+            this.renderStudentPointsHistoryList(uid);
+          }
+          if (document.getElementById('studentHistoryModal')?.classList.contains('active') && this.currentHistoryStudent && this.currentHistoryStudent.uid === uid) {
+            this.currentStudentHistoryActivities = this.getStudentActivityHistory(uid, this.currentHistoryStudent.name);
+            this.filterStudentHistory(this.currentStudentHistoryFilter || 'all');
+          }
+          this.renderAdminPointsPanel();
+          this.renderAdminStudentsList();
+        } catch (err) {
+          console.error('adminDeletePointLog error:', err);
+          this.showNotification('錯誤', '刪除點數記錄失敗: ' + err.message);
+        }
+      }
+    );
   }
 
   // ===== 教師端：課堂榮譽排行榜業務 =====

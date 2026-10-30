@@ -8882,6 +8882,11 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   color: #ec4899;
 }
 
+.student-activity-badge.badge-point {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
 .student-activity-time {
   font-size: 14px;
   color: var(--text-muted);
