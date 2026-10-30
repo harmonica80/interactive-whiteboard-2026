@@ -1,4 +1,29 @@
 # System Log
+## 2026-10-30 - 學生分組管理系統 (Phase 1 & Phase 2)：自動分組、手動調整、歷史分組載入與小組積分轉移
+- 影響檔案：index.html, css/style.css, js/app.js, js/group_manager.js, images/admin_icons/class_groups.svg, SYSTEM_LOG.md
+- 修改項目：
+  1. **建立小組管理核心模組 (js/group_manager.js)**：
+     - 支援依每組人數或總組數自動分組，範圍可選全班或僅線上學生。
+     - 支援未到課學生處理：可選擇保留於組內或暫移至未分配清單。
+     - 支援拖曳學生名牌換組、手動新增組別、自訂組名與代表色、指派組長。
+     - 支援歷史分組快照保存、重新套用、線上到課狀態比對與 CSV 名冊匯出。
+     - 支援小組獨立積分池 (groupPoints) 與給點日誌 (groupPointsLog)。
+     - 支援小組積分轉移至個人：提供「全額均分」與「全員同額獎勵」雙模式，自動寫入個人 pointsLog。
+  2. **教師管理後台全新「K. 學生分組管理」面板 (index.html)**：
+     - 在後台班級管理分類新增「K. 學生分組管理」功能卡片（專屬高質感 SVG 圖標 class_groups.svg）。
+     - 快速切換選單加入 classGroups。
+     - 建立滿版分組工作區：小組網格卡片、即時點數徽章、拖曳換組視覺回饋與未分配學生專區。
+     - 新增「自動分組設定彈窗」（#adminAutoGroupModal）、「歷史分組庫彈窗」（#adminGroupHistoryModal）與「小組積分結算轉移彈窗」（#adminGroupTransferModal）。
+  3. **學生端介面與小組徽章連動 (css/style.css, js/app.js)**：
+     - 學生右下角懸浮個人名牌增加小組徽章（#floatingStudentGroupBadge），即時顯示組名與小組累積點數。
+     - 小組卡片與拖曳名牌全面套用全域四大色系 CSS 變數，字體大小符合 >= 14px 規範。
+  4. **全模組語法與用語檢驗**：
+     - 通過 
+ode --check 語法檢測與 
+pm run check:syntax。
+     - 嚴格落實「記錄」用字與台灣繁體中文生活習慣用語。
+     - 更新快取版本參數至 =459。
+
 ## 2026-10-30 - 學生積分管理新增「點數清空」與「結算點數並記錄到點數歷程」功能
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

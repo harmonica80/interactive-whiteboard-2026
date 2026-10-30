@@ -9073,3 +9073,86 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   box-shadow: 0 2px 8px rgba(180, 83, 9, 0.4);
 }
 
+
+
+/* ==========================================================================
+   👥 學生分組管理與小組卡片樣式 (Group Management Styles)
+   全面連動四大主題變數，文字大小 >= 14px
+   ========================================================================== */
+
+.group-admin-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.group-admin-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.group-admin-card.drag-hover {
+  border-color: var(--accent-color) !important;
+  background: var(--bg-hover) !important;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25) !important;
+  transform: scale(1.01);
+}
+
+.student-drag-chip {
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.student-drag-chip:hover {
+  background: var(--bg-hover) !important;
+  border-color: var(--accent-color) !important;
+}
+
+.student-drag-chip:active {
+  cursor: grabbing !important;
+  transform: scale(0.98);
+  opacity: 0.85;
+}
+
+.chip-action-btn {
+  opacity: 0.6;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.chip-action-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* 學生端浮動小組標籤徽章 */
+.floating-student-group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.floating-student-group-badge .group-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.floating-student-group-badge .group-pts {
+  color: #d97706;
+  font-weight: 800;
+  margin-left: 2px;
+}
+
+@media (max-width: 900px) {
+  .group-workspace-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

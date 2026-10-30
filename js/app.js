@@ -1,4 +1,3 @@
-
 // 主程式
 class App {
   constructor() {
@@ -513,6 +512,28 @@ class App {
       } else {
         floatingAvatarContainer.title = '尚未設定姓名，點擊設定您的名稱與頭像';
       }
+    
+    this.updateFloatingStudentGroupBadge();}
+  }
+
+  updateFloatingStudentGroupBadge() {
+    const groupBadge = document.getElementById('floatingStudentGroupBadge');
+    if (!groupBadge) return;
+    const myUid = this.getUserId();
+    const group = window.groupManager ? window.groupManager.getStudentGroup(myUid) : null;
+    if (group) {
+      groupBadge.style.display = 'inline-flex';
+      const color = group.color || '#3b82f6';
+      const pts = parseInt(group.points, 10) || 0;
+      const isCaptain = (group.captainUid === myUid);
+      groupBadge.innerHTML = `
+        <span class="group-dot" style="background: ${color};"></span>
+        <span>${isCaptain ? '👑 ' : ''}${this.escapeHtml(group.name)}</span>
+        <span class="group-pts" title="小組累積點數">⭐️${pts}</span>
+      `;
+      groupBadge.style.borderColor = color;
+    } else {
+      groupBadge.style.display = 'none';
     }
   }
 
@@ -3661,6 +3682,8 @@ class App {
           this.renderAdminPointsPanel();
         } else if (this.currentAdminFeatureKey === 'classAttendance') {
           this.renderAdminAttendancePanel();
+        } else if (this.currentAdminFeatureKey === 'classGroups') {
+          if (window.groupManager) window.groupManager.renderAdminPanel();
         }
       }
 
@@ -5808,6 +5831,12 @@ class App {
         category: '班級管理',
         icon: 'images/admin_icons/class_attendance.svg'
       },
+      classGroups: {
+        id: 'adminClassGroupSection',
+        title: 'K. 學生分組管理',
+        category: '班級管理',
+        icon: 'images/admin_icons/class_groups.svg'
+      },
       classReaction: {
         id: 'adminReactionSettingsSection',
         title: 'D. 即時互動回饋設定',
@@ -5914,6 +5943,7 @@ class App {
       classStudents: 'adminCatBlock1',
       classPoints: 'adminCatBlock1',
       classAttendance: 'adminCatBlock1',
+      classGroups: 'adminCatBlock1',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
@@ -6047,6 +6077,14 @@ class App {
     // 線上點名與出缺勤管理專屬 UI 同步
     if (featureKey === 'classAttendance') {
       this.renderAdminAttendancePanel();
+    }
+
+    // 學生分組管理專屬 UI 同步
+    if (featureKey === 'classGroups') {
+      if (window.groupManager) {
+        window.groupManager.listenActiveGroups();
+        window.groupManager.renderAdminPanel();
+      }
     }
 
     // 提問管理與教師分享管理：更新 Firebase 空間與流量監測儀表板及附檔開關狀態
@@ -17591,6 +17629,8 @@ class App {
           this.renderAdminPointsPanel();
         } else if (this.currentAdminFeatureKey === 'classAttendance') {
           this.renderAdminAttendancePanel();
+        } else if (this.currentAdminFeatureKey === 'classGroups') {
+          if (window.groupManager) window.groupManager.renderAdminPanel();
         }
       }
     });
