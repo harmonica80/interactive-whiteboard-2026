@@ -496,11 +496,16 @@ class App {
     }
     const floatingPointsBadge = document.getElementById('floatingStudentPointsBadge');
     if (floatingPointsBadge) {
-      const myUid = this.getUserId();
-      const st = (this.registeredStudents || {})[myUid];
-      const pts = st ? (parseInt(st.points, 10) || 0) : 0;
-      floatingPointsBadge.style.display = 'inline-flex';
-      floatingPointsBadge.textContent = `${pts}`;
+      const isVisible = (this.showStudentPointsToStudents !== false);
+      if (isVisible) {
+        const myUid = this.getUserId();
+        const st = (this.registeredStudents || {})[myUid];
+        const pts = st ? (parseInt(st.points, 10) || 0) : 0;
+        floatingPointsBadge.style.display = 'inline-flex';
+        floatingPointsBadge.textContent = `${pts}`;
+      } else {
+        floatingPointsBadge.style.display = 'none';
+      }
     }
     if (floatingAvatarContainer) {
       if (userName) {
@@ -2557,6 +2562,7 @@ class App {
     // 初次渲染右下角 Dock 與後台設定面板
     this.renderLiveReactionDock();
     this.initReactionSettingsListener();
+    this.initPointsSettingsListener();
     this.setupLiveReactionsSync();
   }
 
@@ -18011,9 +18017,6 @@ class App {
                 <span class="admin-student-online-badge ${s.isOnline ? 'online' : 'offline'}" title="${s.isOnline ? '連線中' : '目前離線'}">
                   ${s.isOnline ? '🟢 線上' : '⚪ 離線'}
                 </span>
-                <span class="admin-student-stat-tag admin-student-stat-points" onclick="window.app.adminOpenPointsAdjustModal('${safeUid}')" title="點擊為 ${safeName} 調整點數">
-                  ⭐️ <strong>${s.points || 0}</strong> 點
-                </span>
               </div>
             </div>
 
@@ -18035,17 +18038,6 @@ class App {
             </div>
 
             <div class="admin-student-list-actions">
-              <div style="display: inline-flex; align-items: center; gap: 4px;">
-                <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 1, '主動發言')" title="快速為 ${safeName} +1 點" style="padding: 3px 8px; font-size: 14px; font-weight: bold; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
-                  +1
-                </button>
-                <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 2, '表現優良')" title="快速為 ${safeName} +2 點" style="padding: 3px 8px; font-size: 14px; font-weight: bold; background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; cursor: pointer;">
-                  +2
-                </button>
-                <button type="button" class="presentation-tool-btn" onclick="window.app.adminOpenPointsAdjustModal('${safeUid}')" title="自訂為 ${safeName} 加減點數" style="padding: 3px 8px; font-size: 14px; background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; cursor: pointer;">
-                  ⭐️ 給點
-                </button>
-              </div>
               <button type="button" onclick="window.app.adminOpenStudentHistoryModal('${safeUid}')" title="查閱 ${safeName} 的完整參與歷程">
                 📜 歷程
               </button>
@@ -18086,9 +18078,6 @@ class App {
                   <span class="admin-student-online-badge ${s.isOnline ? 'online' : 'offline'}" title="${s.isOnline ? '連線中' : '目前離線'}">
                     ${s.isOnline ? '🟢 線上' : '⚪ 離線'}
                   </span>
-                  <span class="admin-student-stat-tag admin-student-stat-points" onclick="window.app.adminOpenPointsAdjustModal('${safeUid}')" title="點擊為 ${safeName} 調整點數">
-                    ⭐️ <strong>${s.points || 0}</strong> 點
-                  </span>
                 </div>
                 <div class="admin-student-card-time" title="登入/最後活動時間：${timeObj.full}">
                   <span>⏰</span>
@@ -18110,17 +18099,6 @@ class App {
 
             <!-- 操作按鈕組 -->
             <div class="admin-student-card-actions" style="display: flex; flex-direction: column; gap: 8px;">
-              <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
-                <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 1, '主動發言')" title="快速為 ${safeName} +1 點" style="padding: 3px 8px; font-size: 14px; font-weight: bold; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
-                  +1
-                </button>
-                <button type="button" class="presentation-tool-btn" onclick="window.app.adminQuickAdjustPoints('${safeUid}', 2, '表現優良')" title="快速為 ${safeName} +2 點" style="padding: 3px 8px; font-size: 14px; font-weight: bold; background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; cursor: pointer;">
-                  +2
-                </button>
-                <button type="button" class="presentation-tool-btn" onclick="window.app.adminOpenPointsAdjustModal('${safeUid}')" title="自訂為 ${safeName} 加減點數" style="padding: 3px 8px; font-size: 14px; background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; cursor: pointer;">
-                  ⭐️ 給點
-                </button>
-              </div>
               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                 <button type="button" onclick="window.app.adminOpenStudentHistoryModal('${safeUid}')" title="查閱 ${safeName} 的完整參與歷程">
                   📜 歷程
@@ -19382,11 +19360,58 @@ class App {
     }
   }
 
+  initPointsSettingsListener() {
+    if (!this.db) return;
+    if (this._pointsSettingsRef) {
+      this._pointsSettingsRef.off();
+    }
+    this._pointsSettingsRef = this.db.ref('settings/points');
+    this._pointsSettingsRef.on('value', (snap) => {
+      const val = snap.val();
+      const show = val ? (val.showStudentPoints !== false) : true;
+      this.showStudentPointsToStudents = show;
+
+      // 同步更新後台核取開關狀態
+      const toggle = document.getElementById('adminShowStudentPointsToggle');
+      if (toggle && toggle.checked !== show) {
+        toggle.checked = show;
+      }
+
+      // 學生端即時更新點數徽章顯示/隱藏
+      const badge = document.getElementById('floatingStudentPointsBadge');
+      if (badge) {
+        if (!show) {
+          badge.style.display = 'none';
+        } else {
+          const myUid = this.getUserId();
+          const st = (this.registeredStudents || {})[myUid];
+          const pts = st ? (parseInt(st.points, 10) || 0) : 0;
+          badge.style.display = 'inline-flex';
+          badge.textContent = `${pts}`;
+        }
+      }
+    });
+  }
+
+  toggleStudentPointsVisibility(show) {
+    this.showStudentPointsToStudents = Boolean(show);
+    if (!this.db) return;
+    this.db.ref('settings/points').set({
+      showStudentPoints: Boolean(show),
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      this.showNotification('設定已更新', show ? '已開啟同學端積分數字顯示' : '已關閉同學端積分數字顯示');
+    }).catch(e => {
+      console.error('toggleStudentPointsVisibility error:', e);
+    });
+  }
+
   // ===== 學生端：點數即時同步與專屬激勵特效 =====
   updateStudentPointsDisplay(newPoints, pointsLog) {
     const badge = document.getElementById('floatingStudentPointsBadge');
     if (badge) {
-      badge.style.display = 'inline-flex';
+      const isVisible = (this.showStudentPointsToStudents !== false);
+      badge.style.display = isVisible ? 'inline-flex' : 'none';
       badge.textContent = `${newPoints}`;
     }
 

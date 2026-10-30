@@ -2829,12 +2829,6 @@
                 </div>
 
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openAdminFeature('classPoints')" title="前往學生積分管理" style="font-size: 14px; border-radius: 10px; padding: 6px 14px; background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1.5px solid rgba(245, 158, 11, 0.4); font-weight: bold;">
-                    ⭐️ 學生積分管理 ➔
-                  </button>
-                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openAdminFeature('classAttendance')" title="前往線上點名管理" style="font-size: 14px; border-radius: 10px; padding: 6px 14px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.4); font-weight: bold;">
-                    📋 線上點名管理 ➔
-                  </button>
                   <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.refreshAdminStudentsList()" title="重新由雲端同步最新學生名冊" style="font-size: 14px; border-radius: 10px; padding: 6px 14px;">
                     🔄 重新整理
                   </button>
@@ -2921,7 +2915,15 @@
                   </p>
                 </div>
 
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                  <!-- 是否在同學端顯示積分點數開關 -->
+                  <div style="display: flex; align-items: center; gap: 8px; background: var(--bg-input); padding: 6px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <label for="adminShowStudentPointsToggle" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin: 0; font-size: 14px; font-weight: bold; color: var(--text-primary);">
+                      <input type="checkbox" id="adminShowStudentPointsToggle" checked onchange="window.app && window.app.toggleStudentPointsVisibility(this.checked)" style="width: 18px; height: 18px; accent-color: #f59e0b; cursor: pointer;">
+                      <span>同學端顯示積分數字</span>
+                    </label>
+                  </div>
+
                   <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminOpenPointsAdjustModal()" title="開啟自訂點數加減分彈窗" style="font-size: 14px; border-radius: 10px; padding: 6px 14px; background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1.5px solid rgba(245, 158, 11, 0.4); font-weight: bold;">
                     ⭐️ 批次給點 / 加減分
                   </button>
@@ -6164,7 +6166,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=449"></script>
+  <script src="js/app.js?v=450"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
