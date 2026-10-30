@@ -19477,6 +19477,11 @@ class App {
 
   // ===== 教師端：學生積分管理專屬全頁面板業務 =====
   renderAdminPointsPanel() {
+    if (!this.presetPointReasonsInit) {
+      this.initPointReasons();
+      this.presetPointReasonsInit = true;
+    }
+
     const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
       ? window.ClassRoomManager.getActiveClassCode()
       : (window.currentClassCode || '');
@@ -19583,14 +19588,20 @@ class App {
       return;
     }
 
+    const selectedSet = this.adminSelectedStudentUids || new Set();
+
     listContainer.innerHTML = filtered.map(s => {
       const safeUid = String(s.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
       const safeName = this.escapeHtml(s.name);
       const avHtml = this.renderAvatarHtml(s.avatar, 34);
+      const isChecked = selectedSet.has(s.uid);
 
       return `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; gap: 8px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: ${isChecked ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg-input)'}; border: 1px solid ${isChecked ? 'rgba(245, 158, 11, 0.4)' : 'var(--border-color)'}; border-radius: 8px; gap: 8px; flex-wrap: wrap; transition: all 0.2s;">
           <div style="display: flex; align-items: center; gap: 8px; min-width: 140px; flex: 1;">
+            <label style="display: flex; align-items: center; margin: 0; cursor: pointer; flex-shrink: 0;" title="勾選以進行批次給點">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.app && window.app.adminToggleSelectPointsStudent('${safeUid}', this.checked)" style="width: 18px; height: 18px; accent-color: #f59e0b; cursor: pointer;">
+            </label>
             <div style="flex-shrink: 0;">${avHtml}</div>
             <div>
               <div style="font-weight: bold; font-size: 14px; color: var(--text-primary);">${safeName}</div>
@@ -19614,6 +19625,8 @@ class App {
         </div>
       `;
     }).join('');
+
+    this.updatePointsStudentSelectionUI(false);
   }
 
   // ===== 教師端：線上點名與出缺勤管理專屬全頁面板業務 =====
@@ -19915,63 +19928,383 @@ class App {
     }
   }
 
+  // ===== 學生多選與快捷名冊連動業務 =====
+  adminToggleSelectPointsStudent(uid, isChecked) {
+    if (!this.adminSelectedStudentUids) this.adminSelectedStudentUids = new Set();
+    if (isChecked) {
+      this.adminSelectedStudentUids.add(uid);
+    } else {
+      this.adminSelectedStudentUids.delete(uid);
+    }
+    this.updatePointsStudentSelectionUI(true);
+  }
+
+  adminToggleSelectAllPointsStudents() {
+    if (!this.adminSelectedStudentUids) this.adminSelectedStudentUids = new Set();
+    const students = this.lastAdminStudentsList || [];
+    const allUids = students.map(s => s.uid);
+
+    if (this.adminSelectedStudentUids.size >= allUids.length && allUids.length > 0) {
+      this.adminSelectedStudentUids.clear();
+    } else {
+      allUids.forEach(uid => this.adminSelectedStudentUids.add(uid));
+    }
+    this.updatePointsStudentSelectionUI(false);
+    this.renderAdminPointsStudentList(students);
+  }
+
+  updatePointsStudentSelectionUI(rerenderModalIfOpen = true) {
+    const count = this.adminSelectedStudentUids ? this.adminSelectedStudentUids.size : 0;
+    const badge = document.getElementById('adminPointsSelectedCountBadge');
+    if (badge) {
+      if (count > 0) {
+        badge.style.display = 'inline-block';
+        badge.textContent = `已選 ${count} 人`;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    const selectAllBtn = document.getElementById('btnAdminPointsSelectAll');
+    const students = this.lastAdminStudentsList || [];
+    if (selectAllBtn) {
+      selectAllBtn.textContent = (count >= students.length && students.length > 0) ? '⬜ 取消全選' : '☑️ 全選';
+    }
+
+    // 若給點彈窗是開啟狀態且為批次模式，重新渲染對象
+    if (rerenderModalIfOpen && document.getElementById('adminPointsAdjustModal')?.classList.contains('active') && !this.currentPointsAdjustTargetUid) {
+      this.renderPointsAdjustTargetInfo();
+    }
+  }
+
+  switchPointsAdjustMode(mode) {
+    this.pointsAdjustMode = mode;
+    this.renderPointsAdjustTargetInfo();
+  }
+
+  renderPointsAdjustTargetInfo() {
+    const infoEl = document.getElementById('adminPointsTargetInfo');
+    if (!infoEl) return;
+
+    const targetUid = this.currentPointsAdjustTargetUid;
+    const students = this.lastAdminStudentsList || [];
+    const selectedSet = this.adminSelectedStudentUids || new Set();
+
+    if (targetUid) {
+      // 單一學生模式
+      const st = students.find(s => s.uid === targetUid) || (this.registeredStudents || {})[targetUid];
+      const name = st ? st.name : '同學';
+      const pts = st ? (parseInt(st.points, 10) || 0) : 0;
+      const avHtml = this.renderAvatarHtml(st ? st.avatar : 0, 38);
+
+      infoEl.innerHTML = `
+        <div style="flex-shrink: 0;">${avHtml}</div>
+        <div>
+          <div style="font-weight: bold; font-size: 15px; color: var(--text-primary);">${this.escapeHtml(name)}</div>
+          <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;">
+            目前累積點數：<strong style="color: #d97706;">⭐️ ${pts} 點</strong>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // 批次給點模式：提供「批次全班」與「自行核選同學」
+    const mode = this.pointsAdjustMode || (selectedSet.size > 0 ? 'selected' : 'all');
+    this.pointsAdjustMode = mode;
+    const selectedCount = selectedSet.size;
+
+    let selectorListHtml = '';
+    if (mode === 'selected') {
+      selectorListHtml = `
+        <div style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminModalSelectAllStudents(true)" style="padding: 3px 8px; font-size: 13px; border-radius: 6px;">
+                ☑️ 全選
+              </button>
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminModalSelectAllStudents(false)" style="padding: 3px 8px; font-size: 13px; border-radius: 6px;">
+                ⬜ 全部取消
+              </button>
+            </div>
+            <div style="font-weight: bold; color: var(--text-primary);">
+              已核選 <strong style="color: #d97706;">${selectedCount}</strong> / ${students.length} 位同學
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 6px; max-height: 180px; overflow-y: auto; padding: 6px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+            ${students.map(s => {
+              const isChecked = selectedSet.has(s.uid);
+              const safeUid = String(s.uid).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+              const av = this.renderAvatarHtml(s.avatar, 24);
+              return `
+                <label style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; background: ${isChecked ? 'rgba(245, 158, 11, 0.12)' : 'var(--bg-input)'}; border: 1px solid ${isChecked ? 'rgba(245, 158, 11, 0.35)' : 'var(--border-color)'}; cursor: pointer; user-select: none; margin: 0; transition: all 0.15s;">
+                  <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.app && window.app.adminToggleSelectPointsStudent('${safeUid}', this.checked)" style="width: 16px; height: 16px; accent-color: #f59e0b; cursor: pointer;">
+                  <div style="flex-shrink: 0;">${av}</div>
+                  <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: bold; color: var(--text-primary);" title="${this.escapeHtml(s.name)}">
+                    ${this.escapeHtml(s.name)}
+                  </div>
+                </label>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    infoEl.innerHTML = `
+      <div style="width: 100%;">
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <button type="button" class="presentation-tool-btn ${mode === 'all' ? 'active' : ''}" onclick="window.app && window.app.switchPointsAdjustMode('all')" style="flex: 1; padding: 6px 10px; font-size: 14px; border-radius: 8px; font-weight: bold;">
+            🏫 批次全班（共 ${students.length} 位）
+          </button>
+          <button type="button" class="presentation-tool-btn ${mode === 'selected' ? 'active' : ''}" onclick="window.app && window.app.switchPointsAdjustMode('selected')" style="flex: 1; padding: 6px 10px; font-size: 14px; border-radius: 8px; font-weight: bold;">
+            👥 自行核選同學（已選 ${selectedCount} 位）
+          </button>
+        </div>
+
+        ${mode === 'all' ? `
+          <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5; padding: 4px 2px;">
+            🏫 每位全班同學（共 ${students.length} 位）都將同步獲得相同的加減分點數與事由記錄。
+          </div>
+        ` : selectorListHtml}
+      </div>
+    `;
+  }
+
+  adminModalSelectAllStudents(select) {
+    if (!this.adminSelectedStudentUids) this.adminSelectedStudentUids = new Set();
+    const students = this.lastAdminStudentsList || [];
+    if (select) {
+      students.forEach(s => this.adminSelectedStudentUids.add(s.uid));
+    } else {
+      this.adminSelectedStudentUids.clear();
+    }
+    this.updatePointsStudentSelectionUI(true);
+    this.renderAdminPointsStudentList(students);
+  }
+
+  // ===== 教師端：自訂常用給點事由業務 =====
+  initPointReasons() {
+    this.defaultPointReasons = [
+      '💡 主動積極發言',
+      '🎯 答題精準正確',
+      '🤝 團隊互助合作',
+      '🧠 創意想法獨特',
+      '✨ 專注認真守紀',
+      '📝 筆記作業完整',
+      '⚠️ 課堂分心提醒'
+    ];
+
+    if (!Array.isArray(this.presetPointReasons) || this.presetPointReasons.length === 0) {
+      try {
+        const local = localStorage.getItem('custom_point_reasons');
+        if (local) this.presetPointReasons = JSON.parse(local);
+      } catch (e) {}
+      if (!Array.isArray(this.presetPointReasons) || this.presetPointReasons.length === 0) {
+        this.presetPointReasons = [...this.defaultPointReasons];
+      }
+    }
+
+    if (typeof db !== 'undefined') {
+      db.ref('settings/points/presetReasons').on('value', snap => {
+        const val = snap.val();
+        if (Array.isArray(val) && val.length > 0) {
+          this.presetPointReasons = val;
+          try { localStorage.setItem('custom_point_reasons', JSON.stringify(val)); } catch (e) {}
+          this.renderPointPresetReasonsUI();
+          if (document.getElementById('adminCustomPointReasonsModal')?.classList.contains('active')) {
+            this.renderCustomPointReasonsList();
+          }
+        }
+      });
+    }
+  }
+
+  renderPointPresetReasonsUI() {
+    const container = document.getElementById('adminPointsPresetReasonsContainer');
+    if (!container) return;
+    const reasons = (Array.isArray(this.presetPointReasons) && this.presetPointReasons.length > 0)
+      ? this.presetPointReasons
+      : (this.defaultPointReasons || [
+        '💡 主動積極發言',
+        '🎯 答題精準正確',
+        '🤝 團隊互助合作',
+        '🧠 創意想法獨特',
+        '✨ 專注認真守紀',
+        '📝 筆記作業完整',
+        '⚠️ 課堂分心提醒'
+      ]);
+
+    container.innerHTML = reasons.map(r => {
+      const safeReason = this.escapeHtml(r).replace(/'/g, "\\'");
+      return `
+        <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminSetPointsReason('${safeReason}')" style="padding: 4px 10px; font-size: 14px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; color: var(--text-primary); transition: all 0.2s;">
+          ${this.escapeHtml(r)}
+        </button>
+      `;
+    }).join('');
+  }
+
+  adminOpenCustomPointReasonsModal() {
+    if (!Array.isArray(this.presetPointReasons) || this.presetPointReasons.length === 0) {
+      this.initPointReasons();
+    }
+    this.renderCustomPointReasonsList();
+
+    const input = document.getElementById('adminNewPointReasonInput');
+    if (input) input.value = '';
+
+    const modal = document.getElementById('adminCustomPointReasonsModal');
+    if (modal) {
+      const fsEl = document.fullscreenElement;
+      if (fsEl && fsEl !== document.documentElement) {
+        if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+      } else if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+  }
+
+  closeAdminCustomPointReasonsModal() {
+    const modal = document.getElementById('adminCustomPointReasonsModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+
+  renderCustomPointReasonsList() {
+    const listEl = document.getElementById('adminCustomPointReasonsList');
+    if (!listEl) return;
+    const reasons = (Array.isArray(this.presetPointReasons) && this.presetPointReasons.length > 0)
+      ? this.presetPointReasons
+      : (this.defaultPointReasons || []);
+
+    if (reasons.length === 0) {
+      listEl.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 24px; background: var(--bg-input); border-radius: 8px;">
+          🌱 目前尚無常用事由標籤。
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = reasons.map((r, idx) => {
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; gap: 8px;">
+          <span style="font-size: 14px; font-weight: bold; color: var(--text-primary); word-break: break-word;">${this.escapeHtml(r)}</span>
+          <div style="display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminPromptEditCustomPointReason(${idx})" title="修改事由內容" style="padding: 3px 8px; font-size: 14px; border-radius: 6px;">
+              ✏️ 編輯
+            </button>
+            <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.adminDeleteCustomPointReason(${idx})" title="刪除此項事由" style="padding: 3px 8px; font-size: 14px; border-radius: 6px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">
+              🗑️ 刪除
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async adminAddCustomPointReason() {
+    const input = document.getElementById('adminNewPointReasonInput');
+    const val = (input ? input.value : '').trim();
+    if (!val) {
+      this.showNotification('提示', '請輸入要新增的事由文字！');
+      return;
+    }
+
+    if (!Array.isArray(this.presetPointReasons)) this.presetPointReasons = [...(this.defaultPointReasons || [])];
+    if (this.presetPointReasons.includes(val)) {
+      this.showNotification('提示', '該給點事由已存在！');
+      return;
+    }
+
+    this.presetPointReasons.push(val);
+    await this.adminSavePresetPointReasons();
+    if (input) input.value = '';
+    this.renderCustomPointReasonsList();
+    this.renderPointPresetReasonsUI();
+    this.showNotification('已新增', `已成功新增事由「${val}」！`);
+  }
+
+  async adminPromptEditCustomPointReason(index) {
+    if (!Array.isArray(this.presetPointReasons) || index < 0 || index >= this.presetPointReasons.length) return;
+    const oldVal = this.presetPointReasons[index];
+    const newVal = prompt('請輸入修改後的給點事由：', oldVal);
+    if (newVal === null) return;
+    const trimmed = newVal.trim();
+    if (!trimmed) {
+      this.showNotification('提示', '事由內容不可為空！');
+      return;
+    }
+
+    this.presetPointReasons[index] = trimmed;
+    await this.adminSavePresetPointReasons();
+    this.renderCustomPointReasonsList();
+    this.renderPointPresetReasonsUI();
+    this.showNotification('已修改', `事由已更新為「${trimmed}」！`);
+  }
+
+  async adminDeleteCustomPointReason(index) {
+    if (!Array.isArray(this.presetPointReasons) || index < 0 || index >= this.presetPointReasons.length) return;
+    const item = this.presetPointReasons[index];
+    this.showConfirmModal('🗑️', '刪除常用事由', `確定要刪除「${item}」這個常用事由標籤嗎？`, async () => {
+      this.presetPointReasons.splice(index, 1);
+      await this.adminSavePresetPointReasons();
+      this.renderCustomPointReasonsList();
+      this.renderPointPresetReasonsUI();
+      this.showNotification('已刪除', `已成功刪除事由「${item}」！`);
+    });
+  }
+
+  async adminResetCustomPointReasons() {
+    this.showConfirmModal('🔄', '恢復預設事由', '確定要將常用給點事由恢復為系統預設清單嗎？', async () => {
+      this.presetPointReasons = [...(this.defaultPointReasons || [])];
+      await this.adminSavePresetPointReasons();
+      this.renderCustomPointReasonsList();
+      this.renderPointPresetReasonsUI();
+      this.showNotification('已重設', '已成功恢復系統預設給點事由！');
+    });
+  }
+
+  async adminSavePresetPointReasons() {
+    const list = Array.isArray(this.presetPointReasons) ? this.presetPointReasons : [];
+    try {
+      localStorage.setItem('custom_point_reasons', JSON.stringify(list));
+    } catch (e) {}
+
+    if (typeof db !== 'undefined') {
+      try {
+        await db.ref('settings/points/presetReasons').set(list);
+      } catch (err) {
+        console.warn('Save presetReasons to Firebase error:', err);
+      }
+    }
+  }
+
   adminOpenPointsAdjustModal(targetUid) {
     this.currentPointsAdjustTargetUid = targetUid || null;
-    const infoEl = document.getElementById('adminPointsTargetInfo');
     const amtInput = document.getElementById('adminPointsAdjustAmount');
     const reasonInput = document.getElementById('adminPointsAdjustReason');
 
     if (amtInput) amtInput.value = '1';
     if (reasonInput) reasonInput.value = '主動積極發言';
 
-    const selectedUids = Array.from(this.adminSelectedStudentUids || []);
-    const students = this.lastAdminStudentsList || [];
-
-    if (infoEl) {
-      if (targetUid) {
-        const st = students.find(s => s.uid === targetUid) || (this.registeredStudents || {})[targetUid];
-        const name = st ? st.name : '同學';
-        const pts = st ? (parseInt(st.points, 10) || 0) : 0;
-        const avHtml = this.renderAvatarHtml(st ? st.avatar : 0, 36);
-        infoEl.innerHTML = `
-          <div style="flex-shrink: 0;">${avHtml}</div>
-          <div>
-            <div style="font-weight: bold; font-size: 15px; color: var(--text-primary);">${this.escapeHtml(name)}</div>
-            <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;">
-              目前累積點數：<strong style="color: #d97706;">⭐️ ${pts} 點</strong>
-            </div>
-          </div>
-        `;
-      } else if (selectedUids.length > 0) {
-        const names = selectedUids.map(uid => {
-          const s = students.find(x => x.uid === uid);
-          return s ? s.name : uid.slice(0, 6);
-        }).join('、');
-        infoEl.innerHTML = `
-          <div style="font-size: 24px;">👥</div>
-          <div>
-            <div style="font-weight: bold; font-size: 15px; color: var(--text-primary);">
-              批次為已核選的 <strong>${selectedUids.length}</strong> 位同學給點
-            </div>
-            <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;">
-              包含同學：${this.escapeHtml(names)}
-            </div>
-          </div>
-        `;
-      } else {
-        infoEl.innerHTML = `
-          <div style="font-size: 24px;">🏫</div>
-          <div>
-            <div style="font-weight: bold; font-size: 15px; color: var(--text-primary);">
-              批次為全班所有同學給點（共 ${students.length} 位）
-            </div>
-            <div style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;">
-              每位同學都將同步獲得相同的加減分點數與事由記錄。
-            </div>
-          </div>
-        `;
-      }
+    if (!Array.isArray(this.presetPointReasons) || this.presetPointReasons.length === 0) {
+      this.initPointReasons();
     }
+    this.renderPointPresetReasonsUI();
+
+    // 如果是批次模式，若已有勾選學生預設選 selected，否則選 all
+    if (!targetUid) {
+      const selectedCount = this.adminSelectedStudentUids ? this.adminSelectedStudentUids.size : 0;
+      this.pointsAdjustMode = selectedCount > 0 ? 'selected' : 'all';
+    }
+
+    this.renderPointsAdjustTargetInfo();
 
     const modal = document.getElementById('adminPointsAdjustModal');
     if (modal) {
@@ -20017,20 +20350,19 @@ class App {
     }
 
     const targetUid = this.currentPointsAdjustTargetUid;
-    const selectedUids = Array.from(this.adminSelectedStudentUids || []);
     const students = this.lastAdminStudentsList || [];
 
     let targetList = [];
     if (targetUid) {
       targetList = [targetUid];
-    } else if (selectedUids.length > 0) {
-      targetList = selectedUids;
+    } else if (this.pointsAdjustMode === 'selected') {
+      targetList = Array.from(this.adminSelectedStudentUids || []);
     } else {
       targetList = students.map(s => s.uid);
     }
 
     if (targetList.length === 0) {
-      this.showNotification('提示', '目前尚無學生可進行給點！');
+      this.showNotification('提示', '請至少核選 1 位同學進行給點！');
       return;
     }
 
