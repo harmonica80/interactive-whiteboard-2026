@@ -1255,7 +1255,7 @@ class App {
       }
     }
 
-    // 2. 查詢在線 presence 清單
+    // 2. 查詢線上 presence 清單
     const presenceData = this.onlinePresence || {};
     for (const [key, p] of Object.entries(presenceData)) {
       if (p && p.userId && p.userName && String(p.userName).trim().toLowerCase() === target) {
@@ -1305,7 +1305,7 @@ class App {
     const presenceData = this.onlinePresence || {};
     const now = Date.now();
     for (const [key, p] of Object.entries(presenceData)) {
-      // 僅採計 120 秒內真正活躍在線的 session，避免過期幽靈連線佔用學生姓名
+      // 僅採計 120 秒內真正活躍連線的 session，避免過期幽靈連線佔用學生姓名
       if (p && p.timestamp && (now - p.timestamp > 120000)) continue;
       if (p && p.userId && p.userId !== myUid && p.userName) {
         const n = String(p.userName).trim();
@@ -1402,7 +1402,7 @@ class App {
     // 3. 設定姓名並同步至課堂名冊
     this.setUserName(existingStudent?.name || name);
 
-    // 4. 更新在線狀態 presence
+    // 4. 更新線上連線狀態 presence
     if (this.myPresenceRef) {
       this.myPresenceRef.update({
         userId: targetUid,
@@ -10414,12 +10414,12 @@ class App {
   }
 
   resetOnlinePresence() {
-    if (confirm('是否要清除線上人數快取並重新計算真正在線人數？')) {
+    if (confirm('是否要清除線上人數快取並重新計算真正線上人數？')) {
       db.ref('quiz/presence').remove().then(() => {
         if (typeof this.showNotification === 'function') {
-          this.showNotification('成功', '已清空殘留人數！在線視窗將在數秒內自動重新加入計算。');
+          this.showNotification('成功', '已清空殘留人數！線上視窗將在數秒內自動重新加入計算。');
         } else {
-          alert('已清空殘留人數！在線視窗將在數秒內自動重新加入計算。');
+          alert('已清空殘留人數！線上視窗將在數秒內自動重新加入計算。');
         }
       }).catch(err => {
         console.error('Reset presence error:', err);
@@ -17870,7 +17870,7 @@ class App {
       }
     });
 
-    // 2. 補充 presence 在線名冊
+    // 2. 補充 presence 線上名冊
     const presenceData = this.onlinePresence || {};
     Object.values(presenceData).forEach(p => {
       if (p && p.userId && p.userName && !studentsMap.has(p.userId)) {
@@ -17902,7 +17902,7 @@ class App {
       }
     });
 
-    // 檢查線上在線狀態 Set
+    // 檢查目前連線學生狀態 Set
     const onlineUids = new Set();
     Object.values(presenceData).forEach(p => {
       if (p && p.userId) onlineUids.add(p.userId);
@@ -17946,7 +17946,7 @@ class App {
     // 更新總數徽章
     const countBadge = document.getElementById('adminStudentsTotalCountBadge');
     if (countBadge) {
-      countBadge.textContent = `共 ${studentList.length} 位同學 (目前 ${onlineUids.size} 位在線)`;
+      countBadge.textContent = `共 ${studentList.length} 位同學 (目前 ${onlineUids.size} 位在線上)`;
     }
 
     // 依搜尋條件過濾
@@ -18476,7 +18476,7 @@ class App {
       }
     });
 
-    // 補充在線 presence
+    // 補充線上 presence
     Object.values(this.onlinePresence || {}).forEach(p => {
       if (p && p.userId && p.userName && !studentsMap.has(p.userId)) {
         studentsMap.set(p.userId, {
@@ -18494,7 +18494,7 @@ class App {
     });
 
     let csv = '\uFEFF'; // UTF-8 BOM
-    csv += '學生UID,班級代碼,學生姓名,目前在線狀態,近期登入時間,歷程總數,提問數,留言互動數,圖片分享數,影片分享數,測驗作答數,文字雲發想數\n';
+    csv += '學生UID,班級代碼,學生姓名,目前連線狀態,近期登入時間,歷程總數,提問數,留言互動數,圖片分享數,影片分享數,測驗作答數,文字雲發想數\n';
 
     studentsMap.forEach(s => {
       const isOnline = onlineUids.has(s.uid) ? '線上' : '離線';
@@ -19667,8 +19667,8 @@ class App {
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceAutoDetectOnline(); window.app && window.app.syncEmbedAttendanceFromSession();" style="padding: 5px 10px; font-size: 14px; background: rgba(0, 122, 255, 0.12); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; font-weight: bold;" title="偵測目前在線同學自動標記為出席，離線同學標記為缺席">
-                ⚡ 一鍵在線偵測
+              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceAutoDetectOnline(); window.app && window.app.syncEmbedAttendanceFromSession();" style="padding: 5px 10px; font-size: 14px; background: rgba(0, 122, 255, 0.12); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; font-weight: bold;" title="偵測目前在線上的同學自動標記為出席，離線同學標記為缺席">
+                    ⚡ 一鍵偵測線上學生
               </button>
               <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceSetAllStatus('present'); window.app && window.app.syncEmbedAttendanceFromSession();" style="padding: 5px 10px; font-size: 14px; background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
                 🟢 全員出席
@@ -20964,7 +20964,7 @@ class App {
 
     this.renderAttendanceCurrentStudentsList();
     this.updateAttendanceStatsBar();
-    this.showNotification('偵測完成', `已依當前在線狀態完成自動初盤！`);
+    this.showNotification('偵測完成', `已根據目前連線狀態自動預先標記出席！`);
   }
 
   adminAttendanceSetAllStatus(status) {
@@ -25206,12 +25206,12 @@ function resetAll() {
     db.ref('quiz/videoQuizSettings').remove(),
     db.ref('quiz/videoQuizAnswers').remove(),
     db.ref('quiz/students').remove(),
-    db.ref('quiz/presence').remove(), // 徹底清除在線與快取記錄，避免舊名稱殘留
+    db.ref('quiz/presence').remove(), // 徹底清除線上連線與快取記錄，避免舊名稱殘留
     db.ref('whiteboard').remove(),
     db.ref('whiteboard_room').remove(),
     db.ref('whiteboard_v2').remove(),
     db.ref('system/quotaStats/classStorageMap').child(classKey).set(0),
-    db.ref('quiz/resetTimestamp').set(Date.now()) // 廣播重設事件至所有在線學生客戶端
+    db.ref('quiz/resetTimestamp').set(Date.now()) // 廣播重設事件至所有線上學生客戶端
   ];
 
   if (isOneOff) {

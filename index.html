@@ -1637,7 +1637,7 @@
                       <img src="images/admin_icons/class_students.svg" width="64" height="64" alt="學生名冊與參與歷程管理">
                     </div>
                     <div class="admin-feature-card-title">H. 學生名冊與參與歷程管理</div>
-                    <div class="admin-feature-card-desc">檢視本班同學名單、近期登入時間、在線狀態，支援修改姓名與頭像、刪除學生，並可查閱每位同學之發問、上傳、留言與測驗作答歷程。</div>
+                    <div class="admin-feature-card-desc">檢視本班同學名單、近期登入時間、線上連線狀態，支援修改姓名與頭像、刪除學生，並可查閱每位同學之發問、上傳、留言與測驗作答歷程。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
@@ -1657,7 +1657,7 @@
                       <img src="images/admin_icons/class_attendance.svg" width="64" height="64" alt="線上點名與出缺勤管理">
                     </div>
                     <div class="admin-feature-card-title">J. 線上點名與出缺勤管理</div>
-                    <div class="admin-feature-card-desc">課堂一鍵在線偵測自動初盤、出席/遲到/請假/缺席四態切換、出席自動給點獎勵，以及歷次點名記錄與 CSV 匯出。</div>
+                    <div class="admin-feature-card-desc">課堂一鍵自動偵測線上學生並預先標記出席、出席/遲到/請假/缺席四態切換、出席自動給點獎勵，以及歷次點名記錄與 CSV 匯出。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
                 </div>
@@ -2876,13 +2876,13 @@
                       <option value="points">⭐️ 課堂點數 (高至低)</option>
                       <option value="name">🔤 學生姓名 (筆畫 / A-Z)</option>
                       <option value="activity">🔥 參與活躍度 (歷程總數)</option>
-                      <option value="online">🟢 在線狀態優先</option>
+                      <option value="online">🟢 線上狀態優先</option>
                     </select>
                   </div>
 
                   <label for="adminStudentFilterOnline" style="display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-primary); cursor: pointer; user-select: none; margin: 0;">
                     <input type="checkbox" id="adminStudentFilterOnline" onchange="window.app && window.app.onAdminStudentFilterOnlineChange(this.checked)" style="width: 16px; height: 16px; cursor: pointer;">
-                    <span>僅顯示在線同學</span>
+                    <span>僅顯示線上同學</span>
                   </label>
                 </div>
               </div>
@@ -2995,7 +2995,7 @@
                     <span id="adminAttendanceHistoryCountBadge" style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">共 0 次點名記錄</span>
                   </div>
                   <p style="font-size: 14px; color: var(--text-secondary); margin: 6px 0 0 0; line-height: 1.5;">
-                    💡 提供智慧在線偵測自動初盤、出席/遲到/請假/缺席四態切換、出席自動獎勵 +1 點，並彙整全班歷次點名出席率與出缺勤報表匯出。
+                    💡 支援一鍵自動偵測線上學生並預先標記出席、出席/遲到/請假/缺席四態切換、出席自動獎勵 +1 點，並彙整全班歷次點名出席率與出缺勤報表匯出。
                   </p>
                 </div>
 
@@ -4896,13 +4896,13 @@
             </li>
             <li><strong>📋 線上點名與出缺勤統計：</strong>
               <ul>
-                <li>一鍵偵測在線同學自動初盤，支援出席 / 遲到 / 請假 / 缺席四態切換與個別備註，可設定出席自動獎勵 +1 點。</li>
+                <li>一鍵自動偵測線上學生並預先標記出席，支援出席 / 遲到 / 請假 / 缺席四態切換與個別備註，可設定出席自動獎勵 +1 點。</li>
                 <li>保存歷次點名記錄，自動彙整全班出席率與各狀態次數，並可匯出出缺勤報表（CSV）。</li>
               </ul>
             </li>
             <li><strong>👥 學生名冊與參與歷程管理：</strong>
               <ul>
-                <li>班級管理新增學生名冊：登入時間追蹤、在線狀態、搜尋排序、卡片 / 列表雙視圖、編輯姓名頭像、刪除與名冊 CSV 匯出。</li>
+                <li>班級管理新增學生名冊：登入時間追蹤、線上連線狀態、搜尋排序、卡片 / 列表雙視圖、編輯姓名頭像、刪除與名冊 CSV 匯出。</li>
                 <li>個人歷程彈窗整合提問、圖片、留言、測驗、影片、文字雲等全方位參與記錄，支援分類篩選與匯出。</li>
                 <li><strong>合併帳號</strong>：名冊可直接核選多個帳號合併至保留帳號，自動整併提問、作答、點數與點名記錄，讓同學歷程統計更準確。</li>
                 <li>學生更名全端雙向即時同步，換設備登入也能維持同一份歷程。</li>
@@ -5449,7 +5449,7 @@
                 <li><strong>作者姓名標籤</strong>：每個筆劃、形狀、便利貼、圖片上方皆可浮動顯示建立者姓名膠囊標籤（如「老師」、「王小明」），支援工具列一鍵切換顯示/隱藏。</li>
                 <li><strong>剪貼簿無縫整合 (Ctrl+V)</strong>：貼上圖片自動置中呈現；貼上文字自動生成黃色便利貼，文字中包含的 URL 網址自動轉換為可點擊開啟的超連結。</li>
                 <li><strong>PDF 頁面解析自由選取插入</strong>：採用純前端 PDF.js 解析引擎，上傳 PDF 後即時生成縮圖預覽，支援全選/自選頁面，高解析度插入畫布並自動依序編排不重疊。</li>
-                <li><strong>極致輕量省流同步</strong>：改採物件增量同步架構，節省 90% 以上 Firebase 傳輸流量，支援即時在線參與者名單抽屜與高畫質圖片匯出。</li>
+                <li><strong>極致輕量省流同步</strong>：改採物件增量同步架構，節省 90% 以上 Firebase 傳輸流量，支援即時線上參與者名單抽屜與高畫質圖片匯出。</li>
               </ul>
             </li>
           </ul>
@@ -5845,7 +5845,7 @@
           </div>
           <ul class="changelog-item-list">
             <li><strong>聽歌搶答 (Song Quiz) 雙玩法：</strong>支援個人自主挑戰與全班同步搶答模式，防作弊音訊串流與排行榜。</li>
-            <li><strong>幸運大轉盤抽籤：</strong>內建流暢物理轉盤動畫與音效，支援自訂名單與線上在線同學一鍵匯入。</li>
+            <li><strong>幸運大轉盤抽籤：</strong>內建流暢物理轉盤動畫與音效，支援自訂名單與線上同學一鍵匯入。</li>
             <li><strong>雙軌班級架構：</strong>支援固定班級私有空間與免登入一次性課堂即時切換。</li>
           </ul>
         </div>
@@ -6168,7 +6168,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=455"></script>
+  <script src="js/app.js?v=456"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
@@ -8053,8 +8053,8 @@ Python</pre>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceAutoDetectOnline()" style="padding: 5px 10px; font-size: 14px; background: rgba(0, 122, 255, 0.12); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; font-weight: bold;" title="偵測目前在線同學自動標記為出席，離線同學標記為缺席">
-                ⚡ 一鍵在線偵測
+              <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceAutoDetectOnline()" style="padding: 5px 10px; font-size: 14px; background: rgba(0, 122, 255, 0.12); color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; font-weight: bold;" title="偵測目前在線上的同學自動標記為出席，離線同學標記為缺席">
+                        ⚡ 一鍵偵測線上學生
               </button>
               <button type="button" class="btn btn-sm" onclick="window.app && window.app.adminAttendanceSetAllStatus('present')" style="padding: 5px 10px; font-size: 14px; background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; cursor: pointer;">
                 🟢 全員出席
