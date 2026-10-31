@@ -20482,34 +20482,84 @@ class App {
       return;
     }
 
-    const records = this.activeCheckInRecords || {};
-    const title = (this.activeCheckInState && this.activeCheckInState.title) ? this.activeCheckInState.title : '限時簽到點名單';
+    const checkInRecords = this.activeCheckInRecords || {};
+    const title = (this.activeCheckInState && this.activeCheckInState.title)
+      ? this.activeCheckInState.title
+      : `${new Date().toLocaleDateString('zh-TW')} 限時簽到點名`;
 
-    // 初始化點名單
+    // 依系統標準結構構建 records 物件: { [uid]: { status: 'present'|'absent', remark: '...' } }
     const studentStatusMap = {};
+    let presentCount = 0;
+    let absentCount = 0;
+
     students.forEach(st => {
-      // 若有簽到記錄則為出席 (present)，未簽到為缺席 (absent)
-      studentStatusMap[st.uid] = records[st.uid] ? 'present' : 'absent';
+      const isSigned = !!checkInRecords[st.uid];
+      if (isSigned) {
+        presentCount++;
+        const rec = checkInRecords[st.uid];
+        const timeStr = (rec && rec.time) ? new Date(rec.time).toLocaleTimeString('zh-TW', { hour12: false }) : '';
+        studentStatusMap[st.uid] = {
+          status: 'present',
+          remark: timeStr ? `限時簽到出席 (${timeStr})` : '限時簽到出席'
+        };
+      } else {
+        absentCount++;
+        studentStatusMap[st.uid] = {
+          status: 'absent',
+          remark: '限時簽到未簽到'
+        };
+      }
     });
 
-    this.currentAttendanceSession = {
+    const total = students.length;
+    const presentRate = total > 0 ? `${Math.round((presentCount / total) * 100)}%` : '0%';
+    const now = Date.now();
+    const sessionId = `att_${now}`;
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    const sessionData = {
+      id: sessionId,
       title,
-      timestamp: Date.now(),
-      records: studentStatusMap,
-      studentsSnapshot: students.map(s => ({ uid: s.uid, name: s.name, avatar: s.avatar }))
+      timestamp: now,
+      classCode: classCode || 'default',
+      stats: {
+        total,
+        present: presentCount,
+        late: 0,
+        leave: 0,
+        absent: absentCount,
+        presentRate
+      },
+      records: studentStatusMap
     };
 
-    // 儲存至點名資料庫
-    await this.saveCurrentAttendanceSession();
+    // 儲存至 Firebase 點名資料庫
+    const db = window.db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
+    if (db) {
+      const updates = {};
+      updates[`attendance/sessions/${sessionId}`] = sessionData;
+      await db.ref().update(updates);
+    }
 
-    // 切換回本次課堂點名頁籤以檢視
-    this.switchEmbedAttendanceTab('current');
+    // 同步更新記憶體中當前點名 session
+    this.currentAttendanceSession = {
+      title,
+      timestamp: now,
+      records: studentStatusMap
+    };
+
+    // 更新點名單次數徽章，並切換至「📜 歷史點名記錄」分頁讓老師立刻檢視
+    this.updateAttendanceHistoryCountBadge();
+    this.switchEmbedAttendanceTab('history');
+
     if (this.showNotification) {
-      this.showNotification('🎉 已成功將限時簽到結果套入本次點名單並發布記錄！');
+      this.showNotification(`🎉 已成功將限時簽到存檔為正式點名記錄！（出席：${presentCount} 人 · 缺席：${absentCount} 人，出席率：${presentRate}）`);
     }
   }
 
-  // 📥 匯出簽到記錄 CSV
+  // 📥 SV
   exportCheckInCsv() {
     const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
       ? window.ClassRoomManager.getActiveClassCode()
