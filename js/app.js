@@ -19844,6 +19844,9 @@ class App {
         <button type="button" id="btnEmbedAttSummary" class="presentation-tool-btn" onclick="window.app && window.app.switchEmbedAttendanceTab('summary')" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;">
           📊 出缺勤總覽統計
         </button>
+        <button type="button" id="btnEmbedAttCheckIn" class="presentation-tool-btn purple" onclick="window.app && window.app.switchEmbedAttendanceTab('checkin')" style="font-size: 14px; padding: 6px 14px; border-radius: 8px; font-weight: bold;">
+          ⏱️ 限時動態簽到
+        </button>
       </div>
 
       <!-- 頁籤 1：本次課堂點名 -->
@@ -19907,6 +19910,11 @@ class App {
         <div id="attendanceEmbedSummaryTable" style="max-height: 440px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
           <!-- 統計表格 -->
         </div>
+      </div>
+
+      <!-- 頁籤 4：⏱️ 限時動態簽到 -->
+      <div id="embedAttendanceCheckIn" style="display: none;">
+        <!-- 動態渲染限時動態簽到工作區 -->
       </div>
     `;
 
@@ -19991,24 +19999,683 @@ class App {
     const cur = document.getElementById('embedAttendanceCurrent');
     const hist = document.getElementById('embedAttendanceHistory');
     const sum = document.getElementById('embedAttendanceSummary');
+    const chk = document.getElementById('embedAttendanceCheckIn');
     const bCur = document.getElementById('btnEmbedAttCurrent');
     const bHist = document.getElementById('btnEmbedAttHistory');
     const bSum = document.getElementById('btnEmbedAttSummary');
+    const bChk = document.getElementById('btnEmbedAttCheckIn');
 
     if (cur) cur.style.display = (tab === 'current') ? 'block' : 'none';
     if (hist) hist.style.display = (tab === 'history') ? 'block' : 'none';
     if (sum) sum.style.display = (tab === 'summary') ? 'block' : 'none';
+    if (chk) chk.style.display = (tab === 'checkin') ? 'block' : 'none';
 
     if (bCur) bCur.classList.toggle('active', tab === 'current');
     if (bHist) bHist.classList.toggle('active', tab === 'history');
     if (bSum) bSum.classList.toggle('active', tab === 'summary');
+    if (bChk) bChk.classList.toggle('active', tab === 'checkin');
 
     if (tab === 'history') {
       this.renderEmbedAttendanceHistory();
     } else if (tab === 'summary') {
       this.renderEmbedAttendanceSummary();
+    } else if (tab === 'checkin') {
+      this.renderAttendanceCheckInPanel();
     }
   }
+
+  // ==========================================
+  // ⏱️ 限時動態驗證碼簽到與出缺勤管理
+  // ==========================================
+
+  // 渲染教師端限時動態簽到工作區
+  renderAttendanceCheckInPanel() {
+    const container = document.getElementById('embedAttendanceCheckIn');
+    if (!container) return;
+
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    const state = this.activeCheckInState;
+    const isRunning = !!(state && state.active);
+
+    if (isRunning) {
+      // 進行中：大螢幕動態驗證碼、倒數計時與即時簽到頭像牆
+      const code = state.code || '0000';
+      const duration = state.duration || 60;
+      const title = state.title || '課堂限時簽到';
+      const expireAt = state.expireAt || 0;
+      const remainingSec = expireAt > 0 ? Math.max(0, Math.ceil((expireAt - Date.now()) / 1000)) : 0;
+      const records = this.activeCheckInRecords || {};
+      const signedList = Object.values(records);
+      signedList.sort((a, b) => (a.time || 0) - (b.time || 0));
+
+      const totalStudents = this.getAdminAllStudents();
+      const signedCount = signedList.length;
+      const totalCount = Math.max(totalStudents.length, signedCount);
+      const percent = totalCount > 0 ? Math.round((signedCount / totalCount) * 100) : 0;
+
+      container.innerHTML = `
+        <div id="checkInLiveDashboard" style="background: var(--bg-card); border: 2px solid var(--accent-color); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-hover); display: flex; flex-direction: column; gap: 16px;">
+          <!-- 頂部操作列：標題、全螢幕、控制按鈕 -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <span>⏱️</span> ${this.escapeHtml(title)}
+              </h3>
+              <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 3px 10px; border-radius: 8px; font-size: 14px; font-weight: bold;">
+                ● 簽到進行中
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button id="btnCheckInFullscreen" type="button" class="presentation-tool-btn" onclick="window.app && window.app.toggleCheckInFullscreen()" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;">
+                ⛶ 全螢幕
+              </button>
+              <button type="button" class="presentation-tool-btn blue" onclick="window.app && window.app.extendDynamicCheckIn(30)" style="font-size: 14px; padding: 6px 14px; border-radius: 8px; font-weight: bold;">
+                ⏱️ 延長 30 秒
+              </button>
+              <button type="button" class="presentation-tool-btn red" onclick="window.app && window.app.stopDynamicCheckIn()" style="font-size: 14px; padding: 6px 16px; border-radius: 8px; font-weight: bold;">
+                🛑 立即截止簽到
+              </button>
+            </div>
+          </div>
+
+          <!-- 核心投影區：動態 4 位數驗證碼與倒數計時 -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: center;">
+            <!-- 左側：4 位數驗證碼 -->
+            <div style="background: var(--bg-input); border: 2px solid var(--border-color); border-radius: 16px; padding: 18px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <div style="font-size: 15px; color: var(--text-secondary); font-weight: bold; margin-bottom: 6px;">
+                📢 請同學觀看大螢幕，輸入動態驗證碼：
+              </div>
+              <div style="font-size: 72px; font-weight: 900; letter-spacing: 16px; color: var(--accent-color); font-family: monospace; line-height: 1.1; text-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 6px 0;">
+                ${code}
+              </div>
+              <div style="font-size: 14px; color: var(--text-muted);">
+                ✨ 輸入正確即時完成簽到，並獎勵 +${state.rewardPoints || 1} 點！
+              </div>
+            </div>
+
+            <!-- 右側：倒數秒數與統計數字 -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px; text-align: center;">
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">剩餘簽到時間</div>
+                <div id="checkInLiveCountdown" style="font-size: 42px; font-weight: 900; color: ${remainingSec <= 10 ? '#ef4444' : '#10b981'};">
+                  ${expireAt > 0 ? `${remainingSec} 秒` : '不限時'}
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 12px; text-align: center;">
+                  <div style="font-size: 13px; color: #10b981; font-weight: bold;">已簽到人數</div>
+                  <div id="checkInLiveSignedCount" style="font-size: 26px; font-weight: bold; color: #10b981;">${signedCount} 人</div>
+                </div>
+                <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 12px; text-align: center;">
+                  <div style="font-size: 13px; color: #2563eb; font-weight: bold;">即時出席率</div>
+                  <div id="checkInLivePercent" style="font-size: 26px; font-weight: bold; color: #2563eb;">${percent}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 即時簽到動態頭像牆 (Live Check-in Wall) -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center;">
+              <span>🎉 即時簽到頭像牆</span>
+              <span style="font-size: 14px; color: var(--text-secondary); font-weight: normal;">最新簽到學生立即動態入列</span>
+            </div>
+
+            <div id="checkInLiveWall" style="display: flex; flex-wrap: wrap; gap: 10px; max-height: 280px; overflow-y: auto; padding: 8px; background: var(--bg-input); border-radius: 12px; border: 1px solid var(--border-color); min-height: 90px; align-content: flex-start;">
+              ${signedList.length === 0 ? `
+                <div style="text-align: center; color: var(--text-muted); font-size: 14px; margin: auto; padding: 24px;">
+                  ⏳ 正在等待同學送出驗證碼...
+                </div>
+              ` : signedList.map((item, idx) => {
+                const rank = idx + 1;
+                let badge = `<span style="background: var(--bg-card); color: var(--text-secondary); font-size: 12px; font-weight: bold; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border-color);">#${rank}</span>`;
+                if (rank === 1) badge = `<span style="font-size: 16px;">🥇</span>`;
+                else if (rank === 2) badge = `<span style="font-size: 16px;">🥈</span>`;
+                else if (rank === 3) badge = `<span style="font-size: 16px;">🥉</span>`;
+
+                const timeStr = item.time ? new Date(item.time).toLocaleTimeString('zh-TW', { hour12: false }) : '';
+                const avatar = item.avatar || 'images/default_avatar.png';
+
+                return `
+                  <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 6px 10px; box-shadow: var(--shadow); animation: popIn 0.3s ease;">
+                    ${badge}
+                    <img src="${avatar}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+                    <div style="display: flex; flex-direction: column;">
+                      <span style="font-size: 14px; font-weight: bold; color: var(--text-primary); white-space: nowrap;">${this.escapeHtml(item.name || '同學')}</span>
+                      <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">${timeStr}</span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // 未在進行中：顯示設定面板與前次結算卡片
+    const todayStr = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const defaultTitle = `${todayStr} 課堂限時簽到`;
+
+    const records = this.activeCheckInRecords || {};
+    const hasPreviousRecords = Object.keys(records).length > 0;
+    const signedList = Object.values(records);
+    signedList.sort((a, b) => (a.time || 0) - (b.time || 0));
+
+    container.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- 發起設定卡片 -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>🚀</span> 發起限時動態驗證碼簽到
+          </div>
+          <p style="font-size: 14px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+            系統將於大螢幕投影 4 位數動態驗證碼，同學在自己裝置輸入正確即可完成簽到並自動獲得點數獎勵；結束後可一鍵套入本次點名單或匯出 CSV 報表。
+          </p>
+
+          <!-- 簽到名稱 -->
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label for="checkInSessionTitleInput" style="font-size: 14px; font-weight: bold; color: var(--text-primary);">
+              點名單名稱：
+            </label>
+            <input type="text" id="checkInSessionTitleInput" value="${this.escapeHtml(defaultTitle)}" placeholder="請輸入點名單名稱" style="width: 100%; box-sizing: border-box; padding: 8px 12px; font-size: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
+          </div>
+
+          <!-- 時限選擇 -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">⏱️ 簽到限時：</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.setCheckInDuration(30)" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;" id="btnSec30">30 秒</button>
+              <button type="button" class="presentation-tool-btn purple active" onclick="window.app && window.app.setCheckInDuration(60)" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;" id="btnSec60">60 秒 (推薦)</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.setCheckInDuration(90)" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;" id="btnSec90">90 秒</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.setCheckInDuration(120)" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;" id="btnSec120">2 分鐘</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.setCheckInDuration(180)" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;" id="btnSec180">3 分鐘</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.setCheckInDuration(0)" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;" id="btnSec0">不限時</button>
+            </div>
+            <input type="hidden" id="selectedCheckInDuration" value="60">
+          </div>
+
+          <!-- 獎勵點數選項 -->
+          <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-input); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <input type="checkbox" id="checkInRewardPointsCheck" checked style="width: 18px; height: 18px; cursor: pointer;">
+            <label for="checkInRewardPointsCheck" style="font-size: 14px; font-weight: bold; color: var(--text-primary); cursor: pointer; margin: 0;">
+              ⭐ 簽到完成同學自動獎勵 +1 點（寫入點數歷程並於學生端即時彈出彩帶激勵動畫）
+            </label>
+          </div>
+
+          <!-- 啟動按鈕 -->
+          <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+            <button type="button" class="presentation-tool-btn purple" onclick="window.app && window.app.startDynamicCheckIn()" style="font-size: 16px; padding: 10px 28px; border-radius: 10px; font-weight: bold;">
+              🚀 啟動限時動態簽到
+            </button>
+          </div>
+        </div>
+
+        ${hasPreviousRecords ? `
+          <!-- 前次簽到成果卡片 -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                <span>📋</span> 前次限時簽到成果（共 ${signedList.length} 位同學完成簽到）
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="presentation-tool-btn green" onclick="window.app && window.app.applyCheckInToAttendanceSession()" style="font-size: 14px; padding: 6px 14px; border-radius: 8px; font-weight: bold;">
+                  📋 套入當堂點名單並存檔
+                </button>
+                <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.exportCheckInCsv()" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;">
+                  📥 匯出簽到記錄 CSV
+                </button>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 220px; overflow-y: auto; background: var(--bg-input); padding: 10px; border-radius: 10px; border: 1px solid var(--border-color);">
+              ${signedList.map((item, idx) => {
+                const rank = idx + 1;
+                const timeStr = item.time ? new Date(item.time).toLocaleTimeString('zh-TW', { hour12: false }) : '';
+                return `
+                  <div style="display: inline-flex; align-items: center; gap: 6px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 8px; font-size: 13px;">
+                    <span style="font-weight: bold; color: var(--accent-color);">#${rank}</span>
+                    <span style="font-weight: bold; color: var(--text-primary);">${this.escapeHtml(item.name || '同學')}</span>
+                    <span style="color: var(--text-muted); font-size: 12px;">${timeStr}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  setCheckInDuration(sec) {
+    const hidden = document.getElementById('selectedCheckInDuration');
+    if (hidden) hidden.value = sec;
+
+    [0, 30, 60, 90, 120, 180].forEach(s => {
+      const btn = document.getElementById(`btnSec${s}`);
+      if (btn) {
+        btn.classList.toggle('active', s === sec);
+        btn.classList.toggle('purple', s === sec);
+      }
+    });
+  }
+
+  // 🚀 教師端啟動限時簽到
+  async startDynamicCheckIn() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    if (!classCode) {
+      if (this.showNotification) this.showNotification('⚠️ 請先加入或選擇一個班級後再發起簽到。');
+      return;
+    }
+
+    const titleInput = document.getElementById('checkInSessionTitleInput');
+    const title = titleInput && titleInput.value.trim() ? titleInput.value.trim() : '課堂限時簽到';
+
+    const durInput = document.getElementById('selectedCheckInDuration');
+    const duration = durInput ? parseInt(durInput.value, 10) : 60;
+
+    const rewardCheck = document.getElementById('checkInRewardPointsCheck');
+    const rewardPoints = (rewardCheck && rewardCheck.checked) ? 1 : 0;
+
+    // 隨機產生 4 位數驗證碼 (1000 - 9999)
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    const expireAt = duration > 0 ? (Date.now() + duration * 1000) : 0;
+
+    this.activeCheckInState = {
+      active: true,
+      code,
+      title,
+      duration,
+      expireAt,
+      rewardPoints,
+      startedAt: Date.now()
+    };
+    this.activeCheckInRecords = {};
+
+    const db = this.getDatabaseRef ? this.getDatabaseRef() : (window.database || firebase.database());
+
+    // 寫入教師端全量資料庫並清空 records
+    await db.ref(`classes/${classCode}/attendance/activeCheckIn`).set(this.activeCheckInState);
+    await db.ref(`classes/${classCode}/attendance/activeCheckIn/records`).remove();
+
+    // 廣播輕量狀態給學生端
+    await db.ref(`classes/${classCode}/attendance/activeCheckIn/status`).set({
+      active: true,
+      title,
+      duration,
+      expireAt,
+      rewardPoints,
+      code
+    });
+
+    // 掛載即時 records 監聽器
+    if (this.checkInListenerRef) {
+      this.checkInListenerRef.off();
+    }
+    this.checkInListenerRef = db.ref(`classes/${classCode}/attendance/activeCheckIn/records`);
+    this.checkInListenerRef.on('value', (snapshot) => {
+      this.activeCheckInRecords = snapshot.val() || {};
+      if (this.activeCheckInState && this.activeCheckInState.active) {
+        this.renderAttendanceCheckInPanel();
+      }
+    });
+
+    // 啟動本機定時倒數
+    if (this.checkInTimerId) clearInterval(this.checkInTimerId);
+    if (duration > 0) {
+      this.checkInTimerId = setInterval(() => {
+        if (!this.activeCheckInState || !this.activeCheckInState.active) {
+          clearInterval(this.checkInTimerId);
+          return;
+        }
+        const remaining = Math.max(0, Math.ceil((this.activeCheckInState.expireAt - Date.now()) / 1000));
+        const countdownEl = document.getElementById('checkInLiveCountdown');
+        if (countdownEl) {
+          countdownEl.textContent = `${remaining} 秒`;
+          countdownEl.style.color = remaining <= 10 ? '#ef4444' : '#10b981';
+        }
+        if (remaining <= 0) {
+          clearInterval(this.checkInTimerId);
+          this.stopDynamicCheckIn();
+        }
+      }, 1000);
+    }
+
+    this.renderAttendanceCheckInPanel();
+    if (this.showNotification) {
+      this.showNotification(`🚀 限時動態簽到已啟動！動態驗證碼：【${code}】`);
+    }
+  }
+
+  // 延長簽到時間
+  async extendDynamicCheckIn(seconds = 30) {
+    if (!this.activeCheckInState || !this.activeCheckInState.active) return;
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    const currentExpire = this.activeCheckInState.expireAt || Date.now();
+    const newExpire = Math.max(Date.now(), currentExpire) + (seconds * 1000);
+    this.activeCheckInState.expireAt = newExpire;
+
+    const db = this.getDatabaseRef ? this.getDatabaseRef() : (window.database || firebase.database());
+    await db.ref(`classes/${classCode}/attendance/activeCheckIn/expireAt`).set(newExpire);
+    await db.ref(`classes/${classCode}/attendance/activeCheckIn/status/expireAt`).set(newExpire);
+
+    this.renderAttendanceCheckInPanel();
+    if (this.showNotification) {
+      this.showNotification(`⏱️ 簽到時間已延長 ${seconds} 秒！`);
+    }
+  }
+
+  // 🛑 教師端截止簽到
+  async stopDynamicCheckIn() {
+    if (this.checkInTimerId) {
+      clearInterval(this.checkInTimerId);
+      this.checkInTimerId = null;
+    }
+
+    if (this.activeCheckInState) {
+      this.activeCheckInState.active = false;
+    }
+
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    const db = this.getDatabaseRef ? this.getDatabaseRef() : (window.database || firebase.database());
+    if (classCode) {
+      await db.ref(`classes/${classCode}/attendance/activeCheckIn/active`).set(false);
+      await db.ref(`classes/${classCode}/attendance/activeCheckIn/status`).set({ active: false });
+    }
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+
+    this.renderAttendanceCheckInPanel();
+    const count = Object.keys(this.activeCheckInRecords || {}).length;
+    if (this.showNotification) {
+      this.showNotification(`🏁 限時動態簽到已截止！共有 ${count} 位同學完成簽到。`);
+    }
+  }
+
+  toggleCheckInFullscreen() {
+    const el = document.getElementById('checkInLiveDashboard');
+    const fsBtn = document.getElementById('btnCheckInFullscreen');
+    if (!el) return;
+
+    if (!document.fullscreenElement) {
+      el.requestFullscreen().then(() => {
+        if (fsBtn) {
+          fsBtn.textContent = '🗗 恢復為視窗';
+          fsBtn.classList.add('active', 'is-fullscreen-active');
+        }
+      }).catch(err => {
+        console.error('進入全螢幕失敗:', err);
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        if (fsBtn) {
+          fsBtn.textContent = '⛶ 全螢幕';
+          fsBtn.classList.remove('active', 'is-fullscreen-active');
+        }
+      }).catch(() => {});
+    }
+  }
+
+  // 📋 將簽到結果套入當堂點名單並存檔
+  async applyCheckInToAttendanceSession() {
+    const students = this.getAdminAllStudents();
+    if (students.length === 0) {
+      if (this.showNotification) this.showNotification('⚠️ 目前班級無任何學生資料可套用。');
+      return;
+    }
+
+    const records = this.activeCheckInRecords || {};
+    const title = (this.activeCheckInState && this.activeCheckInState.title) ? this.activeCheckInState.title : '限時簽到點名單';
+
+    // 初始化點名單
+    const studentStatusMap = {};
+    students.forEach(st => {
+      // 若有簽到記錄則為出席 (present)，未簽到為缺席 (absent)
+      studentStatusMap[st.uid] = records[st.uid] ? 'present' : 'absent';
+    });
+
+    this.currentAttendanceSession = {
+      title,
+      timestamp: Date.now(),
+      records: studentStatusMap,
+      studentsSnapshot: students.map(s => ({ uid: s.uid, name: s.name, avatar: s.avatar }))
+    };
+
+    // 儲存至點名資料庫
+    await this.saveCurrentAttendanceSession();
+
+    // 切換回本次課堂點名頁籤以檢視
+    this.switchEmbedAttendanceTab('current');
+    if (this.showNotification) {
+      this.showNotification('🎉 已成功將限時簽到結果套入本次點名單並發布記錄！');
+    }
+  }
+
+  // 📥 匯出簽到記錄 CSV
+  exportCheckInCsv() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    const students = this.getAdminAllStudents();
+    const records = this.activeCheckInRecords || {};
+
+    let csvContent = '\uFEFF'; // UTF-8 BOM
+    csvContent += '座號/序號,學生姓名,學生UID,簽到狀態,簽到時間,輸入驗證碼,獲得獎勵點數\n';
+
+    students.forEach((st, idx) => {
+      const rec = records[st.uid];
+      const isSigned = !!rec;
+      const statusText = isSigned ? '出席' : '未簽到';
+      const timeStr = (rec && rec.time) ? new Date(rec.time).toLocaleString('zh-TW', { hour12: false }) : '--';
+      const codeStr = (rec && rec.code) ? rec.code : '--';
+      const ptsStr = isSigned ? (this.activeCheckInState && this.activeCheckInState.rewardPoints ? this.activeCheckInState.rewardPoints : 1) : 0;
+
+      const safeName = (st.name || '同學').replace(/"/g, '""');
+      csvContent += `${idx + 1},"${safeName}",${st.uid},${statusText},${timeStr},${codeStr},${ptsStr}\n`;
+    });
+
+    const nowStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const fileName = `${classCode || '課堂'}_限時簽到記錄_${nowStr}.csv`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    if (this.showNotification) {
+      this.showNotification(`📥 已成功匯出簽到記錄報表：${fileName}`);
+    }
+  }
+
+  // ==========================================
+  // 🎓 學生端動態驗證碼簽到連動
+  // ==========================================
+  setupStudentCheckInSync() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    if (!classCode) return;
+    const db = this.getDatabaseRef ? this.getDatabaseRef() : (window.database || firebase.database());
+
+    if (this.studentCheckInListenerRef) {
+      this.studentCheckInListenerRef.off();
+    }
+
+    this.studentCheckInListenerRef = db.ref(`classes/${classCode}/attendance/activeCheckIn/status`);
+    this.studentCheckInListenerRef.on('value', (snapshot) => {
+      const status = snapshot.val();
+      if (this.isAdmin) return; // 教師端不彈窗
+
+      if (status && status.active === true) {
+        this.studentCurrentCheckInStatus = status;
+        this.openStudentCheckInModal(status);
+      } else {
+        this.closeStudentCheckInModal(true); // 靜默關閉或結束
+      }
+    });
+  }
+
+  // 學生端彈窗喚起
+  openStudentCheckInModal(status) {
+    const modal = document.getElementById('studentDynamicCheckInModal');
+    if (!modal) return;
+
+    const myUid = this.getUserId();
+    const hasAlreadySigned = this.studentSignedCheckInSession === status.startedAt || localStorage.getItem(`signed_checkin_${status.code}`);
+
+    const titleEl = document.getElementById('studentCheckInModalTitle');
+    if (titleEl) titleEl.textContent = status.title || '課堂限時簽到中';
+
+    const inputSection = document.getElementById('studentCheckInInputSection');
+    const successBox = document.getElementById('studentCheckInSuccessBox');
+    const errorMsg = document.getElementById('studentCheckInErrorMsg');
+    const codeInput = document.getElementById('studentCheckInCodeInput');
+
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    if (hasAlreadySigned) {
+      if (inputSection) inputSection.style.display = 'none';
+      if (successBox) successBox.style.display = 'flex';
+    } else {
+      if (inputSection) inputSection.style.display = 'flex';
+      if (successBox) successBox.style.display = 'none';
+      if (codeInput) {
+        codeInput.value = '';
+        setTimeout(() => codeInput.focus(), 300);
+      }
+    }
+
+    // 啟動學生端本地倒數計時
+    if (this.studentCheckInTimerId) clearInterval(this.studentCheckInTimerId);
+    if (status.expireAt > 0) {
+      this.studentCheckInTimerId = setInterval(() => {
+        const remaining = Math.max(0, Math.ceil((status.expireAt - Date.now()) / 1000));
+        const countdownText = document.getElementById('studentCheckInCountdownText');
+        if (countdownText) {
+          countdownText.textContent = `剩餘 ${remaining} 秒`;
+          countdownText.style.color = remaining <= 10 ? '#ef4444' : 'var(--text-primary)';
+        }
+        if (remaining <= 0) {
+          clearInterval(this.studentCheckInTimerId);
+          const countdownText = document.getElementById('studentCheckInCountdownText');
+          if (countdownText) countdownText.textContent = '⏰ 簽到時間已截止';
+        }
+      }, 1000);
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  // 學生端送出 4 位驗證碼
+  async submitStudentCheckInCode() {
+    const input = document.getElementById('studentCheckInCodeInput');
+    const errorMsg = document.getElementById('studentCheckInErrorMsg');
+    if (!input) return;
+
+    const code = input.value.trim();
+    if (!code) {
+      if (errorMsg) {
+        errorMsg.textContent = '⚠️ 請輸入 4 位數驗證碼！';
+        errorMsg.style.display = 'block';
+      }
+      return;
+    }
+
+    const status = this.studentCurrentCheckInStatus;
+    if (!status || !status.active) {
+      if (errorMsg) {
+        errorMsg.textContent = '⏰ 本次限時簽到已截止！';
+        errorMsg.style.display = 'block';
+      }
+      return;
+    }
+
+    // 比對驗證碼
+    if (code !== String(status.code)) {
+      if (errorMsg) {
+        errorMsg.textContent = '❌ 驗證碼不正確，請觀看老師大螢幕重新輸入！';
+        errorMsg.style.display = 'block';
+      }
+      input.focus();
+      return;
+    }
+
+    // 驗證碼正確！寫入簽到記錄
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
+    const myUid = this.getUserId();
+    const myName = this.getCurrentUserName();
+    const myAvatar = this.getCurrentUserAvatar();
+
+    const db = this.getDatabaseRef ? this.getDatabaseRef() : (window.database || firebase.database());
+    await db.ref(`classes/${classCode}/attendance/activeCheckIn/records/${myUid}`).set({
+      uid: myUid,
+      name: myName,
+      avatar: myAvatar,
+      code,
+      time: Date.now()
+    });
+
+    // 標記本機已簽到
+    this.studentSignedCheckInSession = status.startedAt || true;
+    localStorage.setItem(`signed_checkin_${status.code}`, 'true');
+
+    // 若有獎勵點數，更新學生個人點數
+    if (status.rewardPoints && status.rewardPoints > 0) {
+      const curPts = parseInt(localStorage.getItem(`points_${myUid}`) || '0', 10);
+      const newPts = curPts + status.rewardPoints;
+      localStorage.setItem(`points_${myUid}`, newPts);
+
+      // 若有激勵動畫，觸發彩帶
+      if (typeof this.triggerRewardAnimation === 'function') {
+        this.triggerRewardAnimation(status.rewardPoints);
+      }
+    }
+
+    // 切換為簽到成功視窗
+    const inputSection = document.getElementById('studentCheckInInputSection');
+    const successBox = document.getElementById('studentCheckInSuccessBox');
+    if (inputSection) inputSection.style.display = 'none';
+    if (successBox) successBox.style.display = 'flex';
+
+    if (errorMsg) errorMsg.style.display = 'none';
+  }
+
+  // 關閉學生端簽到彈窗
+  closeStudentCheckInModal(isSilent = false) {
+    const modal = document.getElementById('studentDynamicCheckInModal');
+    if (modal) modal.style.display = 'none';
+    if (this.studentCheckInTimerId) {
+      clearInterval(this.studentCheckInTimerId);
+      this.studentCheckInTimerId = null;
+    }
+  }
+
 
   async renderEmbedAttendanceHistory() {
     const container = document.getElementById('attendanceEmbedHistoryList');

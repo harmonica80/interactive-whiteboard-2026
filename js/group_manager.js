@@ -21,6 +21,8 @@
       this.isInitialized = false;
       this.draggedStudentUid = null;
       this.draggedFromGroupId = null;
+      this.currentPointsGroupIds = [];
+      this.batchSelectedGroupIds = new Set();
 
       // 預設鮮明且高對比的主題配色庫 (連動四大主題且高辨識度)
       this.PRESET_COLORS = [
@@ -1303,15 +1305,427 @@
       }
     }
 
+    // ==========================================
+    // 🏆 小組榮譽積分看板 (支援全螢幕、前三名頒獎台與即時連動)
+    // ==========================================
+    openLeaderboardModal() {
+      if (!this.activeGroupSet || !this.activeGroupSet.groups || Object.keys(this.activeGroupSet.groups).length === 0) {
+        if (this.app && this.app.showNotification) {
+          this.app.showNotification('⚠️ 目前尚無任何小組組別，請先點擊「自動分組」或手動建立小組。');
+        }
+        return;
+      }
+      this.openModal('adminGroupLeaderboardModal');
+      this.renderLeaderboardModal();
+    }
+
+    closeLeaderboardModal() {
+      this.closeModal('adminGroupLeaderboardModal');
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      const fsBtn = document.getElementById('btnGroupLeaderboardFullscreen');
+      if (fsBtn) {
+        fsBtn.textContent = '⛶ 全螢幕';
+        fsBtn.classList.remove('active', 'is-fullscreen-active');
+      }
+    }
+
+    toggleLeaderboardFullscreen() {
+      const modalEl = document.getElementById('adminGroupLeaderboardModal');
+      const fsBtn = document.getElementById('btnGroupLeaderboardFullscreen');
+      if (!modalEl) return;
+
+      if (!document.fullscreenElement) {
+        modalEl.requestFullscreen().then(() => {
+          if (fsBtn) {
+            fsBtn.textContent = '🗗 恢復為視窗';
+            fsBtn.classList.add('active', 'is-fullscreen-active');
+          }
+        }).catch(err => {
+          console.error('進入全螢幕失敗:', err);
+        });
+      } else {
+        document.exitFullscreen().then(() => {
+          if (fsBtn) {
+            fsBtn.textContent = '⛶ 全螢幕';
+            fsBtn.classList.remove('active', 'is-fullscreen-active');
+          }
+        }).catch(() => {});
+      }
+    }
+
+    renderLeaderboardModal() {
+      const modal = document.getElementById('adminGroupLeaderboardModal');
+      if (!modal) return;
+
+      const classCode = this.getActiveClassCode();
+      const scopeBadge = document.getElementById('adminGroupLeaderboardScopeBadge');
+      if (scopeBadge) {
+        scopeBadge.textContent = classCode ? `🏫 班級：${classCode}` : '🌱 一次性課堂';
+      }
+
+      if (!this.activeGroupSet || !this.activeGroupSet.groups) return;
+
+      const studentsMap = this.getAllStudentsMap();
+      const groups = Object.values(this.activeGroupSet.groups);
+      // 依積分由大到小排序，分數相同依組名排序
+      groups.sort((a, b) => {
+        const ptsA = parseInt(a.points, 10) || 0;
+        const ptsB = parseInt(b.points, 10) || 0;
+        if (ptsB !== ptsA) return ptsB - ptsA;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+
+      const countBadge = document.getElementById('adminGroupLeaderboardCount');
+      if (countBadge) {
+        countBadge.textContent = `共 ${groups.length} 組`;
+      }
+
+      // 1. 渲染前三名頒獎台 (Top 3 Podium)
+      const podiumEl = document.getElementById('adminGroupPodiumContainer');
+      if (podiumEl) {
+        const top1 = groups[0] || null;
+        const top2 = groups[1] || null;
+        const top3 = groups[2] || null;
+
+        const renderPodiumPillar = (group, rank, height, medal, badgeColor, medalBg) => {
+          if (!group) {
+            return `
+              <div style="flex: 1; max-width: 220px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;">
+                <div style="width: 100%; height: ${height}px; background: var(--bg-input); border: 2px dashed var(--border-color); border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 14px;">
+                  虛位以待
+                </div>
+              </div>
+            `;
+          }
+
+          const safeGid = String(group.id).replace(/'/g, "\\'");
+          const color = group.color || '#3B82F6';
+          const points = parseInt(group.points, 10) || 0;
+          const members = group.memberUids || [];
+          const captainName = group.captainUid && studentsMap[group.captainUid] ? studentsMap[group.captainUid].name : '';
+
+          return `
+            <div style="flex: 1; max-width: 240px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; animation: fadeInUp 0.4s ease;">
+              <!-- 頂部榮譽圖示與小組名 -->
+              <div style="margin-bottom: 8px; text-align: center; width: 100%;">
+                <div style="font-size: 32px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15)); margin-bottom: 2px;">${medal}</div>
+                <div style="font-weight: bold; font-size: 16px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px;" title="${this.escapeHtml(group.name)}">
+                  ${this.escapeHtml(group.name)}
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 4px;">
+                  <span style="font-size: 20px; font-weight: 900; color: ${badgeColor};">⭐️ ${points}</span>
+                  <span style="font-size: 14px; color: var(--text-secondary);">分</span>
+                </div>
+              </div>
+
+              <!-- 頒獎柱柱體 -->
+              <div style="width: 100%; height: ${height}px; background: ${medalBg}; border-top: 4px solid ${color}; border-radius: 14px 14px 0 0; box-shadow: 0 8px 16px rgba(0,0,0,0.08); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px 8px; box-sizing: border-box; text-align: center;">
+                <div style="font-weight: 900; font-size: 18px; color: ${badgeColor}; letter-spacing: 1px;">
+                  第 ${rank} 名
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  ${captainName ? `👑 組長：${this.escapeHtml(captainName)}` : `組員 ${members.length} 人`}
+                </div>
+                <button type="button" class="presentation-tool-btn" onclick="window.groupManager.openGroupPointsModal('${safeGid}')" style="font-size: 13px; padding: 3px 10px; border-radius: 6px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">
+                  ⭐ 給點
+                </button>
+              </div>
+            </div>
+          `;
+        };
+
+        podiumEl.innerHTML = `
+          <div style="display: flex; align-items: flex-end; justify-content: center; gap: 14px; min-height: 230px; padding: 10px 4px 0 4px; border-bottom: 2px solid var(--border-color); margin-bottom: 8px;">
+            ${renderPodiumPillar(top2, 2, 140, '🥈', '#64748b', 'linear-gradient(180deg, rgba(203, 213, 225, 0.45) 0%, rgba(203, 213, 225, 0.15) 100%)')}
+            ${renderPodiumPillar(top1, 1, 185, '🥇', '#d97706', 'linear-gradient(180deg, rgba(254, 240, 138, 0.55) 0%, rgba(254, 240, 138, 0.15) 100%)')}
+            ${renderPodiumPillar(top3, 3, 115, '🥉', '#b45309', 'linear-gradient(180deg, rgba(254, 215, 170, 0.45) 0%, rgba(254, 215, 170, 0.15) 100%)')}
+          </div>
+        `;
+      }
+
+      // 2. 渲染完整排名清單
+      const listEl = document.getElementById('adminGroupLeaderboardList');
+      if (listEl) {
+        listEl.innerHTML = groups.map((g, idx) => {
+          const rank = idx + 1;
+          const safeGid = String(g.id).replace(/'/g, "\\'");
+          const color = g.color || '#3B82F6';
+          const points = parseInt(g.points, 10) || 0;
+          const members = g.memberUids || [];
+          const memberNames = members.map(uid => studentsMap[uid] ? studentsMap[uid].name : '同學').join('、');
+
+          let rankBadge = `<span style="width: 28px; height: 28px; border-radius: 50%; background: var(--bg-input); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border: 1px solid var(--border-color);">${rank}</span>`;
+          if (rank === 1) rankBadge = `<span style="font-size: 22px;">🥇</span>`;
+          else if (rank === 2) rankBadge = `<span style="font-size: 22px;">🥈</span>`;
+          else if (rank === 3) rankBadge = `<span style="font-size: 22px;">🥉</span>`;
+
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-left: 5px solid ${color}; border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow);">
+              <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
+                <div style="flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 32px;">
+                  ${rankBadge}
+                </div>
+                <div style="min-width: 0; flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-weight: bold; font-size: 15px; color: var(--text-primary);">${this.escapeHtml(g.name)}</span>
+                    <span style="font-size: 13px; color: var(--text-secondary); background: var(--bg-input); padding: 2px 7px; border-radius: 6px;">${members.length} 人</span>
+                  </div>
+                  <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${this.escapeHtml(memberNames)}">
+                    ${memberNames ? `組員：${this.escapeHtml(memberNames)}` : '尚無組員'}
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                <div style="font-size: 17px; font-weight: bold; color: #d97706; display: flex; align-items: center; gap: 4px;">
+                  <span>⭐️</span>
+                  <span>${points}</span>
+                  <span style="font-size: 13px; color: var(--text-secondary); font-weight: normal;">點</span>
+                </div>
+                <button type="button" class="presentation-tool-btn" onclick="window.groupManager.openGroupPointsModal('${safeGid}')" style="font-size: 14px; padding: 4px 10px; border-radius: 6px;">
+                  ⭐ 給點
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // ==========================================
+    // ⭐ 小組整組加扣分彈窗 (取代原 prompt，支援 3 種模式與常用標籤)
+    // ==========================================
     openGroupPointsModal(groupId) {
       if (!this.activeGroupSet || !this.activeGroupSet.groups || !this.activeGroupSet.groups[groupId]) return;
       const g = this.activeGroupSet.groups[groupId];
-      const delta = prompt(`請輸入為【${g.name}】加減的點數 (例如 5 或 -2)：`, '2');
-      if (delta === null) return;
-      const val = parseInt(delta, 10);
-      if (isNaN(val) || val === 0) return;
-      const reason = prompt(`請輸入給點事由：`, '課堂小組活動表現優異');
-      this.addGroupPoints(groupId, val, reason || '課堂小組活動表現優異');
+      this.currentPointsGroupIds = [groupId];
+
+      const targetInfoEl = document.getElementById('adminGroupPointsTargetInfo');
+      if (targetInfoEl) {
+        const studentsMap = this.getAllStudentsMap();
+        const members = g.memberUids || [];
+        const memberNames = members.map(uid => studentsMap[uid] ? studentsMap[uid].name : '同學').join('、');
+        const color = g.color || '#3B82F6';
+        const points = parseInt(g.points, 10) || 0;
+
+        targetInfoEl.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 14px; height: 14px; border-radius: 50%; background: ${color}; flex-shrink: 0;"></div>
+            <div style="font-size: 15px; font-weight: bold; color: var(--text-primary);">【${this.escapeHtml(g.name)}】</div>
+            <div style="font-size: 13px; color: var(--text-secondary); background: var(--bg-card); border: 1px solid var(--border-color); padding: 2px 8px; border-radius: 6px;">
+              共 ${members.length} 人 · 現有 ${points} 點
+            </div>
+          </div>
+          <div style="font-size: 13px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">
+            組員：${memberNames ? this.escapeHtml(memberNames) : '無成員'}
+          </div>
+        `;
+      }
+
+      // 重設輸入框預設值
+      const deltaInput = document.getElementById('adminGroupPointsDeltaInput');
+      if (deltaInput) deltaInput.value = '2';
+      const reasonInput = document.getElementById('adminGroupPointsReasonInput');
+      if (reasonInput) reasonInput.value = '團隊互助合作';
+
+      this.openModal('adminGroupPointsModal');
+    }
+
+    closeGroupPointsModal() {
+      this.closeModal('adminGroupPointsModal');
+      this.currentPointsGroupIds = [];
+    }
+
+    setGroupPointsDelta(delta) {
+      const input = document.getElementById('adminGroupPointsDeltaInput');
+      if (input) input.value = delta;
+    }
+
+    setGroupPointsReason(reason) {
+      const input = document.getElementById('adminGroupPointsReasonInput');
+      if (input) input.value = reason;
+    }
+
+    // ⭐ 批次小組給點功能
+    openBatchGroupPointsModal() {
+      if (!this.activeGroupSet || !this.activeGroupSet.groups || Object.keys(this.activeGroupSet.groups).length === 0) {
+        if (this.app && this.app.showNotification) {
+          this.app.showNotification('⚠️ 目前尚無任何小組組別，無法進行批次給點。');
+        }
+        return;
+      }
+
+      this.batchSelectedGroupIds = new Set(Object.keys(this.activeGroupSet.groups));
+      this.renderBatchGroupSelectList();
+      this.openModal('adminBatchGroupSelectModal');
+    }
+
+    closeBatchGroupSelectModal() {
+      this.closeModal('adminBatchGroupSelectModal');
+    }
+
+    renderBatchGroupSelectList() {
+      const listEl = document.getElementById('adminBatchGroupSelectList');
+      if (!listEl || !this.activeGroupSet || !this.activeGroupSet.groups) return;
+
+      const studentsMap = this.getAllStudentsMap();
+      const groups = Object.values(this.activeGroupSet.groups);
+
+      listEl.innerHTML = groups.map(g => {
+        const safeGid = String(g.id).replace(/'/g, "\\'");
+        const isChecked = this.batchSelectedGroupIds.has(g.id);
+        const color = g.color || '#3B82F6';
+        const members = g.memberUids || [];
+        const memberNames = members.map(uid => studentsMap[uid] ? studentsMap[uid].name : '同學').join('、');
+        const points = parseInt(g.points, 10) || 0;
+
+        return `
+          <label style="display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-left: 4px solid ${color}; border-radius: 8px; padding: 8px 12px; cursor: pointer; margin: 0;">
+            <input type="checkbox" value="${safeGid}" ${isChecked ? 'checked' : ''} onchange="window.groupManager.toggleBatchGroupSelect('${safeGid}', this.checked)" style="width: 17px; height: 17px; cursor: pointer;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: bold; font-size: 14px; color: var(--text-primary);">${this.escapeHtml(g.name)}</span>
+                <span style="font-size: 13px; color: var(--text-secondary);">(${members.length}人 · ${points}點)</span>
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${memberNames ? this.escapeHtml(memberNames) : '無組員'}
+              </div>
+            </div>
+          </label>
+        `;
+      }).join('');
+    }
+
+    toggleBatchGroupSelect(groupId, isChecked) {
+      if (isChecked) {
+        this.batchSelectedGroupIds.add(groupId);
+      } else {
+        this.batchSelectedGroupIds.delete(groupId);
+      }
+    }
+
+    toggleBatchSelectAllGroups() {
+      if (!this.activeGroupSet || !this.activeGroupSet.groups) return;
+      const allIds = Object.keys(this.activeGroupSet.groups);
+      if (this.batchSelectedGroupIds.size === allIds.length) {
+        this.batchSelectedGroupIds.clear();
+      } else {
+        this.batchSelectedGroupIds = new Set(allIds);
+      }
+      this.renderBatchGroupSelectList();
+    }
+
+    confirmBatchGroupSelection() {
+      if (this.batchSelectedGroupIds.size === 0) {
+        if (this.app && this.app.showNotification) {
+          this.app.showNotification('⚠️ 請至少勾選 1 個小組進行給點！');
+        }
+        return;
+      }
+
+      this.currentPointsGroupIds = Array.from(this.batchSelectedGroupIds);
+      this.closeModal('adminBatchGroupSelectModal');
+
+      const targetInfoEl = document.getElementById('adminGroupPointsTargetInfo');
+      if (targetInfoEl) {
+        const groups = this.currentPointsGroupIds.map(gid => this.activeGroupSet.groups[gid]).filter(Boolean);
+        const groupNames = groups.map(g => g.name).join('、');
+        let totalMembers = 0;
+        groups.forEach(g => { totalMembers += (g.memberUids || []).length; });
+
+        targetInfoEl.innerHTML = `
+          <div style="font-size: 15px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+            <span>👥 批次多選給點</span>
+            <span style="font-size: 13px; background: rgba(59, 130, 246, 0.15); color: #2563eb; padding: 2px 8px; border-radius: 6px;">
+              已選取 ${groups.length} 個小組 · 共 ${totalMembers} 人
+            </span>
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
+            對象組別：${this.escapeHtml(groupNames)}
+          </div>
+        `;
+      }
+
+      const deltaInput = document.getElementById('adminGroupPointsDeltaInput');
+      if (deltaInput) deltaInput.value = '2';
+      const reasonInput = document.getElementById('adminGroupPointsReasonInput');
+      if (reasonInput) reasonInput.value = '團隊互助合作';
+
+      this.openModal('adminGroupPointsModal');
+    }
+
+    // 執行送出小組給點
+    async submitGroupPoints() {
+      if (!this.currentPointsGroupIds || this.currentPointsGroupIds.length === 0) {
+        this.closeGroupPointsModal();
+        return;
+      }
+
+      const deltaInput = document.getElementById('adminGroupPointsDeltaInput');
+      const val = parseInt(deltaInput ? deltaInput.value : '0', 10);
+      if (isNaN(val) || val === 0) {
+        if (this.app && this.app.showNotification) {
+          this.app.showNotification('⚠️ 請輸入有效的加減點數（不可為 0）！');
+        }
+        return;
+      }
+
+      const modeRadio = document.querySelector('input[name="adminGroupPointsMode"]:checked');
+      const mode = modeRadio ? modeRadio.value : 'both'; // both / members / pool
+
+      const reasonInput = document.getElementById('adminGroupPointsReasonInput');
+      const reason = reasonInput && reasonInput.value.trim() ? reasonInput.value.trim() : '小組表現優異';
+
+      const targetGroupIds = [...this.currentPointsGroupIds];
+      this.closeGroupPointsModal();
+
+      let affectedMembersCount = 0;
+      let affectedGroupsCount = 0;
+
+      for (const gid of targetGroupIds) {
+        if (!this.activeGroupSet || !this.activeGroupSet.groups || !this.activeGroupSet.groups[gid]) continue;
+        const g = this.activeGroupSet.groups[gid];
+        affectedGroupsCount++;
+
+        // 1. 若包含小組池：更新小組積分與日誌
+        if (mode === 'both' || mode === 'pool') {
+          await this.addGroupPoints(gid, val, reason, false); // 不在迴圈內反覆通知
+        }
+
+        // 2. 若包含組員個人：同步為全組組員加點並寫入歷程
+        if (mode === 'both' || mode === 'members') {
+          const members = g.memberUids || [];
+          for (const uid of members) {
+            affectedMembersCount++;
+            const memberReason = `小組【${g.name}】獎勵：${reason}`;
+            if (this.app && typeof this.app.adminQuickAdjustPoints === 'function') {
+              await this.app.adminQuickAdjustPoints(uid, val, memberReason);
+            }
+          }
+        }
+      }
+
+      // 重新渲染後台與小組看板
+      this.renderAdminPanel();
+      const leaderboardModal = document.getElementById('adminGroupLeaderboardModal');
+      if (leaderboardModal && leaderboardModal.style.display !== 'none') {
+        this.renderLeaderboardModal();
+      }
+
+      if (this.app && this.app.showNotification) {
+        const sign = val > 0 ? `+${val}` : val;
+        let msg = '';
+        if (mode === 'both') {
+          msg = `🎉 已完成 ${affectedGroupsCount} 個小組加分 (${sign} 點)，並同步獎勵 ${affectedMembersCount} 位組員個人點數！`;
+        } else if (mode === 'members') {
+          msg = `🎉 已為 ${affectedGroupsCount} 個小組共 ${affectedMembersCount} 位組員發放個人點數 (${sign} 點)！`;
+        } else {
+          msg = `🎉 已為 ${affectedGroupsCount} 個小組小組池增減 ${sign} 點！`;
+        }
+        this.app.showNotification(msg);
+      }
     }
 
     openTransferModal(groupId) {
