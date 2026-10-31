@@ -1,4 +1,20 @@
 # System Log
+## 2026-10-31 - 修復學生端限時簽到顯示問題：補足即時監聽掛載、雙軌透明代理路徑與頂部通知橫幅
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 問題原因：
+  1. 學生端在系統初始化（`setupRealtimeSync`）與班級切換時未確實調用 `setupStudentCheckInSync()`，導致學生端未掛載 Firebase 簽到廣播監聽器。
+  2. 簽到廣播路徑原手動拼接 `classes/${classCode}/...`，未走全域透明代理 `db.ref('attendance/activeCheckIn/status')`，導致班級變更或一次性課堂時路徑不一致。
+  3. 學生端先前以 `if (this.isAdmin) return;` 略過彈窗，若在同瀏覽器開分頁或本機快取判定為老師時，學生端無法彈窗顯示。
+  4. 學生端缺乏常駐通知橫幅，若彈窗被關閉或被覆蓋時，同學無法隨時找回簽到輸入框。
+- 修改項目：
+  1. **初始化與換班全面掛載監聽**：於 `setupRealtimeSync()` 與 `ClassRoomManager.onClassesChange` 兩處明確掛載 `this.setupStudentCheckInSync()`。
+  2. **統一透明代理路徑**：教師廣播與學生接收全數改走系統統一代理之 `db.ref('attendance/activeCheckIn/status')` 與 `records`，自動精準對齊當前班級路徑與一次性課堂。
+  3. **視角精確隔離**：改為僅在教師端處於管理後台點名面板時（`this.isAdmin && this.activeTabId === 'panel-admin'`）不彈窗干擾，其餘所有視角（包含學生端、首頁、白板與分頁測試）一律即時響應彈窗。
+  4. **新增學生端醒目動態橫幅（`#studentCheckInBanner`）**：
+     - 簽到啟動時，學生端頂部浮動顯示紫粉漸層動態倒數橫幅與「👉 立即簽到」按鈕。
+     - 學生可隨時點擊重新開啟簽到彈窗；簽到成功後顯示完成訊息並獲取點數，截止後自動隱藏。
+  5. 更新快取版本至 `?v=461`，語法通過 `node --check` 驗證，全專案維持嚴格零「紀錄」規範。
+
 ## 2026-10-31 - 執行第二階段（深化互動）：小組分組管理（積分看板+整組加扣分）與限時簽到點名（動態驗證碼+CSV匯出）
 - 影響檔案：`index.html`, `js/app.js`, `js/group_manager.js`, `SYSTEM_LOG.md`。
 - 功能新增與優化亮點：

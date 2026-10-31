@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=460">
+  <link rel="stylesheet" href="css/style.css?v=461">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -21,6 +21,16 @@
 </head>
 <body>
   <!-- 校園網路智慧備用通道提示浮條 -->
+  <!-- ⏱️ 學生端課堂限時簽到醒目通知橫幅 (動態倒數與一鍵喚起) -->
+  <div id="studentCheckInBanner" style="display: none; background: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%); color: #ffffff; padding: 10px 16px; font-size: 15px; font-weight: bold; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,0.2); z-index: 19999; position: sticky; top: 0; align-items: center; justify-content: center; gap: 12px; animation: slideDown 0.3s ease;">
+    <span style="font-size: 18px;">⏱️</span>
+    <span id="studentCheckInBannerTitle">老師已啟動課堂限時簽到！請看大螢幕輸入 4 位驗證碼：</span>
+    <span id="studentCheckInBannerCountdown" style="background: rgba(255,255,255,0.25); padding: 3px 12px; border-radius: 20px; font-size: 14px; font-weight: 900; letter-spacing: 0.5px;">剩餘 60 秒</span>
+    <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openStudentCheckInModal(window.app.studentCurrentCheckInStatus)" style="background: #ffffff; color: #7c3aed; font-weight: 900; font-size: 14px; padding: 5px 16px; border-radius: 20px; border: none; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+      👉 立即簽到
+    </button>
+  </div>
+
   <div id="connectionToastBanner" class="connection-toast-banner">
     <span>⚠️ 校園網路防火牆可能正在檢測 WebSocket，正在切換備用通道，請稍候...</span>
     <button type="button" onclick="document.getElementById('connectionToastBanner').style.display='none'" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px; margin-left: 8px;">✕</button>
@@ -6241,13 +6251,13 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=460"></script>
+  <script src="js/app.js?v=461"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=382"></script>
   <script src="js/video_quiz.js?v=391"></script>
   <script src="js/word_cloud.js?v=400"></script>
   <script src="js/presentation_core.js?v=3125"></script>
-  <script src="js/group_manager.js?v=460"></script>
+  <script src="js/group_manager.js?v=461"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
