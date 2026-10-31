@@ -10448,6 +10448,11 @@ class App {
           });
         }
       }
+
+      // 線上人數變更時，即時同步點名名單中的線上狀態
+      if (typeof this.syncAttendanceWithOnlinePresence === 'function') {
+        this.syncAttendanceWithOnlinePresence();
+      }
     });
   }
 
@@ -17622,6 +17627,8 @@ class App {
       this.renderAdminClassList(classList);
       this.initCrossClassCopySection(classList);
       this.populateAdminClassAvatarDropdown();
+      // 切換班級時重置點名 session，確保即時載入該班最新名冊與線上學生
+      this.currentAttendanceSession = null;
       if (this.activeTabId === 'panel-admin') {
         if (this.currentAdminFeatureKey === 'classStudents') {
           this.renderAdminStudentsList();
@@ -19676,6 +19683,141 @@ class App {
     this.updatePointsStudentSelectionUI(false);
   }
 
+  // 集中彙整全班名冊與線上連線學生 (供點名、積分、名冊共用)
+  getAdminAllStudents() {
+    const studentsMap = new Map();
+
+    // 1. 登記在 quiz/students 的學生
+    const regStudents = this.registeredStudents || {};
+    Object.entries(regStudents).forEach(([uid, data]) => {
+      if (data && (data.name || uid)) {
+        studentsMap.set(uid, {
+          uid,
+          name: String(data.name || '同學').trim(),
+          avatar: data.avatar !== undefined ? data.avatar : 0,
+          points: parseInt(data.points, 10) || 0,
+          pointsLog: data.pointsLog || {},
+          lastLoginAt: data.lastLoginAt || data.updatedAt || null,
+          createdAt: data.createdAt || data.updatedAt || null
+        });
+      }
+    });
+
+    // 2. 補充 presence 線上名冊
+    const presenceData = this.onlinePresence || {};
+    const now = Date.now();
+    Object.values(presenceData).forEach(p => {
+      if (p && p.userId) {
+        if (p.timestamp && (now - p.timestamp > 120000)) return;
+        if (!studentsMap.has(p.userId)) {
+          studentsMap.set(p.userId, {
+            uid: p.userId,
+            name: String(p.userName || '同學').trim(),
+            avatar: p.avatar !== undefined ? p.avatar : 0,
+            points: 0,
+            pointsLog: {},
+            lastLoginAt: p.timestamp || now,
+            createdAt: p.timestamp || now
+          });
+        } else {
+          const s = studentsMap.get(p.userId);
+          if (p.userName && (!s.name || s.name === '同學')) {
+            s.name = String(p.userName).trim();
+          }
+          if (p.avatar !== undefined && s.avatar === undefined) {
+            s.avatar = p.avatar;
+          }
+        }
+      }
+    });
+
+    // 3. 補充提問、圖片、影片等歷程中的同學
+    const extraItems = [
+      ...(this.questions || []),
+      ...(this.images || []),
+      ...(this.videos || [])
+    ];
+    extraItems.forEach(item => {
+      if (item && item.userId && item.user && !studentsMap.has(item.userId)) {
+        studentsMap.set(item.userId, {
+          uid: item.userId,
+          name: String(item.user).trim(),
+          avatar: item.avatar !== undefined ? item.avatar : 0,
+          points: 0,
+          pointsLog: {},
+          lastLoginAt: item.timestamp || null,
+          createdAt: item.timestamp || null
+        });
+      }
+    });
+
+    // 4. 計算線上狀態
+    const onlineUids = new Set();
+    Object.values(presenceData).forEach(p => {
+      if (p && p.userId && (!p.timestamp || (now - p.timestamp <= 120000))) {
+        onlineUids.add(p.userId);
+      }
+    });
+
+    const list = Array.from(studentsMap.values()).map(s => ({
+      ...s,
+      isOnline: onlineUids.has(s.uid)
+    }));
+
+    this.lastAdminStudentsList = list;
+    return list;
+  }
+
+  // 線上 Presence 變更時，即時動態同步點名名單中的線上狀態
+  syncAttendanceWithOnlinePresence() {
+    if (!this.currentAttendanceSession) return;
+    if (!this.currentAttendanceSession.records) this.currentAttendanceSession.records = {};
+
+    const presenceData = this.onlinePresence || {};
+    const now = Date.now();
+    const onlineMap = new Map();
+    Object.values(presenceData).forEach(p => {
+      if (p && p.userId) {
+        if (!p.timestamp || (now - p.timestamp <= 120000)) {
+          onlineMap.set(p.userId, p);
+        }
+      }
+    });
+
+    let hasChanges = false;
+    // 1. 若有新上線同學尚未在名冊中，自動加入
+    onlineMap.forEach((p, uid) => {
+      if (!this.currentAttendanceSession.records[uid]) {
+        const userName = String(p.userName || '同學').trim();
+        this.currentAttendanceSession.records[uid] = {
+          name: userName,
+          avatar: p.avatar !== undefined ? p.avatar : 0,
+          isOnline: true,
+          status: 'present',
+          remark: '',
+          checkInTime: p.timestamp || now
+        };
+        hasChanges = true;
+      }
+    });
+
+    // 2. 更新現有同學的 isOnline
+    Object.keys(this.currentAttendanceSession.records).forEach(uid => {
+      const isOnline = onlineMap.has(uid);
+      if (this.currentAttendanceSession.records[uid].isOnline !== isOnline) {
+        this.currentAttendanceSession.records[uid].isOnline = isOnline;
+        hasChanges = true;
+      }
+    });
+
+    // 3. 若正在檢視點名功能且有變化，即時更新畫面
+    if (hasChanges || (this.activeTabId === 'panel-admin' && this.currentAdminFeatureKey === 'classAttendance')) {
+      this.renderAttendanceCurrentStudentsList();
+      this.updateAttendanceStatsBar();
+      this.syncEmbedAttendanceFromSession();
+    }
+  }
+
   // ===== 教師端：線上點名與出缺勤管理專屬全頁面板業務 =====
   renderAdminAttendancePanel() {
     const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
@@ -21448,17 +21590,34 @@ class App {
   }
 
   initCurrentAttendanceSession() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '');
+
     const now = new Date();
     const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
-    const titleInput = document.getElementById('adminAttendanceSessionTitle');
-    if (titleInput && (!titleInput.value || !this.currentAttendanceSession)) {
-      titleInput.value = `${dateStr} 課堂點名`;
+    const titleInputModal = document.getElementById('adminAttendanceSessionTitle');
+    const titleInputEmbed = document.getElementById('adminAttendanceSessionTitleEmbed');
+    const defaultTitle = `${dateStr} 課堂點名`;
+
+    if (titleInputModal && (!titleInputModal.value || !this.currentAttendanceSession)) {
+      titleInputModal.value = defaultTitle;
+    }
+    if (titleInputEmbed && (!titleInputEmbed.value || !this.currentAttendanceSession)) {
+      titleInputEmbed.value = defaultTitle;
     }
 
-    if (!this.currentAttendanceSession) {
-      const students = this.lastAdminStudentsList || [];
+    // 取得當前完整名冊與線上同學
+    const allStudents = this.getAdminAllStudents();
+
+    // 若 session 尚未建立、或班級已切換、或 records 為空但已找到學生：重新完整初始化
+    const currentRecords = this.currentAttendanceSession ? (this.currentAttendanceSession.records || {}) : null;
+    const isDifferentClass = this.currentAttendanceSession && this.currentAttendanceSession.classCode !== classCode;
+    const isEmptyRecords = !currentRecords || Object.keys(currentRecords).length === 0;
+
+    if (!this.currentAttendanceSession || isDifferentClass || (isEmptyRecords && allStudents.length > 0)) {
       const records = {};
-      students.forEach(s => {
+      allStudents.forEach(s => {
         records[s.uid] = {
           name: s.name,
           avatar: s.avatar,
@@ -21469,36 +21628,112 @@ class App {
         };
       });
       this.currentAttendanceSession = {
-        title: titleInput ? titleInput.value : `${dateStr} 課堂點名`,
+        title: (titleInputEmbed && titleInputEmbed.value) || (titleInputModal && titleInputModal.value) || defaultTitle,
+        classCode: classCode,
         records
       };
+    } else {
+      // 若已有 session，自動補充任何新上線或新註冊的同學
+      allStudents.forEach(s => {
+        if (!this.currentAttendanceSession.records[s.uid]) {
+          this.currentAttendanceSession.records[s.uid] = {
+            name: s.name,
+            avatar: s.avatar,
+            isOnline: s.isOnline,
+            status: s.isOnline ? 'present' : 'absent',
+            remark: s.isOnline ? '' : '未上線',
+            checkInTime: s.isOnline ? Date.now() : null
+          };
+        } else {
+          this.currentAttendanceSession.records[s.uid].isOnline = s.isOnline;
+          if (s.name && this.currentAttendanceSession.records[s.uid].name === '同學') {
+            this.currentAttendanceSession.records[s.uid].name = s.name;
+          }
+        }
+      });
     }
+
     this.renderAttendanceCurrentStudentsList();
     this.updateAttendanceStatsBar();
+    this.syncEmbedAttendanceFromSession();
   }
 
   adminAttendanceAutoDetectOnline() {
-    if (!this.currentAttendanceSession || !this.currentAttendanceSession.records) return;
-    const presenceData = this.onlinePresence || {};
-    const onlineUids = new Set();
-    Object.values(presenceData).forEach(p => {
-      if (p && p.userId) onlineUids.add(p.userId);
+    if (!this.currentAttendanceSession) {
+      this.initCurrentAttendanceSession();
+    }
+    if (!this.currentAttendanceSession.records) {
+      this.currentAttendanceSession.records = {};
+    }
+
+    // 1. 抓取當前所有學生 (包含 registeredStudents 與 presence)
+    const allStudents = this.getAdminAllStudents();
+    allStudents.forEach(s => {
+      if (!this.currentAttendanceSession.records[s.uid]) {
+        this.currentAttendanceSession.records[s.uid] = {
+          name: s.name,
+          avatar: s.avatar,
+          isOnline: s.isOnline,
+          status: s.isOnline ? 'present' : 'absent',
+          remark: s.isOnline ? '' : '未上線',
+          checkInTime: s.isOnline ? Date.now() : null
+        };
+      }
     });
 
+    // 2. 獲取活躍的線上 presence 清單 (120 秒內)
+    const presenceData = this.onlinePresence || {};
+    const onlineMap = new Map();
+    const now = Date.now();
+    Object.values(presenceData).forEach(p => {
+      if (p && p.userId) {
+        if (!p.timestamp || (now - p.timestamp <= 120000)) {
+          onlineMap.set(p.userId, p);
+        }
+      }
+    });
+
+    // 確保任何線上的同學都被納入點名名冊
+    onlineMap.forEach((p, uid) => {
+      if (!this.currentAttendanceSession.records[uid]) {
+        const userName = String(p.userName || '同學').trim();
+        this.currentAttendanceSession.records[uid] = {
+          name: userName,
+          avatar: p.avatar !== undefined ? p.avatar : 0,
+          isOnline: true,
+          status: 'present',
+          remark: '',
+          checkInTime: p.timestamp || now
+        };
+      }
+    });
+
+    // 3. 更新所有同學狀態：線上設為 present，離線設為 absent
+    let detectedCount = 0;
     Object.keys(this.currentAttendanceSession.records).forEach(uid => {
-      const isOnline = onlineUids.has(uid);
-      this.currentAttendanceSession.records[uid].isOnline = isOnline;
-      this.currentAttendanceSession.records[uid].status = isOnline ? 'present' : 'absent';
-      if (!isOnline && !this.currentAttendanceSession.records[uid].remark) {
-        this.currentAttendanceSession.records[uid].remark = '未上線';
-      } else if (isOnline && this.currentAttendanceSession.records[uid].remark === '未上線') {
-        this.currentAttendanceSession.records[uid].remark = '';
+      const isOnline = onlineMap.has(uid);
+      const rec = this.currentAttendanceSession.records[uid];
+      rec.isOnline = isOnline;
+      if (isOnline) {
+        rec.status = 'present';
+        if (rec.remark === '未上線') rec.remark = '';
+        if (!rec.checkInTime) rec.checkInTime = Date.now();
+        detectedCount++;
+      } else {
+        rec.status = 'absent';
+        if (!rec.remark) rec.remark = '未上線';
       }
     });
 
     this.renderAttendanceCurrentStudentsList();
     this.updateAttendanceStatsBar();
-    this.showNotification('偵測完成', `已根據目前連線狀態自動預先標記出席！`);
+    this.syncEmbedAttendanceFromSession();
+
+    if (detectedCount > 0) {
+      this.showNotification('偵測完成', `已成功偵測並自動標記 ${detectedCount} 位線上同學為出席！`);
+    } else {
+      this.showNotification('偵測完成', '目前尚未偵測到任何線上同學連線。');
+    }
   }
 
   adminAttendanceSetAllStatus(status) {

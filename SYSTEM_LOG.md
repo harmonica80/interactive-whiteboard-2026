@@ -1,4 +1,25 @@
 # System Log
+## 2026-10-31 - 修復線上點名名冊顯示問題：解決線上有學生卻顯示「無學生」之異常
+- 影響檔案：`js/app.js`, `index.html`, `SYSTEM_LOG.md`。
+- 問題原因：
+  1. 點名初始程序原先僅依賴 `this.lastAdminStudentsList` 快取，若老師直接進入點名面板而未先點擊過學生名冊分頁，快取為空導致點名名單被初始化為 0 人。
+  2. 當名冊為空時，點擊「⚡ 一鍵偵測線上學生」原先僅遍歷現有名冊物件鍵值，未將真正處於即時連線（`quiz/presence`）的線上同學動態補入點名單中。
+  3. 班級代碼切換時未重設暫存點名 session，導致殘留舊班級或空名冊狀態。
+- 修改項目：
+  1. **集中建構全班學生與線上學生取得函式（`getAdminAllStudents`）**：
+     - 整合 `quiz/students` 雲端名冊、`quiz/presence` 即時連線 Session、以及課堂互動發布記錄，動態確保所有學生與當前線上連線同學皆被納入。
+  2. **全面重構點名初始化（`initCurrentAttendanceSession`）**：
+     - 判斷班級代碼變更或現有名冊為空時，自動調用 `getAdminAllStudents` 完整載入學生。
+     - 若已有進行中點名，自動比對並動態補足新進連線或新登記的同學，維護名冊完整度。
+  3. **強化「⚡ 一鍵偵測線上學生」（`adminAttendanceAutoDetectOnline`）**：
+     - 主動比對 120 秒內活躍之線上 Presence 清單，若有新上線學生立即自動補入點名名冊，並自動標記為「🟢 出席」。
+     - 準確統計偵測到的線上人數並彈出通知（如：*已成功偵測並自動標記 2 位線上同學為出席！*）。
+  4. **掛載 Presence 即時監聽連動（`syncAttendanceWithOnlinePresence`）**：
+     - 於 Firebase 線上人數監聽器連動，只要有同學連線進入教室或離線，點名名單即時動態更新其「🟢 線上 / ⚪ 離線」狀態與名額，與頂部線上人數即時同步。
+  5. **班級切換即時重設**：
+     - 在 `ClassRoomManager.onClassesChange` 事件中重設點名 session，確保換班後立刻載入該班專屬名冊。
+  6. 通過 `node --check` 語法檢驗與全專案嚴格「記錄」零違規檢查，更新快取版本至 `v=459`。
+
 ## 2026-10-30 - 修復分組管理：自動分組彈窗樣式啟用、強化拖曳放置區與新增點擊一鍵換組選單
 - 影響檔案：`js/group_manager.js`, `css/style.css`, `index.html`, `SYSTEM_LOG.md`
 - 修改項目：
