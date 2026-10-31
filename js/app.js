@@ -20029,7 +20029,7 @@ class App {
   }
 
   // ==========================================
-  // ⏱️ 限時動態驗證碼簽到與出缺勤管理
+  // ⏱️ 限時動態驗證碼簽到與出缺勤管理 (智慧雙軌：全新一輪簽到 / 補簽模式)
   // ==========================================
 
   // 渲染教師端限時動態簽到工作區
@@ -20045,6 +20045,7 @@ class App {
       const code = state.code || '0000';
       const duration = state.duration || 60;
       const title = state.title || '課堂限時簽到';
+      const mode = state.mode || 'new'; // 'new' | 'makeup'
       const expireAt = state.expireAt || 0;
       const remainingSec = expireAt > 0 ? Math.max(0, Math.ceil((expireAt - Date.now()) / 1000)) : 0;
       const records = this.activeCheckInRecords || {};
@@ -20058,7 +20059,7 @@ class App {
 
       container.innerHTML = `
         <div id="checkInLiveDashboard" style="background: var(--bg-card); border: 2px solid var(--accent-color); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-hover); display: flex; flex-direction: column; gap: 16px;">
-          <!-- 頂部操作列：標題、全螢幕、控制按鈕 -->
+          <!-- 頂部操作列：標題、模式標籤、全螢幕、控制按鈕 -->
           <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
               <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
@@ -20067,6 +20068,15 @@ class App {
               <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 3px 10px; border-radius: 8px; font-size: 14px; font-weight: bold;">
                 ● 簽到進行中
               </span>
+              ${mode === 'makeup' ? `
+                <span style="background: rgba(245, 158, 11, 0.15); color: #d97706; padding: 3px 10px; border-radius: 8px; font-size: 14px; font-weight: bold;">
+                  🔄 補簽模式（保留前次名冊）
+                </span>
+              ` : `
+                <span style="background: rgba(59, 130, 246, 0.15); color: #2563eb; padding: 3px 10px; border-radius: 8px; font-size: 14px; font-weight: bold;">
+                  🆕 全新一輪簽到
+                </span>
+              `}
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <button id="btnCheckInFullscreen" type="button" class="presentation-tool-btn" onclick="window.app && window.app.toggleCheckInFullscreen()" style="font-size: 14px; padding: 6px 14px; border-radius: 8px;">
@@ -20092,7 +20102,7 @@ class App {
                 ${code}
               </div>
               <div style="font-size: 14px; color: var(--text-muted);">
-                ✨ 輸入正確即時完成簽到，並獎勵 +${state.rewardPoints || 1} 點！
+                ${mode === 'makeup' ? '✨ 前次已簽到的同學維持出席；未簽到同學輸入正確即可完成補簽！' : `✨ 輸入正確即時完成簽到，並獎勵 +${state.rewardPoints || 1} 點！`}
               </div>
             </div>
 
@@ -20186,6 +20196,31 @@ class App {
             <input type="text" id="checkInSessionTitleInput" value="${this.escapeHtml(defaultTitle)}" placeholder="請輸入點名單名稱" style="width: 100%; box-sizing: border-box; padding: 8px 12px; font-size: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
           </div>
 
+          <!-- 簽到模式選擇 (智慧雙軌) -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">🎯 簽到發起模式：</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 14px; color: var(--text-primary); margin: 0;">
+                <input type="radio" name="checkInModeRadio" value="new" ${!hasPreviousRecords ? 'checked' : ''} style="margin-top: 3px; cursor: pointer;">
+                <div>
+                  <span style="font-weight: bold;">🆕 全新一輪簽到（全員重新簽到）</span>
+                  <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
+                    清空前次簽到狀態，所有同學手機/平板皆需重新輸入 4 位驗證碼（適合新一節課或重新抽查點名）。
+                  </div>
+                </div>
+              </label>
+              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: ${hasPreviousRecords ? 'pointer' : 'not-allowed'}; font-size: 14px; color: var(--text-primary); margin: 0; border-top: 1px solid var(--border-color); padding-top: 8px; opacity: ${hasPreviousRecords ? '1' : '0.6'};">
+                <input type="radio" name="checkInModeRadio" value="makeup" ${hasPreviousRecords ? 'checked' : ''} ${!hasPreviousRecords ? 'disabled' : ''} style="margin-top: 3px; cursor: ${hasPreviousRecords ? 'pointer' : 'not-allowed'};">
+                <div>
+                  <span style="font-weight: bold;">🔄 補簽模式（保留前次已簽到名冊）</span>
+                  <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
+                    剛才已簽到同學維持出席（無需重複輸入與領點）；僅讓尚未簽到的遲到或斷線同學輸入新驗證碼補簽。
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <!-- 時限選擇 -->
           <div style="display: flex; flex-direction: column; gap: 8px;">
             <div style="font-size: 14px; font-weight: bold; color: var(--text-primary);">⏱️ 簽到限時：</div>
@@ -20223,7 +20258,7 @@ class App {
               <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                 <span>📋</span> 前次限時簽到成果（共 ${signedList.length} 位同學完成簽到）
               </div>
-              <div style="display: gap: 8px;">
+              <div style="display: flex; gap: 8px;">
                 <button type="button" class="presentation-tool-btn green" onclick="window.app && window.app.applyCheckInToAttendanceSession()" style="font-size: 14px; padding: 6px 14px; border-radius: 8px; font-weight: bold;">
                   📋 套入當堂點名單並存檔
                 </button>
@@ -20265,7 +20300,7 @@ class App {
     });
   }
 
-  // 🚀 教師端啟動限時簽到
+  // 🚀 教師端啟動限時簽到 (支援智慧雙軌：全新一輪簽到 / 補簽模式)
   async startDynamicCheckIn() {
     const db = window.db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
     if (!db) {
@@ -20282,12 +20317,19 @@ class App {
     const rewardCheck = document.getElementById('checkInRewardPointsCheck');
     const rewardPoints = (rewardCheck && rewardCheck.checked) ? 1 : 0;
 
-    // 隨機產生 4 位數驗證碼 (1000 - 9999)
+    // 取得簽到發起模式 (new / makeup)
+    const modeRadio = document.querySelector('input[name="checkInModeRadio"]:checked');
+    const mode = modeRadio ? modeRadio.value : 'new';
+
+    // 隨機產生 4 位數驗證碼 (1000 - 9999) 與專屬 Session ID
     const code = Math.floor(1000 + Math.random() * 9000).toString();
+    const sessionId = 'cs_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
     const expireAt = duration > 0 ? (Date.now() + duration * 1000) : 0;
 
     this.activeCheckInState = {
       active: true,
+      sessionId,
+      mode,
       code,
       title,
       duration,
@@ -20295,15 +20337,24 @@ class App {
       rewardPoints,
       startedAt: Date.now()
     };
-    this.activeCheckInRecords = {};
 
-    // 透過透明代理路徑寫入 (自動導向目前班級或一次性課堂)
-    await db.ref('attendance/activeCheckIn').set(this.activeCheckInState);
-    await db.ref('attendance/activeCheckIn/records').remove();
+    if (mode === 'new') {
+      // 全新一輪簽到：清空 records
+      this.activeCheckInRecords = {};
+      await db.ref('attendance/activeCheckIn/records').remove();
+    } else {
+      // 補簽模式：保留已有 records
+      if (!this.activeCheckInRecords) this.activeCheckInRecords = {};
+    }
+
+    // 透過透明代理路徑寫入狀態
+    await db.ref('attendance/activeCheckIn').update(this.activeCheckInState);
 
     // 廣播輕量狀態給學生端
     await db.ref('attendance/activeCheckIn/status').set({
       active: true,
+      sessionId,
+      mode,
       title,
       duration,
       expireAt,
@@ -20347,7 +20398,8 @@ class App {
 
     this.renderAttendanceCheckInPanel();
     if (this.showNotification) {
-      this.showNotification(`🚀 限時動態簽到已啟動！動態驗證碼：【${code}】`);
+      const modeText = mode === 'makeup' ? '【補簽模式】' : '【全新一輪簽到】';
+      this.showNotification(`🚀 限時動態簽到已啟動 ${modeText}！驗證碼：【${code}】`);
     }
   }
 
@@ -20500,7 +20552,7 @@ class App {
   }
 
   // ==========================================
-  // 🎓 學生端動態驗證碼簽到連動 (支援頂部橫幅 + 醒目彈窗)
+  // 🎓 學生端動態驗證碼簽到連動 (支援智慧雙軌判斷 + 頂部橫幅 + 醒目彈窗)
   // ==========================================
   setupStudentCheckInSync() {
     const db = window.db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
@@ -20530,20 +20582,37 @@ class App {
     });
   }
 
+  // 判斷目前學生端在該次簽到中是否已經完成簽到
+  isStudentAlreadySigned(status) {
+    if (!status) return false;
+    const myUid = this.getUserId();
+    const sessionId = status.sessionId || status.startedAt || 'default_session';
+
+    if (status.mode === 'makeup') {
+      // 補簽模式：若學生在此堂課先前有簽過（或本地記住任意已簽狀態），判定為已出席
+      const lastSignedSession = localStorage.getItem('last_signed_checkin_session');
+      return Boolean(lastSignedSession || this.studentSignedCheckInSession);
+    } else {
+      // 全新一輪簽到模式：嚴格比對本次唯一的 sessionId
+      // 只有當學生在本次全新的 sessionId 簽過，才算已簽到！
+      const lastSignedSession = localStorage.getItem('last_signed_checkin_session');
+      return (lastSignedSession === sessionId) || (this.studentSignedCheckInSession === sessionId);
+    }
+  }
+
   // 更新學生端頂部通知橫幅
   updateStudentCheckInBanner(status) {
     const banner = document.getElementById('studentCheckInBanner');
     if (!banner) return;
 
-    const myUid = this.getUserId();
-    const hasAlreadySigned = this.studentSignedCheckInSession === status.startedAt || localStorage.getItem(`signed_checkin_${status.code}`);
+    const hasAlreadySigned = this.isStudentAlreadySigned(status);
 
     if (hasAlreadySigned) {
       banner.style.display = 'flex';
       banner.style.background = 'linear-gradient(90deg, #10b981 0%, #059669 100%)';
       banner.innerHTML = `
         <span style="font-size: 18px;">✅</span>
-        <span>您已成功完成本堂課限時簽到！獲得獎勵點數 +${status.rewardPoints || 1} 點</span>
+        <span>您已成功完成本堂課簽到！無需重複輸入 (獲得獎勵 +${status.rewardPoints || 1} 點)</span>
         <button type="button" class="presentation-tool-btn" onclick="document.getElementById('studentCheckInBanner').style.display='none'" style="background: rgba(255,255,255,0.25); color: #ffffff; border: none; padding: 3px 10px; border-radius: 20px; font-size: 13px; cursor: pointer;">✕ 關閉</button>
       `;
       return;
@@ -20551,6 +20620,16 @@ class App {
 
     banner.style.display = 'flex';
     banner.style.background = 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)';
+    const modeBadge = status.mode === 'makeup' ? '【補簽】' : '';
+    banner.innerHTML = `
+      <span style="font-size: 18px;">⏱️</span>
+      <span id="studentCheckInBannerTitle">老師已啟動課堂限時簽到${modeBadge}！請看大螢幕輸入 4 位驗證碼：</span>
+      <span id="studentCheckInBannerCountdown" style="background: rgba(255,255,255,0.25); padding: 3px 12px; border-radius: 20px; font-size: 14px; font-weight: 900; letter-spacing: 0.5px;">剩餘 60 秒</span>
+      <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.openStudentCheckInModal(window.app.studentCurrentCheckInStatus)" style="background: #ffffff; color: #7c3aed; font-weight: 900; font-size: 14px; padding: 5px 16px; border-radius: 20px; border: none; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        👉 立即簽到
+      </button>
+    `;
+
     const countdownEl = document.getElementById('studentCheckInBannerCountdown');
     if (countdownEl && status.expireAt > 0) {
       const sec = Math.max(0, Math.ceil((status.expireAt - Date.now()) / 1000));
@@ -20569,11 +20648,13 @@ class App {
     const modal = document.getElementById('studentDynamicCheckInModal');
     if (!modal) return;
 
-    const myUid = this.getUserId();
-    const hasAlreadySigned = this.studentSignedCheckInSession === status.startedAt || localStorage.getItem(`signed_checkin_${status.code}`);
+    const hasAlreadySigned = this.isStudentAlreadySigned(status);
 
     const titleEl = document.getElementById('studentCheckInModalTitle');
-    if (titleEl) titleEl.textContent = status.title || '課堂限時簽到中';
+    if (titleEl) {
+      const modeText = status.mode === 'makeup' ? ' (補簽)' : '';
+      titleEl.textContent = (status.title || '課堂限時簽到中') + modeText;
+    }
 
     const inputSection = document.getElementById('studentCheckInInputSection');
     const successBox = document.getElementById('studentCheckInSuccessBox');
@@ -20585,6 +20666,8 @@ class App {
     if (hasAlreadySigned) {
       if (inputSection) inputSection.style.display = 'none';
       if (successBox) successBox.style.display = 'flex';
+      const rankText = document.getElementById('studentCheckInRankText');
+      if (rankText) rankText.textContent = '您已成功完成本堂課簽到！無需重複輸入。';
     } else {
       if (inputSection) inputSection.style.display = 'flex';
       if (successBox) successBox.style.display = 'none';
@@ -20672,9 +20755,10 @@ class App {
       time: Date.now()
     });
 
-    // 標記本機已簽到
-    this.studentSignedCheckInSession = status.startedAt || true;
-    localStorage.setItem(`signed_checkin_${status.code}`, 'true');
+    // 標記本機已簽到 (綁定專屬 sessionId)
+    const sessionId = status.sessionId || status.startedAt || 'default_session';
+    this.studentSignedCheckInSession = sessionId;
+    localStorage.setItem('last_signed_checkin_session', sessionId);
 
     // 若有獎勵點數，更新學生個人點數
     if (status.rewardPoints && status.rewardPoints > 0) {
@@ -20712,7 +20796,6 @@ class App {
       this.studentCheckInTimerId = null;
     }
   }
-
 
   async renderEmbedAttendanceHistory() {
     const container = document.getElementById('attendanceEmbedHistoryList');
