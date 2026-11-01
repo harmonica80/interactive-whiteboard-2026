@@ -340,9 +340,38 @@
         state.audioTimerInterval = null;
       }
     }
+
+    // 強制停止並立即銷毀所有 YouTube Iframe 音訊，杜絕在背景繼續播放
+    const iframes = document.querySelectorAll('#songQuizHiddenIframe, #songQuizAudioWrapper iframe');
+    iframes.forEach(iframe => {
+      try {
+        iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        iframe.contentWindow.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
+        iframe.src = 'about:blank';
+      } catch (e) {}
+      try { iframe.remove(); } catch (e) {}
+    });
+
     const wrapper = document.getElementById('songQuizAudioWrapper');
     if (wrapper) {
       wrapper.innerHTML = '';
+    }
+
+    if (this.songQuizAudio) {
+      try {
+        this.songQuizAudio.pause();
+        this.songQuizAudio.currentTime = 0;
+        this.songQuizAudio.src = '';
+      } catch (e) {}
+      this.songQuizAudio = null;
+    }
+    if (this.songQuizBuzzerAudio) {
+      try {
+        this.songQuizBuzzerAudio.pause();
+        this.songQuizBuzzerAudio.currentTime = 0;
+        this.songQuizBuzzerAudio.src = '';
+      } catch (e) {}
+      this.songQuizBuzzerAudio = null;
     }
   };
 

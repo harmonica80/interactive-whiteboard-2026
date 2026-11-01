@@ -1,4 +1,22 @@
 # System Log
+## 2026-11-01 - 修復聽歌搶答播放中結束遊戲背景音樂繼續播放問題：銷毀 YouTube Iframe 與全鏈路音訊中斷
+- 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`。
+- 問題原因：
+  1. `resetFocusGameLocalState()` 原先僅暫停原生 `this.songQuizAudio` 物件，未調用 `this.stopSongQuizAudio()`，導致 `#songQuizAudioWrapper` 內部的 YouTube 播放 Iframe 仍留存於 DOM 中持續播放至秒數結束。
+  2. `endFocusGame()` 與 `quickStopFocusGame()` 原在點擊確認後直接等待 Firebase 非同步寫入，未在確認的第一時間立即切斷本地音訊。
+  3. `stopSongQuizAudio()` 原僅清空父層容器之 `innerHTML`，未向 YouTube API 發送 `pauseVideo` / `stopVideo` 指令及清空 `src='about:blank'`，部分瀏覽器環境仍可能短暫殘留背景音訊串流。
+- 修改項目與功能亮點：
+  1. **升級 `stopSongQuizAudio()` 徹底銷毀播放管線**：
+     - 主動尋找所有 `#songQuizHiddenIframe` 與播放 Iframe，透過 `postMessage` 發送 `pauseVideo` 與 `stopVideo` 指令。
+     - 將 Iframe `src` 設為 `'about:blank'` 並從 DOM 節點中強制 `remove()`，同時清空 `#songQuizAudioWrapper`，徹底終止瀏覽器解碼管線。
+     - 清除播放倒數計時器（`buzzerAudioTimeout` 與 `audioTimerInterval`）。
+  2. **串接全域重置程序（`resetFocusGameLocalState`）**：
+     - 在重置本地狀態的第一步全面呼叫 `this.stopSongQuizAudio()`，確保無論是老師點擊結束、快捷停止、或是學生端接收到 `status === 'idle'` 雲端同步時，皆即時靜音銷毀。
+  3. **點擊結束遊戲立即消音**：
+     - 於 `endFocusGame()` 與 `quickStopFocusGame()` 的確認回呼內，在發起非同步 `set('idle')` 的當下立即呼叫 `this.stopSongQuizAudio()`，達到零延遲即刻消音。
+  4. **規範與驗證**：
+     - 通過 `node --check` 語法檢驗，維持 0 處「紀錄」違規，更新快取版本至 `?v=466`。
+
 ## 2026-11-01 - 聽歌搶答開始遊戲自動切換前台測驗畫面與主控台正解按住防窺機制
 - 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`。
 - 修改項目與功能亮點：

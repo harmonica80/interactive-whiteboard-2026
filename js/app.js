@@ -6563,6 +6563,10 @@ class App {
       '確定停止專注力測驗？',
       '這會立即停止全班目前的專注力測驗並清除暫存畫面。',
       () => {
+        // 先在本地立即無延遲終止歌曲播放，杜絕等待雲端寫入期間背景發聲
+        if (typeof this.stopSongQuizAudio === 'function') {
+          try { this.stopSongQuizAudio(); } catch (e) {}
+        }
         db.ref('quiz/focusGame/status').set('idle').then(() => {
           this.resetFocusGameLocalState();
           this.showNotification('已停止', '專注力測驗已停止！');
@@ -12254,7 +12258,19 @@ class App {
 
   // 清除專注力測驗所有網頁暫存、本機記憶體狀態、舊音訊、計時器與舊版面 DOM
   resetFocusGameLocalState() {
-    // 1. 停止所有測驗音訊
+    // 1. 停止所有測驗音訊（含聽歌搶答 YouTube 播放與原生音訊）
+    if (typeof this.stopSongQuizAudio === 'function') {
+      try { this.stopSongQuizAudio(); } catch (e) {}
+    } else {
+      const iframes = document.querySelectorAll('#songQuizHiddenIframe, #songQuizAudioWrapper iframe');
+      iframes.forEach(iframe => {
+        try { iframe.src = 'about:blank'; } catch (e) {}
+        try { iframe.remove(); } catch (e) {}
+      });
+      const wrapper = document.getElementById('songQuizAudioWrapper');
+      if (wrapper) wrapper.innerHTML = '';
+    }
+
     if (this.songQuizAudio) {
       try {
         this.songQuizAudio.pause();
@@ -12888,6 +12904,10 @@ class App {
       '確定要結束專注力測驗嗎？',
       '這會關閉所有學生的測驗畫面。',
       () => {
+        // 先在本地立即無延遲終止歌曲播放，杜絕等待雲端寫入期間背景發聲
+        if (typeof this.stopSongQuizAudio === 'function') {
+          try { this.stopSongQuizAudio(); } catch (e) {}
+        }
         db.ref('quiz/focusGame/status').set('idle').then(() => {
           this.resetFocusGameLocalState();
           this.updateAdminActiveActivitiesUI();
