@@ -6436,6 +6436,21 @@ class App {
    * 更新前台「教師管理模式快捷列 (#teacherQuickControlBar)」與頂部常駐登出按鈕
    */
   updateTeacherQuickControlBar(activeItems = []) {
+    if (this.isAdmin) {
+      if (typeof this.initAdminWhispersSync === 'function') this.initAdminWhispersSync();
+      if (typeof this.initActivityScoringConfig === 'function') this.initActivityScoringConfig();
+    } else {
+      if (typeof this.stopAdminWhispersSync === 'function') this.stopAdminWhispersSync();
+    }
+    if (typeof this.updateTeacherWhispersBadge === 'function') {
+      this.updateTeacherWhispersBadge();
+    }
+
+    const wheelTeacherBtns = document.getElementById('wheelWinnerTeacherRewardBtns');
+    if (wheelTeacherBtns) {
+      wheelTeacherBtns.style.display = this.isAdmin ? 'inline-flex' : 'none';
+    }
+
     const topLogoutBtn = document.getElementById('topBarAdminLogoutBtn');
     if (topLogoutBtn) {
       topLogoutBtn.style.display = this.isAdmin ? 'inline-flex' : 'none';
@@ -13984,16 +13999,28 @@ class App {
       const fontWeight = isTop3 ? 'bold' : 'normal';
       const timeVal = getTime(res);
       const timeStr = timeVal < 999999 ? timeVal.toFixed(2) : '-';
-      const userAvatar = this.renderAvatarHtml(this.getUserAvatar(res.uid, res.name || res.user, res.avatar), 18);
+      const rawName = res.name || res.user || '匿名';
+      const userAvatar = this.renderAvatarHtml(this.getUserAvatar(res.uid, rawName, res.avatar), 18);
+      const groupBadgeHtml = typeof this.renderStudentGroupBadgeHtml === 'function' ? this.renderStudentGroupBadgeHtml(res.uid, rawName) : '';
+      const isTeacherAdminList = (listContainerId === 'adminBuzzGameRankList' || this.isAdmin);
+      const safeUid = String(res.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeNameAttr = String(rawName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const rewardBtnHtml = isTeacherAdminList ? `
+        <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardSingleActivityStudent('${safeUid}', '${safeNameAttr}', '搶答表現優異')" style="padding: 2px 8px; height: 26px; font-size: 14px; border-radius: 6px; margin-left: 6px;" title="依計分模式給予此同學或所屬小組獎勵點數">⭐ 加分</button>
+      ` : '';
       
       return `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; font-weight: ${fontWeight}; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">${medal}</span>
             ${userAvatar}
-            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name || res.user || '匿名')}</span>
+            <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(rawName)}</span>
+            ${groupBadgeHtml}
           </div>
-          <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="color: var(--danger-color); font-family: monospace; font-weight: bold; font-size: 14px;">${res.timeSpent.toFixed(2)} 秒</span>
+            ${rewardBtnHtml}
+          </div>
         </div>
       `;
     }).join('');
@@ -14547,6 +14574,13 @@ class App {
       const rawName = res.userName || res.name || '匿名學生';
       const displayName = this.escapeHtml(rawName);
       const userAvatar = this.renderAvatarHtml(this.getUserAvatar(res.uid, rawName, res.avatar), 20);
+      const groupBadgeHtml = typeof this.renderStudentGroupBadgeHtml === 'function' ? this.renderStudentGroupBadgeHtml(res.uid, rawName) : '';
+      const isTeacherAdminList = (listContainerId === 'adminFocusGameRankList' || this.isAdmin);
+      const safeUid = String(res.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeNameAttr = String(rawName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const rewardBtnHtml = isTeacherAdminList ? `
+        <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardSingleActivityStudent('${safeUid}', '${safeNameAttr}', '專注力測驗表現優異')" style="padding: 2px 8px; height: 26px; font-size: 14px; border-radius: 6px; margin-left: 6px;" title="依計分模式給予此同學或所屬小組獎勵點數">⭐ 加分</button>
+      ` : '';
       const timeVal = getTime(res);
       const timeStr = timeVal < 999999 ? timeVal.toFixed(2) : '-';
       const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次，+${res.penaltySeconds || res.helpCount * 5} 秒）` : '';
@@ -14597,13 +14631,17 @@ class App {
       }
 
       return `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: ${bg}; border: ${border}; border-radius: 12px; font-size: 14px; margin-bottom: 8px; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: ${bg}; border: ${border}; border-radius: 12px; font-size: 14px; margin-bottom: 8px; box-sizing: border-box; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="font-size: 14px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; min-width: 60px; white-space: nowrap;">${medal}</span>
             ${userAvatar}
             <span style="color: var(--text-primary); font-weight: 600; font-size: 15px;">${displayName}</span>
+            ${groupBadgeHtml}
           </div>
-          <div>${detailHtml}</div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div>${detailHtml}</div>
+            ${rewardBtnHtml}
+          </div>
         </div>
       `;
     }).join('');
@@ -15318,25 +15356,30 @@ class App {
       }).join('');
       
       const helpNote = res.helpCount ? `（提示 ${res.helpCount} 次）` : '';
+      const groupBadgeHtml = typeof this.renderStudentGroupBadgeHtml === 'function' ? this.renderStudentGroupBadgeHtml(res.uid, res.name) : '';
+      const safeUid = String(res.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeNameAttr = String(res.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
       return `
         <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 8px; box-sizing: border-box;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               ${this.renderAvatarHtml(this.getUserAvatar(res.uid, res.name, res.avatar), 18)}
               <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">${this.escapeHtml(res.name)}</span>
+              ${groupBadgeHtml}
               ${statusBadge}
             </div>
-            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">⏱️ ${Number(res.timeSpent || 0).toFixed(2)} 秒${helpNote}</span>
+            <span style="font-size: 14px; color: var(--text-muted); font-family: monospace;">⏱️ ${Number(res.timeSpent || 0).toFixed(2)} 秒${helpNote}</span>
           </div>
           
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
-            <div style="display: flex; align-items: center;">
-              <span style="font-size: 13px; color: var(--text-secondary); margin-right: 6px;">回答：</span>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; flex-wrap: wrap;">
+              <span style="font-size: 14px; color: var(--text-secondary); margin-right: 6px;">回答：</span>
               ${answerDisplay}
             </div>
-            <div style="display: flex; gap: 4px;">
-              <button onclick="window.app.judgeCharacterTest('${res.uid}', 'correct')" style="background: #28a745; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">✔️ 答對</button>
-              <button onclick="window.app.judgeCharacterTest('${res.uid}', 'incorrect')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; font-weight: bold; cursor: pointer;">❌ 答錯</button>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button onclick="window.app.judgeCharacterTest('${safeUid}', 'correct')" style="background: #28a745; color: white; border: none; padding: 4px 10px; font-size: 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">✔️ 答對</button>
+              <button onclick="window.app.judgeCharacterTest('${safeUid}', 'incorrect')" style="background: #dc3545; color: white; border: none; padding: 4px 10px; font-size: 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">❌ 答錯</button>
+              <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardSingleActivityStudent('${safeUid}', '${safeNameAttr}', '一字千金答題優異')" style="padding: 2px 8px; height: 28px; font-size: 14px; border-radius: 6px;" title="依計分模式給予此同學或所屬小組獎勵點數">⭐ 加分</button>
             </div>
           </div>
         </div>
@@ -15382,13 +15425,15 @@ class App {
       
       const helpNote = res.helpCount ? `，提示 ${res.helpCount} 次` : '';
       const userAvatar = this.renderAvatarHtml(this.getUserAvatar(res.uid, res.name, res.avatar), 18);
+      const groupBadgeHtml = typeof this.renderStudentGroupBadgeHtml === 'function' ? this.renderStudentGroupBadgeHtml(res.uid, res.name) : '';
       
       return `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-input, #f8f9fa); border: 1px solid var(--border-color); border-radius: 12px; font-size: 14px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="font-size: 16px; font-weight: 900; color: ${color}; display: flex; align-items: center; justify-content: center; width: 24px;">#${index + 1}</span>
             ${userAvatar}
             <span style="color: var(--text-primary); font-weight: 600;">${this.escapeHtml(res.name)}</span>
+            ${groupBadgeHtml}
           </div>
           <span style="color: ${color}; font-weight: bold; font-size: 14px;">${statusIcon} (${Number(res.timeSpent || 0).toFixed(2)} 秒${helpNote})</span>
         </div>
@@ -16660,12 +16705,24 @@ class App {
       this.soundEffects.playWinFanfare();
     }
     
+    this.lastWheelWinnerName = winnerName || '';
+
     // 顯示中獎 Banner
     const banner = document.getElementById('wheelWinnerDisplay');
     if (banner) {
       banner.style.display = 'block';
       const lblWinner = document.getElementById('lblWheelWinner');
       if (lblWinner) lblWinner.textContent = winnerName;
+      const groupBadgeEl = document.getElementById('wheelWinnerGroupBadge');
+      if (groupBadgeEl) {
+        groupBadgeEl.innerHTML = typeof this.renderStudentGroupBadgeHtml === 'function'
+          ? this.renderStudentGroupBadgeHtml(null, winnerName)
+          : '';
+      }
+      const teacherBtns = document.getElementById('wheelWinnerTeacherRewardBtns');
+      if (teacherBtns) {
+        teacherBtns.style.display = this.isAdmin ? 'inline-flex' : 'none';
+      }
     }
     
     // 寫入歷史記錄
@@ -16702,10 +16759,18 @@ class App {
       }
       const item = document.createElement('div');
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border-color);';
+      const groupBadgeHtml = typeof this.renderStudentGroupBadgeHtml === 'function' ? this.renderStudentGroupBadgeHtml(null, winnerName) : '';
+      const safeWinnerAttr = String(winnerName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 6px;';
       item.innerHTML = `
-        <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">🎯 ${this.escapeHtml(winnerName)}</span>
-        <span style="color: var(--text-muted); font-size: 12px;">${this.escapeHtml(time)}</span>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-weight: bold; color: var(--text-primary); font-size: 14px;">🎯 ${this.escapeHtml(winnerName)}</span>
+          ${groupBadgeHtml}
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardWheelWinner(null, '${safeWinnerAttr}')" style="padding: 2px 8px; height: 26px; font-size: 14px; border-radius: 6px;" title="依計分模式給予此同學或所屬小組獎勵點數">⭐ 加分</button>
+          <span style="color: var(--text-muted); font-size: 14px;">${this.escapeHtml(time)}</span>
+        </div>
       `;
       adminList.insertBefore(item, adminList.firstChild);
     }
@@ -18103,6 +18168,7 @@ class App {
         studentsMap.set(uid, {
           uid,
           name: String(data.name).trim(),
+          note: data.note ? String(data.note).trim() : '',
           avatar: data.avatar !== undefined ? data.avatar : 0,
           points: parseInt(data.points, 10) || 0,
           pointsLog: data.pointsLog || {},
@@ -18197,6 +18263,7 @@ class App {
     if (query) {
       filtered = filtered.filter(s =>
         s.name.toLowerCase().includes(query) ||
+        (s.note && s.note.toLowerCase().includes(query)) ||
         s.uid.toLowerCase().includes(query)
       );
     }
@@ -18259,8 +18326,13 @@ class App {
               <div class="admin-student-list-avatar" title="頭像代號: ${s.avatar}">
                 ${avatarHtml}
               </div>
-              <div class="admin-student-list-name-box">
+              <div class="admin-student-list-name-box" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                 <span class="admin-student-list-name" title="${safeName}">${safeName}</span>
+                ${s.note
+                  ? `<span class="student-note-badge has-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="學生備註：${this.escapeHtml(s.note)}（點擊修改真實姓名或注意事項）">📝 ${this.escapeHtml(s.note)}</span>`
+                  : `<button type="button" class="student-note-badge empty-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="點擊新增學生備註（真實姓名／座號／注意事項）">＋ 備註</button>`
+                }
+                ${typeof this.renderStudentGroupBadgeHtml === 'function' ? this.renderStudentGroupBadgeHtml(s.uid, s.name) : ''}
                 <span class="admin-student-online-badge ${s.isOnline ? 'online' : 'offline'}" title="${s.isOnline ? '連線中' : '目前離線'}">
                   ${s.isOnline ? '🟢 線上' : '⚪ 離線'}
                 </span>
@@ -18320,8 +18392,13 @@ class App {
                 ${avatarHtml}
               </div>
               <div class="admin-student-card-info">
-                <div class="admin-student-card-name-row">
+                <div class="admin-student-card-name-row" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                   <span class="admin-student-card-name" title="${safeName}">${safeName}</span>
+                  ${s.note
+                    ? `<span class="student-note-badge has-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="學生備註：${this.escapeHtml(s.note)}（點擊修改真實姓名或注意事項）">📝 ${this.escapeHtml(s.note)}</span>`
+                    : `<button type="button" class="student-note-badge empty-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="點擊新增學生備註（真實姓名／座號／注意事項）">＋ 備註</button>`
+                  }
+                  ${typeof this.renderStudentGroupBadgeHtml === 'function' ? this.renderStudentGroupBadgeHtml(s.uid, s.name) : ''}
                   <span class="admin-student-online-badge ${s.isOnline ? 'online' : 'offline'}" title="${s.isOnline ? '連線中' : '目前離線'}">
                     ${s.isOnline ? '🟢 線上' : '⚪ 離線'}
                   </span>
@@ -18736,7 +18813,7 @@ class App {
     });
 
     let csv = '\uFEFF'; // UTF-8 BOM
-    csv += '學生UID,班級代碼,學生姓名,目前連線狀態,近期登入時間,歷程總數,提問數,留言互動數,圖片分享數,影片分享數,測驗作答數,文字雲發想數\n';
+    csv += '學生UID,班級代碼,學生姓名,學生備註,目前連線狀態,近期登入時間,歷程總數,提問數,留言互動數,圖片分享數,影片分享數,測驗作答數,文字雲發想數\n';
 
     studentsMap.forEach(s => {
       const isOnline = onlineUids.has(s.uid) ? '線上' : '離線';
@@ -18757,8 +18834,10 @@ class App {
 
       const timeStr = latestTime ? new Date(latestTime).toLocaleString() : '無記錄';
       const safeName = `"${String(s.name).replace(/"/g, '""')}"`;
+      const regEntry = (this.registeredStudents && this.registeredStudents[s.uid]) || {};
+      const safeNote = `"${String(regEntry.note || '').replace(/"/g, '""')}"`;
 
-      csv += `"${s.uid}","${classCode}",${safeName},"${isOnline}","${timeStr}",${activities.length},${qCount},${cCount},${imgCount},${vidCount},${quizCount},${wcCount}\n`;
+      csv += `"${s.uid}","${classCode}",${safeName},${safeNote},"${isOnline}","${timeStr}",${activities.length},${qCount},${cCount},${imgCount},${vidCount},${quizCount},${wcCount}\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -18791,6 +18870,11 @@ class App {
       if (inputName) {
         inputName.value = student.name || '';
         setTimeout(() => inputName.focus(), 60);
+      }
+
+      const inputNote = document.getElementById('adminEditStudentNoteInput');
+      if (inputNote) {
+        inputNote.value = student.note ? String(student.note).trim() : '';
       }
 
       const label = document.getElementById('adminEditStudentAvatarLabel');
@@ -18925,6 +19009,859 @@ class App {
     }
   }
 
+  adminQuickEditStudentNote(studentUid) {
+    this.adminOpenEditStudentModal(studentUid);
+    setTimeout(() => {
+      const inputNote = document.getElementById('adminEditStudentNoteInput');
+      if (inputNote) {
+        inputNote.focus();
+        inputNote.select();
+      }
+    }, 90);
+  }
+
+  // =========================================================
+  // 🤫 給老師的悄悄話系統 (學生私人傳訊 & 教師頂部未讀收件匣管理)
+  // =========================================================
+  initAdminWhispersSync() {
+    if (!this.isAdmin) return;
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || '__one_off__');
+
+    if (this._whispersListenerActive && this._whispersListenerClass === classCode) {
+      this.updateTeacherWhispersBadge();
+      return;
+    }
+
+    this.stopAdminWhispersSync();
+    this._whispersListenerActive = true;
+    this._whispersListenerClass = classCode;
+    this.adminWhispersFilter = this.adminWhispersFilter || 'all';
+    this._whispersRef = db.ref('quiz/whispers/items');
+    this._whispersCallback = (snapshot) => {
+      this.adminWhispersData = snapshot.val() || {};
+      this.updateTeacherWhispersBadge();
+      const modal = document.getElementById('adminWhispersModal');
+      if (modal && modal.classList.contains('active')) {
+        this.renderAdminWhispersList();
+      }
+    };
+    this._whispersRef.on('value', this._whispersCallback);
+  }
+
+  stopAdminWhispersSync() {
+    if (this._whispersRef && this._whispersCallback) {
+      try {
+        this._whispersRef.off('value', this._whispersCallback);
+      } catch (e) {}
+    }
+    this._whispersRef = null;
+    this._whispersCallback = null;
+    this._whispersListenerActive = false;
+    this._whispersListenerClass = null;
+  }
+
+  updateTeacherWhispersBadge() {
+    const btn = document.getElementById('btnTeacherWhispersTop');
+    if (!btn) return;
+
+    if (!this.isAdmin) {
+      btn.style.display = 'none';
+      return;
+    }
+
+    btn.style.display = 'inline-flex';
+    const itemsObj = this.adminWhispersData || {};
+    const list = Object.values(itemsObj).filter(it => it && typeof it === 'object');
+    const unreadCount = list.filter(it => !it.read).length;
+
+    const lbl = document.getElementById('txtTeacherWhispersLabel');
+    const badge = document.getElementById('badgeTeacherWhispersUnread');
+
+    if (unreadCount > 0) {
+      btn.classList.add('has-unread');
+      if (lbl) lbl.textContent = '未讀悄悄話';
+      if (badge) {
+        badge.style.display = 'inline-flex';
+        badge.textContent = String(unreadCount);
+      }
+    } else {
+      btn.classList.remove('has-unread');
+      if (lbl) lbl.textContent = '悄悄話';
+      if (badge) {
+        badge.style.display = 'none';
+        badge.textContent = '0';
+      }
+    }
+  }
+
+  openStudentWhisperModal() {
+    const modal = document.getElementById('studentWhisperModal');
+    if (!modal) return;
+
+    const fsEl = document.fullscreenElement;
+    if (fsEl && fsEl !== document.documentElement) {
+      if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+    } else if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+
+    const adminShortcut = document.getElementById('studentWhisperAdminShortcut');
+    if (adminShortcut) {
+      adminShortcut.style.display = this.isAdmin ? 'flex' : 'none';
+    }
+
+    const senderBadge = document.getElementById('studentWhisperSenderBadge');
+    if (senderBadge) {
+      const myName = this.currentUser || localStorage.getItem('whiteboard_username') || '同學';
+      senderBadge.textContent = `目前傳送身分：${myName}`;
+    }
+
+    this.renderStudentSentWhispers();
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+
+    setTimeout(() => {
+      const ta = document.getElementById('studentWhisperTextarea');
+      if (ta) ta.focus();
+    }, 80);
+  }
+
+  closeStudentWhisperModal() {
+    const modal = document.getElementById('studentWhisperModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+
+  insertWhisperQuickTag(tagText) {
+    const ta = document.getElementById('studentWhisperTextarea');
+    if (!ta) return;
+    const current = ta.value.trim();
+    if (!current) {
+      ta.value = tagText;
+    } else if (!current.startsWith(tagText)) {
+      ta.value = tagText + '\n' + current;
+    }
+    ta.focus();
+  }
+
+  getStudentLocalWhispersKey() {
+    const classCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
+      ? window.ClassRoomManager.getActiveClassCode()
+      : (window.currentClassCode || 'oneoff');
+    const uid = this.userId || localStorage.getItem('whiteboard_uid') || 'guest';
+    return `wb_student_whispers_${classCode}_${uid}`;
+  }
+
+  async submitStudentWhisper() {
+    const ta = document.getElementById('studentWhisperTextarea');
+    const text = ta ? ta.value.trim() : '';
+    if (!text) {
+      this.showNotification('提示', '請輸入您想對老師說的悄悄話內容！');
+      if (ta) ta.focus();
+      return;
+    }
+
+    const btn = document.getElementById('btnSubmitStudentWhisper');
+    if (btn) btn.disabled = true;
+
+    const uid = this.userId || localStorage.getItem('whiteboard_uid') || ('u_' + Date.now());
+    const userName = this.currentUser || localStorage.getItem('whiteboard_username') || '匿名同學';
+    const userAvatar = this.currentAvatar !== undefined ? this.currentAvatar : 0;
+    const now = Date.now();
+
+    const msgData = {
+      uid,
+      name: userName,
+      avatar: userAvatar,
+      content: text,
+      createdAt: now,
+      read: false
+    };
+
+    try {
+      const newRef = db.ref('quiz/whispers/items').push();
+      await newRef.set({
+        id: newRef.key,
+        ...msgData
+      });
+
+      // 儲存一份至學生端本機記錄（避免學生端監聽全班悄悄話造成權限與流量問題）
+      try {
+        const key = this.getStudentLocalWhispersKey();
+        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+        existing.unshift({ id: newRef.key, ...msgData });
+        localStorage.setItem(key, JSON.stringify(existing.slice(0, 30)));
+      } catch (e) {}
+
+      if (ta) ta.value = '';
+      this.renderStudentSentWhispers();
+      this.showNotification('傳送成功', '🤫 您的悄悄話已私密傳送給老師！');
+    } catch (err) {
+      this.showNotification('錯誤', '傳送失敗：' + err.message);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  renderStudentSentWhispers() {
+    const container = document.getElementById('studentSentWhispersList');
+    if (!container) return;
+
+    let list = [];
+    try {
+      list = JSON.parse(localStorage.getItem(this.getStudentLocalWhispersKey()) || '[]');
+    } catch (e) {}
+
+    if (!Array.isArray(list) || list.length === 0) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 14px; padding: 14px 0;">尚無傳送記錄</div>';
+      return;
+    }
+
+    container.innerHTML = list.map(item => {
+      const timeStr = item.createdAt ? new Date(item.createdAt).toLocaleString() : '';
+      return `
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 12px; font-size: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 14px; margin-bottom: 4px;">
+            <span>🔒 已私密傳送給老師</span>
+            <span>${this.escapeHtml(timeStr)}</span>
+          </div>
+          <div style="color: var(--text-primary); white-space: pre-wrap; word-break: break-word;">${this.escapeHtml(item.content || '')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  clearStudentLocalWhispers() {
+    try {
+      localStorage.removeItem(this.getStudentLocalWhispersKey());
+    } catch (e) {}
+    this.renderStudentSentWhispers();
+  }
+
+  openAdminWhispersModal() {
+    if (!this.isAdmin) {
+      this.showNotification('權限不足', '僅授課教師可查閱悄悄話管理介面！');
+      return;
+    }
+
+    this.initAdminWhispersSync();
+    const modal = document.getElementById('adminWhispersModal');
+    if (!modal) return;
+
+    const fsEl = document.fullscreenElement;
+    if (fsEl && fsEl !== document.documentElement) {
+      if (!fsEl.contains(modal)) fsEl.appendChild(modal);
+    } else if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+
+    this.renderAdminWhispersList();
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+  }
+
+  closeAdminWhispersModal() {
+    const modal = document.getElementById('adminWhispersModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+
+  setAdminWhispersFilter(filter) {
+    this.adminWhispersFilter = ['all', 'unread', 'read'].includes(filter) ? filter : 'all';
+    ['All', 'Unread', 'Read'].forEach(k => {
+      const btn = document.getElementById('btnWhisperFilter' + k);
+      if (btn) {
+        btn.classList.toggle('active', this.adminWhispersFilter === k.toLowerCase());
+      }
+    });
+    this.renderAdminWhispersList();
+  }
+
+  renderAdminWhispersList() {
+    const container = document.getElementById('adminWhispersListContainer');
+    if (!container) return;
+
+    const itemsObj = this.adminWhispersData || {};
+    const allItems = Object.entries(itemsObj)
+      .map(([key, val]) => (val && typeof val === 'object' ? { ...val, id: val.id || key } : null))
+      .filter(Boolean)
+      .sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+
+    const unreadItems = allItems.filter(it => !it.read);
+    const readItems = allItems.filter(it => Boolean(it.read));
+
+    const elAll = document.getElementById('cntWhisperAll');
+    const elUnread = document.getElementById('cntWhisperUnread');
+    const elRead = document.getElementById('cntWhisperRead');
+    if (elAll) elAll.textContent = String(allItems.length);
+    if (elUnread) elUnread.textContent = String(unreadItems.length);
+    if (elRead) elRead.textContent = String(readItems.length);
+
+    const summaryBadge = document.getElementById('adminWhispersSummaryBadge');
+    if (summaryBadge) {
+      summaryBadge.textContent = `共 ${allItems.length} 則（未讀 ${unreadItems.length} 則）`;
+    }
+
+    const filter = this.adminWhispersFilter || 'all';
+    const filtered = filter === 'unread' ? unreadItems : (filter === 'read' ? readItems : allItems);
+
+    if (filtered.length === 0) {
+      const emptyMsg = filter === 'unread'
+        ? '🎉 目前沒有未讀的悄悄話訊息！'
+        : (filter === 'read' ? '📭 目前沒有已讀的悄悄話記錄。' : '📭 目前尚無同學傳送悄悄話給老師。');
+      container.innerHTML = `
+        <div style="text-align: center; color: var(--text-secondary); font-size: 15px; padding: 48px 20px; background: var(--bg-input); border-radius: 12px; border: 1px dashed var(--border-color);">
+          ${emptyMsg}
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = filtered.map(item => {
+      const safeId = String(item.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const safeUid = String(item.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const rawName = item.name || '匿名同學';
+      const safeNameAttr = String(rawName).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const avatarHtml = this.renderAvatarHtml(this.getUserAvatar(item.uid, rawName, item.avatar), 32);
+      const timeObj = this.formatFullDateTime(item.createdAt);
+
+      // 查找該同學是否有教師備註與所屬小組
+      const regStudent = (this.registeredStudents && item.uid && this.registeredStudents[item.uid]) || {};
+      const studentNote = regStudent.note ? String(regStudent.note).trim() : '';
+      const noteBadgeHtml = studentNote
+        ? `<span class="student-note-badge has-note" onclick="window.app.adminQuickEditStudentNote('${safeUid}')" title="點擊編輯學生備註">📝 ${this.escapeHtml(studentNote)}</span>`
+        : '';
+      const groupBadgeHtml = typeof this.renderStudentGroupBadgeHtml === 'function'
+        ? this.renderStudentGroupBadgeHtml(item.uid, rawName)
+        : '';
+
+      const isRead = Boolean(item.read);
+      const statusBadge = isRead
+        ? '<span style="background: rgba(16, 185, 129, 0.14); color: #10b981; padding: 2px 8px; border-radius: 10px; font-size: 14px; font-weight: bold;">🟢 已讀</span>'
+        : '<span style="background: rgba(255, 59, 48, 0.14); color: var(--danger-color); padding: 2px 8px; border-radius: 10px; font-size: 14px; font-weight: bold;">🔴 未讀</span>';
+
+      return `
+        <div class="whisper-msg-card ${isRead ? 'is-read' : 'is-unread'}">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              ${avatarHtml}
+              <span style="font-size: 15px; font-weight: bold; color: var(--text-primary);">${this.escapeHtml(rawName)}</span>
+              ${noteBadgeHtml}
+              ${groupBadgeHtml}
+              ${statusBadge}
+            </div>
+            <div style="font-size: 14px; color: var(--text-muted);" title="${timeObj.full}">
+              ⏰ ${timeObj.relative} (${timeObj.full})
+            </div>
+          </div>
+
+          <div style="font-size: 15px; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap; word-break: break-word; background: var(--bg-card); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color);">${this.escapeHtml(item.content || '')}</div>
+
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap;">
+            ${isRead ? `
+              <button type="button" class="presentation-tool-btn" onclick="window.app.toggleWhisperReadStatus('${safeId}', false)" style="font-size: 14px; padding: 4px 10px; height: 30px; border-radius: 8px;">
+                📩 標為未讀
+              </button>
+            ` : `
+              <button type="button" class="presentation-tool-btn active" onclick="window.app.toggleWhisperReadStatus('${safeId}', true)" style="font-size: 14px; padding: 4px 12px; height: 30px; border-radius: 8px;">
+                ✔️ 標為已讀
+              </button>
+            `}
+            <button type="button" class="presentation-tool-btn" onclick="window.app.rewardSingleActivityStudent('${safeUid}', '${safeNameAttr}', '課堂回饋與提問互動鼓勵')" style="font-size: 14px; padding: 4px 10px; height: 30px; border-radius: 8px;" title="給予此同學 +1 點鼓勵點數">
+              ⭐ 鼓勵加分
+            </button>
+            <button type="button" class="presentation-tool-btn danger" onclick="window.app.deleteWhisperItem('${safeId}')" style="font-size: 14px; padding: 4px 10px; height: 30px; border-radius: 8px;">
+              🗑️ 刪除
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async toggleWhisperReadStatus(id, isRead) {
+    if (!this.isAdmin || !id) return;
+    try {
+      await db.ref('quiz/whispers/items').child(id).update({
+        read: Boolean(isRead),
+        readAt: isRead ? Date.now() : null
+      });
+    } catch (e) {
+      this.showNotification('錯誤', '更新狀態失敗：' + e.message);
+    }
+  }
+
+  async markAllWhispersRead() {
+    if (!this.isAdmin) return;
+    const itemsObj = this.adminWhispersData || {};
+    const unreadIds = Object.keys(itemsObj).filter(k => itemsObj[k] && !itemsObj[k].read);
+    if (unreadIds.length === 0) {
+      this.showNotification('提示', '目前所有訊息皆為已讀狀態！');
+      return;
+    }
+    try {
+      const now = Date.now();
+      await Promise.all(unreadIds.map(id =>
+        db.ref('quiz/whispers/items').child(id).update({ read: true, readAt: now })
+      ));
+      this.showNotification('成功', `已將 ${unreadIds.length} 則訊息全部標記為已讀！`);
+    } catch (e) {
+      this.showNotification('錯誤', '批次標記失敗：' + e.message);
+    }
+  }
+
+  async deleteWhisperItem(id) {
+    if (!this.isAdmin || !id) return;
+    try {
+      await db.ref('quiz/whispers/items').child(id).remove();
+    } catch (e) {
+      this.showNotification('錯誤', '刪除失敗：' + e.message);
+    }
+  }
+
+  clearAllWhispers(onlyRead = false) {
+    if (!this.isAdmin) return;
+    const itemsObj = this.adminWhispersData || {};
+    const targetIds = Object.keys(itemsObj).filter(k => {
+      if (!itemsObj[k]) return false;
+      return onlyRead ? Boolean(itemsObj[k].read) : true;
+    });
+
+    if (targetIds.length === 0) {
+      this.showNotification('提示', onlyRead ? '目前沒有已讀訊息可供刪除。' : '目前收件匣是空的。');
+      return;
+    }
+
+    const title = onlyRead ? '刪除所有已讀訊息' : '清空全部悄悄話訊息';
+    const desc = onlyRead
+      ? `確定要刪除全部 <strong>${targetIds.length}</strong> 則「已讀」的悄悄話訊息嗎？（未讀訊息將保留）`
+      : `確定要清空收件匣中全部 <strong>${targetIds.length}</strong> 則悄悄話訊息嗎？此操作無法復原。`;
+
+    this.showConfirmModal('🗑️', title, desc, async () => {
+      try {
+        if (!onlyRead) {
+          await db.ref('quiz/whispers/items').remove();
+        } else {
+          await Promise.all(targetIds.map(id => db.ref('quiz/whispers/items').child(id).remove()));
+        }
+        this.showNotification('成功', `已清理 ${targetIds.length} 則悄悄話訊息！`);
+      } catch (e) {
+        this.showNotification('錯誤', '清理失敗：' + e.message);
+      }
+    });
+  }
+
+  // =========================================================
+  // 🎯 第四階段：各個活動與測驗「個人／小組／雙軌」計分設定與獎勵引擎
+  // =========================================================
+  initActivityScoringConfig() {
+    if (this._activityScoringInitialized) {
+      this.updateActivityScoringBarUI();
+      return;
+    }
+    this._activityScoringInitialized = true;
+    let saved = null;
+    try {
+      saved = JSON.parse(localStorage.getItem('wb_activity_scoring_config_v1') || 'null');
+    } catch (e) {}
+
+    this.activityScoringConfig = {
+      mode: (saved && ['individual', 'group', 'both'].includes(saved.mode)) ? saved.mode : 'individual',
+      pointsPerReward: (saved && parseInt(saved.pointsPerReward, 10) > 0) ? parseInt(saved.pointsPerReward, 10) : 1
+    };
+
+    this.updateActivityScoringBarUI();
+  }
+
+  setActivityScoringMode(mode) {
+    if (!['individual', 'group', 'both'].includes(mode)) return;
+    if (!this.activityScoringConfig) this.initActivityScoringConfig();
+    this.activityScoringConfig.mode = mode;
+    try {
+      localStorage.setItem('wb_activity_scoring_config_v1', JSON.stringify(this.activityScoringConfig));
+    } catch (e) {}
+    this.updateActivityScoringBarUI();
+
+    const modeLabels = {
+      individual: '👤 個人計分（獎勵計入學生個人榮譽點數）',
+      group: '👥 小組計分（獎勵計入學生所屬分組積分）',
+      both: '🌟 個人＋小組同步計分（個人與所屬小組同時加分）'
+    };
+    this.showNotification('🎯 計分模式已切換', `目前各活動與測驗計分設定為：【${modeLabels[mode]}】`);
+  }
+
+  setActivityScoringPoints(pts) {
+    const val = parseInt(pts, 10);
+    if (!val || val <= 0) return;
+    if (!this.activityScoringConfig) this.initActivityScoringConfig();
+    this.activityScoringConfig.pointsPerReward = val;
+    try {
+      localStorage.setItem('wb_activity_scoring_config_v1', JSON.stringify(this.activityScoringConfig));
+    } catch (e) {}
+    this.updateActivityScoringBarUI();
+  }
+
+  updateActivityScoringBarUI() {
+    const cfg = this.activityScoringConfig || { mode: 'individual', pointsPerReward: 1 };
+    document.querySelectorAll('.activity-scoring-mode-btn').forEach(btn => {
+      const m = btn.getAttribute('data-scoring-mode');
+      btn.classList.toggle('active', m === cfg.mode);
+    });
+    document.querySelectorAll('.activity-scoring-pts-select').forEach(sel => {
+      sel.value = String(cfg.pointsPerReward);
+    });
+  }
+
+  resolveStudentUidByName(name) {
+    if (!name) return null;
+    const cleanTarget = String(name).trim().toLowerCase();
+    const regStudents = this.registeredStudents || {};
+    for (const [uid, data] of Object.entries(regStudents)) {
+      if (data && data.name && String(data.name).trim().toLowerCase() === cleanTarget) {
+        return uid;
+      }
+      if (data && data.note && String(data.note).trim().toLowerCase() === cleanTarget) {
+        return uid;
+      }
+    }
+    const presence = this.onlinePresence || {};
+    for (const p of Object.values(presence)) {
+      if (p && p.userId && p.userName && String(p.userName).trim().toLowerCase() === cleanTarget) {
+        return p.userId;
+      }
+    }
+    return null;
+  }
+
+  getStudentGroupInfo(uid, name) {
+    const gm = window.groupManager;
+    if (!gm || !gm.activeGroupSet || !Array.isArray(gm.activeGroupSet.groups)) return null;
+
+    let targetUid = uid;
+    if (!targetUid && name) {
+      targetUid = this.resolveStudentUidByName(name);
+    }
+
+    for (const g of gm.activeGroupSet.groups) {
+      if (!g || !Array.isArray(g.memberUids)) continue;
+      if (targetUid && g.memberUids.includes(targetUid)) {
+        return { groupId: g.id, groupName: g.name || '小組', groupColor: g.color || '#3b82f6' };
+      }
+    }
+
+    // 若透過姓名可比對組員姓名
+    if (name) {
+      const cleanName = String(name).trim().toLowerCase();
+      const regStudents = this.registeredStudents || {};
+      for (const g of gm.activeGroupSet.groups) {
+        if (!g || !Array.isArray(g.memberUids)) continue;
+        const matched = g.memberUids.some(mUid => {
+          const st = regStudents[mUid];
+          return st && st.name && String(st.name).trim().toLowerCase() === cleanName;
+        });
+        if (matched) {
+          return { groupId: g.id, groupName: g.name || '小組', groupColor: g.color || '#3b82f6' };
+        }
+      }
+    }
+    return null;
+  }
+
+  renderStudentGroupBadgeHtml(uid, name) {
+    const info = this.getStudentGroupInfo(uid, name);
+    if (!info) return '';
+    return `<span class="student-group-mini-badge" style="border-color: ${info.groupColor}; color: ${info.groupColor};" title="所屬分組：${this.escapeHtml(info.groupName)}">👥 ${this.escapeHtml(info.groupName)}</span>`;
+  }
+
+  async awardActivityPoints(uid, name, amount, reason = '課堂活動與測驗獎勵', options = {}) {
+    if (!this.isAdmin) {
+      this.showNotification('權限不足', '僅授課教師可執行加分獎勵！');
+      return { personalAwarded: false, groupAwarded: false };
+    }
+    if (!this.activityScoringConfig) this.initActivityScoringConfig();
+
+    const mode = options.mode || this.activityScoringConfig.mode || 'individual';
+    const pts = parseInt(amount || this.activityScoringConfig.pointsPerReward || 1, 10);
+    const targetUid = uid || this.resolveStudentUidByName(name);
+    const displayName = name || (targetUid && this.registeredStudents?.[targetUid]?.name) || '同學';
+    const groupInfo = this.getStudentGroupInfo(targetUid, displayName);
+
+    let personalAwarded = false;
+    let groupAwarded = false;
+
+    // 1. 個人計分 (individual 或 both，或 group 模式但該生未分組時自動退回個人加分)
+    if (mode === 'individual' || mode === 'both' || (mode === 'group' && !groupInfo)) {
+      if (targetUid) {
+        const regStudents = this.registeredStudents || {};
+        const student = regStudents[targetUid] || { name: displayName, points: 0, pointsLog: {} };
+        const currentPoints = parseInt(student.points, 10) || 0;
+        const nextPoints = Math.max(0, currentPoints + pts);
+        const logId = 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+        const logEntry = {
+          amount: pts,
+          balance: nextPoints,
+          reason: reason,
+          timestamp: Date.now()
+        };
+        await db.ref(`quiz/students/${targetUid}`).update({
+          name: student.name || displayName,
+          points: nextPoints,
+          [`pointsLog/${logId}`]: logEntry,
+          updatedAt: Date.now()
+        });
+        if (!this.registeredStudents) this.registeredStudents = {};
+        this.registeredStudents[targetUid] = {
+          ...student,
+          name: student.name || displayName,
+          points: nextPoints,
+          pointsLog: { ...(student.pointsLog || {}), [logId]: logEntry }
+        };
+        personalAwarded = true;
+      }
+    }
+
+    // 2. 小組計分 (group 或 both)
+    if ((mode === 'group' || mode === 'both') && groupInfo && window.groupManager) {
+      if (!options.AwardedGroupIds || !options.AwardedGroupIds.has(groupInfo.groupId)) {
+        if (options.AwardedGroupIds) options.AwardedGroupIds.add(groupInfo.groupId);
+        await window.groupManager.addGroupPoints(groupInfo.groupId, pts, `${reason}（${displayName} 表現優異）`);
+        groupAwarded = true;
+      }
+    }
+
+    if (!options.silent) {
+      if (personalAwarded && groupAwarded) {
+        this.showNotification('🌟 個人＋小組同步加分', `已為「${displayName}」個人及所屬【${groupInfo.groupName}】各加 +${pts} 點！`);
+      } else if (groupAwarded) {
+        this.showNotification('👥 小組加分成功', `已為「${displayName}」所屬的【${groupInfo.groupName}】加 +${pts} 點！`);
+      } else if (personalAwarded) {
+        const fallbackHint = (mode === 'group' && !groupInfo) ? '（該生尚未分組，已自動計入個人點數）' : '';
+        this.showNotification('👤 個人加分成功', `已為「${displayName}」個人榮譽點數加 +${pts} 點！${fallbackHint}`);
+      } else {
+        this.showNotification('提示', `找不到同學「${displayName}」的名冊資料或分組，請確認同學已登入課堂。`);
+      }
+    }
+
+    return { personalAwarded, groupAwarded, groupInfo };
+  }
+
+  async rewardSingleActivityStudent(uid, name, reason = '活動表現優異') {
+    if (!this.activityScoringConfig) this.initActivityScoringConfig();
+    const pts = this.activityScoringConfig.pointsPerReward || 1;
+    await this.awardActivityPoints(uid, name, pts, reason);
+  }
+
+  async rewardBatchTargets(targets, reason) {
+    if (!Array.isArray(targets) || targets.length === 0) {
+      this.showNotification('提示', '目前沒有符合條件的同學可供獎勵加分！');
+      return;
+    }
+    if (!this.activityScoringConfig) this.initActivityScoringConfig();
+    const pts = this.activityScoringConfig.pointsPerReward || 1;
+    const mode = this.activityScoringConfig.mode || 'individual';
+
+    let pCount = 0;
+    const awardedGroups = new Set();
+    for (const t of targets) {
+      const res = await this.awardActivityPoints(t.uid, t.name, pts, reason, {
+        silent: true,
+        mode,
+        AwardedGroupIds: awardedGroups
+      });
+      if (res.personalAwarded) pCount++;
+    }
+
+    if (this.lastAdminFeatureKey === 'classStudents') {
+      this.renderAdminStudentsList();
+    }
+
+    if (mode === 'both') {
+      this.showNotification('🎁 批次獎勵完成', `已依【個人＋小組同步】模式，為 ${pCount} 位同學與 ${awardedGroups.size} 個小組各加 +${pts} 點（事由：${reason}）！`);
+    } else if (mode === 'group') {
+      this.showNotification('🎁 小組批次獎勵完成', `已為表現優異同學所屬的 ${awardedGroups.size} 個小組各加 +${pts} 點${pCount > 0 ? `（另有 ${pCount} 位未分組同學計入個人點數）` : ''}！`);
+    } else {
+      this.showNotification('🎁 個人批次獎勵完成', `已為 ${pCount} 位表現優異同學個人各加 +${pts} 點（事由：${reason}）！`);
+    }
+  }
+
+  async rewardFocusGameBatch(targetType = 'top3') {
+    const results = (this.focusGame && this.focusGame.results) || {};
+    const entries = Object.entries(results).map(([uid, r]) => ({
+      uid,
+      name: (r && (r.userName || r.name)) || '同學',
+      timeSpent: parseFloat(r?.timeSpent) || 999999,
+      score: Number(r?.score || 0),
+      status: r?.status || ''
+    }));
+
+    if (entries.length === 0) {
+      this.showNotification('提示', '目前專注力測驗排行榜尚無同學成績記錄！');
+      return;
+    }
+
+    const gameType = (this.focusGame && this.focusGame.gameType) || 'numberGrid';
+    const isCharGame = ['characterTest', 'characterCrossword', 'characterUnitedWords'].includes(gameType);
+    const isQuizGame = ['songQuiz', 'classicsQuiz'].includes(gameType);
+
+    let qualified = entries;
+    if (isCharGame) {
+      qualified = entries.filter(e => e.status === 'correct');
+      if (qualified.length === 0 && targetType === 'all_qualified') {
+        this.showNotification('提示', '目前尚無標記為「✔️ 答對」的同學！');
+        return;
+      }
+      if (qualified.length === 0) qualified = entries;
+    } else if (isQuizGame) {
+      qualified = entries.filter(e => e.score > 0);
+      if (qualified.length === 0) qualified = entries;
+    }
+
+    qualified.sort((a, b) => {
+      if (isQuizGame && b.score !== a.score) return b.score - a.score;
+      return a.timeSpent - b.timeSpent;
+    });
+
+    const selected = targetType === 'top3' ? qualified.slice(0, 3) : qualified;
+    const reason = targetType === 'top3' ? '專注力測驗前三名獎勵' : '專注力測驗完賽/答對獎勵';
+    await this.rewardBatchTargets(selected, reason);
+  }
+
+  async rewardBuzzGameBatch(targetType = 'top1') {
+    const results = (this.buzzGame && this.buzzGame.results) || {};
+    const entries = Object.entries(results).map(([uid, r]) => ({
+      uid,
+      name: (r && (r.name || r.user)) || '同學',
+      timeSpent: parseFloat(r?.timeSpent) || 999999
+    })).sort((a, b) => a.timeSpent - b.timeSpent);
+
+    if (entries.length === 0) {
+      this.showNotification('提示', '目前搶答排行榜尚無同學搶答記錄！');
+      return;
+    }
+
+    const selected = targetType === 'top1' ? entries.slice(0, 1) : entries.slice(0, 3);
+    const reason = targetType === 'top1' ? '課堂搶答第一名獎勵' : '課堂搶答前三名獎勵';
+    await this.rewardBatchTargets(selected, reason);
+  }
+
+  async rewardChoiceQuizBatch(targetType = 'all') {
+    const answersObj = (window.quiz && window.quiz.currentAnswers) || {};
+    const entries = Object.values(answersObj).filter(a => a && (a.userId || a.userName));
+    if (entries.length === 0) {
+      this.showNotification('提示', '目前選擇題/配對題測驗尚無同學作答記錄！');
+      return;
+    }
+
+    if (targetType === 'option') {
+      const quizType = window.quiz?.currentQuiz?.quizType || 'single';
+      if (quizType === 'matching') {
+        const correctTargets = entries
+          .filter(a => a.isAllCorrect || (Array.isArray(a.pairs) && a.pairs.length > 0))
+          .map(a => ({ uid: a.userId, name: a.userName }));
+        await this.rewardBatchTargets(correctTargets, '配對題測驗答對獎勵');
+        return;
+      }
+
+      const opts = window.quiz?.currentQuiz?.options || [];
+      const optHint = opts.map((o, i) => `${i + 1}`).join(' / ') || '1 / 2 / 3 / 4';
+      const input = window.prompt(`請輸入本題正確選項編號（例如：${optHint}），系統將依計分模式一鍵獎勵選該選項的同學或小組：`, '1');
+      if (!input) return;
+      const targetIdx = parseInt(input.trim(), 10) - 1;
+      if (isNaN(targetIdx) || targetIdx < 0) {
+        this.showNotification('提示', '請輸入有效的選項編號數字！');
+        return;
+      }
+
+      const matched = entries.filter(a => {
+        if (Array.isArray(a.options)) return a.options.includes(targetIdx);
+        return Number(a.option) === targetIdx;
+      }).map(a => ({ uid: a.userId, name: a.userName }));
+
+      await this.rewardBatchTargets(matched, `選擇題測驗答對（選項 ${targetIdx + 1}）獎勵`);
+    } else {
+      const uniqueMap = new Map();
+      entries.forEach(a => {
+        const key = a.userId || a.userName;
+        if (key && !uniqueMap.has(key)) {
+          uniqueMap.set(key, { uid: a.userId, name: a.userName });
+        }
+      });
+      await this.rewardBatchTargets(Array.from(uniqueMap.values()), '選擇題測驗參與作答獎勵');
+    }
+  }
+
+  async rewardVideoQuizBatch(targetType = 'correct') {
+    const vq = window.videoQuiz;
+    if (!vq || !vq.allAnswers) {
+      this.showNotification('提示', '目前尚無影片測驗作答記錄！');
+      return;
+    }
+    const quizId = (vq.activeSession && vq.activeSession.quizId) || vq.selectedQuizId || Object.keys(vq.allAnswers)[0];
+    const quizAnswers = (quizId && vq.allAnswers[quizId]) || {};
+    const studentMap = new Map();
+
+    Object.values(quizAnswers).forEach(qAnsObj => {
+      if (!qAnsObj || typeof qAnsObj !== 'object') return;
+      Object.entries(qAnsObj).forEach(([uid, ans]) => {
+        if (!ans) return;
+        if (targetType === 'correct' && !ans.isCorrect) return;
+        const actualUid = ans.userId || uid;
+        const name = ans.userName || '同學';
+        if (!studentMap.has(actualUid)) {
+          studentMap.set(actualUid, { uid: actualUid, name });
+        }
+      });
+    });
+
+    const targets = Array.from(studentMap.values());
+    if (targets.length === 0) {
+      this.showNotification('提示', targetType === 'correct' ? '目前尚無在影片測驗中答對的同學記錄！' : '目前尚無影片測驗參與作答記錄！');
+      return;
+    }
+
+    const reason = targetType === 'correct' ? '影片出題測驗答對獎勵' : '影片出題測驗參與作答獎勵';
+    await this.rewardBatchTargets(targets, reason);
+  }
+
+  async rewardWheelWinner(customPts = null, customName = null) {
+    const winnerName = customName || this.lastWheelWinnerName || document.getElementById('lblWheelWinner')?.textContent?.trim();
+    if (!winnerName || winnerName === '-') {
+      this.showNotification('提示', '請先啟動抽人抽出幸運同學後再進行獎勵加分！');
+      return;
+    }
+    if (!this.activityScoringConfig) this.initActivityScoringConfig();
+    const pts = customPts || this.activityScoringConfig.pointsPerReward || 1;
+    const uid = this.resolveStudentUidByName(winnerName);
+    await this.awardActivityPoints(uid, winnerName, pts, '隨機抽人課堂互動獎勵');
+  }
+
+  async rewardWordCloudBatch() {
+    const subs = (window.wordCloud && window.wordCloud.submissions) || {};
+    const uniqueMap = new Map();
+    Object.values(subs).forEach(s => {
+      if (!s) return;
+      const key = s.userId || s.userName;
+      if (key && !uniqueMap.has(key)) {
+        uniqueMap.set(key, { uid: s.userId, name: s.userName || '同學' });
+      }
+    });
+
+    const targets = Array.from(uniqueMap.values());
+    if (targets.length === 0) {
+      this.showNotification('提示', '目前文字雲尚無同學送出詞彙記錄！');
+      return;
+    }
+
+    await this.rewardBatchTargets(targets, '即時文字雲發想參與獎勵');
+  }
+
+
   async adminSaveStudentEdit() {
     const uid = this.editingStudentUid;
     if (!uid) return;
@@ -18937,6 +19874,9 @@ class App {
       return;
     }
 
+    const inputNote = document.getElementById('adminEditStudentNoteInput');
+    const newNote = inputNote ? inputNote.value.trim() : '';
+
     const avatarId = this.editingStudentAvatarId !== undefined ? this.editingStudentAvatarId : 0;
     const oldStudent = (this.registeredStudents && this.registeredStudents[uid]) || {};
     const oldName = oldStudent.name || '';
@@ -18946,9 +19886,10 @@ class App {
     }
 
     try {
-      // 1. 更新名冊 (保留更名歷程以便日後多設備登入辨識)
+      // 1. 更新名冊 (保留更名歷程與備註欄位)
       await db.ref('quiz/students').child(uid).update({
         name: newName,
+        note: newNote,
         avatar: avatarId,
         previousNames: prevNames,
         updatedAt: Date.now()
@@ -18958,6 +19899,7 @@ class App {
       this.registeredStudents[uid] = {
         ...oldStudent,
         name: newName,
+        note: newNote,
         avatar: avatarId,
         previousNames: prevNames,
         updatedAt: Date.now()

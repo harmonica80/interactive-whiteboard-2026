@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=470">
+  <link rel="stylesheet" href="css/style.css?v=472">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -110,6 +110,12 @@
       </div>
 
       <div class="class-mode-actions">
+        <!-- 🤫 教師專屬：給老師的悄悄話通知與管理入口 (圖 2 紅框處) -->
+        <button type="button" class="class-action-btn btn-teacher-whispers" id="btnTeacherWhispersTop" style="display: none;" onclick="window.app && window.app.openAdminWhispersModal()" title="查看同學傳給老師的私人悄悄話訊息">
+          <span>🤫</span>
+          <span id="txtTeacherWhispersLabel">悄悄話</span>
+          <span id="badgeTeacherWhispersUnread" class="whisper-unread-badge" style="display: none;">0</span>
+        </button>
         <!-- 教室/班級邀請連結按鈕 (支援一次性與專屬班級) -->
         <button type="button" class="class-action-btn btn-share-link" id="btnShareClassLink" onclick="window.app && window.app.openClassInviteModal()" title="開啟此教室/班級邀請連結與 QR Code">
           🔗 邀請連結
@@ -463,6 +469,11 @@
               <!-- 得獎 Banner (全模式共用) -->
               <div id="wheelWinnerDisplay" class="wheel-winner-banner" style="display: none;">
                 恭喜抽中：<span id="lblWheelWinner" class="winner-name">-</span>
+                <span id="wheelWinnerGroupBadge" style="margin-left: 6px; vertical-align: middle;"></span>
+                <span id="wheelWinnerTeacherRewardBtns" style="display: none; margin-left: 10px; gap: 6px; align-items: center; vertical-align: middle;">
+                  <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.rewardWheelWinner(1)" style="padding: 3px 10px; font-size: 14px; border-radius: 8px; height: 28px;" title="依計分模式給予抽中同學或所屬小組 +1 點獎勵">⭐ +1點</button>
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardWheelWinner(2)" style="padding: 3px 10px; font-size: 14px; border-radius: 8px; height: 28px;" title="依計分模式給予抽中同學或所屬小組 +2 點獎勵">⭐ +2點</button>
+                </span>
               </div>
             </div>
             
@@ -2863,7 +2874,7 @@
               <div style="background: var(--bg-input); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
                 <div style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px;">
                   <span style="font-size: 14px; color: var(--text-muted);">🔍</span>
-                  <input type="text" id="adminStudentSearchInput" class="question-input" placeholder="搜尋學生姓名或 UID..." oninput="window.app && window.app.onAdminStudentSearchChange(this.value)" style="margin: 0; width: 100%; font-size: 14px;">
+                  <input type="text" id="adminStudentSearchInput" class="question-input" placeholder="搜尋學生姓名、備註或 UID..." oninput="window.app && window.app.onAdminStudentSearchChange(this.value)" style="margin: 0; width: 100%; font-size: 14px;">
                 </div>
 
                 <!-- 🎴 卡片式 / 📋 列表式呈現切換 -->
@@ -3455,6 +3466,31 @@
                 </button>
               </div>
 
+              <!-- 🎯 第四階段：選擇題/配對題測驗計分對象設定（個人／分組／雙軌）与一鍵加分 -->
+              <div class="activity-scoring-config-bar" style="margin-top: 14px;">
+                <div class="activity-scoring-row">
+                  <span class="activity-scoring-title">🎯 計分設定：</span>
+                  <div class="activity-scoring-mode-group">
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn active" data-scoring-mode="individual" onclick="window.app && window.app.setActivityScoringMode('individual')" title="加分時直接計入學生個人榮譽點數">👤 個人計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="group" onclick="window.app && window.app.setActivityScoringMode('group')" title="加分時自動計入該學生所屬小組積分">👥 小組計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="both" onclick="window.app && window.app.setActivityScoringMode('both')" title="加分時同時計入學生個人點數與所屬小組積分">🌟 個人＋小組同步</button>
+                  </div>
+                  <div class="activity-scoring-pts-wrap">
+                    <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                      <option value="1">+1 點</option>
+                      <option value="2">+2 點</option>
+                      <option value="3">+3 點</option>
+                      <option value="5">+5 點</option>
+                    </select>
+                  </div>
+                  <div class="activity-scoring-actions">
+                    <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardChoiceQuizBatch('option')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="指定正確選項（或配對全對），一鍵獎勵答對的同學或所屬小組">🎁 獎勵指定選項(答對)</button>
+                    <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardChoiceQuizBatch('all')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="一鍵獎勵本題所有參與作答的同學或所屬小組">🎁 獎勵全體作答</button>
+                  </div>
+                </div>
+              </div>
+
               <!-- 5. 選擇題測驗雙頁籤：歷次題目庫 與 題庫管理 (圖 2) -->
               <div id="quizHistorySection" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                 <!-- 雙頁籤導覽列 (圖 2 需求 1) -->
@@ -3562,6 +3598,31 @@
                 <button type="button" id="vqGoToFrontendBtn" class="presentation-tool-btn" onclick="window.app && window.app.switchToTab('panel-video-quiz')" style="flex: 1; min-width: 140px; padding: 12px; font-weight: bold; border-radius: 10px; cursor: pointer; font-size: 15px; justify-content: center; box-sizing: border-box;" title="前往前台學生測驗視角畫面">
                   👁️ 前台測驗畫面
                 </button>
+              </div>
+
+              <!-- 🎯 第四階段：影片出題測驗計分對象設定（個人／分組／雙軌）與一鍵加分 -->
+              <div class="activity-scoring-config-bar" style="margin-bottom: 16px;">
+                <div class="activity-scoring-row">
+                  <span class="activity-scoring-title">🎯 計分設定：</span>
+                  <div class="activity-scoring-mode-group">
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn active" data-scoring-mode="individual" onclick="window.app && window.app.setActivityScoringMode('individual')">👤 個人計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="group" onclick="window.app && window.app.setActivityScoringMode('group')">👥 小組計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="both" onclick="window.app && window.app.setActivityScoringMode('both')">🌟 個人＋小組同步</button>
+                  </div>
+                  <div class="activity-scoring-pts-wrap">
+                    <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                      <option value="1">+1 點</option>
+                      <option value="2">+2 點</option>
+                      <option value="3">+3 點</option>
+                      <option value="5">+5 點</option>
+                    </select>
+                  </div>
+                  <div class="activity-scoring-actions">
+                    <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardVideoQuizBatch('correct')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="一鍵獎勵在影片測驗中答對題目的同學或所屬小組">🎁 獎勵影片答對同學</button>
+                    <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardVideoQuizBatch('all')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="一鍵獎勵所有參與影片測驗作答的同學或所屬小組">🎁 獎勵全體參與</button>
+                  </div>
+                </div>
               </div>
 
               <!-- 主管理視圖 (列表與設定) -->
@@ -3786,7 +3847,7 @@
                 </div>
               </div>
 
-              <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
                 <button class="presentation-tool-btn active" onclick="window.app.startBuzzGameAdmin()" style="flex: 1; min-width: 140px; justify-content: center; height: 38px; font-size: 14px; border-radius: 10px;">
                   🚀 開始搶答
                 </button>
@@ -3796,6 +3857,31 @@
                 <button id="adminBuzzGameEndBtn" class="presentation-tool-btn is-idle-btn" disabled onclick="window.app.endBuzzGameAdmin()" style="flex: 1; min-width: 140px; justify-content: center; height: 38px; font-size: 14px; border-radius: 10px;" title="目前無進行中的搶答">
                   ⏹️ 目前無進行中搶答
                 </button>
+              </div>
+
+              <!-- 🎯 第四階段：搶答活動計分對象設定（個人／分組／雙軌）與一鍵加分 -->
+              <div class="activity-scoring-config-bar" style="margin-bottom: 16px;">
+                <div class="activity-scoring-row">
+                  <span class="activity-scoring-title">🎯 計分設定：</span>
+                  <div class="activity-scoring-mode-group">
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn active" data-scoring-mode="individual" onclick="window.app && window.app.setActivityScoringMode('individual')">👤 個人計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="group" onclick="window.app && window.app.setActivityScoringMode('group')">👥 小組計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="both" onclick="window.app && window.app.setActivityScoringMode('both')">🌟 個人＋小組同步</button>
+                  </div>
+                  <div class="activity-scoring-pts-wrap">
+                    <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                      <option value="1">+1 點</option>
+                      <option value="2">+2 點</option>
+                      <option value="3">+3 點</option>
+                      <option value="5">+5 點</option>
+                    </select>
+                  </div>
+                  <div class="activity-scoring-actions">
+                    <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardBuzzGameBatch('top1')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="依計分模式一鍵獎勵搶答第一名的同學或所屬小組">🥇 獎勵第一名</button>
+                    <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardBuzzGameBatch('top3')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="依計分模式一鍵獎勵搶答前三名的同學或所屬小組">🏆 獎勵前三名</button>
+                  </div>
+                </div>
               </div>
 
               <!-- 搶答即時排行榜 -->
@@ -4084,7 +4170,7 @@
                 <div style="font-size: 14px; color: var(--text-muted); margin-top: 8px;">選擇「位置序列記憶」時使用：學生需記住閃爍格子，並依正常或反向順序點回。</div>
               </div>
 
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
                 <button class="presentation-tool-btn active" onclick="window.app.startFocusGame()" style="flex: 1; min-width: 140px; justify-content: center; height: 38px; font-size: 14px; border-radius: 10px;">
                   🚀 開始遊戲
                 </button>
@@ -4094,6 +4180,31 @@
                 <button id="adminFocusGameEndBtn" class="presentation-tool-btn is-idle-btn" disabled onclick="window.app.endFocusGame()" style="flex: 1; min-width: 140px; justify-content: center; height: 38px; font-size: 14px; border-radius: 10px;" title="目前無進行中的測驗">
                   ⏹️ 目前無進行中測驗
                 </button>
+              </div>
+
+              <!-- 🎯 第四階段：專注力測驗計分對象設定（個人／分組／雙軌）與一鍵加分 -->
+              <div class="activity-scoring-config-bar" style="margin-bottom: 14px;">
+                <div class="activity-scoring-row">
+                  <span class="activity-scoring-title">🎯 計分設定：</span>
+                  <div class="activity-scoring-mode-group">
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn active" data-scoring-mode="individual" onclick="window.app && window.app.setActivityScoringMode('individual')">👤 個人計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="group" onclick="window.app && window.app.setActivityScoringMode('group')">👥 小組計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="both" onclick="window.app && window.app.setActivityScoringMode('both')">🌟 個人＋小組同步</button>
+                  </div>
+                  <div class="activity-scoring-pts-wrap">
+                    <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                      <option value="1">+1 點</option>
+                      <option value="2">+2 點</option>
+                      <option value="3">+3 點</option>
+                      <option value="5">+5 點</option>
+                    </select>
+                  </div>
+                  <div class="activity-scoring-actions">
+                    <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardFocusGameBatch('top3')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="依計分模式一鍵獎勵排行榜前三名的同學或所屬小組">🏆 獎勵前三名</button>
+                    <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardFocusGameBatch('all_qualified')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="依計分模式一鍵獎勵所有完成挑戰／答對的同學或所屬小組">🎁 獎勵全部完賽/答對</button>
+                  </div>
+                </div>
               </div>
 
               <!-- 控制台即時排行榜 -->
@@ -4115,7 +4226,7 @@
             </div>
             <div class="admin-section-body">
               <!-- 快捷控制橫幅 -->
-              <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
                 <button type="button" onclick="window.app.switchToTab('panel-lucky-wheel')" class="presentation-tool-btn active" style="flex: 1; min-width: 180px; justify-content: center; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px;">
                   🎯 前往抽人互動大螢幕
                 </button>
@@ -4125,6 +4236,30 @@
                 <button type="button" onclick="window.app.triggerWheelSpin()" class="presentation-tool-btn warning" style="flex: 1; min-width: 180px; justify-content: center; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px;">
                   🔥 立即啟動抽人
                 </button>
+              </div>
+
+              <!-- 🎯 第四階段：隨機抽人計分對象設定（個人／分組／雙軌）與一鍵加分 -->
+              <div class="activity-scoring-config-bar" style="margin-bottom: 18px;">
+                <div class="activity-scoring-row">
+                  <span class="activity-scoring-title">🎯 計分設定：</span>
+                  <div class="activity-scoring-mode-group">
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn active" data-scoring-mode="individual" onclick="window.app && window.app.setActivityScoringMode('individual')">👤 個人計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="group" onclick="window.app && window.app.setActivityScoringMode('group')">👥 小組計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="both" onclick="window.app && window.app.setActivityScoringMode('both')">🌟 個人＋小組同步</button>
+                  </div>
+                  <div class="activity-scoring-pts-wrap">
+                    <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                      <option value="1">+1 點</option>
+                      <option value="2">+2 點</option>
+                      <option value="3">+3 點</option>
+                      <option value="5">+5 點</option>
+                    </select>
+                  </div>
+                  <div class="activity-scoring-actions">
+                    <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardWheelWinner()" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="依計分模式一鍵獎勵最新抽中的同學或所屬小組">🎁 獎勵最新抽中同學</button>
+                  </div>
+                </div>
               </div>
 
               <!-- 名單設定區塊 -->
@@ -4234,7 +4369,7 @@
             </div>
             <div class="admin-section-body">
               <!-- 快捷控制按鈕群 -->
-              <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+              <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
                 <button type="button" onclick="window.app.switchToTab('panel-word-cloud')" class="presentation-tool-btn active" style="flex: 1; min-width: 180px; justify-content: center; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px;">
                   🎯 前往文字雲大螢幕
                 </button>
@@ -4247,6 +4382,30 @@
                 <button type="button" onclick="window.wordCloud?.exportPng()" class="presentation-tool-btn" style="flex: 1; min-width: 180px; justify-content: center; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px;">
                   💾 匯出成果 PNG
                 </button>
+              </div>
+
+              <!-- 🎯 第四階段：即時文字雲計分對象設定（個人／分組／雙軌）與一鍵加分 -->
+              <div class="activity-scoring-config-bar" style="margin-bottom: 18px;">
+                <div class="activity-scoring-row">
+                  <span class="activity-scoring-title">🎯 計分設定：</span>
+                  <div class="activity-scoring-mode-group">
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn active" data-scoring-mode="individual" onclick="window.app && window.app.setActivityScoringMode('individual')">👤 個人計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="group" onclick="window.app && window.app.setActivityScoringMode('group')">👥 小組計分</button>
+                    <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="both" onclick="window.app && window.app.setActivityScoringMode('both')">🌟 個人＋小組同步</button>
+                  </div>
+                  <div class="activity-scoring-pts-wrap">
+                    <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                      <option value="1">+1 點</option>
+                      <option value="2">+2 點</option>
+                      <option value="3">+3 點</option>
+                      <option value="5">+5 點</option>
+                    </select>
+                  </div>
+                  <div class="activity-scoring-actions">
+                    <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardWordCloudBatch()" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="依計分模式一鍵獎勵本題所有參與文字雲發想的同學或所屬小組">🎁 獎勵全體發想同學</button>
+                  </div>
+                </div>
               </div>
 
               <!-- 出題設定面板 (支援文字題型與圖片題型) -->
@@ -6244,20 +6403,20 @@ Python</pre>
   
   <script src="js/firebase-config.js?v=381"></script>
   <script src="js/teacher_auth_manager.js?v=384"></script>
-  <script src="js/character_pool.js?v=470"></script>
+  <script src="js/character_pool.js?v=471"></script>
   <script src="js/classics_quiz_pool.js?v=306"></script>
   <script src="js/song_quiz_pool.js?v=382"></script>
-  <script src="js/focus_question_bank.js?v=470"></script>
+  <script src="js/focus_question_bank.js?v=471"></script>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=470"></script>
+  <script src="js/app.js?v=472"></script>
   <script src="js/classics_quiz.js?v=380"></script>
-  <script src="js/song_quiz.js?v=470"></script>
+  <script src="js/song_quiz.js?v=471"></script>
   <script src="js/video_quiz.js?v=391"></script>
   <script src="js/word_cloud.js?v=400"></script>
   <script src="js/presentation_core.js?v=3125"></script>
-  <script src="js/group_manager.js?v=470"></script>
+  <script src="js/group_manager.js?v=471"></script>
   
   <!-- 問題彈出視窗 -->
   <div id="questionModal" class="modal-overlay question-modal">
@@ -7770,11 +7929,19 @@ Python</pre>
       <input type="hidden" id="adminEditStudentUid" value="">
 
       <!-- 姓名輸入 -->
-      <div style="margin-bottom: 16px;">
+      <div style="margin-bottom: 14px;">
         <label for="adminEditStudentNameInput" style="display: block; font-size: 14px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">
           同學姓名 / 暱稱：
         </label>
         <input type="text" id="adminEditStudentNameInput" class="question-input" placeholder="請輸入姓名" style="margin: 0; width: 100%; font-size: 15px; font-weight: bold;" maxlength="30">
+      </div>
+
+      <!-- 📝 教師專屬備註欄位 (真實姓名 / 座號 / 注意事項) -->
+      <div style="margin-bottom: 16px;">
+        <label for="adminEditStudentNoteInput" style="display: block; font-size: 14px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">
+          📝 學生備註（真實姓名／座號／注意事項，僅教師可見）：
+        </label>
+        <input type="text" id="adminEditStudentNoteInput" class="question-input" placeholder="例：05 王小明、坐第一排、需多鼓勵..." style="margin: 0; width: 100%; font-size: 14px;" maxlength="80">
       </div>
 
       <!-- 頭像選取 -->
@@ -8471,6 +8638,10 @@ Python</pre>
           <span class="fab-item-icon">🛠️</span>
           <span class="fab-item-text">建立自己的白板</span>
         </button>
+        <button type="button" class="fab-quick-menu-item" onclick="window.app && window.app.openStudentWhisperModal(); window.app && window.app.toggleQuickInfoMenu(false)">
+          <span class="fab-item-icon">🤫</span>
+          <span class="fab-item-text">給老師的悄悄話</span>
+        </button>
         <button type="button" class="fab-quick-menu-item" onclick="window.app && window.app.openChangelogModal(); window.app && window.app.toggleQuickInfoMenu(false)">
           <span class="fab-item-icon">📄</span>
           <span class="fab-item-text">版本更新歷程</span>
@@ -8974,6 +9145,121 @@ Python</pre>
         <button type="button" onclick="window.groupManager && window.groupManager.confirmTransferPoints()" class="presentation-tool-btn purple" style="padding: 8px 22px; font-size: 14px; font-weight: bold; border-radius: 8px;">
           🎁 確認轉移至個人
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🤫 給老師的悄悄話：學生傳送私人訊息彈窗 (圖 1) -->
+  <div id="studentWhisperModal" class="modal-overlay" style="display: none; z-index: 21800;" onclick="if(event.target===this) window.app && window.app.closeStudentWhisperModal()">
+    <div class="modal-content" style="max-width: 520px; width: 94%; max-height: 90vh; overflow-y: auto; padding: 22px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-hover);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px;">
+        <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <span>🤫</span> 給老師的悄悄話
+        </h3>
+        <button type="button" class="modal-close" onclick="window.app && window.app.closeStudentWhisperModal()" style="font-size: 18px; background: none; border: none; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <!-- 若老師自己點開，提供前往管理介面的捷徑 -->
+      <div id="studentWhisperAdminShortcut" style="display: none; margin-bottom: 12px; padding: 10px 14px; background: rgba(0, 122, 255, 0.1); border: 1px solid var(--accent-color); border-radius: 10px; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 14px; font-weight: bold; color: var(--text-primary);">👨‍🏫 您目前處於教師管理模式</span>
+        <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.closeStudentWhisperModal(); window.app && window.app.openAdminWhispersModal();" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;">
+          📬 開啟悄悄話收件匣管理 ➔
+        </button>
+      </div>
+
+      <!-- 隱私安心說明與傳送身分 -->
+      <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: var(--text-primary); font-weight: bold;">
+          <span>🔒 私人訊息保護：</span>
+          <span id="studentWhisperSenderBadge" style="color: var(--accent-color);"></span>
+        </div>
+        <div>此訊息<strong>只有授課老師本人看得到</strong>，不會公開顯示在白板或讓其他同學看見，請放心告訴老師您的想法或需要協助的地方！</div>
+      </div>
+
+      <!-- 快速主題標籤 -->
+      <div style="margin-bottom: 10px;">
+        <label style="display: block; font-size: 14px; font-weight: bold; color: var(--text-secondary); margin-bottom: 6px;">💡 點選可快速帶入主題（選填）：</label>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.insertWhisperQuickTag('【上課內容請教】老師您好，剛剛講解的部分我有點聽不太懂：')" style="font-size: 14px; padding: 4px 10px; height: 30px; border-radius: 8px;">🙋 內容想請教</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.insertWhisperQuickTag('【視線/聲音反映】老師您好，目前座位看不太清楚螢幕／聲音有點小：')" style="font-size: 14px; padding: 4px 10px; height: 30px; border-radius: 8px;">🪑 視線/聲音</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.insertWhisperQuickTag('【分組與互動協助】老師您好，關於分組或課堂活動想請老師幫忙：')" style="font-size: 14px; padding: 4px 10px; height: 30px; border-radius: 8px;">🤝 分組協助</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.insertWhisperQuickTag('【身體不適/請假】老師您好，我目前身體有點不舒服：')" style="font-size: 14px; padding: 4px 10px; height: 30px; border-radius: 8px;">🏥 身體不適</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.insertWhisperQuickTag('【課堂心得與建議】老師您好，我想跟您分享：')" style="font-size: 14px; padding: 4px 10px; height: 30px; border-radius: 8px;">💡 心得與建議</button>
+        </div>
+      </div>
+
+      <!-- 訊息輸入框 -->
+      <div style="margin-bottom: 14px;">
+        <label for="studentWhisperTextarea" style="display: block; font-size: 14px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">
+          ✍️ 想對老師說的話：
+        </label>
+        <textarea id="studentWhisperTextarea" rows="4" class="question-input" placeholder="請在此輸入您想私下告訴老師的訊息..." maxlength="500" style="width: 100%; box-sizing: border-box; margin: 0; padding: 10px 12px; font-size: 15px; line-height: 1.5; border-radius: 10px; resize: vertical;"></textarea>
+      </div>
+
+      <!-- 送出按鈕 -->
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px;">
+        <button type="button" onclick="window.app && window.app.closeStudentWhisperModal()" style="padding: 8px 16px; font-size: 14px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; color: var(--text-primary);">
+          取消
+        </button>
+        <button type="button" id="btnSubmitStudentWhisper" onclick="window.app && window.app.submitStudentWhisper()" class="presentation-tool-btn active" style="padding: 8px 22px; font-size: 14px; font-weight: bold; border-radius: 8px;">
+          🚀 傳送悄悄話給老師
+        </button>
+      </div>
+
+      <!-- 本機已傳送記錄 -->
+      <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+        <div style="font-size: 14px; font-weight: bold; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+          <span>📤 我在此裝置傳送過的悄悄話記錄</span>
+          <button type="button" onclick="window.app && window.app.clearStudentLocalWhispers()" style="background: none; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; text-decoration: underline;">清除本機記錄</button>
+        </div>
+        <div id="studentSentWhispersList" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📬 給老師的悄悄話管理介面：教師端收件匣彈窗 (圖 2 點選後進入) -->
+  <div id="adminWhispersModal" class="modal-overlay" style="display: none; z-index: 21850;" onclick="if(event.target===this) window.app && window.app.closeAdminWhispersModal()">
+    <div class="modal-content" style="max-width: 720px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; padding: 22px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-hover);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>🤫</span> 給老師的悄悄話管理
+          </h3>
+          <span id="adminWhispersSummaryBadge" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 3px 10px; border-radius: 20px; font-size: 14px; font-weight: bold;">共 0 則</span>
+        </div>
+        <button type="button" class="modal-close" onclick="window.app && window.app.closeAdminWhispersModal()" style="font-size: 18px; background: none; border: none; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <!-- 篩選頁籤與批次操作工具列 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; flex-shrink: 0;">
+        <div style="display: inline-flex; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 3px; gap: 4px;">
+          <button type="button" id="btnWhisperFilterAll" class="presentation-tool-btn active" onclick="window.app && window.app.setAdminWhispersFilter('all')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px; border: none;">
+            📬 全部 (<span id="cntWhisperAll">0</span>)
+          </button>
+          <button type="button" id="btnWhisperFilterUnread" class="presentation-tool-btn" onclick="window.app && window.app.setAdminWhispersFilter('unread')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px; border: none;">
+            🔴 未讀 (<span id="cntWhisperUnread">0</span>)
+          </button>
+          <button type="button" id="btnWhisperFilterRead" class="presentation-tool-btn" onclick="window.app && window.app.setAdminWhispersFilter('read')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px; border: none;">
+            🟢 已讀 (<span id="cntWhisperRead">0</span>)
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.markAllWhispersRead()" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="將所有未讀訊息標記為已讀">
+            ✔️ 全部標為已讀
+          </button>
+          <button type="button" class="presentation-tool-btn danger" onclick="window.app && window.app.clearAllWhispers(true)" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="刪除所有已讀的悄悄話訊息">
+            🗑️ 刪除已讀
+          </button>
+          <button type="button" class="presentation-tool-btn danger" onclick="window.app && window.app.clearAllWhispers(false)" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="清空所有悄悄話訊息">
+            🗑️ 全部清空
+          </button>
+        </div>
+      </div>
+
+      <!-- 訊息清單容器 -->
+      <div id="adminWhispersListContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 220px; max-height: 60vh; padding-right: 4px;">
+        <!-- 動態渲染悄悄話卡片 -->
       </div>
     </div>
   </div>

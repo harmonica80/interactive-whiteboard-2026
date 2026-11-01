@@ -9251,3 +9251,182 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   font-weight: bold;
   user-select: none;
 }
+
+/* =========================================================
+   🤫 給老師的悄悄話 (頂部通知按鈕與收件匣卡片)
+   ========================================================= */
+.class-action-btn.btn-teacher-whispers {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-color);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.class-action-btn.btn-teacher-whispers:hover {
+  border-color: var(--accent-color);
+  background: var(--bg-input);
+  transform: translateY(-1px);
+}
+
+.class-action-btn.btn-teacher-whispers.has-unread {
+  background: rgba(255, 59, 48, 0.12);
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+  animation: pulseDangerGlow 2s infinite;
+}
+
+.whisper-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 12px;
+  background: var(--danger-color);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.whisper-msg-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.whisper-msg-card.is-unread {
+  border-left: 5px solid var(--danger-color);
+  background: var(--bg-input);
+}
+
+.whisper-msg-card.is-read {
+  opacity: 0.88;
+}
+
+/* =========================================================
+   📝 學生名冊備註欄位徽章 (圖 3) 與 小組標籤
+   ========================================================= */
+.student-note-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  padding: 2px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.student-note-badge.has-note {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  font-weight: 700;
+}
+
+[data-theme="dark"] .student-note-badge.has-note {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.student-note-badge.empty-note {
+  background: var(--bg-input);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-color);
+  font-weight: 600;
+}
+
+.student-note-badge:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: translateY(-1px);
+}
+
+.student-group-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+/* =========================================================
+   🎯 第四階段：活動與測驗「個人／小組」計分設定控制列
+   ========================================================= */
+.activity-scoring-config-bar {
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.activity-scoring-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.activity-scoring-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.activity-scoring-mode-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.activity-scoring-mode-btn {
+  font-size: 14px !important;
+  padding: 4px 12px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+}
+
+.activity-scoring-pts-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.activity-scoring-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
