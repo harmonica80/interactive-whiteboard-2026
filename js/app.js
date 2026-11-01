@@ -6098,6 +6098,9 @@ class App {
     }
 
     // 捲動至後台頂部
+    // 同步更新測驗與搶答後台結束按鈕狀態
+    this.updateAdminActivityEndButtons();
+
     const panelAdmin = document.getElementById('panel-admin');
     if (panelAdmin) {
       panelAdmin.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -6254,6 +6257,69 @@ class App {
         <button type="button" onclick="${item.stopAction}" title="直接強制停止此活動" style="background: #ff3b30; border: none; color: white; border-radius: 8px; padding: 3px 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⏹️ 停止</button>
       </div>
     `).join('');
+
+    // 同步更新測驗與搶答後台結束按鈕狀態
+    this.updateAdminActivityEndButtons();
+  }
+
+  // 動態更新後台管理介面中各項測驗/搶答結束按鈕的視覺與互動狀態
+  updateAdminActivityEndButtons() {
+    // 1. 專注力測驗結束按鈕
+    const focusEndBtn = document.getElementById('adminFocusGameEndBtn');
+    const isFocusActive = !!(this.focusGame && (this.focusGame.status === 'playing' || this.focusGame.status === 'countdown'));
+    if (focusEndBtn) {
+      if (isFocusActive) {
+        focusEndBtn.disabled = false;
+        focusEndBtn.className = 'presentation-tool-btn danger active';
+        focusEndBtn.innerHTML = '🛑 結束遊戲 (進行中)';
+        focusEndBtn.title = '點擊立即結束當前進行中的專注力測驗';
+      } else {
+        focusEndBtn.disabled = true;
+        focusEndBtn.className = 'presentation-tool-btn is-idle-btn';
+        focusEndBtn.innerHTML = '⏹️ 目前無進行中測驗';
+        focusEndBtn.title = '目前無進行中的測驗';
+      }
+    }
+
+    // 2. 搶答遊戲結束按鈕
+    const buzzEndBtn = document.getElementById('adminBuzzGameEndBtn');
+    const isBuzzActive = !!(this.buzzGame && (this.buzzGame.status === 'playing' || this.buzzGame.status === 'countdown'));
+    if (buzzEndBtn) {
+      if (isBuzzActive) {
+        buzzEndBtn.disabled = false;
+        buzzEndBtn.className = 'presentation-tool-btn danger active';
+        buzzEndBtn.innerHTML = '🛑 停止搶答 (進行中)';
+        buzzEndBtn.title = '點擊立即結束當前進行中的搶答';
+      } else {
+        buzzEndBtn.disabled = true;
+        buzzEndBtn.className = 'presentation-tool-btn is-idle-btn';
+        buzzEndBtn.innerHTML = '⏹️ 目前無進行中搶答';
+        buzzEndBtn.title = '目前無進行中的搶答';
+      }
+    }
+  }
+
+  // 教師端單螢幕防窺：按住眼睛顯示標準答案，放開立即自動隱藏
+  togglePeekAnswer(show) {
+    const mask = document.getElementById('peekAnswerMasked');
+    const real = document.getElementById('peekAnswerReal');
+    const btn = document.querySelector('.peek-answer-btn');
+    const icon = document.getElementById('peekAnswerIcon');
+    const label = document.getElementById('peekAnswerLabel');
+
+    if (show) {
+      if (mask) mask.style.display = 'none';
+      if (real) real.style.display = 'inline-block';
+      if (btn) btn.classList.add('is-holding');
+      if (icon) icon.textContent = '👁️‍🗨️';
+      if (label) label.textContent = '放開隱藏答案';
+    } else {
+      if (mask) mask.style.display = 'inline-block';
+      if (real) real.style.display = 'none';
+      if (btn) btn.classList.remove('is-holding');
+      if (icon) icon.textContent = '👁️';
+      if (label) label.textContent = '按住查看答案';
+    }
   }
 
   /**
@@ -13584,6 +13650,8 @@ class App {
       '確定要停止搶答嗎？',
       '這會收回所有學生的搶答畫面並使其回到白板。',
       () => {
+        this.buzzGame = null;
+        this.updateAdminActiveActivitiesUI();
         db.ref('quiz/buzzGame').set(null).then(() => {
           this.showNotification('成功', '搶答已停止並重置！');
         });
@@ -15074,14 +15142,12 @@ class App {
     const isUnited = this.focusGame && this.focusGame.gameType === 'characterUnitedWords';
     
     let headerHtml = '';
+    let answerHtml = '';
+    let answerSubtitle = '';
     if (isCrossword || isUnited) {
       const correctAnswersText = questions.map(q => q.targetWord || q.char || '').join(' ');
-      headerHtml = `
-        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; line-height: 1.8;">
-          💡 標準答案：<span style="font-size: 18px; color: var(--accent-color); font-weight: 900;">${this.escapeHtml(correctAnswersText)}</span><br>
-          🎨 標色說明：🟢 綠色代表與標準答案相同；🔴 紅色代表與標準答案不同，方便您快速核對審查。
-        </div>
-      `;
+      answerHtml = `<span style="font-size: 18px; color: var(--accent-color); font-weight: 900;">${this.escapeHtml(correctAnswersText)}</span>`;
+      answerSubtitle = '';
     } else {
       const correctAnswersLinks = questions.map(q => {
         let searchWord = q.searchWord || q.char;
@@ -15098,14 +15164,36 @@ class App {
         }
         return `<a href="https://www.google.com/search?q=${encodeURIComponent(searchWord)}" target="_blank" style="color: var(--accent-color, #007aff); text-decoration: underline; font-weight: bold; font-size: 20px; margin: 0 4px; font-family: 'DFKai-SB', 'BiauKai', 'Kaiti', serif;" title="點擊在 Google 搜尋：${this.escapeHtml(searchWord)}">${this.escapeHtml(q.char)}</a>`;
       }).join(' ');
-      
-      headerHtml = `
-        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: bold; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; line-height: 1.8;">
-          💡 標準答案 (點選字可進行 Google 詞彙搜尋)：${correctAnswersLinks}<br>
-          🎨 標色說明：🟢 綠色代表與標準答案相同；🔴 紅色代表與標準答案不同，方便您快速核對。
-        </div>
-      `;
+      answerHtml = correctAnswersLinks;
+      answerSubtitle = ' <span style="font-size: 14px; color: var(--text-muted); font-weight: normal;">(點選字可進行 Google 詞彙搜尋)</span>';
     }
+
+    headerHtml = `
+      <div class="peek-answer-box" style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; font-weight: bold; background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 8px; line-height: 1.8;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 14px; color: var(--text-primary);">💡 標準答案${answerSubtitle}：</span>
+            <span id="peekAnswerMasked" class="peek-answer-masked" style="font-size: 16px; color: var(--text-muted); background: var(--bg-input); padding: 2px 12px; border-radius: 6px; border: 1px dashed var(--border-color); letter-spacing: 2px; user-select: none;">••••••</span>
+            <span id="peekAnswerReal" class="peek-answer-real" style="display: none;">${answerHtml}</span>
+          </div>
+          <button type="button" 
+            class="presentation-tool-btn peek-answer-btn" 
+            onmousedown="window.app.togglePeekAnswer(true)" 
+            onmouseup="window.app.togglePeekAnswer(false)" 
+            onmouseleave="window.app.togglePeekAnswer(false)" 
+            ontouchstart="window.app.togglePeekAnswer(true); event.preventDefault();" 
+            ontouchend="window.app.togglePeekAnswer(false)" 
+            ontouchcancel="window.app.togglePeekAnswer(false)" 
+            title="單螢幕投影防窺：按住不放以暫時顯示標準答案，放開滑鼠/手指即自動隱藏" 
+            style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; user-select: none;">
+            <span id="peekAnswerIcon">👁️</span> <span id="peekAnswerLabel">按住查看答案</span>
+          </button>
+        </div>
+        <div style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">
+          🎨 標色說明：🟢 綠色代表與標準答案相同；🔴 紅色代表與標準答案不同，方便您快速核對審查。
+        </div>
+      </div>
+    `;
     
     container.innerHTML = headerHtml + sorted.map((res, index) => {
       const answers = res.answers || [];
