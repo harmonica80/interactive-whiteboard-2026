@@ -1,4 +1,10 @@
 # System Log
+## 2026-11-01 - 成語與佳句名言典故測驗（classicsQuiz）按下開始遊戲後自動開啟前台測驗畫面
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. 於 `startFocusGame()` 的 `autoSwitchFrontendTypes` 清單加入 `classicsQuiz`（📜 成語與佳句名言典故），教師按下「🚀 開始遊戲」後即自動切換並開啟前台測驗畫面。
+  2. 通過 `node --check js/app.js` 語法檢驗，更新快取版本至 `?v=471`。
+
 ## 2026-11-01 - 一字千金三個測驗單元按下開始遊戲後自動開啟前台測驗畫面
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

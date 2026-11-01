@@ -12615,7 +12615,7 @@ class App {
     const allowHintInput = document.getElementById('focusGameAllowHint');
     const allowHint = allowHintInput ? allowHintInput.checked : true;
     
-    const autoSwitchFrontendTypes = ['songQuiz', 'characterTest', 'characterCrossword', 'characterUnitedWords'];
+    const autoSwitchFrontendTypes = ['songQuiz', 'characterTest', 'characterCrossword', 'characterUnitedWords', 'classicsQuiz'];
     if (autoSwitchFrontendTypes.includes(gameType)) {
       this.previewStudentActivity('gameFocus');
     }
