@@ -523,6 +523,39 @@
       this.renderAdminPanel();
     }
 
+    // 🧹 一鍵清除所有小組目前積分（保留目前分組結構與組員名單）
+    async clearAllGroupPoints() {
+      if (!this.activeGroupSet || !this.activeGroupSet.groups || Object.keys(this.activeGroupSet.groups).length === 0) {
+        if (this.app && typeof this.app.showNotifyModal === 'function') {
+          this.app.showNotifyModal('⚠️ 目前尚未建立任何小組！');
+        }
+        return;
+      }
+
+      const executeClear = async () => {
+        Object.values(this.activeGroupSet.groups).forEach((g) => {
+          g.points = 0;
+          g.pointsLog = {};
+        });
+        this.activeGroupSet.updatedAt = Date.now();
+        await this.saveActiveGroupSet(this.activeGroupSet);
+        this.renderAdminPanel();
+        if (this.app && typeof this.app.showNotifyModal === 'function') {
+          this.app.showNotifyModal('🧹 已成功將所有小組目前積分歸零！');
+        }
+      };
+
+      if (this.app && typeof this.app.showConfirmModal === 'function') {
+        this.app.showConfirmModal(
+          '🧹 確定要清除所有小組目前積分嗎？',
+          '這將把所有小組目前的累計積分與給點記錄全部歸零重新計算，但會完整保留目前的分組名單與組員配置。',
+          executeClear
+        );
+      } else if (window.confirm('確定要清除所有小組目前的累計積分嗎？（將保留目前的分組名單與組員配置）')) {
+        await executeClear();
+      }
+    }
+
     // 一鍵移除當前未在線組員至未分配區
     async removeOfflineMembersToUnassigned() {
       if (!this.activeGroupSet || !this.activeGroupSet.groups) return;

@@ -5824,7 +5824,7 @@ class App {
       },
       classPoints: {
         id: 'adminClassPointsSection',
-        title: 'I. 學生積分管理',
+        title: 'I. 學生個人積分管理',
         category: '班級管理',
         icon: 'images/admin_icons/class_points.svg'
       },
@@ -5836,7 +5836,7 @@ class App {
       },
       classGroups: {
         id: 'adminClassGroupSection',
-        title: 'K. 學生分組管理',
+        title: 'K. 學生分組管理與小組積分管理',
         category: '班級管理',
         icon: 'images/admin_icons/class_groups.svg'
       },

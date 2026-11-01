@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=474">
+  <link rel="stylesheet" href="css/style.css?v=475">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1663,12 +1663,12 @@
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- I. 學生積分管理 (課堂給點與榮譽榜) -->
+                  <!-- I. 學生個人積分管理 (課堂給點與榮譽榜) -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classPoints')">
                     <div class="admin-feature-icon-box">
-                      <img src="images/admin_icons/class_points.svg" width="64" height="64" alt="學生積分管理">
+                      <img src="images/admin_icons/class_points.svg" width="64" height="64" alt="學生個人積分管理">
                     </div>
-                    <div class="admin-feature-card-title">I. 學生積分管理</div>
+                    <div class="admin-feature-card-title">I. 學生個人積分管理</div>
                     <div class="admin-feature-card-desc">課堂表現給點與自訂加減分、常用理由標籤批次獎勵、學生端即時激勵動畫，以及大螢幕課堂榮譽排行榜。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
@@ -1683,12 +1683,12 @@
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
 
-                  <!-- K. 學生分組管理 -->
+                  <!-- K. 學生分組管理與小組積分管理 -->
                   <div class="admin-feature-card" onclick="window.app.openAdminFeature('classGroups')">
                     <div class="admin-feature-icon-box">
-                      <img src="images/admin_icons/class_groups.svg" width="64" height="64" alt="學生分組管理">
+                      <img src="images/admin_icons/class_groups.svg" width="64" height="64" alt="學生分組管理與小組積分管理">
                     </div>
-                    <div class="admin-feature-card-title">K. 學生分組管理</div>
+                    <div class="admin-feature-card-title">K. 學生分組管理與小組積分管理</div>
                     <div class="admin-feature-card-desc">依人數或組數自動分組、手動拖曳調整、線上狀態篩選、歷史分組快照載入，以及獨立小組積分與結算轉移機制。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
@@ -2929,10 +2929,10 @@
             </div>
           </div>
 
-          <!-- I. 學生積分管理 (可折疊全頁區塊) -->
+          <!-- I. 學生個人積分管理 (可折疊全頁區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminClassPointsSection">
             <div class="admin-section-header">
-              <h3>⭐️ I. 學生積分管理</h3>
+              <h3>⭐️ I. 學生個人積分管理</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3055,10 +3055,10 @@
             </div>
           </div>
 
-                    <!-- K. 學生分組管理 (可折疊全頁區塊) -->
+                    <!-- K. 學生分組管理與小組積分管理 (可折疊全頁區塊) -->
           <div class="admin-section admin-section-collapsible collapsed" id="adminClassGroupSection">
             <div class="admin-section-header">
-              <h3>👥 K. 學生分組管理</h3>
+              <h3>👥 K. 學生分組管理與小組積分管理</h3>
               <span class="collapse-icon">▼</span>
             </div>
             <div class="admin-section-body">
@@ -3097,6 +3097,9 @@
                   </button>
                   <button type="button" class="presentation-tool-btn" onclick="if(confirm('確定要清空目前的小組分組嗎？組員將退回未分配清單。')) window.groupManager && window.groupManager.clearActiveGroups()" title="清空當前小組設定" style="font-size: 14px; border-radius: 10px; padding: 6px 14px; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.25);">
                     🗑️ 清空分組
+                  </button>
+                  <button type="button" class="presentation-tool-btn" onclick="window.groupManager && window.groupManager.clearAllGroupPoints()" title="保留目前分組名單，僅將所有小組目前的累計積分歸零重新計算" style="font-size: 14px; border-radius: 10px; padding: 6px 14px; color: #ef4444; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.25); font-weight: bold;">
+                    🧹 清除小組目前積分
                   </button>
                 </div>
               </div>
@@ -6414,7 +6417,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=474"></script>
+  <script src="js/app.js?v=475"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=471"></script>
   <script src="js/video_quiz.js?v=391"></script>

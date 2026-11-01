@@ -9423,12 +9423,14 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   gap: 6px;
 }
 
-.activity-scoring-pts-select {
-  min-width: 98px !important;
+.activity-scoring-pts-select,
+.admin-feature-fullpage select.activity-scoring-pts-select,
+.admin-feature-fullpage .activity-scoring-config-bar select {
+  min-width: 102px !important;
   width: auto !important;
-  height: 34px !important;
-  padding: 0 26px 0 10px !important;
-  line-height: 32px !important;
+  height: 36px !important;
+  padding: 2px 28px 2px 10px !important;
+  line-height: normal !important;
   font-size: 14px !important;
   font-weight: 700 !important;
   border-radius: 8px !important;
