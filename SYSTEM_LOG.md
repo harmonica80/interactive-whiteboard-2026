@@ -1,5 +1,5 @@
 # System Log
-## 2026-11-01 - 修正「每次獎勵」下拉選單全頁覆寫裁切、正名「學生個人積分管理／學生分組管理與小組積分管理」、新增「清除小組目前積分」功能
+## 2026-11-01 - 修正「每次獎勵」下拉選單全頁覆寫裁切、正名「學生個人積分管理／學生分組與小組積分管理」、新增「清除小組目前積分」功能
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `js/group_manager.js`, `SYSTEM_LOG.md`。
 - 修改項目：
   1. **修正全頁後台「每次獎勵」下拉選單頂部文字裁切問題（圖1）**：
@@ -7,9 +7,9 @@
      - 修正：將選擇器提升為 `.activity-scoring-pts-select, .admin-feature-fullpage select.activity-scoring-pts-select, .admin-feature-fullpage .activity-scoring-config-bar select`，設定 `height: 36px !important; padding: 2px 28px 2px 10px !important; line-height: normal !important; font-size: 14px !important; min-width: 102px !important;`，確保在所有全頁後台與彈窗中皆完整垂直置中顯示。
   2. **功能名稱正名（需求2）**：
      - 將「I. 學生積分管理」全面改為 **「I. 學生個人積分管理」**。
-     - 將「K. 學生分組管理」全面改為 **「K. 學生分組管理與小組積分管理」**（含後台總覽卡片、全頁標題列與快速切換下拉選單）。
+     - 將「K. 學生分組管理」全面改為 **「K. 學生分組與小組積分管理」**（含後台總覽卡片、全頁標題列與快速切換下拉選單）。
   3. **新增「🧹 清除小組目前積分」功能（圖2）**：
-     - 於「K. 學生分組管理與小組積分管理」頂部工具列（`🗑️ 清空分組` 右側）新增 **`🧹 清除小組目前積分`** 按鈕，點擊後彈出確認視窗，確認後透過 `groupManager.clearAllGroupPoints()` 將目前所有小組的累計積分與給點記錄歸零重算，同時完整保留現有分組結構與組員名單。
+     - 於「K. 學生分組與小組積分管理」頂部工具列（`🗑️ 清空分組` 右側）新增 **`🧹 清除小組目前積分`** 按鈕，點擊後彈出確認視窗，確認後透過 `groupManager.clearAllGroupPoints()` 將目前所有小組的累計積分與給點記錄歸零重算，同時完整保留現有分組結構與組員名單。
   4. 通過 `node --check js/app.js` 與 `node --check js/group_manager.js` 語法檢驗，更新快取版本至 `?v=475`。
 
 ## 2026-11-01 - 文字雲「結束文字雲」按鈕進行中/閒置動態樣式與「指定單一或多位同學加減分」功能

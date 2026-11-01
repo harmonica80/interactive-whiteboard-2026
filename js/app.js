@@ -5836,7 +5836,7 @@ class App {
       },
       classGroups: {
         id: 'adminClassGroupSection',
-        title: 'K. 學生分組管理與小組積分管理',
+        title: 'K. 學生分組與小組積分管理',
         category: '班級管理',
         icon: 'images/admin_icons/class_groups.svg'
       },
