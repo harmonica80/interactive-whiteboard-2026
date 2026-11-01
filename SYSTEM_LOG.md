@@ -1,4 +1,10 @@
 # System Log
+## 2026-11-01 - 一字千金三個測驗單元按下開始遊戲後自動開啟前台測驗畫面
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. 在 `startFocusGame()` 中，將一字千金三個測驗單元（`characterTest` 字力測驗、`characterCrossword` 字字珠璣、`characterUnitedWords` 團結一詞）納入發起後自動呼叫 `this.previewStudentActivity('gameFocus')` 的清單，使教師按下「🚀 開始遊戲」後即刻自動切換並開啟前台測驗畫面。
+  2. 通過 `node --check js/app.js` 驗證，更新快取版本至 `?v=470`。
+
 ## 2026-11-01 - 修復聽歌搶答「按住看正解」按鈕因文字展開位移觸發 mouseleave 導致無法顯示問題
 - 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`。
 - 問題原因：

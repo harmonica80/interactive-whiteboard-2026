@@ -12615,6 +12615,11 @@ class App {
     const allowHintInput = document.getElementById('focusGameAllowHint');
     const allowHint = allowHintInput ? allowHintInput.checked : true;
     
+    const autoSwitchFrontendTypes = ['songQuiz', 'characterTest', 'characterCrossword', 'characterUnitedWords'];
+    if (autoSwitchFrontendTypes.includes(gameType)) {
+      this.previewStudentActivity('gameFocus');
+    }
+
     db.ref('quiz/focusGame').set({
       status: 'countdown',
       gameType: gameType,
@@ -12657,8 +12662,8 @@ class App {
       results: null
     }).then(() => {
       this.showNotification('成功', '專注力/破冰遊戲已發起！');
-      // 若為聽歌搶答，發起後自動無縫切換至前台測驗畫面，方便教師主控播放
-      if (gameType === 'songQuiz') {
+      // 若為聽歌搶答或一字千金三個測驗單元，發起後自動無縫切換至前台測驗畫面
+      if (autoSwitchFrontendTypes.includes(gameType)) {
         this.previewStudentActivity('gameFocus');
       }
     }).catch(err => {
