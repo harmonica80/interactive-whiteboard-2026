@@ -1442,13 +1442,22 @@
     // 結束文字雲活動
     stopActivity() {
       if (!window.app?.isAdmin) return;
+      if (!this.activeActivity || !this.activeActivity.active) {
+        this.updateActiveActivityUI();
+        return;
+      }
       window.app?.showConfirmModal(
         '☁️',
         '確定要結束文字雲活動嗎？',
         '結束後學生端將不再顯示作答視窗，本次文字雲題目與成果也會自動保存至歷史記錄庫。',
         () => {
           this.saveCurrentToHistory(true, false);
+          if (this.activeActivity) {
+            this.activeActivity.active = false;
+          }
+          this.updateActiveActivityUI();
           db.ref('quiz/wordCloud/active/active').set(false).then(() => {
+            this.updateActiveActivityUI();
             window.app?.showNotification('成功', '即時文字雲活動已結束，並已自動保存至歷史記錄庫！');
           });
         }
@@ -1604,6 +1613,35 @@
       db.ref('quiz/wordCloud/hiddenWords').remove();
       this.recalculateAndRender();
       window.app?.showNotification('成功', '已解除所有詞彙之遮蔽！');
+    }
+
+    // 獎勵提交特定詞彙的同學或所屬小組
+    rewardWordVoters(rawWord) {
+      if (!window.app?.isAdmin) return;
+      let word = rawWord;
+      try { word = decodeURIComponent(rawWord); } catch (e) {}
+      word = (word || '').trim();
+      if (!word) return;
+      const targetKey = word.replace(/^[#＃\s]+|[!！?？,，.\s]+$/g, '').trim().toLowerCase() || word.toLowerCase();
+
+      const uniqueMap = new Map();
+      Object.values(this.submissions || {}).forEach(s => {
+        if (!s || !s.word) return;
+        const cleanW = s.word.trim().replace(/^[#＃\s]+|[!！?？,，.\s]+$/g, '').trim().toLowerCase() || s.word.trim().toLowerCase();
+        if (cleanW === targetKey) {
+          const uKey = s.userId || s.user || s.userName;
+          if (uKey && !uniqueMap.has(uKey)) {
+            uniqueMap.set(uKey, { uid: s.userId || '', name: s.user || s.userName || '同學' });
+          }
+        }
+      });
+
+      const targets = Array.from(uniqueMap.values());
+      if (targets.length === 0) {
+        window.app?.showNotification('提示', `找不到送出詞彙「${word}」的同學記錄！`);
+        return;
+      }
+      window.app?.rewardBatchTargets(targets, `文字雲優質詞彙「${word}」獎勵`);
     }
 
     // 挑選重點/焦點詞彙（變成最大字級加粗並顯示於中心）
@@ -1978,6 +2016,9 @@
 
         // 即時更新右側票數與排行榜名次
         this.updateRankingListUI(wordsList);
+        if (window.app && window.app._wcScoringModalOpen && typeof window.app.renderWordCloudStudentScoringList === 'function') {
+          window.app.renderWordCloudStudentScoringList();
+        }
       } catch (err) {
         console.error('WordCloud updateRankingListUI error:', err);
       }
@@ -2027,6 +2068,7 @@
               </div>
               <span style="font-weight: 900; color: ${isMultiple ? '#2563eb' : 'var(--accent-color)'}; font-size: 14px; min-width: 32px; text-align: right;">${item.count}票</span>
               ${window.app?.isAdmin ? `
+                <button type="button" class="preset-btn" onclick="window.wordCloud?.rewardWordVoters('${encodeURIComponent(item.word)}')" style="padding: 1px 6px; font-size: 14px; color: #d97706; border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.08); height: auto;" title="依計分模式獎勵送出此詞彙的同學或所屬小組">⭐</button>
                 <button type="button" class="preset-btn" onclick="window.wordCloud?.toggleFocusWord('${encodeURIComponent(item.word)}')" style="padding: 1px 6px; font-size: 14px; color: ${item.isFocused ? 'var(--accent-color)' : 'var(--text-secondary)'}; border-color: ${item.isFocused ? '#2563eb' : 'var(--border-color)'}; background: ${item.isFocused ? 'rgba(37,99,235,0.1)' : 'transparent'}; height: auto;" title="${item.isFocused ? '取消焦點詞彙' : '設為焦點詞彙'}">${item.isFocused ? '★' : '☆'}</button>
                 <button type="button" class="preset-btn" onclick="window.wordCloud?.toggleHideWord('${encodeURIComponent(item.word)}')" style="padding: 1px 6px; font-size: 14px; color: #ef4444; border-color: rgba(239,68,68,0.3); background: transparent; height: auto;" title="隱藏此詞彙">✕</button>
               ` : ''}

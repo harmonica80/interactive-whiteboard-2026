@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=473">
+  <link rel="stylesheet" href="css/style.css?v=474">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -653,7 +653,8 @@
               <div class="wc-ranking-card" id="wcRankingCard">
                 <div class="wc-ranking-header">
                   <h4>🏆 熱門詞頻排行</h4>
-                  <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" class="presentation-tool-btn active wc-teacher-only" onclick="window.app && window.app.openWordCloudStudentScoringModal()" style="display: none; padding: 2px 8px; height: 28px; font-size: 14px; border-radius: 6px;" title="指定單一或多位同學進行加分或扣分">🎯 指定加減分</button>
                     <span style="font-size: 14px; color: var(--text-muted);">TOP 15</span>
                     <button type="button" class="presentation-tool-btn" id="btnToggleWcRanking" onclick="window.wordCloud?.toggleRankingSidebar()" title="收合熱門詞頻排行">▶ 收合</button>
                   </div>
@@ -4405,6 +4406,7 @@
                     </select>
                   </div>
                   <div class="activity-scoring-actions">
+                    <button type="button" class="presentation-tool-btn active" onclick="window.app && window.app.openWordCloudStudentScoringModal()" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="開啟學生名單，可針對單一或勾選多位同學（或所屬小組）進行加分或扣分">🎯 指定同學加減分</button>
                     <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardWordCloudBatch()" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="依計分模式一鍵獎勵本題所有參與文字雲發想的同學或所屬小組">🎁 獎勵全體發想同學</button>
                   </div>
                 </div>
@@ -4468,8 +4470,8 @@
                   <button type="button" class="presentation-tool-btn" onclick="window.wordCloud?.saveCurrentToHistory(true, true)" style="flex: 1; min-width: 140px; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 10px;">
                     💾 儲存至歷史題庫
                   </button>
-                  <button type="button" class="presentation-tool-btn danger" onclick="window.wordCloud?.stopActivity()" style="flex: 1; min-width: 120px; padding: 12px; font-size: 14px; border-radius: 10px;">
-                    🛑 結束文字雲
+                  <button type="button" id="adminWcEndBtn" class="presentation-tool-btn is-idle-btn" onclick="window.wordCloud?.stopActivity()" style="flex: 1; min-width: 140px; padding: 12px; font-size: 14px; border-radius: 10px;" disabled>
+                    ⏹️ 目前無進行中文字雲
                   </button>
                   <button type="button" class="presentation-tool-btn danger" onclick="window.wordCloud?.clearSubmissions()" style="flex: 1; min-width: 120px; padding: 12px; font-size: 14px; border-radius: 10px;">
                     🗑️ 清空所有送出詞彙
@@ -6412,7 +6414,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=473"></script>
+  <script src="js/app.js?v=474"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=471"></script>
   <script src="js/video_quiz.js?v=391"></script>
@@ -9266,5 +9268,82 @@ Python</pre>
     </div>
   </div>
 
+
+  <!-- 🎯 文字雲指定單一或多位同學加減分彈窗 (圖 2 需求) -->
+  <div id="wcStudentScoringModal" class="modal-overlay" style="display: none; z-index: 21880;" onclick="if(event.target===this) window.app && window.app.closeWordCloudStudentScoringModal()">
+    <div class="modal-content" style="max-width: 760px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; padding: 22px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-hover);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 12px; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>🎯</span> 文字雲指定同學／小組加減分
+          </h3>
+          <span id="wcScoringSummaryBadge" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 3px 10px; border-radius: 20px; font-size: 14px; font-weight: bold;">發想 0 人</span>
+        </div>
+        <button type="button" class="modal-close" onclick="window.app && window.app.closeWordCloudStudentScoringModal()" style="font-size: 18px; background: none; border: none; cursor: pointer; color: var(--text-secondary);">✕</button>
+      </div>
+
+      <!-- 計分模式與每次加減點數設定列 (與全域計分設定即時連動) -->
+      <div class="activity-scoring-config-bar" style="margin-bottom: 12px; flex-shrink: 0;">
+        <div class="activity-scoring-row">
+          <span class="activity-scoring-title">🎯 計分對象：</span>
+          <div class="activity-scoring-mode-group">
+            <button type="button" class="presentation-tool-btn activity-scoring-mode-btn active" data-scoring-mode="individual" onclick="window.app && window.app.setActivityScoringMode('individual')">👤 個人計分</button>
+            <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="group" onclick="window.app && window.app.setActivityScoringMode('group')">👥 小組計分</button>
+            <button type="button" class="presentation-tool-btn activity-scoring-mode-btn" data-scoring-mode="both" onclick="window.app && window.app.setActivityScoringMode('both')">🌟 個人＋小組同步</button>
+          </div>
+          <div class="activity-scoring-pts-wrap">
+            <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">單次加減點數：</label>
+            <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)">
+              <option value="1">1 點</option>
+              <option value="2">2 點</option>
+              <option value="3">3 點</option>
+              <option value="5">5 點</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 篩選頁籤、搜尋框與全選控制列 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; flex-shrink: 0;">
+        <div style="display: inline-flex; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 3px; gap: 4px;">
+          <button type="button" id="btnWcScoreTabSubmitted" class="presentation-tool-btn active" onclick="window.app && window.app.setWcScoringFilter('submitted')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px; border: none;">
+            ☁️ 本次發想同學 (<span id="cntWcScoreSubmitted">0</span>)
+          </button>
+          <button type="button" id="btnWcScoreTabAll" class="presentation-tool-btn" onclick="window.app && window.app.setWcScoringFilter('all')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px; border: none;">
+            👥 全班學生名冊 (<span id="cntWcScoreAll">0</span>)
+          </button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; justify-content: flex-end; flex-wrap: wrap;">
+          <input type="text" id="wcScoringSearchInput" class="question-input" placeholder="🔍 搜尋姓名、備註或詞彙..." oninput="window.app && window.app.renderWordCloudStudentScoringList()" style="margin: 0; padding: 6px 12px; height: 34px; font-size: 14px; border-radius: 8px; min-width: 180px; flex: 1; max-width: 260px;">
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.toggleWcScoringSelectAll(true)" style="font-size: 14px; padding: 4px 10px; height: 32px; border-radius: 8px;">全選</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.toggleWcScoringSelectAll(false)" style="font-size: 14px; padding: 4px 10px; height: 32px; border-radius: 8px;">清除勾選</button>
+        </div>
+      </div>
+
+      <!-- 學生與發想詞彙清單 -->
+      <div id="wcStudentScoringListContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; min-height: 220px; max-height: 52vh; padding-right: 4px;">
+        <!-- 動態渲染學生列 -->
+      </div>
+
+      <!-- 底部多選批次加減分工具列 -->
+      <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; flex-shrink: 0;">
+        <div style="font-size: 14px; font-weight: bold; color: var(--text-secondary);">
+          ☑️ 已勾選 <strong id="wcScoringSelectedCount" style="color: var(--accent-color); font-size: 16px;">0</strong> 位同學
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.applyWordCloudSelectedStudentsScore(1)" style="font-size: 14px; padding: 6px 16px; height: 36px; border-radius: 8px; font-weight: bold;">
+            ➕ 為勾選同學加分
+          </button>
+          <button type="button" class="presentation-tool-btn danger" onclick="window.app && window.app.applyWordCloudSelectedStudentsScore(-1)" style="font-size: 14px; padding: 6px 16px; height: 36px; border-radius: 8px; font-weight: bold;">
+            ➖ 為勾選同學扣分
+          </button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.closeWordCloudStudentScoringModal()" style="font-size: 14px; padding: 6px 16px; height: 36px; border-radius: 8px;">
+            關閉
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -6295,6 +6295,23 @@ class App {
         buzzEndBtn.title = '目前無進行中的搶答';
       }
     }
+
+    // 3. 即時文字雲結束按鈕
+    const wcEndBtn = document.getElementById('adminWcEndBtn');
+    const isWcActive = !!(window.wordCloud && window.wordCloud.activeActivity && window.wordCloud.activeActivity.active);
+    if (wcEndBtn) {
+      if (isWcActive) {
+        wcEndBtn.disabled = false;
+        wcEndBtn.className = 'presentation-tool-btn danger active';
+        wcEndBtn.innerHTML = '🛑 結束文字雲 (進行中)';
+        wcEndBtn.title = '點擊立即結束當前進行中的文字雲活動';
+      } else {
+        wcEndBtn.disabled = true;
+        wcEndBtn.className = 'presentation-tool-btn is-idle-btn';
+        wcEndBtn.innerHTML = '⏹️ 目前無進行中文字雲';
+        wcEndBtn.title = '目前無進行中的文字雲活動';
+      }
+    }
   }
 
   // 教師端單螢幕防窺：聽歌搶答按住顯示歌曲正解，放開立即自動隱藏
@@ -19522,6 +19539,9 @@ class App {
     document.querySelectorAll('.activity-scoring-pts-select').forEach(sel => {
       sel.value = String(cfg.pointsPerReward);
     });
+    if (this._wcScoringModalOpen && typeof this.renderWordCloudStudentScoringList === 'function') {
+      this.renderWordCloudStudentScoringList();
+    }
   }
 
   resolveStudentUidByName(name) {
@@ -19599,13 +19619,17 @@ class App {
 
   async awardActivityPoints(uid, name, amount, reason = '課堂活動與測驗獎勵', options = {}) {
     if (!this.isAdmin) {
-      this.showNotification('權限不足', '僅授課教師可執行加分獎勵！');
+      this.showNotification('權限不足', '僅授課教師可執行加減分！');
       return { personalAwarded: false, groupAwarded: false };
     }
     if (!this.activityScoringConfig) this.initActivityScoringConfig();
 
     const mode = options.mode || this.activityScoringConfig.mode || 'individual';
-    const pts = parseInt(amount || this.activityScoringConfig.pointsPerReward || 1, 10);
+    const rawAmt = (amount !== undefined && amount !== null) ? parseInt(amount, 10) : (this.activityScoringConfig.pointsPerReward || 1);
+    const pts = isNaN(rawAmt) || rawAmt === 0 ? 1 : rawAmt;
+    const isDeduct = pts < 0;
+    const ptsText = pts > 0 ? `+${pts}` : `${pts}`;
+    const actionWord = isDeduct ? '扣分' : '加分';
 
     // 若為小組計分或個人+小組同步計分，確保分組資料已從 Firebase 載入
     if ((mode === 'group' || mode === 'both') && window.groupManager && typeof window.groupManager.ensureActiveGroupsLoaded === 'function') {
@@ -19654,20 +19678,20 @@ class App {
     if ((mode === 'group' || mode === 'both') && groupInfo && window.groupManager) {
       if (!options.AwardedGroupIds || !options.AwardedGroupIds.has(groupInfo.groupId)) {
         if (options.AwardedGroupIds) options.AwardedGroupIds.add(groupInfo.groupId);
-        await window.groupManager.addGroupPoints(groupInfo.groupId, pts, `${reason}（${displayName} 表現優異）`);
+        await window.groupManager.addGroupPoints(groupInfo.groupId, pts, `${reason}（${displayName}）`);
         groupAwarded = true;
       }
     }
 
     if (!options.silent) {
       if (personalAwarded && groupAwarded) {
-        this.showNotification('🌟 個人＋小組同步加分', `已為「${displayName}」個人及所屬【${groupInfo.groupName}】各加 +${pts} 點！`);
+        this.showNotification(`🌟 個人＋小組同步${actionWord}`, `已為「${displayName}」個人及所屬【${groupInfo.groupName}】各 ${ptsText} 點！`);
       } else if (groupAwarded) {
-        this.showNotification('👥 小組加分成功', `已為「${displayName}」所屬的【${groupInfo.groupName}】加 +${pts} 點！`);
+        this.showNotification(`👥 小組${actionWord}成功`, `已為「${displayName}」所屬的【${groupInfo.groupName}】 ${ptsText} 點！`);
       } else if (mode === 'group' && !groupInfo) {
         this.showNotification('⚠️ 該同學尚未分組', `目前為【👥 小組計分】模式，但「${displayName}」尚未被分配至任何小組！請先至「學生分組管理」將該生加入小組，或切換為「👤 個人計分」。`);
       } else if (personalAwarded) {
-        this.showNotification('👤 個人加分成功', `已為「${displayName}」個人榮譽點數加 +${pts} 點！`);
+        this.showNotification(`👤 個人${actionWord}成功`, `已為「${displayName}」個人榮譽點數 ${ptsText} 點！`);
       } else {
         this.showNotification('提示', `找不到同學「${displayName}」的名冊資料或分組，請確認同學已登入課堂。`);
       }
@@ -19682,13 +19706,16 @@ class App {
     await this.awardActivityPoints(uid, name, pts, reason);
   }
 
-  async rewardBatchTargets(targets, reason) {
+  async rewardBatchTargets(targets, reason, deltaSign = 1) {
     if (!Array.isArray(targets) || targets.length === 0) {
-      this.showNotification('提示', '目前沒有符合條件的同學可供獎勵加分！');
+      this.showNotification('提示', '目前沒有符合條件的同學可供加減分！');
       return;
     }
     if (!this.activityScoringConfig) this.initActivityScoringConfig();
-    const pts = this.activityScoringConfig.pointsPerReward || 1;
+    const basePts = this.activityScoringConfig.pointsPerReward || 1;
+    const pts = deltaSign < 0 ? -Math.abs(basePts) : Math.abs(basePts);
+    const ptsText = pts > 0 ? `+${pts}` : `${pts}`;
+    const actionWord = pts < 0 ? '扣分' : '獎勵加分';
     const mode = this.activityScoringConfig.mode || 'individual';
 
     let pCount = 0;
@@ -19707,15 +19734,15 @@ class App {
     }
 
     if (mode === 'both') {
-      this.showNotification('🎁 批次獎勵完成', `已依【個人＋小組同步】模式，為 ${pCount} 位同學與 ${awardedGroups.size} 個小組各加 +${pts} 點（事由：${reason}）！`);
+      this.showNotification(`🎯 批次${actionWord}完成`, `已依【個人＋小組同步】模式，為 ${pCount} 位同學與 ${awardedGroups.size} 個小組各 ${ptsText} 點（事由：${reason}）！`);
     } else if (mode === 'group') {
       if (awardedGroups.size > 0) {
-        this.showNotification('🎁 小組批次獎勵完成', `已為表現優異同學所屬的 ${awardedGroups.size} 個小組各加 +${pts} 點（事由：${reason}）！`);
+        this.showNotification(`👥 小組批次${actionWord}完成`, `已為所選同學所屬的 ${awardedGroups.size} 個小組各 ${ptsText} 點（事由：${reason}）！`);
       } else {
-        this.showNotification('⚠️ 尚無對應分組可加分', '符合條件的同學目前皆尚未被分配至任何小組！請先至「學生分組管理」進行分組，或改選「👤 個人計分」。');
+        this.showNotification('⚠️ 尚無對應分組可加減分', '所選同學目前皆尚未被分配至任何小組！請先至「學生分組管理」進行分組，或改選「👤 個人計分」。');
       }
     } else {
-      this.showNotification('🎁 個人批次獎勵完成', `已為 ${pCount} 位表現優異同學個人各加 +${pts} 點（事由：${reason}）！`);
+      this.showNotification(`👤 個人批次${actionWord}完成`, `已為 ${pCount} 位同學個人各 ${ptsText} 點（事由：${reason}）！`);
     }
   }
 
@@ -19935,9 +19962,11 @@ class App {
     const uniqueMap = new Map();
     Object.values(subs).forEach(s => {
       if (!s) return;
-      const key = s.userId || s.userName;
+      const name = s.user || s.userName || '同學';
+      const uid = s.userId || this.resolveStudentUidByName(name) || '';
+      const key = uid || name;
       if (key && !uniqueMap.has(key)) {
-        uniqueMap.set(key, { uid: s.userId, name: s.userName || '同學' });
+        uniqueMap.set(key, { uid, name });
       }
     });
 
@@ -19948,6 +19977,261 @@ class App {
     }
 
     await this.rewardBatchTargets(targets, '即時文字雲發想參與獎勵');
+  }
+
+  // =========================================================
+  // 🎯 文字雲：指定單一或多位同學加減分彈窗控制與渲染
+  // =========================================================
+  async openWordCloudStudentScoringModal() {
+    if (!this.isAdmin) {
+      this.showNotification('權限不足', '僅授課教師可開啟指定加減分面板！');
+      return;
+    }
+    this.initActivityScoringConfig();
+    if (window.groupManager && typeof window.groupManager.ensureActiveGroupsLoaded === 'function') {
+      await window.groupManager.ensureActiveGroupsLoaded();
+    }
+
+    const subs = (window.wordCloud && window.wordCloud.submissions) || {};
+    const hasSubs = Object.keys(subs).length > 0;
+    this._wcScoringFilter = hasSubs ? 'submitted' : 'all';
+    this._wcScoringSelectedKeys = new Set();
+    this._wcScoringModalOpen = true;
+
+    const modal = document.getElementById('wcStudentScoringModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+    this.updateActivityScoringBarUI();
+    this.setWcScoringFilter(this._wcScoringFilter);
+  }
+
+  closeWordCloudStudentScoringModal() {
+    this._wcScoringModalOpen = false;
+    const modal = document.getElementById('wcStudentScoringModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+
+  setWcScoringFilter(filter) {
+    this._wcScoringFilter = filter === 'all' ? 'all' : 'submitted';
+    const btnSub = document.getElementById('btnWcScoreTabSubmitted');
+    const btnAll = document.getElementById('btnWcScoreTabAll');
+    if (btnSub) btnSub.classList.toggle('active', this._wcScoringFilter === 'submitted');
+    if (btnAll) btnAll.classList.toggle('active', this._wcScoringFilter === 'all');
+    this.renderWordCloudStudentScoringList();
+  }
+
+  getWordCloudStudentScoringList() {
+    const subs = (window.wordCloud && window.wordCloud.submissions) || {};
+    const regStudents = this.registeredStudents || {};
+    const studentWordsMap = new Map(); // key (uid or name) -> { uid, name, words: [] }
+
+    Object.values(subs).forEach(s => {
+      if (!s || !s.word) return;
+      const rawName = (s.user || s.userName || '同學').trim();
+      const uid = s.userId && regStudents[s.userId] ? s.userId : (this.resolveStudentUidByName(rawName) || s.userId || '');
+      const key = uid || `name_${rawName}`;
+      const displayName = (uid && regStudents[uid]?.name) || rawName;
+      if (!studentWordsMap.has(key)) {
+        studentWordsMap.set(key, { key, uid, name: displayName, words: [] });
+      }
+      studentWordsMap.get(key).words.push(s.word.trim());
+    });
+
+    const submittedList = Array.from(studentWordsMap.values());
+    const allMap = new Map();
+
+    // 先放有交文字雲的同學
+    submittedList.forEach(item => {
+      allMap.set(item.key, item);
+    });
+
+    // 再補齊全班名冊其餘同學
+    Object.entries(regStudents).forEach(([uid, st]) => {
+      if (!st || !st.name) return;
+      if (!allMap.has(uid)) {
+        allMap.set(uid, {
+          key: uid,
+          uid,
+          name: st.name,
+          words: []
+        });
+      }
+    });
+
+    return {
+      submittedList,
+      allList: Array.from(allMap.values())
+    };
+  }
+
+  renderWordCloudStudentScoringList() {
+    const container = document.getElementById('wcStudentScoringListContainer');
+    if (!container) return;
+
+    const { submittedList, allList } = this.getWordCloudStudentScoringList();
+    const cntSubEl = document.getElementById('cntWcScoreSubmitted');
+    const cntAllEl = document.getElementById('cntWcScoreAll');
+    const summaryBadge = document.getElementById('wcScoringSummaryBadge');
+    if (cntSubEl) cntSubEl.textContent = String(submittedList.length);
+    if (cntAllEl) cntAllEl.textContent = String(allList.length);
+    if (summaryBadge) summaryBadge.textContent = `發想 ${submittedList.length} 人 ／ 全班 ${allList.length} 人`;
+
+    const sourceList = this._wcScoringFilter === 'all' ? allList : submittedList;
+    const query = (document.getElementById('wcScoringSearchInput')?.value || '').trim().toLowerCase();
+    const regStudents = this.registeredStudents || {};
+
+    const filtered = sourceList.filter(item => {
+      if (!query) return true;
+      const st = item.uid ? regStudents[item.uid] : null;
+      const note = (st && st.note) ? String(st.note).toLowerCase() : '';
+      const groupInfo = this.getStudentGroupInfo(item.uid, item.name);
+      const groupName = groupInfo ? groupInfo.groupName.toLowerCase() : '';
+      const wordsStr = (item.words || []).join(' ').toLowerCase();
+      return (
+        item.name.toLowerCase().includes(query) ||
+        note.includes(query) ||
+        groupName.includes(query) ||
+        wordsStr.includes(query)
+      );
+    });
+
+    if (!this._wcScoringSelectedKeys) this._wcScoringSelectedKeys = new Set();
+
+    if (filtered.length === 0) {
+      const emptyMsg = this._wcScoringFilter === 'submitted'
+        ? '目前尚無同學送出文字雲詞彙，您可以點選上方「👥 全班學生名冊」直接指定全班任一同學加減分！'
+        : '找不到符合搜尋條件的同學。';
+      container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 32px 16px; font-size: 14px; background: var(--bg-input); border-radius: 12px; border: 1px dashed var(--border-color);">${emptyMsg}</div>`;
+      this.updateWcScoringSelectedCount();
+      return;
+    }
+
+    const pts = this.activityScoringConfig?.pointsPerReward || 1;
+    const gmGroups = window.groupManager?.activeGroupSet?.groups || {};
+
+    container.innerHTML = filtered.map(item => {
+      const st = item.uid ? regStudents[item.uid] : null;
+      const personalPts = st ? (parseInt(st.points, 10) || 0) : 0;
+      const noteHtml = (st && st.note)
+        ? `<span class="student-note-badge has-note" style="cursor: default;">📝 ${this.escapeHtml(st.note)}</span>`
+        : '';
+      const groupInfo = this.getStudentGroupInfo(item.uid, item.name);
+      const groupPts = (groupInfo && gmGroups[groupInfo.groupId]) ? (parseInt(gmGroups[groupInfo.groupId].points, 10) || 0) : null;
+      const groupBadgeHtml = groupInfo
+        ? `<span class="student-group-mini-badge" style="border-color: ${groupInfo.groupColor}; color: ${groupInfo.groupColor};">👥 ${this.escapeHtml(groupInfo.groupName)}${groupPts !== null ? ` (${groupPts}點)` : ''}</span>`
+        : `<span style="font-size: 14px; color: var(--text-muted);">未分組</span>`;
+
+      const wordsHtml = (item.words && item.words.length > 0)
+        ? `<div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px; word-break: break-word;">💬 發想詞彙：${item.words.map(w => `<span style="display: inline-block; background: rgba(59,130,246,0.1); color: var(--accent-color); border-radius: 6px; padding: 1px 8px; margin: 2px 4px 2px 0; font-weight: bold;">${this.escapeHtml(w)}</span>`).join('')}</div>`
+        : `<div style="font-size: 14px; color: var(--text-muted); margin-top: 2px;">尚未送出文字雲詞彙</div>`;
+
+      const isChecked = this._wcScoringSelectedKeys.has(item.key);
+      const safeKey = this.escapeHtml(item.key);
+      const safeUid = this.escapeHtml(item.uid || '');
+      const safeName = this.escapeHtml(item.name || '同學');
+
+      return `
+        <div class="wc-scoring-student-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--bg-input); border: 1px solid ${isChecked ? 'var(--accent-color)' : 'var(--border-color)'}; border-radius: 10px; flex-wrap: wrap;">
+          <label style="display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 220px; cursor: pointer; margin: 0;">
+            <input type="checkbox" class="wc-score-student-chk" data-key="${safeKey}" data-uid="${safeUid}" data-name="${safeName}" ${isChecked ? 'checked' : ''} onchange="window.app && window.app.onWcScoringRowCheckChange(this)" style="width: 18px; height: 18px; margin-top: 3px; cursor: pointer; accent-color: var(--accent-color); flex-shrink: 0;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span style="font-weight: bold; font-size: 15px; color: var(--text-primary);">${safeName}</span>
+                ${noteHtml}
+                ${groupBadgeHtml}
+                <span style="font-size: 14px; color: #d97706; font-weight: bold; background: rgba(245,158,11,0.12); padding: 1px 8px; border-radius: 999px;">🔥 個人 ${personalPts} 點</span>
+              </div>
+              ${wordsHtml}
+            </div>
+          </label>
+          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.adjustSingleStudentScoreFromWc('${safeUid}', '${safeName}', 1)" style="font-size: 14px; padding: 4px 10px; height: 32px; border-radius: 8px; font-weight: bold;" title="依目前計分模式為此同學或所屬小組加 +${pts} 點">
+              ➕ 加 ${pts} 點
+            </button>
+            <button type="button" class="presentation-tool-btn danger" onclick="window.app && window.app.adjustSingleStudentScoreFromWc('${safeUid}', '${safeName}', -1)" style="font-size: 14px; padding: 4px 10px; height: 32px; border-radius: 8px; font-weight: bold;" title="依目前計分模式為此同學或所屬小組扣 -${pts} 點">
+              ➖ 扣 ${pts} 點
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    this.updateWcScoringSelectedCount();
+  }
+
+  onWcScoringRowCheckChange(chk) {
+    if (!chk) return;
+    if (!this._wcScoringSelectedKeys) this._wcScoringSelectedKeys = new Set();
+    const key = chk.getAttribute('data-key');
+    if (!key) return;
+    if (chk.checked) {
+      this._wcScoringSelectedKeys.add(key);
+    } else {
+      this._wcScoringSelectedKeys.delete(key);
+    }
+    const row = chk.closest('.wc-scoring-student-row');
+    if (row) {
+      row.style.borderColor = chk.checked ? 'var(--accent-color)' : 'var(--border-color)';
+    }
+    this.updateWcScoringSelectedCount();
+  }
+
+  toggleWcScoringSelectAll(selectAll) {
+    if (!this._wcScoringSelectedKeys) this._wcScoringSelectedKeys = new Set();
+    const chks = document.querySelectorAll('#wcStudentScoringListContainer .wc-score-student-chk');
+    chks.forEach(chk => {
+      chk.checked = Boolean(selectAll);
+      const key = chk.getAttribute('data-key');
+      if (key) {
+        if (selectAll) this._wcScoringSelectedKeys.add(key);
+        else this._wcScoringSelectedKeys.delete(key);
+      }
+      const row = chk.closest('.wc-scoring-student-row');
+      if (row) {
+        row.style.borderColor = selectAll ? 'var(--accent-color)' : 'var(--border-color)';
+      }
+    });
+    this.updateWcScoringSelectedCount();
+  }
+
+  updateWcScoringSelectedCount() {
+    const el = document.getElementById('wcScoringSelectedCount');
+    if (el) {
+      el.textContent = String(this._wcScoringSelectedKeys ? this._wcScoringSelectedKeys.size : 0);
+    }
+  }
+
+  async adjustSingleStudentScoreFromWc(uid, name, sign = 1) {
+    if (!this.activityScoringConfig) this.initActivityScoringConfig();
+    const basePts = this.activityScoringConfig.pointsPerReward || 1;
+    const pts = sign < 0 ? -Math.abs(basePts) : Math.abs(basePts);
+    const reason = sign < 0 ? '即時文字雲課堂表現扣分' : '即時文字雲發想表現優異';
+    await this.awardActivityPoints(uid, name, pts, reason);
+    this.renderWordCloudStudentScoringList();
+  }
+
+  async applyWordCloudSelectedStudentsScore(sign = 1) {
+    if (!this._wcScoringSelectedKeys || this._wcScoringSelectedKeys.size === 0) {
+      this.showNotification('提示', '請先勾選至少一位要加減分的同學！');
+      return;
+    }
+    const { allList } = this.getWordCloudStudentScoringList();
+    const targets = allList
+      .filter(item => this._wcScoringSelectedKeys.has(item.key))
+      .map(item => ({ uid: item.uid, name: item.name }));
+
+    if (targets.length === 0) {
+      this.showNotification('提示', '請先勾選至少一位要加減分的同學！');
+      return;
+    }
+    const reason = sign < 0 ? '即時文字雲指定同學扣分' : '即時文字雲指定同學獎勵';
+    await this.rewardBatchTargets(targets, reason, sign);
+    this.renderWordCloudStudentScoringList();
   }
 
 
