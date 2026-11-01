@@ -19491,20 +19491,57 @@ class App {
       saved = JSON.parse(localStorage.getItem('wb_activity_scoring_config_v1') || 'null');
     } catch (e) {}
 
+    // 預設計分方式一律設為「個人計分 (individual)」
     this.activityScoringConfig = {
-      mode: (saved && ['individual', 'group', 'both'].includes(saved.mode)) ? saved.mode : 'individual',
+      mode: 'individual',
       pointsPerReward: (saved && parseInt(saved.pointsPerReward, 10) > 0) ? parseInt(saved.pointsPerReward, 10) : 1
     };
+    try {
+      localStorage.setItem('wb_activity_scoring_config_v1', JSON.stringify(this.activityScoringConfig));
+    } catch (e) {}
 
     this.updateActivityScoringBarUI();
   }
 
-  setActivityScoringMode(mode) {
+  async setActivityScoringMode(mode) {
     if (!['individual', 'group', 'both'].includes(mode)) return;
     if (!this.activityScoringConfig) this.initActivityScoringConfig();
     if (window.groupManager && !window.groupManager.groupListenerRef) {
       window.groupManager.listenActiveGroups();
     }
+
+    // 若選擇小組計分或個人＋小組同步計分，先檢查目前是否已有小組分組設定
+    if (mode === 'group' || mode === 'both') {
+      if (window.groupManager && typeof window.groupManager.ensureActiveGroupsLoaded === 'function') {
+        await window.groupManager.ensureActiveGroupsLoaded();
+      }
+      const gm = window.groupManager;
+      const groupsObj = (gm && gm.activeGroupSet && gm.activeGroupSet.groups && typeof gm.activeGroupSet.groups === 'object')
+        ? gm.activeGroupSet.groups
+        : {};
+      const hasGroups = Object.keys(groupsObj).length > 0;
+
+      if (!hasGroups) {
+        this.activityScoringConfig.mode = 'individual';
+        this.updateActivityScoringBarUI();
+        this.showConfirmModal(
+          '👥',
+          '目前尚未建立小組分組設定',
+          '系統偵測到目前班級尚未建立任何小組分組，無法使用小組計分功能。<br><br>請問是否要立即前往「<strong>K. 學生分組與小組積分管理</strong>」進行分組設定？',
+          () => {
+            if (typeof this.closeWordCloudStudentScoringModal === 'function') {
+              this.closeWordCloudStudentScoringModal();
+            }
+            this.switchToTab('panel-admin');
+            if (typeof this.openAdminFeature === 'function') {
+              this.openAdminFeature('classGroups');
+            }
+          }
+        );
+        return;
+      }
+    }
+
     this.activityScoringConfig.mode = mode;
     try {
       localStorage.setItem('wb_activity_scoring_config_v1', JSON.stringify(this.activityScoringConfig));

@@ -1,4 +1,14 @@
 # System Log
+## 2026-11-01 - 預設計分方式固定為「個人計分」並新增選擇小組計分時未分組自動提示與導引
+- 影響檔案：`index.html`, `js/app.js`, `js/group_manager.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **預設計分方式固定設為「👤 個人計分」**：
+     - 調整 `initActivityScoringConfig()`，每次載入系統時一律將預設 `mode` 設為 `'individual'`（個人計分），避免跨課堂殘留上一次的小組計分設定；且當教師在分組管理點擊「🗑️ 清空分組」時，亦自動將計分模式歸位回「👤 個人計分」。
+  2. **選擇「👥 小組計分」或「🌟 個人＋小組同步」時未設定分組防呆提示與一鍵前往**：
+     - 在 `setActivityScoringMode(mode)` 中，若切換為 `'group'` 或 `'both'`，系統會先確保雲端分組資料已載入並檢查 `activeGroupSet.groups` 是否已有分組。
+     - 若偵測到目前尚未建立任何小組分組，會自動維持在「👤 個人計分」並彈出確認對話框提醒老師，詢問是否要立即前往「**K. 學生分組與小組積分管理**」進行分組設定；點擊確認後自動切換至該全頁功能。
+  3. 修正 `clearAllGroupPoints()` 呼叫 `showConfirmModal` 之 4 參數簽章與 `showNotification`，並將 `index.html` 內所有腳本快取版本更新至 `?v=478`。
+
 ## 2026-11-01 - 修正「每次獎勵」下拉選單全頁覆寫裁切、正名「學生個人積分管理／學生分組與小組積分管理」、新增「清除小組目前積分」功能
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `js/group_manager.js`, `SYSTEM_LOG.md`。
 - 修改項目：

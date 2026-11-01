@@ -432,6 +432,12 @@
       this.activeGroupSet.updatedAt = Date.now();
 
       await this.saveActiveGroupSet(this.activeGroupSet);
+      if (this.app && this.app.activityScoringConfig && this.app.activityScoringConfig.mode !== 'individual') {
+        this.app.activityScoringConfig.mode = 'individual';
+        if (typeof this.app.updateActivityScoringBarUI === 'function') {
+          this.app.updateActivityScoringBarUI();
+        }
+      }
       this.renderAdminPanel();
     }
 
