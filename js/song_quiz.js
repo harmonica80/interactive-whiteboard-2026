@@ -946,13 +946,10 @@
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
             <div style="display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;">
               <span style="font-size:14px; font-weight:900; color:var(--accent-color);">👑 老師主控台 (正解：</span>
-              <span id="peekSongMasked" class="peek-answer-masked" style="font-size:14px; color:var(--text-muted); background:var(--bg-input); padding:2px 8px; border-radius:6px; border:1px dashed var(--border-color); letter-spacing:2px; user-select:none;">••••••</span>
-              <span id="peekSongReal" class="peek-answer-real" style="display:none; font-size:14px; font-weight:900; color:var(--accent-color);">${escapeForSong(question.title)} / ${escapeForSong(question.artist || '')}</span>
               <button type="button" 
                 class="presentation-tool-btn peek-answer-btn peek-song-btn" 
-                onmousedown="window.app.toggleSongPeekAnswer(true)" 
+                onmousedown="window.app.toggleSongPeekAnswer(true); event.preventDefault();" 
                 onmouseup="window.app.toggleSongPeekAnswer(false)" 
-                onmouseleave="window.app.toggleSongPeekAnswer(false)" 
                 ontouchstart="window.app.toggleSongPeekAnswer(true); event.preventDefault();" 
                 ontouchend="window.app.toggleSongPeekAnswer(false)" 
                 ontouchcancel="window.app.toggleSongPeekAnswer(false)" 
@@ -960,6 +957,8 @@
                 style="font-size:14px; padding:2px 8px; height:28px; line-height:1; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; user-select:none;">
                 <span id="peekSongIcon">👁️</span> <span id="peekSongLabel">按住看正解</span>
               </button>
+              <span id="peekSongMasked" class="peek-answer-masked" style="font-size:14px; color:var(--text-muted); background:var(--bg-input); padding:2px 8px; border-radius:6px; border:1px dashed var(--border-color); letter-spacing:2px; user-select:none;">••••••</span>
+              <span id="peekSongReal" class="peek-answer-real" style="display:none; font-size:14px; font-weight:900; color:var(--accent-color);">${escapeForSong(question.title)} / ${escapeForSong(question.artist || '')}</span>
               <span style="font-size:14px; font-weight:900; color:var(--accent-color);">)</span>
             </div>
             <span style="font-size:14px; color:var(--text-muted);">狀態：${roundStatus}${hasPausedProgress ? ` (進度 ${round.audioSeekTime}s)` : ''}</span>

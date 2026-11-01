@@ -1,4 +1,14 @@
 # System Log
+## 2026-11-01 - 修復聽歌搶答「按住看正解」按鈕因文字展開位移觸發 mouseleave 導致無法顯示問題
+- 影響檔案：`index.html`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`。
+- 問題原因：
+  1. 原先「👁️ 按住看正解」按鈕排在遮罩 `••••••` 右側；當按下 `mousedown` 將 `••••••` 切換為較長的歌名與歌手名稱時，按鈕瞬間向右推移離開滑鼠游標下方，導致瀏覽器在同一毫秒內立即觸發按鈕的 `onmouseleave="toggleSongPeekAnswer(false)"`，使答案瞬間又被隱藏。
+  2. `index.html` 中 `js/song_quiz.js`、`js/character_pool.js`、`js/focus_question_bank.js` 的 `?v=` 參數尚未同步升至最新快取版本號。
+- 修改項目：
+  1. **固定按鈕位置不隨答案長短位移**：將「👁️ 按住看正解」移至答案文字左側（`👑 老師主控台 (正解：[👁️ 按住看正解] ••••••)`），展開答案時按鈕座標完全固定不動。
+  2. **改用全域 `window` 放開監聽取代 `onmouseleave`**：移除 `onmouseleave`，改於按下時在 `window` 綁定一次性 `mouseup` / `touchend` / `touchcancel` / `blur` 監聽，確保按住滑鼠左鍵期間即使游標微幅移動也穩定顯示，放開滑鼠左鍵即刻隱藏。
+  3. **全面同步腳本快取版本**：將 `index.html` 中所有相關 JS 引用統一更新至 `?v=469`。
+
 ## 2026-11-01 - 修復結束遊戲後按鈕狀態未即時切回閒置樣式問題
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 問題原因：

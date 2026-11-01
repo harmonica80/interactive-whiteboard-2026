@@ -6311,12 +6311,28 @@ class App {
       if (btn) btn.classList.add('is-holding');
       if (icon) icon.textContent = '👁️‍🗨️';
       if (label) label.textContent = '放開隱藏';
+
+      if (!this._songPeekReleaseHandler) {
+        this._songPeekReleaseHandler = () => {
+          this.toggleSongPeekAnswer(false);
+        };
+      }
+      window.addEventListener('mouseup', this._songPeekReleaseHandler, { once: true });
+      window.addEventListener('touchend', this._songPeekReleaseHandler, { once: true });
+      window.addEventListener('touchcancel', this._songPeekReleaseHandler, { once: true });
+      window.addEventListener('blur', this._songPeekReleaseHandler, { once: true });
     } else {
       if (mask) mask.style.display = 'inline-block';
       if (real) real.style.display = 'none';
       if (btn) btn.classList.remove('is-holding');
       if (icon) icon.textContent = '👁️';
       if (label) label.textContent = '按住看正解';
+      if (this._songPeekReleaseHandler) {
+        window.removeEventListener('mouseup', this._songPeekReleaseHandler);
+        window.removeEventListener('touchend', this._songPeekReleaseHandler);
+        window.removeEventListener('touchcancel', this._songPeekReleaseHandler);
+        window.removeEventListener('blur', this._songPeekReleaseHandler);
+      }
     }
   }
 
@@ -6324,7 +6340,7 @@ class App {
   togglePeekAnswer(show) {
     const mask = document.getElementById('peekAnswerMasked');
     const real = document.getElementById('peekAnswerReal');
-    const btn = document.querySelector('.peek-answer-btn');
+    const btn = document.querySelector('.peek-answer-btn:not(.peek-song-btn)');
     const icon = document.getElementById('peekAnswerIcon');
     const label = document.getElementById('peekAnswerLabel');
 
@@ -6334,12 +6350,28 @@ class App {
       if (btn) btn.classList.add('is-holding');
       if (icon) icon.textContent = '👁️‍🗨️';
       if (label) label.textContent = '放開隱藏答案';
+
+      if (!this._charPeekReleaseHandler) {
+        this._charPeekReleaseHandler = () => {
+          this.togglePeekAnswer(false);
+        };
+      }
+      window.addEventListener('mouseup', this._charPeekReleaseHandler, { once: true });
+      window.addEventListener('touchend', this._charPeekReleaseHandler, { once: true });
+      window.addEventListener('touchcancel', this._charPeekReleaseHandler, { once: true });
+      window.addEventListener('blur', this._charPeekReleaseHandler, { once: true });
     } else {
       if (mask) mask.style.display = 'inline-block';
       if (real) real.style.display = 'none';
       if (btn) btn.classList.remove('is-holding');
       if (icon) icon.textContent = '👁️';
       if (label) label.textContent = '按住查看答案';
+      if (this._charPeekReleaseHandler) {
+        window.removeEventListener('mouseup', this._charPeekReleaseHandler);
+        window.removeEventListener('touchend', this._charPeekReleaseHandler);
+        window.removeEventListener('touchcancel', this._charPeekReleaseHandler);
+        window.removeEventListener('blur', this._charPeekReleaseHandler);
+      }
     }
   }
 
@@ -15239,9 +15271,8 @@ class App {
           </div>
           <button type="button" 
             class="presentation-tool-btn peek-answer-btn" 
-            onmousedown="window.app.togglePeekAnswer(true)" 
+            onmousedown="window.app.togglePeekAnswer(true); event.preventDefault();" 
             onmouseup="window.app.togglePeekAnswer(false)" 
-            onmouseleave="window.app.togglePeekAnswer(false)" 
             ontouchstart="window.app.togglePeekAnswer(true); event.preventDefault();" 
             ontouchend="window.app.togglePeekAnswer(false)" 
             ontouchcancel="window.app.togglePeekAnswer(false)" 
