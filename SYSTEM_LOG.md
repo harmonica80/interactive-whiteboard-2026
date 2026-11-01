@@ -1,4 +1,14 @@
 # System Log
+## 2026-11-01 - 修復結束遊戲後按鈕狀態未即時切回閒置樣式問題
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 問題原因：
+  1. `updateAdminActiveActivitiesUI()` 中，當最後一項進行中活動結束使 `activeItems.length === 0` 時，函式在更新完頂部綠燈提示後直接執行了 `return;`，導致排在函式最末端的 `this.updateAdminActivityEndButtons()` 被提前跳過而未執行。
+  2. `endFocusGame()` 與 `quickStopFocusGame()` 確認結束時未先將本地 `this.focusGame.status` 設為 `'idle'`。
+- 修改項目：
+  1. 將 `this.updateAdminActivityEndButtons()` 移至 `updateAdminActiveActivitiesUI()` 的提前 `return` 之前（與 `this.updateTeacherQuickControlBar(activeItems)` 同級執行），確保無論 `activeItems` 是否為空皆必定更新按鈕樣式。
+  2. 在 `endFocusGame()` 與 `quickStopFocusGame()` 點擊確定當下，立即於本地設定 `this.focusGame.status = 'idle'` 並呼叫 `this.updateAdminActiveActivitiesUI()`，使按鈕零延遲切換回「⏹️ 目前無進行中測驗」灰階停用狀態。
+  3. 通過 `node --check` 驗證，更新快取版本至 `?v=468`。
+
 ## 2026-11-01 - 全面檢核並修正「一字千金：字力測驗」預設題庫（502 題）注音與題幹錯誤
 - 影響檔案：`index.html`, `js/character_pool.js`, `js/focus_question_bank.js`, `SYSTEM_LOG.md`。
 - 修改項目與修復亮點：

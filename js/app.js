@@ -6232,8 +6232,9 @@ class App {
       });
     }
 
-    // 同步更新頂部常駐登出按鈕與前台教師快捷控場列
+    // 同步更新頂部常駐登出按鈕、前台教師快捷控場列與後台結束遊戲按鈕狀態
     this.updateTeacherQuickControlBar(activeItems);
+    this.updateAdminActivityEndButtons();
 
     const container = document.getElementById('adminActiveActivitiesContainer');
     if (!container) return;
@@ -6257,9 +6258,6 @@ class App {
         <button type="button" onclick="${item.stopAction}" title="直接強制停止此活動" style="background: #ff3b30; border: none; color: white; border-radius: 8px; padding: 3px 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">⏹️ 停止</button>
       </div>
     `).join('');
-
-    // 同步更新測驗與搶答後台結束按鈕狀態
-    this.updateAdminActivityEndButtons();
   }
 
   // 動態更新後台管理介面中各項測驗/搶答結束按鈕的視覺與互動狀態
@@ -6563,11 +6561,19 @@ class App {
       '確定停止專注力測驗？',
       '這會立即停止全班目前的專注力測驗並清除暫存畫面。',
       () => {
-        // 先在本地立即無延遲終止歌曲播放，杜絕等待雲端寫入期間背景發聲
+        // 先在本地立即無延遲終止歌曲播放並切換狀態，讓按鈕與介面即刻更新
         if (typeof this.stopSongQuizAudio === 'function') {
           try { this.stopSongQuizAudio(); } catch (e) {}
         }
+        if (this.focusGame) {
+          this.focusGame.status = 'idle';
+        }
+        this.resetFocusGameLocalState();
+        this.updateAdminActiveActivitiesUI();
         db.ref('quiz/focusGame/status').set('idle').then(() => {
+          if (this.focusGame) {
+            this.focusGame.status = 'idle';
+          }
           this.resetFocusGameLocalState();
           this.showNotification('已停止', '專注力測驗已停止！');
           this.updateAdminActiveActivitiesUI();
@@ -12904,11 +12910,19 @@ class App {
       '確定要結束專注力測驗嗎？',
       '這會關閉所有學生的測驗畫面。',
       () => {
-        // 先在本地立即無延遲終止歌曲播放，杜絕等待雲端寫入期間背景發聲
+        // 先在本地立即無延遲終止歌曲播放並切換狀態，讓按鈕與介面即刻更新
         if (typeof this.stopSongQuizAudio === 'function') {
           try { this.stopSongQuizAudio(); } catch (e) {}
         }
+        if (this.focusGame) {
+          this.focusGame.status = 'idle';
+        }
+        this.resetFocusGameLocalState();
+        this.updateAdminActiveActivitiesUI();
         db.ref('quiz/focusGame/status').set('idle').then(() => {
+          if (this.focusGame) {
+            this.focusGame.status = 'idle';
+          }
           this.resetFocusGameLocalState();
           this.updateAdminActiveActivitiesUI();
           this.showNotification('成功', '遊戲已結束！');
