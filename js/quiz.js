@@ -97,6 +97,8 @@ class Quiz {
       quizData.pairs = extraData.pairs || [];
       quizData.matchOptions = extraData.matchOptions || (extraData.pairs ? extraData.pairs.map(p => p.right) : []);
       quizData.correctAnswer = extraData.correctAnswer || (extraData.pairs ? extraData.pairs.reduce((acc, p) => { acc[p.left] = p.right; return acc; }, {}) : {});
+    } else if (Array.isArray(extraData.correctOptions) && extraData.correctOptions.length > 0) {
+      quizData.correctOptions = extraData.correctOptions;
     }
     
     this.quizRef.set(quizData);
@@ -144,6 +146,8 @@ class Quiz {
         historyItem.pairs = extraData.pairs || [];
         historyItem.matchOptions = extraData.matchOptions || (extraData.pairs ? extraData.pairs.map(p => p.right) : []);
         historyItem.correctAnswer = extraData.correctAnswer || {};
+      } else if (Array.isArray(extraData.correctOptions) && extraData.correctOptions.length > 0) {
+        historyItem.correctOptions = extraData.correctOptions;
       }
       this.historyRef.push(historyItem);
     }
@@ -152,7 +156,7 @@ class Quiz {
   submitAnswer(answerData) {
     if (!this.currentQuiz || !this.currentQuiz.active) return;
     
-    let userId = localStorage.getItem('quiz_user_id');
+    let userId = (window.app && window.app.userId) || localStorage.getItem('user_id') || localStorage.getItem('quiz_user_id');
     if (!userId) {
       userId = 'user_' + Math.random().toString(36).substr(2, 9);
       localStorage.setItem('quiz_user_id', userId);
@@ -272,18 +276,20 @@ class Quiz {
     } else {
       if (container.querySelector('.option-matching-pair')) {
         container.innerHTML = `
-          <div class="option-input" data-type="text">
+          <div class="option-input" data-type="text" data-correct="false">
             <span class="option-label">1</span>
             <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+            <button type="button" class="option-correct-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">⬜ 正解</button>
             <input type="text" class="option-field" placeholder="選項 1 文字內容">
             <input type="hidden" class="option-img-data" value="">
             <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
             <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
             <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
           </div>
-          <div class="option-input" data-type="text">
+          <div class="option-input" data-type="text" data-correct="false">
             <span class="option-label">2</span>
             <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+            <button type="button" class="option-correct-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">⬜ 正解</button>
             <input type="text" class="option-field" placeholder="選項 2 文字內容">
             <input type="hidden" class="option-img-data" value="">
             <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
@@ -291,8 +297,51 @@ class Quiz {
             <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
           </div>
         `;
+      } else if (quizType === 'single') {
+        // 切換回單選題時，若原本複選勾了多個正解，僅保留第一個正解
+        let foundFirst = false;
+        container.querySelectorAll('.option-input').forEach(el => {
+          if (el.getAttribute('data-correct') === 'true') {
+            if (!foundFirst) {
+              foundFirst = true;
+            } else {
+              el.setAttribute('data-correct', 'false');
+              const b = el.querySelector('.option-correct-toggle-btn');
+              if (b) {
+                b.classList.remove('is-correct');
+                b.innerHTML = '⬜ 正解';
+              }
+            }
+          }
+        });
       }
     }
+  }
+
+  // 切換選項是否為「正解」（單選題最多勾選 1 個，複選題可勾選多個；若皆不勾選則作為純投票）
+  toggleOptionCorrect(btn) {
+    if (!btn) return;
+    const row = btn.closest('.option-input');
+    if (!row) return;
+    const quizType = document.querySelector('input[name="quizTypeRadio"]:checked')?.value || 'single';
+    const isCurrentlyCorrect = row.getAttribute('data-correct') === 'true';
+
+    if (quizType === 'single' && !isCurrentlyCorrect) {
+      const container = row.closest('#optionsContainer') || document;
+      container.querySelectorAll('.option-input').forEach(el => {
+        el.setAttribute('data-correct', 'false');
+        const b = el.querySelector('.option-correct-toggle-btn');
+        if (b) {
+          b.classList.remove('is-correct');
+          b.innerHTML = '⬜ 正解';
+        }
+      });
+    }
+
+    const nextState = !isCurrentlyCorrect;
+    row.setAttribute('data-correct', nextState ? 'true' : 'false');
+    btn.classList.toggle('is-correct', nextState);
+    btn.innerHTML = nextState ? '✅ 正解' : '⬜ 正解';
   }
   
   endQuiz() {
@@ -654,6 +703,8 @@ class Quiz {
       `;
     } else {
       // 📊 長條圖 (預設)
+      const correctOpts = Array.isArray(this.currentQuiz?.correctOptions) ? this.currentQuiz.correctOptions : [];
+      const isTeacher = !!(window.app && window.app.isAdmin);
       html += `
         <div style="display: flex; flex-direction: column; gap: 8px;">
           ${items.map((it, idx) => {
@@ -661,20 +712,51 @@ class Quiz {
             const pct = totalVoters > 0 ? (it.count / totalVoters * 100) : 0;
             const displayPct = Math.round(pct);
             const color = it.color || CHART_COLORS[idx % CHART_COLORS.length];
+            const isCorrectOpt = correctOpts.includes(idx);
+            const showCorrectBadge = isCorrectOpt && (isFinal || isTeacher);
             return `
-              <div class="result-bar" style="align-items: center; margin-bottom: 4px;">
+              <div class="result-bar" style="align-items: center; margin-bottom: 4px; gap: 8px;">
                 <div class="result-label" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; width: auto;" title="${this.escapeHtml(it.label)}">
                   ${isImg ? `<img src="${it.image}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">` : ''}
                   <span>${this.escapeHtml(it.label)}</span>
+                  ${showCorrectBadge ? `<span style="color: #10b981; font-weight: bold; font-size: 14px;" title="標準答案">✅ 正解</span>` : ''}
                 </div>
-                <div class="result-progress">
+                <div class="result-progress" style="flex: 1;">
                   <div class="result-fill" style="width: ${pct}%; background: ${color};">
                     ${it.count} (${displayPct}%)
                   </div>
                 </div>
+                ${isTeacher && quizType !== 'matching' ? `
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardChoiceQuizOption(${idx})" style="padding: 2px 10px; height: 28px; font-size: 14px; border-radius: 6px; flex-shrink: 0;" title="依目前計分模式（個人／小組），一鍵獎勵選擇此選項的同學">
+                    ⭐ 加分
+                  </button>
+                ` : ''}
               </div>
             `;
           }).join('')}
+        </div>
+      `;
+    }
+
+    if (window.app && window.app.isAdmin) {
+      const hasPreCorrect = Array.isArray(this.currentQuiz?.correctOptions) && this.currentQuiz.correctOptions.length > 0;
+      const mode = window.app.activityScoringConfig?.mode || 'individual';
+      const pts = window.app.activityScoringConfig?.pointsPerReward || 1;
+      const modeName = mode === 'group' ? '👥 小組計分' : (mode === 'both' ? '🌟 個人＋小組同步' : '👤 個人計分');
+      html += `
+        <div style="margin-top: 12px; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div style="font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span>🎯 目前計分模式：<strong style="color: var(--accent-color);">${modeName}（每次 +${pts} 點）</strong></span>
+            ${hasPreCorrect ? `<span style="color: #10b981; font-weight: bold;">（已設定正解：選項 ${this.currentQuiz.correctOptions.map(i => i + 1).join('、')}）</span>` : `<span style="color: var(--text-muted);">（未預設正解，可直接點擊上方各選項右側「⭐ 加分」或下方全體獎勵）</span>`}
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardChoiceQuizBatch('option')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;">
+              🎁 ${hasPreCorrect || quizType === 'matching' ? '獎勵答對同學/小組' : '指定選項加分'}
+            </button>
+            <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardChoiceQuizBatch('all')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;">
+              🎁 獎勵全體投票作答
+            </button>
+          </div>
         </div>
       `;
     }
@@ -2197,18 +2279,21 @@ class Quiz {
     }
 
     const container = document.getElementById('optionsContainer');
+    const savedCorrect = Array.isArray(item.correctOptions) ? item.correctOptions : [];
     if (container && Array.isArray(item.options)) {
       container.innerHTML = item.options.map((opt, idx) => {
         const isImg = typeof opt === 'object' && opt !== null && !!opt.image;
         const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt));
         const imgSrc = isImg ? opt.image : '';
+        const isCorrect = savedCorrect.includes(idx);
 
         return `
-          <div class="option-input" data-type="${isImg ? 'image' : 'text'}">
+          <div class="option-input" data-type="${isImg ? 'image' : 'text'}" data-correct="${isCorrect ? 'true' : 'false'}">
             <span class="option-label">${idx + 1}</span>
             <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isImg ? 'color: #ff9500; border-color: #ff9500;' : ''}">
               ${isImg ? '🖼️ 圖片' : '📝 文字'}
             </button>
+            <button type="button" class="option-correct-toggle-btn ${isCorrect ? 'is-correct' : ''}" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">${isCorrect ? '✅ 正解' : '⬜ 正解'}</button>
             <input type="text" class="option-field" value="${this.escapeHtml(optText)}" placeholder="${isImg ? '說明文字或留空' : '選項文字內容'}">
             <input type="hidden" class="option-img-data" value="${this.escapeHtml(imgSrc)}">
             <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">
@@ -2694,12 +2779,14 @@ Python
                 const optText = isImg ? (opt.text || '') : (typeof opt === 'object' ? (opt.text || '') : String(opt));
                 const imgSrc = isImg ? opt.image : '';
 
+                const isCorrect = Array.isArray(q0.correctOptions) && q0.correctOptions.includes(idx);
                 return `
-                  <div class="option-input" data-type="${isImg ? 'image' : 'text'}">
+                  <div class="option-input" data-type="${isImg ? 'image' : 'text'}" data-correct="${isCorrect ? 'true' : 'false'}">
                     <span class="option-label">${idx + 1}</span>
                     <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" style="${isImg ? 'color: #ff9500; border-color: #ff9500;' : ''}">
                       ${isImg ? '🖼️ 圖片' : '📝 文字'}
                     </button>
+                    <button type="button" class="option-correct-toggle-btn ${isCorrect ? 'is-correct' : ''}" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">${isCorrect ? '✅ 正解' : '⬜ 正解'}</button>
                     <input type="text" class="option-field" value="${this.escapeHtml(optText)}" placeholder="${isImg ? '說明文字或留空' : '選項文字內容'}">
                     <input type="hidden" class="option-img-data" value="${this.escapeHtml(imgSrc)}">
                     <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="${isImg ? 'display: inline-flex;' : 'display: none;'}">

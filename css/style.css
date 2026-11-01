@@ -9423,6 +9423,54 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   gap: 6px;
 }
 
+.activity-scoring-pts-select {
+  min-width: 98px !important;
+  width: auto !important;
+  height: 34px !important;
+  padding: 0 26px 0 10px !important;
+  line-height: 32px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-sizing: border-box !important;
+  cursor: pointer;
+}
+
+/* 選擇題選項標記正解按鈕 */
+.option-correct-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 10px;
+  height: 34px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1.5px dashed var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.option-correct-toggle-btn:hover {
+  border-color: var(--success-color, #10b981);
+  color: var(--success-color, #10b981);
+}
+
+.option-input[data-correct="true"] .option-correct-toggle-btn,
+.option-correct-toggle-btn.is-correct {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1.5px solid #10b981;
+  color: #10b981;
+}
+
 .activity-scoring-actions {
   display: inline-flex;
   align-items: center;

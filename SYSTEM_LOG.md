@@ -1,4 +1,25 @@
 # System Log
+## 2026-11-01 - 修復「每次獎勵」下拉選單文字裁切、新增選擇題「✅ 正解」標記與圖表直接加分、修復小組計分模式加分問題
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `js/quiz.js`, `js/group_manager.js`, `SYSTEM_LOG.md`。
+- 問題原因與修改項目：
+  1. **修復「每次獎勵」下拉選單文字未完整顯示（圖1）**：
+     - 原因：`<select class="question-input activity-scoring-pts-select">` 受 `.question-input` 預設上下內距與 `height: 32px` 擠壓，導致文字在 Windows 瀏覽器中被垂直裁切。
+     - 修正：於 `css/style.css` 新增 `.activity-scoring-pts-select` 專屬樣式（`min-width: 98px !important; width: auto !important; height: 34px !important; padding: 0 26px 0 10px !important; line-height: 32px !important;`）並移除 HTML 行內衝突的 `padding` 與 `width`，完整顯示 `+1 點 / +2 點 / +3 點 / +5 點`。
+  2. **新增選擇題「⬜ 正解 / ✅ 正解」標記與雙模式給分機制（問題2）**：
+     - 於選擇題選項列新增 `.option-correct-toggle-btn`（`⬜ 正解` / `✅ 正解`），單選題可勾選 1 個標準答案、複選題可勾選多個標準答案；若為純投票/問卷亦可完全不勾選。
+     - 修正 `js/quiz.js` `submitAnswer()` 使用學生正式 `userId`（`window.app.userId || localStorage.getItem('user_id')`），確保作答記錄與學生名冊及分組系統 100% 對應。
+     - 支援三種靈活給分方式：
+       1. **出題時已勾選「✅ 正解」（或配對題）**：點擊「🎁 獎勵正解／指定選項」即自動比對標準答案，一鍵為所有答對同學或所屬小組加分。
+       2. **未預設正解（純投票模式）**：在即時長條圖每個選項右側新增教師專屬「⭐ 加分」按鈕（`rewardChoiceQuizOption(idx)`），點選該選項即可直接獎勵投給該選項的同學或小組；或點擊「🎁 獎勵正解／指定選項」輸入選項編號給分。
+       3. **全體參與獎勵**：點擊「🎁 獎勵全體投票作答」一鍵獎勵所有參與投票的同學或小組。
+  3. **修復搶答與各活動設定「👥 小組計分」時誤加給個人而非小組的問題（圖2）**：
+     - 原因：`groupManager.activeGroupSet.groups` 在 Firebase 載入後為物件（`{ group_1: {...} }`）而非陣列，原 `getStudentGroupInfo()` 使用 `Array.isArray(gm.activeGroupSet.groups)` 判斷導致恆回傳 `null`；且若教師未先點開分組頁籤即進入搶答，`activeGroupSet` 尚未載入，進而觸發退回個人加分的邏輯。
+     - 修正：
+       1. `getStudentGroupInfo()` 改以 `Object.values(gm.activeGroupSet.groups || {})` 遍歷所有小組，並支援比對學生 UID、姓名、備註與曾用名。
+       2. 新增 `groupManager.ensureActiveGroupsLoaded()` 並在初始化與執行小組加分前自動確保雲端分組資料已載入，且分組資料載入時自動重繪搶答與專注力排行榜以顯示學生所屬小組徽章（`👥 第X組`）。
+       3. 在 `awardActivityPoints()` 中，當模式為「👥 小組計分（`group`）」時，嚴格僅加分至所屬小組，不再誤加給個人；若該生尚未分組則明確提示教師。
+  4. 通過 `node --check` 驗證所有修改之 JS 檔案，更新快取版本至 `?v=473`。
+
 ## 2026-11-01 - 新增「給老師的悄悄話」私訊管理系統、學生名冊「備註」欄位與第四階段活動/測驗「個人／小組」計分設定
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

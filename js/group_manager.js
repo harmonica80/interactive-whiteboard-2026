@@ -146,7 +146,33 @@
         if (this.app && typeof this.app.updateFloatingStudentGroupBadge === 'function') {
           this.app.updateFloatingStudentGroupBadge();
         }
+        if (this.app) {
+          if (this.app.buzzGame && this.app.buzzGame.results && typeof this.app.renderBuzzGameLeaderboard === 'function') {
+            this.app.renderBuzzGameLeaderboard('adminBuzzGameRankList', this.app.buzzGame.results);
+            this.app.renderBuzzGameLeaderboard('studentBuzzGameRankList', this.app.buzzGame.results);
+          }
+          if (this.app.focusGame && this.app.focusGame.results && typeof this.app.handleFocusGameSync === 'function') {
+            this.app.handleFocusGameSync(this.app.focusGame);
+          }
+        }
       });
+    }
+
+    // 確保分組資料已從雲端載入（防止尚未開啟分組頁籤即在搶答/測驗執行小組加分）
+    async ensureActiveGroupsLoaded() {
+      if (!this.groupListenerRef) {
+        this.listenActiveGroups();
+      }
+      if (!this.activeGroupSet || !this.activeGroupSet.groups || Object.keys(this.activeGroupSet.groups).length === 0) {
+        try {
+          const snap = await db.ref(this.getDbPath('active')).once('value');
+          const val = snap.val();
+          if (val) {
+            this.activeGroupSet = val;
+          }
+        } catch (e) {}
+      }
+      return this.activeGroupSet;
     }
 
     // 卸載監聽器 (遵守規範)

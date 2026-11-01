@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="shortcut icon" href="favicon.ico?v=4">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4">
-  <link rel="stylesheet" href="css/style.css?v=472">
+  <link rel="stylesheet" href="css/style.css?v=473">
   <link rel="stylesheet" href="css/presentation.css?v=3123">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -3436,18 +3436,20 @@
                 </div>
                 
                 <div id="optionsContainer" class="options-container">
-                  <div class="option-input" data-type="text">
+                  <div class="option-input" data-type="text" data-correct="false">
                     <span class="option-label">1</span>
                     <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+                    <button type="button" class="option-correct-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">⬜ 正解</button>
                     <input type="text" class="option-field" placeholder="選項 1 文字內容">
                     <input type="hidden" class="option-img-data" value="">
                     <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
                     <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
                     <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
                   </div>
-                  <div class="option-input" data-type="text">
+                  <div class="option-input" data-type="text" data-correct="false">
                     <span class="option-label">2</span>
                     <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+                    <button type="button" class="option-correct-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">⬜ 正解</button>
                     <input type="text" class="option-field" placeholder="選項 2 文字內容">
                     <input type="hidden" class="option-img-data" value="">
                     <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
@@ -3477,7 +3479,7 @@
                   </div>
                   <div class="activity-scoring-pts-wrap">
                     <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
-                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)">
                       <option value="1">+1 點</option>
                       <option value="2">+2 點</option>
                       <option value="3">+3 點</option>
@@ -3485,8 +3487,8 @@
                     </select>
                   </div>
                   <div class="activity-scoring-actions">
-                    <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardChoiceQuizBatch('option')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="指定正確選項（或配對全對），一鍵獎勵答對的同學或所屬小組">🎁 獎勵指定選項(答對)</button>
-                    <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardChoiceQuizBatch('all')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="一鍵獎勵本題所有參與作答的同學或所屬小組">🎁 獎勵全體作答</button>
+                    <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardChoiceQuizBatch('option')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="若出題時已勾選「✅ 正解」（或配對題）則直接獎勵答對者；若為純投票未勾選正解，點擊可指定要給分的選項">🎁 獎勵正解／指定選項</button>
+                    <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardChoiceQuizBatch('all')" style="font-size: 14px; padding: 4px 12px; height: 32px; border-radius: 8px;" title="純投票或問卷模式：一鍵獎勵本題所有參與投票作答的同學或所屬小組">🎁 獎勵全體投票作答</button>
                   </div>
                 </div>
               </div>
@@ -3611,7 +3613,7 @@
                   </div>
                   <div class="activity-scoring-pts-wrap">
                     <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
-                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)">
                       <option value="1">+1 點</option>
                       <option value="2">+2 點</option>
                       <option value="3">+3 點</option>
@@ -3870,7 +3872,7 @@
                   </div>
                   <div class="activity-scoring-pts-wrap">
                     <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
-                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)">
                       <option value="1">+1 點</option>
                       <option value="2">+2 點</option>
                       <option value="3">+3 點</option>
@@ -4193,7 +4195,7 @@
                   </div>
                   <div class="activity-scoring-pts-wrap">
                     <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
-                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)">
                       <option value="1">+1 點</option>
                       <option value="2">+2 點</option>
                       <option value="3">+3 點</option>
@@ -4249,7 +4251,7 @@
                   </div>
                   <div class="activity-scoring-pts-wrap">
                     <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
-                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)">
                       <option value="1">+1 點</option>
                       <option value="2">+2 點</option>
                       <option value="3">+3 點</option>
@@ -4395,7 +4397,7 @@
                   </div>
                   <div class="activity-scoring-pts-wrap">
                     <label style="font-size: 14px; color: var(--text-secondary); font-weight: bold;">每次獎勵：</label>
-                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)" style="width: 90px; margin: 0; padding: 4px 8px; height: 32px; font-size: 14px; border-radius: 8px;">
+                    <select class="question-input activity-scoring-pts-select" onchange="window.app && window.app.setActivityScoringPoints(this.value)">
                       <option value="1">+1 點</option>
                       <option value="2">+2 點</option>
                       <option value="3">+3 點</option>
@@ -6410,7 +6412,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=306"></script>
   <script src="js/matching_quiz.js?v=380"></script>
   <script src="js/quiz.js?v=392"></script>
-  <script src="js/app.js?v=472"></script>
+  <script src="js/app.js?v=473"></script>
   <script src="js/classics_quiz.js?v=380"></script>
   <script src="js/song_quiz.js?v=471"></script>
   <script src="js/video_quiz.js?v=391"></script>

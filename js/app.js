@@ -19461,6 +19461,9 @@ class App {
   // 🎯 第四階段：各個活動與測驗「個人／小組／雙軌」計分設定與獎勵引擎
   // =========================================================
   initActivityScoringConfig() {
+    if (window.groupManager && !window.groupManager.groupListenerRef) {
+      window.groupManager.listenActiveGroups();
+    }
     if (this._activityScoringInitialized) {
       this.updateActivityScoringBarUI();
       return;
@@ -19482,6 +19485,9 @@ class App {
   setActivityScoringMode(mode) {
     if (!['individual', 'group', 'both'].includes(mode)) return;
     if (!this.activityScoringConfig) this.initActivityScoringConfig();
+    if (window.groupManager && !window.groupManager.groupListenerRef) {
+      window.groupManager.listenActiveGroups();
+    }
     this.activityScoringConfig.mode = mode;
     try {
       localStorage.setItem('wb_activity_scoring_config_v1', JSON.stringify(this.activityScoringConfig));
@@ -19529,6 +19535,9 @@ class App {
       if (data && data.note && String(data.note).trim().toLowerCase() === cleanTarget) {
         return uid;
       }
+      if (data && Array.isArray(data.previousNames) && data.previousNames.some(pn => String(pn).trim().toLowerCase() === cleanTarget)) {
+        return uid;
+      }
     }
     const presence = this.onlinePresence || {};
     for (const p of Object.values(presence)) {
@@ -19541,29 +19550,38 @@ class App {
 
   getStudentGroupInfo(uid, name) {
     const gm = window.groupManager;
-    if (!gm || !gm.activeGroupSet || !Array.isArray(gm.activeGroupSet.groups)) return null;
+    if (!gm || !gm.activeGroupSet || !gm.activeGroupSet.groups) return null;
+
+    const groupList = Array.isArray(gm.activeGroupSet.groups)
+      ? gm.activeGroupSet.groups
+      : Object.values(gm.activeGroupSet.groups);
+    if (groupList.length === 0) return null;
 
     let targetUid = uid;
     if (!targetUid && name) {
       targetUid = this.resolveStudentUidByName(name);
     }
 
-    for (const g of gm.activeGroupSet.groups) {
+    for (const g of groupList) {
       if (!g || !Array.isArray(g.memberUids)) continue;
       if (targetUid && g.memberUids.includes(targetUid)) {
         return { groupId: g.id, groupName: g.name || '小組', groupColor: g.color || '#3b82f6' };
       }
     }
 
-    // 若透過姓名可比對組員姓名
+    // 若透過姓名可比對組員姓名、備註或曾用名
     if (name) {
       const cleanName = String(name).trim().toLowerCase();
       const regStudents = this.registeredStudents || {};
-      for (const g of gm.activeGroupSet.groups) {
+      for (const g of groupList) {
         if (!g || !Array.isArray(g.memberUids)) continue;
         const matched = g.memberUids.some(mUid => {
           const st = regStudents[mUid];
-          return st && st.name && String(st.name).trim().toLowerCase() === cleanName;
+          if (!st) return false;
+          if (st.name && String(st.name).trim().toLowerCase() === cleanName) return true;
+          if (st.note && String(st.note).trim().toLowerCase() === cleanName) return true;
+          if (Array.isArray(st.previousNames) && st.previousNames.some(pn => String(pn).trim().toLowerCase() === cleanName)) return true;
+          return false;
         });
         if (matched) {
           return { groupId: g.id, groupName: g.name || '小組', groupColor: g.color || '#3b82f6' };
@@ -19588,6 +19606,12 @@ class App {
 
     const mode = options.mode || this.activityScoringConfig.mode || 'individual';
     const pts = parseInt(amount || this.activityScoringConfig.pointsPerReward || 1, 10);
+
+    // 若為小組計分或個人+小組同步計分，確保分組資料已從 Firebase 載入
+    if ((mode === 'group' || mode === 'both') && window.groupManager && typeof window.groupManager.ensureActiveGroupsLoaded === 'function') {
+      await window.groupManager.ensureActiveGroupsLoaded();
+    }
+
     const targetUid = uid || this.resolveStudentUidByName(name);
     const displayName = name || (targetUid && this.registeredStudents?.[targetUid]?.name) || '同學';
     const groupInfo = this.getStudentGroupInfo(targetUid, displayName);
@@ -19595,8 +19619,8 @@ class App {
     let personalAwarded = false;
     let groupAwarded = false;
 
-    // 1. 個人計分 (individual 或 both，或 group 模式但該生未分組時自動退回個人加分)
-    if (mode === 'individual' || mode === 'both' || (mode === 'group' && !groupInfo)) {
+    // 1. 個人計分 (僅限 individual 或 both 模式；純 group 模式絕不誤加給個人)
+    if (mode === 'individual' || mode === 'both') {
       if (targetUid) {
         const regStudents = this.registeredStudents || {};
         const student = regStudents[targetUid] || { name: displayName, points: 0, pointsLog: {} };
@@ -19640,9 +19664,10 @@ class App {
         this.showNotification('🌟 個人＋小組同步加分', `已為「${displayName}」個人及所屬【${groupInfo.groupName}】各加 +${pts} 點！`);
       } else if (groupAwarded) {
         this.showNotification('👥 小組加分成功', `已為「${displayName}」所屬的【${groupInfo.groupName}】加 +${pts} 點！`);
+      } else if (mode === 'group' && !groupInfo) {
+        this.showNotification('⚠️ 該同學尚未分組', `目前為【👥 小組計分】模式，但「${displayName}」尚未被分配至任何小組！請先至「學生分組管理」將該生加入小組，或切換為「👤 個人計分」。`);
       } else if (personalAwarded) {
-        const fallbackHint = (mode === 'group' && !groupInfo) ? '（該生尚未分組，已自動計入個人點數）' : '';
-        this.showNotification('👤 個人加分成功', `已為「${displayName}」個人榮譽點數加 +${pts} 點！${fallbackHint}`);
+        this.showNotification('👤 個人加分成功', `已為「${displayName}」個人榮譽點數加 +${pts} 點！`);
       } else {
         this.showNotification('提示', `找不到同學「${displayName}」的名冊資料或分組，請確認同學已登入課堂。`);
       }
@@ -19684,7 +19709,11 @@ class App {
     if (mode === 'both') {
       this.showNotification('🎁 批次獎勵完成', `已依【個人＋小組同步】模式，為 ${pCount} 位同學與 ${awardedGroups.size} 個小組各加 +${pts} 點（事由：${reason}）！`);
     } else if (mode === 'group') {
-      this.showNotification('🎁 小組批次獎勵完成', `已為表現優異同學所屬的 ${awardedGroups.size} 個小組各加 +${pts} 點${pCount > 0 ? `（另有 ${pCount} 位未分組同學計入個人點數）` : ''}！`);
+      if (awardedGroups.size > 0) {
+        this.showNotification('🎁 小組批次獎勵完成', `已為表現優異同學所屬的 ${awardedGroups.size} 個小組各加 +${pts} 點（事由：${reason}）！`);
+      } else {
+        this.showNotification('⚠️ 尚無對應分組可加分', '符合條件的同學目前皆尚未被分配至任何小組！請先至「學生分組管理」進行分組，或改選「👤 個人計分」。');
+      }
     } else {
       this.showNotification('🎁 個人批次獎勵完成', `已為 ${pCount} 位表現優異同學個人各加 +${pts} 點（事由：${reason}）！`);
     }
@@ -19750,9 +19779,48 @@ class App {
     await this.rewardBatchTargets(selected, reason);
   }
 
-  async rewardChoiceQuizBatch(targetType = 'all') {
+  // 解析選擇題/配對題目前作答記錄為標準清單 [{ uid, name, rawAnswer }]
+  getChoiceQuizNormalizedEntries() {
     const answersObj = (window.quiz && window.quiz.currentAnswers) || {};
-    const entries = Object.values(answersObj).filter(a => a && (a.userId || a.userName));
+    const regStudents = this.registeredStudents || {};
+    const list = [];
+    for (const [keyUid, ansVal] of Object.entries(answersObj)) {
+      if (ansVal === null || ansVal === undefined) continue;
+      const uid = (typeof ansVal === 'object' && !Array.isArray(ansVal) && ansVal.userId) ? ansVal.userId : keyUid;
+      const st = regStudents[uid];
+      const name = (st && st.name) || (typeof ansVal === 'object' && !Array.isArray(ansVal) && ansVal.userName) || '同學';
+      list.push({ uid, name, rawAnswer: ansVal });
+    }
+    return list;
+  }
+
+  // 直接針對選擇題某一個選項編號 (0-based) 進行加分獎勵
+  async rewardChoiceQuizOption(targetIdx) {
+    const entries = this.getChoiceQuizNormalizedEntries();
+    if (entries.length === 0) {
+      this.showNotification('提示', '目前選擇題測驗尚無同學作答記錄！');
+      return;
+    }
+    const matched = entries.filter(item => {
+      const a = item.rawAnswer;
+      if (Array.isArray(a)) return a.map(Number).includes(targetIdx);
+      if (typeof a === 'number' || typeof a === 'string') return Number(a) === targetIdx;
+      if (a && typeof a === 'object') {
+        if (Array.isArray(a.options)) return a.options.map(Number).includes(targetIdx);
+        return Number(a.option) === targetIdx;
+      }
+      return false;
+    }).map(item => ({ uid: item.uid, name: item.name }));
+
+    if (matched.length === 0) {
+      this.showNotification('提示', `目前沒有同學選擇「選項 ${targetIdx + 1}」！`);
+      return;
+    }
+    await this.rewardBatchTargets(matched, `選擇題測驗（選項 ${targetIdx + 1}）獎勵`);
+  }
+
+  async rewardChoiceQuizBatch(targetType = 'all') {
+    const entries = this.getChoiceQuizNormalizedEntries();
     if (entries.length === 0) {
       this.showNotification('提示', '目前選擇題/配對題測驗尚無同學作答記錄！');
       return;
@@ -19761,38 +19829,59 @@ class App {
     if (targetType === 'option') {
       const quizType = window.quiz?.currentQuiz?.quizType || 'single';
       if (quizType === 'matching') {
-        const correctTargets = entries
-          .filter(a => a.isAllCorrect || (Array.isArray(a.pairs) && a.pairs.length > 0))
-          .map(a => ({ uid: a.userId, name: a.userName }));
-        await this.rewardBatchTargets(correctTargets, '配對題測驗答對獎勵');
+        const pairs = window.quiz?.currentQuiz?.pairs || [];
+        const correctTargets = entries.filter(item => {
+          const a = item.rawAnswer;
+          if (!a || typeof a !== 'object') return false;
+          if (a.isAllCorrect) return true;
+          if (pairs.length > 0) {
+            return pairs.every(p => a[p.left] === p.right);
+          }
+          return false;
+        }).map(item => ({ uid: item.uid, name: item.name }));
+        await this.rewardBatchTargets(correctTargets, '配對題測驗全對獎勵');
         return;
       }
 
+      // 若出題時老師已標記「✅ 正解」，自動比對正解加分！
+      const preCorrect = Array.isArray(window.quiz?.currentQuiz?.correctOptions) ? window.quiz.currentQuiz.correctOptions : [];
+      if (preCorrect.length > 0) {
+        const matched = entries.filter(item => {
+          const a = item.rawAnswer;
+          if (quizType === 'multiple') {
+            const arr = Array.isArray(a) ? a.map(Number) : (Array.isArray(a?.options) ? a.options.map(Number) : []);
+            return arr.length === preCorrect.length && preCorrect.every(c => arr.includes(Number(c)));
+          } else {
+            const chosen = (typeof a === 'number' || typeof a === 'string') ? Number(a) : Number(a?.option);
+            return preCorrect.includes(chosen);
+          }
+        }).map(item => ({ uid: item.uid, name: item.name }));
+
+        const optLabels = preCorrect.map(i => i + 1).join('、');
+        await this.rewardBatchTargets(matched, `選擇題測驗答對正解（選項 ${optLabels}）獎勵`);
+        return;
+      }
+
+      // 若未預設正解（純投票模式），讓老師輸入要給分的選項編號
       const opts = window.quiz?.currentQuiz?.options || [];
       const optHint = opts.map((o, i) => `${i + 1}`).join(' / ') || '1 / 2 / 3 / 4';
-      const input = window.prompt(`請輸入本題正確選項編號（例如：${optHint}），系統將依計分模式一鍵獎勵選該選項的同學或小組：`, '1');
+      const input = window.prompt(`本題為投票模式（未預先勾選正解）。\n請輸入要獎勵的選項編號（例如：${optHint}），系統將依計分模式一鍵獎勵投給該選項的同學或小組：`, '1');
       if (!input) return;
       const targetIdx = parseInt(input.trim(), 10) - 1;
       if (isNaN(targetIdx) || targetIdx < 0) {
         this.showNotification('提示', '請輸入有效的選項編號數字！');
         return;
       }
-
-      const matched = entries.filter(a => {
-        if (Array.isArray(a.options)) return a.options.includes(targetIdx);
-        return Number(a.option) === targetIdx;
-      }).map(a => ({ uid: a.userId, name: a.userName }));
-
-      await this.rewardBatchTargets(matched, `選擇題測驗答對（選項 ${targetIdx + 1}）獎勵`);
+      await this.rewardChoiceQuizOption(targetIdx);
     } else {
       const uniqueMap = new Map();
-      entries.forEach(a => {
-        const key = a.userId || a.userName;
+      entries.forEach(item => {
+        const key = item.uid || item.name;
         if (key && !uniqueMap.has(key)) {
-          uniqueMap.set(key, { uid: a.userId, name: a.userName });
+          uniqueMap.set(key, { uid: item.uid, name: item.name });
         }
       });
-      await this.rewardBatchTargets(Array.from(uniqueMap.values()), '選擇題測驗參與作答獎勵');
+      await this.rewardBatchTargets(Array.from(uniqueMap.values()), '選擇題測驗參與投票作答獎勵');
     }
   }
 
@@ -27647,25 +27736,34 @@ function startQuiz() {
     return;
   }
 
-  // 收集一般單選/複選選項內容 (支援文字與圖片類型)
+  // 收集一般單選/複選選項內容 (支援文字與圖片類型，以及選填「✅ 正解」標記)
   const optionContainers = document.querySelectorAll('#optionsContainer .option-input');
   const options = [];
+  const correctOptions = [];
 
   optionContainers.forEach(container => {
     const type = container.getAttribute('data-type') || 'text';
+    const isCorrect = container.getAttribute('data-correct') === 'true';
     const textVal = container.querySelector('.option-field')?.value.trim() || '';
     const imgData = container.querySelector('.option-img-data')?.value.trim() || '';
 
+    let added = false;
     if (type === 'image') {
       if (imgData) {
         options.push({ type: 'image', text: textVal, image: imgData });
+        added = true;
       } else if (textVal) {
         options.push({ type: 'text', text: textVal });
+        added = true;
       }
     } else {
       if (textVal) {
         options.push(textVal);
+        added = true;
       }
+    }
+    if (added && isCorrect) {
+      correctOptions.push(options.length - 1);
     }
   });
   
@@ -27675,7 +27773,7 @@ function startQuiz() {
   }
   
   if (window.quiz) {
-    window.quiz.startQuiz(finalQuestion, options, quizType);
+    window.quiz.startQuiz(finalQuestion, options, quizType, { correctOptions });
     if (editorEl) editorEl.innerHTML = '';
     const legacyInput = document.getElementById('quizQuestion');
     if (legacyInput) legacyInput.value = '';
@@ -27684,18 +27782,20 @@ function startQuiz() {
     const optsContainer = document.getElementById('optionsContainer');
     if (optsContainer) {
       optsContainer.innerHTML = `
-        <div class="option-input" data-type="text">
+        <div class="option-input" data-type="text" data-correct="false">
           <span class="option-label">1</span>
           <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+          <button type="button" class="option-correct-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">⬜ 正解</button>
           <input type="text" class="option-field" placeholder="選項 1 文字內容">
           <input type="hidden" class="option-img-data" value="">
           <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
           <img class="option-img-preview-thumb" style="display: none;" title="點擊預覽大圖" onclick="window.quiz && window.quiz.previewOptionImg(this.src)">
           <button class="remove-option-btn" onclick="removeOption(this)" title="移除">✕</button>
         </div>
-        <div class="option-input" data-type="text">
+        <div class="option-input" data-type="text" data-correct="false">
           <span class="option-label">2</span>
           <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+          <button type="button" class="option-correct-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">⬜ 正解</button>
           <input type="text" class="option-field" placeholder="選項 2 文字內容">
           <input type="hidden" class="option-img-data" value="">
           <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
@@ -27783,9 +27883,10 @@ function loadPreset(type) {
   const options = presets[type];
   if (options && container) {
     container.innerHTML = options.map((opt, idx) => `
-      <div class="option-input" data-type="text">
+      <div class="option-input" data-type="text" data-correct="false">
         <span class="option-label">${idx + 1}</span>
         <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+        <button type="button" class="option-correct-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">⬜ 正解</button>
         <input type="text" class="option-field" value="${opt}" placeholder="選項">
         <input type="hidden" class="option-img-data" value="">
         <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
@@ -27855,9 +27956,11 @@ function addOption() {
   const div = document.createElement('div');
   div.className = 'option-input';
   div.setAttribute('data-type', 'text');
+  div.setAttribute('data-correct', 'false');
   div.innerHTML = `
     <span class="option-label">${count}</span>
     <button type="button" class="option-type-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionType(this)" title="切換文字或圖片選項">📝 文字</button>
+    <button type="button" class="option-correct-toggle-btn" onclick="window.quiz && window.quiz.toggleOptionCorrect(this)" title="點擊標記此選項為正確答案（若為純投票可不勾選）">⬜ 正解</button>
     <input type="text" class="option-field" placeholder="選項 ${count} 文字內容">
     <input type="hidden" class="option-img-data" value="">
     <button type="button" class="option-img-btn" onclick="window.quiz && window.quiz.selectOptionImage(this, event)" style="display: none;" title="上傳或貼上圖片">🖼️ 選取圖片</button>
