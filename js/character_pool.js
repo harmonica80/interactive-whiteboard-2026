@@ -207,7 +207,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "速",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "不速之（　）",
+    "clue": "不（　）之客",
     "searchWord": "不速之客"
   },
   {
@@ -217,9 +217,9 @@ const CHARACTER_TEST_POOL = [
     "searchWord": "供不應求"
   },
   {
-    "char": "本",
-    "zhuyin": "ㄅㄣˇ",
-    "clue": "忘恩負（　）",
+    "char": "恩",
+    "zhuyin": "ㄣ",
+    "clue": "忘（　）負義",
     "searchWord": "忘恩負義"
   },
   {
@@ -230,20 +230,20 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "日",
-    "zhuyin": "ㄖㄧˋ",
+    "zhuyin": "ㄖˋ",
     "clue": "重見天（　）",
     "searchWord": "重見天日"
   },
   {
     "char": "一",
     "zhuyin": "ㄧ",
-    "clue": "千篇一（　）",
+    "clue": "千篇（　）律",
     "searchWord": "千篇一律"
   },
   {
     "char": "名",
     "zhuyin": "ㄇㄧㄥˊ",
-    "clue": "莫名其（　）",
+    "clue": "莫（　）其妙",
     "searchWord": "莫名其妙"
   },
   {
@@ -255,7 +255,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "山",
     "zhuyin": "ㄕㄢ",
-    "clue": "東山再（　）",
+    "clue": "東（　）再起",
     "searchWord": "東山再起"
   },
   {
@@ -267,13 +267,13 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "人",
     "zhuyin": "ㄖㄣˊ",
-    "clue": "助人為（　）",
+    "clue": "助（　）為樂",
     "searchWord": "助人為樂"
   },
   {
     "char": "天",
     "zhuyin": "ㄊㄧㄢ",
-    "clue": "怨天尤（　）",
+    "clue": "怨（　）尤人",
     "searchWord": "怨天尤人"
   },
   {
@@ -285,7 +285,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "口",
     "zhuyin": "ㄎㄡˇ",
-    "clue": "啞口無（　）",
+    "clue": "啞（　）無言",
     "searchWord": "啞口無言"
   },
   {
@@ -297,19 +297,19 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "心",
     "zhuyin": "ㄒㄧㄣ",
-    "clue": "粗心大（　）",
+    "clue": "粗（　）大意",
     "searchWord": "粗心大意"
   },
   {
     "char": "日",
-    "zhuyin": "ㄖㄧˋ",
-    "clue": "日新月（　）",
+    "zhuyin": "ㄖˋ",
+    "clue": "（　）新月異",
     "searchWord": "日新月異"
   },
   {
     "char": "雷",
     "zhuyin": "ㄌㄟˊ",
-    "clue": "如雷貫（　）",
+    "clue": "如（　）貫耳",
     "searchWord": "如雷貫耳"
   },
   {
@@ -399,7 +399,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "磬",
     "zhuyin": "ㄑㄧㄥˋ",
-    "clue": "他家境貧如懸（　）。",
+    "clue": "他家境室如懸（　）。",
     "searchWord": "室如懸磬"
   },
   {
@@ -417,7 +417,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "籍",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "在政壇上他只是一個（　）籍無名的人。",
+    "clue": "在政壇上他只是一個（　）（　）無名的人。",
     "searchWord": "籍籍無名"
   },
   {
@@ -459,7 +459,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "輯",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "這本書的（　）排很好。",
+    "clue": "這本書的編（　）很好。",
     "searchWord": "編輯"
   },
   {
@@ -518,7 +518,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "沈",
-    "zhuyin": "ㄕㄣˇ",
+    "zhuyin": "ㄔㄣˊ",
     "clue": "現場陷入一片（　）默。",
     "searchWord": "沈默"
   },
@@ -577,10 +577,10 @@ const CHARACTER_TEST_POOL = [
     "searchWord": "無暇"
   },
   {
-    "char": "暇",
+    "char": "遐",
     "zhuyin": "ㄒㄧㄚˊ",
     "clue": "這引發無限（　）想。",
-    "searchWord": "暇想"
+    "searchWord": "遐想"
   },
   {
     "char": "瑕",
@@ -615,7 +615,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "稗",
     "zhuyin": "ㄅㄞˋ",
-    "clue": "他愛看野史（　）官。",
+    "clue": "他愛看（　）官野史。",
     "searchWord": "稗官野史"
   },
   {
@@ -668,7 +668,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "聒",
-    "zhuyin": "ㄍㄨㄛ",
+    "zhuyin": "ㄍㄨㄚ",
     "clue": "鳥在樹上（　）噪。",
     "searchWord": "聒噪"
   },
@@ -685,7 +685,7 @@ const CHARACTER_TEST_POOL = [
     "searchWord": "恬不知恥"
   },
   {
-    "char": "刮",
+    "char": "颳",
     "zhuyin": "ㄍㄨㄚ",
     "clue": "外面正（　）著大風。",
     "searchWord": "颳風"
@@ -709,10 +709,10 @@ const CHARACTER_TEST_POOL = [
     "searchWord": "小憩"
   },
   {
-    "char": "憇",
+    "char": "憩",
     "zhuyin": "ㄑㄧˋ",
-    "clue": "我們在涼亭小（　）。",
-    "searchWord": "小憩"
+    "clue": "旅途中在此稍作休（　）。",
+    "searchWord": "休憩"
   },
   {
     "char": "契",
@@ -752,7 +752,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "拮",
-    "zhuyin": "ㄐㄧˊ",
+    "zhuyin": "ㄐㄧㄝˊ",
     "clue": "他最近生活（　）据。",
     "searchWord": "拮据"
   },
@@ -764,7 +764,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "詰",
-    "zhuyin": "ㄐㄧˊ",
+    "zhuyin": "ㄐㄧㄝˊ",
     "clue": "法官在法庭上（　）問嫌犯。",
     "searchWord": "詰問"
   },
@@ -823,10 +823,10 @@ const CHARACTER_TEST_POOL = [
     "searchWord": "花瓣"
   },
   {
-    "char": "辧",
+    "char": "辦",
     "zhuyin": "ㄅㄢˋ",
-    "clue": "這件事立刻（　）理。",
-    "searchWord": "辦理"
+    "clue": "學校盛大舉（　）運動會。",
+    "searchWord": "舉辦"
   },
   {
     "char": "脈",
@@ -872,13 +872,13 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "簸",
-    "zhuyin": "ㄅㄛˇ",
+    "zhuyin": "ㄅㄛˋ",
     "clue": "用（　）箕篩選穀物。",
     "searchWord": "簸箕"
   },
   {
     "char": "播",
-    "zhuyin": "ㄅㄛ",
+    "zhuyin": "ㄅㄛˋ",
     "clue": "電台正廣（　）警報。",
     "searchWord": "廣播"
   },
@@ -938,7 +938,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "填",
-    "zhuyin": "ℊㄧㄢˊ",
+    "zhuyin": "ㄊㄧㄢˊ",
     "clue": "請（　）寫正確聯絡電話。",
     "searchWord": "填寫"
   },
@@ -1203,7 +1203,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "助",
     "zhuyin": "ㄓㄨˋ",
-    "clue": "互相幫（　）是美德.。",
+    "clue": "互相幫（　）是美德。",
     "searchWord": "幫助"
   },
   {
@@ -1269,7 +1269,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "宿",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "今晚在民宿寄（　）。",
+    "clue": "今晚在旅店寄（　）。",
     "searchWord": "寄宿"
   },
   {
@@ -1281,7 +1281,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "訴",
     "zhuyin": "ㄙㄨˋ",
-    "clue": "他提起民事訴（　）。",
+    "clue": "他提起民事（　）訟。",
     "searchWord": "訴訟"
   },
   {
@@ -1352,7 +1352,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "訟",
-    "zhuyin": "ㄙㄨˋ",
+    "zhuyin": "ㄙㄨㄥˋ",
     "clue": "兩家陷入官（　）。",
     "searchWord": "官訟"
   },
@@ -1401,7 +1401,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "慫",
     "zhuyin": "ㄙㄨㄥˇ",
-    "clue": "受朋友（　）手犯了錯。",
+    "clue": "受朋友（　）恿犯了錯。",
     "searchWord": "慫恿"
   },
   {
@@ -1448,7 +1448,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "麟",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄣˊ",
     "clue": "鳳毛（　）角的人才。",
     "searchWord": "鳳毛麟角"
   },
@@ -1460,73 +1460,73 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "玲",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "玉雕小巧（　）瓏。",
     "searchWord": "玲瓏"
   },
   {
     "char": "伶",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "這孩子口齒（　）俐。",
     "searchWord": "伶俐"
   },
   {
     "char": "聆",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "大家靜靜（　）聽音樂。",
     "searchWord": "聆聽"
   },
   {
     "char": "齡",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "神木的年（　）已千年。",
     "searchWord": "年齡"
   },
   {
     "char": "羚",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "草原上有（　）羊奔馳。",
     "searchWord": "羚羊"
   },
   {
     "char": "零",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "核對後帳目為（　）。",
     "searchWord": "零錢"
   },
   {
     "char": "鈴",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "下課（　）聲響起。",
     "searchWord": "鈴聲"
   },
   {
     "char": "凌",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "不要（　）侮弱小。",
     "searchWord": "凌侮"
   },
   {
     "char": "陵",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "古代帝王（　）寢遺址。",
     "searchWord": "陵寢"
   },
   {
     "char": "綾",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "衣服是用（　）羅綢緞製成。",
     "searchWord": "綾羅綢緞"
   },
   {
     "char": "嶺",
-    "zhuyin": "ㄌㄧˇ",
+    "zhuyin": "ㄌㄧㄥˇ",
     "clue": "翻越重重山（　）。",
     "searchWord": "山嶺"
   },
   {
     "char": "領",
-    "zhuyin": "ㄌㄧˇ",
+    "zhuyin": "ㄌㄧㄥˇ",
     "clue": "他帶（　）團隊前行。",
     "searchWord": "帶領"
   },
@@ -1544,7 +1544,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "靈",
-    "zhuyin": "ㄌㄧˊ",
+    "zhuyin": "ㄌㄧㄥˊ",
     "clue": "這個方法很（　）驗。",
     "searchWord": "靈驗"
   },
@@ -1886,7 +1886,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "筒",
-    "zhuyin": "ㄊㄨㄥˊ",
+    "zhuyin": "ㄊㄨㄥˇ",
     "clue": "丟進垃圾（　）中。",
     "searchWord": "垃圾筒"
   },
@@ -1899,7 +1899,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "通",
     "zhuyin": "ㄊㄨㄥ",
-    "clue": "四（　）八達的交通。",
+    "clue": "四（　）八達的公路網。",
     "searchWord": "四通八達"
   },
   {
@@ -2138,7 +2138,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "彈",
-    "zhuyin": "ㄉㄢˋ",
+    "zhuyin": "ㄊㄢˊ",
     "clue": "對牛（　）琴",
     "searchWord": "對牛彈琴"
   },
@@ -2293,7 +2293,7 @@ const CHARACTER_TEST_POOL = [
     "searchWord": "重見天日"
   },
   {
-    "char": "&",
+    "char": "篇",
     "zhuyin": "ㄆㄧㄢ",
     "clue": "千（　）一律",
     "searchWord": "千篇一律"
@@ -2372,7 +2372,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "喧",
-    "zhuyin": "ㄒㄨㄢ",
+    "zhuyin": "ㄒㄩㄢ",
     "clue": "請勿大聲（　）嘩。",
     "searchWord": "喧嘩"
   },
@@ -2384,7 +2384,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "暄",
-    "zhuyin": "ㄒㄨㄢ",
+    "zhuyin": "ㄒㄩㄢ",
     "clue": "見面寒（　）幾句。",
     "searchWord": "寒暄"
   },
@@ -2493,7 +2493,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "毅",
     "zhuyin": "ㄧˋ",
-    "clue": "做事要有恆心和毅（　）。",
+    "clue": "做事要有恆心和（　）力。",
     "searchWord": "毅力"
   },
   {
@@ -2505,7 +2505,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "瞻",
     "zhuyin": "ㄓㄢ",
-    "clue": "高瞻遠（　）的眼光。",
+    "clue": "高（　）遠矚的眼光。",
     "searchWord": "高瞻遠矚"
   },
   {
@@ -2553,7 +2553,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "置",
     "zhuyin": "ㄓˋ",
-    "clue": "對這件事置（　）不理。",
+    "clue": "對這件事（　）之不理。",
     "searchWord": "置之不理"
   },
   {
@@ -2631,7 +2631,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "忌",
     "zhuyin": "ㄐㄧˋ",
-    "clue": "肆無忌（　）的行為。",
+    "clue": "肆無（　）憚的行為。",
     "searchWord": "肆無忌憚"
   },
   {
@@ -2695,21 +2695,22 @@ const CHARACTER_TEST_POOL = [
     "searchWord": "寂寞"
   },
   {
-    "char": "ㄐㄧˋ",
+    "char": "計",
+    "zhuyin": "ㄐㄧˋ",
     "clue": "百年大（　）教育為本。",
     "searchWord": "百年大計"
   },
   {
     "char": "季",
     "zhuyin": "ㄐㄧˋ",
-    "clue": "一年四季（　）的變化。",
+    "clue": "一年四（　）的變化。",
     "searchWord": "四季"
   },
   {
     "char": "冀",
     "zhuyin": "ㄐㄧˋ",
-    "clue": "寄（　）厚望的眼神。",
-    "searchWord": "寄予厚望"
+    "clue": "希（　）能獲得好成績。",
+    "searchWord": "希冀"
   },
   {
     "char": "既",
@@ -2737,7 +2738,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "績",
-    "zhuyin": "ㄐㄧˋ",
+    "zhuyin": "ㄐㄧ",
     "clue": "創下輝煌的戰（　）。",
     "searchWord": "戰績"
   },
@@ -2749,13 +2750,13 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "跡",
-    "zhuyin": "ㄐㄧˋ",
-    "clue": "消聲匿（　）的隱士。",
-    "searchWord": "消聲匿跡"
+    "zhuyin": "ㄐㄧ",
+    "clue": "銷聲匿（　）的隱士。",
+    "searchWord": "銷聲匿跡"
   },
   {
     "char": "藉",
-    "zhuyin": "ㄐㄧˊ",
+    "zhuyin": "ㄐㄧㄝˋ",
     "clue": "（　）題發揮的行為。",
     "searchWord": "藉題發揮"
   },
@@ -2768,7 +2769,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "羈",
     "zhuyin": "ㄐㄧ",
-    "clue": "不受 any 羈（　）的自由。",
+    "clue": "不受任何（　）絆的自由。",
     "searchWord": "羈絆"
   },
   {
@@ -2804,7 +2805,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "及",
     "zhuyin": "ㄐㄧˊ",
-    "clue": "及時雨（　）下得很及時。",
+    "clue": "這場（　）時雨下得真好。",
     "searchWord": "及時雨"
   },
   {
@@ -2846,7 +2847,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "天",
     "zhuyin": "ㄊㄧㄢ",
-    "clue": "今天的（　）氣真好。",
+    "clue": "外面的（　）氣真好。",
     "searchWord": "天氣"
   },
   {
@@ -2893,7 +2894,7 @@ const CHARACTER_TEST_POOL = [
   },
   {
     "char": "家",
-    "zhuyin": "ㄐㄧ合",
+    "zhuyin": "ㄐㄧㄚ",
     "clue": "這是我溫暖的（　）。",
     "searchWord": "家庭"
   },
@@ -2978,7 +2979,7 @@ const CHARACTER_TEST_POOL = [
   {
     "char": "花",
     "zhuyin": "ㄏㄨㄚ",
-    "clue": "花園裡的（　）朵盛開。",
+    "clue": "公園裡的（　）朵盛開。",
     "searchWord": "花朵"
   },
   {
@@ -3013,8 +3014,6 @@ const CHARACTER_TEST_POOL = [
   }
 ];
 
-
-// 一字千金字字珠璣題庫 - 預先準備的 100 題超豐富題庫
 const CHARACTER_CROSSWORD_POOL = [
   {
     "char": "海",

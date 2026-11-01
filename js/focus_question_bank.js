@@ -178,6 +178,27 @@
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            if (type === 'characterTest') {
+              const defaults = this.getDefaultPool('characterTest');
+              const zhuyinValid = /^[ㄅ-ㄩˊˇˋ˙]+$/;
+              let updated = false;
+              parsed.forEach((item, idx) => {
+                const def = defaults[idx];
+                const isCorrupted = !item.char || item.char.length !== 1 || /[ㄅ-ㄩ&]/.test(item.char) || !item.zhuyin || !zhuyinValid.test(item.zhuyin);
+                if (def && (isCorrupted || (item.searchWord === def.searchWord && (item.zhuyin !== def.zhuyin || item.clue !== def.clue || item.char !== def.char)))) {
+                  item.char = def.char;
+                  item.zhuyin = def.zhuyin;
+                  item.clue = def.clue;
+                  item.searchWord = def.searchWord;
+                  updated = true;
+                }
+              });
+              if (updated) {
+                try {
+                  localStorage.setItem(this.STORAGE_PREFIX + type, JSON.stringify(parsed));
+                } catch (e) {}
+              }
+            }
             if (type === 'songQuiz') {
               const defaults = this.getDefaultPool('songQuiz');
               const existingIds = new Set(parsed.map(s => s.id || s.title));
