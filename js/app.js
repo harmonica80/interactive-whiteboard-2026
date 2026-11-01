@@ -6299,6 +6299,29 @@ class App {
     }
   }
 
+  // 教師端單螢幕防窺：聽歌搶答按住顯示歌曲正解，放開立即自動隱藏
+  toggleSongPeekAnswer(show) {
+    const mask = document.getElementById('peekSongMasked');
+    const real = document.getElementById('peekSongReal');
+    const btn = document.querySelector('.peek-song-btn');
+    const icon = document.getElementById('peekSongIcon');
+    const label = document.getElementById('peekSongLabel');
+
+    if (show) {
+      if (mask) mask.style.display = 'none';
+      if (real) real.style.display = 'inline-block';
+      if (btn) btn.classList.add('is-holding');
+      if (icon) icon.textContent = '👁️‍🗨️';
+      if (label) label.textContent = '放開隱藏';
+    } else {
+      if (mask) mask.style.display = 'inline-block';
+      if (real) real.style.display = 'none';
+      if (btn) btn.classList.remove('is-holding');
+      if (icon) icon.textContent = '👁️';
+      if (label) label.textContent = '按住看正解';
+    }
+  }
+
   // 教師端單螢幕防窺：按住眼睛顯示標準答案，放開立即自動隱藏
   togglePeekAnswer(show) {
     const mask = document.getElementById('peekAnswerMasked');
@@ -12580,6 +12603,10 @@ class App {
       results: null
     }).then(() => {
       this.showNotification('成功', '專注力/破冰遊戲已發起！');
+      // 若為聽歌搶答，發起後自動無縫切換至前台測驗畫面，方便教師主控播放
+      if (gameType === 'songQuiz') {
+        this.previewStudentActivity('gameFocus');
+      }
     }).catch(err => {
       this.showNotification('錯誤', '發起失敗: ' + err.message);
     });
