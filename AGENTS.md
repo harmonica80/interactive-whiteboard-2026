@@ -84,9 +84,10 @@
 1. **小版本更新（Patch，例如 `3.09.01` ➔ `3.09.02` 或 `3.10.11` ➔ `3.10.12`）**：
    - 平時進行日常修復、微調或小版本更新時，**不需**每次改動都更新網頁內的「🚀 即時互動白板版本更新歷程」彈窗（`#changelogModal`）與 `README.md`。
    - 僅需先將修改重點記錄於專案開發日誌（如 `SYSTEM_LOG.md`）中留存即可。
-2. **版本階段躍升（Minor / Major，例如從 `3.09` 更新到 `3.10`，或從 `3.10` 更新到 `3.11`）**：
+2. **版本階段躍升（Minor / Major，例如從 `3.09` 更新到 `3.10`，或從 `3.10` 更新到 `3.11`、`3.30`）**：
    - 每當推進主/次版本號時，必須將這段期間所有小版本累積的重要更新內容進行完整匯整，並**同步更新以下兩處**：
-     1. **網頁內版本更新歷程彈窗**：[index.html](file:///j:/我的雲端硬碟/AI代理人測試資料夾/OpenCode%20測試資料夾/interactive-whiteboard/index.html) 中的 `#changelogModal`（「🚀 即時互動白板版本更新歷程」，新增最新版本卡片並將 `.is-latest` 與「最新版本」標籤移至新版本卡片）。
+     1. **網頁內版本更新歷程彈窗**：[index.html](file:///j:/我的雲端硬碟/AI代理人測試資料夾/OpenCode%20測試資料夾/interactive-whiteboard/index.html) 中的 `#changelogModal`（「🚀 即時互動白板版本更新歷程」）：
+        - **唯一最新標籤規範（嚴格遵守）**：**全系統僅允許最新一版（最頂端卡片）擁有 `.is-latest` class、「🌟」符號與 `<span class="changelog-badge-latest">最新版本</span>` 標籤**；所有歷史版本必須同步移除上述標示，絕不允許同時存在兩個以上的最新版本標示！
      2. **GitHub 專案說明文件**：[README.md](file:///j:/我的雲端硬碟/AI代理人測試資料夾/OpenCode%20測試資料夾/interactive-whiteboard/README.md) 中的功能特色與說明。
 
 ---
