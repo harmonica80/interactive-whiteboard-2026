@@ -8060,7 +8060,8 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   position: absolute;
   bottom: 58px;
   right: 0;
-  width: 275px;
+  width: 310px;
+  max-width: calc(100vw - 24px);
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
   border-radius: 18px;
