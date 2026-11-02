@@ -2955,36 +2955,153 @@
       }
     }
 
-    // 彈出儲存目前簡報對話框
+    // 彈出儲存目前簡報對話框 (支援建立新教材或更新現有教材)
     promptSaveCurrentPresentation() {
       if (!this.slides || this.slides.length === 0) {
         this.notify('提示', '目前無任何簡報內容可儲存！請先上傳 PDF 或新增簡報頁面。');
         return;
       }
+      this.openSaveChoiceModal();
+    }
+
+    // 開啟儲存教材選擇彈窗 (建立新教材 vs 更新現有教材)
+    openSaveChoiceModal() {
+      const modal = document.getElementById('modalPresentationSaveChoice');
+      if (!modal) return;
+
       const now = new Date();
       const defaultTitle = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} 簡報教材`;
 
-      if (window.app && typeof window.app.showPromptModal === 'function') {
-        window.app.showPromptModal(
-          '☁️ 儲存簡報為雲端教材',
-          '請輸入此簡報教材名稱：',
-          defaultTitle,
-          (title) => {
-            if (title && title.trim()) {
-              this.saveCurrentPresentationToCloud(title.trim());
+      const newTitleInput = document.getElementById('presSaveNewTitleInput');
+      if (newTitleInput) {
+        newTitleInput.value = this.currentLoadedMaterialTitle || defaultTitle;
+      }
+
+      // 填充現有教材下拉選單
+      const selectEl = document.getElementById('presSaveTargetMaterialSelect');
+      const updateCard = document.getElementById('presSaveOptionUpdateCard');
+      const bankItems = Object.values(this.materialsBank || {});
+
+      if (selectEl) {
+        selectEl.innerHTML = '';
+        if (bankItems.length > 0) {
+          const sortedItems = bankItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          sortedItems.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            const sCount = item.slideCount || (item.slides ? item.slides.length : 0);
+            opt.textContent = `${item.title || '未命名教材'} (${sCount} 頁)`;
+            if (this.currentLoadedMaterialId && item.id === this.currentLoadedMaterialId) {
+              opt.selected = true;
             }
-          }
-        );
-      } else {
-        const title = prompt('請輸入此簡報教材名稱：', defaultTitle);
-        if (title && title.trim()) {
-          this.saveCurrentPresentationToCloud(title.trim());
+            selectEl.appendChild(opt);
+          });
         }
+      }
+
+      // 若教材庫目前無任何現有檔案，更新選項反灰或隱藏
+      if (updateCard) {
+        if (bankItems.length === 0) {
+          updateCard.style.opacity = '0.5';
+          updateCard.style.pointerEvents = 'none';
+        } else {
+          updateCard.style.opacity = '1';
+          updateCard.style.pointerEvents = 'auto';
+        }
+      }
+
+      // 預設選取狀態：若是由某教材載入且該教材存在，預設選取「更新現有教材」，否則選取「建立新教材」
+      if (this.currentLoadedMaterialId && this.materialsBank && this.materialsBank[this.currentLoadedMaterialId]) {
+        this.selectSaveMode('update');
+      } else {
+        this.selectSaveMode('new');
+      }
+
+      this.openModal(modal);
+    }
+
+    // 切換儲存模式 (new | update)
+    selectSaveMode(mode) {
+      const radioNew = document.getElementById('presSaveRadioNew');
+      const radioUpdate = document.getElementById('presSaveRadioUpdate');
+      const newCard = document.getElementById('presSaveOptionNewCard');
+      const updateCard = document.getElementById('presSaveOptionUpdateCard');
+      const newWrap = document.getElementById('presSaveNewNameWrap');
+      const updateWrap = document.getElementById('presSaveUpdateSelectWrap');
+
+      if (mode === 'update') {
+        const bankItems = Object.keys(this.materialsBank || {});
+        if (bankItems.length === 0) {
+          mode = 'new';
+        }
+      }
+
+      if (mode === 'new') {
+        if (radioNew) radioNew.checked = true;
+        if (radioUpdate) radioUpdate.checked = false;
+        if (newCard) {
+          newCard.style.borderColor = 'var(--accent-color)';
+          newCard.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+        }
+        if (updateCard) {
+          updateCard.style.borderColor = 'var(--border-color)';
+          updateCard.style.backgroundColor = 'var(--bg-card)';
+        }
+        if (newWrap) newWrap.style.display = 'block';
+        if (updateWrap) updateWrap.style.display = 'none';
+      } else {
+        if (radioNew) radioNew.checked = false;
+        if (radioUpdate) radioUpdate.checked = true;
+        if (newCard) {
+          newCard.style.borderColor = 'var(--border-color)';
+          newCard.style.backgroundColor = 'var(--bg-card)';
+        }
+        if (updateCard) {
+          updateCard.style.borderColor = 'var(--accent-color)';
+          updateCard.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+        }
+        if (newWrap) newWrap.style.display = 'none';
+        if (updateWrap) updateWrap.style.display = 'block';
       }
     }
 
-    // 儲存目前簡報至雲端教材庫
-    async saveCurrentPresentationToCloud(title) {
+    // 關閉儲存模式選擇彈窗
+    closeSaveChoiceModal() {
+      const modal = document.getElementById('modalPresentationSaveChoice');
+      if (modal) {
+        this.closeModal(modal);
+      }
+    }
+
+    // 確認執行儲存 (建立新教材或更新現有教材)
+    async confirmSaveChoice() {
+      const isNew = document.getElementById('presSaveRadioNew')?.checked;
+      if (isNew) {
+        const inputEl = document.getElementById('presSaveNewTitleInput');
+        const title = (inputEl ? inputEl.value : '').trim();
+        if (!title) {
+          this.notify('提示', '請輸入教材名稱！');
+          if (inputEl) inputEl.focus();
+          return;
+        }
+        this.closeSaveChoiceModal();
+        await this.saveCurrentPresentationToCloud(title, null);
+      } else {
+        const selectEl = document.getElementById('presSaveTargetMaterialSelect');
+        const targetId = selectEl ? selectEl.value : null;
+        if (!targetId || !this.materialsBank || !this.materialsBank[targetId]) {
+          this.notify('提示', '請選擇要更新覆蓋的現有教材！');
+          return;
+        }
+        const targetMaterial = this.materialsBank[targetId];
+        const targetTitle = targetMaterial.title || '現有教材';
+        this.closeSaveChoiceModal();
+        await this.saveCurrentPresentationToCloud(targetTitle, targetId);
+      }
+    }
+
+    // 儲存目前簡報至雲端教材庫 (targetMaterialId 為 null 時建立新教材；傳入 ID 時更新現有教材)
+    async saveCurrentPresentationToCloud(title, targetMaterialId = null) {
       if (!this.slides || this.slides.length === 0) {
         this.notify('提示', '目前無任何簡報內容可儲存！');
         return;
@@ -2993,7 +3110,8 @@
       const finalTitle = (title || '').trim();
       if (!finalTitle) return;
 
-      this.notify('處理中', '正在打包儲存簡報教材至雲端...');
+      const isUpdate = Boolean(targetMaterialId);
+      this.notify('處理中', isUpdate ? `正在覆蓋更新簡報教材「${finalTitle}」至雲端...` : '正在打包儲存全新簡報教材至雲端...');
 
       try {
         let totalQuestions = 0;
@@ -3010,13 +3128,17 @@
           });
         }
 
-        const materialId = `pres_mat_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        const materialId = targetMaterialId || `pres_mat_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         const myUser = this.getUserInfo();
+        const existingData = (isUpdate && this.materialsBank) ? this.materialsBank[materialId] : null;
+
         const materialData = {
           id: materialId,
           title: finalTitle,
-          createdAt: Date.now(),
-          createdBy: myUser.name || '老師',
+          createdAt: existingData?.createdAt || Date.now(),
+          updatedAt: Date.now(),
+          createdBy: existingData?.createdBy || (myUser.name || '老師'),
+          updatedBy: myUser.name || '老師',
           slideCount: this.slides.length,
           annotationCount: totalAnnotations,
           questionCount: totalQuestions,
@@ -3027,7 +3149,12 @@
         if (typeof db === 'undefined') throw new Error('資料庫未連線');
 
         await db.ref(`presentation_materials/${materialId}`).set(materialData);
-        this.notify('🎉 儲存成功', `簡報教材「${finalTitle}」已成功儲存至雲端教材庫！`);
+
+        // 記錄當前載入的教材資訊
+        this.currentLoadedMaterialId = materialId;
+        this.currentLoadedMaterialTitle = finalTitle;
+
+        this.notify('🎉 儲存成功', isUpdate ? `已成功覆蓋更新簡報教材「${finalTitle}」！` : `簡報教材「${finalTitle}」已成功儲存為全新雲端教材！`);
         if (!this.materialsBank) this.materialsBank = {};
         this.materialsBank[materialId] = materialData;
         this.renderCloudBankList();
@@ -3160,6 +3287,8 @@
         this.slides = JSON.parse(JSON.stringify(material.slides || []));
         this.annotations = JSON.parse(JSON.stringify(material.annotations || {}));
         this.currentSlideIndex = 0;
+        this.currentLoadedMaterialId = materialId;
+        this.currentLoadedMaterialTitle = material.title || '';
 
         // 2. 依模式更新權限 (需求 3：學生可以參與互動 vs 僅老師操作簡報)
         const isReadOnly = mode === 'readonly';
