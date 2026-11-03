@@ -9024,12 +9024,102 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
 }
 
 /* ==========================================================================
-   管理員登入模式下右下角浮動元件堆疊平滑位移
+   管理員登入模式下右下角浮動元件堆疊平滑位移與懸浮位置設定
    ========================================================================== */
 .fab-quick-info-container,
+.fab-admin-shortcuts-container,
 .live-reaction-dock,
-.floating-student-avatar-container {
-  transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+.floating-student-avatar-container,
+.student-points-award-toast {
+  transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              left 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 顯示於左側時的元件定位 */
+[data-floating-pos="left"] .fab-admin-shortcuts-container {
+  left: 24px !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .fab-admin-shortcuts-menu {
+  left: 0 !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .fab-quick-info-container {
+  left: 24px !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .fab-quick-info-menu {
+  left: 0 !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .live-reaction-dock {
+  left: 24px !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .reaction-scenario-menu {
+  left: 0 !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .reaction-rate-limit-toast {
+  left: 0 !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .reaction-collapsed-tooltip {
+  left: 0 !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .reaction-collapsed-tooltip::after {
+  left: 18px !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .reaction-collapsed-arrow {
+  left: auto !important;
+  right: -4px !important;
+  animation: arrowBounceRight 1.2s infinite ease-in-out !important;
+}
+
+@keyframes arrowBounceRight {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+[data-floating-pos="left"] .reaction-collapse-toggle-btn {
+  transform: rotate(180deg);
+}
+
+[data-floating-pos="left"] .floating-student-avatar-container {
+  left: 24px !important;
+  right: auto !important;
+}
+
+[data-floating-pos="left"] .student-points-award-toast {
+  left: 24px !important;
+  right: auto !important;
+}
+
+@media (max-width: 600px) {
+  [data-floating-pos="left"] .fab-admin-shortcuts-container,
+  [data-floating-pos="left"] .fab-quick-info-container,
+  [data-floating-pos="left"] .live-reaction-dock,
+  [data-floating-pos="left"] .floating-student-avatar-container,
+  [data-floating-pos="left"] .student-points-award-toast {
+    left: 14px !important;
+    right: auto !important;
+  }
 }
 
 body.is-admin-logged-in #fabAdminShortcutsContainer {

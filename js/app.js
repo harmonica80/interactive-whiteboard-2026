@@ -188,6 +188,7 @@ class App {
     this.initFabQuickInfo();
     this.initFabAdminShortcuts();
     this.initWhiteboardFeatures();
+    this.initFloatingButtonPosition();
     if (window.timerMusicManager) {
       window.timerMusicManager.updateDropdown();
     }
@@ -5975,6 +5976,12 @@ class App {
         category: '班級管理',
         icon: 'images/admin_icons/class_groups.svg'
       },
+      floatingButtonPosition: {
+        id: 'adminFloatingButtonPositionSection',
+        title: 'L. 懸浮按鈕顯示位置設定',
+        category: '班級管理',
+        icon: 'images/admin_icons/class_reg.svg'
+      },
       classReaction: {
         id: 'adminReactionSettingsSection',
         title: 'D. 即時互動回饋設定',
@@ -6082,6 +6089,7 @@ class App {
       classPoints: 'adminCatBlock1',
       classAttendance: 'adminCatBlock1',
       classGroups: 'adminCatBlock1',
+      floatingButtonPosition: 'adminCatBlock1',
       quizChoice: 'adminCatBlock2',
       quizVideo: 'adminCatBlock2',
       gameBuzz: 'adminCatBlock3',
@@ -6223,6 +6231,11 @@ class App {
         window.groupManager.listenActiveGroups();
         window.groupManager.renderAdminPanel();
       }
+    }
+
+    // 懸浮按鈕顯示位置設定專屬 UI 同步
+    if (featureKey === 'floatingButtonPosition') {
+      this.renderFloatingButtonPositionAdminUI();
     }
 
     // 提問管理與教師分享管理：更新 Firebase 空間與流量監測儀表板及附檔開關狀態
@@ -26984,6 +26997,7 @@ class App {
       { key: 'quizVideo', title: '影片出題測驗', category: '測驗出題管理', icon: 'images/admin_icons/quiz_video.svg' },
       { key: 'classStudents', title: '學生名冊與參與歷程管理', category: '班級經營與學生', icon: 'images/admin_icons/class_students.svg' },
       { key: 'classGroups', title: '學生分組與小組積分管理', category: '班級經營與學生', icon: 'images/admin_icons/class_groups.svg' },
+      { key: 'floatingButtonPosition', title: '懸浮按鈕顯示位置設定', category: '班級經營與學生', icon: 'images/admin_icons/class_reg.svg' },
       { key: 'classReg', title: '班級開課管理與切換班級', category: '班級經營與學生', icon: 'images/admin_icons/class_reg.svg' },
       { key: 'classAvatar', title: '班級專屬頭像管理與圖鑑', category: '班級經營與學生', icon: 'images/admin_icons/class_avatar.svg' },
       { key: 'classCopy', title: '跨班教材與測驗複製', category: '班級經營與學生', icon: 'images/admin_icons/class_copy.svg' },
@@ -27634,6 +27648,214 @@ class App {
       if (paneFolders) paneFolders.style.display = 'none';
       if (paneItems) paneItems.style.display = 'block';
     }
+  }
+
+  // ===== 懸浮按鈕顯示位置設定 (左側 / 右側，僅老師 / 全班) =====
+  initFloatingButtonPosition() {
+    this.floatingButtonScope = localStorage.getItem('floating_btn_scope') || 'teacher';
+    this.floatingButtonPosition = 'right';
+    this.classroomFloatingButtonPosition = 'right';
+
+    // 初始先讀取本機快取
+    if (this.isAdmin) {
+      if (this.floatingButtonScope === 'teacher') {
+        this.floatingButtonPosition = localStorage.getItem('floating_btn_pos_teacher') || 'right';
+      } else {
+        this.floatingButtonPosition = localStorage.getItem('floating_btn_pos_class') || 'right';
+      }
+    } else {
+      this.floatingButtonPosition = localStorage.getItem('floating_btn_pos_class') || 'right';
+    }
+    this.applyFloatingButtonPosition(this.floatingButtonPosition);
+
+    // 監聽 Firebase 班級雲端廣播
+    const db = window.db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
+    if (db) {
+      const code = window.ClassRoomManager?.getActiveClassCode?.() || window.currentClassCode || (new URLSearchParams(window.location.search).get('class')) || '';
+      const refPath = code ? `classes/${code}/floatingButtonPosition` : 'settings/floatingButtonPosition';
+      if (this.floatingButtonPosRef) {
+        this.floatingButtonPosRef.off();
+      }
+      this.floatingButtonPosRef = db.ref(refPath);
+      this.floatingButtonPosRef.on('value', (snapshot) => {
+        const val = snapshot.val();
+        this.classroomFloatingButtonPosition = (val === 'left') ? 'left' : 'right';
+        localStorage.setItem('floating_btn_pos_class', this.classroomFloatingButtonPosition);
+        this.applyFloatingButtonPosition();
+        if (this.currentAdminFeatureKey === 'floatingButtonPosition') {
+          this.renderFloatingButtonPositionAdminUI();
+        }
+      });
+    }
+  }
+
+  applyFloatingButtonPosition(overridePos) {
+    let targetPos = overridePos;
+    if (!targetPos) {
+      if (this.isAdmin) {
+        const scope = this.floatingButtonScope || localStorage.getItem('floating_btn_scope') || 'teacher';
+        if (scope === 'teacher') {
+          targetPos = localStorage.getItem('floating_btn_pos_teacher') || 'right';
+        } else {
+          targetPos = this.classroomFloatingButtonPosition || localStorage.getItem('floating_btn_pos_class') || 'right';
+        }
+      } else {
+        // 學生端一律遵循班級雲端廣播設定
+        targetPos = this.classroomFloatingButtonPosition || localStorage.getItem('floating_btn_pos_class') || 'right';
+      }
+    }
+
+    this.floatingButtonPosition = targetPos;
+    document.body.setAttribute('data-floating-pos', targetPos);
+
+    // 更新即時互動 Dock 的屬性與收合指示箭頭符號
+    const dock = document.getElementById('liveReactionDock');
+    if (dock) {
+      dock.setAttribute('data-position', targetPos);
+    }
+    const arrow = document.querySelector('.reaction-collapsed-arrow');
+    if (arrow) {
+      arrow.textContent = targetPos === 'left' ? '›' : '‹';
+    }
+  }
+
+  renderFloatingButtonPositionAdminUI() {
+    const code = window.ClassRoomManager?.getActiveClassCode?.() || window.currentClassCode || '';
+    const badge = document.getElementById('floatingPosClassScopeBadge');
+    if (badge) {
+      badge.textContent = code ? `🏫 當前班級：${code}` : '🌱 一次性課堂（公開空間）';
+    }
+
+    const activePos = this.floatingButtonPosition || 'right';
+    const activeScope = this.floatingButtonScope || localStorage.getItem('floating_btn_scope') || 'teacher';
+
+    const rightRadio = document.querySelector('input[name="floatingBtnPosRadio"][value="right"]');
+    const leftRadio = document.querySelector('input[name="floatingBtnPosRadio"][value="left"]');
+    if (activePos === 'left') {
+      if (leftRadio) leftRadio.checked = true;
+    } else {
+      if (rightRadio) rightRadio.checked = true;
+    }
+    this.updateFloatingPosCardVisuals(activePos);
+
+    const teacherRadio = document.querySelector('input[name="floatingBtnScopeRadio"][value="teacher"]');
+    const allRadio = document.querySelector('input[name="floatingBtnScopeRadio"][value="all"]');
+    if (activeScope === 'all') {
+      if (allRadio) allRadio.checked = true;
+    } else {
+      if (teacherRadio) teacherRadio.checked = true;
+    }
+
+    const posText = activePos === 'left' ? '👈 左側' : '👉 右側';
+    const scopeText = activeScope === 'all' ? '👥 全班一起調整（雲端同步）' : '👤 僅老師（本機個人偏好）';
+    const hint = document.getElementById('floatingPosStatusHint');
+    if (hint) {
+      hint.innerHTML = `✅ 目前位置：<strong>${posText}</strong> · 適用對象：<strong>${scopeText}</strong>`;
+    }
+  }
+
+  updateFloatingPosCardVisuals(pos) {
+    const cardRight = document.getElementById('floatingPosCardRight');
+    const cardLeft = document.getElementById('floatingPosCardLeft');
+    const badgeRight = document.getElementById('floatingPosBadgeRight');
+    const badgeLeft = document.getElementById('floatingPosBadgeLeft');
+
+    if (pos === 'left') {
+      if (cardLeft) {
+        cardLeft.style.borderColor = 'var(--accent-color)';
+        cardLeft.style.boxShadow = '0 0 0 1px var(--accent-color)';
+      }
+      if (cardRight) {
+        cardRight.style.borderColor = 'var(--border-color)';
+        cardRight.style.boxShadow = 'none';
+      }
+      if (badgeLeft) badgeLeft.style.display = 'inline-block';
+      if (badgeRight) badgeRight.style.display = 'none';
+    } else {
+      if (cardRight) {
+        cardRight.style.borderColor = 'var(--accent-color)';
+        cardRight.style.boxShadow = '0 0 0 1px var(--accent-color)';
+      }
+      if (cardLeft) {
+        cardLeft.style.borderColor = 'var(--border-color)';
+        cardLeft.style.boxShadow = 'none';
+      }
+      if (badgeRight) badgeRight.style.display = 'inline-block';
+      if (badgeLeft) badgeLeft.style.display = 'none';
+    }
+  }
+
+  onFloatingPosRadioChange(val) {
+    this.updateFloatingPosCardVisuals(val);
+    // 即時預覽畫面切換
+    this.applyFloatingButtonPosition(val);
+    const scope = document.querySelector('input[name="floatingBtnScopeRadio"]:checked')?.value || this.floatingButtonScope || 'teacher';
+    const posText = val === 'left' ? '👈 左側' : '👉 右側';
+    const scopeText = scope === 'all' ? '👥 全班一起調整' : '👤 僅老師';
+    const hint = document.getElementById('floatingPosStatusHint');
+    if (hint) {
+      hint.innerHTML = `⏳ 預覽位置：<strong>${posText}</strong> · 適用對象：<strong>${scopeText}</strong>（請點擊下方「儲存並套用設定」）`;
+    }
+  }
+
+  onFloatingScopeRadioChange(val) {
+    this.floatingButtonScope = val;
+    const pos = document.querySelector('input[name="floatingBtnPosRadio"]:checked')?.value || this.floatingButtonPosition || 'right';
+    const posText = pos === 'left' ? '👈 左側' : '👉 右側';
+    const scopeText = val === 'all' ? '👥 全班一起調整（雲端同步）' : '👤 僅老師（本機個人偏好）';
+    const hint = document.getElementById('floatingPosStatusHint');
+    if (hint) {
+      hint.innerHTML = `⏳ 預覽位置：<strong>${posText}</strong> · 適用對象：<strong>${scopeText}</strong>（請點擊下方「儲存並套用設定」）`;
+    }
+  }
+
+  async saveFloatingButtonPosition() {
+    const posRadio = document.querySelector('input[name="floatingBtnPosRadio"]:checked');
+    const scopeRadio = document.querySelector('input[name="floatingBtnScopeRadio"]:checked');
+    const pos = posRadio ? posRadio.value : (this.floatingButtonPosition || 'right');
+    const scope = scopeRadio ? scopeRadio.value : (this.floatingButtonScope || 'teacher');
+
+    this.floatingButtonPosition = pos;
+    this.floatingButtonScope = scope;
+    localStorage.setItem('floating_btn_scope', scope);
+
+    const db = window.db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
+    const code = window.ClassRoomManager?.getActiveClassCode?.() || window.currentClassCode || '';
+
+    if (scope === 'teacher') {
+      localStorage.setItem('floating_btn_pos_teacher', pos);
+      this.applyFloatingButtonPosition(pos);
+      this.showNotification('設定已儲存', `懸浮按鈕位置已切換至「${pos === 'left' ? '左側' : '右側'}」（僅本機老師端套用）。`);
+    } else {
+      // 全班一起調整
+      localStorage.setItem('floating_btn_pos_class', pos);
+      localStorage.setItem('floating_btn_pos_teacher', pos);
+      if (db) {
+        const refPath = code ? `classes/${code}/floatingButtonPosition` : 'settings/floatingButtonPosition';
+        try {
+          await db.ref(refPath).set(pos);
+        } catch (e) {
+          console.error('儲存懸浮按鈕位置至雲端失敗：', e);
+        }
+      }
+      this.classroomFloatingButtonPosition = pos;
+      this.applyFloatingButtonPosition(pos);
+      this.showNotification('設定已同步', `懸浮按鈕位置已切換至「${pos === 'left' ? '左側' : '右側'}」，並已同步廣播給全班同學！`);
+    }
+
+    const posText = pos === 'left' ? '👈 左側' : '👉 右側';
+    const scopeText = scope === 'all' ? '👥 全班一起調整（雲端同步）' : '👤 僅老師（本機個人偏好）';
+    const hint = document.getElementById('floatingPosStatusHint');
+    if (hint) {
+      hint.innerHTML = `✅ 目前位置：<strong>${posText}</strong> · 適用對象：<strong>${scopeText}</strong>`;
+    }
+  }
+
+  resetFloatingButtonPosition() {
+    const rightRadio = document.querySelector('input[name="floatingBtnPosRadio"][value="right"]');
+    if (rightRadio) rightRadio.checked = true;
+    this.updateFloatingPosCardVisuals('right');
+    this.saveFloatingButtonPosition();
   }
 
   // ===== 功能模組啟用設定 =====
@@ -29250,6 +29472,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.app.switchToTab('panel-admin');
       }
       window.app.updateAdminActiveActivitiesUI();
+  if (typeof window.app.applyFloatingButtonPosition === 'function') {
+    window.app.applyFloatingButtonPosition();
+  }
     }
     setTimeout(() => {
       if (window.app && typeof window.app.checkDefaultPasswordBanner === 'function') {
@@ -29292,8 +29517,14 @@ async function submitAdminPassword() {
       window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
       window.app.updateFocusGameAdminOptions();
       window.app.updateAdminActiveActivitiesUI();
+  if (typeof window.app.applyFloatingButtonPosition === 'function') {
+    window.app.applyFloatingButtonPosition();
+  }
       window.app.renderFirebaseQuotaBanners();
       window.app.scheduleCurrentClassStorageSync();
+      if (typeof window.app.applyFloatingButtonPosition === 'function') {
+        window.app.applyFloatingButtonPosition();
+      }
 
       if (res.isDefault) {
         const days = res.remainingDays !== undefined ? res.remainingDays : (window.teacherAuthManager ? window.teacherAuthManager.getDefaultPasswordRemainingDays() : 0);
@@ -29356,8 +29587,14 @@ async function submitAdminPassword() {
         window.app.switchToTab('panel-admin');
       }
       window.app.updateAdminActiveActivitiesUI();
+  if (typeof window.app.applyFloatingButtonPosition === 'function') {
+    window.app.applyFloatingButtonPosition();
+  }
       window.app.renderFirebaseQuotaBanners();
       window.app.scheduleCurrentClassStorageSync();
+      if (typeof window.app.applyFloatingButtonPosition === 'function') {
+        window.app.applyFloatingButtonPosition();
+      }
       window.app.showNotification('成功', '已進入管理員模式！');
       window.app.checkDefaultPasswordBanner();
     } else {
@@ -29388,6 +29625,9 @@ function logoutAdmin(isAutoIdleLogout = false) {
   window.app.handleFocusGameSync(window.app.focusGame); // 即時更新專注力大廳 UI
   window.app.handleBuzzGameSync(window.app.buzzGame); // 即時更新搶答狀態
   window.app.updateAdminActiveActivitiesUI();
+  if (typeof window.app.applyFloatingButtonPosition === 'function') {
+    window.app.applyFloatingButtonPosition();
+  }
 
   if (isAutoIdleLogout === true) {
     window.app.showNotification('🔒 安全自動保護', '因管理員模式閒置超過 90 分鐘，系統已自動登出並切回學生視角，防止公用電腦誤觸。');

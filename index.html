@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=485">
+  <link rel="stylesheet" href="css/style.css?v=487">
   <link rel="stylesheet" href="css/presentation.css?v=483">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1640,7 +1640,7 @@
                 <div class="admin-cat-title">
                   <span>🏫</span>
                   <span>班級管理</span>
-                  <span class="admin-cat-badge">11 個功能</span>
+                  <span class="admin-cat-badge">12 個功能</span>
                 </div>
                 <div class="admin-cat-toggle-arrow">▼</div>
               </div>
@@ -1753,6 +1753,16 @@
                     </div>
                     <div class="admin-feature-card-title">K. 學生分組與小組積分管理</div>
                     <div class="admin-feature-card-desc">依人數或組數自動分組、手動拖曳調整、線上狀態篩選、歷史分組快照載入，以及獨立小組積分與結算轉移機制。</div>
+                    <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
+                  </div>
+
+                  <!-- L. 懸浮按鈕顯示位置設定 -->
+                  <div class="admin-feature-card" onclick="window.app.openAdminFeature('floatingButtonPosition')">
+                    <div class="admin-feature-icon-box" style="display: flex; align-items: center; justify-content: center; font-size: 38px;">
+                      🧭
+                    </div>
+                    <div class="admin-feature-card-title">L. 懸浮按鈕顯示位置設定</div>
+                    <div class="admin-feature-card-desc">自訂預設在右下角的懸浮按鈕顯示於左側或右側，並可自由選擇僅老師或全班一起同步調整。</div>
                     <div class="admin-feature-btn-pill">進入全頁功能 ➔</div>
                   </div>
                 </div>
@@ -3170,6 +3180,132 @@
               <!-- 學生分組主工作區 -->
               <div id="adminGroupEmbeddedContainer" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; box-shadow: var(--shadow);">
                 <!-- 動態注入分組主介面 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- L. 懸浮按鈕顯示位置設定 (可折疊全頁區塊) -->
+          <div class="admin-section admin-section-collapsible collapsed" id="adminFloatingButtonPositionSection">
+            <div class="admin-section-header">
+              <h3>🧭 L. 懸浮按鈕顯示位置設定</h3>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="admin-section-body">
+              <!-- 頂部說明 -->
+              <div style="margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);">
+                <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                  <span id="floatingPosClassScopeBadge" style="background: rgba(14, 165, 233, 0.15); color: #0284c7; padding: 3px 10px; border-radius: 8px; font-size: 14px; font-weight: bold;">🏫 當前班級：載入中...</span>
+                  <span style="font-size: 14px; color: var(--text-secondary);">自訂白板邊角懸浮元件佈局</span>
+                </div>
+                <p style="font-size: 14px; color: var(--text-secondary); margin: 8px 0 0 0; line-height: 1.6;">
+                  決定原本預設顯示在螢幕<strong>右下角</strong>的懸浮按鈕群（包含 💡 教室資訊與功能、⚡ 常用管理快捷徑、💖 即時互動回饋表情列、學生姓名大頭像 HUD 與點數提示浮窗）顯示於螢幕<strong>左側</strong>或<strong>右側</strong>，並可自由指定套用對象為<strong>僅老師</strong>端或<strong>全班同學一起同步調整</strong>。
+                </p>
+              </div>
+
+              <!-- 主設定卡片容器 -->
+              <div style="display: flex; flex-direction: column; gap: 24px; max-width: 860px;">
+                
+                <!-- 1. 顯示位置選擇 -->
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; box-shadow: var(--shadow);">
+                  <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                    <span>📍</span> 選擇懸浮按鈕顯示位置
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+                    
+                    <!-- 右側選項卡 -->
+                    <label class="floating-pos-card" id="floatingPosCardRight" style="display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 12px; border: 2px solid var(--accent-color); background: var(--bg-input); cursor: pointer; transition: all 0.2s ease;">
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 16px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                          <input type="radio" name="floatingBtnPosRadio" value="right" checked onchange="window.app && window.app.onFloatingPosRadioChange(this.value)" style="width: 20px; height: 20px; accent-color: var(--accent-color); cursor: pointer;">
+                          👉 顯示於右側（預設）
+                        </span>
+                        <span class="floating-pos-badge" id="floatingPosBadgeRight" style="font-size: 12px; padding: 2px 8px; border-radius: 6px; background: var(--accent-color); color: #ffffff; font-weight: bold;">使用中</span>
+                      </div>
+                      <p style="font-size: 14px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                        懸浮按鈕垂直堆疊於螢幕右下角，彈出選單向左展開，適合大多數習慣右手操作與標準投影版面。
+                      </p>
+                      <!-- 簡短視覺示意框 -->
+                      <div style="height: 50px; background: var(--bg-secondary, rgba(0,0,0,0.05)); border: 1px dashed var(--border-color); border-radius: 8px; position: relative;">
+                        <div style="position: absolute; right: 10px; bottom: 8px; display: flex; gap: 4px;">
+                          <div style="width: 24px; height: 24px; border-radius: 50%; background: #007aff; opacity: 0.8; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px;">💡</div>
+                          <div style="width: 24px; height: 24px; border-radius: 50%; background: #ff3b30; opacity: 0.8; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px;">❤️</div>
+                        </div>
+                      </div>
+                    </label>
+
+                    <!-- 左側選項卡 -->
+                    <label class="floating-pos-card" id="floatingPosCardLeft" style="display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 12px; border: 2px solid var(--border-color); background: var(--bg-input); cursor: pointer; transition: all 0.2s ease;">
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 16px; font-weight: bold; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                          <input type="radio" name="floatingBtnPosRadio" value="left" onchange="window.app && window.app.onFloatingPosRadioChange(this.value)" style="width: 20px; height: 20px; accent-color: var(--accent-color); cursor: pointer;">
+                          👈 顯示於左側
+                        </span>
+                        <span class="floating-pos-badge" id="floatingPosBadgeLeft" style="display: none; font-size: 12px; padding: 2px 8px; border-radius: 6px; background: var(--accent-color); color: #ffffff; font-weight: bold;">使用中</span>
+                      </div>
+                      <p style="font-size: 14px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                        懸浮按鈕垂直堆疊於螢幕左下角，彈出選單向右展開，避免遮擋白板右側繪圖區或特定教材內容。
+                      </p>
+                      <!-- 簡短視覺示意框 -->
+                      <div style="height: 50px; background: var(--bg-secondary, rgba(0,0,0,0.05)); border: 1px dashed var(--border-color); border-radius: 8px; position: relative;">
+                        <div style="position: absolute; left: 10px; bottom: 8px; display: flex; gap: 4px;">
+                          <div style="width: 24px; height: 24px; border-radius: 50%; background: #007aff; opacity: 0.8; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px;">💡</div>
+                          <div style="width: 24px; height: 24px; border-radius: 50%; background: #ff3b30; opacity: 0.8; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px;">❤️</div>
+                        </div>
+                      </div>
+                    </label>
+
+                  </div>
+                </div>
+
+                <!-- 2. 適用對象選擇 -->
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; box-shadow: var(--shadow);">
+                  <div style="font-size: 16px; font-weight: bold; color: var(--text-primary); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                    <span>👥</span> 選擇適用對象範圍
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    
+                    <label style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 10px; background: var(--bg-input); border: 1px solid var(--border-color); cursor: pointer;">
+                      <input type="radio" name="floatingBtnScopeRadio" value="teacher" checked onchange="window.app && window.app.onFloatingScopeRadioChange(this.value)" style="width: 20px; height: 20px; margin-top: 2px; accent-color: var(--accent-color); cursor: pointer;">
+                      <div>
+                        <div style="font-size: 15px; font-weight: bold; color: var(--text-primary);">
+                          👤 僅老師（本機個人偏好套用）
+                        </div>
+                        <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                          僅改變目前老師瀏覽器畫面的懸浮按鈕位置，不影響學生的白板畫面，學生端仍維持原先位置。
+                        </div>
+                      </div>
+                    </label>
+
+                    <label style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 10px; background: var(--bg-input); border: 1px solid var(--border-color); cursor: pointer;">
+                      <input type="radio" name="floatingBtnScopeRadio" value="all" onchange="window.app && window.app.onFloatingScopeRadioChange(this.value)" style="width: 20px; height: 20px; margin-top: 2px; accent-color: var(--accent-color); cursor: pointer;">
+                      <div>
+                        <div style="font-size: 15px; font-weight: bold; color: var(--text-primary);">
+                          👥 全班一起調整（透過雲端即時同步給全班）
+                        </div>
+                        <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                          將位置寫入目前班級雲端設定，老師與所有連線中的學生端畫面皆會即時平滑同步位移至選定位置。
+                        </div>
+                      </div>
+                    </label>
+
+                  </div>
+                </div>
+
+                <!-- 3. 操作按鈕與即時狀態提示 -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 6px;">
+                  <div id="floatingPosStatusHint" style="font-size: 14px; color: var(--success-color); font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                    ✅ 目前位置：👉 右側 · 適用對象：👤 僅老師
+                  </div>
+                  <div style="display: flex; gap: 10px;">
+                    <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.resetFloatingButtonPosition()" style="font-size: 14px; padding: 8px 18px; border-radius: 8px;">
+                      🔄 恢復預設（右側）
+                    </button>
+                    <button type="button" class="presentation-tool-btn purple" onclick="window.app && window.app.saveFloatingButtonPosition()" style="font-size: 15px; padding: 8px 24px; border-radius: 8px; font-weight: bold;">
+                      💾 儲存並套用設定
+                    </button>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -6541,7 +6677,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=483"></script>
   <script src="js/matching_quiz.js?v=483"></script>
   <script src="js/quiz.js?v=483"></script>
-  <script src="js/app.js?v=486"></script>
+  <script src="js/app.js?v=487"></script>
   <script src="js/classics_quiz.js?v=483"></script>
   <script src="js/song_quiz.js?v=483"></script>
   <script src="js/video_quiz.js?v=483"></script>
