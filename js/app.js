@@ -2778,11 +2778,33 @@ class App {
       itemEl.className = `reaction-scenario-item${isActive ? ' is-active' : ''}`;
       itemEl.title = `點擊立即切換為：${preset.title}`;
 
+      const rateVal = this.getPresetMaxReactionsPerSec(preset.key);
+      const rateOptions = [
+        { val: 1, label: '1 個 / 秒' },
+        { val: 2, label: '2 個 / 秒' },
+        { val: 3, label: '3 個 / 秒' },
+        { val: 4, label: '4 個 / 秒' },
+        { val: 5, label: '5 個 / 秒' },
+        { val: 8, label: '8 個 / 秒' },
+        { val: 10, label: '10 個 / 秒' }
+      ];
+      const rateOptionsHtml = rateOptions.map(opt =>
+        `<option value="${opt.val}"${rateVal === opt.val ? ' selected' : ''}>${opt.label}</option>`
+      ).join('');
+
       const headerEl = document.createElement('div');
       headerEl.className = 'reaction-scenario-item-header';
       headerEl.innerHTML = `
         <span class="reaction-scenario-item-title">${this.escapeHtml(preset.title)}</span>
-        ${isActive ? '<span class="reaction-scenario-active-tag">✓ 使用中</span>' : ''}
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" onclick="event.stopPropagation()">
+          ${isActive ? '<span class="reaction-scenario-active-tag">✓ 使用中</span>' : ''}
+          <div class="reaction-scenario-rate-wrap" title="設定此情境 1 秒最多可按幾次">
+            <span class="reaction-scenario-rate-label">⏱️ 1秒最多：</span>
+            <select class="reaction-scenario-rate-select" onchange="window.app.setPresetMaxPerSec('${preset.key}', this.value); event.stopPropagation();">
+              ${rateOptionsHtml}
+            </select>
+          </div>
+        </div>
       `;
 
       const pillsContainer = document.createElement('div');
@@ -26812,15 +26834,39 @@ class App {
     const modal = document.getElementById('modalAdminShortcuts');
     if (modal) {
       modal.style.display = 'flex';
+      modal.classList.add('active');
     }
   }
 
   closeAdminShortcutsModal() {
     const modal = document.getElementById('modalAdminShortcuts');
     if (modal) {
+      modal.classList.remove('active');
       modal.style.display = 'none';
     }
     this._draftAdminShortcuts = null;
+  }
+
+  moveAdminShortcutOrder(index, delta) {
+    if (!this._draftAdminShortcuts) {
+      this._draftAdminShortcuts = [...this.getAdminShortcuts()];
+    }
+    const targetIdx = index + delta;
+    if (targetIdx < 0 || targetIdx >= this._draftAdminShortcuts.length) return;
+    const item = this._draftAdminShortcuts.splice(index, 1)[0];
+    this._draftAdminShortcuts.splice(targetIdx, 0, item);
+    this.renderAdminShortcutsModalUI();
+  }
+
+  reorderAdminShortcutDraft(fromIndex, toIndex) {
+    if (!this._draftAdminShortcuts) {
+      this._draftAdminShortcuts = [...this.getAdminShortcuts()];
+    }
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
+    if (fromIndex >= this._draftAdminShortcuts.length || toIndex >= this._draftAdminShortcuts.length) return;
+    const item = this._draftAdminShortcuts.splice(fromIndex, 1)[0];
+    this._draftAdminShortcuts.splice(toIndex, 0, item);
+    this.renderAdminShortcutsModalUI();
   }
 
   renderAdminShortcutsModalUI() {
@@ -26838,27 +26884,100 @@ class App {
       countBadge.textContent = `已選 ${draft.length} / 10 個`;
     }
 
-    // 渲染 Chips
+    // 渲染可拖曳排序的已選清單 (需求 4)
     if (chipsEl) {
       chipsEl.innerHTML = '';
       if (draft.length === 0) {
-        chipsEl.innerHTML = `<span style="font-size: 14px; color: var(--text-secondary);">尚未選擇任何常用功能，請由下方勾選（最多 10 個）</span>`;
+        chipsEl.innerHTML = `<div style="font-size: 14px; color: var(--text-secondary); padding: 8px; text-align: center;">尚未選擇任何常用功能，請由下方勾選（最多 10 個）</div>`;
       } else {
-        draft.forEach(key => {
+        draft.forEach((key, idx) => {
           const feat = catalogMap[key];
           if (!feat) return;
-          const chip = document.createElement('span');
-          chip.className = 'admin-shortcuts-chip';
-          chip.innerHTML = `
-            <img src="${feat.icon}" alt="" style="width: 18px; height: 18px; object-fit: contain;">
-            <span>${this.escapeHtml(feat.title)}</span>
-            <button type="button" class="admin-shortcuts-chip-remove" title="移除此捷徑">✕</button>
+
+          const card = document.createElement('div');
+          card.className = 'admin-shortcuts-sort-card';
+          card.draggable = true;
+          card.dataset.index = String(idx);
+          card.dataset.key = key;
+
+          card.innerHTML = `
+            <span class="admin-shortcuts-drag-handle" title="按住拖曳調整順序">☰</span>
+            <span class="admin-shortcuts-order-badge">#${idx + 1}</span>
+            <img src="${feat.icon}" alt="" class="admin-shortcuts-sort-icon" onerror="this.style.display='none'">
+            <span class="admin-shortcuts-sort-name">${this.escapeHtml(feat.title)}</span>
+            <div class="admin-shortcuts-sort-arrows" onclick="event.stopPropagation()">
+              <button type="button" class="admin-shortcuts-arrow-btn" ${idx === 0 ? 'disabled' : ''} title="往前移">▲</button>
+              <button type="button" class="admin-shortcuts-arrow-btn" ${idx === draft.length - 1 ? 'disabled' : ''} title="往後移">▼</button>
+            </div>
+            <button type="button" class="admin-shortcuts-chip-remove" title="移除此捷徑" onclick="event.stopPropagation()">✕</button>
           `;
-          chip.querySelector('.admin-shortcuts-chip-remove').addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.removeAdminShortcutFromDraft(key);
+
+          // 上移箭頭
+          const upBtn = card.querySelectorAll('.admin-shortcuts-arrow-btn')[0];
+          if (upBtn && idx > 0) {
+            upBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.moveAdminShortcutOrder(idx, -1);
+            });
+          }
+
+          // 下移箭頭
+          const downBtn = card.querySelectorAll('.admin-shortcuts-arrow-btn')[1];
+          if (downBtn && idx < draft.length - 1) {
+            downBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.moveAdminShortcutOrder(idx, 1);
+            });
+          }
+
+          // 移除按鈕
+          const removeBtn = card.querySelector('.admin-shortcuts-chip-remove');
+          if (removeBtn) {
+            removeBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.removeAdminShortcutFromDraft(key);
+            });
+          }
+
+          // 拖曳事件 (HTML5 Drag & Drop)
+          card.addEventListener('dragstart', (e) => {
+            this._draggedShortcutIndex = idx;
+            card.classList.add('is-dragging');
+            if (e.dataTransfer) {
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', String(idx));
+            }
           });
-          chipsEl.appendChild(chip);
+
+          card.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+            card.classList.add('drag-over');
+          });
+
+          card.addEventListener('dragleave', () => {
+            card.classList.remove('drag-over');
+          });
+
+          card.addEventListener('drop', (e) => {
+            e.preventDefault();
+            card.classList.remove('drag-over');
+            const fromIdx = this._draggedShortcutIndex !== undefined
+              ? this._draggedShortcutIndex
+              : parseInt(e.dataTransfer ? e.dataTransfer.getData('text/plain') : '-1', 10);
+            const toIdx = idx;
+            if (fromIdx !== undefined && !isNaN(fromIdx) && fromIdx !== toIdx) {
+              this.reorderAdminShortcutDraft(fromIdx, toIdx);
+            }
+          });
+
+          card.addEventListener('dragend', () => {
+            card.classList.remove('is-dragging');
+            chipsEl.querySelectorAll('.admin-shortcuts-sort-card').forEach(c => c.classList.remove('drag-over'));
+            this._draggedShortcutIndex = null;
+          });
+
+          chipsEl.appendChild(card);
         });
       }
     }

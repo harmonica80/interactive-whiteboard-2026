@@ -8309,10 +8309,19 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--bg-header);
-  border-bottom: 1px solid var(--border-color);
+  padding: 14px 18px;
+  background: var(--bg-card) !important;
+  border-bottom: 1.5px solid var(--border-color);
   flex-shrink: 0;
+}
+
+.reaction-scenario-header-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .reaction-scenario-menu-close {
@@ -8348,7 +8357,7 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border-radius: 14px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -8374,6 +8383,7 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .reaction-scenario-item-title {
@@ -8390,6 +8400,52 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   padding: 2px 8px;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+/* 1 秒最多可按幾次設定下拉選單 (需求 2) */
+.reaction-scenario-rate-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2px 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.reaction-scenario-rate-wrap:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.15);
+}
+
+.reaction-scenario-rate-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.reaction-scenario-rate-select {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-color);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  padding: 2px 0;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.reaction-scenario-rate-select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .reaction-scenario-item-pills {
@@ -8414,31 +8470,38 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
 }
 
 .reaction-scenario-menu-footer {
-  padding: 10px 14px;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-header);
+  padding: 12px 16px;
+  border-top: 1.5px solid var(--border-color);
+  background: var(--bg-card) !important;
   flex-shrink: 0;
   display: flex;
   justify-content: center;
 }
 
 .reaction-scenario-settings-btn {
-  background: transparent;
-  border: 1px dashed var(--border-color);
-  border-radius: 10px;
-  color: var(--accent-color);
+  background: var(--bg-secondary) !important;
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: 12px;
+  color: var(--accent-color) !important;
   font-size: 14px;
-  font-weight: 700;
-  padding: 6px 14px;
+  font-weight: 800;
+  padding: 9px 16px;
   cursor: pointer;
   width: 100%;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
 }
 
 .reaction-scenario-settings-btn:hover {
-  background: rgba(0, 122, 255, 0.08);
-  border-color: var(--accent-color);
+  background: var(--accent-color) !important;
+  color: #ffffff !important;
+  border-color: var(--accent-color) !important;
+  transform: translateY(-1px);
 }
 
 /* ==========================================================================
@@ -8672,6 +8735,121 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   color: var(--text-primary);
 }
 
+/* 可拖曳排序的快捷功能清單 (需求 4) */
+.admin-shortcuts-sortable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.admin-shortcuts-sort-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  user-select: none;
+  cursor: grab;
+}
+
+.admin-shortcuts-sort-card:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 3px 10px rgba(0, 122, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.admin-shortcuts-sort-card:active {
+  cursor: grabbing;
+}
+
+.admin-shortcuts-sort-card.is-dragging {
+  opacity: 0.45;
+  border: 1.5px dashed var(--accent-color);
+  background: rgba(0, 122, 255, 0.06);
+}
+
+.admin-shortcuts-sort-card.drag-over {
+  border-color: var(--accent-color);
+  background: rgba(0, 122, 255, 0.12);
+  transform: scale(1.02);
+}
+
+.admin-shortcuts-drag-handle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  cursor: grab;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.admin-shortcuts-drag-handle:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--accent-color);
+}
+
+.admin-shortcuts-order-badge {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent-color);
+  background: rgba(0, 122, 255, 0.1);
+  padding: 2px 7px;
+  border-radius: 6px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.admin-shortcuts-sort-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.admin-shortcuts-sort-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.admin-shortcuts-sort-arrows {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.admin-shortcuts-arrow-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-shortcuts-arrow-btn:hover:not(:disabled) {
+  background: var(--accent-color);
+  color: #ffffff;
+  border-color: var(--accent-color);
+}
+
+.admin-shortcuts-arrow-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
 .admin-shortcuts-chip {
   display: inline-flex;
   align-items: center;
@@ -8824,6 +9002,25 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
 .admin-shortcuts-save-btn:hover {
   background: var(--accent-hover, #0062cc);
   transform: translateY(-1px);
+}
+
+/* 確保自訂常用功能彈窗正常顯示 */
+#modalAdminShortcuts {
+  z-index: 20050 !important;
+}
+
+#modalAdminShortcuts.active {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+#modalAdminShortcuts.active .modal-card,
+#modalAdminShortcuts.active .modal-content {
+  transform: scale(1) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* ==========================================================================
