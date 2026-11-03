@@ -8250,6 +8250,619 @@ body.wc-fullscreen-active #panel-word-cloud.active .wc-canvas-wrapper {
   background: rgba(0, 0, 0, 0.05);
 }
 
+/* ==========================================================================
+   快速切換即時互動情境 (老師專屬) (需求 1)
+   ========================================================================== */
+.reaction-scenario-toggle-btn {
+  background: rgba(0, 122, 255, 0.08);
+  border: 1px solid rgba(0, 122, 255, 0.25);
+  font-size: 16px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+.reaction-scenario-toggle-btn:hover {
+  background: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
+  transform: scale(1.15) rotate(-8deg);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+}
+
+.reaction-scenario-menu {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  width: 380px;
+  max-width: calc(100vw - 28px);
+  max-height: min(72vh, 540px);
+  background: var(--bg-card, #ffffff);
+  border: 1.5px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  z-index: 3450;
+  overflow: hidden;
+  animation: reactionMenuPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes reactionMenuPop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.reaction-scenario-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.reaction-scenario-menu-close {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.reaction-scenario-menu-close:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-primary);
+}
+
+.reaction-scenario-menu-list {
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.reaction-scenario-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.reaction-scenario-item:hover {
+  background: var(--bg-hover, rgba(0, 122, 255, 0.08));
+  border-color: var(--accent-color);
+  transform: translateY(-1px);
+}
+
+.reaction-scenario-item.is-active {
+  border-color: var(--accent-color);
+  background: rgba(0, 122, 255, 0.1);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.reaction-scenario-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reaction-scenario-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.reaction-scenario-active-tag {
+  font-size: 14px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.reaction-scenario-item-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.reaction-scenario-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.reaction-scenario-menu-footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-header);
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.reaction-scenario-settings-btn {
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  color: var(--accent-color);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.reaction-scenario-settings-btn:hover {
+  background: rgba(0, 122, 255, 0.08);
+  border-color: var(--accent-color);
+}
+
+/* ==========================================================================
+   右下角常用管理功能快捷徑 (FAB ⚡) (需求 2)
+   ========================================================================== */
+.fab-admin-shortcuts-container {
+  position: fixed;
+  bottom: 20px;
+  right: 24px;
+  z-index: 3405;
+  user-select: none;
+  font-family: inherit;
+}
+
+@media (max-width: 600px) {
+  .fab-admin-shortcuts-container {
+    bottom: 14px;
+    right: 14px;
+  }
+}
+
+.fab-admin-shortcuts-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-card, #ffffff);
+  border: 1.5px solid var(--accent-color, #007aff);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.fab-admin-shortcuts-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+  border-color: var(--accent-hover, #0062cc);
+}
+
+.fab-admin-shortcuts-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.fab-admin-shortcuts-menu {
+  position: absolute;
+  bottom: 58px;
+  right: 0;
+  width: 290px;
+  max-width: calc(100vw - 28px);
+  background: var(--bg-card, #ffffff);
+  border: 1.5px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  border-radius: 18px;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.22);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 3410;
+  animation: fabMenuPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fab-shortcuts-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.fab-shortcuts-menu-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.fab-shortcuts-badge {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-color);
+  background: rgba(0, 122, 255, 0.12);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+.fab-shortcuts-btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.fab-shortcuts-btn-icon:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.fab-shortcuts-menu-close {
+  background: transparent;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.fab-shortcuts-menu-close:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-primary);
+}
+
+.fab-shortcuts-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.fab-shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--border-color, transparent);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.fab-shortcut-item:hover {
+  background: var(--bg-hover, rgba(0, 122, 255, 0.08));
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
+  transform: translateX(-2px);
+}
+
+.fab-shortcut-item-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.fab-shortcut-item-text {
+  flex: 1;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fab-shortcut-item-arrow {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.fab-shortcuts-menu-footer {
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.fab-shortcuts-customize-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px dashed var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fab-shortcuts-customize-btn:hover {
+  background: rgba(0, 122, 255, 0.08);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+/* ==========================================================================
+   自訂常用管理功能快捷清單對話框樣式 (需求 2)
+   ========================================================================== */
+.admin-shortcuts-count-pill {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-color);
+  background: rgba(0, 122, 255, 0.12);
+  border: 1px solid rgba(0, 122, 255, 0.25);
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.admin-shortcuts-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.admin-shortcuts-close-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-primary);
+}
+
+.admin-shortcuts-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 4px 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.admin-shortcuts-chip-remove {
+  background: rgba(239, 68, 68, 0.12);
+  border: none;
+  color: var(--danger-color, #ef4444);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  transition: all 0.15s ease;
+}
+
+.admin-shortcuts-chip-remove:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.admin-shortcuts-cat-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.admin-shortcuts-cat-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+
+.admin-shortcuts-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.admin-shortcuts-item-row:hover {
+  border-color: var(--accent-color);
+  background: var(--bg-hover, rgba(0, 122, 255, 0.05));
+}
+
+.admin-shortcuts-item-row.is-checked {
+  border-color: var(--accent-color);
+  background: rgba(0, 122, 255, 0.08);
+}
+
+.admin-shortcuts-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-color);
+  cursor: pointer;
+}
+
+.admin-shortcuts-item-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.admin-shortcuts-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.admin-shortcuts-reset-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-shortcuts-reset-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.admin-shortcuts-cancel-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-shortcuts-cancel-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.admin-shortcuts-save-btn {
+  background: var(--accent-color);
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 18px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+  transition: all 0.15s ease;
+}
+
+.admin-shortcuts-save-btn:hover {
+  background: var(--accent-hover, #0062cc);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   管理員登入模式下右下角浮動元件堆疊平滑位移
+   ========================================================================== */
+.fab-quick-info-container,
+.live-reaction-dock,
+.floating-student-avatar-container {
+  transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.is-admin-logged-in #fabAdminShortcutsContainer {
+  display: block !important;
+}
+
+body.is-admin-logged-in .fab-quick-info-container {
+  bottom: 78px;
+}
+
+body.is-admin-logged-in .live-reaction-dock {
+  bottom: 136px;
+}
+
+body.is-admin-logged-in .floating-student-avatar-container {
+  bottom: 202px;
+}
+
+@media (max-width: 600px) {
+  body.is-admin-logged-in .fab-quick-info-container {
+    bottom: 66px;
+  }
+  body.is-admin-logged-in .live-reaction-dock {
+    bottom: 118px;
+  }
+  body.is-admin-logged-in .floating-student-avatar-container {
+    bottom: 178px;
+  }
+}
+
 /* 教室邀請與 QR Code 光箱彈窗 (確保全平台正常顯示) */
 #modalClassInvite {
   z-index: 10015 !important;

@@ -186,12 +186,15 @@ class App {
     this.checkSecurityRuleExpiry();
     this.initClassRoomUI();
     this.initFabQuickInfo();
+    this.initFabAdminShortcuts();
     this.initWhiteboardFeatures();
     if (window.timerMusicManager) {
       window.timerMusicManager.updateDropdown();
     }
     if (this.isAdmin) {
       this.updateAdminActiveActivitiesUI();
+    } else {
+      this.updateTeacherQuickControlBar();
     }
     
     // Global user interaction listener to resume audio if blocked by autoplay
@@ -2715,13 +2718,123 @@ class App {
       expandedBar.appendChild(btn);
     });
 
+    // 若為授課教師/管理者，於結尾處增加「快速切換即時互動情境」按鈕 (需求 1，如圖 1 紅色箭頭位置)
+    if (this.isAdmin) {
+      const scenarioBtn = document.createElement('button');
+      scenarioBtn.type = 'button';
+      scenarioBtn.id = 'reactionScenarioToggleBtn';
+      scenarioBtn.className = 'reaction-scenario-toggle-btn';
+      scenarioBtn.title = '快速切換互動情境 (老師專屬)';
+      scenarioBtn.innerHTML = '🎭';
+      scenarioBtn.setAttribute('aria-label', '快速切換互動情境');
+      scenarioBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleReactionScenarioMenu();
+      });
+      expandedBar.appendChild(scenarioBtn);
+    }
+
     const collapseBtn = document.createElement('button');
     collapseBtn.type = 'button';
     collapseBtn.className = 'reaction-collapse-toggle-btn';
     collapseBtn.title = '收合互動回饋列';
     collapseBtn.textContent = '›';
-    collapseBtn.addEventListener('click', () => this.toggleReactionDock(false));
+    collapseBtn.addEventListener('click', () => {
+      this.toggleReactionDock(false);
+      this.toggleReactionScenarioMenu(false);
+    });
     expandedBar.appendChild(collapseBtn);
+  }
+
+  /**
+   * 切換「快速切換即時互動情境」選單 (需求 1，如圖 2)
+   */
+  toggleReactionScenarioMenu(force) {
+    const menu = document.getElementById('reactionScenarioMenu');
+    if (!menu) return;
+    const shouldOpen = force !== undefined ? force : (menu.style.display === 'none' || !menu.style.display);
+    if (shouldOpen) {
+      this.renderReactionScenarioMenu();
+      menu.style.display = 'flex';
+    } else {
+      menu.style.display = 'none';
+    }
+  }
+
+  /**
+   * 渲染即時互動情境清單 (如圖 2 膠囊按鈕列)
+   */
+  renderReactionScenarioMenu() {
+    const list = document.getElementById('reactionScenarioMenuList');
+    if (!list) return;
+
+    const catalog = this.getReactionPresetsCatalog();
+    const activeKey = (this.reactionSettings && this.reactionSettings.activePreset) || 'classic';
+
+    list.innerHTML = '';
+    catalog.forEach((preset) => {
+      const isActive = (preset.key === activeKey);
+      const itemEl = document.createElement('div');
+      itemEl.className = `reaction-scenario-item${isActive ? ' is-active' : ''}`;
+      itemEl.title = `點擊立即切換為：${preset.title}`;
+
+      const headerEl = document.createElement('div');
+      headerEl.className = 'reaction-scenario-item-header';
+      headerEl.innerHTML = `
+        <span class="reaction-scenario-item-title">${this.escapeHtml(preset.title)}</span>
+        ${isActive ? '<span class="reaction-scenario-active-tag">✓ 使用中</span>' : ''}
+      `;
+
+      const pillsContainer = document.createElement('div');
+      pillsContainer.className = 'reaction-scenario-item-pills';
+
+      const displayItems = preset.key === 'custom'
+        ? ((this.reactionSettings && Array.isArray(this.reactionSettings.customItems) && this.reactionSettings.customItems.length >= 2)
+            ? this.reactionSettings.customItems
+            : this.getDefaultCustomReactionItems())
+        : (preset.items || []);
+
+      (displayItems || []).forEach((item) => {
+        const pill = document.createElement('span');
+        pill.className = 'reaction-scenario-pill';
+        const labelText = item.btnLabel ? `<span>${this.escapeHtml(item.btnLabel)}</span>` : '';
+        pill.innerHTML = `<span>${this.escapeHtml(item.emoji)}</span>${labelText}`;
+        pillsContainer.appendChild(pill);
+      });
+
+      itemEl.appendChild(headerEl);
+      itemEl.appendChild(pillsContainer);
+
+      itemEl.addEventListener('click', () => {
+        this.quickSwitchReactionPreset(preset.key);
+      });
+
+      list.appendChild(itemEl);
+    });
+  }
+
+  /**
+   * 快速切換互動情境並顯示提示 (需求 1)
+   */
+  quickSwitchReactionPreset(presetKey) {
+    this.selectReactionPreset(presetKey);
+    this.toggleReactionScenarioMenu(false);
+    const catalog = this.getReactionPresetsCatalog();
+    const preset = catalog.find(p => p.key === presetKey);
+    const title = preset ? preset.title : '互動回饋情境';
+    if (typeof this.showNotification === 'function') {
+      this.showNotification('互動情境切換', `已成功切換為「${title}」！全班學生即時同步。`);
+    }
+  }
+
+  /**
+   * 從快速切換選單前往後台詳細設定
+   */
+  openReactionSettingsFromMenu() {
+    this.toggleReactionScenarioMenu(false);
+    if (typeof this.openAdminFeature === 'function') {
+      this.openAdminFeature('classReaction');
+    }
   }
 
   toggleReactionDock(expand, save = true) {
@@ -6497,6 +6610,34 @@ class App {
     const vqQuickLink = document.getElementById('vqAdminQuickLinkWrapper');
     if (vqQuickLink) {
       vqQuickLink.style.display = this.isAdmin ? 'block' : 'none';
+    }
+
+    const adminShortcutsContainer = document.getElementById('fabAdminShortcutsContainer');
+    if (adminShortcutsContainer) {
+      adminShortcutsContainer.style.display = this.isAdmin ? 'block' : 'none';
+      if (this.isAdmin) {
+        if (typeof this.renderAdminShortcutsMenu === 'function') {
+          this.renderAdminShortcutsMenu();
+        }
+      } else {
+        if (typeof this.toggleAdminShortcutsMenu === 'function') {
+          this.toggleAdminShortcutsMenu(false);
+        }
+        if (typeof this.toggleReactionScenarioMenu === 'function') {
+          this.toggleReactionScenarioMenu(false);
+        }
+      }
+    }
+
+    if (this.isAdmin) {
+      document.body.classList.add('is-admin-logged-in');
+    } else {
+      document.body.classList.remove('is-admin-logged-in');
+    }
+
+    // 當管理員身分切換時，即時重繪右下角互動回饋 Dock (顯示/隱藏 🎭 快速切換情境按鈕)
+    if (typeof this.renderLiveReactionDock === 'function') {
+      this.renderLiveReactionDock();
     }
 
     const quickBar = document.getElementById('teacherQuickControlBar');
@@ -26536,6 +26677,317 @@ class App {
         if (!container.contains(e.target)) {
           menu.style.display = 'none';
         }
+      }
+    });
+  }
+
+  // ===== 右下角常用管理功能快捷徑 (FAB ⚡, 需求 2) =====
+  getDefaultAdminShortcutKeys() {
+    return ['classPoints', 'classAttendance', 'gameBuzz', 'gameFocus', 'classReaction', 'shareNews'];
+  }
+
+  getAdminFeaturesCatalog() {
+    return [
+      { key: 'classPoints', title: '學生個人積分管理', category: '班級經營與學生', icon: 'images/admin_icons/class_points.svg', isDefault: true },
+      { key: 'classAttendance', title: '線上點名與出缺勤管理', category: '班級經營與學生', icon: 'images/admin_icons/class_attendance.svg', isDefault: true },
+      { key: 'gameBuzz', title: '搶答', category: '課堂互動與遊戲', icon: 'images/admin_icons/game_buzz.svg', isDefault: true },
+      { key: 'gameFocus', title: '專注力測驗', category: '課堂互動與遊戲', icon: 'images/admin_icons/game_focus.svg', isDefault: true },
+      { key: 'classReaction', title: '即時互動回饋設定', category: '課堂互動與遊戲', icon: 'images/admin_icons/class_reaction.svg', isDefault: true },
+      { key: 'shareNews', title: '最新消息', category: '教材與消息發布', icon: 'images/admin_icons/share_news.svg', isDefault: true },
+      { key: 'gameWheel', title: '隨機抽人 (5種模式)', category: '課堂互動與遊戲', icon: 'images/admin_icons/game_wheel.svg' },
+      { key: 'gameWordCloud', title: '即時文字雲', category: '課堂互動與遊戲', icon: 'images/admin_icons/game_focus.svg' },
+      { key: 'quizChoice', title: '選擇題測驗', category: '測驗出題管理', icon: 'images/admin_icons/quiz_choice.svg' },
+      { key: 'quizVideo', title: '影片出題測驗', category: '測驗出題管理', icon: 'images/admin_icons/quiz_video.svg' },
+      { key: 'classStudents', title: '學生名冊與參與歷程管理', category: '班級經營與學生', icon: 'images/admin_icons/class_students.svg' },
+      { key: 'classGroups', title: '學生分組與小組積分管理', category: '班級經營與學生', icon: 'images/admin_icons/class_groups.svg' },
+      { key: 'classReg', title: '班級開課管理與切換班級', category: '班級經營與學生', icon: 'images/admin_icons/class_reg.svg' },
+      { key: 'classAvatar', title: '班級專屬頭像管理與圖鑑', category: '班級經營與學生', icon: 'images/admin_icons/class_avatar.svg' },
+      { key: 'classCopy', title: '跨班教材與測驗複製', category: '班級經營與學生', icon: 'images/admin_icons/class_copy.svg' },
+      { key: 'shareMaterials', title: '課程進度與教材', category: '教材與消息發布', icon: 'images/admin_icons/share_materials.svg' },
+      { key: 'qaMgmt', title: '提問管理', category: '同學提問與資料分享', icon: 'images/admin_icons/qa_mgmt.svg' },
+      { key: 'imgMgmt', title: '圖片管理', category: '同學提問與資料分享', icon: 'images/admin_icons/img_mgmt.svg' },
+      { key: 'vidMgmt', title: '影片管理', category: '同學提問與資料分享', icon: 'images/admin_icons/vid_mgmt.svg' },
+      { key: 'classSound', title: '測驗與互動音效設定', category: '系統與安全性', icon: 'images/admin_icons/class_sound.svg' },
+      { key: 'classSecurity', title: '教師身分與密碼安全設定', category: '系統與安全性', icon: 'images/admin_icons/class_security.svg' },
+      { key: 'systemReset', title: '系統重設與備份管理', category: '系統與安全性', icon: 'images/admin_icons/system_reset.svg' },
+      { key: 'whiteboardFeatures', title: '功能模組啟用設定', category: '系統與安全性', icon: 'images/admin_icons/system_reset.svg' }
+    ];
+  }
+
+  getAdminShortcuts() {
+    try {
+      const raw = localStorage.getItem('wb_admin_shortcuts');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const validKeys = this.getAdminFeaturesCatalog().map(f => f.key);
+          const filtered = parsed.filter(k => validKeys.includes(k));
+          if (filtered.length > 0) {
+            return filtered.slice(0, 10);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('讀取常用管理功能快捷徑失敗：', e);
+    }
+    return this.getDefaultAdminShortcutKeys();
+  }
+
+  saveAdminShortcuts(keys) {
+    const validKeys = this.getAdminFeaturesCatalog().map(f => f.key);
+    const sanitized = (Array.isArray(keys) ? keys : this.getDefaultAdminShortcutKeys())
+      .filter(k => validKeys.includes(k))
+      .slice(0, 10);
+    localStorage.setItem('wb_admin_shortcuts', JSON.stringify(sanitized));
+    this.renderAdminShortcutsMenu();
+  }
+
+  toggleAdminShortcutsMenu(force) {
+    const menu = document.getElementById('fabAdminShortcutsMenu');
+    if (!menu) return;
+    const shouldOpen = force !== undefined ? force : (menu.style.display === 'none' || !menu.style.display);
+    if (shouldOpen) {
+      this.renderAdminShortcutsMenu();
+      menu.style.display = 'flex';
+    } else {
+      menu.style.display = 'none';
+    }
+  }
+
+  renderAdminShortcutsMenu() {
+    const listEl = document.getElementById('fabAdminShortcutsList');
+    const badgeEl = document.getElementById('fabShortcutsCountBadge');
+    if (!listEl) return;
+
+    const shortcuts = this.getAdminShortcuts();
+    const catalog = this.getAdminFeaturesCatalog();
+    const catalogMap = {};
+    catalog.forEach(item => { catalogMap[item.key] = item; });
+
+    if (badgeEl) {
+      badgeEl.textContent = `${shortcuts.length}/10`;
+    }
+
+    listEl.innerHTML = '';
+    if (shortcuts.length === 0) {
+      listEl.innerHTML = `
+        <div style="font-size: 14px; color: var(--text-secondary); text-align: center; padding: 16px 8px;">
+          尚未設定常用功能，請點擊下方自訂按鈕加入！
+        </div>
+      `;
+      return;
+    }
+
+    shortcuts.forEach(key => {
+      const feature = catalogMap[key];
+      if (!feature) return;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'fab-shortcut-item';
+      btn.title = `前往【${feature.title}】`;
+      btn.innerHTML = `
+        <img src="${feature.icon}" alt="" class="fab-shortcut-item-icon" onerror="this.style.display='none'">
+        <span class="fab-shortcut-item-text">${this.escapeHtml(feature.title)}</span>
+        <span class="fab-shortcut-item-arrow">›</span>
+      `;
+      btn.addEventListener('click', () => {
+        this.executeAdminShortcut(key);
+      });
+      listEl.appendChild(btn);
+    });
+  }
+
+  executeAdminShortcut(key) {
+    this.toggleAdminShortcutsMenu(false);
+    if (typeof this.openAdminFeature === 'function') {
+      this.openAdminFeature(key);
+    }
+  }
+
+  openAdminShortcutsModal() {
+    this.toggleAdminShortcutsMenu(false);
+    this._draftAdminShortcuts = [...this.getAdminShortcuts()];
+    this.renderAdminShortcutsModalUI();
+    const modal = document.getElementById('modalAdminShortcuts');
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  closeAdminShortcutsModal() {
+    const modal = document.getElementById('modalAdminShortcuts');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    this._draftAdminShortcuts = null;
+  }
+
+  renderAdminShortcutsModalUI() {
+    const chipsEl = document.getElementById('adminShortcutsSelectedChips');
+    const checklistEl = document.getElementById('adminShortcutsFullChecklist');
+    const countBadge = document.getElementById('adminShortcutsModalCountBadge');
+    if (!checklistEl) return;
+
+    const draft = this._draftAdminShortcuts || this.getAdminShortcuts();
+    const catalog = this.getAdminFeaturesCatalog();
+    const catalogMap = {};
+    catalog.forEach(item => { catalogMap[item.key] = item; });
+
+    if (countBadge) {
+      countBadge.textContent = `已選 ${draft.length} / 10 個`;
+    }
+
+    // 渲染 Chips
+    if (chipsEl) {
+      chipsEl.innerHTML = '';
+      if (draft.length === 0) {
+        chipsEl.innerHTML = `<span style="font-size: 14px; color: var(--text-secondary);">尚未選擇任何常用功能，請由下方勾選（最多 10 個）</span>`;
+      } else {
+        draft.forEach(key => {
+          const feat = catalogMap[key];
+          if (!feat) return;
+          const chip = document.createElement('span');
+          chip.className = 'admin-shortcuts-chip';
+          chip.innerHTML = `
+            <img src="${feat.icon}" alt="" style="width: 18px; height: 18px; object-fit: contain;">
+            <span>${this.escapeHtml(feat.title)}</span>
+            <button type="button" class="admin-shortcuts-chip-remove" title="移除此捷徑">✕</button>
+          `;
+          chip.querySelector('.admin-shortcuts-chip-remove').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.removeAdminShortcutFromDraft(key);
+          });
+          chipsEl.appendChild(chip);
+        });
+      }
+    }
+
+    // 依分類分組渲染核取清單
+    const categories = [];
+    catalog.forEach(item => {
+      if (!categories.includes(item.category)) categories.push(item.category);
+    });
+
+    checklistEl.innerHTML = '';
+    categories.forEach(catName => {
+      const catCard = document.createElement('div');
+      catCard.className = 'admin-shortcuts-cat-card';
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'admin-shortcuts-cat-title';
+      titleEl.innerHTML = `<span>📁</span><span>${this.escapeHtml(catName)}</span>`;
+      catCard.appendChild(titleEl);
+
+      const gridEl = document.createElement('div');
+      gridEl.className = 'admin-shortcuts-grid';
+
+      catalog.filter(item => item.category === catName).forEach(item => {
+        const isChecked = draft.includes(item.key);
+        const row = document.createElement('div');
+        row.className = `admin-shortcuts-item-row${isChecked ? ' is-checked' : ''}`;
+        row.innerHTML = `
+          <input type="checkbox" class="admin-shortcuts-checkbox" ${isChecked ? 'checked' : ''}>
+          <img src="${item.icon}" alt="" class="admin-shortcuts-item-icon" onerror="this.style.display='none'">
+          <span class="admin-shortcuts-item-name">${this.escapeHtml(item.title)}</span>
+        `;
+
+        row.addEventListener('click', (e) => {
+          if (e.target && e.target.tagName === 'INPUT') return;
+          this.toggleAdminShortcutDraft(item.key);
+        });
+
+        const chk = row.querySelector('.admin-shortcuts-checkbox');
+        chk.addEventListener('change', () => {
+          this.toggleAdminShortcutDraft(item.key);
+        });
+
+        gridEl.appendChild(row);
+      });
+
+      catCard.appendChild(gridEl);
+      checklistEl.appendChild(catCard);
+    });
+  }
+
+  toggleAdminShortcutDraft(key) {
+    if (!this._draftAdminShortcuts) {
+      this._draftAdminShortcuts = [...this.getAdminShortcuts()];
+    }
+    const idx = this._draftAdminShortcuts.indexOf(key);
+    if (idx >= 0) {
+      this._draftAdminShortcuts.splice(idx, 1);
+    } else {
+      if (this._draftAdminShortcuts.length >= 10) {
+        if (typeof this.showNotification === 'function') {
+          this.showNotification('⚠️ 數量上限提示', '最多只能設定 10 個常用管理功能喔！請先取消勾選其他功能。');
+        } else {
+          alert('最多只能設定 10 個常用管理功能喔！請先取消勾選其他功能。');
+        }
+        this.renderAdminShortcutsModalUI();
+        return;
+      }
+      this._draftAdminShortcuts.push(key);
+    }
+    this.renderAdminShortcutsModalUI();
+  }
+
+  removeAdminShortcutFromDraft(key) {
+    if (!this._draftAdminShortcuts) {
+      this._draftAdminShortcuts = [...this.getAdminShortcuts()];
+    }
+    const idx = this._draftAdminShortcuts.indexOf(key);
+    if (idx >= 0) {
+      this._draftAdminShortcuts.splice(idx, 1);
+      this.renderAdminShortcutsModalUI();
+    }
+  }
+
+  resetAdminShortcutsToDefault() {
+    this._draftAdminShortcuts = [...this.getDefaultAdminShortcutKeys()];
+    this.renderAdminShortcutsModalUI();
+    if (typeof this.showNotification === 'function') {
+      this.showNotification('已恢復預設值', '已重設為 6 項系統預設常用功能，點擊「儲存並套用」即可生效。');
+    }
+  }
+
+  saveAdminShortcutsModal() {
+    const list = this._draftAdminShortcuts || this.getAdminShortcuts();
+    this.saveAdminShortcuts(list);
+    this.closeAdminShortcutsModal();
+    if (typeof this.showNotification === 'function') {
+      this.showNotification('快捷設定已儲存', `已成功設定 ${list.length} 個常用管理功能！`);
+    }
+  }
+
+  initFabAdminShortcuts() {
+    this.renderAdminShortcutsMenu();
+
+    document.addEventListener('click', (e) => {
+      // 點擊外部關閉常用功能選單
+      const shortcutsContainer = document.getElementById('fabAdminShortcutsContainer');
+      const shortcutsMenu = document.getElementById('fabAdminShortcutsMenu');
+      if (shortcutsContainer && shortcutsMenu && shortcutsMenu.style.display !== 'none') {
+        if (!shortcutsContainer.contains(e.target)) {
+          shortcutsMenu.style.display = 'none';
+        }
+      }
+
+      // 點擊外部關閉快速切換情境選單
+      const reactionDock = document.getElementById('liveReactionDock');
+      const scenarioMenu = document.getElementById('reactionScenarioMenu');
+      if (reactionDock && scenarioMenu && scenarioMenu.style.display !== 'none') {
+        if (!reactionDock.contains(e.target)) {
+          scenarioMenu.style.display = 'none';
+        }
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.toggleAdminShortcutsMenu(false);
+        this.toggleReactionScenarioMenu(false);
+        this.closeAdminShortcutsModal();
       }
     });
   }
