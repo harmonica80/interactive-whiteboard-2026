@@ -1,4 +1,16 @@
 # System Log
+## 2026-11-03 - 修復限時動態簽到點數歷程寫入與學生端即時彩帶激勵動畫
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **落實限時動態簽到點數歷程寫入**：
+     - 原先 `submitStudentCheckInCode()` 僅更新本機 `localStorage`，未真正寫入 Firebase，導致「簽到完成同學自動獎勵 +1 點」未記錄至雲端與學生點數歷程中。
+     - 修正後，當學生輸入 4 位動態驗證碼完成簽到且該次簽到設定了獎勵點數（`status.rewardPoints > 0`）時，系統會自動向 Firebase `quiz/students/${myUid}` 寫入累加後點數，並於 `quiz/students/${myUid}/pointsLog/${logId}` 新增一筆型態為 `checkIn` 之完整點數記錄（含金額、結餘、簽到場次主題與時間戳記），使教師端「學生個人積分管理」之個別學生點數歷程能即時同步查驗。
+     - 同步更新學生端頂部橫幅、個人懸浮點數徽章（`#floatingStudentPointsBadge`）與簽到成功彈窗之獎勵標籤（`#studentCheckInRewardBadge`）。
+  2. **實作學生端彩帶激勵動畫與和弦鈴聲**：
+     - 正式實作 `triggerRewardAnimation(points, reason)` 與 `launchConfettiRibbons()`，透過全螢幕獨立 Canvas（`#rewardConfettiCanvas`）呈現 120 顆彩色亮片與長條彩帶（雙側禮砲仰角發射、物理重力飄落、3D 翻轉與空氣阻尼特效），並搭配 Web Audio API 合成愉悅獲勝鈴聲與 `#studentPointsAwardToast` 彈窗。
+     - 整合 `showPointsAwardNotification`，使學生無論在簽到獲獎或測驗/課堂互動獲得點數時，皆能即時享有絢爛的彩帶激勵反饋。
+  3. 更新快取版本號至 `?v=486`。
+
 ## 2026-11-03 - 修正更新歷程移除 3.20.01「最新版本」標籤並將唯一標籤原則寫入 AGENTS.md 工作守則
 - 影響檔案：`index.html`, `AGENTS.md`, `SYSTEM_LOG.md`。
 - 修改項目：

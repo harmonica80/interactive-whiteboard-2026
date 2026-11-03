@@ -21218,19 +21218,184 @@ class App {
     if (!toast || !deltaEl || !reasonEl) return;
 
     deltaEl.textContent = `🎉 獲得課堂點數 +${amount} 點！`;
-    reasonEl.textContent = `${reason || '表現優良'} (目前累積 ${totalPoints} 點)`;
+    const curPts = totalPoints !== undefined ? totalPoints : (this.studentPreviousPoints || 0);
+    reasonEl.textContent = `${reason || '表現優良'}${curPts !== undefined && curPts !== null ? ` (目前累積 ${curPts} 點)` : ''}`;
 
     toast.classList.add('active');
 
-    // 播放音效
+    // 播放音效 (優先使用 soundManager，若無則以 Web Audio API 播放清脆獲勝鈴聲)
     if (window.soundManager && typeof window.soundManager.play === 'function') {
       try { window.soundManager.play('correct'); } catch (e) {}
+    } else {
+      this.playRewardChime();
     }
+
+    // 觸發全螢幕彩帶爆破與飄落激勵動畫
+    this.launchConfettiRibbons();
 
     if (this.pointsAwardToastTimer) clearTimeout(this.pointsAwardToastTimer);
     this.pointsAwardToastTimer = setTimeout(() => {
       toast.classList.remove('active');
     }, 3800);
+  }
+
+  // 觸發學生端獎勵激勵動畫與通知浮窗
+  triggerRewardAnimation(points = 1, reason = '限時動態簽到獎勵') {
+    const myUid = this.getUserId();
+    const curPts = this.studentPreviousPoints !== undefined
+      ? this.studentPreviousPoints
+      : parseInt(localStorage.getItem(`points_${myUid}`) || '0', 10);
+    this.showPointsAwardNotification(points, reason, curPts);
+  }
+
+  // 播放愉悅獲勝和弦鈴聲 (Web Audio API 合成)
+  playRewardChime() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!this.rewardAudioCtx) this.rewardAudioCtx = new AudioCtx();
+      const ctx = this.rewardAudioCtx;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      const now = ctx.currentTime;
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+        gain.gain.setValueAtTime(0.09, now + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 0.36);
+      });
+    } catch (e) {}
+  }
+
+  // 繽紛彩帶與亮片漫天飄落動畫 (Confetti & Ribbon Effect)
+  launchConfettiRibbons() {
+    let canvas = document.getElementById('rewardConfettiCanvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.id = 'rewardConfettiCanvas';
+      canvas.style.position = 'fixed';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.width = '100vw';
+      canvas.style.height = '100vh';
+      canvas.style.pointerEvents = 'none';
+      canvas.style.zIndex = '29999';
+      document.body.appendChild(canvas);
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.display = 'block';
+
+    if (this.confettiAnimationId) {
+      cancelAnimationFrame(this.confettiAnimationId);
+      this.confettiAnimationId = null;
+    }
+
+    const confettiColors = [
+      '#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#007aff',
+      '#af52de', '#ff2d55', '#5856d6', '#06b6d4', '#ec4899'
+    ];
+
+    const particles = [];
+    const particleCount = 120;
+
+    for (let i = 0; i < particleCount; i++) {
+      const isLeft = i % 2 === 0;
+      const startX = isLeft
+        ? (canvas.width * 0.15 + (Math.random() * 80 - 40))
+        : (canvas.width * 0.85 + (Math.random() * 80 - 40));
+      const startY = canvas.height * 0.88 + (Math.random() * 40 - 20);
+      
+      const angle = isLeft
+        ? (-Math.PI / 4 + (Math.random() * 0.4 - 0.2))
+        : (-3 * Math.PI / 4 + (Math.random() * 0.4 - 0.2));
+      const speed = Math.random() * 16 + 14;
+
+      const isStrip = Math.random() > 0.35;
+      const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+
+      particles.push({
+        x: startX,
+        y: startY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        w: isStrip ? (Math.random() * 6 + 8) : (Math.random() * 6 + 6),
+        h: isStrip ? (Math.random() * 14 + 16) : (Math.random() * 6 + 6),
+        color,
+        isStrip,
+        alpha: 1,
+        decay: Math.random() * 0.008 + 0.007,
+        gravity: 0.42,
+        drag: 0.965,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.15,
+        tiltAngle: Math.random() * Math.PI,
+        tiltSpeed: Math.random() * 0.1 + 0.06,
+        wobble: Math.random() * Math.PI * 2,
+        wobbleSpeed: Math.random() * 0.08 + 0.04
+      });
+    }
+
+    const self = this;
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      let activeCount = 0;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (p.alpha <= 0 || p.y > canvas.height + 60) continue;
+        activeCount++;
+
+        p.vx *= p.drag;
+        p.vy *= p.drag;
+        p.vy += p.gravity;
+
+        p.wobble += p.wobbleSpeed;
+        p.x += p.vx + Math.sin(p.wobble) * 2;
+        p.y += p.vy;
+
+        p.rotation += p.rotSpeed;
+        p.tiltAngle += p.tiltSpeed;
+        p.alpha -= p.decay;
+
+        const tilt = Math.sin(p.tiltAngle);
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+
+        ctx.fillStyle = p.color;
+        if (p.isStrip) {
+          ctx.fillRect(-p.w / 2 * tilt, -p.h / 2, p.w * tilt, p.h);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      if (activeCount > 0) {
+        self.confettiAnimationId = requestAnimationFrame(render);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'none';
+        self.confettiAnimationId = null;
+      }
+    };
+
+    self.confettiAnimationId = requestAnimationFrame(render);
   }
 
   // ===== 教師端：學生積分管理專屬全頁面板業務 =====
@@ -22427,6 +22592,25 @@ class App {
       }
     }
 
+    const rewardHint = document.getElementById('studentCheckInRewardHint');
+    if (rewardHint) {
+      if (status.rewardPoints && status.rewardPoints > 0) {
+        rewardHint.textContent = `✨ 簽到完成即可獲得出席獎勵 +${status.rewardPoints} 點！`;
+      } else {
+        rewardHint.textContent = '✨ 簽到完成即可列入課堂出席記錄！';
+      }
+    }
+
+    const rewardBadge = document.getElementById('studentCheckInRewardBadge');
+    if (rewardBadge) {
+      if (status.rewardPoints && status.rewardPoints > 0) {
+        rewardBadge.style.display = 'inline-block';
+        rewardBadge.textContent = `⭐ 獲得獎勵 +${status.rewardPoints} 點`;
+      } else {
+        rewardBadge.style.display = 'none';
+      }
+    }
+
     // 啟動學生端本地倒數計時
     if (this.studentCheckInTimerId) clearInterval(this.studentCheckInTimerId);
     if (status.expireAt > 0) {
@@ -22457,6 +22641,8 @@ class App {
 
   // 學生端送出 4 位驗證碼
   async submitStudentCheckInCode() {
+    if (this.isSubmittingCheckIn) return;
+
     const input = document.getElementById('studentCheckInCodeInput');
     const errorMsg = document.getElementById('studentCheckInErrorMsg');
     if (!input) return;
@@ -22489,49 +22675,125 @@ class App {
       return;
     }
 
-    // 驗證碼正確！寫入簽到記錄
-    const myUid = this.getUserId();
-    const myName = this.getCurrentUserName();
-    const myAvatar = this.getCurrentUserAvatar();
-
-    const db = window.db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
-    if (!db) return;
-
-    await db.ref(`attendance/activeCheckIn/records/${myUid}`).set({
-      uid: myUid,
-      name: myName,
-      avatar: myAvatar,
-      code,
-      time: Date.now()
-    });
-
-    // 標記本機已簽到 (綁定專屬 sessionId)
     const sessionId = status.sessionId || status.startedAt || 'default_session';
-    this.studentSignedCheckInSession = sessionId;
-    localStorage.setItem('last_signed_checkin_session', sessionId);
-
-    // 若有獎勵點數，更新學生個人點數
-    if (status.rewardPoints && status.rewardPoints > 0) {
-      const curPts = parseInt(localStorage.getItem(`points_${myUid}`) || '0', 10);
-      const newPts = curPts + status.rewardPoints;
-      localStorage.setItem(`points_${myUid}`, newPts);
-
-      // 若有激勵動畫，觸發彩帶
-      if (typeof this.triggerRewardAnimation === 'function') {
-        this.triggerRewardAnimation(status.rewardPoints);
+    const alreadySigned = this.isStudentAlreadySigned(status);
+    if (alreadySigned) {
+      if (errorMsg) {
+        errorMsg.textContent = '✅ 您先前已完成簽到，無需重複送出！';
+        errorMsg.style.display = 'block';
       }
+      return;
     }
 
-    // 更新頂部橫幅為簽到完成
-    this.updateStudentCheckInBanner(status);
+    this.isSubmittingCheckIn = true;
+    try {
+      // 驗證碼正確！寫入簽到記錄
+      const myUid = this.getUserId();
+      const myName = this.getCurrentUserName() || '同學';
+      const myAvatar = this.getCurrentUserAvatar();
 
-    // 切換為簽到成功視窗
-    const inputSection = document.getElementById('studentCheckInInputSection');
-    const successBox = document.getElementById('studentCheckInSuccessBox');
-    if (inputSection) inputSection.style.display = 'none';
-    if (successBox) successBox.style.display = 'flex';
+      const db = window.db || (typeof firebase !== 'undefined' && firebase.database ? firebase.database() : null);
+      if (!db) return;
 
-    if (errorMsg) errorMsg.style.display = 'none';
+      await db.ref(`attendance/activeCheckIn/records/${myUid}`).set({
+        uid: myUid,
+        name: myName,
+        avatar: myAvatar,
+        code,
+        time: Date.now()
+      });
+
+      // 標記本機已簽到 (綁定專屬 sessionId)
+      this.studentSignedCheckInSession = sessionId;
+      localStorage.setItem('last_signed_checkin_session', sessionId);
+
+      // 若有獎勵點數，寫入點數歷程並更新學生個人點數
+      if (status.rewardPoints && status.rewardPoints > 0) {
+        const rewardPts = parseInt(status.rewardPoints, 10) || 1;
+        let currentPoints = 0;
+        let studentData = {};
+        try {
+          const snap = await db.ref(`quiz/students/${myUid}`).once('value');
+          studentData = snap.val() || {};
+          currentPoints = parseInt(studentData.points, 10) || 0;
+        } catch (e) {
+          console.warn('Failed to read student points from firebase:', e);
+          currentPoints = parseInt(localStorage.getItem(`points_${myUid}`) || '0', 10);
+        }
+
+        const newPts = currentPoints + rewardPts;
+        const logId = db.ref('quiz/students').child(myUid).child('pointsLog').push().key || ('log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6));
+        const sessionTitle = status.title ? `限時動態簽到（${status.title}）` : '限時動態簽到獎勵';
+        const logEntry = {
+          amount: rewardPts,
+          balance: newPts,
+          reason: sessionTitle,
+          type: 'checkIn',
+          timestamp: Date.now()
+        };
+
+        const updates = {};
+        updates[`quiz/students/${myUid}/name`] = myName;
+        updates[`quiz/students/${myUid}/avatar`] = myAvatar !== undefined ? myAvatar : 0;
+        updates[`quiz/students/${myUid}/points`] = newPts;
+        updates[`quiz/students/${myUid}/pointsLog/${logId}`] = logEntry;
+        updates[`quiz/students/${myUid}/updatedAt`] = Date.now();
+
+        await db.ref().update(updates);
+
+        // 同步本地狀態與快取
+        localStorage.setItem(`points_${myUid}`, newPts);
+        if (!this.registeredStudents) this.registeredStudents = {};
+        if (!this.registeredStudents[myUid]) {
+          this.registeredStudents[myUid] = {
+            ...studentData,
+            name: myName,
+            avatar: myAvatar !== undefined ? myAvatar : 0,
+            points: newPts,
+            pointsLog: {}
+          };
+        } else {
+          this.registeredStudents[myUid].points = newPts;
+          if (!this.registeredStudents[myUid].pointsLog) this.registeredStudents[myUid].pointsLog = {};
+        }
+        this.registeredStudents[myUid].pointsLog[logId] = logEntry;
+
+        this.studentPreviousPoints = newPts;
+        const badge = document.getElementById('floatingStudentPointsBadge');
+        if (badge) {
+          badge.textContent = `${newPts}`;
+          if (this.showStudentPointsToStudents !== false) {
+            badge.style.display = 'inline-flex';
+          }
+        }
+
+        // 觸發彩帶激勵動畫與通知浮窗
+        this.triggerRewardAnimation(rewardPts, sessionTitle);
+      }
+
+      // 更新頂部橫幅為簽到完成
+      this.updateStudentCheckInBanner(status);
+
+      // 切換為簽到成功視窗
+      const inputSection = document.getElementById('studentCheckInInputSection');
+      const successBox = document.getElementById('studentCheckInSuccessBox');
+      if (inputSection) inputSection.style.display = 'none';
+      if (successBox) successBox.style.display = 'flex';
+
+      const rewardBadge = document.getElementById('studentCheckInRewardBadge');
+      if (rewardBadge) {
+        if (status.rewardPoints && status.rewardPoints > 0) {
+          rewardBadge.style.display = 'inline-block';
+          rewardBadge.textContent = `⭐ 獲得獎勵 +${status.rewardPoints} 點`;
+        } else {
+          rewardBadge.style.display = 'none';
+        }
+      }
+
+      if (errorMsg) errorMsg.style.display = 'none';
+    } finally {
+      this.isSubmittingCheckIn = false;
+    }
   }
 
   // 關閉學生端簽到彈窗
