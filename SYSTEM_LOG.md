@@ -1,4 +1,11 @@
 # System Log
+## 2026-11-03 - 後台頂部快速切換下拉選單補齊「L. 懸浮按鈕顯示位置設定」選項
+- 影響檔案：`index.html`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. 於後台工作區頂部之「快速切換：」下拉選單（`#adminQuickSwitchSelect`）中的「班級管理」分組內，補齊 `<option value="floatingButtonPosition">L. 懸浮按鈕顯示位置設定</option>`。
+  2. 同步微調「I. 學生個人積分管理」與「K. 學生分組與小組積分管理」之選項名稱，與各功能卡片標題完全一致。
+  3. 更新快取版本號至 `?v=488`。
+
 ## 2026-11-03 - 班級管理新增「懸浮按鈕顯示位置設定」功能（支援左側/右側切換與僅老師/全班同步）
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
