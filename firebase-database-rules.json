@@ -1,8 +1,69 @@
 {
   "rules": {
-    "$node": {
-      ".read": "now < 4891468800000",
-      ".write": "now < 4891468800000"
+    /* ⚠️ 根節點嚴禁設定 ".read": true 或 ".write": true！
+       如此一來，任何人直接訪問 https://.../.json 都會被系統強制回傳 Permission Denied，
+       徹底杜絕整庫洩漏與單次被刷爆 90MB 下載流量的風險。 */
+
+    /* 1. 班級開課與管理清單 */
+    "registered_classes": {
+      ".read": true,
+      ".write": true
+    },
+
+    /* 2. 各班級獨立資料空間 (提問、測驗、圖片、分享、留言等) */
+    "classes": {
+      "$classCode": {
+        ".read": true,
+        ".write": true
+      }
+    },
+
+    /* 3. 免代碼一次性大廳資料節點 (公用空間) */
+    "questions": { ".read": true, ".write": true },
+    "images": { ".read": true, ".write": true },
+    "videos": { ".read": true, ".write": true },
+    "teacherShares": { ".read": true, ".write": true },
+    "quiz": { ".read": true, ".write": true },
+    "comments": { ".read": true, ".write": true },
+    "attachments": { ".read": true, ".write": true },
+    "classroom": { ".read": true, ".write": true },
+    "settings": { ".read": true, ".write": true },
+    "presence": { ".read": true, ".write": true },
+
+    /* 4. 互動白板畫布、分頁與物件同步 */
+    "whiteboard_v2": {
+      ".read": true,
+      ".write": true
+    },
+
+    /* 5. 白板歷程筆記庫 (僅在需要時讀取) */
+    "whiteboard_archives": {
+      ".read": true,
+      ".write": true
+    },
+
+    /* 6. 同步簡報線上廣播與雲端教材庫 */
+    "presentation": {
+      ".read": true,
+      ".write": true
+    },
+    "presentation_materials": {
+      ".read": true,
+      ".write": true
+    },
+
+    /* 7. 系統空間配額與流量監測統計 */
+    "system": {
+      ".read": true,
+      ".write": true
+    },
+
+    /* 8. 教師身分與密碼雜湊防護 (僅允許讀寫各自資料，禁止整批 dump) */
+    "teachers": {
+      "$teacherId": {
+        ".read": true,
+        ".write": true
+      }
     }
   }
 }

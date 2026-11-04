@@ -9189,6 +9189,22 @@ body.is-admin-logged-in .floating-student-avatar-container {
   pointer-events: auto !important;
 }
 
+/* 雲端大檔與過期歷程清理中心彈窗 */
+#modalCloudCleanup {
+  z-index: 20050 !important;
+}
+
+#modalCloudCleanup.active {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+#modalCloudCleanup.active .modal-content {
+  transform: scale(1) !important;
+}
+
 #modalClassInvite.active .modal-card,
 #modalClassInvite.active .modal-content {
   transform: scale(1) !important;

@@ -7251,18 +7251,28 @@ class App {
   // ===== 雲端大檔與過期歷程清理中心 (Cloud Storage & Traffic Deep Cleanup) =====
   openCloudCleanupModal() {
     if (!this.isAdmin) {
+      if (typeof this.showAdminPasswordModal === 'function') {
+        this.showAdminPasswordModal(() => {
+          this.openCloudCleanupModal();
+        });
+        return;
+      }
       this.showNotification('權限不足', '僅有教師管理員可開啟雲端大檔清理中心！');
       return;
     }
     const modal = document.getElementById('modalCloudCleanup');
     if (!modal) return;
     modal.style.display = 'flex';
+    modal.classList.add('active');
     this.scanCloudStorageUsage(false);
   }
 
   closeCloudCleanupModal() {
     const modal = document.getElementById('modalCloudCleanup');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
   }
 
   async scanCloudStorageUsage(showToast = false) {

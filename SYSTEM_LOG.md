@@ -1,4 +1,15 @@
 # System Log
+## 2026-11-05 - 修復深度清理大檔彈窗 active 樣式與更新 Firebase 安全規則阻斷 /.json 洩漏
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `firebase-database-rules.json`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修復「🧹 深度清理大檔」按鈕點擊無反應問題**：
+     - 因 `.modal-overlay` 預設具備 `opacity: 0; visibility: hidden;`，補充 `modal.classList.add('active')` 與 CSS 顯隱樣式，修復點擊後彈窗隱形的問題。
+     - 補充管理員身分檢查友善引導：若尚未登入管理員，點擊時自動彈出密碼輸入彈窗，驗證後立即無縫開啟清理中心。
+  2. **全面更新 Firebase 資料庫安全規則（`firebase-database-rules.json`）**：
+     - 徹底移除根節點之 `".read": true`，全面封鎖外部直接存取 `https://.../.json` 下載全庫與刷爆流量的資安漏洞（強制 Permission Denied）。
+     - 採細緻化節點白名單授權（`classes`, `registered_classes`, `whiteboard_v2`, `presentation`, `teachers/$id` 等），確保所有教學互動功能維持正常運作。
+  3. 更新快取版本號至 `?v=492`。
+
 ## 2026-11-05 - Firebase 流量與儲存空間深度優化（阻斷大檔常駐監聽與新增雲端大檔清理中心）
 - 影響檔案：`index.html`, `whiteboard.html`, `css/style.css`, `js/app.js`, `js/presentation_core.js`, `js/whiteboard_core.js`, `SYSTEM_LOG.md`。
 - 修改項目：
