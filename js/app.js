@@ -5553,12 +5553,12 @@ class App {
     if (imgUserEl) {
       imgUserEl.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
-          <span style="font-size: 13px; color: #fff; display: inline-flex; align-items: center; gap: 6px;">${this.renderAvatarHtml(this.getUserAvatar(img.userId, img.user, img.avatar), 20)}<span>上傳者：${this.escapeHtml(img.user || '同學')}</span></span>
+          <span style="font-size: 14px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">${this.renderAvatarHtml(this.getUserAvatar(img.userId, img.user, img.avatar), 20)}<span>上傳者：${this.escapeHtml(img.user || '同學')}</span></span>
           ${(isOwnerImg || this.isAdmin) ? `
             <div style="display: inline-flex; gap: 6px;">
-              <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('images', '${img.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(0,122,255,0.3); color: #fff; border: 1px solid var(--accent-color);">📤 複製到其他班</button>
-              <button type="button" class="preset-btn" onclick="window.app.editImagePrompt('${img.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3);">✏️ 修改檔名</button>
-              <button type="button" class="preset-btn" onclick="window.app.deleteMyImage('${img.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; color: #ff453a; border-color: #ff453a; background: transparent;">🗑️ 刪除圖片</button>
+              <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('images', '${img.id}')" style="padding: 2px 8px; font-size: 14px; border-radius: 4px; cursor: pointer; background: var(--bg-card); color: var(--accent-color); border: 1px solid var(--accent-color);">📤 複製到其他班</button>
+              <button type="button" class="preset-btn" onclick="window.app.editImagePrompt('${img.id}')" style="padding: 2px 8px; font-size: 14px; border-radius: 4px; cursor: pointer; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">✏️ 修改檔名</button>
+              <button type="button" class="preset-btn" onclick="window.app.deleteMyImage('${img.id}')" style="padding: 2px 8px; font-size: 14px; border-radius: 4px; cursor: pointer; color: var(--danger-color); border: 1px solid var(--danger-color); background: var(--bg-card);">🗑️ 刪除圖片</button>
             </div>
           ` : ''}
         </div>
@@ -5659,12 +5659,12 @@ class App {
     if (vidUserEl) {
       vidUserEl.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px;">
-          <span style="font-size: 13px; color: #fff; display: inline-flex; align-items: center; gap: 6px;">${this.renderAvatarHtml(this.getUserAvatar(vid.userId, vid.user, vid.avatar), 20)}<span>分享者：${this.escapeHtml(vid.user || '同學')}</span></span>
+          <span style="font-size: 14px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">${this.renderAvatarHtml(this.getUserAvatar(vid.userId, vid.user, vid.avatar), 20)}<span>分享者：${this.escapeHtml(vid.user || '同學')}</span></span>
           ${(isOwnerVid || this.isAdmin) ? `
             <div style="display: inline-flex; gap: 6px;">
-              <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('videos', '${vid.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(0,122,255,0.3); color: #fff; border: 1px solid var(--accent-color);">📤 複製到其他班</button>
-              <button type="button" class="preset-btn" onclick="window.app.editVideoPrompt('${vid.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3);">✏️ 修改標題</button>
-              <button type="button" class="preset-btn" onclick="window.app.deleteMyVideo('${vid.id}')" style="padding: 2px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; color: #ff453a; border-color: #ff453a; background: transparent;">🗑️ 刪除影片</button>
+              <button type="button" class="preset-btn" onclick="window.app.openSingleItemCopyModal('videos', '${vid.id}')" style="padding: 2px 8px; font-size: 14px; border-radius: 4px; cursor: pointer; background: var(--bg-card); color: var(--accent-color); border: 1px solid var(--accent-color);">📤 複製到其他班</button>
+              <button type="button" class="preset-btn" onclick="window.app.editVideoPrompt('${vid.id}')" style="padding: 2px 8px; font-size: 14px; border-radius: 4px; cursor: pointer; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);">✏️ 修改標題</button>
+              <button type="button" class="preset-btn" onclick="window.app.deleteMyVideo('${vid.id}')" style="padding: 2px 8px; font-size: 14px; border-radius: 4px; cursor: pointer; color: var(--danger-color); border: 1px solid var(--danger-color); background: var(--bg-card);">🗑️ 刪除影片</button>
             </div>
           ` : ''}
         </div>
@@ -5696,7 +5696,7 @@ class App {
       playerContainer.innerHTML = `<iframe src="${embedUrl}" allow="autoplay" allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>`;
     } else {
       if (vid.hasLocalBlob && !vid.url) {
-        playerContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-size:14px;background:#000;">⏳ 正在載入影片串流，請稍候...</div>';
+        playerContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-primary);font-size:14px;background:var(--bg-primary);">⏳ 正在載入影片串流，請稍候...</div>';
         const blobKey = vid.blobKey || vid.id;
         db.ref(`video_blobs/${blobKey}`).once('value').then(snap => {
           const blobUrl = snap.val();
@@ -5705,10 +5705,10 @@ class App {
             playerContainer.innerHTML = `<video src="${blobUrl}" controls autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>`;
             if (downloadBtn) downloadBtn.href = blobUrl;
           } else {
-            playerContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ff453a;font-size:14px;background:#000;">❌ 影片內容已不存在或被移除</div>';
+            playerContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--danger-color);font-size:14px;background:var(--bg-primary);">❌ 影片內容已不存在或被移除</div>';
           }
         }).catch(err => {
-          playerContainer.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ff453a;font-size:14px;background:#000;">❌ 載入失敗：${err.message}</div>`;
+          playerContainer.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--danger-color);font-size:14px;background:var(--bg-primary);">❌ 載入失敗：${err.message}</div>`;
         });
       } else {
         playerContainer.innerHTML = `<video src="${vid.url}" controls autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>`;

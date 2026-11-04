@@ -1530,12 +1530,16 @@ body {
 /* 圖片彈出視窗 */
 .image-modal .modal-content {
   max-width: 90vw;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .image-modal .modal-body {
   padding: 0;
   text-align: center;
-  background: #000;
+  background: var(--bg-card);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1554,6 +1558,7 @@ body {
   touch-action: none;
   cursor: grab;
   position: relative;
+  background: var(--bg-primary);
 }
 
 .image-modal .image-zoom-container:active {
@@ -1594,33 +1599,33 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--bg-card);
   padding: 6px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--border-color);
   backdrop-filter: blur(5px);
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: var(--shadow);
 }
 
 .image-modal .draw-settings-panel {
   display: none;
   flex-direction: column;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   padding: 10px;
   border-radius: 8px;
   align-items: center;
   backdrop-filter: blur(5px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow);
 }
 
 .image-modal .zoom-btn {
   width: 36px;
   height: 36px;
-  border: none;
-  background: rgba(255,255,255,0.9);
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
   border-radius: 8px;
   font-size: 16px;
   cursor: pointer;
@@ -1628,17 +1633,19 @@ body {
   align-items: center;
   justify-content: center;
   transition: background 0.2s, color 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  color: #333;
+  box-shadow: var(--shadow);
+  color: var(--text-primary);
 }
 
 .image-modal .zoom-btn:hover {
-  background: white;
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 
 .image-modal .zoom-btn.active {
   background: var(--accent-color);
   color: white;
+  border-color: var(--accent-color);
 }
 
 /* Color Dots inside modal */
@@ -1647,7 +1654,7 @@ body {
   height: 18px;
   border-radius: 50%;
   border: 2px solid white;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.4);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.2);
   cursor: pointer;
   padding: 0;
   transition: transform 0.1s;
@@ -1665,8 +1672,8 @@ body {
   position: absolute;
   bottom: 120px;
   right: 15px;
-  background: rgba(0,0,0,0.65);
-  color: white;
+  background: var(--bg-card);
+  color: var(--text-primary);
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 14px;
@@ -1674,8 +1681,8 @@ body {
   z-index: 10;
   pointer-events: none;
   backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .image-modal .image-info {
@@ -3066,12 +3073,15 @@ body {
 }
 
 .image-modal .modal-nav-btn {
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .image-modal .modal-nav-btn:hover {
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 /* ===== 影片專用樣式 ===== */
 .preview-item.video-item {
@@ -3319,27 +3329,27 @@ body {
   text-align: left;
 }
 
-/* 在黑底 (如圖片/影片 modal 的 info 區) 留言樣式微調 */
+/* 圖片/影片 modal 的 info 區留言樣式連動全域主題 */
 .image-info .comments-list {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px dashed rgba(255, 255, 255, 0.15);
+  background: var(--bg-input);
+  border: 1px dashed var(--border-color);
 }
 
 .image-info .comment-item {
-  background: #1c1c1e;
-  border: 1px solid #2c2c2e;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
 }
 
 .image-info .comment-item .comment-user {
-  color: #64d2ff;
+  color: var(--accent-color);
 }
 
 .image-info .comment-item .comment-time {
-  color: #8e8e93;
+  color: var(--text-muted);
 }
 
 .image-info .comment-item .comment-text {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 /* 資料夾拖曳排序視覺樣式 */

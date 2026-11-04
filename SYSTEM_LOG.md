@@ -1,4 +1,16 @@
 # System Log
+## 2026-11-04 - 圖片分享區與影片分享區彈窗樣式全面連動四大色系主題
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **圖片分享區彈窗（`#imageModal`）全面連動主題色系**：
+     - 將原先寫死固定黑底（`#000`、`rgba(0,0,0,0.85)`）的彈窗內容區、畫布容器、資訊列改為綁定全域 CSS 主題變數（`var(--bg-card)`、`var(--bg-primary)`、`var(--border-color)`、`var(--text-primary)`）。
+     - 關閉按鈕（`#imageModalClose`）與左右切換導覽按鈕（`#imageModalPrev`、`#imageModalNext`）改為連動主題輸入背景與邊框，保持清晰的懸浮立體感。
+     - 縮放與標記工具列（`.zoom-buttons-container`、`.draw-settings-panel`、`.zoom-btn`、`#zoomInfo`）樣式全面連動主題卡片背景與文字色。
+     - 資訊欄、上傳者資訊、檔名、留言區標題、留言清單項目（`.image-info .comment-item`）及留言輸入框全面改為套用主題變數，文字大小確保 `>= 14px`。
+  2. **影片分享區彈窗（`#videoModal`）全面連動主題色系**：
+     - 同步將播放器容器、關閉按鈕、導覽按鈕、資訊列、表情符號列、留言回饋區與留言輸入框等樣式全面綁定主題 CSS 變數，在淺色、深色、粉色、淺棕色等四大主題下呈現一致且舒適的視覺體驗。
+     - 串流載入中與錯誤提示訊息改為主題背景與狀態文字色。
+  3. 更新快取版本號至 `?v=489`。
 ## 2026-11-03 - 後台頂部快速切換下拉選單補齊「L. 懸浮按鈕顯示位置設定」選項
 - 影響檔案：`index.html`, `SYSTEM_LOG.md`。
 - 修改項目：
