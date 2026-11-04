@@ -1,4 +1,14 @@
 # System Log
+## 2026-11-04 - 修復複製長短網址通知訊息彈窗遭邀請彈窗遮擋問題與按鈕即時反饋
+- 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修正全域通知彈窗（`#notifyModal`）層級設定**：
+     - 清除 `css/style.css` 舊規則中誤將 `#notifyModal` 寫死為 `z-index: 4000 !important;` 導致被邀請彈窗（`#modalClassInvite`，`z-index: 10015`）遮擋之問題。
+     - 將全域通知彈窗 `#notifyModal` 統一提升為最頂層 `z-index: 30000 !important;`，整合確認彈窗 `#customConfirmModal` 設為 `z-index: 29900 !important;`，確保在教室邀請彈窗、管理後台彈窗或任何全螢幕畫面上均能清楚浮現於最上層。
+  2. **強化複製按鈕之雙重即時視覺反饋**：
+     - 於點擊「📋 複製長連結」或「📋 複製短網址」按鈕時，除頂層彈出「📋 複製成功」通知外，按鈕本體同步短暫切換為「✅ 已複製！」（持續 1.5 秒），提供雙重明確反饋。
+  3. 更新快取版本號至 `?v=490`。
+
 ## 2026-11-04 - 圖片分享區與影片分享區彈窗樣式全面連動四大色系主題
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

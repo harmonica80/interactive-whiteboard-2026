@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=489">
+  <link rel="stylesheet" href="css/style.css?v=490">
   <link rel="stylesheet" href="css/presentation.css?v=483">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -6678,7 +6678,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=483"></script>
   <script src="js/matching_quiz.js?v=483"></script>
   <script src="js/quiz.js?v=483"></script>
-  <script src="js/app.js?v=489"></script>
+  <script src="js/app.js?v=490"></script>
   <script src="js/classics_quiz.js?v=483"></script>
   <script src="js/song_quiz.js?v=483"></script>
   <script src="js/video_quiz.js?v=483"></script>
@@ -6813,7 +6813,7 @@ Python</pre>
   </div>
   
   <!-- 整合通用確認彈出視窗 -->
-  <div id="customConfirmModal" class="modal-overlay confirm-modal" onclick="if(event.target === this && window.app) window.app.closeConfirmModal()">
+  <div id="customConfirmModal" class="modal-overlay confirm-modal" style="z-index: 29900;" onclick="if(event.target === this && window.app) window.app.closeConfirmModal()">
     <div class="modal-content">
       <div class="modal-body">
         <div id="confirmModalIcon" style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
@@ -6827,8 +6827,8 @@ Python</pre>
     </div>
   </div>
 
-  <!-- 通知彈出視窗（用於投票成功、重複投票等提示，提高 z-index 防止被任何彈窗遮擋） -->
-  <div id="notifyModal" class="modal-overlay question-modal" style="z-index: 20050;">
+  <!-- 通知彈出視窗（用於操作成功、複製網址、投票等全域提示，設為最高 z-index 30000 防止被任何彈窗遮擋） -->
+  <div id="notifyModal" class="modal-overlay question-modal" style="z-index: 30000;">
     <div class="modal-content">
       <div class="modal-header">
         <span id="notifyModalTitle">提示</span>
@@ -9035,7 +9035,7 @@ Python</pre>
           <label style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">🌐 原始長連結：</label>
           <div style="display: flex; gap: 8px;">
             <input type="text" id="txtInviteShareUrl" readonly style="flex: 1; padding: 8px 10px; border: 1.5px solid var(--border-color); border-radius: 8px; font-size: 14px; background: var(--bg-input); color: var(--text-primary);">
-            <button type="button" class="preset-btn" onclick="window.app && window.app.copyInviteUrl('long')" style="background: #64748b; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; white-space: nowrap;">
+            <button type="button" id="btnInviteCopyLong" class="preset-btn" onclick="window.app && window.app.copyInviteUrl('long')" style="background: #64748b; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; white-space: nowrap;">
               📋 複製長連結
             </button>
           </div>

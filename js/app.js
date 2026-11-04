@@ -27555,6 +27555,9 @@ class App {
     const inputUrl = isShort
       ? document.getElementById('txtInviteShortUrl')
       : document.getElementById('txtInviteShareUrl');
+    const copyBtn = isShort
+      ? document.getElementById('btnInviteCopyShort')
+      : document.getElementById('btnInviteCopyLong');
 
     if (!inputUrl || !inputUrl.value || inputUrl.value.includes('產生中') || inputUrl.value.includes('失敗')) {
       this.showNotification('⚠️ 無法複製', '目前尚無有效的網址可複製！');
@@ -27563,6 +27566,13 @@ class App {
     const label = isShort ? '專屬短網址' : '教室長連結';
     navigator.clipboard.writeText(inputUrl.value).then(() => {
       this.showNotification('📋 複製成功', `${label}已成功複製至剪貼簿！`);
+      if (copyBtn) {
+        const origText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '✅ 已複製！';
+        setTimeout(() => {
+          if (copyBtn) copyBtn.innerHTML = origText;
+        }, 1500);
+      }
     }).catch(() => {
       prompt(`請手動複製${label}：`, inputUrl.value);
     });
