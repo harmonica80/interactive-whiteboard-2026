@@ -6322,6 +6322,20 @@ body {
   color: var(--accent-color);
 }
 
+.quota-action-btn.danger,
+.quota-mini-btn.danger {
+  background: var(--danger-color, #ff3b30);
+  border-color: var(--danger-color, #ff3b30);
+  color: #ffffff;
+}
+
+.quota-action-btn.danger:hover,
+.quota-mini-btn.danger:hover {
+  background: #d70015;
+  border-color: #d70015;
+  color: #ffffff;
+}
+
 .firebase-quota-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));

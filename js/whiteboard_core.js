@@ -278,21 +278,8 @@
 
     roomRef = db.ref('whiteboard_v2');
 
-    // 監聽白板雲端歷程檔案庫
+    // 雲端歷程檔案庫改為按需抓取 (On-Demand)，不再於初始載入時無條件全量監聽，節省巨量頻寬
     archivesRef = getArchivesRef();
-    if (archivesRef) {
-      archivesRef.on('value', (snap) => {
-        const val = snap.val() || {};
-        Object.keys(archiveBank).forEach(k => delete archiveBank[k]);
-        Object.assign(archiveBank, val);
-        if (window.parent) {
-          window.parent.whiteboardArchives = archiveBank;
-        }
-        if (typeof renderWhiteboardArchiveList === 'function') {
-          renderWhiteboardArchiveList();
-        }
-      });
-    }
 
     // 學生端動態同步至老師當前畫布與分頁
     function syncStudentToTeacherView() {
@@ -3678,8 +3665,7 @@
   }
   if (els.btnRefreshWbArchives) {
     els.btnRefreshWbArchives.onclick = () => {
-      renderWhiteboardArchiveList();
-      flashToast('🔄 已重新整理歷程清單');
+      fetchWhiteboardArchives(true);
     };
   }
   if (els.wbArchiveSearchInput) {
@@ -3909,11 +3895,37 @@
   }
 
   // ===== 白板雲端歷程檔案庫管理 (存檔、載入、跨班複製、刪除) =====
+  async function fetchWhiteboardArchives(showNotification = false) {
+    const ref = getArchivesRef();
+    if (!ref) return;
+    try {
+      if (els.wbArchiveListContainer && Object.keys(archiveBank).length === 0) {
+        els.wbArchiveListContainer.innerHTML = '<div style="text-align: center; padding: 36px 20px; color: var(--text-muted); font-size: 14px;">⏳ 正在連線讀取雲端歷程檔案清單...</div>';
+      }
+      const snap = await ref.once('value');
+      const val = snap.val() || {};
+      Object.keys(archiveBank).forEach(k => delete archiveBank[k]);
+      Object.assign(archiveBank, val);
+      if (window.parent) {
+        window.parent.whiteboardArchives = archiveBank;
+      }
+      renderWhiteboardArchiveList();
+      if (showNotification) {
+        flashToast('🔄 雲端歷程檔案清單已重新整理！');
+      }
+    } catch (err) {
+      console.error('fetchWhiteboardArchives error:', err);
+      if (els.wbArchiveListContainer) {
+        els.wbArchiveListContainer.innerHTML = `<div style="text-align: center; padding: 36px 20px; color: var(--danger-color); font-size: 14px;">❌ 讀取歷程失敗：${err.message || '網路逾時'}</div>`;
+      }
+    }
+  }
+
   function openWhiteboardArchiveModal() {
     if (!els.whiteboardArchiveModal) return;
     els.whiteboardArchiveModal.classList.add('open');
     els.whiteboardArchiveModal.style.display = 'flex';
-    renderWhiteboardArchiveList();
+    fetchWhiteboardArchives(false);
   }
 
   function closeWhiteboardArchiveModal() {
@@ -4084,6 +4096,9 @@
         const ref = getArchivesRef();
         if (!ref) throw new Error('雲端歷程資料庫未就緒');
         await ref.child(archiveId).set(archiveData);
+        archiveBank[archiveId] = archiveData;
+        if (window.parent) window.parent.whiteboardArchives = archiveBank;
+        renderWhiteboardArchiveList();
         flashToast('✅ 白板歷程檔案已成功儲存至雲端！');
       } catch (err) {
         console.error('儲存白板歷程失敗:', err);
@@ -4191,6 +4206,9 @@
       const ref = getArchivesRef();
       if (ref) {
         ref.child(archiveId).remove().then(() => {
+          delete archiveBank[archiveId];
+          if (window.parent) window.parent.whiteboardArchives = archiveBank;
+          renderWhiteboardArchiveList();
           flashToast('🗑️ 歷程檔案已刪除');
         }).catch(err => {
           flashToast('❌ 刪除失敗：' + err.message);

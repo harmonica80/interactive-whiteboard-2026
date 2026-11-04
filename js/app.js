@@ -7184,6 +7184,7 @@ class App {
           <div class="firebase-quota-actions">
             <button type="button" class="quota-mini-btn" onclick="window.app.recalculateAllFirebaseStorage(true)" title="重新掃描計算目前課堂與附件空間">🔄 重新掃描</button>
             <button type="button" class="quota-mini-btn" onclick="window.app.promptCalibrateFirebaseQuota()" title="手動校準對齊 Firebase Console 顯示數值">⚙️ 校準數值</button>
+            <button type="button" class="quota-mini-btn danger" onclick="window.app && window.app.openCloudCleanupModal()" title="開啟雲端大檔與過期歷程清理中心">🧹 深度清理大檔</button>
           </div>
         </div>
         <div class="firebase-quota-grid">
@@ -7245,6 +7246,481 @@ class App {
         firstChild.appendChild(thirdChild);
       }
     }
+  }
+
+  // ===== 雲端大檔與過期歷程清理中心 (Cloud Storage & Traffic Deep Cleanup) =====
+  openCloudCleanupModal() {
+    if (!this.isAdmin) {
+      this.showNotification('權限不足', '僅有教師管理員可開啟雲端大檔清理中心！');
+      return;
+    }
+    const modal = document.getElementById('modalCloudCleanup');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    this.scanCloudStorageUsage(false);
+  }
+
+  closeCloudCleanupModal() {
+    const modal = document.getElementById('modalCloudCleanup');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async scanCloudStorageUsage(showToast = false) {
+    if (typeof db === 'undefined') return;
+    const container = document.getElementById('cloudCleanupSectionsContainer');
+    const totalEl = document.getElementById('cloudCleanupTotalSizeText');
+    if (container) {
+      container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px;">⏳ 正在深層掃描資料庫中各模組大檔與暫存用量...</div>';
+    }
+    if (totalEl) totalEl.textContent = '計算中...';
+
+    try {
+      const [wbSnap, presMatSnap, presLiveSnap, attSnap, imgSnap, sharesSnap, qSnap] = await Promise.all([
+        db.ref('whiteboard_archives').once('value').catch(() => null),
+        db.ref('presentation_materials').once('value').catch(() => null),
+        db.ref('presentation').once('value').catch(() => null),
+        db.ref('attachments').once('value').catch(() => null),
+        (this.imageRef || db.ref('images')).once('value').catch(() => null),
+        db.ref('teacherShares').once('value').catch(() => null),
+        db.ref('questions').once('value').catch(() => null)
+      ]);
+
+      const wbArchives = (wbSnap && wbSnap.val()) || {};
+      const presMaterials = (presMatSnap && presMatSnap.val()) || {};
+      const presLive = (presLiveSnap && presLiveSnap.val()) || {};
+      const attachments = (attSnap && attSnap.val()) || {};
+      const images = (imgSnap && imgSnap.val()) || {};
+      const shares = (sharesSnap && sharesSnap.val()) || {};
+      const questions = (qSnap && qSnap.val()) || {};
+
+      // 1. 白板歷程
+      const wbKeys = Object.keys(wbArchives);
+      const wbBytes = this.estimateJsonBytes(wbArchives);
+
+      // 2. 簡報教材庫
+      const presMatKeys = Object.keys(presMaterials);
+      const presMatBytes = this.estimateJsonBytes(presMaterials);
+
+      // 3. 進行中簡報廣播殘留
+      let presLiveSlidesCount = 0;
+      if (Array.isArray(presLive.slides)) presLiveSlidesCount = presLive.slides.length;
+      const presLiveBytes = this.estimateJsonBytes(presLive);
+
+      // 4. 孤立附件掃描
+      const validAttIds = new Set();
+      Object.values(questions).forEach(q => {
+        if (Array.isArray(q.attachments)) {
+          q.attachments.forEach(a => { if (a && a.id) validAttIds.add(a.id); });
+        }
+      });
+      Object.values(shares).forEach(s => {
+        if (Array.isArray(s.attachments)) {
+          s.attachments.forEach(a => { if (a && a.id) validAttIds.add(a.id); });
+        }
+      });
+      let orphanedAttCount = 0;
+      let orphanedAttBytes = 0;
+      const attKeys = Object.keys(attachments);
+      attKeys.forEach(id => {
+        if (!validAttIds.has(id)) {
+          orphanedAttCount++;
+          orphanedAttBytes += (attachments[id]?.base64Size || attachments[id]?.size || this.estimateJsonBytes(attachments[id]));
+        }
+      });
+      const totalAttBytes = this.estimateJsonBytes(attachments);
+
+      // 5. 圖片分享
+      const imgKeys = Object.keys(images);
+      const imgBytes = this.estimateJsonBytes(images);
+
+      const grandTotalBytes = wbBytes + presMatBytes + presLiveBytes + totalAttBytes + imgBytes;
+      if (totalEl) totalEl.textContent = `${this.formatQuotaBytes(grandTotalBytes)}`;
+
+      this._cloudCleanupData = {
+        wbArchives,
+        presMaterials,
+        presLive,
+        attachments,
+        images,
+        orphanedAttCount
+      };
+
+      this.renderCloudCleanupSections({
+        wbCount: wbKeys.length,
+        wbBytes,
+        wbArchives,
+        presMatCount: presMatKeys.length,
+        presMatBytes,
+        presMaterials,
+        presLiveSlidesCount,
+        presLiveBytes,
+        hasLivePres: presLiveSlidesCount > 0 || presLiveBytes > 2048,
+        attCount: attKeys.length,
+        orphanedAttCount,
+        orphanedAttBytes,
+        totalAttBytes,
+        imgCount: imgKeys.length,
+        imgBytes
+      });
+
+      if (showToast) {
+        this.showNotification('🔄 掃描完成', `已完成資料庫大檔掃描，共偵測約 ${this.formatQuotaBytes(grandTotalBytes)} 資料！`);
+      }
+    } catch (err) {
+      console.error('scanCloudStorageUsage error:', err);
+      if (container) {
+        container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger-color); font-size: 14px;">❌ 掃描失敗：${err.message || '網路逾時'}</div>`;
+      }
+    }
+  }
+
+  renderCloudCleanupSections(data) {
+    const container = document.getElementById('cloudCleanupSectionsContainer');
+    if (!container) return;
+
+    const sectionsHtml = `
+      <!-- 1. 白板雲端歷程檔案庫 -->
+      <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">📋</span>
+            <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">白板雲端歷程筆記庫</span>
+            <span style="font-size: 14px; padding: 2px 8px; border-radius: 10px; background: rgba(102, 126, 234, 0.15); color: var(--accent-color); font-weight: 600;">共 ${data.wbCount} 筆 (${this.formatQuotaBytes(data.wbBytes)})</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            ${data.wbCount > 0 ? `
+              <button type="button" class="presentation-tool-btn" onclick="window.app.toggleCleanupDetail('wbDetailList')" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🔍 展開清單
+              </button>
+              <button type="button" class="presentation-tool-btn danger" onclick="window.app.cleanAllWhiteboardArchives()" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🗑️ 清空所有筆記
+              </button>
+            ` : `<span style="font-size: 14px; color: var(--text-muted);">無歷程檔案</span>`}
+          </div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+          每份白板歷程筆記包含各頁面畫筆筆畫與貼圖大圖（約 5MB~15MB/筆）。清理不再使用的歷程可立即釋放大量空間。
+        </div>
+        <div id="wbDetailList" style="display: none; margin-top: 6px; padding: 10px; background: var(--bg-input); border-radius: 10px; max-height: 220px; overflow-y: auto;">
+          ${this.renderWbArchivesCleanupList(data.wbArchives)}
+        </div>
+      </div>
+
+      <!-- 2. 同步簡報雲端教材庫 -->
+      <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">📑</span>
+            <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">同步簡報雲端教材庫</span>
+            <span style="font-size: 14px; padding: 2px 8px; border-radius: 10px; background: rgba(52, 199, 89, 0.15); color: #30b0c7; font-weight: 600;">共 ${data.presMatCount} 份 (${this.formatQuotaBytes(data.presMatBytes)})</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            ${data.presMatCount > 0 ? `
+              <button type="button" class="presentation-tool-btn" onclick="window.app.toggleCleanupDetail('presMatDetailList')" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🔍 展開清單
+              </button>
+              <button type="button" class="presentation-tool-btn danger" onclick="window.app.cleanAllPresentationMaterials()" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🗑️ 清空所有教材
+              </button>
+            ` : `<span style="font-size: 14px; color: var(--text-muted);">無雲端教材</span>`}
+          </div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+          每份簡報教材儲存了所有投影片的高畫質 WebP 圖片底圖（約 2MB~5MB/份）。若已上課完畢可清理或先匯出 JSON 備份。
+        </div>
+        <div id="presMatDetailList" style="display: none; margin-top: 6px; padding: 10px; background: var(--bg-input); border-radius: 10px; max-height: 220px; overflow-y: auto;">
+          ${this.renderPresMaterialsCleanupList(data.presMaterials)}
+        </div>
+      </div>
+
+      <!-- 3. 線上簡報廣播殘留暫存 -->
+      <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">📡</span>
+            <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">線上簡報廣播暫存殘留</span>
+            <span style="font-size: 14px; padding: 2px 8px; border-radius: 10px; background: rgba(255, 149, 0, 0.15); color: #ff9500; font-weight: 600;">${data.presLiveSlidesCount > 0 ? `${data.presLiveSlidesCount} 頁暫存 (${this.formatQuotaBytes(data.presLiveBytes)})` : `無殘留 (0 B)`}</span>
+          </div>
+          <div>
+            ${data.hasLivePres ? `
+              <button type="button" class="presentation-tool-btn danger" onclick="window.app.cleanPresentationBroadcastTemp()" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🧹 清理線上廣播殘留
+              </button>
+            ` : `<span style="font-size: 14px; color: var(--text-muted);">乾淨無殘留</span>`}
+          </div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+          課堂簡報播放完畢後，雲端若殘留投影片大檔（<code>presentation/slides</code>）與歷史作答，學生連線時會持續嘗試同步。一鍵清理可釋放線上頻寬。
+        </div>
+      </div>
+
+      <!-- 4. 孤立附件檔案掃描 -->
+      <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">📎</span>
+            <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">提問與分享孤立附件</span>
+            <span style="font-size: 14px; padding: 2px 8px; border-radius: 10px; background: rgba(175, 82, 222, 0.15); color: #af52de; font-weight: 600;">共 ${data.attCount} 個附檔 (${this.formatQuotaBytes(data.totalAttBytes)})</span>
+          </div>
+          <div>
+            ${data.orphanedAttCount > 0 ? `
+              <button type="button" class="presentation-tool-btn danger" onclick="window.app.cleanOrphanedAttachments(); setTimeout(() => window.app.scanCloudStorageUsage(false), 800);" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🧹 清理 ${data.orphanedAttCount} 個孤立附檔 (${this.formatQuotaBytes(data.orphanedAttBytes)})
+              </button>
+            ` : `<span style="font-size: 14px; color: var(--text-muted);">無孤立附件</span>`}
+          </div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+          提問或教師分享內容若已被刪除，但附檔仍殘留在 <code>attachments/</code> 節點者即為孤立附件，可安全清理釋放空間。
+        </div>
+      </div>
+
+      <!-- 5. 圖片分享區歷史圖檔 -->
+      <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">🖼️</span>
+            <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">圖片分享區歷史圖檔</span>
+            <span style="font-size: 14px; padding: 2px 8px; border-radius: 10px; background: rgba(255, 45, 85, 0.15); color: #ff2d55; font-weight: 600;">共 ${data.imgCount} 張 (${this.formatQuotaBytes(data.imgBytes)})</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            ${data.imgCount > 20 ? `
+              <button type="button" class="presentation-tool-btn" onclick="window.app.cleanOldImages(20)" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🧹 保留最新 20 張 (清除其餘舊圖)
+              </button>
+            ` : ''}
+            ${data.imgCount > 0 ? `
+              <button type="button" class="presentation-tool-btn danger" onclick="window.app.cleanAllImages()" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🗑️ 清空所有圖片
+              </button>
+            ` : `<span style="font-size: 14px; color: var(--text-muted);">無分享圖片</span>`}
+          </div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+          學生上傳至圖片分享區的圖檔。若已累積大量歷史課堂照片，建議清理舊圖以節省下載頻寬。
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = sectionsHtml;
+  }
+
+  toggleCleanupDetail(elId) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+  }
+
+  renderWbArchivesCleanupList(wbArchives) {
+    const keys = Object.keys(wbArchives || {});
+    if (keys.length === 0) return '<div style="font-size: 14px; color: var(--text-muted); text-align: center;">無檔案</div>';
+    return keys.map(k => {
+      const item = wbArchives[k] || {};
+      const itemBytes = this.estimateJsonBytes(item);
+      const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleString('zh-TW') : '未知時間';
+      const safeTitle = (item.title || '白板歷程筆記').replace(/"/g, '&quot;');
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border-color); font-size: 14px;">
+          <div>
+            <strong style="color: var(--text-primary);">${safeTitle}</strong>
+            <span style="font-size: 12.5px; color: var(--text-muted); margin-left: 8px;">${dateStr} · 約 ${this.formatQuotaBytes(itemBytes)}</span>
+          </div>
+          <button type="button" class="presentation-tool-btn danger" onclick="window.app.cleanWhiteboardArchiveItem('${k}', '${safeTitle}')" style="padding: 3px 10px; font-size: 13px; border-radius: 6px;">
+            🗑️ 刪除
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderPresMaterialsCleanupList(presMaterials) {
+    const keys = Object.keys(presMaterials || {});
+    if (keys.length === 0) return '<div style="font-size: 14px; color: var(--text-muted); text-align: center;">無教材</div>';
+    return keys.map(k => {
+      const item = presMaterials[k] || {};
+      const itemBytes = this.estimateJsonBytes(item);
+      const sCount = item.slideCount || (item.slides ? item.slides.length : 0);
+      const dateStr = item.updatedAt || item.createdAt ? new Date(item.updatedAt || item.createdAt).toLocaleString('zh-TW') : '未知時間';
+      const safeTitle = (item.title || '簡報教材').replace(/"/g, '&quot;');
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border-color); font-size: 14px;">
+          <div>
+            <strong style="color: var(--text-primary);">${safeTitle}</strong>
+            <span style="font-size: 12.5px; color: var(--text-muted); margin-left: 8px;">${sCount} 頁 · ${dateStr} · 約 ${this.formatQuotaBytes(itemBytes)}</span>
+          </div>
+          <button type="button" class="presentation-tool-btn danger" onclick="window.app.cleanPresentationMaterialItem('${k}', '${safeTitle}')" style="padding: 3px 10px; font-size: 13px; border-radius: 6px;">
+            🗑️ 刪除
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  cleanWhiteboardArchiveItem(archiveId, title) {
+    this.showConfirmModal(
+      '🗑️',
+      '刪除白板歷程筆記',
+      `確定要刪除白板歷程筆記「${title}」嗎？刪除後無法復原。`,
+      async () => {
+        try {
+          await db.ref(`whiteboard_archives/${archiveId}`).remove();
+          if (window.whiteboardArchives) delete window.whiteboardArchives[archiveId];
+          this.showNotification('🗑️ 已刪除', `已成功刪除白板歷程筆記「${title}」！`);
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '刪除失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  cleanAllWhiteboardArchives() {
+    this.showConfirmModal(
+      '⚠️',
+      '清空所有白板歷程筆記',
+      '確定要清空雲端資料庫中所有的白板歷程筆記嗎？此操作無法復原，建議確認已於白板介面匯出備份 JSON。',
+      async () => {
+        try {
+          await db.ref('whiteboard_archives').remove();
+          if (window.whiteboardArchives) {
+            Object.keys(window.whiteboardArchives).forEach(k => delete window.whiteboardArchives[k]);
+          }
+          this.showNotification('🧹 清理完成', '已清空所有白板雲端歷程筆記！');
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '清空失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  cleanPresentationMaterialItem(materialId, title) {
+    this.showConfirmModal(
+      '🗑️',
+      '刪除簡報教材',
+      `確定要刪除簡報教材「${title}」嗎？刪除後無法復原。`,
+      async () => {
+        try {
+          await db.ref(`presentation_materials/${materialId}`).remove();
+          if (window.presentationManager && window.presentationManager.materialsBank) {
+            delete window.presentationManager.materialsBank[materialId];
+            window.presentationManager.renderCloudBankList();
+          }
+          this.showNotification('🗑️ 已刪除', `已成功刪除簡報教材「${title}」！`);
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '刪除失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  cleanAllPresentationMaterials() {
+    this.showConfirmModal(
+      '⚠️',
+      '清空所有簡報教材',
+      '確定要清空雲端資料庫中所有的簡報教材檔案嗎？此操作無法復原，建議確認已於簡報介面匯出備份 JSON。',
+      async () => {
+        try {
+          await db.ref('presentation_materials').remove();
+          if (window.presentationManager && window.presentationManager.materialsBank) {
+            window.presentationManager.materialsBank = {};
+            window.presentationManager.renderCloudBankList();
+          }
+          this.showNotification('🧹 清理完成', '已清空所有簡報雲端教材檔案！');
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '清空失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  cleanPresentationBroadcastTemp() {
+    this.showConfirmModal(
+      '🧹',
+      '清理線上簡報廣播暫存',
+      '確定要清理 Firebase 雲端簡報暫存嗎？這將刪除目前雲端殘留的線上廣播投影片大圖與學生作答暫存，立即釋放資料庫頻寬與儲存空間（不會影響教材庫與本機編輯內容）。',
+      async () => {
+        try {
+          await Promise.all([
+            db.ref('presentation/slides').remove().catch(() => {}),
+            db.ref('presentation/submissions').remove().catch(() => {}),
+            db.ref('presentation/annotations').remove().catch(() => {}),
+            db.ref('presentation/laser').remove().catch(() => {})
+          ]);
+          if (!window.presentationManager || !window.presentationManager.isPresenting) {
+            await db.ref('presentation/live').set({
+              isPresenting: false,
+              currentSlideIndex: 0,
+              hostUid: '',
+              hostName: '',
+              updatedAt: Date.now()
+            }).catch(() => {});
+          }
+          this.showNotification('🧹 清理完成', '已清理線上簡報廣播殘留暫存！');
+          this.scanCloudStorageUsage(false);
+        } catch (err) {
+          this.showNotification('錯誤', '清理失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  cleanOldImages(keepCount = 20) {
+    this.showConfirmModal(
+      '🧹',
+      '保留最新圖片並清除舊圖',
+      `確定要保留最新的 ${keepCount} 張圖片，並清除更早的舊圖片嗎？這將大幅減少圖片分享區的頻寬消耗。`,
+      async () => {
+        try {
+          const imgRef = this.imageRef || db.ref('images');
+          const snap = await imgRef.once('value');
+          const images = [];
+          snap.forEach(child => {
+            images.push({ id: child.key, ...child.val() });
+          });
+          images.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+          if (images.length <= keepCount) {
+            this.showNotification('提示', `目前圖片僅有 ${images.length} 張，不需清理！`);
+            return;
+          }
+
+          const toDelete = images.slice(keepCount);
+          const delPromises = toDelete.map(item => imgRef.child(item.id).remove());
+          await Promise.all(delPromises);
+          this.showNotification('🧹 清理完成', `已刪除 ${toDelete.length} 張舊圖片，保留最新 ${keepCount} 張！`);
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '清理圖片失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  cleanAllImages() {
+    this.showConfirmModal(
+      '⚠️',
+      '清空所有圖片',
+      '確定要清空圖片分享區的所有圖片嗎？此操作無法復原。',
+      async () => {
+        try {
+          const imgRef = this.imageRef || db.ref('images');
+          await imgRef.remove();
+          this.showNotification('🧹 清理完成', '已清空圖片分享區的所有圖片！');
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '清空圖片失敗：' + err.message);
+        }
+      }
+    );
   }
 
   // ===== 提問區「允許學生提問附檔」後台開關與即時同步 =====

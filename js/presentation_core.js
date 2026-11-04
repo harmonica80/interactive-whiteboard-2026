@@ -2909,33 +2909,42 @@
       const modal = this.els.modalCloudBank || document.getElementById('modalPresentationCloudBank');
       if (!modal) return;
       this.openModal(modal);
-      this.mountCloudBankListener();
+      this.loadCloudBankData(false);
     }
 
     closeCloudBankModal() {
       const modal = this.els.modalCloudBank || document.getElementById('modalPresentationCloudBank');
       if (!modal) return;
       this.closeModal(modal);
-      this.unmountCloudBankListener();
+    }
+
+    async loadCloudBankData(showNotification = false) {
+      if (typeof db === 'undefined') return;
+      const container = document.getElementById('presentationBankListContainer');
+      if (container && (!this.materialsBank || Object.keys(this.materialsBank).length === 0)) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px;">⏳ 正在連線讀取雲端教材清單...</div>';
+      }
+      try {
+        const snap = await db.ref('presentation_materials').once('value');
+        this.materialsBank = snap.val() || {};
+        this.renderCloudBankList();
+        if (showNotification) {
+          this.notify('🔄 已更新', '已重新整理雲端教材清單！');
+        }
+      } catch (err) {
+        console.error('loadCloudBankData error:', err);
+        if (container) {
+          container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger-color); font-size: 14px;">❌ 讀取教材失敗：${err.message || '網路逾時'}</div>`;
+        }
+      }
     }
 
     mountCloudBankListener() {
-      if (typeof db === 'undefined') return;
-      if (this._cloudBankListenerMounted) return;
-      this._cloudBankListenerMounted = true;
-
-      db.ref('presentation_materials').on('value', (snap) => {
-        const val = snap.val() || {};
-        this.materialsBank = val;
-        this.renderCloudBankList();
-      });
+      this.loadCloudBankData(false);
     }
 
     unmountCloudBankListener() {
-      if (typeof db === 'undefined') return;
-      if (!this._cloudBankListenerMounted) return;
-      this._cloudBankListenerMounted = false;
-      db.ref('presentation_materials').off();
+      // 保持空函式相容
     }
 
     onBankSearchInput(query) {
@@ -2944,15 +2953,7 @@
     }
 
     refreshCloudBankList() {
-      if (typeof db !== 'undefined') {
-        db.ref('presentation_materials').once('value').then(snap => {
-          this.materialsBank = snap.val() || {};
-          this.renderCloudBankList();
-          this.notify('🔄 已更新', '已重新整理雲端教材清單！');
-        }).catch(err => {
-          this.notify('錯誤', '重新整理失敗：' + err.message);
-        });
-      }
+      this.loadCloudBankData(true);
     }
 
     // 彈出儲存目前簡報對話框 (支援建立新教材或更新現有教材)

@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=490">
+  <link rel="stylesheet" href="css/style.css?v=491">
   <link rel="stylesheet" href="css/presentation.css?v=483">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -2570,6 +2570,21 @@
                       📥 匯入 JSON 記錄
                     </button>
                     <input type="file" id="importRecordInput" accept=".json" style="display: none;" onchange="adminImportRecord(event)">
+                  </div>
+                </div>
+
+                <!-- 雲端大檔與過期歷程清理欄 -->
+                <div style="flex: 1; min-width: 280px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
+                  <h3 style="margin-top: 0; margin-bottom: 12px; color: var(--danger-color); font-size: 19px; display: flex; align-items: center; gap: 8px;">
+                    <span>🧹</span> 雲端大檔與過期歷程清理
+                  </h3>
+                  <p style="font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px;">
+                    ⚡ 深度掃描並清理白板歷程筆記、簡報教材庫大檔、線上廣播暫存殘留與孤立附件，徹底降低 Firebase 360MB 每日流量消耗。
+                  </p>
+                  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button class="presentation-tool-btn danger" onclick="window.app && window.app.openCloudCleanupModal()" style="flex: 1; min-width: 130px; justify-content: center; padding: 12px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; box-sizing: border-box; margin: 0;">
+                      🧹 開啟雲端大檔清理中心
+                    </button>
                   </div>
                 </div>
               </div>
@@ -6678,12 +6693,12 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=483"></script>
   <script src="js/matching_quiz.js?v=483"></script>
   <script src="js/quiz.js?v=483"></script>
-  <script src="js/app.js?v=490"></script>
+  <script src="js/app.js?v=491"></script>
   <script src="js/classics_quiz.js?v=483"></script>
   <script src="js/song_quiz.js?v=483"></script>
   <script src="js/video_quiz.js?v=483"></script>
   <script src="js/word_cloud.js?v=483"></script>
-  <script src="js/presentation_core.js?v=483"></script>
+  <script src="js/presentation_core.js?v=491"></script>
   <script src="js/group_manager.js?v=483"></script>
   
   <!-- 問題彈出視窗 -->
@@ -9056,6 +9071,59 @@ Python</pre>
       <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
         💡 老師可直接將此視窗投影至大螢幕，方便全體同學手機掃描 QR Code 或輸入短網址加入！
       </div>
+    </div>
+  </div>
+
+  <!-- 雲端大檔與過期歷程清理中心對話框 -->
+  <div id="modalCloudCleanup" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 20050;" onclick="if(event.target===this) window.app && window.app.closeCloudCleanupModal()">
+    <div class="modal-content modal-card" style="width: 95%; max-width: 760px; max-height: 88vh; display: flex; flex-direction: column; border-radius: 20px; padding: 0; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.3); background: var(--bg-card); overflow: hidden; border: 1.5px solid var(--border-color);">
+      
+      <!-- 彈窗頂部 Header -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1.5px solid var(--border-color); background: var(--bg-card);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 26px;">🧹</span>
+          <div>
+            <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+              <span>雲端大檔與過期歷程清理中心</span>
+              <span id="cloudCleanupStatusBadge" style="font-size: 14px; font-weight: 600; padding: 2px 8px; border-radius: 12px; background: rgba(0, 122, 255, 0.1); color: var(--accent-color);">深層掃描</span>
+            </h3>
+            <p style="margin: 3px 0 0 0; font-size: 14px; color: var(--text-secondary);">掃描並清除資料庫中的大型歷史檔案與殘留暫存，大幅釋放空間並降低每日 360MB 下載流量</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.app && window.app.closeCloudCleanupModal()" style="border: none; background: transparent; font-size: 22px; cursor: pointer; color: var(--text-secondary); padding: 4px 8px;" title="關閉對話框">✕</button>
+      </div>
+
+      <!-- 彈窗內容主體 -->
+      <div style="padding: 18px 22px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- 頂部即時摘要列 -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px 16px; border-radius: 12px; background: var(--bg-input); border: 1px solid var(--border-color);">
+          <div style="font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+            <span>💾 預估可清理項目總量：</span>
+            <strong id="cloudCleanupTotalSizeText" style="font-size: 16px; color: var(--accent-color);">掃描中...</strong>
+          </div>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.scanCloudStorageUsage(true)" style="padding: 6px 14px; font-size: 14px; border-radius: 8px;">
+            🔄 重新掃描
+          </button>
+        </div>
+
+        <!-- 各模組掃描卡片容器 -->
+        <div id="cloudCleanupSectionsContainer" style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px;">
+            ⏳ 正在深層掃描資料庫中各模組大檔與暫存用量...
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 彈窗底部操作列 -->
+      <div style="padding: 14px 20px; border-top: 1.5px solid var(--border-color); background: var(--bg-card); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <span style="font-size: 14px; color: var(--text-secondary); line-height: 1.4;">💡 提示：白板筆記與簡報教材刪除前，可先於各模組介面點選「匯出 JSON」備份至電腦本機。</span>
+        <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.closeCloudCleanupModal()" style="padding: 8px 18px; font-size: 14px; border-radius: 10px;">
+          關閉
+        </button>
+      </div>
+
     </div>
   </div>
 
