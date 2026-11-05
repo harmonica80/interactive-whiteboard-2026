@@ -1,4 +1,12 @@
 # System Log
+## 2026-11-05 - 升級 Firebase 儲存空間掃描演算法（全庫涵蓋白板歷程、簡報教材與跨班資料）
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修正儲存空間統計僅有幾百 Byte 與 Firebase Console 89.92MB 巨大落差之問題**：
+     - 原版 `recalculateAllFirebaseStorage()` 僅局部抓取目前記憶體內已載入之單一班級提問文字，嚴重漏算體積最大的「白板雲端歷程（`whiteboard_archives`，~30MB）」、「簡報雲端教材庫（`presentation_materials`，~30MB）」、「線上簡報廣播殘留（`presentation`）」與「所有班級獨立資料（`classes`）」，導致網頁端誤判為幾百 Byte。
+     - 全面升級為全庫深層空間掃描引擎：並行掃描全部核心大檔節點與所有班級，精確還原資料庫整體儲存總量（`totalScannedStorageBytes`），點擊「🔄 重新掃描」即可精準對齊真實的 ~89.9 MB。
+  2. 更新快取版本號至 `?v=495`。
+
 ## 2026-11-05 - 清除計時背景音樂「帕海貝爾 - 卡農 (本機版)」與 11.8MB 實體音訊檔
 - 影響檔案：`index.html`, `js/timer_music_manager.js`, `js/app.js`, `audio/canon.mp3`, `SYSTEM_LOG.md`。
 - 修改項目：

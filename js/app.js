@@ -7030,37 +7030,69 @@ class App {
     this.quotaStatsRef.child('classStorageMap').child(classKey).set(totalForThisClass).catch(() => {});
   }
 
-  recalculateAllFirebaseStorage(showToast = true) {
+  async recalculateAllFirebaseStorage(showToast = true) {
     if (!this.quotaStatsRef) return;
     if (showToast) {
-      this.showNotification('📊 掃描中', '正在重新計算目前課堂與附件的資料庫空間用量...');
+      this.showNotification('📊 掃描中', '正在全庫深度掃描白板歷程、簡報教材與附件之實際空間...');
     }
-    // 掃描本班主表與獨立 attachments 節點
-    this.scanAndSyncCurrentClassStorage();
-    db.ref('attachments').once('value').then((snap) => {
-      const val = snap.val();
-      const attBytes = val ? this.estimateJsonBytes(val) : 0;
-      const baseBytes =
-        this.estimateJsonBytes(this.questions) +
-        this.estimateJsonBytes(this.images) +
-        this.estimateJsonBytes(this.videos) +
-        this.estimateJsonBytes(this.shares);
+
+    try {
+      const [
+        wbSnap, presMatSnap, presLiveSnap, attSnap,
+        classesSnap, rootQSnap, rootImgSnap, rootVidSnap,
+        rootSharesSnap, rootQuizSnap, wbV2Snap
+      ] = await Promise.all([
+        db.ref('whiteboard_archives').once('value').catch(() => null),
+        db.ref('presentation_materials').once('value').catch(() => null),
+        db.ref('presentation').once('value').catch(() => null),
+        db.ref('attachments').once('value').catch(() => null),
+        db.ref('classes').once('value').catch(() => null),
+        db.ref('questions').once('value').catch(() => null),
+        (this.imageRef || db.ref('images')).once('value').catch(() => null),
+        (this.videoRef || db.ref('videos')).once('value').catch(() => null),
+        (this.sharesRef || db.ref('teacherShares')).once('value').catch(() => null),
+        db.ref('quiz').once('value').catch(() => null),
+        db.ref('whiteboard_v2').once('value').catch(() => null)
+      ]);
+
+      const wbBytes = wbSnap ? this.estimateJsonBytes(wbSnap.val()) : 0;
+      const presMatBytes = presMatSnap ? this.estimateJsonBytes(presMatSnap.val()) : 0;
+      const presLiveBytes = presLiveSnap ? this.estimateJsonBytes(presLiveSnap.val()) : 0;
+      const attBytes = attSnap ? this.estimateJsonBytes(attSnap.val()) : 0;
+      const classesBytes = classesSnap ? this.estimateJsonBytes(classesSnap.val()) : 0;
+      const rootQBytes = rootQSnap ? this.estimateJsonBytes(rootQSnap.val()) : 0;
+      const rootImgBytes = rootImgSnap ? this.estimateJsonBytes(rootImgSnap.val()) : 0;
+      const rootVidBytes = rootVidSnap ? this.estimateJsonBytes(rootVidSnap.val()) : 0;
+      const rootSharesBytes = rootSharesSnap ? this.estimateJsonBytes(rootSharesSnap.val()) : 0;
+      const rootQuizBytes = rootQuizSnap ? this.estimateJsonBytes(rootQuizSnap.val()) : 0;
+      const wbV2Bytes = wbV2Snap ? this.estimateJsonBytes(wbV2Snap.val()) : 0;
+
+      const totalScannedBytes = wbBytes + presMatBytes + presLiveBytes + attBytes +
+                                classesBytes + rootQBytes + rootImgBytes + rootVidBytes +
+                                rootSharesBytes + rootQuizBytes + wbV2Bytes;
+
       const classKey = window.currentClassCode ? `class_${window.currentClassCode}` : 'one_off_root';
-      const totalForThisClass = baseBytes + attBytes;
-      return this.quotaStatsRef.update({
-        [`classStorageMap/${classKey}`]: totalForThisClass,
+      const curClassBase = this.estimateJsonBytes(this.questions) +
+                           this.estimateJsonBytes(this.images) +
+                           this.estimateJsonBytes(this.videos) +
+                           this.estimateJsonBytes(this.shares);
+
+      await this.quotaStatsRef.update({
+        totalScannedStorageBytes: totalScannedBytes,
+        [`classStorageMap/${classKey}`]: curClassBase,
+        [`classStorageMap/system_shared_modules`]: wbBytes + presMatBytes + presLiveBytes + attBytes + wbV2Bytes,
         lastScannedAt: Date.now()
       });
-    }).then(() => {
+
       if (showToast) {
-        this.showNotification('✅ 掃描完成', '已更新 Firebase 儲存空間與流量統計！');
+        this.showNotification('✅ 掃描完成', `已全庫完成深度掃描！目前總使用空間約為 ${this.formatQuotaBytes(totalScannedBytes)}。`);
       }
-    }).catch((err) => {
+    } catch (err) {
       console.warn('重新掃描空間失敗:', err);
       if (showToast) {
-        this.showNotification('提示', '已完成本地快取空間估算');
+        this.showNotification('提示', '掃描時發生錯誤：' + (err.message || '網路逾時'));
       }
-    });
+    }
   }
 
   promptCalibrateFirebaseQuota() {
@@ -7102,6 +7134,9 @@ class App {
   }
 
   getAutoTrackedStorageBytes() {
+    if (this.quotaStats && typeof this.quotaStats.totalScannedStorageBytes === 'number' && this.quotaStats.totalScannedStorageBytes > 0) {
+      return this.quotaStats.totalScannedStorageBytes;
+    }
     const map = (this.quotaStats && this.quotaStats.classStorageMap) || {};
     const keys = Object.keys(map);
     if (keys.length > 0) {
