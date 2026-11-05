@@ -1,4 +1,17 @@
 # System Log
+## 2026-11-05 - 刪除額度卡片標題多餘折疊按鈕與驗證/優化 MP4 影片縮圖延遲載入機制
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **刪除額度說明卡片標題旁多餘的折疊按鈕箭頭**：
+     - 自 `index.html` 與 `js/app.js`（`renderFirebaseQuotaBanners()`）中徹底移除標題文字右側之 `<span class="quota-toggle-arrow">▼</span>`，維持簡潔標題版面，並保留下方操作列專屬之「▼ 展開 / ▲ 收合」獨立切換按鈕。
+  2. **全面驗證與增強使用者上傳 MP4 影片之縮圖延遲載入（Lazy Load）機制**：
+     - **上傳時極致輕量縮圖生成**：優化 `extractVideoThumbnail()` 演算法，填補白色底圖、解析度微縮至 220x165、輸出 WebP 0.65 高效壓縮縮圖（僅約 3KB~5KB），並加入 6 秒超時熔斷與 `video.load()` 相容性保證。
+     - **主清單純縮圖呈現與流量完全隔離**：無論是 Storage 上傳或 Base64 備用上傳，影片主清單（`renderVideos()` 與 `renderAdminVideos()`）一律僅渲染 `<img>` 載入極小縮圖，絕不建立 `<video>` 標籤，全班師生瀏覽影片分享區時絕不偷跑下載數十 MB 的 MP4 檔案。
+     - **點擊開啟時才按需載入（On-Demand Streaming）**：僅當使用者於列表點擊該部影片開啟播放視窗（`showVideoModal()`）時，才動態載入 MP4 串流或自 `video_blobs/` 節點抓取檔案；關閉視窗（`closeVideoModal()`）時立即銷毀 `<video>` 標籤釋放快取與記憶體。
+     - **外部 MP4 連結縮圖支援**：於 `submitVideoLink()` 中支援外部直接 MP4 影片網址自動萃取縮圖，避免列表加載外部影片流量。
+     - **雲端清理中心擴充「影片分享區」**：於 `modalCloudCleanup` 新增第 6 區塊，提供歷史影片轉縮圖抽離優化（`migrateLegacyVideosToBlobs()`）、保留最新 10 部影片與一鍵清空所有影片功能。
+  3. 更新快取版本號至 `?v=499`。
+
 ## 2026-11-05 - 升級 Firebase 儲存空間掃描演算法（全庫涵蓋白板歷程、簡報教材與跨班資料）
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

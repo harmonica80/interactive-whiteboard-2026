@@ -5345,56 +5345,78 @@ class App {
 
   extractVideoThumbnail(fileOrUrl) {
     return new Promise((resolve) => {
+      let resolved = false;
+      let videoUrl = '';
+      const cleanup = () => {
+        if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+          try { URL.revokeObjectURL(videoUrl); } catch (e) {}
+        }
+      };
+      const done = (result) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        cleanup();
+        resolve(result);
+      };
+
+      const timer = setTimeout(() => {
+        done(null);
+      }, 6000);
+
       const video = document.createElement('video');
       video.preload = 'metadata';
       video.muted = true;
       video.playsInline = true;
+      video.crossOrigin = 'anonymous';
       
-      let videoUrl = '';
       if (typeof fileOrUrl === 'string') {
         videoUrl = fileOrUrl;
       } else if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
         videoUrl = URL.createObjectURL(fileOrUrl);
       } else {
-        resolve(null);
+        done(null);
         return;
       }
 
       video.src = videoUrl;
 
-      // 影片載入 metadata 後，跳到第 1.5 秒
+      // 影片載入 metadata 後，跳到第 1 秒或中段
       video.onloadedmetadata = () => {
-        video.currentTime = Math.min(1.5, video.duration / 2);
+        const seekTime = (video.duration && video.duration > 0.5) ? Math.min(1.0, video.duration / 2) : 0.1;
+        video.currentTime = seekTime;
       };
 
       video.onseeked = () => {
         try {
           const canvas = document.createElement('canvas');
-          // 設定截圖寬高 (上限為 320x240，大小適中，節省 Firebase 儲存空間)
-          const scale = Math.min(320 / video.videoWidth, 240 / video.videoHeight, 1);
-          canvas.width = video.videoWidth * scale;
-          canvas.height = video.videoHeight * scale;
+          // 設定截圖寬高 (上限為 220x165，大小僅約 3KB~5KB，大幅節省 Firebase 儲存空間與全班下載流量)
+          const vw = video.videoWidth || 320;
+          const vh = video.videoHeight || 240;
+          const scale = Math.min(220 / vw, 165 / vh, 1);
+          canvas.width = Math.max(1, Math.round(vw * scale));
+          canvas.height = Math.max(1, Math.round(vh * scale));
 
           const ctx = canvas.getContext('2d');
+          // 先填純白底色，避免透明背景轉 WebP 問題
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/webp', 0.7); // 採用 WebP 高效壓縮以大幅縮減體積與流量
-
-          if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
-            URL.revokeObjectURL(videoUrl);
-          }
-          resolve(dataUrl);
+          const dataUrl = canvas.toDataURL('image/webp', 0.65); // 採用 WebP 高效壓縮以大幅縮減體積與流量
+          done(dataUrl);
         } catch (err) {
-          console.error('Extract thumbnail error:', err);
-          resolve(null);
+          console.warn('Extract thumbnail error:', err);
+          done(null);
         }
       };
 
       video.onerror = () => {
-        if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
-          URL.revokeObjectURL(videoUrl);
-        }
-        resolve(null);
+        done(null);
       };
+
+      try {
+        video.load();
+      } catch (e) {}
     });
   }
 
@@ -7221,7 +7243,6 @@ class App {
         <div class="firebase-quota-header" onclick="window.app && window.app.toggleFirebaseQuotaBlock(event)" style="cursor: pointer; user-select: none;" title="點擊展開或折疊額度說明區塊">
           <div class="firebase-quota-title">
             <span>📊 Firebase 免費空間與每日、每月流量額度說明</span>
-            <span class="quota-toggle-arrow" style="font-size: 13px; margin-left: 4px; color: var(--accent-color);">${isCollapsed ? '▼' : '▲'}</span>
           </div>
           <div class="firebase-quota-actions" onclick="event.stopPropagation();">
             <button type="button" class="quota-mini-btn danger" onclick="window.app && window.app.openCloudCleanupModal()" title="開啟雲端大檔與過期歷程清理中心">🧹 深度清理大檔</button>
@@ -7359,14 +7380,16 @@ class App {
     if (totalEl) totalEl.textContent = '計算中...';
 
     try {
-      const [wbSnap, presMatSnap, presLiveSnap, attSnap, imgSnap, sharesSnap, qSnap] = await Promise.all([
+      const [wbSnap, presMatSnap, presLiveSnap, attSnap, imgSnap, sharesSnap, qSnap, vidSnap, vidBlobsSnap] = await Promise.all([
         db.ref('whiteboard_archives').once('value').catch(() => null),
         db.ref('presentation_materials').once('value').catch(() => null),
         db.ref('presentation').once('value').catch(() => null),
         db.ref('attachments').once('value').catch(() => null),
         (this.imageRef || db.ref('images')).once('value').catch(() => null),
         db.ref('teacherShares').once('value').catch(() => null),
-        db.ref('questions').once('value').catch(() => null)
+        db.ref('questions').once('value').catch(() => null),
+        (this.videoRef || db.ref('videos')).once('value').catch(() => null),
+        db.ref('video_blobs').once('value').catch(() => null)
       ]);
 
       const wbArchives = (wbSnap && wbSnap.val()) || {};
@@ -7376,6 +7399,8 @@ class App {
       const images = (imgSnap && imgSnap.val()) || {};
       const shares = (sharesSnap && sharesSnap.val()) || {};
       const questions = (qSnap && qSnap.val()) || {};
+      const videos = (vidSnap && vidSnap.val()) || {};
+      const videoBlobs = (vidBlobsSnap && vidBlobsSnap.val()) || {};
 
       // 1. 白板歷程
       const wbKeys = Object.keys(wbArchives);
@@ -7417,7 +7442,11 @@ class App {
       const imgKeys = Object.keys(images);
       const imgBytes = this.estimateJsonBytes(images);
 
-      const grandTotalBytes = wbBytes + presMatBytes + presLiveBytes + totalAttBytes + imgBytes;
+      // 6. 影片分享
+      const vidKeys = Object.keys(videos);
+      const vidBytes = this.estimateJsonBytes(videos) + this.estimateJsonBytes(videoBlobs);
+
+      const grandTotalBytes = wbBytes + presMatBytes + presLiveBytes + totalAttBytes + imgBytes + vidBytes;
       if (totalEl) totalEl.textContent = `${this.formatQuotaBytes(grandTotalBytes)}`;
 
       this._cloudCleanupData = {
@@ -7426,6 +7455,8 @@ class App {
         presLive,
         attachments,
         images,
+        videos,
+        videoBlobs,
         orphanedAttCount
       };
 
@@ -7444,7 +7475,9 @@ class App {
         orphanedAttBytes,
         totalAttBytes,
         imgCount: imgKeys.length,
-        imgBytes
+        imgBytes,
+        vidCount: vidKeys.length,
+        vidBytes
       });
 
       if (showToast) {
@@ -7587,6 +7620,37 @@ class App {
         </div>
         <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
           學生上傳至圖片分享區的圖檔。若已累積大量歷史課堂照片，建議清理舊圖以節省下載頻寬。
+        </div>
+      </div>
+
+      <!-- 6. 影片分享區歷史影片 -->
+      <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">🎬</span>
+            <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">影片分享區歷史影片</span>
+            <span style="font-size: 14px; padding: 2px 8px; border-radius: 10px; background: rgba(52, 199, 89, 0.15); color: #34c759; font-weight: 600;">共 ${data.vidCount} 部 (${this.formatQuotaBytes(data.vidBytes)})</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            ${data.vidCount > 0 ? `
+              <button type="button" class="presentation-tool-btn" onclick="window.app.migrateLegacyVideosToBlobs()" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;" title="將既有 MP4 大檔抽離至獨立節點並生成極小縮圖">
+                ⚡ 歷史影片轉縮圖優化
+              </button>
+            ` : ''}
+            ${data.vidCount > 10 ? `
+              <button type="button" class="presentation-tool-btn" onclick="window.app.cleanOldVideos(10)" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🧹 保留最新 10 部 (清除其餘舊片)
+              </button>
+            ` : ''}
+            ${data.vidCount > 0 ? `
+              <button type="button" class="presentation-tool-btn danger" onclick="window.app.cleanAllVideos()" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
+                🗑️ 清空所有影片
+              </button>
+            ` : `<span style="font-size: 14px; color: var(--text-muted);">無分享影片</span>`}
+          </div>
+        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+          使用者上傳或分享的影片。系統已全面採用「列表僅載入極小縮圖（約 3KB），點開後才按需載入 MP4 串流」機制，有效杜絕頻寬暴增。若已累積大量歷史影片，可在此進行縮圖抽離優化或清理舊檔。
         </div>
       </div>
     `;
@@ -7877,6 +7941,111 @@ class App {
           this.scheduleCurrentClassStorageSync();
         } catch (err) {
           this.showNotification('錯誤', '圖片優化失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  // ===== 歷史影片大檔轉縮圖優化 (將早期儲存於清單節點的 MP4 大檔抽離為獨立節點，並生成極小縮圖) =====
+  async migrateLegacyVideosToBlobs() {
+    this.showConfirmModal(
+      '🎬',
+      '歷史影片轉縮圖優化',
+      '系統將掃描影片分享區中的既有影片，若發現早期直接儲存於清單節點的 MP4 大檔，會自動抽離至獨立下載節點，並生成約 3KB 的極小縮圖。此操作可大幅節省全班進入影片分享區時的 Firebase 下載流量。確定要開始優化嗎？',
+      async () => {
+        try {
+          this.showNotification('優化中', '正在掃描影片分享區歷史檔案...');
+          const vRef = this.videoRef || db.ref('videos');
+          const snap = await vRef.once('value');
+          const data = snap.val() || {};
+          const keys = Object.keys(data);
+          let migratedCount = 0;
+
+          for (const k of keys) {
+            const item = data[k];
+            if (item && item.url && item.url.startsWith('data:video')) {
+              let thumb = item.thumbnail;
+              if (!thumb) {
+                thumb = await this.extractVideoThumbnail(item.url);
+              }
+              await db.ref(`video_blobs/${k}`).set(item.url);
+              await vRef.child(k).update({
+                url: '',
+                thumbnail: thumb || null,
+                hasLocalBlob: true,
+                blobKey: k
+              });
+              migratedCount++;
+            } else if (item && !item.thumbnail && (item.type === 'upload' || (item.url && item.url.match(/\.(mp4|webm|mov)($|\?)/i)))) {
+              const thumb = await this.extractVideoThumbnail(item.url);
+              if (thumb) {
+                await vRef.child(k).update({ thumbnail: thumb });
+                migratedCount++;
+              }
+            }
+          }
+
+          this.showNotification('🧹 優化完成', `已成功優化 ${migratedCount} 部歷史影片，大幅降低資料庫流量消耗！`);
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '影片優化失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  cleanOldVideos(keepCount = 10) {
+    this.showConfirmModal(
+      '🧹',
+      '保留最新影片並清除舊檔',
+      `確定要保留最新的 ${keepCount} 部影片，並清除更早的舊影片嗎？這將大幅釋放雲端影片儲存空間與下載流量。`,
+      async () => {
+        try {
+          const vRef = this.videoRef || db.ref('videos');
+          const snap = await vRef.once('value');
+          const videos = [];
+          snap.forEach(child => {
+            videos.push({ id: child.key, ...child.val() });
+          });
+          videos.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+          if (videos.length <= keepCount) {
+            this.showNotification('提示', `目前影片僅有 ${videos.length} 部，不需清理！`);
+            return;
+          }
+
+          const toDelete = videos.slice(keepCount);
+          const delPromises = toDelete.flatMap(item => [
+            vRef.child(item.id).remove(),
+            db.ref('video_blobs').child(item.id).remove().catch(() => {})
+          ]);
+          await Promise.all(delPromises);
+          this.showNotification('🧹 清理完成', `已刪除 ${toDelete.length} 部舊影片，保留最新 ${keepCount} 部！`);
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '清理影片失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  cleanAllVideos() {
+    this.showConfirmModal(
+      '⚠️',
+      '清空所有影片',
+      '確定要清空影片分享區的所有影片嗎？此操作無法復原。',
+      async () => {
+        try {
+          const vRef = this.videoRef || db.ref('videos');
+          await vRef.remove();
+          await db.ref('video_blobs').remove().catch(() => {});
+          this.showNotification('🧹 清理完成', '已清空影片分享區的所有影片！');
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '清空影片失敗：' + err.message);
         }
       }
     );
@@ -9250,21 +9419,30 @@ class App {
     const author = this.getCurrentUserName() || '同學';
     const uid = this.getUserId();
 
-    this.videoRef.push({
-      url: url,
-      user: author,
-      userId: uid,
-      avatar: this.getCurrentUserAvatar(),
-      filename: filename,
-      timestamp: Date.now(),
-      type: type,
-      youtubeId: ytId || null
-    }).then(() => {
-      input.value = '';
-      this.showNotification('成功', '影片連結分享成功！');
-    }).catch(err => {
-      this.showNotification('錯誤', '分享失敗: ' + err.message);
-    });
+    const doPush = (thumb = null) => {
+      this.videoRef.push({
+        url: url,
+        user: author,
+        userId: uid,
+        avatar: this.getCurrentUserAvatar(),
+        filename: filename,
+        timestamp: Date.now(),
+        type: type,
+        youtubeId: ytId || null,
+        thumbnail: thumb || null
+      }).then(() => {
+        input.value = '';
+        this.showNotification('成功', '影片連結分享成功！');
+      }).catch(err => {
+        this.showNotification('錯誤', '分享失敗: ' + err.message);
+      });
+    };
+
+    if (type === 'external' && url.match(/\.(mp4|webm|mov)($|\?)/i)) {
+      this.extractVideoThumbnail(url).then(thumb => doPush(thumb)).catch(() => doPush(null));
+    } else {
+      doPush(null);
+    }
   }
 
   // ===== 教師分享區功能 =====
