@@ -96,7 +96,6 @@
 
   const DEFAULT_TIMER_MUSIC = [
     { category: '巴洛克', title: '🎵 帕海貝爾 - 卡農 (YouTube)', url: 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1' },
-    { category: '巴洛克', title: '🎵 帕海貝爾 - 卡農 (本機版)', url: 'audio/canon.mp3' },
     { category: '巴洛克', title: '🎵 英格蘭民謠 - 綠袖子', url: 'https://www.youtube.com/watch?v=GUrkvBPXmDQ' },
     { category: '巴洛克', title: '🎵 韓德爾 - 水上音樂', url: 'https://www.youtube.com/watch?v=1h4mAceHmrI' },
     { category: '巴洛克', title: '🎵 海頓 - 降E大調小號協奏曲「快板」', url: 'https://www.youtube.com/watch?v=Uum5rmPLVZw' },
@@ -134,7 +133,12 @@
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+            // 自動過濾已廢棄之本機版卡農與空曲目
+            const cleaned = parsed.filter(item => item && item.url !== 'audio/canon.mp3' && !item.title?.includes('卡農 (本機版)'));
+            if (cleaned.length !== parsed.length) {
+              localStorage.setItem(this.STORAGE_KEY, JSON.stringify(cleaned));
+            }
+            return cleaned;
           }
         }
         // 自動遷移舊版 v3 / v2 清單
@@ -142,29 +146,14 @@
         if (oldStored) {
           const parsedOld = JSON.parse(oldStored);
           if (Array.isArray(parsedOld) && parsedOld.length > 0) {
-            // 移除失效的 pixabay 連結以及移除 lofi / piano 本機曲目
+            // 移除失效的 pixabay 連結以及移除本機曲目
             let filtered = parsedOld.filter(item => 
               !item.url.includes('pixabay') && 
               !item.url.includes('lofi.mp3') && 
-              !item.url.includes('piano.mp3')
+              !item.url.includes('piano.mp3') &&
+              item.url !== 'audio/canon.mp3' &&
+              !item.title?.includes('卡農 (本機版)')
             );
-            // 將本機卡農移至巴洛克分類，緊接在 YouTube 卡農下方
-            const canonLocalIndex = filtered.findIndex(item => item.url === 'audio/canon.mp3');
-            let canonLocalItem = null;
-            if (canonLocalIndex !== -1) {
-              canonLocalItem = filtered.splice(canonLocalIndex, 1)[0];
-            } else {
-              canonLocalItem = { category: '巴洛克', title: '🎵 帕海貝爾 - 卡農 (本機版)', url: 'audio/canon.mp3' };
-            }
-            canonLocalItem.category = '巴洛克';
-            canonLocalItem.title = '🎵 帕海貝爾 - 卡農 (本機版)';
-
-            const ytCanonIndex = filtered.findIndex(item => item.url.includes('MnhXZRw_ATU'));
-            if (ytCanonIndex !== -1) {
-              filtered.splice(ytCanonIndex + 1, 0, canonLocalItem);
-            } else {
-              filtered.unshift(canonLocalItem);
-            }
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filtered));
             return filtered;
           }
@@ -266,7 +255,6 @@
       let csv = '\uFEFF';
       csv += '曲目分類,曲目名稱,音樂網址\r\n';
       csv += '"巴洛克","🎵 帕海貝爾 - 卡農 (YouTube)","https://www.youtube.com/watch?v=MnhXZRw_ATU"\r\n';
-      csv += '"巴洛克","🎵 帕海貝爾 - 卡農 (本機版)","audio/canon.mp3"\r\n';
       csv += '"古典鋼琴","🎵 理查克萊德門 - 夢中的婚禮","https://www.youtube.com/watch?v=HJDLHuixqG8"\r\n';
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

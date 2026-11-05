@@ -11947,21 +11947,6 @@ class App {
           },
           onError: (event) => {
             console.warn("YouTube player error code:", event.data);
-            // 若自訂 YouTube 影片受版權保護無法嵌入 (代碼 101/150) 或載入失敗，自動備援切換為本機保證版卡農
-            if (this.currentAudioPlaying === 'canon') {
-              console.warn("Falling back to local canon.mp3 due to YouTube error");
-              this.isHtml5Audio = true;
-              const bgAudio = document.getElementById('bgAudioPlayer');
-              if (bgAudio) {
-                if (!bgAudio.src.endsWith('audio/canon.mp3')) {
-                  bgAudio.src = 'audio/canon.mp3';
-                  bgAudio.load();
-                }
-                bgAudio.muted = this.timerMuted;
-                if (!this.timerMuted) bgAudio.volume = 1.0;
-                bgAudio.play().catch(e => console.warn(e));
-              }
-            }
           }
         }
       });
@@ -12150,7 +12135,7 @@ class App {
 
         this.currentAudioPlaying = 'canon';
 
-        const musicSrc = this.currentMusicUrl || 'audio/canon.mp3';
+        const musicSrc = this.currentMusicUrl || 'https://www.youtube.com/watch?v=MnhXZRw_ATU&list=RDMnhXZRw_ATU&start_radio=1';
         // 優先使用原生 HTML5 音訊引擎 (100% 必定響起)
         if (this.isHtml5Audio || musicSrc.includes('.mp3') || musicSrc.startsWith('audio/') || !musicSrc.includes('youtu')) {
           if (bgAudio) {

@@ -1,4 +1,16 @@
 # System Log
+## 2026-11-05 - 清除計時背景音樂「帕海貝爾 - 卡農 (本機版)」與 11.8MB 實體音訊檔
+- 影響檔案：`index.html`, `js/timer_music_manager.js`, `js/app.js`, `audio/canon.mp3`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **移除本機版卡農曲目與選單項目**：
+     - 從 `index.html` 之倒數計時背景音樂選單（`#timerMusicSelect`）中移除「🎵 帕海貝爾 - 卡農 (本機版)」。
+     - 從 `js/timer_music_manager.js` 之預設音樂清單（`DEFAULT_TIMER_MUSIC`）與 CSV 範本中移除本機版卡農。
+     - 於 `getPlaylist()` 中加入自動過濾與清洗邏輯：若使用者本機 `localStorage` 仍保留有舊版本機卡農，載入時自動平滑清除，防止舊快取殘留。
+  2. **刪除 11.85MB 實體音訊大檔（`audio/canon.mp3`）**：
+     - 自專案儲存庫中徹底移除 `audio/canon.mp3`，大幅瘦身專案體積與網頁載入負擔。
+     - 調整 `js/app.js` 之音訊播放預設網址與備援機制，全面對齊 YouTube 版經典卡農。
+  3. 更新快取版本號至 `?v=494`。
+
 ## 2026-11-05 - 前端全域引入 Firebase Auth SDK 並實裝背景自動匿名驗證（全面封鎖 .json 惡意存取）
 - 影響檔案：`index.html`, `whiteboard.html`, `js/firebase-config.js`, `SYSTEM_LOG.md`。
 - 修改項目：
