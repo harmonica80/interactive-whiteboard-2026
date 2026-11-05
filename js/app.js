@@ -7418,14 +7418,35 @@ class App {
       const totalAttBytes = this.estimateJsonBytes(attachments);
 
       // 5. 圖片分享
-      const imgKeys = Object.keys(images);
-      const imgBytes = this.estimateJsonBytes(images);
+      let allImgKeys = Object.keys(images);
+      let allImgBytes = this.estimateJsonBytes(images);
 
       // 6. 影片分享
-      const vidKeys = Object.keys(videos);
-      const vidBytes = this.estimateJsonBytes(videos) + this.estimateJsonBytes(videoBlobs);
+      let allVidKeys = Object.keys(videos);
+      let allVidBytes = this.estimateJsonBytes(videos) + this.estimateJsonBytes(videoBlobs);
 
-      const grandTotalBytes = wbBytes + presMatBytes + presLiveBytes + totalAttBytes + imgBytes + vidBytes;
+      if (typeof rawRef === 'function') {
+        try {
+          const clsSnap = await rawRef('classes').once('value');
+          const clsData = clsSnap.val() || {};
+          Object.keys(clsData).forEach(cCode => {
+            const cObj = clsData[cCode] || {};
+            if (cObj.images && (!window.currentClassCode || window.currentClassCode !== cCode)) {
+              allImgKeys = allImgKeys.concat(Object.keys(cObj.images));
+              allImgBytes += this.estimateJsonBytes(cObj.images);
+            }
+            if (cObj.videos && (!window.currentClassCode || window.currentClassCode !== cCode)) {
+              allVidKeys = allVidKeys.concat(Object.keys(cObj.videos));
+              allVidBytes += this.estimateJsonBytes(cObj.videos);
+            }
+            if (cObj.video_blobs && (!window.currentClassCode || window.currentClassCode !== cCode)) {
+              allVidBytes += this.estimateJsonBytes(cObj.video_blobs);
+            }
+          });
+        } catch (e) {}
+      }
+
+      const grandTotalBytes = wbBytes + presMatBytes + presLiveBytes + totalAttBytes + allImgBytes + allVidBytes;
       if (totalEl) totalEl.textContent = `${this.formatQuotaBytes(grandTotalBytes)}`;
 
       this._cloudCleanupData = {
@@ -7453,10 +7474,10 @@ class App {
         orphanedAttCount,
         orphanedAttBytes,
         totalAttBytes,
-        imgCount: imgKeys.length,
-        imgBytes,
-        vidCount: vidKeys.length,
-        vidBytes
+        imgCount: allImgKeys.length,
+        imgBytes: allImgBytes,
+        vidCount: allVidKeys.length,
+        vidBytes: allVidBytes
       });
 
       if (showToast) {
@@ -7859,115 +7880,276 @@ class App {
     );
   }
 
-  // ===== 歷史圖片大檔轉縮圖優化 (將既有主清單大圖抽離為獨立節點，並生成極小縮圖) =====
+  // 輔助：安全產生圖片極小縮圖 (約 3KB WebP，補純白底圖避免透明背景反黑)
+  generateImageThumbnail(sourceUrl, maxDim = 180) {
+    return new Promise((resolve) => {
+      if (!sourceUrl) return resolve(null);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      const timer = setTimeout(() => {
+        resolve(null);
+      }, 5000);
+      img.onload = () => {
+        clearTimeout(timer);
+        try {
+          let tw = img.width || maxDim;
+          let th = img.height || maxDim;
+          if (tw > maxDim || th > maxDim) {
+            const tratio = Math.min(maxDim / tw, maxDim / th);
+            tw = Math.max(1, Math.round(tw * tratio));
+            th = Math.max(1, Math.round(th * tratio));
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = tw;
+          canvas.height = th;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, tw, th);
+          ctx.drawImage(img, 0, 0, tw, th);
+          const thumbDataUrl = canvas.toDataURL('image/webp', 0.65);
+          resolve(thumbDataUrl);
+        } catch (e) {
+          console.warn('generateImageThumbnail canvas error:', e);
+          resolve(null);
+        }
+      };
+      img.onerror = () => {
+        clearTimeout(timer);
+        resolve(null);
+      };
+      img.src = sourceUrl;
+    });
+  }
+
+  // 取得全庫所有圖片資料庫節點（涵蓋目前班級、根節點與所有註冊班級）
+  async getAllImageDbTargets() {
+    const targets = [];
+    const seenPaths = new Set();
+    const addRef = (ref, label, blobRoot) => {
+      if (!ref) return;
+      const path = ref.toString();
+      if (seenPaths.has(path)) return;
+      seenPaths.add(path);
+      targets.push({ ref, label, blobRoot });
+    };
+
+    if (this.imageRef) addRef(this.imageRef, '目前工作區', 'image_blobs');
+    if (typeof rawRef === 'function') {
+      addRef(rawRef('images'), '根目錄', 'image_blobs');
+      try {
+        const clsSnap = await rawRef('classes').once('value');
+        const clsData = clsSnap.val() || {};
+        Object.keys(clsData).forEach(cCode => {
+          if (clsData[cCode] && clsData[cCode].images) {
+            addRef(rawRef(`classes/${cCode}/images`), `班級 ${cCode}`, `classes/${cCode}/image_blobs`);
+          }
+        });
+      } catch (e) {}
+    } else if (typeof db !== 'undefined') {
+      addRef(db.ref('images'), '預設節點', 'image_blobs');
+    }
+    return targets;
+  }
+
+  // 取得全庫所有影片資料庫節點（涵蓋目前班級、根節點與所有註冊班級）
+  async getAllVideoDbTargets() {
+    const targets = [];
+    const seenPaths = new Set();
+    const addRef = (ref, label, blobRoot) => {
+      if (!ref) return;
+      const path = ref.toString();
+      if (seenPaths.has(path)) return;
+      seenPaths.add(path);
+      targets.push({ ref, label, blobRoot });
+    };
+
+    if (this.videoRef) addRef(this.videoRef, '目前工作區', 'video_blobs');
+    if (typeof rawRef === 'function') {
+      addRef(rawRef('videos'), '根目錄', 'video_blobs');
+      try {
+        const clsSnap = await rawRef('classes').once('value');
+        const clsData = clsSnap.val() || {};
+        Object.keys(clsData).forEach(cCode => {
+          if (clsData[cCode] && clsData[cCode].videos) {
+            addRef(rawRef(`classes/${cCode}/videos`), `班級 ${cCode}`, `classes/${cCode}/video_blobs`);
+          }
+        });
+      } catch (e) {}
+    } else if (typeof db !== 'undefined') {
+      addRef(db.ref('videos'), '預設節點', 'video_blobs');
+    }
+    return targets;
+  }
+
+  // ===== 歷史圖片大檔轉縮圖優化 (深層掃描全庫：抽離大檔並建立極小縮圖) =====
   async migrateLegacyImagesToThumbnails() {
     this.showConfirmModal(
       '🖼️',
       '歷史圖片轉縮圖優化',
-      '系統將掃描目前圖片分享區中的歷史圖片，自動將大圖抽出至獨立下載節點，並在清單中生成約 3KB 的極小縮圖。此操作可大幅節省全班每次進入圖片分享時的 Firebase 下載流量。確定要開始優化嗎？',
+      '系統將深層掃描全庫圖片分享區，若發現清單中殘留歷史大圖（Base64）或缺少極小縮圖，會自動抽離至獨立節點並生成約 3KB 的輕量縮圖，大幅降低全班載入流量。若所有圖片均已最佳化，則維持現狀。確定要開始掃描優化嗎？',
       async () => {
         try {
-          this.showNotification('優化中', '正在掃描圖片分享區歷史圖檔...');
-          const imgRef = this.imageRef || db.ref('images');
-          const snap = await imgRef.once('value');
-          const data = snap.val() || {};
-          const keys = Object.keys(data);
+          this.showNotification('優化中', '正在深層掃描全庫圖片檔案...');
+          const targets = await this.getAllImageDbTargets();
+          let totalScanned = 0;
           let migratedCount = 0;
+          let alreadyOptimizedCount = 0;
 
-          for (const k of keys) {
-            const item = data[k];
-            if (item && item.url && item.url.startsWith('data:image') && !item.thumbnail) {
-              await new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                  const THUMB_MAX = 180;
-                  let tw = img.width, th = img.height;
-                  if (tw > THUMB_MAX || th > THUMB_MAX) {
-                    const tratio = Math.min(THUMB_MAX / tw, THUMB_MAX / th);
-                    tw = Math.round(tw * tratio);
-                    th = Math.round(th * tratio);
+          for (const target of targets) {
+            const snap = await target.ref.once('value');
+            const data = snap.val() || {};
+            const keys = Object.keys(data);
+            totalScanned += keys.length;
+
+            for (const k of keys) {
+              const item = data[k];
+              if (!item) continue;
+
+              const hasHeavyUrl = Boolean(item.url && (item.url.startsWith('data:') || item.url.length > 500));
+              const missingThumbnail = !item.thumbnail;
+
+              if (hasHeavyUrl || missingThumbnail) {
+                const updates = {};
+                let largeDataUrl = hasHeavyUrl ? item.url : null;
+                let newThumb = item.thumbnail || null;
+
+                // 若缺少縮圖，嘗試產出
+                if (missingThumbnail) {
+                  const src = largeDataUrl || item.url;
+                  if (src) {
+                    newThumb = await this.generateImageThumbnail(src);
+                  } else if (item.hasLocalBlob && item.blobKey) {
+                    const blobPath = target.blobRoot ? `${target.blobRoot}/${item.blobKey}` : `image_blobs/${item.blobKey}`;
+                    const bSnap = await (typeof rawRef === 'function' ? rawRef(blobPath) : db.ref(blobPath)).once('value');
+                    if (bSnap.val()) {
+                      newThumb = await this.generateImageThumbnail(bSnap.val());
+                    }
                   }
-                  const thumbCanvas = document.createElement('canvas');
-                  thumbCanvas.width = tw;
-                  thumbCanvas.height = th;
-                  const tctx = thumbCanvas.getContext('2d');
-                  tctx.fillStyle = '#ffffff';
-                  tctx.fillRect(0, 0, tw, th);
-                  tctx.drawImage(img, 0, 0, tw, th);
-                  const thumbDataUrl = thumbCanvas.toDataURL('image/webp', 0.65);
+                }
 
-                  // 獨立存入 image_blobs
-                  db.ref(`image_blobs/${k}`).set(item.url).then(() => {
-                    return imgRef.child(k).update({
-                      url: '',
-                      thumbnail: thumbDataUrl,
-                      hasLocalBlob: true,
-                      blobKey: k
-                    });
-                  }).then(() => {
-                    migratedCount++;
-                    resolve();
-                  }).catch(() => resolve());
-                };
-                img.onerror = () => resolve();
-                img.src = item.url;
-              });
+                if (hasHeavyUrl) {
+                  const blobPath = target.blobRoot ? `${target.blobRoot}/${k}` : `image_blobs/${k}`;
+                  const blobRef = typeof rawRef === 'function' ? rawRef(blobPath) : db.ref(blobPath);
+                  await blobRef.set(largeDataUrl);
+                  updates.url = '';
+                  updates.hasLocalBlob = true;
+                  updates.blobKey = k;
+                }
+                if (newThumb && !item.thumbnail) {
+                  updates.thumbnail = newThumb;
+                }
+
+                if (Object.keys(updates).length > 0) {
+                  await target.ref.child(k).update(updates);
+                  migratedCount++;
+                } else {
+                  alreadyOptimizedCount++;
+                }
+              } else {
+                alreadyOptimizedCount++;
+              }
             }
           }
 
-          this.showNotification('🧹 優化完成', `已成功優化 ${migratedCount} 張歷史大圖為極小縮圖，大幅降低資料庫流量消耗！`);
+          if (migratedCount > 0) {
+            this.showNotification('🧹 優化完成', `已成功優化 ${migratedCount} 張歷史大圖為極小縮圖（約 3KB），大圖已抽離為獨立載入節點！全班下載流量大幅降低。`);
+          } else if (totalScanned > 0) {
+            this.showNotification('✅ 狀態最佳', `全庫掃描完成（共 ${totalScanned} 張圖片）：所有圖片皆已採用「極小縮圖（約 3KB）與獨立大檔節點」優化，目前清單極為輕量，無需任何轉換！`);
+          } else {
+            this.showNotification('ℹ️ 尚無圖片', '目前圖片分享區尚無任何圖片，無需進行縮圖轉換。');
+          }
+
           this.scanCloudStorageUsage(false);
           this.scheduleCurrentClassStorageSync();
         } catch (err) {
+          console.error('migrateLegacyImagesToThumbnails error:', err);
           this.showNotification('錯誤', '圖片優化失敗：' + err.message);
         }
       }
     );
   }
 
-  // ===== 歷史影片大檔轉縮圖優化 (將早期儲存於清單節點的 MP4 大檔抽離為獨立節點，並生成極小縮圖) =====
+  // ===== 歷史影片大檔轉縮圖優化 (深層掃描全庫：抽離 MP4 大檔並建立極小縮圖) =====
   async migrateLegacyVideosToBlobs() {
     this.showConfirmModal(
       '🎬',
       '歷史影片轉縮圖優化',
-      '系統將掃描影片分享區中的既有影片，若發現早期直接儲存於清單節點的 MP4 大檔，會自動抽離至獨立下載節點，並生成約 3KB 的極小縮圖。此操作可大幅節省全班進入影片分享區時的 Firebase 下載流量。確定要開始優化嗎？',
+      '系統將深層掃描全庫影片分享區，若發現主清單節點殘留 MP4 Base64 大檔或缺少極小縮圖，會自動抽離至獨立節點並生成約 3KB 的極小縮圖，大幅降低全班連線流量。若所有影片均已最佳化，則維持現狀。確定要開始掃描優化嗎？',
       async () => {
         try {
-          this.showNotification('優化中', '正在掃描影片分享區歷史檔案...');
-          const vRef = this.videoRef || db.ref('videos');
-          const snap = await vRef.once('value');
-          const data = snap.val() || {};
-          const keys = Object.keys(data);
+          this.showNotification('優化中', '正在深層掃描全庫影片檔案...');
+          const targets = await this.getAllVideoDbTargets();
+          let totalScanned = 0;
           let migratedCount = 0;
+          let alreadyOptimizedCount = 0;
 
-          for (const k of keys) {
-            const item = data[k];
-            if (item && item.url && item.url.startsWith('data:video')) {
-              let thumb = item.thumbnail;
-              if (!thumb) {
-                thumb = await this.extractVideoThumbnail(item.url);
-              }
-              await db.ref(`video_blobs/${k}`).set(item.url);
-              await vRef.child(k).update({
-                url: '',
-                thumbnail: thumb || null,
-                hasLocalBlob: true,
-                blobKey: k
-              });
-              migratedCount++;
-            } else if (item && !item.thumbnail && (item.type === 'upload' || (item.url && item.url.match(/\.(mp4|webm|mov)($|\?)/i)))) {
-              const thumb = await this.extractVideoThumbnail(item.url);
-              if (thumb) {
-                await vRef.child(k).update({ thumbnail: thumb });
-                migratedCount++;
+          for (const target of targets) {
+            const snap = await target.ref.once('value');
+            const data = snap.val() || {};
+            const keys = Object.keys(data);
+            totalScanned += keys.length;
+
+            for (const k of keys) {
+              const item = data[k];
+              if (!item) continue;
+
+              const hasHeavyVideoUrl = Boolean(item.url && (item.url.startsWith('data:video') || item.url.length > 1000));
+              const missingThumbnail = !item.thumbnail && item.type !== 'youtube';
+
+              if (hasHeavyVideoUrl || missingThumbnail) {
+                const updates = {};
+                let largeVideoData = hasHeavyVideoUrl ? item.url : null;
+                let newThumb = item.thumbnail || null;
+
+                if (missingThumbnail) {
+                  const src = largeVideoData || item.url;
+                  if (src) {
+                    newThumb = await this.extractVideoThumbnail(src);
+                  } else if (item.hasLocalBlob && item.blobKey) {
+                    const blobPath = target.blobRoot ? `${target.blobRoot}/${item.blobKey}` : `video_blobs/${item.blobKey}`;
+                    const bSnap = await (typeof rawRef === 'function' ? rawRef(blobPath) : db.ref(blobPath)).once('value');
+                    if (bSnap.val()) {
+                      newThumb = await this.extractVideoThumbnail(bSnap.val());
+                    }
+                  }
+                }
+
+                if (hasHeavyVideoUrl) {
+                  const blobPath = target.blobRoot ? `${target.blobRoot}/${k}` : `video_blobs/${k}`;
+                  const blobRef = typeof rawRef === 'function' ? rawRef(blobPath) : db.ref(blobPath);
+                  await blobRef.set(largeVideoData);
+                  updates.url = '';
+                  updates.hasLocalBlob = true;
+                  updates.blobKey = k;
+                }
+                if (newThumb && !item.thumbnail) {
+                  updates.thumbnail = newThumb;
+                }
+
+                if (Object.keys(updates).length > 0) {
+                  await target.ref.child(k).update(updates);
+                  migratedCount++;
+                } else {
+                  alreadyOptimizedCount++;
+                }
+              } else {
+                alreadyOptimizedCount++;
               }
             }
           }
 
-          this.showNotification('🧹 優化完成', `已成功優化 ${migratedCount} 部歷史影片，大幅降低資料庫流量消耗！`);
+          if (migratedCount > 0) {
+            this.showNotification('🧹 優化完成', `已成功優化 ${migratedCount} 部歷史影片，將 MP4 大檔抽離至獨立節點並生成極小縮圖！大幅降低資料庫流量消耗。`);
+          } else if (totalScanned > 0) {
+            this.showNotification('✅ 狀態最佳', `全庫掃描完成（共 ${totalScanned} 部影片）：所有影片皆已採用「極小縮圖（約 3KB）與點開才載入」優化，主清單絕不預載 MP4 影片，無需任何轉換！`);
+          } else {
+            this.showNotification('ℹ️ 尚無影片', '目前影片分享區尚無任何影片，無需進行縮圖轉換。');
+          }
+
           this.scanCloudStorageUsage(false);
           this.scheduleCurrentClassStorageSync();
         } catch (err) {
+          console.error('migrateLegacyVideosToBlobs error:', err);
           this.showNotification('錯誤', '影片優化失敗：' + err.message);
         }
       }
