@@ -7251,27 +7251,6 @@ class App {
           </div>
         </div>
         <div class="firebase-quota-body" style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 8px;">
-          <div class="quota-summary-line" style="margin-bottom: 8px;">
-            <div class="quota-summary-item">
-              <span class="quota-metric-label">💾 免費儲存空間</span>
-              <span class="quota-metric-value">1 GB</span>
-            </div>
-            <span class="quota-summary-sep">｜</span>
-            <div class="quota-summary-item">
-              <span class="quota-metric-label">📡 每日下載流量</span>
-              <span class="quota-metric-value" style="color: #e65100;">360 MB / 天</span>
-            </div>
-            <span class="quota-summary-sep">｜</span>
-            <div class="quota-summary-item">
-              <span class="quota-metric-label">🌐 每月下載流量</span>
-              <span class="quota-metric-value">約 10 GB / 月</span>
-            </div>
-            <span class="quota-summary-sep">｜</span>
-            <div class="quota-summary-item">
-              <span class="quota-metric-label">👥 同時連線人數</span>
-              <span class="quota-metric-value">100 人</span>
-            </div>
-          </div>
           <div class="firebase-quota-grid">
             <div class="quota-metric-box tier-normal">
               <div class="quota-metric-top">

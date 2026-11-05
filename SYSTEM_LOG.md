@@ -1,4 +1,12 @@
 # System Log
+## 2026-11-05 - 刪除 Firebase 額度說明展開區塊內重複之單行摘要指標
+- 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **移除展開區塊頂部重複之單行摘要資訊**：
+     - 自 `index.html` 與 `js/app.js`（`renderFirebaseQuotaBanners()`）之 `.firebase-quota-body` 中徹底移除 `.quota-summary-line`（免費儲存空間、每日下載流量、每月下載流量、同時連線人數之重複單行列）。
+     - 展開後直接呈現下方 4 欄具備詳細文字說明的度量指標卡片（`.firebase-quota-grid`），介面清爽無重複贅述。
+  2. 更新快取版本號至 `?v=500`。
+
 ## 2026-11-05 - 刪除額度卡片標題多餘折疊按鈕與驗證/優化 MP4 影片縮圖延遲載入機制
 - 影響檔案：`index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
