@@ -2037,6 +2037,7 @@ class App {
       '確定要刪除此圖片嗎？',
       '刪除後該圖片及留言回饋將永久移除，無法復原。',
       () => {
+        db.ref('image_blobs').child(id).remove().catch(() => {});
         db.ref('images').child(id).remove()
           .then(() => {
             if (this.activeImageId === id) {
@@ -4732,6 +4733,7 @@ class App {
         const updates = {};
         imgBoxes.forEach(box => {
           updates[`images/${box.value}`] = null;
+          updates[`image_blobs/${box.value}`] = null;
         });
         
         db.ref().update(updates).then(() => {
@@ -4799,6 +4801,7 @@ class App {
         const updates = {};
         imgBoxes.forEach(box => {
           updates[`images/${box.value}`] = null;
+          updates[`image_blobs/${box.value}`] = null;
         });
         
         db.ref().update(updates).then(() => {
@@ -4963,6 +4966,7 @@ class App {
         const updates = {};
         vidBoxes.forEach(box => {
           updates[`videos/${box.value}`] = null;
+          updates[`video_blobs/${box.value}`] = null;
         });
         
         db.ref().update(updates).then(() => {
@@ -4992,6 +4996,7 @@ class App {
         const updates = {};
         vidBoxes.forEach(box => {
           updates[`videos/${box.value}`] = null;
+          updates[`video_blobs/${box.value}`] = null;
         });
         
         db.ref().update(updates).then(() => {
@@ -5546,8 +5551,40 @@ class App {
     
     const modalImage = document.getElementById('modalImage');
     const canvas = document.getElementById('imageMarkupCanvas');
+    const modalDownloadBtn = document.getElementById('modalDownloadBtn');
     
-    modalImage.src = img.url;
+    // 原尺寸大圖點按時按需下載，列表預設只載入縮圖以節省流量
+    if (img.url) {
+      modalImage.src = img.url;
+      if (modalDownloadBtn) {
+        modalDownloadBtn.href = img.url;
+        modalDownloadBtn.download = img.filename;
+      }
+    } else if (img.hasLocalBlob || img.blobKey) {
+      if (img.thumbnail) modalImage.src = img.thumbnail;
+      const blobKey = img.blobKey || img.id;
+      this.showNotification('下載中', '正在下載原尺寸大圖...');
+      db.ref(`image_blobs/${blobKey}`).once('value').then(snap => {
+        const fullUrl = snap.val();
+        if (fullUrl) {
+          img.url = fullUrl; // 快取在前端記憶體物件，本次工作階段不再重複下載
+          if (this.activeImageId === id) {
+            modalImage.src = fullUrl;
+            if (modalDownloadBtn) {
+              modalDownloadBtn.href = fullUrl;
+              modalDownloadBtn.download = img.filename;
+            }
+          }
+          this.recordFirebaseTraffic(this.estimateJsonBytes(fullUrl));
+        } else {
+          this.showNotification('提示', '原尺寸大圖已不存在，顯示預覽縮圖');
+        }
+      }).catch(err => {
+        console.warn('載入原圖失敗:', err);
+      });
+    } else {
+      modalImage.src = img.thumbnail || '';
+    }
     const isOwnerImg = this.isItemOwner(img);
     const imgUserEl = document.getElementById('modalImageUser');
     if (imgUserEl) {
@@ -7162,88 +7199,87 @@ class App {
     return { totalStorageBytes, totalTrafficBytes };
   }
 
-  toggleQuotaDetails(btnEl) {
-    this._quotaDetailsExpanded = !this._quotaDetailsExpanded;
-    const cards = document.querySelectorAll('.firebase-quota-card');
-    cards.forEach(card => {
-      const details = card.querySelector('.quota-details-content');
-      const toggleBtn = card.querySelector('.quota-toggle-btn');
-      if (details) {
-        details.style.display = this._quotaDetailsExpanded ? 'grid' : 'none';
-      }
-      if (toggleBtn) {
-        toggleBtn.innerHTML = this._quotaDetailsExpanded ? '📖 收合說明 ▴' : '📖 詳細說明 ▾';
-        if (this._quotaDetailsExpanded) toggleBtn.classList.add('active');
-        else toggleBtn.classList.remove('active');
-      }
-    });
+  toggleFirebaseQuotaBlock(e) {
+    if (e && typeof e.stopPropagation === 'function') {
+      if (e.target.closest('button') && !e.target.closest('.quota-collapse-toggle-btn')) return;
+      e.stopPropagation();
+    }
+    const isCurrentlyCollapsed = (localStorage.getItem('admin_firebase_quota_collapsed') !== 'false');
+    const nextCollapsed = !isCurrentlyCollapsed;
+    try {
+      localStorage.setItem('admin_firebase_quota_collapsed', nextCollapsed ? 'true' : 'false');
+    } catch (err) {}
+    this.renderFirebaseQuotaBanners();
   }
 
   renderFirebaseQuotaBanners() {
     const bannerIds = ['firebaseQuotaBannerDashboard', 'firebaseQuotaBannerQuestions', 'firebaseQuotaBannerShares'];
-    const isExpanded = !!this._quotaDetailsExpanded;
+    const isCollapsed = (localStorage.getItem('admin_firebase_quota_collapsed') !== 'false');
 
     const html = `
-      <div class="firebase-quota-card">
-        <div class="firebase-quota-header">
+      <div class="firebase-quota-card ${isCollapsed ? 'is-collapsed' : ''}">
+        <div class="firebase-quota-header" onclick="window.app && window.app.toggleFirebaseQuotaBlock(event)" style="cursor: pointer; user-select: none;" title="點擊展開或折疊額度說明區塊">
           <div class="firebase-quota-title">
             <span>📊 Firebase 免費空間與每日、每月流量額度說明</span>
+            <span class="quota-toggle-arrow" style="font-size: 13px; margin-left: 4px; color: var(--accent-color);">${isCollapsed ? '▼' : '▲'}</span>
           </div>
-          <div class="firebase-quota-actions">
+          <div class="firebase-quota-actions" onclick="event.stopPropagation();">
             <button type="button" class="quota-mini-btn danger" onclick="window.app && window.app.openCloudCleanupModal()" title="開啟雲端大檔與過期歷程清理中心">🧹 深度清理大檔</button>
             <button type="button" class="quota-mini-btn" onclick="window.open('https://console.firebase.google.com/project/opencode-whiteboard/database/opencode-whiteboard-default-rtdb/usage', '_blank')" title="前往 Firebase Console 查看官方即時用量與帳單">🔗 前往 Firebase 主控台查看</button>
-            <button type="button" class="quota-mini-btn quota-toggle-btn ${isExpanded ? 'active' : ''}" onclick="window.app && window.app.toggleQuotaDetails(this)" title="展開或收合各項目詳細說明">${isExpanded ? '📖 收合說明 ▴' : '📖 詳細說明 ▾'}</button>
+            <button type="button" class="quota-mini-btn quota-collapse-toggle-btn ${isCollapsed ? '' : 'active'}" onclick="window.app && window.app.toggleFirebaseQuotaBlock(event)" title="展開或折疊額度說明區塊">${isCollapsed ? '▼ 展開' : '▲ 收合'}</button>
           </div>
         </div>
-        <div class="quota-summary-line">
-          <div class="quota-summary-item">
-            <span class="quota-metric-label">💾 免費儲存空間</span>
-            <span class="quota-metric-value">1 GB</span>
-          </div>
-          <span class="quota-summary-sep">｜</span>
-          <div class="quota-summary-item">
-            <span class="quota-metric-label">📡 每日下載流量</span>
-            <span class="quota-metric-value" style="color: #e65100;">360 MB / 天</span>
-          </div>
-          <span class="quota-summary-sep">｜</span>
-          <div class="quota-summary-item">
-            <span class="quota-metric-label">🌐 每月下載流量</span>
-            <span class="quota-metric-value">約 10 GB / 月</span>
-          </div>
-          <span class="quota-summary-sep">｜</span>
-          <div class="quota-summary-item">
-            <span class="quota-metric-label">👥 同時連線人數</span>
-            <span class="quota-metric-value">100 人</span>
-          </div>
-        </div>
-        <div class="quota-details-content firebase-quota-grid" style="display: ${isExpanded ? 'grid' : 'none'}; margin-top: 8px;">
-          <div class="quota-metric-box tier-normal">
-            <div class="quota-metric-top">
+        <div class="firebase-quota-body" style="display: ${isCollapsed ? 'none' : 'block'}; margin-top: 8px;">
+          <div class="quota-summary-line" style="margin-bottom: 8px;">
+            <div class="quota-summary-item">
               <span class="quota-metric-label">💾 免費儲存空間</span>
               <span class="quota-metric-value">1 GB</span>
             </div>
-            <div class="quota-metric-hint">課堂提問、圖片、白板歷程與簡報教材之總儲存上限</div>
-          </div>
-          <div class="quota-metric-box tier-normal">
-            <div class="quota-metric-top">
+            <span class="quota-summary-sep">｜</span>
+            <div class="quota-summary-item">
               <span class="quota-metric-label">📡 每日下載流量</span>
               <span class="quota-metric-value" style="color: #e65100;">360 MB / 天</span>
             </div>
-            <div class="quota-metric-hint">免費方案每日傳輸限制，若超出當日暫停連線，每日午夜自動重置</div>
-          </div>
-          <div class="quota-metric-box tier-normal">
-            <div class="quota-metric-top">
+            <span class="quota-summary-sep">｜</span>
+            <div class="quota-summary-item">
               <span class="quota-metric-label">🌐 每月下載流量</span>
               <span class="quota-metric-value">約 10 GB / 月</span>
             </div>
-            <div class="quota-metric-hint">免費配額之全月累積下載傳輸總額度上限</div>
-          </div>
-          <div class="quota-metric-box tier-normal">
-            <div class="quota-metric-top">
+            <span class="quota-summary-sep">｜</span>
+            <div class="quota-summary-item">
               <span class="quota-metric-label">👥 同時連線人數</span>
               <span class="quota-metric-value">100 人</span>
             </div>
-            <div class="quota-metric-hint">全班師生於白板與各項教學模組即時線上連線數上限</div>
+          </div>
+          <div class="firebase-quota-grid">
+            <div class="quota-metric-box tier-normal">
+              <div class="quota-metric-top">
+                <span class="quota-metric-label">💾 免費儲存空間</span>
+                <span class="quota-metric-value">1 GB</span>
+              </div>
+              <div class="quota-metric-hint">課堂提問、圖片、白板歷程與簡報教材之總儲存上限</div>
+            </div>
+            <div class="quota-metric-box tier-normal">
+              <div class="quota-metric-top">
+                <span class="quota-metric-label">📡 每日下載流量</span>
+                <span class="quota-metric-value" style="color: #e65100;">360 MB / 天</span>
+              </div>
+              <div class="quota-metric-hint">免費方案每日傳輸限制，若超出當日暫停連線，每日午夜自動重置</div>
+            </div>
+            <div class="quota-metric-box tier-normal">
+              <div class="quota-metric-top">
+                <span class="quota-metric-label">🌐 每月下載流量</span>
+                <span class="quota-metric-value">約 10 GB / 月</span>
+              </div>
+              <div class="quota-metric-hint">免費配額之全月累積下載傳輸總額度上限</div>
+            </div>
+            <div class="quota-metric-box tier-normal">
+              <div class="quota-metric-top">
+                <span class="quota-metric-label">👥 同時連線人數</span>
+                <span class="quota-metric-value">100 人</span>
+              </div>
+              <div class="quota-metric-hint">全班師生於白板與各項教學模組即時線上連線數上限</div>
+            </div>
           </div>
         </div>
       </div>
@@ -7532,6 +7568,11 @@ class App {
             <span style="font-size: 14px; padding: 2px 8px; border-radius: 10px; background: rgba(255, 45, 85, 0.15); color: #ff2d55; font-weight: 600;">共 ${data.imgCount} 張 (${this.formatQuotaBytes(data.imgBytes)})</span>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            ${data.imgCount > 0 ? `
+              <button type="button" class="presentation-tool-btn" onclick="window.app.migrateLegacyImagesToThumbnails()" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;" title="將既有大圖抽離並建立極小縮圖">
+                ⚡ 歷史大圖轉縮圖優化
+              </button>
+            ` : ''}
             ${data.imgCount > 20 ? `
               <button type="button" class="presentation-tool-btn" onclick="window.app.cleanOldImages(20)" style="padding: 5px 12px; font-size: 14px; border-radius: 8px;">
                 🧹 保留最新 20 張 (清除其餘舊圖)
@@ -7740,7 +7781,10 @@ class App {
           }
 
           const toDelete = images.slice(keepCount);
-          const delPromises = toDelete.map(item => imgRef.child(item.id).remove());
+          const delPromises = toDelete.flatMap(item => [
+            imgRef.child(item.id).remove(),
+            db.ref('image_blobs').child(item.id).remove().catch(() => {})
+          ]);
           await Promise.all(delPromises);
           this.showNotification('🧹 清理完成', `已刪除 ${toDelete.length} 張舊圖片，保留最新 ${keepCount} 張！`);
           this.scanCloudStorageUsage(false);
@@ -7761,11 +7805,78 @@ class App {
         try {
           const imgRef = this.imageRef || db.ref('images');
           await imgRef.remove();
+          await db.ref('image_blobs').remove().catch(() => {});
           this.showNotification('🧹 清理完成', '已清空圖片分享區的所有圖片！');
           this.scanCloudStorageUsage(false);
           this.scheduleCurrentClassStorageSync();
         } catch (err) {
           this.showNotification('錯誤', '清空圖片失敗：' + err.message);
+        }
+      }
+    );
+  }
+
+  // ===== 歷史圖片大檔轉縮圖優化 (將既有主清單大圖抽離為獨立節點，並生成極小縮圖) =====
+  async migrateLegacyImagesToThumbnails() {
+    this.showConfirmModal(
+      '🖼️',
+      '歷史圖片轉縮圖優化',
+      '系統將掃描目前圖片分享區中的歷史圖片，自動將大圖抽出至獨立下載節點，並在清單中生成約 3KB 的極小縮圖。此操作可大幅節省全班每次進入圖片分享時的 Firebase 下載流量。確定要開始優化嗎？',
+      async () => {
+        try {
+          this.showNotification('優化中', '正在掃描圖片分享區歷史圖檔...');
+          const imgRef = this.imageRef || db.ref('images');
+          const snap = await imgRef.once('value');
+          const data = snap.val() || {};
+          const keys = Object.keys(data);
+          let migratedCount = 0;
+
+          for (const k of keys) {
+            const item = data[k];
+            if (item && item.url && item.url.startsWith('data:image') && !item.thumbnail) {
+              await new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                  const THUMB_MAX = 180;
+                  let tw = img.width, th = img.height;
+                  if (tw > THUMB_MAX || th > THUMB_MAX) {
+                    const tratio = Math.min(THUMB_MAX / tw, THUMB_MAX / th);
+                    tw = Math.round(tw * tratio);
+                    th = Math.round(th * tratio);
+                  }
+                  const thumbCanvas = document.createElement('canvas');
+                  thumbCanvas.width = tw;
+                  thumbCanvas.height = th;
+                  const tctx = thumbCanvas.getContext('2d');
+                  tctx.fillStyle = '#ffffff';
+                  tctx.fillRect(0, 0, tw, th);
+                  tctx.drawImage(img, 0, 0, tw, th);
+                  const thumbDataUrl = thumbCanvas.toDataURL('image/webp', 0.65);
+
+                  // 獨立存入 image_blobs
+                  db.ref(`image_blobs/${k}`).set(item.url).then(() => {
+                    return imgRef.child(k).update({
+                      url: '',
+                      thumbnail: thumbDataUrl,
+                      hasLocalBlob: true,
+                      blobKey: k
+                    });
+                  }).then(() => {
+                    migratedCount++;
+                    resolve();
+                  }).catch(() => resolve());
+                };
+                img.onerror = () => resolve();
+                img.src = item.url;
+              });
+            }
+          }
+
+          this.showNotification('🧹 優化完成', `已成功優化 ${migratedCount} 張歷史大圖為極小縮圖，大幅降低資料庫流量消耗！`);
+          this.scanCloudStorageUsage(false);
+          this.scheduleCurrentClassStorageSync();
+        } catch (err) {
+          this.showNotification('錯誤', '圖片優化失敗：' + err.message);
         }
       }
     );
@@ -8560,7 +8671,7 @@ class App {
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const MAX = 1000; // 限制最大寬高為 1000px 以便看清圖片中的文字
+            const MAX = 1000; // 限制原圖最大寬高為 1000px 以便看清圖片中的文字
             let w = img.width, h = img.height;
             if (w > MAX || h > MAX) {
               const ratio = Math.min(MAX / w, MAX / h);
@@ -8575,16 +8686,43 @@ class App {
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, w, h);
             ctx.drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/webp', 0.82));
+            const fullDataUrl = canvas.toDataURL('image/webp', 0.82);
+
+            // 產生列表專用微型縮圖 (最大寬高 180px，品質 0.65，體積僅約 3KB ~ 6KB)
+            const THUMB_MAX = 180;
+            let tw = img.width, th = img.height;
+            if (tw > THUMB_MAX || th > THUMB_MAX) {
+              const tratio = Math.min(THUMB_MAX / tw, THUMB_MAX / th);
+              tw = Math.round(tw * tratio);
+              th = Math.round(th * tratio);
+            }
+            const thumbCanvas = document.createElement('canvas');
+            thumbCanvas.width = tw;
+            thumbCanvas.height = th;
+            const tctx = thumbCanvas.getContext('2d');
+            tctx.fillStyle = '#ffffff';
+            tctx.fillRect(0, 0, tw, th);
+            tctx.drawImage(img, 0, 0, tw, th);
+            const thumbDataUrl = thumbCanvas.toDataURL('image/webp', 0.65);
+
+            resolve({ fullDataUrl, thumbDataUrl });
           };
           img.onerror = () => reject(new Error('讀取圖片失敗'));
           img.src = e.target.result;
         };
         reader.onerror = () => reject(new Error('讀取檔案失敗'));
         reader.readAsDataURL(file);
-      }).then(dataUrl => {
-        return this.imageRef.push({
-          url: dataUrl,
+      }).then(async ({ fullDataUrl, thumbDataUrl }) => {
+        const newRef = this.imageRef.push();
+        const imgKey = newRef.key;
+        // 將大圖二進位 Base64 獨立存放在 image_blobs/${imgKey}，列表絕不重複全量下載！
+        await db.ref(`image_blobs/${imgKey}`).set(fullDataUrl);
+
+        return newRef.set({
+          url: '', // 主列表節點留空，避免 28 筆列表全量廣播下載！
+          thumbnail: thumbDataUrl, // 只載入極小縮圖 (約 3KB ~ 6KB)
+          hasLocalBlob: true,
+          blobKey: imgKey,
           user: author,
           userId: uid,
           avatar: this.getCurrentUserAvatar(),
@@ -10689,11 +10827,11 @@ class App {
       const authorName = img.user || '同學';
       return `
         <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
-          <div class="preview-item" data-id="${img.id}" data-url="${img.url}" data-user="${this.escapeHtml(authorName)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0; position: relative;">
+          <div class="preview-item" data-id="${img.id}" data-url="${img.thumbnail || img.url || ''}" data-user="${this.escapeHtml(authorName)}" data-filename="${this.escapeHtml(img.filename)}" style="cursor: pointer; margin: 0; position: relative;">
             ${commentCount > 0 ? `
               <div class="card-comment-badge" onclick="event.stopPropagation(); window.app && window.app.showImageModal ? window.app.showImageModal('${img.id}') : null;" title="${commentCount} 則留言回饋">${commentCount > 99 ? '99+' : commentCount}</div>
             ` : ''}
-            <img src="${img.url}" alt="${img.filename}">
+            <img src="${img.thumbnail || img.url || ''}" alt="${img.filename}">
           </div>
           <div style="font-size: 11px; color: var(--text-secondary); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: 100%;">
             ${this.renderAvatarHtml(this.getUserAvatar(img.userId, authorName, img.avatar), 16)}
@@ -11040,7 +11178,7 @@ class App {
     const renderImageItemHtml = (img) => `
       <div class="preview-item-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg-card); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color); position: relative; margin-bottom: 12px;">
         <div class="preview-item" style="position: relative; margin: 0;">
-          <img src="${img.url}" alt="${img.filename}">
+          <img src="${img.thumbnail || img.url || ''}" alt="${img.filename}">
           <button onclick="window.app.openSingleItemCopyModal('images', '${img.id}')" title="複製此圖片至其他班級" style="
             position: absolute; top: -6px; left: -6px;
             width: 24px; height: 24px; border: none;
@@ -30306,6 +30444,7 @@ function deleteImage(id) {
     '確定要刪除此圖片嗎？',
     '此動作將永久刪除該圖片，且無法復原。',
     () => {
+      db.ref('image_blobs').child(id).remove().catch(() => {});
       db.ref('images').child(id).remove()
         .then(() => window.app.showNotification('成功', '已刪除圖片！'))
         .catch(err => window.app.showNotification('錯誤', '刪除失敗: ' + err.message));
@@ -30320,6 +30459,7 @@ function deleteVideo(id) {
     '確定要刪除此影片嗎？',
     '此動作將永久刪除該影片，且無法復原。',
     () => {
+      db.ref('video_blobs').child(id).remove().catch(() => {});
       db.ref('videos').child(id).remove()
         .then(() => window.app.showNotification('成功', '已刪除影片！'))
         .catch(err => window.app.showNotification('錯誤', '刪除失敗: ' + err.message));

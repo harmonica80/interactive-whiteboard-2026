@@ -6258,6 +6258,14 @@ body {
   transition: all 0.25s ease;
 }
 
+.firebase-quota-card.is-collapsed {
+  padding: 6px 12px;
+}
+
+.firebase-quota-card.is-collapsed .firebase-quota-header {
+  margin-bottom: 0;
+}
+
 /* 整體卡片狀態：超過 80% 橘黃色預警 */
 .firebase-quota-card.quota-card-warn-80 {
   border-color: #f59e0b;
