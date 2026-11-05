@@ -1159,6 +1159,25 @@ if (typeof firebase !== 'undefined' && firebase.initializeApp) {
   }
 }
 
+// 自動執行 Firebase 匿名驗證 (確保發送之所有請求皆帶有合法的 Session Auth Token，防止外部未經授權任意讀取 .json)
+if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') {
+  try {
+    const auth = firebase.auth();
+    window.firebaseAuth = auth;
+    auth.onAuthStateChanged(function(user) {
+      if (!user) {
+        auth.signInAnonymously().then(function(cred) {
+          // 匿名驗證成功，順利取得 Session Token
+        }).catch(function(err) {
+          console.warn('Firebase 匿名驗證登入警告:', err);
+        });
+      }
+    });
+  } catch (authInitErr) {
+    console.warn('Firebase Auth 啟動失敗:', authInitErr);
+  }
+}
+
 // 取得資料庫原生實例
 var rawDb = null;
 var rawRef = null;

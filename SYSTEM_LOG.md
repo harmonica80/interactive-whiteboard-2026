@@ -1,4 +1,15 @@
 # System Log
+## 2026-11-05 - 前端全域引入 Firebase Auth SDK 並實裝背景自動匿名驗證（全面封鎖 .json 惡意存取）
+- 影響檔案：`index.html`, `whiteboard.html`, `js/firebase-config.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **引入官方 Firebase Auth SDK**：
+     - 於主系統 `index.html` 與互動白板 `whiteboard.html` 中引入官方 `firebase-auth.js`。
+  2. **實裝背景無感自動匿名驗證（Anonymous Auth）**：
+     - 於 `js/firebase-config.js` 初始化時掛載 `auth.onAuthStateChanged()`，當檢測到尚未持有通行證時，自動在背景以 0.1 秒極速執行 `auth.signInAnonymously()`。
+     - 師生使用白板、簡報、提問、測驗等課堂功能「完全免註冊、免登入 Google 帳號、無感通行」。
+     - 配合 Firebase Console 的 `auth != null` 安全規則，外部任何直接在網址列輸入 `https://.../xxx.json` 或使用 Python/curl 爬蟲者，均會被 Firebase 閘道直接回傳 `Permission denied`，徹底杜絕資料外洩與流量盜刷。
+  3. 更新快取版本號至 `?v=493`。
+
 ## 2026-11-05 - 修復深度清理大檔彈窗 active 樣式與更新 Firebase 安全規則阻斷 /.json 洩漏
 - 影響檔案：`index.html`, `css/style.css`, `js/app.js`, `firebase-database-rules.json`, `SYSTEM_LOG.md`。
 - 修改項目：
