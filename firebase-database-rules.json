@@ -21,7 +21,9 @@
     /* 3. 免代碼一次性大廳資料節點 (公用空間) */
     "questions": { ".read": true, ".write": true },
     "images": { ".read": true, ".write": true },
+    "image_blobs": { ".read": true, ".write": true },
     "videos": { ".read": true, ".write": true },
+    "video_blobs": { ".read": true, ".write": true },
     "teacherShares": { ".read": true, ".write": true },
     "quiz": { ".read": true, ".write": true },
     "comments": { ".read": true, ".write": true },

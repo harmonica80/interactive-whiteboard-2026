@@ -7098,19 +7098,19 @@ class App {
     try {
       const [
         wbSnap, presMatSnap, presLiveSnap, attSnap,
-        classesSnap, rootQSnap, rootImgSnap, rootVidSnap,
+        regSnap, rootQSnap, rootImgSnap, rootVidSnap,
         rootSharesSnap, rootQuizSnap, wbV2Snap
       ] = await Promise.all([
         db.ref('whiteboard_archives').once('value').catch(() => null),
         db.ref('presentation_materials').once('value').catch(() => null),
         db.ref('presentation').once('value').catch(() => null),
         db.ref('attachments').once('value').catch(() => null),
-        db.ref('classes').once('value').catch(() => null),
-        db.ref('questions').once('value').catch(() => null),
-        (this.imageRef || db.ref('images')).once('value').catch(() => null),
-        (this.videoRef || db.ref('videos')).once('value').catch(() => null),
-        (this.sharesRef || db.ref('teacherShares')).once('value').catch(() => null),
-        db.ref('quiz').once('value').catch(() => null),
+        (typeof rawRef === 'function' ? rawRef('registered_classes') : db.ref('registered_classes')).once('value').catch(() => null),
+        (typeof rawRef === 'function' ? rawRef('questions') : db.ref('questions')).once('value').catch(() => null),
+        (typeof rawRef === 'function' ? rawRef('images') : db.ref('images')).once('value').catch(() => null),
+        (typeof rawRef === 'function' ? rawRef('videos') : db.ref('videos')).once('value').catch(() => null),
+        (typeof rawRef === 'function' ? rawRef('teacherShares') : db.ref('teacherShares')).once('value').catch(() => null),
+        (typeof rawRef === 'function' ? rawRef('quiz') : db.ref('quiz')).once('value').catch(() => null),
         db.ref('whiteboard_v2').once('value').catch(() => null)
       ]);
 
@@ -7118,7 +7118,19 @@ class App {
       const presMatBytes = presMatSnap ? this.estimateJsonBytes(presMatSnap.val()) : 0;
       const presLiveBytes = presLiveSnap ? this.estimateJsonBytes(presLiveSnap.val()) : 0;
       const attBytes = attSnap ? this.estimateJsonBytes(attSnap.val()) : 0;
-      const classesBytes = classesSnap ? this.estimateJsonBytes(classesSnap.val()) : 0;
+      
+      let classesBytes = 0;
+      if (regSnap && regSnap.val()) {
+        const cCodes = Object.keys(regSnap.val());
+        for (const cCode of cCodes) {
+          try {
+            const cSnap = await (typeof rawRef === 'function' ? rawRef(`classes/${cCode}`) : db.ref(`classes/${cCode}`)).once('value').catch(() => null);
+            if (cSnap && cSnap.val()) {
+              classesBytes += this.estimateJsonBytes(cSnap.val());
+            }
+          } catch (e) {}
+        }
+      }
       const rootQBytes = rootQSnap ? this.estimateJsonBytes(rootQSnap.val()) : 0;
       const rootImgBytes = rootImgSnap ? this.estimateJsonBytes(rootImgSnap.val()) : 0;
       const rootVidBytes = rootVidSnap ? this.estimateJsonBytes(rootVidSnap.val()) : 0;
@@ -7427,22 +7439,25 @@ class App {
 
       if (typeof rawRef === 'function') {
         try {
-          const clsSnap = await rawRef('classes').once('value');
-          const clsData = clsSnap.val() || {};
-          Object.keys(clsData).forEach(cCode => {
-            const cObj = clsData[cCode] || {};
-            if (cObj.images && (!window.currentClassCode || window.currentClassCode !== cCode)) {
-              allImgKeys = allImgKeys.concat(Object.keys(cObj.images));
-              allImgBytes += this.estimateJsonBytes(cObj.images);
+          const regSnap = await rawRef('registered_classes').once('value').catch(() => null);
+          const regData = (regSnap && regSnap.val()) || {};
+          const cCodes = Object.keys(regData);
+          for (const cCode of cCodes) {
+            if (!window.currentClassCode || window.currentClassCode !== cCode) {
+              const [cImgSnap, cVidSnap, cVidBlobSnap] = await Promise.all([
+                rawRef(`classes/${cCode}/images`).once('value').catch(() => null),
+                rawRef(`classes/${cCode}/videos`).once('value').catch(() => null),
+                rawRef(`classes/${cCode}/video_blobs`).once('value').catch(() => null)
+              ]);
+              const cImgs = (cImgSnap && cImgSnap.val()) || {};
+              const cVids = (cVidSnap && cVidSnap.val()) || {};
+              const cVidBlobs = (cVidBlobSnap && cVidBlobSnap.val()) || {};
+              allImgKeys = allImgKeys.concat(Object.keys(cImgs));
+              allImgBytes += this.estimateJsonBytes(cImgs);
+              allVidKeys = allVidKeys.concat(Object.keys(cVids));
+              allVidBytes += this.estimateJsonBytes(cVids) + this.estimateJsonBytes(cVidBlobs);
             }
-            if (cObj.videos && (!window.currentClassCode || window.currentClassCode !== cCode)) {
-              allVidKeys = allVidKeys.concat(Object.keys(cObj.videos));
-              allVidBytes += this.estimateJsonBytes(cObj.videos);
-            }
-            if (cObj.video_blobs && (!window.currentClassCode || window.currentClassCode !== cCode)) {
-              allVidBytes += this.estimateJsonBytes(cObj.video_blobs);
-            }
-          });
+          }
         } catch (e) {}
       }
 
@@ -7937,12 +7952,10 @@ class App {
     if (typeof rawRef === 'function') {
       addRef(rawRef('images'), '根目錄', 'image_blobs');
       try {
-        const clsSnap = await rawRef('classes').once('value');
-        const clsData = clsSnap.val() || {};
-        Object.keys(clsData).forEach(cCode => {
-          if (clsData[cCode] && clsData[cCode].images) {
-            addRef(rawRef(`classes/${cCode}/images`), `班級 ${cCode}`, `classes/${cCode}/image_blobs`);
-          }
+        const regSnap = await rawRef('registered_classes').once('value').catch(() => null);
+        const regData = (regSnap && regSnap.val()) || {};
+        Object.keys(regData).forEach(cCode => {
+          addRef(rawRef(`classes/${cCode}/images`), `班級 ${cCode}`, `classes/${cCode}/image_blobs`);
         });
       } catch (e) {}
     } else if (typeof db !== 'undefined') {
@@ -7967,12 +7980,10 @@ class App {
     if (typeof rawRef === 'function') {
       addRef(rawRef('videos'), '根目錄', 'video_blobs');
       try {
-        const clsSnap = await rawRef('classes').once('value');
-        const clsData = clsSnap.val() || {};
-        Object.keys(clsData).forEach(cCode => {
-          if (clsData[cCode] && clsData[cCode].videos) {
-            addRef(rawRef(`classes/${cCode}/videos`), `班級 ${cCode}`, `classes/${cCode}/video_blobs`);
-          }
+        const regSnap = await rawRef('registered_classes').once('value').catch(() => null);
+        const regData = (regSnap && regSnap.val()) || {};
+        Object.keys(regData).forEach(cCode => {
+          addRef(rawRef(`classes/${cCode}/videos`), `班級 ${cCode}`, `classes/${cCode}/video_blobs`);
         });
       } catch (e) {}
     } else if (typeof db !== 'undefined') {
