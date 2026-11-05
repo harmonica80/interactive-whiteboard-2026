@@ -7162,8 +7162,26 @@ class App {
     return { totalStorageBytes, totalTrafficBytes };
   }
 
+  toggleQuotaDetails(btnEl) {
+    this._quotaDetailsExpanded = !this._quotaDetailsExpanded;
+    const cards = document.querySelectorAll('.firebase-quota-card');
+    cards.forEach(card => {
+      const details = card.querySelector('.quota-details-content');
+      const toggleBtn = card.querySelector('.quota-toggle-btn');
+      if (details) {
+        details.style.display = this._quotaDetailsExpanded ? 'grid' : 'none';
+      }
+      if (toggleBtn) {
+        toggleBtn.innerHTML = this._quotaDetailsExpanded ? '📖 收合說明 ▴' : '📖 詳細說明 ▾';
+        if (this._quotaDetailsExpanded) toggleBtn.classList.add('active');
+        else toggleBtn.classList.remove('active');
+      }
+    });
+  }
+
   renderFirebaseQuotaBanners() {
     const bannerIds = ['firebaseQuotaBannerDashboard', 'firebaseQuotaBannerQuestions', 'firebaseQuotaBannerShares'];
+    const isExpanded = !!this._quotaDetailsExpanded;
 
     const html = `
       <div class="firebase-quota-card">
@@ -7174,9 +7192,31 @@ class App {
           <div class="firebase-quota-actions">
             <button type="button" class="quota-mini-btn danger" onclick="window.app && window.app.openCloudCleanupModal()" title="開啟雲端大檔與過期歷程清理中心">🧹 深度清理大檔</button>
             <button type="button" class="quota-mini-btn" onclick="window.open('https://console.firebase.google.com/project/opencode-whiteboard/database/opencode-whiteboard-default-rtdb/usage', '_blank')" title="前往 Firebase Console 查看官方即時用量與帳單">🔗 前往 Firebase 主控台查看</button>
+            <button type="button" class="quota-mini-btn quota-toggle-btn ${isExpanded ? 'active' : ''}" onclick="window.app && window.app.toggleQuotaDetails(this)" title="展開或收合各項目詳細說明">${isExpanded ? '📖 收合說明 ▴' : '📖 詳細說明 ▾'}</button>
           </div>
         </div>
-        <div class="firebase-quota-grid">
+        <div class="quota-summary-line">
+          <div class="quota-summary-item">
+            <span class="quota-metric-label">💾 免費儲存空間</span>
+            <span class="quota-metric-value">1 GB</span>
+          </div>
+          <span class="quota-summary-sep">｜</span>
+          <div class="quota-summary-item">
+            <span class="quota-metric-label">📡 每日下載流量</span>
+            <span class="quota-metric-value" style="color: #e65100;">360 MB / 天</span>
+          </div>
+          <span class="quota-summary-sep">｜</span>
+          <div class="quota-summary-item">
+            <span class="quota-metric-label">🌐 每月下載流量</span>
+            <span class="quota-metric-value">約 10 GB / 月</span>
+          </div>
+          <span class="quota-summary-sep">｜</span>
+          <div class="quota-summary-item">
+            <span class="quota-metric-label">👥 同時連線人數</span>
+            <span class="quota-metric-value">100 人</span>
+          </div>
+        </div>
+        <div class="quota-details-content firebase-quota-grid" style="display: ${isExpanded ? 'grid' : 'none'}; margin-top: 8px;">
           <div class="quota-metric-box tier-normal">
             <div class="quota-metric-top">
               <span class="quota-metric-label">💾 免費儲存空間</span>
@@ -7221,7 +7261,7 @@ class App {
       const pEl = topRow.querySelector('p');
       if (pEl && !pEl.innerHTML.includes('<br>')) {
         pEl.innerHTML = '請點選功能卡片進入該功能的獨立全頁操作模式。<br>點擊各類別標題可自由展開或折疊。';
-        pEl.style.fontSize = '12.5px';
+        pEl.style.fontSize = '14px';
         pEl.style.lineHeight = '1.45';
         pEl.style.whiteSpace = 'nowrap';
       }

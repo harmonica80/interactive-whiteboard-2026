@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="favicon.png?v=483">
   <link rel="shortcut icon" href="favicon.ico?v=483">
   <link rel="apple-touch-icon" href="apple-touch-icon.png?v=483">
-  <link rel="stylesheet" href="css/style.css?v=496">
+  <link rel="stylesheet" href="css/style.css?v=497">
   <link rel="stylesheet" href="css/presentation.css?v=483">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1639,9 +1639,31 @@
                     <div class="firebase-quota-actions">
                       <button type="button" class="quota-mini-btn danger" onclick="window.app && window.app.openCloudCleanupModal()" title="開啟雲端大檔與過期歷程清理中心">🧹 深度清理大檔</button>
                       <button type="button" class="quota-mini-btn" onclick="window.open('https://console.firebase.google.com/project/opencode-whiteboard/database/opencode-whiteboard-default-rtdb/usage', '_blank')" title="前往 Firebase Console 查看官方即時用量與帳單">🔗 前往 Firebase 主控台查看</button>
+                      <button type="button" class="quota-mini-btn quota-toggle-btn" onclick="window.app && window.app.toggleQuotaDetails(this)" title="展開或收合各項目詳細說明">📖 詳細說明 ▾</button>
                     </div>
                   </div>
-                  <div class="firebase-quota-grid">
+                  <div class="quota-summary-line">
+                    <div class="quota-summary-item">
+                      <span class="quota-metric-label">💾 免費儲存空間</span>
+                      <span class="quota-metric-value">1 GB</span>
+                    </div>
+                    <span class="quota-summary-sep">｜</span>
+                    <div class="quota-summary-item">
+                      <span class="quota-metric-label">📡 每日下載流量</span>
+                      <span class="quota-metric-value" style="color: #e65100;">360 MB / 天</span>
+                    </div>
+                    <span class="quota-summary-sep">｜</span>
+                    <div class="quota-summary-item">
+                      <span class="quota-metric-label">🌐 每月下載流量</span>
+                      <span class="quota-metric-value">約 10 GB / 月</span>
+                    </div>
+                    <span class="quota-summary-sep">｜</span>
+                    <div class="quota-summary-item">
+                      <span class="quota-metric-label">👥 同時連線人數</span>
+                      <span class="quota-metric-value">100 人</span>
+                    </div>
+                  </div>
+                  <div class="quota-details-content firebase-quota-grid" style="display: none; margin-top: 8px;">
                     <div class="quota-metric-box tier-normal">
                       <div class="quota-metric-top">
                         <span class="quota-metric-label">💾 免費儲存空間</span>
@@ -6735,7 +6757,7 @@ Python</pre>
   <script src="js/timer_music_manager.js?v=494"></script>
   <script src="js/matching_quiz.js?v=483"></script>
   <script src="js/quiz.js?v=483"></script>
-  <script src="js/app.js?v=496"></script>
+  <script src="js/app.js?v=497"></script>
   <script src="js/classics_quiz.js?v=483"></script>
   <script src="js/song_quiz.js?v=483"></script>
   <script src="js/video_quiz.js?v=483"></script>

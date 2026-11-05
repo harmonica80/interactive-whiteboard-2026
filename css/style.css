@@ -6239,7 +6239,7 @@ body {
 
 .firebase-quota-banner-dashboard-slot {
   flex: 1 1 360px;
-  max-width: 620px;
+  max-width: 680px;
   min-width: 280px;
 }
 
@@ -6334,6 +6334,39 @@ body {
   background: #d70015;
   border-color: #d70015;
   color: #ffffff;
+}
+
+.quota-mini-btn.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #ffffff;
+}
+
+/* 單行摘要額度標示列 */
+.quota-summary-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.quota-summary-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.quota-summary-sep {
+  color: var(--border-color);
+  opacity: 0.75;
+  font-weight: 300;
+  user-select: none;
 }
 
 .firebase-quota-grid {
