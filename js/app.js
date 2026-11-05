@@ -7164,85 +7164,48 @@ class App {
 
   renderFirebaseQuotaBanners() {
     const bannerIds = ['firebaseQuotaBannerDashboard', 'firebaseQuotaBannerQuestions', 'firebaseQuotaBannerShares'];
-    const MAX_STORAGE_BYTES = 1024 * 1024 * 1024; // 1 GB
-    const MAX_TRAFFIC_BYTES = 10 * 1024 * 1024 * 1024; // 10 GB
 
-    const { totalStorageBytes, totalTrafficBytes } = this.getCalculatedQuotaTotals();
-    const storagePct = Math.min(100, (totalStorageBytes / MAX_STORAGE_BYTES) * 100);
-    const trafficPct = Math.min(100, (totalTrafficBytes / MAX_TRAFFIC_BYTES) * 100);
-
-    const getTierClass = (pct) => {
-      if (pct >= 90) return 'tier-danger-90';
-      if (pct >= 80) return 'tier-warn-80';
-      return 'tier-normal';
-    };
-
-    const getTierBadgeLabel = (pct) => {
-      if (pct >= 90) return '🚨 危險 (>90%)';
-      if (pct >= 80) return '⚠️ 預警 (>80%)';
-      return '🟢 正常';
-    };
-
-    const storageTier = getTierClass(storagePct);
-    const trafficTier = getTierClass(trafficPct);
-    const maxPct = Math.max(storagePct, trafficPct);
-    const cardStateClass = maxPct >= 90 ? 'quota-card-danger-90' : (maxPct >= 80 ? 'quota-card-warn-80' : '');
-
-    let alertBannerHtml = '';
-    if (maxPct >= 90) {
-      const whichText = (storagePct >= 90 && trafficPct >= 90)
-        ? '儲存空間與本月流量皆已超過 90%'
-        : (storagePct >= 90 ? `儲存空間已達 ${storagePct.toFixed(1)}%（超過 90% 警戒線）` : `本月下載流量已達 ${trafficPct.toFixed(1)}%（超過 90% 警戒線）`);
-      alertBannerHtml = `
-        <div class="quota-alert-banner alert-90">
-          <span>🚨 <strong>嚴重額度警告：</strong>目前 Firebase ${whichText}！即將觸及免費版硬性上限，請立即刪除不再使用的大型附件、舊圖片或舊提問。</span>
-        </div>
-      `;
-    } else if (maxPct >= 80) {
-      const whichText = (storagePct >= 80 && trafficPct >= 80)
-        ? '儲存空間與本月流量皆已超過 80%'
-        : (storagePct >= 80 ? `儲存空間已達 ${storagePct.toFixed(1)}%（超過 80% 提醒線）` : `本月下載流量已達 ${trafficPct.toFixed(1)}%（超過 80% 提醒線）`);
-      alertBannerHtml = `
-        <div class="quota-alert-banner alert-80">
-          <span>⚠️ <strong>容量預警提醒：</strong>目前 Firebase ${whichText}，建議適時清理歷史附件或備份舊課堂資料。</span>
-        </div>
-      `;
-    }
-
-    const monthLabel = this.quotaStats?.monthKey || this.getCurrentMonthKey();
     const html = `
-      <div class="firebase-quota-card ${cardStateClass}">
+      <div class="firebase-quota-card">
         <div class="firebase-quota-header">
           <div class="firebase-quota-title">
-            <span>📊 Firebase 空間與本月流量即時監測</span>
+            <span>📊 Firebase 免費空間與每日、每月流量額度說明</span>
           </div>
           <div class="firebase-quota-actions">
-            <button type="button" class="quota-mini-btn" onclick="window.app.recalculateAllFirebaseStorage(true)" title="重新掃描計算目前課堂與附件空間">🔄 重新掃描</button>
-            <button type="button" class="quota-mini-btn" onclick="window.app.promptCalibrateFirebaseQuota()" title="手動校準對齊 Firebase Console 顯示數值">⚙️ 校準數值</button>
             <button type="button" class="quota-mini-btn danger" onclick="window.app && window.app.openCloudCleanupModal()" title="開啟雲端大檔與過期歷程清理中心">🧹 深度清理大檔</button>
+            <button type="button" class="quota-mini-btn" onclick="window.open('https://console.firebase.google.com/project/opencode-whiteboard/database/opencode-whiteboard-default-rtdb/usage', '_blank')" title="前往 Firebase Console 查看官方即時用量與帳單">🔗 前往 Firebase 主控台查看</button>
           </div>
         </div>
         <div class="firebase-quota-grid">
-          <div class="quota-metric-box ${storageTier}">
+          <div class="quota-metric-box tier-normal">
             <div class="quota-metric-top">
-              <span class="quota-metric-label">💾 目前已使用空間 <span class="quota-status-pill">${getTierBadgeLabel(storagePct)}</span></span>
-              <span class="quota-metric-value">${this.formatQuotaBytes(totalStorageBytes)} / 1 GB <span style="font-size: 11px; opacity: 0.85;">(${storagePct.toFixed(1)}%)</span></span>
+              <span class="quota-metric-label">💾 免費儲存空間</span>
+              <span class="quota-metric-value">1 GB</span>
             </div>
-            <div class="quota-progress-track">
-              <div class="quota-progress-fill" style="width: ${Math.max(1.5, storagePct).toFixed(1)}%;"></div>
-            </div>
+            <div class="quota-metric-hint">課堂提問、圖片、白板歷程與簡報教材之總儲存上限</div>
           </div>
-          <div class="quota-metric-box ${trafficTier}">
+          <div class="quota-metric-box tier-normal">
             <div class="quota-metric-top">
-              <span class="quota-metric-label">📡 本月已使用流量 (${monthLabel}) <span class="quota-status-pill">${getTierBadgeLabel(trafficPct)}</span></span>
-              <span class="quota-metric-value">${this.formatQuotaBytes(totalTrafficBytes)} / 10 GB <span style="font-size: 11px; opacity: 0.85;">(${trafficPct.toFixed(1)}%)</span></span>
+              <span class="quota-metric-label">📡 每日下載流量</span>
+              <span class="quota-metric-value" style="color: #e65100;">360 MB / 天</span>
             </div>
-            <div class="quota-progress-track">
-              <div class="quota-progress-fill" style="width: ${Math.max(1.5, trafficPct).toFixed(1)}%;"></div>
+            <div class="quota-metric-hint">免費方案每日傳輸限制，若超出當日暫停連線，每日午夜自動重置</div>
+          </div>
+          <div class="quota-metric-box tier-normal">
+            <div class="quota-metric-top">
+              <span class="quota-metric-label">🌐 每月下載流量</span>
+              <span class="quota-metric-value">約 10 GB / 月</span>
             </div>
+            <div class="quota-metric-hint">免費配額之全月累積下載傳輸總額度上限</div>
+          </div>
+          <div class="quota-metric-box tier-normal">
+            <div class="quota-metric-top">
+              <span class="quota-metric-label">👥 同時連線人數</span>
+              <span class="quota-metric-value">100 人</span>
+            </div>
+            <div class="quota-metric-hint">全班師生於白板與各項教學模組即時線上連線數上限</div>
           </div>
         </div>
-        ${alertBannerHtml}
       </div>
     `;
 
