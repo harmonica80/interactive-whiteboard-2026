@@ -3,7 +3,7 @@
 - 影響檔案：`firebase-database-rules.json`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：
   1. **修正全域資料庫安全規則（`firebase-database-rules.json`）**：
-     - 新增根節點 `image_blobs` 與 `video_blobs` 的讀寫許可（`.read: true, .write: true`），解決將歷史圖片與影片 Base64 抽離至獨立節點時觸發 `PERMISSION_DENIED` 的問題。
+     - 新增根節點 `image_blobs` 與 `video_blobs` 之 Session 驗證讀寫許可（`.read: "auth != null", .write: "auth != null"`），全面維持高強度資安防護並解決將歷史圖片與影片 Base64 抽離至獨立節點時觸發 `PERMISSION_DENIED` 的問題。
   2. **修正跨班級遍歷邏輯（合法權限路徑存取）**：
      - 因 Firebase 安全規則中 `classes` 根節點嚴禁整庫傾印（未開放直接讀取根路徑），將所有嘗試直讀 `rawRef('classes')` 的程式碼徹底替換為先讀取具備權限的 `registered_classes` 取得班級代碼清單，再分別讀取各班專屬空間（`classes/${cCode}/*`）。
      - 同步修正 `recalculateAllFirebaseStorage`、`scanCloudStorageUsage`、`getAllImageDbTargets` 與 `getAllVideoDbTargets`。
