@@ -13156,17 +13156,38 @@ class App {
     this.showNotification('提示', '正在準備匯出檔案（含 tldraw 白板畫稿），請稍候...');
     
     try {
-      const [questionsSnap, imagesSnap, videosSnap, sharesSnap, quizSnap, whiteboardSnap, tldrawSnapshot] = await Promise.all([
-        db.ref('questions').once('value'),
-        db.ref('images').once('value'),
-        db.ref('videos').once('value'),
-        db.ref('teacherShares').once('value'),
-        db.ref('quiz').once('value'),
-        db.ref('whiteboard').once('value'),
-        this.getTldrawSnapshot()
+      const safeOnce = async (refPath) => {
+        try {
+          return await db.ref(refPath).once('value');
+        } catch (e) {
+          console.warn(`Export: safe skip ${refPath}:`, e?.message);
+          return null;
+        }
+      };
+
+      const [
+        questionsSnap,
+        imagesSnap,
+        videosSnap,
+        sharesSnap,
+        quizSnap,
+        whiteboardSnap,
+        whiteboardV2Snap,
+        whiteboardArchivesSnap,
+        tldrawSnapshot
+      ] = await Promise.all([
+        safeOnce('questions'),
+        safeOnce('images'),
+        safeOnce('videos'),
+        safeOnce('teacherShares'),
+        safeOnce('quiz'),
+        safeOnce('whiteboard'),
+        safeOnce('whiteboard_v2'),
+        safeOnce('whiteboard_archives'),
+        (typeof this.getTldrawSnapshot === 'function') ? this.getTldrawSnapshot().catch(() => null) : Promise.resolve(null)
       ]);
       
-      const quizData = quizSnap.val() || {};
+      const quizData = (quizSnap && quizSnap.val()) || {};
       const currentCode = (window.ClassRoomManager && typeof window.ClassRoomManager.getActiveClassCode === 'function')
         ? window.ClassRoomManager.getActiveClassCode()
         : (window.currentClassCode || '');
@@ -13180,12 +13201,14 @@ class App {
         className: currentClassName || null,
         appVersion: this.APP_VERSION || '3.1.0',
         exportedAt: new Date().toISOString(),
-        dbUrl: db.app.options.databaseURL || "",
-        questions: questionsSnap.val() || {},
-        images: imagesSnap.val() || {},
-        videos: videosSnap.val() || {},
-        teacherShares: sharesSnap.val() || {},
-        whiteboard: whiteboardSnap.val() || {},
+        dbUrl: (db && db.app && db.app.options && db.app.options.databaseURL) || "",
+        questions: (questionsSnap && questionsSnap.val()) || {},
+        images: (imagesSnap && imagesSnap.val()) || {},
+        videos: (videosSnap && videosSnap.val()) || {},
+        teacherShares: (sharesSnap && sharesSnap.val()) || {},
+        whiteboard: (whiteboardSnap && whiteboardSnap.val()) || {},
+        whiteboard_v2: (whiteboardV2Snap && whiteboardV2Snap.val()) || {},
+        whiteboard_archives: (whiteboardArchivesSnap && whiteboardArchivesSnap.val()) || {},
         tldrawSnapshot: tldrawSnapshot || null,
         quiz: {
           current: quizData.current || null,
@@ -13270,7 +13293,7 @@ class App {
         const importedData = JSON.parse(rawText);
         
         // Validate format
-        if (!importedData || (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard && !importedData.tldrawSnapshot)) {
+        if (!importedData || (!importedData.questions && !importedData.images && !importedData.videos && !importedData.quiz && !importedData.whiteboard && !importedData.whiteboard_v2 && !importedData.tldrawSnapshot)) {
           this.showNotification('錯誤', '無效的記錄檔格式！');
           return;
         }
@@ -13310,7 +13333,13 @@ class App {
           
           // Set data nodes
           promises.push(db.ref('questions').set(importedData.questions || null));
-          promises.push(db.ref('whiteboard').set(importedData.whiteboard || null));
+          if (importedData.whiteboard_v2) {
+            promises.push(db.ref('whiteboard_v2').set(importedData.whiteboard_v2).catch(() => {}));
+          }
+          if (importedData.whiteboard_archives) {
+            promises.push(db.ref('whiteboard_archives').set(importedData.whiteboard_archives).catch(() => {}));
+          }
+          promises.push(db.ref('whiteboard').set(importedData.whiteboard || null).catch(() => {}));
           promises.push(db.ref('quiz/broadcastVideo').remove()); // Reset broadcast state
           
           // Write images sequentially to prevent WebSocket connection frame overflow & disconnects
@@ -20957,7 +20986,23 @@ class App {
   }
 
   async rewardFocusGameBatch(targetType = 'top3') {
-    const results = (this.focusGame && this.focusGame.results) || {};
+    let results = (this.focusGame && this.focusGame.results) || {};
+    // 若為聽歌搶答全班搶答模式 (buzzer)，成績儲存在 buzzerScores
+    if ((!results || Object.keys(results).length === 0) && this.focusGame && this.focusGame.buzzerScores) {
+      results = {};
+      Object.entries(this.focusGame.buzzerScores).forEach(([uId, bScore]) => {
+        if (!bScore) return;
+        results[uId] = {
+          uid: uId,
+          name: bScore.name || '同學',
+          userName: bScore.name || '同學',
+          score: Number(bScore.score) || 0,
+          correctCount: Number(bScore.correctCount) || 0,
+          timeSpent: 0,
+          status: 'correct'
+        };
+      });
+    }
     const entries = Object.entries(results).map(([uid, r]) => ({
       uid,
       name: (r && (r.userName || r.name)) || '同學',

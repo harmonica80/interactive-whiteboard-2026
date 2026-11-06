@@ -32,6 +32,14 @@
     "presence": { ".read": "auth != null", ".write": "auth != null" },
 
     /* 4. 互動白板畫布、分頁與物件同步 */
+    "whiteboard": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "whiteboard_room": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "whiteboard_v2": {
       ".read": "auth != null",
       ".write": "auth != null"

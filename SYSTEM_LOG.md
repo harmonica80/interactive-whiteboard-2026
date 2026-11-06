@@ -1,4 +1,19 @@
 # System Log
+## 2026-11-06 - 修正課堂記錄 JSON 匯出權限錯誤與實作聽歌搶答完成時自動記點
+- 影響檔案：`firebase-database-rules.json`, `index.html`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **修正課堂記錄 JSON 匯出權限阻擋問題（`adminExportRecord`）**：
+     - **補強 Firebase 安全規則**：於 `firebase-database-rules.json` 補齊 `whiteboard` 與 `whiteboard_room` 節點之讀寫權限（`auth != null`），防止讀取白板節點時回傳 `permission_denied at /whiteboard`。
+     - **匯出容錯與新版白板相容性（`safeOnce`）**：將 `adminExportRecord()` 內各節點讀取包裹獨立 try/catch，確保即使個別節點不存在或權限變動亦不中斷整體匯出程序；同步支援導出新版 `whiteboard_v2`、`whiteboard_archives` 與 `tldrawSnapshot`。
+     - **匯入相容性加強（`adminImportRecord`）**：支援同時還原 `whiteboard_v2`、`whiteboard_archives` 與舊版 `whiteboard`。
+  2. **實作聽歌搶答完成時自動記點功能**：
+     - **個人自主挑戰模式（Self Mode）**：學生完成自主挑戰時（`finishSongQuizGame`），依答對歌曲首數與教師計分設定自動計算點數，寫入 `quiz/students/${userId}` 榮譽點數與 `pointsLog`，若在分組模式下同步獎勵所屬小組，並於結算畫面顯著呈現「⭐ 榮譽點數已自動記點 +X 點」，同時觸發獲勝音效與彩帶激勵特效。
+     - **全班同步搶答模式（Buzzer Mode）**：
+       - 修正 `submitBuzzerAnswer` 於 `buzzerScores` 確保存入學生 `uid`。
+       - 全班搶答結束時（`renderBuzzerFinalLeaderboard`），由教師端自動依答對題數及計分倍率為全班所有得分同學自動完成榮譽記點（`autoAwardSongQuizBuzzerFinal`，具備單局防重複防呆機制）。
+       - 頒獎清單中每位同學顯示「⭐ 已自動記點 +X 點」，並保留個別「⭐ 加分」按鈕以利教師彈性加碼。
+     - **專注力測驗批次加分（`rewardFocusGameBatch`）支援搶答模式**：若當前為聽歌搶答 Buzzer 模式，自動自 `buzzerScores` 萃取成績資料，解決管理後台批次加分按鈕查無成績記錄之問題。
+  3. 更新快取版本號至 `?v=503`。
 ## 2026-11-05 - 修復歷史圖片/影片優化 PERMISSION_DENIED 權限錯誤（更新資料庫規則與合法節點遍歷）
 - 影響檔案：`firebase-database-rules.json`, `index.html`, `js/app.js`, `SYSTEM_LOG.md`。
 - 修改項目：

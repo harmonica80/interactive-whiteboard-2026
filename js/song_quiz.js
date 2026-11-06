@@ -494,10 +494,23 @@
 
     const game = this.focusGame;
     const userId = localStorage.getItem('user_id') || 'guest';
+    const userName = (typeof this.getCurrentUserName === 'function' && this.getCurrentUserName()) 
+      || localStorage.getItem('user_nickname') 
+      || localStorage.getItem('user_name') 
+      || '同學';
     const now = Date.now();
     const start = this.focusStartTimeLocal || (game && game.startTime) || now;
     const rawElapsed = (now - start) / 1000 + (this.focusHelpPenaltySeconds || 0);
     const timeSpent = Math.max(0.1, Number(rawElapsed.toFixed(2)) || 0.1);
+
+    // 聽歌搶答完成時自動記點 (依答對題數及計分設定自動記點入帳)
+    let autoAwardedPts = 0;
+    if (state.correctCount > 0) {
+      const basePts = (this.activityScoringConfig && this.activityScoringConfig.pointsPerReward) ? Number(this.activityScoringConfig.pointsPerReward) : 1;
+      const multiplier = (isNaN(basePts) || basePts <= 0) ? 1 : basePts;
+      autoAwardedPts = state.correctCount * multiplier;
+      this.autoAwardSelfSongQuizPoints(userId, userName, autoAwardedPts, state.correctCount, (game.questions || []).length);
+    }
 
     const result = {
       name: userName,
@@ -505,6 +518,7 @@
       avatar: this.getCurrentUserAvatar(),
       answers: state.answers,
       score: state.correctCount,
+      autoAwardedPoints: autoAwardedPts,
       totalQuestions: (game.questions || []).length,
       timeSpent,
       completedAt: firebase.database.ServerValue.TIMESTAMP,
@@ -525,13 +539,56 @@
     this.renderSongQuizCompleted(updatedGame, result);
 
     db.ref(`quiz/focusGame/results/${userId}`).set(result).then(() => {
-      this.showNotification('完成', `聽歌搶答完成！答對 ${state.correctCount}／${game.questions.length} 題！`);
+      const pointNotice = autoAwardedPts > 0 ? `，已自動記點 +${autoAwardedPts} 點` : '';
+      this.showNotification('完成', `聽歌搶答完成！答對 ${state.correctCount}／${game.questions.length} 題${pointNotice}！`);
       if (document.getElementById('songQuizSelfRankList')) {
         this.renderFocusGameLeaderboard('songQuizSelfRankList', this.focusGame?.results || currentResults);
       }
     }).catch((error) => {
       this.showNotification('錯誤', `送出成績失敗：${error.message}`);
     });
+  };
+
+  // 個人自主挑戰完成時自動記點寫入 Firebase
+  App.prototype.autoAwardSelfSongQuizPoints = async function autoAwardSelfSongQuizPoints(userId, userName, points, correctCount, totalQuestions) {
+    if (!userId || points <= 0) return;
+    try {
+      const snap = await db.ref(`quiz/students/${userId}`).once('value');
+      const stData = snap.val() || {};
+      const currentPoints = parseInt(stData.points, 10) || 0;
+      const nextPoints = currentPoints + points;
+      const logId = db.ref('quiz/students').child(userId).child('pointsLog').push().key || ('log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6));
+      const reason = `聽歌搶答完成挑戰（答對 ${correctCount}／${totalQuestions} 首）`;
+      const logEntry = {
+        amount: points,
+        balance: nextPoints,
+        reason: reason,
+        timestamp: Date.now()
+      };
+
+      const updates = {};
+      updates[`quiz/students/${userId}/name`] = stData.name || userName;
+      updates[`quiz/students/${userId}/avatar`] = stData.avatar !== undefined ? stData.avatar : (typeof this.getCurrentUserAvatar === 'function' ? this.getCurrentUserAvatar() : 0);
+      updates[`quiz/students/${userId}/points`] = nextPoints;
+      updates[`quiz/students/${userId}/pointsLog/${logId}`] = logEntry;
+      updates[`quiz/students/${userId}/updatedAt`] = Date.now();
+      await db.ref().update(updates);
+
+      // 若有分組且為小組或雙軌計分模式，同步獎勵所屬小組
+      const scoringMode = (this.activityScoringConfig && this.activityScoringConfig.mode) || 'individual';
+      if ((scoringMode === 'group' || scoringMode === 'both') && window.groupManager) {
+        const groupInfo = (typeof this.getStudentGroupInfo === 'function') ? this.getStudentGroupInfo(userId, userName) : null;
+        if (groupInfo && typeof window.groupManager.addGroupPoints === 'function') {
+          await window.groupManager.addGroupPoints(groupInfo.groupId, points, `${reason}（${userName}）`);
+        }
+      }
+
+      if (typeof this.triggerRewardAnimation === 'function') {
+        this.triggerRewardAnimation(points, reason);
+      }
+    } catch (err) {
+      console.warn('autoAwardSelfSongQuizPoints error:', err);
+    }
   };
 
   // 渲染個人自主挑戰結算與解析清單
@@ -547,6 +604,7 @@
     const score = Number(result.score) || 0;
     const total = Number(result.totalQuestions) || (game.questions || []).length;
     const byId = new Map(answers.map((item) => [item.questionId, item]));
+    const earnedPoints = Number(result.autoAwardedPoints) || (score > 0 ? score : 0);
 
     grid.style.display = 'flex';
     grid.style.flexDirection = 'column';
@@ -557,10 +615,15 @@
     grid.innerHTML = `
       <div style="padding:18px; border-radius:14px; background:rgba(52,199,89,0.12); border:1px solid #34c759; width:100%; box-sizing:border-box; text-align:center;">
         <div style="font-size:22px; font-weight:900; color:#167a31;">🎉 恭喜完成！答對 ${score}／${total} 題</div>
-        <div style="font-size:14px; color:var(--text-secondary); margin-top:6px;">
+        ${earnedPoints > 0 ? `
+          <div style="margin-top:8px; display:inline-flex; align-items:center; gap:6px; background:#10b981; color:white; padding:4px 14px; border-radius:20px; font-size:14px; font-weight:900; box-shadow:0 2px 8px rgba(16,185,129,0.3);">
+            ⭐ 榮譽點數已自動記點 +${earnedPoints} 點
+          </div>
+        ` : ''}
+        <div style="font-size:14px; color:var(--text-secondary); margin-top:8px;">
           總耗時：<strong>${Number(result.timeSpent || 0).toFixed(2)}</strong> 秒（含提示加罰 ${result.penaltySeconds || 0} 秒）
         </div>
-        <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">
+        <div style="font-size:14px; color:var(--text-muted); margin-top:4px;">
           以下為本局歌曲清單與正解，可點擊在 YouTube 欣賞完整 MV！
         </div>
       </div>
@@ -1218,6 +1281,7 @@
         const score = (curr && curr.score) || 0;
         const correctCount = (curr && curr.correctCount) || 0;
         return {
+          uid: userId,
           name: userName,
           score: score + 10,
           correctCount: correctCount + 1,
@@ -1344,6 +1408,35 @@
     }
   };
 
+  // 全班搶答結束時由老師端自動為所有得分同學記點入帳
+  App.prototype.autoAwardSongQuizBuzzerFinal = async function autoAwardSongQuizBuzzerFinal(rankedEntries) {
+    if (!this.isAdmin || !Array.isArray(rankedEntries) || rankedEntries.length === 0) return;
+    if (!this.activityScoringConfig) this.initActivityScoringConfig();
+
+    const basePts = (this.activityScoringConfig && this.activityScoringConfig.pointsPerReward) ? Number(this.activityScoringConfig.pointsPerReward) : 1;
+    const multiplier = (isNaN(basePts) || basePts <= 0) ? 1 : basePts;
+    const mode = (this.activityScoringConfig && this.activityScoringConfig.mode) || 'individual';
+    const awardedGroups = new Set();
+    let pCount = 0;
+
+    for (const entry of rankedEntries) {
+      const correctCount = Number(entry.correctCount) || Math.max(1, Math.round((Number(entry.score) || 10) / 10));
+      if (correctCount <= 0) continue;
+      const pts = correctCount * multiplier;
+      const reason = `全班聽歌搶答完賽榮譽（第 ${entry.rank} 名，答對 ${correctCount} 首）`;
+      const res = await this.awardActivityPoints(entry.uid, entry.name, pts, reason, {
+        silent: true,
+        mode,
+        AwardedGroupIds: awardedGroups
+      });
+      if (res && res.personalAwarded) pCount++;
+    }
+
+    if (pCount > 0 || awardedGroups.size > 0) {
+      this.showNotification('🎉 聽歌搶答自動記點完成', `已依計分模式為全班 ${pCount} 位搶答得分同學（及 ${awardedGroups.size} 個小組）自動完成榮譽記點！`);
+    }
+  };
+
   // 渲染全班搶答最終排行榜與頒獎
   App.prototype.renderBuzzerFinalLeaderboard = function renderBuzzerFinalLeaderboard(game) {
     const grid = document.getElementById('focusGameGrid');
@@ -1355,7 +1448,10 @@
     this.stopSongQuizAudio();
 
     const scores = game.buzzerScores || {};
-    const entries = Object.values(scores).sort((a, b) => (b.score || 0) - (a.score || 0));
+    const entries = Object.entries(scores).map(([uId, s]) => ({
+      ...(s || {}),
+      uid: (s && s.uid) || uId
+    })).sort((a, b) => (b.score || 0) - (a.score || 0));
 
     // 計算同分人數與並列名次
     const scoreCounts = {};
@@ -1377,13 +1473,32 @@
       };
     });
 
+    // 聽歌搶答全班搶答完成時，由教師端自動觸發自動記點作業 (每答對 1 首記 1 點，保證只執行一次)
+    if (this.isAdmin && game && !game.buzzerAutoAwarded && rankedEntries.length > 0) {
+      db.ref('quiz/focusGame/buzzerAutoAwarded').set(true).catch(() => {});
+      this.autoAwardSongQuizBuzzerFinal(rankedEntries);
+    }
+
+    const basePts = (this.activityScoringConfig && this.activityScoringConfig.pointsPerReward) ? Number(this.activityScoringConfig.pointsPerReward) : 1;
+    const multiplier = (isNaN(basePts) || basePts <= 0) ? 1 : basePts;
+
     grid.innerHTML = `
       <div style="padding:20px; border-radius:16px; background:linear-gradient(135deg, rgba(0,122,255,0.12) 0%, rgba(52,199,89,0.12) 100%); border:1.5px solid var(--accent-color); text-align:center; box-sizing:border-box;">
         <div style="font-size:26px; font-weight:900; color:var(--text-primary);">🏆 全班聽歌搶答 頒獎典禮 🏆</div>
         <div style="font-size:14px; color:var(--text-secondary); margin-top:6px;">全部歌曲搶答完畢！以下為全班同學的搶答戰績與榮譽榜：</div>
+        <div style="margin-top:10px; display:inline-flex; align-items:center; gap:6px; background:#10b981; color:white; padding:4px 14px; border-radius:20px; font-size:14px; font-weight:900; box-shadow:0 2px 8px rgba(16,185,129,0.3);">
+          ⭐ 榮譽點數已自動記點入帳（每答對 1 首記 ${multiplier} 點）
+        </div>
       </div>
 
-      <div style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
+      ${this.isAdmin ? `
+        <div style="display:flex; gap:8px; margin-top:12px; margin-bottom:4px; flex-wrap:wrap;">
+          <button type="button" class="presentation-tool-btn success" onclick="window.app && window.app.rewardFocusGameBatch('top3')" style="font-size:14px; padding:6px 14px; border-radius:8px;" title="依計分設定獎勵排行榜前三名同學或所屬小組">🏆 獎勵前三名</button>
+          <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardFocusGameBatch('all_qualified')" style="font-size:14px; padding:6px 14px; border-radius:8px;" title="依計分設定獎勵全部答對得分同學或所屬小組">🎁 獎勵全部得分同學</button>
+        </div>
+      ` : ''}
+
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
         ${rankedEntries.length === 0 ? `
           <div style="padding:24px; text-align:center; color:var(--text-muted); background:var(--bg-card); border-radius:12px; border:1px solid var(--border-color);">
             本局無同學得分
@@ -1406,15 +1521,26 @@
             border = '2px solid #cd7f32';
           }
 
+          const correctCount = Number(entry.correctCount) || Math.max(1, Math.round((Number(entry.score) || 10) / 10));
+          const earnedPts = correctCount * multiplier;
+          const safeUid = String(entry.uid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const safeName = String(entry.name || '同學').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
           return `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-radius:12px; background:${bg}; border:${border};">
-              <div style="display:flex; align-items:center; gap:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-radius:12px; background:${bg}; border:${border}; flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                 <span style="font-weight:900; font-size:15px; color:var(--text-primary); min-width:90px; white-space:nowrap;">${badge}</span>
                 <span style="font-size:16px; font-weight:bold; color:var(--text-primary);">${escapeForSong(entry.name)}</span>
               </div>
-              <div style="text-align:right;">
-                <span style="font-size:18px; font-weight:900; color:var(--accent-color);">${entry.score || 0} 分</span>
-                <span style="font-size:12px; color:var(--text-secondary); margin-left:8px;">(答對 ${entry.correctCount || 0} 首)</span>
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <div style="text-align:right;">
+                  <span style="font-size:18px; font-weight:900; color:var(--accent-color);">${entry.score || 0} 分</span>
+                  <span style="font-size:12px; color:var(--text-secondary); margin-left:6px;">(答對 ${correctCount} 首)</span>
+                </div>
+                <span style="font-size:12px; font-weight:bold; color:#10b981; background:rgba(16,185,129,0.12); padding:3px 8px; border-radius:6px; white-space:nowrap;">⭐ 已自動記點 +${earnedPts} 點</span>
+                ${this.isAdmin ? `
+                  <button type="button" class="presentation-tool-btn" onclick="window.app && window.app.rewardSingleActivityStudent('${safeUid}', '${safeName}', '聽歌搶答優秀表現')" style="padding: 2px 8px; height: 26px; font-size: 14px; border-radius: 6px;" title="依計分模式額外獎勵此同學或所屬小組點數">⭐ 加分</button>
+                ` : ''}
               </div>
             </div>
           `;
