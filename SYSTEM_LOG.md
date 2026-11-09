@@ -1,4 +1,17 @@
 # System Log
+## 2026-11-09 - 修復帶班級代碼開啟時偶發被切換至一次性課堂問題（Auth就緒等待與指數退避重試）
+- 影響檔案：`index.html`, `js/firebase-config.js`, `js/app.js`, `SYSTEM_LOG.md`。
+- 修改項目：
+  1. **解決 Firebase 匿名身分驗證競態（Race Condition）**：
+     - 於 `js/firebase-config.js` 之 `window.ClassRoomManager` 新增 `ensureAuthReady()` 函式，在向資料庫查詢前主動等待 Firebase 匿名驗證就緒並取得合法 Session Token，徹底根除因頁面剛載入時 Token 未就緒而被資料庫安全規則判定為 `PERMISSION_DENIED` 的問題。
+  2. **強化班級存在檢驗防禦（`checkClassExists`）**：
+     - 加入平滑指數退避重試機制（3 次），若遭遇暫時性網路抖動或延遲自動重試。
+     - 精準區分伺服器狀態：唯有資料庫明確回傳快照不存在時才判定為 `false`；若因網路斷線或多次連線異常則回傳 `null`，絕不再將連線失敗誤判為「查無此班級」。
+  3. **改善班級初始化與彈窗提示邏輯（`initClassRoomUI` / `submitClassModal`）**：
+     - 調整 `initClassRoomUI()`，唯有在 `exists === false`（伺服器確認無此代碼）時才退回一次性課堂；若為網路延遲或 Token 建立中（`exists === null`），安全保留班級代碼並維持專屬班級模式，待連線建立後自動同步資料，不再抹除網址列代碼。
+     - 手動輸入班級代碼視窗同步區分「查無代碼」與「網路逾時」之差異化提示。
+  4. 更新快取版本號至 `?v=504`（`firebase-config.js?v=494`、`app.js?v=504`）。
+
 ## 2026-11-06 - 修正課堂記錄 JSON 匯出權限錯誤與實作聽歌搶答完成時自動記點
 - 影響檔案：`firebase-database-rules.json`, `index.html`, `js/app.js`, `js/song_quiz.js`, `SYSTEM_LOG.md`。
 - 修改項目：

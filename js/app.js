@@ -18812,14 +18812,14 @@ class App {
     const userName = (window.ClassRoomManager && window.ClassRoomManager.getUserName()) || localStorage.getItem('user_name') || '';
 
     if (code) {
-      // 驗證代碼是否確實存在於註冊清單中 (防手滑或無效 URL 參數)
+      // 驗證代碼是否確實存在於註冊清單中 (防手滑或無效 URL 參數，含 Auth 就緒等待與平滑重試)
       let exists = true;
       if (window.ClassRoomManager && typeof window.ClassRoomManager.checkClassExists === 'function') {
         exists = await window.ClassRoomManager.checkClassExists(code);
       }
 
-      if (!exists) {
-        // 代碼未登記開課，自動退回一次性課堂並跳出提示
+      if (exists === false) {
+        // 唯有伺服器明確回傳無此代碼時，才自動退回一次性課堂並跳出提示
         if (window.ClassRoomManager) {
           window.ClassRoomManager.setActiveClassCode('');
         }
@@ -18839,7 +18839,7 @@ class App {
         if (btnExit) btnExit.style.display = 'none';
         if (btnActionText) btnActionText.textContent = '輸入班級代碼';
       } else {
-        // 專屬班級模式（正常開課班級）
+        // 專屬班級模式（正常開課班級，或網路連線暫時延遲時安全保留代碼）
         if (modeOneOff) modeOneOff.style.display = 'none';
         if (modeClass) modeClass.style.display = 'inline-flex';
         if (displayClassCode) displayClassCode.textContent = code;
@@ -19024,10 +19024,10 @@ class App {
         exists = await window.ClassRoomManager.checkClassExists(sanitized);
       }
     } catch (e) {
-      exists = false;
+      exists = null;
     }
 
-    if (!exists) {
+    if (exists === false) {
       if (errorEl) {
         errorEl.style.background = 'rgba(255, 59, 48, 0.1)';
         errorEl.style.borderLeftColor = '#ff3b30';
@@ -19036,6 +19036,15 @@ class App {
         errorEl.style.display = 'block';
       }
       return; // 嚴格阻擋！絕不在資料庫建立垃圾空間
+    } else if (exists === null) {
+      if (errorEl) {
+        errorEl.style.background = 'rgba(255, 149, 0, 0.1)';
+        errorEl.style.borderLeftColor = '#ff9500';
+        errorEl.style.color = '#b45309';
+        errorEl.innerHTML = `⚠️ 驗證班級代碼時網路連線逾時，請確認網路連線穩定後重試！`;
+        errorEl.style.display = 'block';
+      }
+      return;
     }
 
     // 驗證通過，儲存姓名與班級代碼

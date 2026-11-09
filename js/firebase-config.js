@@ -188,18 +188,80 @@ window.ClassRoomManager = {
     localStorage.setItem('user_role', role === 'teacher' ? 'teacher' : 'student');
   },
 
-  // 檢查班級是否已由老師登記開課
-  async checkClassExists(code) {
+  // 等待 Firebase 匿名身分驗證完成（保證持有合法 Session Token 再發送資料庫請求，避免 PERMISSION_DENIED）
+  async ensureAuthReady(timeoutMs = 4000) {
+    if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') {
+      return null;
+    }
+    try {
+      const auth = window.firebaseAuth || firebase.auth();
+      if (auth.currentUser) return auth.currentUser;
+
+      return await new Promise((resolve) => {
+        let isResolved = false;
+        let timer = null;
+
+        const finish = (user) => {
+          if (!isResolved) {
+            isResolved = true;
+            if (timer) clearTimeout(timer);
+            try { unsubscribe(); } catch (e) {}
+            resolve(user || null);
+          }
+        };
+
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          if (user) finish(user);
+        });
+
+        // 若尚未登入，主動觸發匿名登入
+        if (!auth.currentUser) {
+          auth.signInAnonymously().catch((err) => {
+            console.warn('ensureAuthReady signInAnonymously warning:', err);
+          });
+        }
+
+        timer = setTimeout(() => {
+          finish(auth.currentUser || null);
+        }, timeoutMs);
+      });
+    } catch (e) {
+      console.warn('ensureAuthReady error:', e);
+      return null;
+    }
+  },
+
+  // 檢查班級是否已由老師登記開課（含 Auth 預先就緒等待與平滑重試防禦）
+  async checkClassExists(code, maxRetries = 2) {
     if (!code) return false;
     const sanitized = this.sanitizeClassCode(code);
     if (!sanitized) return false;
-    try {
-      const snap = await rawRef(`registered_classes/${sanitized}`).once('value');
-      return snap.exists() && snap.val() !== null;
-    } catch (e) {
-      console.warn('checkClassExists error:', e);
-      return false;
+
+    // 1. 預先等待 Firebase 匿名驗證就緒，防止身分令牌尚未取得時遭安全規則拒絕存取
+    await this.ensureAuthReady(3500);
+
+    const refFn = typeof rawRef === 'function' 
+      ? rawRef 
+      : (typeof firebase !== 'undefined' && firebase.database ? firebase.database().ref.bind(firebase.database()) : null);
+    if (!refFn) return null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const snap = await refFn(`registered_classes/${sanitized}`).once('value');
+        // 成功取得伺服器回傳，明確比對班級代碼是否存在
+        return snap.exists() && snap.val() !== null;
+      } catch (e) {
+        console.warn(`checkClassExists (嘗試 ${attempt + 1}/${maxRetries + 1}) 發生異常:`, e?.message || e);
+        if (attempt < maxRetries) {
+          // 指數退避延遲 300ms ~ 600ms，等待網路連線或 Token 建立完畢
+          await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+        } else {
+          // 多次重試後仍為網路或權限異常，回傳 null（代表連線或檢驗失敗，非確認無此班級）
+          return null;
+        }
+      }
     }
+    return false;
   },
 
   // 老師登記新班級 (開課)
