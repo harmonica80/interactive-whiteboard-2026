@@ -18818,28 +18818,23 @@ class App {
         exists = await window.ClassRoomManager.checkClassExists(code);
       }
 
-      if (exists === false) {
-        // 唯有伺服器明確回傳無此代碼時，才自動退回一次性課堂並跳出提示
-        if (window.ClassRoomManager) {
-          window.ClassRoomManager.setActiveClassCode('');
-        }
-        const cleanUrl = new URL(window.location.href);
-        cleanUrl.searchParams.delete('class');
-        cleanUrl.searchParams.delete('room');
-        window.history.replaceState({}, '', cleanUrl.toString());
-
-        this.showNotification(
-          '查無此班級代碼',
-          `班級代碼【${code}】尚未經老師登記開課或輸入錯誤。為避免浪費資料庫空間，已為您自動返回一次性課堂（公開空間）。`
-        );
-
-        if (modeOneOff) modeOneOff.style.display = 'inline-flex';
-        if (modeClass) modeClass.style.display = 'none';
+      if (exists === false || exists === null) {
+        // 伺服器明確回傳無此代碼 (exists === false) 或連線驗證異常 (exists === null)
+        // 依使用者需求：不要立即自動降級返回一次性課堂（避免使用者誤以為已成功進入該班級發言作答）
+        // 先在頂部清楚標記為未連線/待驗證狀態，並彈出原因說明與選擇彈窗
+        if (modeOneOff) modeOneOff.style.display = 'none';
+        if (modeClass) modeClass.style.display = 'inline-flex';
+        if (displayClassCode) displayClassCode.textContent = `${code} (未登入)`;
         if (btnShare) btnShare.style.display = 'none';
-        if (btnExit) btnExit.style.display = 'none';
-        if (btnActionText) btnActionText.textContent = '輸入班級代碼';
+        if (btnExit) btnExit.style.display = 'inline-flex';
+        if (btnActionText) btnActionText.textContent = '班級連線失敗';
+
+        this.showClassEntryErrorModal(code, exists === false ? 'not_found' : 'network_error');
+        return;
       } else {
-        // 專屬班級模式（正常開課班級，或網路連線暫時延遲時安全保留代碼）
+        // 專屬班級模式（正常開課班級，驗證成功）
+        this.closeClassEntryErrorModal();
+
         if (modeOneOff) modeOneOff.style.display = 'none';
         if (modeClass) modeClass.style.display = 'inline-flex';
         if (displayClassCode) displayClassCode.textContent = code;
@@ -19099,6 +19094,121 @@ class App {
 
   shareClassLink() {
     this.openClassInviteModal();
+  }
+
+  // ===== 班級代碼驗證異常 / 防呆處理機制 =====
+  showClassEntryErrorModal(code, reasonType = 'not_found') {
+    const modal = document.getElementById('classEntryErrorModal');
+    if (!modal) return;
+    const codeDisplay = document.getElementById('classEntryErrorCodeDisplay');
+    const reasonDisplay = document.getElementById('classEntryErrorReason');
+    const titleEl = document.getElementById('classEntryErrorTitle');
+    const retryBtn = document.getElementById('btnRetryClassLogin');
+
+    if (codeDisplay) {
+      codeDisplay.textContent = code || '(未提供代碼)';
+    }
+
+    if (retryBtn) {
+      retryBtn.disabled = false;
+      retryBtn.innerHTML = '🔄 重新嘗試連線登入此班級';
+    }
+
+    if (reasonType === 'network_error') {
+      if (titleEl) titleEl.textContent = '班級連線或驗證異常';
+      if (reasonDisplay) {
+        reasonDisplay.innerHTML = `無法順利連線至資料庫驗證班級代碼【<strong>${this.escapeHtml ? this.escapeHtml(code) : code}</strong>】。<br>可能因校園網路延遲、離線或身分驗證尚未就緒。`;
+      }
+    } else {
+      if (titleEl) titleEl.textContent = '查無此登記班級代碼';
+      if (reasonDisplay) {
+        reasonDisplay.innerHTML = `班級代碼【<strong>${this.escapeHtml ? this.escapeHtml(code) : code}</strong>】尚未經老師至管理後台登記開課，或連結輸入有誤。`;
+      }
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  closeClassEntryErrorModal() {
+    const modal = document.getElementById('classEntryErrorModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  async retryClassLogin() {
+    const retryBtn = document.getElementById('btnRetryClassLogin');
+    if (retryBtn) {
+      retryBtn.disabled = true;
+      retryBtn.innerHTML = '⏳ 正在重新向伺服器驗證中...';
+    }
+
+    const code = window.currentClassCode || new URLSearchParams(window.location.search).get('class') || new URLSearchParams(window.location.search).get('room');
+    if (!code) {
+      this.closeClassEntryErrorModal();
+      this.confirmFallbackToOneOffClass();
+      return;
+    }
+
+    let exists = false;
+    try {
+      if (window.ClassRoomManager && typeof window.ClassRoomManager.checkClassExists === 'function') {
+        exists = await window.ClassRoomManager.checkClassExists(code, 3);
+      }
+    } catch (e) {
+      exists = null;
+    }
+
+    if (exists === true) {
+      this.closeClassEntryErrorModal();
+      this.showToast('✅ 班級連線成功！正在進入課堂...');
+      // 成功進入，重新執行 initClassRoomUI 正常初始化班級環境與監聽器
+      await this.initClassRoomUI();
+    } else {
+      if (retryBtn) {
+        retryBtn.disabled = false;
+        retryBtn.innerHTML = '🔄 重新嘗試連線登入此班級';
+      }
+      this.showToast(exists === false ? '❌ 伺服器確認查無此班級代碼' : '⚠️ 連線逾時，請檢查網路連線後再試', 'error');
+      this.showClassEntryErrorModal(code, exists === false ? 'not_found' : 'network_error');
+    }
+  }
+
+  openClassModalFromEntryError() {
+    this.closeClassEntryErrorModal();
+    this.openClassRoomModal();
+  }
+
+  confirmFallbackToOneOffClass() {
+    this.closeClassEntryErrorModal();
+    // 使用者主動確認前往一次性課堂：清除班級代碼與 URL 參數，切換至公開免代碼空間
+    if (window.ClassRoomManager) {
+      window.ClassRoomManager.setActiveClassCode('');
+    }
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete('class');
+    cleanUrl.searchParams.delete('room');
+    window.history.replaceState({}, '', cleanUrl.toString());
+
+    const modeOneOff = document.getElementById('modeOneOffDisplay');
+    const modeClass = document.getElementById('modeClassDisplay');
+    const btnShare = document.getElementById('btnShareClassLink');
+    const btnExit = document.getElementById('btnExitClass');
+    const btnActionText = document.getElementById('btnClassActionText');
+
+    if (modeOneOff) modeOneOff.style.display = 'inline-flex';
+    if (modeClass) modeClass.style.display = 'none';
+    if (btnShare) btnShare.style.display = 'inline-flex';
+    if (btnExit) btnExit.style.display = 'none';
+    if (btnActionText) btnActionText.textContent = '輸入班級代碼';
+
+    this.showToast('🌱 已切換至「免代碼一次性課堂（公開空間）」');
+    const userName = (window.ClassRoomManager && window.ClassRoomManager.getUserName()) || localStorage.getItem('user_name') || '';
+    if (!userName && !this.isAdmin) {
+      setTimeout(() => {
+        this.openStudentNameModal();
+      }, 350);
+    }
   }
 
   // ===== 管理後台：班級管理與開課管制業務 =====
